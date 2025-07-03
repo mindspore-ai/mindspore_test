@@ -19,11 +19,10 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-
 class StdAscend : public AclnnKernelMod {
  public:
   StdAscend() : AclnnKernelMod(std::move("aclnnStd")) {}

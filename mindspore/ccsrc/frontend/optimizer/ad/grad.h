@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_GRAD_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AD_GRAD_H_
 
+#include <vector>
 #include "ir/anf.h"
 #include "ir/meta_func_graph.h"
 #include "frontend/optimizer/optimizer.h"
@@ -33,13 +34,14 @@ enum BpropAutoMonadLevel : int {
   // When setting to Whole level, it will keep the order for all side effect nodes between forward and backward.
   kLevelWhole,
 };
-FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top = true,
-                  BpropAutoMonadLevel level = kLevelNone);
+FRONTEND_EXPORT FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer,
+                                  bool is_top = true, BpropAutoMonadLevel level = kLevelNone,
+                                  bool is_view_inplace = false);
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
-                                   bool is_top = true);
+                                   const std::vector<bool> &is_view_inplace, bool is_top = true);
 FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBasePtr &resources);
 MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node);
-void CleanRes();
+FRONTEND_EXPORT void CleanRes();
 bool MergeForward(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 }  // namespace ad
 }  // namespace mindspore

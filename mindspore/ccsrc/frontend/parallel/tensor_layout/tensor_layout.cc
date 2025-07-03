@@ -15,6 +15,7 @@
  */
 
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
+#include <algorithm>
 #include <iostream>
 #include <utility>
 #include "utils/ms_utils.h"
@@ -87,6 +88,21 @@ Status TensorLayout::InitFromVector(const Shape &device_arrangement, const Shape
     MS_LOG(ERROR) << "Init tensor_layout failed.";
     return FAILED;
   }
+  if (SetDefaultTensorMapAndShapeBefore(tensor_map, tensor_shape) != SUCCESS) {
+    MS_LOG(ERROR) << "Set default tensor_shape_before_ or tensor_map_before_ failed.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status TensorLayout::SetDefaultTensorMapAndShapeBefore(const Shape &tensor_map, const Shape &tensor_shape) {
+  tensor_map_before_.clear();
+  std::transform(tensor_map.begin(), tensor_map.end(), std::back_inserter(tensor_map_before_),
+                 [](int64_t x) { return Shape{x}; });
+  if (tensor_shape_before_.Init(tensor_shape) != SUCCESS) {
+    MS_LOG(ERROR) << "Init tensor_shape_before_ failed.";
+    return FAILED;
+  }
   return SUCCESS;
 }
 
@@ -134,13 +150,13 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     std::accumulate(device_arrangement.begin(), device_arrangement.end(), 1, std::multiplies<int64_t>());
   if (device_num != device_total && check_device_num) {
     MS_LOG(ERROR) << "The configured device_matrix " << device_arrangement << " accumulate value " << device_total
-                  << " dose not equal to the device number in one stage " << device_num;
+                  << " does not equal to the device number in one stage " << device_num;
     return FAILED;
   }
   Shape extended_tensor_map;
   Shape reshaped_tensor_shape;
   if (tensor_shape.size() != tensor_map.size()) {
-    MS_LOG(ERROR) << "The tensor_shape " << tensor_shape << " dose not have the same size with tensor_map "
+    MS_LOG(ERROR) << "The tensor_shape " << tensor_shape << " does not have the same size with tensor_map "
                   << tensor_map;
     return FAILED;
   }
@@ -157,7 +173,7 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
 
   if (not_none_count > device_arrangement.size()) {
     MS_LOG(ERROR) << "The device_matrix " << device_arrangement
-                  << " length dose not greater equal than the not None size of extended_tensor_map "
+                  << " length does not greater equal than the not None size of extended_tensor_map "
                   << extended_tensor_map;
     return FAILED;
   }
@@ -187,6 +203,7 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     return FAILED;
   }
   tensor_map_before_ = tensor_map;
+  init_from_extend_vector_ = true;
   return SUCCESS;
 }
 
@@ -286,6 +303,9 @@ void TensorLayout::RemoveElementEqualToOneInDeviceArrangement() {
       continue;
     }
     device_arrangement_shape.push_back(device_arrangement_origin_.GetDimByIdx(i));
+  }
+  if (device_arrangement_shape.empty()) {
+    device_arrangement_shape.emplace_back(1);
   }
   (void)device_arrangement_.Init(device_arrangement_shape);
   (void)tensor_map_.Init(tensor_map_shape);
@@ -557,6 +577,9 @@ bool TensorLayout::operator<(const TensorLayout &t1) const {
   }
   if (!IsSameTensorMap(t1)) {
     return tensor_map_ < t1.tensor_map();
+  }
+  if (!IsSameTensorShape(t1)) {
+    return tensor_shape_ < t1.tensor_shape();
   }
   return false;
 }

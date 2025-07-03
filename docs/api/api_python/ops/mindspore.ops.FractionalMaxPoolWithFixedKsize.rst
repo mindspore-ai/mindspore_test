@@ -30,7 +30,7 @@ mindspore.ops.FractionalMaxPoolWithFixedKsize
     异常：
         - **TypeError** - 如果 `input_x` 的数据类型不是：float16、float32、float64、int32、int64。
         - **TypeError** - 如果 `random_samples` 的数据类型不是：float16、float32、float64。
-        - **ValueError** - 如果 `ksize` 不是一个数，并且不是一个长度为2的元组。 
+        - **ValueError** - 如果 `ksize` 不是一个数，并且不是一个长度为2的元组。
         - **ValueError** - 如果 `output_shape` 不是一个数，并且不是长度为2的元组。
         - **ValueError** - 如果 `ksize` 、 `output_shape` 和-1的总和大于 `input_x` 的相应维度。
         - **ValueError** - 如果 `random_samples` 的轴数不是3。

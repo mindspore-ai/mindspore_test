@@ -22,11 +22,12 @@
 #include <utility>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace boundingbox_decode_cpu {
 constexpr size_t MIN_MAX_SHAPE_SIZE = 2;
 class BoundingBoxDecodeCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -60,6 +61,7 @@ class BoundingBoxDecodeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> max_shape_;
   float wh_ratio_clip_{0.016};
 };
+}  // namespace boundingbox_decode_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

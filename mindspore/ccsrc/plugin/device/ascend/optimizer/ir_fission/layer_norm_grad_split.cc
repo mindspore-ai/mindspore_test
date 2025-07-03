@@ -27,6 +27,7 @@
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {

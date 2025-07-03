@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -35,13 +38,38 @@ using mindspore::abstract::AbstractSequencePtr;
 using mindspore::abstract::AbstractTensor;
 using mindspore::abstract::AbstractTuple;
 
-// x = (1, 2, 3, 4)
-// a, *b, c = x    // targets(a, *b, c) = assign(x)
-// a = 1, *b = [2, 3], c = 4
-// convert:
-// StarredGetItem(sequence, position_in_target, targets_num)
-// *b: StarredGetItem(x, 1, 3)
-// output: *b = makelist(getitem(x, 1), getitem(x, 2))
+namespace {
+void SetSequenceElementsUseFlagsForStarred(const AbstractBasePtrList &args_abs_list) {
+  // Handle for DDE.
+  for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(args_abs_list[i]);
+    if (args_abs_list[i]->isa<abstract::AbstractSequence>()) {
+      MS_LOG(DEBUG) << "Starred operation is consuming tuple/list arguments[" << i
+                    << "]: " << args_abs_list[i]->ToString();
+      SetSequenceElementsUseFlagsRecursively(args_abs_list[i], true);
+    }
+  }
+}
+}  // namespace
+
+/**
+ * \brief Generate func graph of Primitive `StarredGetItem`.
+ *
+ * \example
+ * origin:
+ *   x = (1, 2, 3, 4)
+ *   a, *b, c = x    // targets(a, *b, c) = assign(x)
+ *   a = 1, *b = [2, 3], c = 4
+ * convert:
+ *   StarredGetItem(sequence, position_in_target, targets_num)
+ *   *b: StarredGetItem(x, 1, 3)
+ * output:
+ *   *b = makelist(getitem(x, 1), getitem(x, 2))
+ *
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   // Check inputs
   constexpr size_t starred_getitem_args_size = 3;
@@ -54,6 +82,7 @@ FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_a
                       << ", but got " << args_abs_list.size();
   }
 
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   auto first_input__abs = args_abs_list[sequence_index];
   MS_EXCEPTION_IF_NULL(first_input__abs);
   if (!first_input__abs->isa<AbstractSequence>()) {
@@ -98,13 +127,23 @@ FuncGraphPtr StarredGetItem::GenerateFuncGraph(const AbstractBasePtrList &args_a
   return ret_graph;
 }
 
-// x = [1, 2, 3, 4]
-// a = *x,    // targets(a) = assign(*x,)
-// a = (1, 2, 3, 4)
-// convert:
-// StarredUnpackMerge(StarredUnpack(sequence))
-// StarredUnpackMerge(((1, 2, 3, 4), )
-// StarredUnpackMerge(tuple_getitem(x, 0), ...)
+/**
+ * \brief Generate func graph of Primitive `StarredUnpack`.
+ *
+ * \example
+ * origin:
+ *   x = [1, 2, 3, 4]
+ *   a = *x,    // targets(a) = assign(*x,)
+ *   a = (1, 2, 3, 4)
+ * convert:
+ *   StarredUnpackMerge(StarredUnpack(sequence))
+ *   StarredUnpackMerge(((1, 2, 3, 4), )
+ *   StarredUnpackMerge(tuple_getitem(x, 0), ...)
+ *
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredUnpack::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   // Check inputs
   constexpr size_t starred_unpack_args_size = 1;
@@ -113,6 +152,7 @@ FuncGraphPtr StarredUnpack::GenerateFuncGraph(const AbstractBasePtrList &args_ab
     MS_LOG(EXCEPTION) << "For 'StarredUnpack', the number of input should be " << starred_unpack_args_size
                       << ", but got " << args_abs_list.size();
   }
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   auto &unpack_arg = args_abs_list[sequence_index];
   MS_EXCEPTION_IF_NULL(unpack_arg);
   FuncGraphPtr ret_graph = std::make_shared<FuncGraph>();
@@ -194,12 +234,23 @@ std::pair<std::vector<int64_t>, int64_t> StarredUnpackMerge::GetStarredUnpackMer
   return {starred_flags, is_tuple};
 }
 
-// a = *[1, 2], (3, 4)
-// convert:
-// StarredUnpackMerge(assign_node1, assign_node2, starred_flags_node, is_tuple)
-// StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
-// a: (1, 2, (3, 4))
+/**
+ * \brief Generate func graph of Primitive `StarredUnpackMerge`.
+ *
+ * \example
+ * origin:
+ *   a = *[1, 2], (3, 4)
+ * convert:
+ *   StarredUnpackMerge(assign_node1, assign_node2, starred_flags_node, is_tuple)
+ *   StarredUnpackMerge(StarredUnpack(*[1, 2]), (3, 4), (1, 0), 1) --> (1, 2, (3, 4))
+ *   a: (1, 2, (3, 4))
+ *
+ * \param[in] args_abs_list List of input abstract.
+ *
+ * \return The generated func graph.
+ **/
 FuncGraphPtr StarredUnpackMerge::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  SetSequenceElementsUseFlagsForStarred(args_abs_list);
   // Check inputs, and get flags info.
   auto [starred_flags, is_tuple] = GetStarredUnpackMergeFlags(args_abs_list);
 

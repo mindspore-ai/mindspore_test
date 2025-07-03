@@ -21,11 +21,7 @@
 
 #include "include/common/utils/utils.h"
 #include "minddata/dataset/core/pybind_support.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-#endif
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 
 namespace mindspore {

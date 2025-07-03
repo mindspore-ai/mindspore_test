@@ -18,7 +18,7 @@
 
 #include <vector>
 #include "include/backend/kernel_graph.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace device {

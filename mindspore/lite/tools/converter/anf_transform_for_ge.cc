@@ -37,6 +37,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "tools/common/string_util.h"
 #include "src/common/common.h"
+#include "tools/optimizer/fusion/leaky_relu_fusion.h"
 #include "tools/optimizer/fusion/antiquant_add_mul_matmul_allreduce_fusion.h"
 #include "tools/optimizer/fusion/kv_cache_mgr_one_branch_fusion.h"
 #include "tools/optimizer/fusion/kv_cache_mgr_concat_fusion.h"
@@ -85,6 +86,10 @@ void EnableFlashAttentionTikPass(std::vector<opt::PassPtr> *fusions, const std::
   fusions->push_back(std::make_shared<opt::FlashAttentionTikPass>());
 }
 
+void EnableLeakyReluFusionFusion(std::vector<opt::PassPtr> *fusions, const std::shared_ptr<ConverterPara> &param) {
+  fusions->push_back(std::make_shared<opt::LeakyReluFusion>());
+}
+
 void EnableGroupNormSiluFusion(std::vector<opt::PassPtr> *fusions, const std::shared_ptr<ConverterPara> &param) {
   fusions->push_back(std::make_shared<opt::GroupNormSiluFusion>());
 }
@@ -124,6 +129,7 @@ int AnfTransformForGe::RunGeFusionPass(const FuncGraphPtr &old_graph, const std:
 
   auto plugin_custom_ops = param->ascendGeOptionCfg.plugin_custom_ops;
   MS_LOG(INFO) << "plugin_custom_ops: " << plugin_custom_ops;
+  EnableLeakyReluFusionFusion(&fusions, param);
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end()) {
     MS_LOG(INFO) << "using all fusion";
     EnableFlashAttentionFusion(&fusions, param);

@@ -24,7 +24,8 @@
 #include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_guard/cache.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
-#include "pipeline/jit/pi/utils/utils.h"
+#include "pipeline/jit/pi/utils/inline_reason.h"
+#include "pipeline/jit/pi/utils/stop_trace_reason.h"
 
 namespace mindspore {
 namespace pijit {
@@ -41,15 +42,6 @@ class Traceback {
     bool is_graph_mode_;
   };
 
-  struct InlineInfo {
-    std::string func_name_;
-    std::string inline_name_;
-    std::string root_name_;
-    InlineReason res = InlineReason::kInlineUnknown;
-    int code_size_;
-    int depth;
-    int line;
-  };
   Traceback() = default;
   Traceback(const std::string &raw_func_name, const std::string &raw_func_info_name, int raw_code_size)
       : raw_func_name_(raw_func_name), raw_func_info_name_(raw_func_info_name), raw_code_size_(raw_code_size) {}
@@ -57,30 +49,14 @@ class Traceback {
   void Clear() {
     tbs_.clear();
     stop_trace_res_.clear();
-    inline_infos_.clear();
   }
 
   std::string raw_func_name() const { return raw_func_name_; }
   void PushTbs(const Element &tb) { tbs_.push_back(tb); }
   void PushStopTraceRes(const std::string &func_name, StopTraceReason res) { stop_trace_res_.emplace(func_name, res); }
-  void PushInlineInfo(InlineInfo info);
-  void DumpInlineInfo(std::stringstream &os, const std::string &func_name) const;
   int FindMaxNameLength(const std::list<Element> &tbs) const;
   std::string Dump(bool is_all = false) const;
   std::string DumpSummary() const;
-  std::string GetStopTrace() {
-    std::string res;
-    for (auto item : stop_trace_res_) {
-      std::string item_str;
-      if (res.size() == 0) {
-        res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
-      } else {
-        res += std::string("\"") + item.first + "\":" + std::to_string(SizeToInt(item.second));
-      }
-    }
-    res = std::string("{") + res + std::string("}");
-    return res;
-  }
 
  private:
   std::string raw_func_name_;
@@ -89,8 +65,6 @@ class Traceback {
   std::list<Element> tbs_;
   // <func_name, stop_trace_reason>
   std::unordered_map<std::string, StopTraceReason> stop_trace_res_;
-  // <root_func_name, InlineInfo>
-  std::map<std::string, std::list<InlineInfo>> inline_infos_;
 };
 
 class JitCompileResults {
@@ -114,38 +88,45 @@ class JitCompileResults {
   State stat() const { return stat_; }
   const auto &origin_frame() const { return compile_frame_; }
   const auto &input_signature() const { return input_signature_; }
-  const auto &code() const { return code_; }
-  const auto &codehub() const { return codehub_; }
+  const auto &codehub() { return cache_.code_hub(); }
+  const auto &code() const { return cache_.code(); }
   const auto &tbs() const { return tbs_; }
   const auto &conf() const { return conf_; }
   int &compile_count() { return compile_count_; }
   int &break_count() { return break_count_; }
+  const auto &cache() const { return cache_; }
 
   void set_stat(State s);
   void set_input_signature(const py::object &sig) { input_signature_ = sig; }
-  void set_origin_frame(EvalFrameObject *f) { compile_frame_ = PyFrameWrapper(f); }
-  void set_code(const OptCodePtr &p) { code_ = p; }
-  void set_codehub(const OptCodeHubPtr &p) { codehub_ = p; }
+  void set_origin_frame(PyFrameWrapper f) { compile_frame_ = f; }
+  void set_code(const OptCodePtr &p) { cache_.set_code(p); }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
   void set_conf(const std::shared_ptr<GraphJitConfig> &c) { conf_ = c; }
+  void set_is_for_loop_body_wrapper(bool is_for_loop_body_wrapper) {
+    is_for_loop_body_wrapper_ = is_for_loop_body_wrapper;
+  }
+  bool is_for_loop_body_wrapper() { return is_for_loop_body_wrapper_; }
 
   int IncCodeCount() { return compile_count_++; }
+  void ClearCache() { cache_.Clear(); }
+  void CacheFailGuard() { cache_.CollectFailGuard(); }
 
  private:
   explicit JitCompileResults(bool skip = false);
-  ~JitCompileResults();
+  ~JitCompileResults() = default;
 
   PyFrameWrapper compile_frame_;
   py::object input_signature_;
   State stat_;
 
   // compiler output
-  OptCodePtr code_;
-  OptCodeHubPtr codehub_;
+  CodeCache cache_;
+
   std::shared_ptr<Traceback> tbs_;
   std::shared_ptr<GraphJitConfig> conf_;
   int compile_count_;
   int break_count_;
+  bool is_for_loop_body_wrapper_ = false;
 };
 
 inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {
@@ -158,7 +139,8 @@ inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {
   return nullptr;
 }
 
-inline JitCompileResults *GetJitCompileResults(PyObject *code) {
+inline JitCompileResults *GetJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? GetJitCompileResults(reinterpret_cast<PyCodeObject *>(code)) : nullptr;
@@ -171,7 +153,8 @@ inline void SetJitCompileResults(PyCodeObject *code, JitCompileResults *ptr) {
   }
 }
 
-inline JitCompileResults *CreateJitCompileResults(PyObject *code) {
+inline JitCompileResults *CreateJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? JitCompileResults::Create(reinterpret_cast<PyCodeObject *>(code)) : nullptr;

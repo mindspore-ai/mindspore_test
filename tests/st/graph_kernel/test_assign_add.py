@@ -34,6 +34,8 @@ class AssignAdd(nn.Cell):
 
 def get_output(x2, y2, enable_graph_kernel=False):
     context.set_context(enable_graph_kernel=enable_graph_kernel)
+    if enable_graph_kernel:
+        context.set_context(graph_kernel_flags="--enable_expand_ops=AssignAdd")
     add = AssignAdd(x2)
     result_gk_on_1 = add(y2)
     add_2 = AssignAdd(result_gk_on_1)

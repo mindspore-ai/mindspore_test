@@ -23,11 +23,12 @@
 #include <utility>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace set_size_cpu {
 class SetSizeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SetSizeCpuKernelMod> {
  public:
   SetSizeCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class SetSizeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   TypeId val_dtype_{kTypeUnknown};
   size_t values_size_{0};
 };
+}  // namespace set_size_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SET_SIZE_CPU_KERNEL_H_

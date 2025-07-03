@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batchmatmul_reduce_scatter_all_to_all {
 
 class BatchMatMulReduceScatterAlltoAllAscend : public AclnnKernelMod {
  public:
@@ -50,6 +51,7 @@ class BatchMatMulReduceScatterAlltoAllAscend : public AclnnKernelMod {
   //  Integer on the host side, enumeration of acl flow mode, currently only supports 1
   const int64_t stream_mode_ = 1;
 };
+}  // namespace batchmatmul_reduce_scatter_all_to_all
 }  // namespace kernel
 }  // namespace mindspore
 

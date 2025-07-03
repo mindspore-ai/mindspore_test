@@ -21,10 +21,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isinf {
 class IsInfAscend final : public AclnnKernelMod {
  public:
   IsInfAscend() : AclnnKernelMod(std::move("aclnnIsInf")) {}
@@ -42,6 +43,7 @@ class IsInfAscend final : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnEqScalar, EqScalar)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 };
+}  // namespace isinf
 }  // namespace kernel
 }  // namespace mindspore
 

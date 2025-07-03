@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <optional>
+#include <set>
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "utils/value_utils.h"
 
 namespace mindspore::graphkernel::expander {
+constexpr int typeLevelBool = 0;
+constexpr int typeLevelInt = 1;
+constexpr int typeLevelReducedFloat = 2;
+constexpr int typeLevelFloat = 3;
+constexpr int typeLevelComplex = 4;
+
+static inline int TypeToLevel(TypeId t) {
+  static const std::unordered_map<TypeId, int> type_level_map = {
+    {kNumberTypeBool, typeLevelBool},
+    {kNumberTypeInt8, typeLevelInt},
+    {kNumberTypeInt16, typeLevelInt},
+    {kNumberTypeInt32, typeLevelInt},
+    {kNumberTypeInt64, typeLevelInt},
+    {kNumberTypeUInt8, typeLevelInt},
+    {kNumberTypeUInt16, typeLevelInt},
+    {kNumberTypeUInt32, typeLevelInt},
+    {kNumberTypeUInt64, typeLevelInt},
+    {kNumberTypeFloat16, typeLevelReducedFloat},
+    {kNumberTypeBFloat16, typeLevelReducedFloat},
+    {kNumberTypeFloat32, typeLevelFloat},
+    {kNumberTypeFloat64, typeLevelFloat},
+  };
+  const auto it = type_level_map.find(t);
+  return it != type_level_map.end() ? it->second : typeLevelComplex;
+}
+
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
   if (!CheckAllFormatsSame(ib, FormatDefaultNchwSame)) {
     return {};
@@ -216,7 +246,23 @@ REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
   return {result};
 });
 
-REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
+enum ReduceType { kSum = 0, kMean };
+
+std::optional<std::vector<int64_t>> GetAxis(const NodePtr &axis) {
+  std::vector<int64_t> res;
+  if (axis->GetDtype()->type_id() != kMetaTypeNone) {
+    auto axis_value = axis->GetValue();
+    bool is_valid_axis =
+      axis_value->isa<ValueSequence>() || axis_value->isa<tensor::Tensor>() || axis_value->isa<Scalar>();
+    if (!is_valid_axis) {
+      return std::nullopt;
+    }
+    res = GetAxisList(axis->GetValue());
+  }
+  return res;
+}
+
+NodePtrList ReduceExtCommon(const DefaultIrBuilder *ib, ReduceType reduce_type) {
   auto input = ib->input(kIndex0);
   auto input_type = input->GetDtype()->type_id();
   if (input_type != kNumberTypeFloat32 && input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) {
@@ -233,10 +279,14 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
   input = input_type == kNumberTypeFloat32 ? input : ib->Cast(input, kNumberTypeFloat32);
   auto x_shape = input->GetShape();
   if (x_shape.empty() || IsDynamicRank(x_shape)) {
-    MS_LOG(DEBUG) << "Skip empty shape or dynamic rank, shape is: " << x_shape;
+    MS_LOG(DEBUG) << "Skip expanding node, bucause shape of this node is empty or dynamic rank, shape is: " << x_shape;
     return {};
   }
-  auto axis_ = GetAxisList(axis->GetValue());
+  auto axis_opt = GetAxis(axis);
+  if (!axis_opt.has_value()) {
+    return {};
+  }
+  std::vector<int64_t> axis_ = axis_opt.value();
   auto rank = SizeToLong(x_shape.size());
   (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
   if (axis_.empty()) {
@@ -256,11 +306,17 @@ REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
       sz *= x_shape[i];
     }
   }
-  auto sum_x = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
-  auto result = ib->Div(sum_x, sz);
-  result = out_type == kNumberTypeFloat32 ? result : ib->Cast(result, out_type);
-  return {result};
-});
+  auto res = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
+  if (reduce_type == ReduceType::kMean) {
+    res = ib->Div(res, sz);
+  }
+  res = out_type == kNumberTypeFloat32 ? res : ib->Cast(res, out_type);
+  return {res};
+}
+
+REG_EXPANDER_FUNC("SumExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kSum); });
+
+REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) { return ReduceExtCommon(ib, ReduceType::kMean); });
 
 REG_EXPANDER_FUNC("AcoshExt").SetBody(BODYFUNC(ib) {
   auto input = ib->input(kIndex0);
@@ -345,7 +401,10 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
   auto x0_type = x0->GetDtype()->type_id();
   auto x1_type = x1->GetDtype()->type_id();
   auto alpha_type = alpha->GetDtype()->type_id();
+  static std::set<TypeId> dvm_supported_types{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeInt32,
+                                              kNumberTypeBFloat16};
   if (x0_type == kNumberTypeBool) {
+    MS_LOG(DEBUG) << "The data type of first input is not supported: " << TypeIdToString(x0_type);
     return {};
   }
   if (x1_type != x0_type) {
@@ -361,6 +420,14 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
       x1 = ib->Cast(x1, alpha_type);
     } else {
       alpha = ib->ScalarToTensor(alpha, x0->GetDtype());
+      auto alpha_value = alpha->GetValue();
+      if (GraphKernelFlags::GetInstance().kernel_generator == "DVM" &&
+          (alpha_value == nullptr || !IsValueKnown(alpha_value)) &&
+          dvm_supported_types.find(alpha_type) == dvm_supported_types.end()) {
+        MS_LOG(DEBUG) << "alpha is not const value and the data type of it is not supported: "
+                      << TypeIdToString(alpha_type);
+        return {};
+      }
     }
   }
   x1 = ib->Mul(x1, alpha);
@@ -374,4 +441,48 @@ NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
 REG_EXPANDER_FUNC("AddExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, true); });
 
 REG_EXPANDER_FUNC("SubExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, false); });
+
+REG_EXPANDER_FUNC("Muls").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto scalar = ib->input(kIndex1);
+  auto input_type = input->GetDtype();
+  auto scalar_type = scalar->GetDtype();
+  auto scalar_value = scalar->GetValue();
+  if (scalar_value == nullptr || !IsValueKnown(scalar_value)) {
+    MS_LOG(DEBUG) << "scalar is not const value and the data type of it is not supported: "
+                  << TypeIdToString(scalar_type->type_id());
+    return {};
+  }
+  auto dst_type = TypeToLevel(input_type->type_id()) >= TypeToLevel(scalar_type->type_id()) ? input_type : scalar_type;
+  scalar = ib->ScalarToTensor(scalar, dst_type);
+  if (input_type != dst_type) {
+    input = ib->Cast(input, dst_type);
+  }
+  return {ib->Mul(input, scalar)};
+});
+
+REG_EXPANDER_FUNC("TanhGrad").SetBody(BODYFUNC(ib) {
+  if (!CheckAllFormatsSame(ib)) {
+    return {};
+  }
+  auto input_y = ib->input(kIndex0);
+  auto input_dy = ib->input(kIndex1);
+  auto y_type = input_y->GetDtype();
+  auto dy_type = input_dy->GetDtype();
+  if (y_type->type_id() != dy_type->type_id()) {
+    return {};
+  }
+  // for reduced floating types like fp16 and bf16, cast is required to guarantee the precision is acceptable
+  if (y_type->type_id() == kNumberTypeFloat16 || y_type->type_id() == kNumberTypeBFloat16) {
+    auto fp32 = TypeIdToType(kNumberTypeFloat32);
+    auto input_y_fp32 = ib->Cast(input_y, fp32);
+    auto input_dy_fp32 = ib->Cast(input_dy, fp32);
+    auto const_one_fp32 = ib->Tensor(1, fp32);
+    auto output_fp32 = ib->Mul(input_dy_fp32, ib->Sub(const_one_fp32, ib->Mul(input_y_fp32, input_y_fp32)));
+    return {ib->Cast(output_fp32, y_type)};
+  } else {
+    auto const_one = ib->Tensor(1, y_type);
+    return {ib->Mul(input_dy, ib->Sub(const_one, ib->Mul(input_y, input_y)))};
+  }
+});
 }  // namespace mindspore::graphkernel::expander

@@ -25,7 +25,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
 #include "frontend/optimizer/irpass/branch_culling.h"
 #include "frontend/optimizer/irpass/cast_eliminate.h"
@@ -63,7 +62,6 @@
 #include "frontend/optimizer/irpass/switch_or_switch_layer_defer_inline.h"
 #include "frontend/optimizer/irpass/call_graph_tuple_transform.h"
 #include "frontend/optimizer/irpass/recompute_prepare.h"
-#include "frontend/optimizer/irpass/convert_tensor_eliminate.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/irpass/grad_partial_transform.h"
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
@@ -71,14 +69,33 @@
 #include "frontend/optimizer/irpass/slice_to_tuple.h"
 #include "frontend/optimizer/irpass/j_node_and_user_rematch.h"
 #include "frontend/optimizer/irpass/loop_unroll.h"
+#include "frontend/optimizer/irpass/morph.h"
+#include "frontend/optimizer/irpass/make_tuple_from_fprop_eliminate.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace opt {
 namespace irpass {
 OptimizeIRPassLib::OptimizeIRPassLib() {
-  arithmetic_simplify_ = MakeSubstitution(std::make_shared<ArithmeticSimplify>(), "arithmetic_simplify",
-                                          {prim::kPrimScalarAdd, prim::kPrimScalarMul, prim::kPrimAdd,
-                                           prim::kPrimidentity, prim::kPrimMomentum, prim::kPrimMul, prim::kPrimPow});
+  arithmetic_simplify_ =
+    MakeSubstitution(std::make_shared<ArithmeticSimplify>(), "arithmetic_simplify",
+                     {prim::kPrimScalarAdd, prim::kPrimScalarMul, prim::kPrimAdd, prim::kPrimidentity,
+                      prim::kPrimMomentum, prim::kPrimMul, prim::kPrimMuls, prim::kPrimPow});
   special_op_eliminate_ = MakeSubstitution(
     std::make_shared<SpecialOpEliminater>(), "special_op_eliminate",
     {prim::kPrimInsertGradientOf, prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType});
@@ -159,11 +176,6 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   depend_value_elim_ = MakeSubstitution(std::make_shared<DependValueElim>(), "depend_value_elim", prim::kPrimDepend);
   all_reduce_const_elim_ =
     MakeSubstitution(std::make_shared<AllReduceConstElim>(), "reduce_all_const_elim", prim::kPrimAllReduce);
-  convert_tensor_eliminate_ = MakeSubstitution(std::make_shared<ConvertTensorEliminate>(), "convert_tensor_eliminate",
-                                               {prim::kPrimConvertToAdapterTensor, prim::kPrimConvertToMsTensor});
-  convert_tensor_all_eliminate_ =
-    MakeSubstitution(std::make_shared<ConvertTensorAllEliminate>(), "convert_tensor_all_eliminate",
-                     {prim::kPrimConvertToAdapterTensor, prim::kPrimConvertToMsTensor});
 
   // Environ Item Eliminate
   environ_get_eliminate_ =
@@ -245,8 +257,8 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   load_eliminater_ = MakeSubstitution(std::make_shared<LoadEliminater>(), "load_eliminater", prim::kPrimLoad);
 
   // StopGradient eliminate
-  stopgrad_eliminater_ =
-    MakeSubstitution(std::make_shared<StopGradientEliminater>(), "stopgrad_eliminater", prim::kPrimStopGradient);
+  redundant_stopgrad_eliminater_ = MakeSubstitution(std::make_shared<StopGradientEliminater>(),
+                                                    "redundant_stop_gradient_eliminater", prim::kPrimStopGradient);
 
   // Incorporation
   incorporate_call_ = MakeSubstitution(std::make_shared<IncorporateCall>(), "incorporate_call", IsCNodeDup);
@@ -256,6 +268,9 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   // Virtual Dataset
   virtual_dataset_eliminate_ = MakeSubstitution(std::make_shared<VirtualDatasetEliminater>(),
                                                 "virtual_dataset_eliminate", prim::kPrimVirtualDataset);
+
+  dump_gradient_eliminate_ =
+    MakeSubstitution(std::make_shared<DumpGradientEliminater>(), "dumpgradient_eliminate", prim::kPrimDumpGradient);
 
   // Virtual Output
   virtual_output_eliminate_ =
@@ -324,6 +339,9 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   opt_reshape_ = MakeSubstitution(std::make_shared<OptReshape>(), "opt_reshape", prim::kPrimReshape);
   fold_const_symbol_ = MakeSubstitution(std::make_shared<FoldConstSymbol>(), "fold_const_symbol", IsCNode);
   fold_same_value_ = MakeSubstitution(std::make_shared<FoldSameValue>(), "fold_same_value", prim::kPrimShape);
+
+  // Transform prim to funcgraph
+  meta_morphosis_ = MakeSubstitution(std::make_shared<Morph>(), "meta_morphosis", IsMetamorphosisCNode);
 }
 
 ResolveIRPassLib::ResolveIRPassLib() {
@@ -335,6 +353,11 @@ ResolveIRPassLib::ResolveIRPassLib() {
 GradPartialPassLib::GradPartialPassLib() {
   grad_partial_transform_ =
     MakeSubstitution(std::make_shared<GradPartialTransform>(), "grad_partial_transform", IsCNode);
+}
+
+AdjustGraphAfterValidatePassLib::AdjustGraphAfterValidatePassLib() {
+  make_tuple_from_fprop_eliminate_ =
+    MakeSubstitution(std::make_shared<MakeTupleFromFpropEliminate>(), "make_tuple_from_fprop_eliminate", IsCNode);
 }
 }  // namespace irpass
 }  // namespace opt

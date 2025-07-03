@@ -5,7 +5,7 @@ mindspore.numpy.sin
 
     逐元素计算三角正弦函数。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

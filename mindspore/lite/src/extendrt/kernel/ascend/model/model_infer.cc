@@ -16,8 +16,8 @@
 
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -56,7 +56,7 @@ bool ModelInfer::Init() {
   std::lock_guard<std::mutex> lock(g_context_mutex);
   int32_t device_id = options_->device_id;
   aclError ret = CALL_ASCEND_API(aclrtSetDevice, device_id);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl open device " << device_id << " failed.";
     return false;
   }
@@ -80,7 +80,7 @@ bool ModelInfer::Init() {
   }
 
   ret = CALL_ASCEND_API(aclrtGetCurrentContext, &context_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl create context failed.";
     return false;
   }
@@ -88,7 +88,7 @@ bool ModelInfer::Init() {
 
   aclrtRunMode run_mode;
   ret = CALL_ASCEND_API(aclrtGetRunMode, &run_mode);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl get run mode failed.";
     return false;
   }
@@ -96,7 +96,7 @@ bool ModelInfer::Init() {
   model_process_.SetIsDevice(is_device);
   MS_LOG(INFO) << "Get run mode success is device input/output " << is_device;
   ret = aclrtCreateStream(&stream_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl create stream failed";
     return false;
   }
@@ -112,7 +112,7 @@ bool ModelInfer::Finalize(bool process_ends) {
     return true;
   }
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed.";
     return false;
   }
@@ -127,7 +127,7 @@ bool ModelInfer::Finalize(bool process_ends) {
 
   if (stream_ != nullptr) {
     rt_ret = CALL_ASCEND_API(aclrtDestroyStream, stream_);
-    if (rt_ret != ACL_ERROR_NONE) {
+    if (rt_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Destroy stream failed";
     }
     stream_ = nullptr;
@@ -141,7 +141,7 @@ bool ModelInfer::Finalize(bool process_ends) {
     AclMemManager::GetInstance().ReleaseDeviceMem(options_->device_id, options_->model_path);
   }
   rt_ret = CALL_ASCEND_API(aclrtResetDevice, options_->device_id);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Reset device " << options_->device_id << " failed.";
   }
   MS_LOG(INFO) << "End to reset device " << options_->device_id;
@@ -153,7 +153,7 @@ bool ModelInfer::Finalize(bool process_ends) {
 
 bool ModelInfer::Load(const void *om_data, size_t om_data_size) {
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
     return false;
   }
@@ -173,7 +173,7 @@ bool ModelInfer::Load(const void *om_data, size_t om_data_size) {
 
 bool ModelInfer::Inference(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
     return false;
   }
@@ -187,7 +187,7 @@ bool ModelInfer::Inference(const std::vector<KernelTensor *> &inputs, const std:
 
 bool ModelInfer::UpdateWeights(const std::vector<KernelTensor *> &inputs) {
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
     return false;
   }
@@ -208,7 +208,7 @@ std::vector<Format> ModelInfer::GetOutputFormat() { return model_process_.GetOut
 
 bool ModelInfer::Resize(const std::vector<ShapeVector> &new_shapes) {
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
     return false;
   }

@@ -5,6 +5,8 @@ dist_comm_broadcast:
             dtype: tensor
         src:
             dtype: int
+        rank_id:
+            dtype: int
         group:
             dtype: str
     returns:
@@ -17,3 +19,4 @@ dist_comm_broadcast:
         is_comm_op: True
         Ascend: DistCommBroadcastAscend
         CPU: DistCommBroadcastCPU
+    non-differentiable: True

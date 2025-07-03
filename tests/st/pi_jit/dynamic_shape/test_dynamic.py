@@ -1,18 +1,12 @@
-from mindspore._c_expression import update_pijit_default_config
 from mindspore.nn import Cell
 from mindspore import ops
 from mindspore import context, jit
 from mindspore.common import dtype
 from mindspore.common import Tensor
 import numpy as np
-import sys  
 import pytest 
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class DynamicFactory:
     def __init__(self, ps_net):
@@ -20,7 +14,7 @@ class DynamicFactory:
 
     def forward_cmp(self, inputs):
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.ps_net.construct, mode="PIJit")(inputs)
+        jit(function=self.ps_net.construct, capture_mode="bytecode")(inputs)
         self.ps_net(inputs)
 
 class Net7(Cell):
@@ -35,7 +29,6 @@ class Net7(Cell):
         return b
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_shape_frontend_optimize():
     '''

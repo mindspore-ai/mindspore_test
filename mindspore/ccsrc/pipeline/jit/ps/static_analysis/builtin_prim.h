@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 
 namespace mindspore {
 namespace abstract {
-class InnerAbsEvaluator : public TransitionPrimEvaluator {
+class InnerAbsEvaluator final : public TransitionPrimEvaluator {
  public:
   InnerAbsEvaluator() : TransitionPrimEvaluator("InnerAbsEvaluator") {}
   ~InnerAbsEvaluator() override = default;
@@ -38,7 +38,7 @@ class InnerAbsEvaluator : public TransitionPrimEvaluator {
   bool CheckConst(const AbstractBasePtrList &args_abs_list) const;
 };
 
-class InnerRoundEvaluator : public TransitionPrimEvaluator {
+class InnerRoundEvaluator final : public TransitionPrimEvaluator {
  public:
   InnerRoundEvaluator() : TransitionPrimEvaluator("InnerRoundEvaluator") {}
   ~InnerRoundEvaluator() override = default;

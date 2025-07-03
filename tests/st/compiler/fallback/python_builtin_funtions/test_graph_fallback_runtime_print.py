@@ -23,7 +23,6 @@ from mindspore import Tensor, jit, context, nn, mutable
 import mindspore.ops as ops
 from tests.mark_utils import arg_mark
 
-
 context.set_context(mode=context.GRAPH_MODE)
 
 
@@ -62,7 +61,7 @@ def check_output(output, patterns):
         assert output.find(pattern) != -1, "Unexpected output:\n" + output + "\n--- pattern ---\n" + pattern
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_fallback_print_asnumpy():
     """
@@ -70,7 +69,7 @@ def test_fallback_print_asnumpy():
     Description: Test print in fallback runtime
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = Tensor(np.array([1, 2, 3, 4]))
         y = x.asnumpy()
@@ -81,7 +80,7 @@ def test_fallback_print_asnumpy():
         res = foo()
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'[1 2 3 4] [1 2 3 4]'}
     check_output(cap.output, patterns)
@@ -95,6 +94,7 @@ def test_fallback_print_asnumpy_custom_class_ascend():
     Description: Test print in fallback runtime
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class GetattrClass():
         def __init__(self):
             self.attr1 = Tensor(np.array([1, 2, 3, 4])).asnumpy()
@@ -115,7 +115,7 @@ def test_fallback_print_asnumpy_custom_class_ascend():
         res = net()
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'[1 2 3 4]\nTensor(shape=[], dtype=Int64, value=1)\n'}
     check_output(cap.output, patterns)
@@ -142,7 +142,7 @@ def test_fallback_print_mutable():
         res = net(input_x)
         assert not res
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'2\n'}
     check_output(cap.output, patterns)
@@ -172,7 +172,7 @@ def test_fallback_print_pyinterpret():
         out = test_print()
         assert (out[0].asnumpy() == out[1]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'tensor_sum: \nTensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\nnp_sum:  [ 2  4  6  8 10]\n'}
     check_output(cap.output, patterns)
@@ -186,6 +186,7 @@ def test_np_init():
     Description: Test numpy defined in init in graph mode.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -202,12 +203,12 @@ def test_np_init():
         res = net()
         assert (res.asnumpy() == [4, 6]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     patterns = {'[1 2]\n'}
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_print_str_format():
     """
@@ -215,6 +216,7 @@ def test_print_str_format():
     Description: Test print str format in graph mode.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def construct(self, x):
             x = ops.add(x, x)
@@ -229,6 +231,6 @@ def test_print_str_format():
         res = net(input_x)
         assert (res.asnumpy() == [[1, 3], [5, 7]]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
     patterns = {'x is [[2 4]\n [6 8]]\n'}
     check_output(cap.output, patterns)

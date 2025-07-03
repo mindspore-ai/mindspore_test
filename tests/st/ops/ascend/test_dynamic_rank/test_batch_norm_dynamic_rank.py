@@ -15,13 +15,13 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore.ops.operations as ops
 from mindspore.nn import Cell
 from mindspore import Tensor
 from mindspore import context
 
 np.random.seed(3)
+context.set_context(jit_level='O0')
 
 
 class MSDynRankNet(Cell):

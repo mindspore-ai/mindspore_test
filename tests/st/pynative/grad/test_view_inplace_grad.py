@@ -17,10 +17,11 @@
 import torch
 import numpy as np
 import pytest
+import mindspore as ms
 from mindspore import Tensor, nn, mint, ops, _no_grad
 from mindspore.common.api import _pynative_executor
 from mindspore.ops.auto_generate.gen_ops_def import as_strided, transpose, broadcast_to
-from tests.st.pynative.utils import GradOfAllInputs
+from tests.st.pynative.utils import GradOfAllInputs, GradOfFirstInput
 from tests.mark_utils import arg_mark
 
 
@@ -323,7 +324,7 @@ class TorchViewInplaceHasBprop(torch.autograd.Function):
         return a, b
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_copy():
@@ -359,7 +360,7 @@ def test_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_slice_copy():
@@ -393,7 +394,7 @@ def test_tensor_slice_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_common_view_copy():
@@ -443,7 +444,7 @@ def test_common_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_multi_view_copy():
@@ -521,7 +522,7 @@ def test_multi_view_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_multi_copy():
@@ -548,7 +549,7 @@ def test_view_multi_copy():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_no_grad_copy():
@@ -610,7 +611,7 @@ def test_as_strided_overlap_grad():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_inplace_with_bprop():
@@ -638,7 +639,7 @@ def test_view_inplace_with_bprop():
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_view_inplace_grad_check_exception():
@@ -698,3 +699,26 @@ def test_view_inplace_grad_check_exception():
         grad_fn2(x5, y5, sens)
         _pynative_executor.sync()
     assert "This view is one of output for multi output operator" in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_triggers_requires_grad_propagation():
+    """
+    Feature: Test view inplace valid.
+    Description: Test whether inplace update on a base tensor makes its view require grad.
+    Expectation: The calculation result is correct.
+    """
+
+    def fn(y):
+        x = Tensor([1.0, 2.0, 3.0], dtype=ms.float32)
+        x_view = x[:2]
+        x[0] = y[0]
+        return x_view * x_view
+
+    input_tensor = Tensor([2.0, 2.0])
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_tensor)
+    assert np.allclose(grad.asnumpy(), np.array([4.0, 0.0], dtype=np.float32), 0.000001, 0.000001)

@@ -20,6 +20,7 @@
 #include "ir/func_graph.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {
@@ -41,6 +42,10 @@ bool ConcatConcatFusion::Run(const FuncGraphPtr &func_graph) {
 }
 
 int ConcatConcatFusion::Process(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
+  if (cnode == nullptr) {
+    MS_LOG(ERROR) << "cnode is a nullptr, ConcatConcatFusion::Process";
+    return lite::RET_NULL_PTR;
+  }
   MS_ASSERT(func_graph != nullptr && cnode != nullptr);
   auto prim = GetCNodePrimitive(cnode);
   if (prim == nullptr) {
@@ -59,6 +64,10 @@ int ConcatConcatFusion::Process(const FuncGraphPtr &func_graph, const CNodePtr &
       continue;
     }
     auto pre_concat = node->cast<CNodePtr>();
+    if (pre_concat == nullptr) {
+      MS_LOG(ERROR) << "pre_concat is a nullptr, ConcatConcatFusion::Process";
+      return lite::RET_NULL_PTR;
+    }
     if (IsMultiOutputTensors(func_graph, pre_concat)) {
       new_inputs.push_back(node);
       continue;

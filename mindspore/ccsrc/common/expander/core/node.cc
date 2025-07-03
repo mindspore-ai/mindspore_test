@@ -155,16 +155,16 @@ ValuePtr FuncNode::BuildValue() { return value_; }
 InputType FuncNode::input_type() { return input_type_; }
 
 std::vector<int64_t> FuncNode::shape() {
-  if (value_->isa<tensor::BaseTensor>()) {
-    const auto &tensor = value_->cast<tensor::BaseTensorPtr>();
+  if (value_->isa<tensor::Tensor>()) {
+    const auto &tensor = value_->cast<tensor::TensorPtr>();
     return tensor->shape();
   }
   return Node::shape();
 }
 
 TypePtr FuncNode::dtype() {
-  if (value_->isa<tensor::BaseTensor>()) {
-    const auto &tensor = value_->cast<tensor::BaseTensorPtr>();
+  if (value_->isa<tensor::Tensor>()) {
+    const auto &tensor = value_->cast<tensor::TensorPtr>();
     return type_ = tensor->Dtype();
   }
   return Node::dtype();

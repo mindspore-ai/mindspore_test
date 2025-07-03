@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 #include "frontend/parallel/pass/dataset_reader_optimizer.h"
 #include <algorithm>
+#include <memory>
+#include <list>
 #include <stack>
 #include <queue>
 #include <string>
@@ -25,18 +27,70 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "include/common/utils/utils.h"
 #include "utils/hash_set.h"
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/pass/overlap_opt_shard_in_pipeline.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
+constexpr auto kRankList = "rank_list";
+constexpr auto kDatasetBroadcast = "dataset_broadcast";
+void ControlOrder(const CNodePtr &prior, const CNodePtr &last, const FuncGraphPtr &graph,
+                  const FuncGraphManagerPtr &manager, const std::string &tags) {
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last->input(1), prior};
+  auto depend = graph->NewCNode(depend_input);
+  depend->set_abstract(last->input(1)->abstract());
+  depend->AddPrimalAttr(tags, MakeValue(true));
+  manager->SetEdge(last, 1, depend);
+}
+
+bool CreateBroadcastInput(const Shapes &shapes, const std::vector<TypePtr> &types, const FuncGraphPtr &graph,
+                          AnfNodePtr *make_tuple) {
+  if (shapes.size() != types.size()) {
+    return false;
+  }
+  std::vector<AnfNodePtr> make_tuple_input = {NewValueNode(prim::kPrimMakeTuple->Clone())};
+  AbstractBasePtrList make_tuple_abstract;
+  for (size_t i = 0; i < shapes.size(); ++i) {
+    tensor::TensorPtr zero_tensor = nullptr;
+    auto cur_input_shape = shapes.at(i);
+    auto cur_input_type = types.at(i);
+    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, cur_input_shape);
+    if (zero_tensor == nullptr) {
+      return false;
+    }
+    auto abs = zero_tensor->ToAbstract();
+    auto zero_node = NewValueNode(zero_tensor);
+    zero_node->set_abstract(abs->Clone());
+    make_tuple_input.emplace_back(zero_node);
+    make_tuple_abstract.emplace_back(abs);
+  }
+  if (make_tuple_input.size() == 1) {
+    return false;
+  }
+  *make_tuple = graph->NewCNode(make_tuple_input);
+  (*make_tuple)->set_abstract(std::make_shared<abstract::AbstractTuple>(make_tuple_abstract));
+  return true;
+}
+
 bool DatasetReaderOptimizer::Init() {
   auto ms_context = MsContext::GetInstance();
   if (ms_context == nullptr) {
     return false;
   }
   opt_level_ = ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL);
+  if (opt_level_ != WITHIN_STAGE && opt_level_ != OPT_ALL && opt_level_ != BETWEEN_STAGE) {
+    return false;
+  }
   auto is_kbk = ms_context->IsKByKExecutorMode();
   if (!is_kbk) {
     MS_LOG(WARNING) << "Now, Dataset broadcast optimize pass only support O0 and O1 jit level.";
@@ -82,7 +136,9 @@ RankList DatasetReaderOptimizer::InferReapteDataRankThroughDataStrategy(const St
     return rank_list;
   }
   auto cnode = virtual_dataset_->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(prim);
   uint64_t repeat_dim = 0;
   DeviceMatrix device_matrix;
   if (prim->HasAttr(REPEAT_DIM_DIRECT) && GetValue<std::string>(prim->GetAttr(REPEAT_DIM_DIRECT)) == RIGHT) {
@@ -99,18 +155,72 @@ RankList DatasetReaderOptimizer::InferReapteDataRankThroughDataStrategy(const St
   return rank_list;
 }
 
-RankList DatasetReaderOptimizer::InferRepeatRankListWithinStage() {
-  RankList rank_list = {};
+std::vector<RankList> DatasetReaderOptimizer::InferRepeatDataRankThroughLayout() {
+  // ((2, 2, 2),)
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  // (((2), (1), (0)),)
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  std::vector<RankList> all_rank_list;
+  std::vector<int64_t> last_repeated_dim;
+  for (size_t idx = 0; idx < all_dev_mat.size(); ++idx) {
+    RankList rank_list = {};
+    if (virtual_dataset_ == nullptr) {
+      all_rank_list.push_back(rank_list);
+      continue;
+    }
+    auto tensor_map = all_tensor_map.at(idx);
+    auto dev_mat = all_dev_mat.at(idx);
+    std::vector<int64_t> used_dev_idx = {};
+    std::vector<int64_t> repeated_dim = {};
+    for (size_t i = 0; i < tensor_map.size(); ++i) {
+      for (size_t j = 0; j < tensor_map.at(i).size(); ++j) {
+        auto tensor_map_value = tensor_map.at(i).at(j);
+        if (tensor_map_value != -1) {
+          auto real_idx = dev_mat.size() - LongToSize(tensor_map_value) - 1;
+          used_dev_idx.push_back(SizeToLong(real_idx));
+        }
+      }
+    }
+    for (size_t i = 0; i < dev_mat.size(); ++i) {
+      if (std::find(used_dev_idx.begin(), used_dev_idx.end(), i) == used_dev_idx.end()) {
+        repeated_dim.push_back(SizeToLong(i));
+      }
+    }
+    if (!repeated_dim.empty()) {
+      DeviceMatrix device_matrix =
+        DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(), dev_mat);
+      device_matrix.GetDevicesAlongMultiDim(repeated_dim, &rank_list);
+    }
+    if (!all_rank_list.empty()) {
+      if (!std::equal(repeated_dim.begin(), repeated_dim.end(), last_repeated_dim.begin())) {
+        MS_LOG(EXCEPTION) << "The repeated dim for each layout must be equal, but got current repeated_dim "
+                          << repeated_dim << ", last repeated_dim " << last_repeated_dim;
+      }
+    }
+    last_repeated_dim = repeated_dim;
+    all_rank_list.push_back(rank_list);
+  }
+  return all_rank_list;
+}
+
+std::vector<RankList> DatasetReaderOptimizer::InferRepeatRankListWithinStage() {
+  std::vector<RankList> rank_list = {{}};
   if (opt_level_ != WITHIN_STAGE && opt_level_ != OPT_ALL) {
     return rank_list;
   }
+
+  if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+      !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+    return InferRepeatDataRankThroughLayout();
+  }
+
   auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
   if (!data_stra.empty()) {
-    return InferReapteDataRankThroughDataStrategy(data_stra);
+    return {InferReapteDataRankThroughDataStrategy(data_stra)};
   }
   bool full_batch = ParallelContext::GetInstance()->full_batch();
   if (full_batch) {
-    return g_device_manager->GetDeviceListInThisStage();
+    return {g_device_manager->GetDeviceListInThisStage()};
   }
   return rank_list;
 }
@@ -126,8 +236,10 @@ AnfNodePtr DatasetReaderOptimizer::FindDatasetParameter(const AnfNodePtr &node, 
     auto cur_node_users = node_users_map.at(cur_node);
     for (const auto &node_pair : cur_node_users) {
       auto user_node = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_node);
       if (IsValueNode<FuncGraph>(user_node->input(0))) {
         auto fg = GetValueNode<FuncGraphPtr>(user_node->input(0));
+        MS_EXCEPTION_IF_NULL(fg);
         if (fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
           auto fg_params = fg->parameters();
           return fg_params.at(node_pair.second - 1);
@@ -157,8 +269,10 @@ void DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePtr &n
     auto cur_node_users = node_users_map.at(cur_node);
     for (const auto &node_pair : cur_node_users) {
       auto user_node = node_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_node);
       if (IsValueNode<FuncGraph>(user_node->input(0))) {
         auto fg = GetValueNode<FuncGraphPtr>(user_node->input(0));
+        MS_EXCEPTION_IF_NULL(fg);
         auto stage = fg->stage();
         if (stage != -1) {
           data_used_stage->insert(stage);
@@ -200,47 +314,6 @@ RankList DatasetReaderOptimizer::InferRepeatRankList(const RankList &within_stag
   return rank_list;
 }
 
-bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
-                                            std::vector<AnfNodePtr> *const input_vec) {
-  auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
-  if (shapes.size() != types.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < shapes.size(); ++i) {
-    tensor::TensorPtr zero_tensor = nullptr;
-    auto cur_input_shape = shapes.at(i);
-    auto cur_input_type = types.at(i);
-    Shape slice_shape;
-    if (!data_stra.empty()) {
-      if (data_stra.size() != shapes.size()) {
-        return false;
-      }
-      auto cur_input_stra = data_stra.at(i);
-      if (cur_input_stra.size() != cur_input_shape.size()) {
-        return false;
-      }
-      for (size_t j = 0; j < cur_input_stra.size(); ++j) {
-        slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
-      }
-    } else {
-      slice_shape = cur_input_shape;
-      auto full_batch = ParallelContext::GetInstance()->full_batch();
-      if (!full_batch) {
-        auto dev_num = g_device_manager->stage_device_num();
-        slice_shape[0] = slice_shape[0] / dev_num;
-      }
-    }
-
-    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, slice_shape);
-    if (zero_tensor == nullptr) {
-      return false;
-    }
-    input_vec->emplace_back(NewValueNode(zero_tensor));
-  }
-
-  return true;
-}
-
 void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
   auto global_rank = g_device_manager->global_rank();
   auto iter = std::find(rank_list.begin(), rank_list.end(), global_rank);
@@ -248,44 +321,11 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
     return;
   }
   std::vector<AnfNodePtr> broadcast_input = {NewValueNode(prim::kPrimBroadcast->Clone())};
-  AnfNodePtr broadcast;
-  if (iter == rank_list.begin()) {
-    (void)broadcast_input.emplace_back(get_next_);
-    broadcast = root_->NewCNode(broadcast_input);
-    std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), get_next_, broadcast};
-    auto depend = root_->NewCNode(depend_input);
-    (void)manager_->Replace(get_next_, depend);
-  } else {
-    auto prim = GetCNodePrimitive(get_next_);
-    auto shape_attr = prim->GetAttr(SHAPES);
-    auto type_attr = prim->GetAttr(TYPES);
-    if (shape_attr == nullptr || type_attr == nullptr) {
-      return;
-    }
-    std::vector<ValuePtr> shape = shape_attr->isa<ValueTuple>() ? shape_attr->cast<ValueTuplePtr>()->value()
-                                                                : shape_attr->cast<ValueListPtr>()->value();
-    Shapes shapes;
-    for (const auto &element : shape) {
-      std::vector<ValuePtr> element_list =
-        element->isa<ValueTuple>() ? element->cast<ValueTuplePtr>()->value() : element->cast<ValueListPtr>()->value();
-      Shape shape_vec;
-      (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
-                           [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
-      shapes.emplace_back(shape_vec);
-    }
-    auto types = GetValue<std::vector<TypePtr>>(type_attr);
-    std::vector<AnfNodePtr> make_tuple_input = {NewValueNode(prim::kPrimMakeTuple->Clone())};
-    if (!CreateZeroNode(shapes, types, &make_tuple_input)) {
-      return;
-    }
-    if (make_tuple_input.size() == 1) {
-      return;
-    }
-    auto make_tuple = root_->NewCNode(make_tuple_input);
-    (void)broadcast_input.emplace_back(make_tuple);
-    broadcast = root_->NewCNode(broadcast_input);
-    (void)manager_->Replace(get_next_, broadcast);
-  }
+  (void)broadcast_input.emplace_back(get_next_);
+  auto broadcast = root_->NewCNode(broadcast_input);
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), get_next_, broadcast};
+  auto depend = root_->NewCNode(depend_input);
+  (void)manager_->Replace(get_next_, depend);
   Group data_repeat_group;
   if (g_device_manager->CreateGroup(rank_list, &data_repeat_group) != SUCCESS) {
     MS_LOG(WARNING) << "Create dataset repeat group failed, rank list is: " << rank_list;
@@ -295,9 +335,19 @@ void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
     return;
   }
   auto prim = GetCNodePrimitive(broadcast);
+  MS_EXCEPTION_IF_NULL(prim);
   prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
   prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
   prim->set_attr(DATASET_BROADCAST, MakeValue(True));
+
+  broadcast->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
+  depend->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
+
+  auto rank_list_ptr = std::make_shared<RankList>(rank_list);
+  broadcast->set_user_data<RankList>(kRankList, rank_list_ptr);
+  CNodePtr get_next_c = get_next_->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_next_c);
+  get_next_c->AddAttr(kDatasetBroadcast, MakeValue<bool>(true));
 }
 
 void DatasetReaderOptimizer::BroadcastDataset() {
@@ -308,10 +358,11 @@ void DatasetReaderOptimizer::BroadcastDataset() {
   if (virtual_dataset_ == nullptr) {
     return;
   }
-  auto reapte_rank_within_stage = InferRepeatRankListWithinStage();
+  auto reapte_rank_within_stage = InferRepeatRankListWithinStage().at(0);
   const auto &node_users_map = manager_->node_users();
   auto dataset_users = node_users_map.at(virtual_dataset_);
   std::set<int64_t> data_used_stage;
+  std::vector<int64_t> tuple_get_item_idx = {};
   for (const auto &node_pair : dataset_users) {
     auto cnode = node_pair.first->cast<CNodePtr>();
     if (!IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem)) {
@@ -320,6 +371,7 @@ void DatasetReaderOptimizer::BroadcastDataset() {
     auto cur_input_parameter = FindDatasetParameter(cnode, node_users_map);
     if (cur_input_parameter != nullptr) {
       FindAllStageIdUsedDataParameter(cur_input_parameter, node_users_map, &data_used_stage);
+      tuple_get_item_idx.push_back(GetTupleGetItemIndex(cnode));
     }
   }
   RankList reapte_rank_between_stage;
@@ -329,6 +381,147 @@ void DatasetReaderOptimizer::BroadcastDataset() {
     return;
   }
   InsertBroadcast(rank_list);
+}
+
+void InsertDepend(const std::vector<CNodePtr> &nodes, const FuncGraphPtr &graph, const FuncGraphManagerPtr &manager) {
+  size_t size = nodes.size();
+  if (size <= 1) {
+    return;
+  }
+  for (size_t i = 0; i < size - 1; i++) {
+    const auto &prior = nodes[i];
+    const auto &last = nodes[i + 1];
+    ControlOrder(prior, last, graph, manager, kDatasetBroadcast);
+  }
+}
+
+void FreezeParallelOptimizerCommOrder(const FuncGraphPtr &graph) {
+  bool find_dataset_broadcast = false;
+  auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+  for (const auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!cnode->HasAttr(kDatasetBroadcast)) {
+      continue;
+    }
+    auto attr = cnode->GetAttr(kDatasetBroadcast);
+    MS_EXCEPTION_IF_NULL(attr);
+    if (GetValue<bool>(attr)) {
+      find_dataset_broadcast = true;
+      break;
+    }
+  }
+  if (!find_dataset_broadcast) {
+    return;
+  }
+  auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  std::vector<CNodePtr> allgather_vec;
+  std::vector<CNodePtr> reducescatter_vec;
+  std::list<CNodePtr> graph_orders = graph->GetOrderedCnodes();
+  std::vector<CNodePtr> origin_nodes_topological(graph_orders.begin(), graph_orders.end());
+  for (const auto &node : origin_nodes_topological) {
+    if (IsPrimitiveCNode(node, prim::kPrimAllGather) && common::AnfAlgo::IsFromParallelOptimizer(node)) {
+      allgather_vec.push_back(node);
+      continue;
+    }
+    if (IsPrimitiveCNode(node, prim::kPrimReduceScatter) && common::AnfAlgo::IsFromParallelOptimizer(node)) {
+      reducescatter_vec.push_back(node);
+    }
+  }
+  InsertDepend(allgather_vec, graph, manager);
+  InsertDepend(reducescatter_vec, graph, manager);
+}
+
+void ReplaceGetnextWithBroadcast(const FuncGraphPtr &graph) {
+  auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+  CNodePtr broadcast = nullptr;
+  for (const auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!cnode->HasAttr(kDatasetBroadcast)) {
+      continue;
+    }
+    if (IsPrimitiveCNode(cnode, prim::kPrimBroadcast)) {
+      broadcast = cnode;
+      break;
+    }
+  }
+  if (broadcast == nullptr) {
+    return;
+  }
+  if (!broadcast->has_user_data(kRankList)) {
+    return;
+  }
+  auto rank_list = broadcast->user_data<RankList>(kRankList);
+  MS_EXCEPTION_IF_NULL(rank_list);
+  auto global_rank = g_device_manager->global_rank();
+  auto iter = std::find(rank_list->begin(), rank_list->end(), global_rank);
+  if (iter == rank_list->begin()) {
+    return;
+  }
+  CNodePtr get_next = broadcast->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_next);
+  if (!IsPrimitiveCNode(get_next, prim::kPrimGetNext)) {
+    MS_LOG(EXCEPTION) << "For ReplaceGetnextWithBroadcast: found Broadcast, but not GetNext. ";
+  }
+  const auto &manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &node_users_map = manager->node_users();
+  auto users = node_users_map.at(broadcast);
+  CNodePtr depend = users.front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(depend);
+
+  auto prim = GetCNodePrimitive(get_next);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto shape_attr = prim->GetAttr(SHAPES);
+  auto type_attr = prim->GetAttr(TYPES);
+  if (shape_attr == nullptr || type_attr == nullptr) {
+    return;
+  }
+
+  std::vector<ValuePtr> shape;
+  if (shape_attr->isa<ValueTuple>()) {
+    const auto &value_tuple = shape_attr->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(value_tuple);
+    shape = value_tuple->value();
+  } else {
+    const auto &value_list = shape_attr->cast<ValueListPtr>();
+    MS_EXCEPTION_IF_NULL(value_list);
+    shape = value_list->value();
+  }
+  Shapes shapes;
+  for (const auto &element : shape) {
+    std::vector<ValuePtr> element_list;
+    if (element->isa<ValueTuple>()) {
+      const auto &value_tuple = element->cast<ValueTuplePtr>();
+      MS_EXCEPTION_IF_NULL(value_tuple);
+      element_list = value_tuple->value();
+    } else {
+      const auto &value_list = element->cast<ValueListPtr>();
+      MS_EXCEPTION_IF_NULL(value_list);
+      element_list = value_list->value();
+    }
+    Shape shape_vec;
+    (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
+                         [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
+    shapes.emplace_back(shape_vec);
+  }
+  auto types = GetValue<std::vector<TypePtr>>(type_attr);
+  AnfNodePtr real_input = nullptr;
+  if (!CreateBroadcastInput(shapes, types, graph, &real_input)) {
+    return;
+  }
+  manager->SetEdge(broadcast, 1, real_input);
+  broadcast->set_abstract(get_next->abstract()->Clone());
+  manager->Replace(get_next, broadcast);
+  manager->Replace(depend, depend->input(1));
 }
 
 void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
@@ -363,7 +556,9 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
@@ -384,22 +579,35 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (opt_shard_comm_list.empty()) {
     return;
   }
-  if (opt_level == 2) {
-    for (const auto &opt_shard_comm : opt_shard_comm_list) {
-      std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
-      auto depend_node = graph->NewCNode(depend_inputs);
-      depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
-      (void)manager->Replace(opt_shard_comm->input(1), depend_node);
-    }
-    return;
+  for (const auto &opt_shard_comm : opt_shard_comm_list) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
+    auto depend_node = graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
+    (void)manager->Replace(opt_shard_comm->input(1), depend_node);
   }
-  std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
-  (void)std::copy(opt_shard_comm_list.begin(), opt_shard_comm_list.end(), std::back_inserter(make_tuple_inputs));
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), broadcast_op->input(1),
-                                        graph->NewCNode(make_tuple_inputs)};
-  auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(broadcast_op->input(1)->abstract()->Clone());
-  (void)manager->Replace(broadcast_op->input(1), depend_node);
+  return;
+}
+
+static std::vector<CNodePtr> GetPPComms(const AnfNodePtrList &nodes) {
+  std::vector<CNodePtr> pp_comms;
+  for (const auto &node : nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimReceive) && !IsPrimitiveCNode(node, prim::kPrimSend)) {
+      continue;
+    }
+    if (is_first_receive(node)) {
+      pp_comms.emplace_back(node->cast<CNodePtr>());
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!cnode->HasPrimalAttr(PIPELINE_PARAM)) {
+      continue;
+    }
+    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      continue;
+    }
+    pp_comms.emplace_back(cnode);
+  }
+  return pp_comms;
 }
 
 void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
@@ -426,14 +634,8 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     return;
   }
   auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-  CNodePtr first_recv;
-  for (const auto &node : all_nodes) {
-    if (is_first_receive((node))) {
-      first_recv = node->cast<CNodePtr>();
-      break;
-    }
-  }
-  if (first_recv == nullptr) {
+  auto pp_comms = GetPPComms(all_nodes);
+  if (pp_comms.empty()) {
     return;
   }
   CNodePtr broadcast_op;
@@ -442,7 +644,9 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
@@ -452,10 +656,12 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (broadcast_op == nullptr) {
     return;
   }
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_recv->input(1), broadcast_op};
-  auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_recv->input(1)->abstract()->Clone());
-  (void)manager->Replace(first_recv->input(1), depend_node);
+  for (const auto &pp_comm : pp_comms) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), pp_comm->input(1), broadcast_op};
+    auto depend_node = graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(pp_comm->input(1)->abstract()->Clone());
+    (void)manager->Replace(pp_comm->input(1), depend_node);
+  }
 }
 }  // namespace parallel
 }  // namespace mindspore

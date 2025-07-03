@@ -21,7 +21,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "minddata/mindrecord/include/shard_operator.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
 #include "minddata/mindrecord/include/shard_category.h"
 
@@ -37,6 +36,8 @@ class MINDRECORD_API ShardPkSample : public ShardCategory {
                 int64_t num_samples);
 
   ~ShardPkSample() override{};
+
+  std::string Name() override { return "ShardPkSample"; }
 
   Status SufExecute(ShardTaskList &tasks) override;
 

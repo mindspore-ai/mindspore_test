@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -165,7 +164,7 @@ def test_unpack_graph_uint8():
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_unpack_graph_bool():
-    unpack(np.bool)
+    unpack(np.bool_)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
@@ -201,4 +200,4 @@ def test_unpack_pynative_uint8():
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_unpack_pynative_bool():
-    unpack_pynative(np.bool)
+    unpack_pynative(np.bool_)

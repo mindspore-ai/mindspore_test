@@ -87,7 +87,7 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &original_kernel_na
   std::string tensor_loader_name = original_kernel_name + ":" + std::to_string(tensor_loader_slot_);
   std::shared_ptr<TensorData> data = debugger->GetTensor(tensor_loader_name);
   if (data == nullptr) {
-    MS_LOG(INFO) << "Failed to find " << tensor_loader_name << " in tensor loader, skipping current statistics";
+    MS_VLOG(VL_DUMP) << "Failed to find " << tensor_loader_name << " in tensor loader, skipping current statistics";
     return false;
   }
   return DumpTensorStatsToFile(dump_path, data);
@@ -95,13 +95,13 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &original_kernel_na
 
 bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const std::shared_ptr<TensorData> data) {
   if (data == nullptr) {
-    MS_LOG(INFO) << "Tensor data is empty, skipping current statistics";
+    MS_VLOG(VL_DUMP) << "Tensor data is empty, skipping current statistics";
     return false;
   }
   std::string type = data->GetTypeString();
   if (type.empty()) {
     type = "unsupported(" + std::to_string(data->GetType()) + ")";
-    MS_LOG(INFO) << "Unsupported tensor data_type " << type << " for tensor " << data->GetName();
+    MS_VLOG(VL_DUMP) << "Unsupported tensor data_type " << type << " for tensor " << data->GetName();
   }
   std::string filename = dump_path + "/" + kCsvFileName;
   // try to open file
@@ -147,7 +147,7 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const s
   for (auto &header : statistic_category) {
     auto &item = stat.header_item_map[header];
     csv.WriteToCsv(item);
-    MS_LOG(INFO) << "Write the :" << header << " into file, value is: " << item;
+    MS_VLOG(VL_DUMP) << "Write the :" << header << " into file, value is: " << item;
   }
   csv.WriteToCsv("", true);
   csv.CloseFile();

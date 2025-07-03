@@ -2,63 +2,71 @@ argmin:
   description: |
     argmin(axis=None, keepdims=False) -> Tensor
     
-    Returns the indices of the minimum value of `self` across the axis.
-
-    If the shape of `self` is :math:`(self_1, ..., self_N)`, the shape of the output tensor is
-    :math:`(self_1, ..., self_{axis-1}, self_{axis+1}, ..., self_N)`.
-    
+    Returns the indices of the minimum values along the given axis of the tensor.
+ 
     Args: 
-        axis (Union[int, None], optional): Axis where the Argmin operation applies to. If None, it will return the index 
-            of the minimum value in the flattened Tensor along the specified axis. Default: ``None`` .
-        keepdims (bool, optional): Whether the output tensor retains the specified
-            dimension. Ignored if `axis` is None. Default: ``False`` .
+        axis (Union[int, None], optional): Specify the axis for computation. If ``None`` , compute all elements in the
+            tensor. Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, indices of the min value of `self` across the axis.
-
-    Raises:
-        TypeError: If `axis` is not an int.
+        Tensor
 
     Supported Platforms:
        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
-        >>> index = Tensor.argmin(input_x) # input_x.argmin()
-        >>> print(index)
-        2
+        >>> x = mindspore.tensor([[2, 5, 1, 6],
+        ...                       [3, -7, -2, 4],
+        ...                       [8, -4, 1, -3]])
+        >>> # case 1: By default, compute the minimum of all elements.
+        >>> x.argmin()
+        Tensor(shape=[], dtype=Int32, value= 5)
+        >>>
+        >>> # case 2: Compute the minimum along axis 1.
+        >>> x.argmin(axis=1)
+        Tensor(shape=[3], dtype=Int32, value= [2, 1, 1])
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> x.argmin(axis=1, keepdims=True)
+        Tensor(shape=[3, 1], dtype=Int32, value=
+        [[2],
+         [1],
+         [1]])
     
     .. method:: Tensor.argmin(dim=None, keepdim=False) -> Tensor
         :noindex:
     
-    Returns the indices of the minimum value of `self` across the dim.
-    
-    If the shape of `self` is :math:`(self_1, ..., self_N)`, the shape of the output tensor is
-    :math:`(self_1, ..., self_{dim-1}, self_{dim+1}, ..., self_N)`.
-    
+    Returns the indices of the minimum values along the given axis of the tensor.
+   
     Args:
-        dim (Union[int, None], optional): Dimension where the Argmin operation applies to. If None, it will return the index 
-            of the minimum value in the flattened Tensor along the specified dimension. Default: ``None`` .
-        keepdim (bool, optional): Whether the output tensor retains the specified
-           dimension. Ignored if `dim` is None. Default: ``False`` .
+        dim (Union[int, None], optional): Specify the axis for computation. If ``None`` , compute all elements in the
+            tensor.
+        keepdim (bool, optional): Whether the output tensor has dim retained.
 
     Returns:
-        Tensor, indices of the min value of `self` across the dimension.
-
-    Raises:
-        TypeError: If `dim` is not an int.
+        Tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input_x = Tensor(np.array([2.0, 3.1, 1.2]), mindspore.float32)
-        >>> index = Tensor.argmin(input_x) # input_x.argmin()
-        >>> print(index)
-        2
+        >>> x = mindspore.tensor([[2, 5, 1, 6],
+        ...                       [3, -7, -2, 4],
+        ...                       [8, -4, 1, -3]])
+        >>> # case 1: By default, compute the minimum of all elements.
+        >>> x.argmin()
+        Tensor(shape=[], dtype=Int32, value= 5)
+        >>>
+        >>> # case 2: Compute the minimum along dim 1.
+        >>> x.argmin(dim=1)
+        Tensor(shape=[3], dtype=Int32, value= [2, 1, 1])
+        >>>
+        >>> # case 3: If keepdim=True, the output shape will be same of that of the input.
+        >>> x.argmin(dim=1, keepdim=True)
+        Tensor(shape=[3, 1], dtype=Int32, value=
+        [[2],
+         [1],
+         [1]])

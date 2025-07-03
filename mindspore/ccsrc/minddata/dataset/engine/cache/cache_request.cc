@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 #include "minddata/dataset/engine/cache/cache_request.h"
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include <sched.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -237,7 +237,7 @@ Status CreateCacheRequest::PostReply() {
   // Next is a set of cpu id that we should re-adjust ourselves for better affinity.
   auto sz = p->cpu_id()->size();
   cc_->cpu_list_.reserve(sz);
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   std::string c_list;
   cpu_set_t cpu_set;
   CPU_ZERO(&cpu_set);
@@ -245,13 +245,13 @@ Status CreateCacheRequest::PostReply() {
   for (uint32_t i = 0; i < sz; ++i) {
     auto cpu_id = p->cpu_id()->Get(i);
     cc_->cpu_list_.push_back(cpu_id);
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
     c_list += std::to_string(cpu_id) + " ";
     CPU_SET(cpu_id, &cpu_set);
 #endif
   }
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   if (sz > 0) {
     auto err = sched_setaffinity(getpid(), sizeof(cpu_set), &cpu_set);
     if (err == -1) {

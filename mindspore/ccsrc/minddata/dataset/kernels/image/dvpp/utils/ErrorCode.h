@@ -153,7 +153,7 @@ enum {
   APP_ERR_QUEUE_STOPED = APP_ERR_QUEUE_BASE + 2,  // Queue: queue stopped
   APP_ERROR_QUEUE_FULL = APP_ERR_QUEUE_BASE + 3,  // Queue: full queue
 
-  // define the error code of destory
+  // define the error code of destroy
   APP_ERR_DESTORY_BASE = 6000,
   APP_ERR_DESTORY_TENSOR = APP_ERR_DESTORY_BASE + 1,
   APP_ERR_DESTORY_SCALAR = APP_ERR_DESTORY_BASE + 2,
@@ -227,7 +227,7 @@ const std::string APP_ERR_COMMON_LOG_STRING[] = {
   "Device, file or resource open failed",
   "Device, file or resource read failed",  // 20
   "Device, file or resource write failed",
-  "Device, file or resource destory failed",  // 22
+  "Device, file or resource destroy failed",  // 22
   " ",
   "Out of connection, Communication shutdown",  // 24
   "connection fail",
@@ -285,7 +285,7 @@ std::string GetAppErrCodeInfo(APP_ERROR err);
 void AssertErrorCode(int code, const std::string &file, const std::string &function, int line);
 void CheckErrorCode(int code, const std::string &file, const std::string &function, int line);
 
-#define RtAssert(code) AssertErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__);
-#define RtCheckError(code) CheckErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__);
+#define RtAssert(code) AssertErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__)
+#define RtCheckError(code) CheckErrorCode(code, DATASET_SRC_FILE_NAME, __FUNCTION__, __LINE__)
 
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_KERNELS_IMAGE_DVPP_UTILS_ERROR_CODE_H_

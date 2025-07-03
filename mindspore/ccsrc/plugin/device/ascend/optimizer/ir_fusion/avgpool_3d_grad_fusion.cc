@@ -23,6 +23,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/avgpool_3d_fusion.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace opt {

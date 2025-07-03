@@ -23,12 +23,17 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_t.h"
 
 namespace mindspore {
 namespace lite {
 namespace {
 constexpr size_t kCommonInputNum = 3;
 }  // namespace
+
+using mindspore::ops::kNameTranspose;
+
+TransposeMapper::TransposeMapper() : PrimitiveMapper(kNameTranspose) {}
 
 STATUS TransposeMapper::Mapper(const CNodePtr &cnode) {
   MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "cnode is nullptr.");

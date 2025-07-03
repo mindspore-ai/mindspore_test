@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/add_fp32.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "include/common/thread_pool.h"

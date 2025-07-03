@@ -1,54 +1,5 @@
 maximum:
   description: |
     maximum(other) -> Tensor
-    
-    Computes the maximum of input tensors element-wise.
 
-    .. math::
-        output_i = \max(tensor_i, other_i)
-    
-    Note:
-        - `self` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-        - The `other` can be a tensor or a scalar.
-        - When `other` is a tensor,
-          dtypes of `self` and `other` cannot be bool at the same time, and the shapes of them could be broadcast.
-        - When `other` is a scalar, the scalar could only be a constant.
-        - Broadcasting is supported.
-        - If one of the elements being compared is a NaN, then that element is returned.
-
-    .. warning::
-        If all inputs are of scalar int type, the output is a Tensor of type int32 in GRAPH mode 
-        and a Tensor of type int64 in PYNATIVE mode.
-
-    Args:
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool or a tensor whose data type is number or bool.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among `self` and `other`.
-
-    Raises:
-        TypeError: If `other` is not one of the following: Tensor, Number, bool.
-        ValueError: If `self` and `other` are not the same shape.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-    
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> # case 1 : same data type
-        >>> x = Tensor(np.array([1.0, 5.0, 3.0]), mindspore.float32)
-        >>> y = Tensor(np.array([4.0, 2.0, 6.0]), mindspore.float32)
-        >>> output = x.maximum(y)
-        >>> print(output)
-        [4. 5. 6.]
-        >>> # case 2 : different data type
-        >>> x = Tensor(np.array([1.0, 5.0, 3.0]), mindspore.int32)
-        >>> y = Tensor(np.array([4.0, 2.0, 6.0]), mindspore.float32)
-        >>> output = x.maximum(y)
-        >>> print(output.dtype)
-        Float32
+    For details, please refer to :func:`mindspore.ops.maximum`.

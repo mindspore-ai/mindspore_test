@@ -1,0 +1,20 @@
+#operator kthvalue
+kthvalue:
+  args:
+    input:
+      dtype: tensor
+    k:
+      dtype: int
+    dim:
+      dtype: int
+      default: -1
+    keepdim:
+      dtype: bool
+      default: False
+  returns:
+    values:
+      dtype: tensor
+    indices:
+      dtype: tensor
+  dispatch:
+    enable: True

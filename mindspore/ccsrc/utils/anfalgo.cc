@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,18 +34,33 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_utils.h"
 #include "ops/op_def.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/trace_base.h"
 #include "utils/anf_utils.h"
+#include "utils/phase.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"
-#include "pybind_api/ir/primitive_py.h"
-#include "kernel/kernel_build_info.h"
+#include "frontend/ir/primitive_py.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace common {
@@ -55,6 +70,7 @@ using abstract::AbstractTuple;
 
 namespace {
 constexpr size_t kNopNodeRealInputIndex = 1;
+constexpr int64_t kAll2AllSize = 262144;
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -253,6 +269,21 @@ bool IsNodeDynamicShape(const AnfNodePtr &node) {
   }
   return in_dynamic || out_dynamic;
 }
+
+bool IsNeededOverlapCommA2a(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
+  bool is_target = false;
+  if (pp_1f1b_value.find("AlltoAll") != std::string::npos) {
+    is_target =
+      is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAll) || IsPrimitiveCNode(cnode, prim::kPrimAllToAll);
+  }
+  if (pp_1f1b_value.find("AlltoAllV") != std::string::npos) {
+    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAlltoAllV);
+  }
+  if (pp_1f1b_value.find("AllReduce") != std::string::npos) {
+    is_target = is_target || IsPrimitiveCNode(cnode, prim::kPrimAllReduce);
+  }
+  return is_target;
+}
 }  // namespace
 
 AnfNodePtr AnfAlgo::GetTupleGetItemRealInput(const CNodePtr &tuple_get_item) {
@@ -318,8 +349,7 @@ KernelWithIndex VisitKernelWithReturnTypeForTupleGetItem(const AnfNodePtr &anf_n
                                                       return_types);
   }
   if (common::AnfAlgo::IsCallNode(item_with_index_tmp.first) || item_with_index_tmp.first->isa<Parameter>() ||
-      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut) ||
-      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimGEGraphOp)) {
+      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut)) {
     size_t real_index = item_with_index_tmp.second;
     if (abs == nullptr) {
       abs = item_with_index_tmp.first->abstract();
@@ -445,14 +475,15 @@ size_t AnfAlgo::GetOutputNumByAbstract(const AbstractBasePtr &node_abstract) {
   MS_EXCEPTION_IF_NULL(node_abstract);
   size_t result = 0;
 
-  if (!node_abstract->isa<abstract::AbstractSequence>() ||
-      node_abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len() ||
-      node_abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len_element_abs() != nullptr) {
+  if (!node_abstract->isa<abstract::AbstractSequence>()) {
     return 1;
   }
 
   auto tuple_abstract = node_abstract->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(tuple_abstract);
+  if (tuple_abstract->dynamic_len() || tuple_abstract->dynamic_len_element_abs() != nullptr) {
+    return 1;
+  }
   const auto &sub_abstracts = tuple_abstract->elements();
   for (const auto &sub_abstract : sub_abstracts) {
     MS_EXCEPTION_IF_NULL(sub_abstract);
@@ -1251,8 +1282,9 @@ bool AnfAlgo::IsCommunicationOp(const std::string &prim_name) {
   static const std::set<std::string> kCommunicationOpNames = {
     kAllReduceOpName,       kAllGatherOpName,       kBroadcastOpName, kReduceScatterOpName,     kSendOpName,
     kReceiveOpName,         kAlltoAllOpName,        kAllToAllOpName,  kAllToAllvOpName,         kMuxReceiveOpName,
-    kMuxSendOpName,         kReduceOpName,          kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
-    kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName, kAlltoAllVGEOpName};
+    kMuxSendOpName,         kMoeDistributeDispatch, kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
+    kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName, kAlltoAllVGEOpName,       kAllGatherVOpName,
+    kReduceScatterVOpName,  kMoeDistributeCombine,  kReduceOpName};
   return (kCommunicationOpNames.find(prim_name) != kCommunicationOpNames.end());
 }
 
@@ -1260,6 +1292,9 @@ bool AnfAlgo::IsCommunicationOp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return false;
+  }
+  if (HasNodeAttr("is_comm_op", node->cast<CNodePtr>())) {
+    return true;
   }
   auto kernel_name = AnfAlgo::GetCNodeName(node);
   return IsCommunicationOp(kernel_name);
@@ -1278,6 +1313,17 @@ bool AnfAlgo::IsLcclCommunicationOp(const AnfNodePtr &node) {
 
   auto collective_comm_lib = GetValue<std::string>(attr_collective_comm_lib);
   return (collective_comm_lib == "LCCL") ? true : false;
+}
+
+bool AnfAlgo::IsCommFusionOp(const std::string &kernel_name) {
+  bool is_comm_fusion_op = (kernel_name == kMatMulAllReduceOpName) || (kernel_name == kMoeDistributeCombine) ||
+                           (kernel_name == kMoeDistributeDispatch) || (kernel_name == kQbmmAllReduceAdd) ||
+                           (kernel_name == kMatmulAllReduceAddRmsNorm);
+  return is_comm_fusion_op;
+}
+
+bool AnfAlgo::IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name) {
+  return IsCommunicationOp(node) && !IsCommFusionOp(kernel_name);
 }
 
 bool AnfAlgo::IsDtypeFormatSensitiveOp(const AnfNodePtr &node) {
@@ -1683,12 +1729,16 @@ bool AnfAlgo::IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
   }
   auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
   return std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    if (node == nullptr || common::AnfAlgo::IsCallNode(node)) {
+    if (node == nullptr || common::AnfAlgo::IsCallNode(node) || IsPrimitiveCNode(node, prim::kPrimReturn)) {
       return false;
     }
-    return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
-           common::AnfAlgo::IsNodeMutableScalar(node);
+    return common::AnfAlgo::IsDynamic(node);
   });
+}
+
+bool AnfAlgo::IsDynamic(const AnfNodePtr &node) {
+  return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
+         common::AnfAlgo::IsNodeMutableScalar(node);
 }
 
 bool AnfAlgo::IsDynamicShape(const AnfNodePtr &node) {
@@ -1799,6 +1849,31 @@ bool AnfAlgo::IsNodeOutputDynamicShape(const AnfNodePtr &node) {
     return true;
   }
   return base_shape->IsDynamic();
+}
+
+std::string AnfAlgo::GetMoveToDstStr(const AnfNodePtr &node) {
+  constexpr size_t kToInputIdx = 2;
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>() || !IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+    return "";
+  }
+  const auto cnode = node->cast<CNodePtr>();
+  if (cnode == nullptr) {
+    return "";
+  }
+  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(kToInputIdx), 0, true);
+  const auto &to_input = kernel_with_index.first;
+  if (to_input == nullptr || !to_input->isa<ValueNode>()) {
+    MS_LOG(INFO) << "The second input of MoveTo is not a ValueNode.";
+    return "";
+  }
+  auto to_value_node = to_input->cast<ValueNodePtr>();
+  auto to_value = to_value_node->value();
+  if (!to_value->isa<StringImm>()) {
+    MS_LOG(INFO) << "The value of the second input of MoveTo[" << node->ToString() << "] is not a string.";
+    return "";
+  }
+  return to_value->cast<StringImmPtr>()->value();
 }
 
 bool AnfAlgo::IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr) {
@@ -2074,9 +2149,8 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   if (IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
     // If make_tuple in make_tuple, visit may start with inner tuple_getitem.
     if (index_stack->empty()) {
-      MS_LOG(WARNING) << "Visit make tuple: " << node->DebugString()
-                      << ", but index are empty, visit should not start with inner tuple_getitem.";
-      return nullptr;
+      MS_LOG(INFO) << "Visit make tuple: " << node->DebugString() << " with empty indexes.";
+      return node;
     }
     auto make_tuple = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(make_tuple);
@@ -2093,48 +2167,26 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   MS_LOG(DEBUG) << "Get real node:" << node->DebugString();
   return node;
 }
-bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) {
-  if (IsDynamicShape(cnode)) {
-    return false;
-  }
-  ShapeVector inp_shape = GetPrevNodeOutputInferShape(cnode, 0);
-  ShapeVector out_shape = GetOutputInferShape(cnode, 0);
-  constexpr size_t NO_ATTR_INP_NUM_AT_LEAST = 10;
-  constexpr size_t ATTR_NUM = 5;
-  ShapeVector attrs_val;
-  auto inp_num = cnode->size();
-  // If the following masks are all inputs, the forward input number is 10 and the backward input number is 11.
-  if (inp_num >= NO_ATTR_INP_NUM_AT_LEAST) {
-    for (size_t mask_idx = inp_num - kIndex5; mask_idx < inp_num; ++mask_idx) {
-      if (cnode->input(mask_idx)->isa<ValueNode>()) {
-        auto value_node = cnode->input(mask_idx)->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        attrs_val.emplace_back(GetValue<int64_t>(value_node->value()));
-      }
-    }
-  } else if (HasNodeAttr(kAttrBeginMask, cnode) && HasNodeAttr(kAttrEndMask, cnode) &&
-             HasNodeAttr(kAttrEllipsisMask, cnode) && HasNodeAttr(kAttrNewAxisMask, cnode) &&
-             HasNodeAttr(kAttrShrinkAxisMask, cnode)) {
-    auto begin_mask = GetNodeAttr<int64_t>(cnode, kAttrBeginMask);
-    auto end_mask = GetNodeAttr<int64_t>(cnode, kAttrEndMask);
-    auto ellipsis_mask = GetNodeAttr<int64_t>(cnode, kAttrEllipsisMask);
-    auto new_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrNewAxisMask);
-    auto shrink_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrShrinkAxisMask);
-    attrs_val = {begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
-  }
-  if (inp_shape.size() != out_shape.size()) {
-    return false;
-  }
-  for (size_t idx = 0; idx < inp_shape.size(); ++idx) {
-    if (inp_shape[idx] != out_shape[idx]) {
-      return false;
-    }
-  }
-  if (attrs_val.size() != ATTR_NUM) {
-    return false;
-  }
-  return std::all_of(attrs_val.begin(), attrs_val.end(), [](int element) { return element == 0; });
+bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) { return false; }
+
+namespace {
+// Read view tag from op yamls.
+// When all the view kernel support aclnn kernelmod, change is_graph_view_ to is_view
+bool CheckViewInYaml(const std::string &name) {
+  const auto &op_def = mindspore::ops::GetOpDef(name);
+  bool is_view = (op_def != nullptr ? op_def->is_graph_view_ : false);
+  return is_view;
 }
+}  // namespace
+
+bool AnfAlgo::IsViewNode(const AnfNodePtr &node) {
+  CNodePtr cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto node_name = AnfAlgo::GetCNodeName(cnode);
+  bool is_view = CheckViewInYaml(node_name);
+  return is_view;
+}
+
 bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   static mindspore::HashSet<std::string> nop_nodes = {prim::kPrimReshape->name(),
                                                       kExpandDimsOpName,
@@ -2160,6 +2212,10 @@ bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   auto input0 = cnode->input(0);
   MS_EXCEPTION_IF_NULL(input0);
   if (!input0->isa<ValueNode>()) {
+    return false;
+  }
+  if (cnode->HasAttr("enable_view")) {
+    // Do not skip view node when enable_view.
     return false;
   }
   bool is_nop_node = false;
@@ -2211,7 +2267,7 @@ TypeId AnfAlgo::GetSparseTypeIdAt(const AnfNodePtr &node, size_t idx) {
                              << node->abstract()->ToString();
 }
 
-std::string AnfAlgo::GetTensorValueString(const tensor::BaseTensorPtr &tensor) {
+std::string AnfAlgo::GetTensorValueString(const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto dtype = tensor->Dtype();
   MS_EXCEPTION_IF_NULL(dtype);
@@ -2257,6 +2313,12 @@ std::string AnfAlgo::GetTensorValueString(const tensor::BaseTensorPtr &tensor) {
     fn(reinterpret_cast<float *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeBFloat16) {
     fn(reinterpret_cast<bfloat16 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeHiFloat8) {
+    fn(reinterpret_cast<hifloat8 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeFloat8E5M2) {
+    fn(reinterpret_cast<float8_e5m2 *>(tensor->data_c()));
+  } else if (dtype->type_id() == kNumberTypeFloat8E4M3FN) {
+    fn(reinterpret_cast<float8_e4m3fn *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex64) {
     fn(reinterpret_cast<complex64 *>(tensor->data_c()));
   } else if (dtype->type_id() == kNumberTypeComplex128) {
@@ -2290,17 +2352,6 @@ abstract::AbstractBasePtr AnfAlgo::FrontendGetNodeAbstractByIndex(const AnfNodeP
     return sub_abstract;
   }
   return elements[index];
-}
-
-std::string AnfAlgo::GetJitLevel(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  if (!func_graph->has_attr(kAttrJitLevel)) {
-    MS_LOG(INFO) << "The func_graph:" << func_graph->ToString() << " has no jit_level attr, return default: None.";
-    return "";
-  }
-  auto jit_level_value = func_graph->get_attr(kAttrJitLevel);
-  auto jit_level = GetValue<std::string>(jit_level_value);
-  return jit_level;
 }
 
 bool AnfAlgo::IsNodeMutableScalar(const AnfNodePtr &node) {
@@ -2520,15 +2571,21 @@ abstract::BaseShapePtr AnfAlgo::GetDynamicSequenceShape(const AnfNodePtr &node, 
 
 abstract::AbstractBasePtr AnfAlgo::FetchAbstractByIndex(const AbstractBasePtr &abstract, size_t index) {
   MS_EXCEPTION_IF_NULL(abstract);
-  if (!abstract->isa<abstract::AbstractSequence>() || abstract->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
+  if (!abstract->isa<abstract::AbstractSequence>()) {
     if (index != 0) {
       MS_LOG(INTERNAL_EXCEPTION) << "Invalid abstract index:" << index << " for abstract:" << abstract->ToString();
     }
     return abstract;
   }
-
   auto tuple_abstract = abstract->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(tuple_abstract);
+  if (tuple_abstract->dynamic_len()) {
+    if (index != 0) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Invalid abstract index:" << index
+                                 << " for dynamic len abstract:" << abstract->ToString();
+    }
+    return abstract;
+  }
   const auto &sub_abstracts = tuple_abstract->elements();
   size_t real_index = index;
   for (const auto &sub_abstract : sub_abstracts) {
@@ -2627,7 +2684,7 @@ ValuePtr AnfAlgo::ValueToScalar(const ValuePtr &value, TypeId type_id) {
 
 namespace {
 void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
-  if (value->isa<tensor::BaseTensor>()) {
+  if (value->isa<tensor::Tensor>()) {
     (void)value_list->emplace_back(value);
     return;
   }
@@ -2644,8 +2701,8 @@ void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
 void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
   MS_EXCEPTION_IF_NULL(value_list);
   for (size_t i = 0; i < ref_list.size(); ++i) {
-    if (utils::isa<tensor::BaseTensorPtr>(ref_list[i])) {
-      auto tensor_ptr = utils::cast<std::shared_ptr<tensor::BaseTensor>>(ref_list[i]);
+    if (utils::isa<tensor::TensorPtr>(ref_list[i])) {
+      auto tensor_ptr = utils::cast<std::shared_ptr<tensor::Tensor>>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(tensor_ptr);
       (void)value_list->emplace_back(tensor_ptr);
     } else if (utils::isa<VectorRef>(ref_list[i])) {
@@ -2659,6 +2716,8 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
       auto value_seq = utils::cast<ValueSequencePtr>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(value_seq);
       FlattenValueSequence(value_list, value_seq);
+    } else if (utils::isa<ValuePtr>(ref_list[i])) {
+      continue;
     } else {
       MS_LOG(EXCEPTION) << "The ref value " << ref_list[i].ToString() << " is not a vector ref or a tensor!";
     }
@@ -2668,6 +2727,7 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
 bool HasAbstractFunction(const AbstractBasePtr &abs) {
   if (abs->isa<abstract::AbstractSequence>() && !abs->isa<abstract::AbstractSparseTensor>()) {
     auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abs_seq);
     if (abs_seq->dynamic_len()) {
       return HasAbstractFunction(abs_seq->dynamic_len_element_abs());
     }
@@ -2702,49 +2762,59 @@ bool AcceptableReturnValue(const CNodePtr &cnode, const AnfNodePtr &input0) {
 
 bool SupportInlinePartial(const AnfNodePtr &input0) {
   // inline partial
-  if (IsPrimitiveCNode(input0, prim::kPrimTupleGetItem)) {
-    auto tuple_get_node = input0->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_get_node);
-    auto get_from_node = tuple_get_node->input(1);
-    auto idx = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_node);
-    MS_EXCEPTION_IF_NULL(get_from_node);
-    // tuple get item from a call subgraph output
-    if (get_from_node->isa<CNode>() && IsValueNode<FuncGraph>(get_from_node->cast<CNodePtr>()->input(0))) {
-      auto call_graph = GetValueNode<FuncGraphPtr>(get_from_node->cast<CNodePtr>()->input(0));
-      MS_EXCEPTION_IF_NULL(call_graph);
-      auto graph_out = call_graph->output();
-      MS_EXCEPTION_IF_NULL(graph_out);
-      size_t tuple_input_num = common::AnfAlgo::GetInputTensorNum(graph_out);
-      // the partial must be the last output
-      if (graph_out->isa<CNode>() && tuple_input_num == idx + 1) {
-        int partial_cnt = 0;
-        for (size_t i = 0; i < tuple_input_num; i++) {
-          auto input = graph_out->cast<CNodePtr>()->input(i + 1);
-          if (IsPrimitiveCNode(input, prim::kPrimPartial)) {
-            partial_cnt++;
-          }
-        }
-        auto partial = graph_out->cast<CNodePtr>()->input(idx + 1);
-        MS_EXCEPTION_IF_NULL(partial);
-        // we only support one partial func at the last return value now
-        if (partial_cnt != 1 || !IsPrimitiveCNode(partial, prim::kPrimPartial)) {
-          if (partial_cnt != 0) {
-            MS_LOG(INFO) << "Partial func cnt: " << partial_cnt
-                         << ", last return value: " << partial->fullname_with_scope();
-          }
-          return false;
-        }
-        auto partial_inputs = partial->cast<CNodePtr>()->inputs();
-        // the input of partial can't be FuncGraph/Partial
-        bool has_illegal_input = std::any_of(
-          partial_inputs.begin() + kPartialMinInputSize, partial_inputs.end(), [](const AnfNodePtr &partial_input) {
-            return IsValueNode<FuncGraph>(partial_input) || IsPrimitiveCNode(partial_input, prim::kPrimPartial);
-          });
-        return !has_illegal_input;
-      }
+  if (!IsPrimitiveCNode(input0, prim::kPrimTupleGetItem)) {
+    return false;
+  }
+  auto tuple_get_node = input0->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_get_node);
+  auto get_from_node = tuple_get_node->input(1);
+  auto idx = common::AnfAlgo::GetTupleGetItemOutIndex(tuple_get_node);
+  MS_EXCEPTION_IF_NULL(get_from_node);
+  // tuple get item from a call subgraph output
+  if (!get_from_node->isa<CNode>()) {
+    return false;
+  }
+  const auto &get_from_cnode = get_from_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_from_cnode);
+  if (!IsValueNode<FuncGraph>(get_from_cnode->input(0))) {
+    return false;
+  }
+  auto call_graph = GetValueNode<FuncGraphPtr>(get_from_cnode->input(0));
+  MS_EXCEPTION_IF_NULL(call_graph);
+  auto graph_out = call_graph->output();
+  MS_EXCEPTION_IF_NULL(graph_out);
+  size_t tuple_input_num = common::AnfAlgo::GetInputTensorNum(graph_out);
+  // the partial must be the last output
+  if (!graph_out->isa<CNode>() || tuple_input_num != idx + 1) {
+    return false;
+  }
+  const auto &graph_out_cnode = graph_out->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(graph_out_cnode);
+  int partial_cnt = 0;
+  for (size_t i = 0; i < tuple_input_num; i++) {
+    auto input = graph_out_cnode->input(i + 1);
+    if (IsPrimitiveCNode(input, prim::kPrimPartial)) {
+      partial_cnt++;
     }
   }
-  return false;
+  auto partial = graph_out_cnode->input(idx + 1);
+  MS_EXCEPTION_IF_NULL(partial);
+  // we only support one partial func at the last return value now
+  if (partial_cnt != 1 || !IsPrimitiveCNode(partial, prim::kPrimPartial)) {
+    if (partial_cnt != 0) {
+      MS_LOG(INFO) << "Partial func cnt: " << partial_cnt << ", last return value: " << partial->fullname_with_scope();
+    }
+    return false;
+  }
+  const auto &partial_cnode = partial->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(partial_cnode);
+  auto partial_inputs = partial_cnode->inputs();
+  // the input of partial can't be FuncGraph/Partial
+  bool has_illegal_input = std::any_of(
+    partial_inputs.begin() + kPartialMinInputSize, partial_inputs.end(), [](const AnfNodePtr &partial_input) {
+      return IsValueNode<FuncGraph>(partial_input) || IsPrimitiveCNode(partial_input, prim::kPrimPartial);
+    });
+  return !has_illegal_input;
 }
 }  // namespace
 
@@ -2764,11 +2834,12 @@ ValuePtrList AnfAlgo::TransformVectorRefToMultiValue(const VectorRef &base_ref) 
 }
 
 bool AnfAlgo::HasIncorporateCallNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (!IsValueNode<Primitive>(cnode->input(0))) {  // If cnode is a call node.
     auto input0 = cnode->input(0);
     if (IsPrimitiveCNode(input0, prim::kPrimSwitch) || IsPrimitiveCNode(input0, prim::kPrimSwitchLayer) ||
         IsValueNode<FuncGraph>(input0)) {
-      if (IsCellReuse(input0) && IsEnableRefMode()) {
+      if (IsCellReuse(input0)) {
         MS_LOG(INFO) << "Use cell reuse when enable ge mode: " << cnode->DebugString();
         return true;
       }
@@ -2798,15 +2869,18 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
     if (node->abstract() != nullptr) {
       auto shape = node->abstract()->GetShape();
       // Dynamic shape tensor.
-      if (shape->isa<abstract::TensorShape>() && IsDynamic(shape->GetShapeVector())) {
+      if (shape->isa<abstract::TensorShape>() && mindspore::IsDynamic(shape->GetShapeVector())) {
         dynamic_node = node;
         break;
       }
       // Dynamic len sequence.
-      if (node->abstract()->isa<abstract::AbstractSequence>() &&
-          node->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-        dynamic_node = node;
-        break;
+      if (node->abstract()->isa<abstract::AbstractSequence>()) {
+        const auto &seq_abs = node->abstract()->cast<abstract::AbstractSequencePtr>();
+        MS_EXCEPTION_IF_NULL(seq_abs);
+        if (seq_abs->dynamic_len()) {
+          dynamic_node = node;
+          break;
+        }
       }
       // PyExecute node exist
       if (IsPrimitiveCNode(node, prim::kPrimPyExecute)) {
@@ -2827,12 +2901,143 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
   return false;
 }
 
+CNodePtr AnfAlgo::CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  AnfNodePtrList new_make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  (void)new_make_tuple_inputs.insert(new_make_tuple_inputs.cend(), tuple_inputs.cbegin(), tuple_inputs.cend());
+  auto make_tuple_node = func_graph->NewCNode(new_make_tuple_inputs);
+  MS_EXCEPTION_IF_NULL(make_tuple_node);
+
+  // MakeTuple's abstract must consist of all inputs' abstract in case unexpected graph compiling error.
+  AbstractBasePtrList abstract_list;
+  (void)std::for_each(tuple_inputs.cbegin(), tuple_inputs.cend(),
+                      [&](const auto &input) { (void)abstract_list.emplace_back(input->abstract()); });
+  if (std::find_if(abstract_list.begin(), abstract_list.end(), [](auto abs) { return !abs; }) != abstract_list.end()) {
+    return make_tuple_node;
+  }
+  make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
+  return make_tuple_node;
+}
+
+void AnfAlgo::InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node,
+                           const FuncGraphManagerPtr &manager, const FuncGraphPtr &root, const std::string &attr_tag,
+                           const size_t post_node_input_index) {
+  MS_EXCEPTION_IF_NULL(prior_node);
+  MS_EXCEPTION_IF_NULL(post_node);
+  if (prior_node == post_node) {
+    return;
+  }
+  auto post_cnode = post_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(post_cnode);
+  std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), post_cnode->input(post_node_input_index),
+                                          prior_node};
+  auto depend_node = root->NewCNode(depend_input);
+  depend_node->set_abstract(post_cnode->input(post_node_input_index)->abstract());
+  if (!attr_tag.empty()) {
+    depend_node->AddAttr(attr_tag, MakeValue<bool>(true));
+  }
+  (void)manager->SetEdge(post_node, post_node_input_index, depend_node);
+}
+
+bool AnfAlgo::IsNeededOverlapComm(const CNodePtr &cnode, const std::string &pp_1f1b_value) {
+  bool is_target = IsNeededOverlapCommA2a(cnode, pp_1f1b_value);
+  if (pp_1f1b_value.find("MorphAllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("AllGather") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimAllGather) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  if (pp_1f1b_value.find("MorphReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("redistribution") == std::string::npos &&
+                    GetCNodePrimitive(cnode)->instance_name().find("forward_op") == std::string::npos);
+  } else if (pp_1f1b_value.find("ReduceScatter") != std::string::npos) {
+    is_target =
+      is_target || (IsPrimitiveCNode(cnode, prim::kPrimReduceScatter) &&
+                    GetCNodePrimitive(cnode)->instance_name().find("parallel_optimizer") == std::string::npos);
+  }
+  return is_target;
+}
+
+AnfNodePtr AnfAlgo::GetInputNode(const AnfNodePtr &node,
+                                 std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter) {
+  std::queue<AnfNodePtr> node_queue;
+  node_queue.push(node);
+  while (!node_queue.empty()) {
+    auto end = node_queue.front();
+    node_queue.pop();
+    if (!end->isa<CNode>()) {
+      return end;
+    }
+    auto cnode_queue_end = end->cast<CNodePtr>();
+    auto check_res = check_filter(cnode_queue_end);
+    if (!check_res.first) {
+      return end;
+    }
+    node_queue.push(cnode_queue_end->input(check_res.second));
+  }
+  return node;
+}
+
+bool AnfAlgo::IsNeededShape(const CNodePtr &cnode) {
+  if (!(cnode->input(kIndex1)->abstract() && cnode->input(kIndex1)->abstract()->isa<AbstractTensor>() &&
+        cnode->input(kIndex1)->abstract()->GetShape())) {
+    return true;
+  }
+  auto a2a_shape = cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+  auto a2a_size = std::accumulate(a2a_shape.begin(), a2a_shape.end(), 1, std::multiplies<int64_t>());
+  if (std::find(a2a_shape.begin(), a2a_shape.end(), -1) != a2a_shape.end()) {
+    auto input_node = GetInputNode(cnode->input(kIndex1), [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                    IsPrimitiveCNode(cnode, prim::kPrimReshape) || IsPrimitiveCNode(cnode, prim::kPrimCast);
+      return std::make_pair(filter, 1);
+    });
+    if (!input_node->isa<CNode>()) {
+      return true;
+    }
+    auto input_cnode = input_node->cast<CNodePtr>();
+    if (input_cnode->input(kIndex1)->abstract() && input_cnode->input(kIndex1)->abstract()->isa<AbstractTensor>() &&
+        input_cnode->input(kIndex1)->abstract()->GetShape()) {
+      auto a2a_input_shape = input_cnode->input(kIndex1)->abstract()->GetShape()->GetShapeVector();
+      auto a2a_input_size =
+        std::accumulate(a2a_input_shape.begin(), a2a_input_shape.end(), 1, std::multiplies<int64_t>());
+      if (std::find(a2a_input_shape.begin(), a2a_input_shape.end(), -1) != a2a_input_shape.end()) {
+        return true;
+      }
+      return a2a_input_size >= kAll2AllSize;
+    }
+    return true;
+  }
+  return a2a_size >= kAll2AllSize;
+}
+
 bool AnfAlgo::IsMonadType(const TypeId &type_id) {
   if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
                   [&type_id](const TypeId m_type_id) { return type_id == m_type_id; })) {
     return true;
   }
   return false;
+}
+
+bool AnfAlgo::IsBackendGe() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendGE;
+}
+
+bool AnfAlgo::IsBackendMs() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  std::string backend = context->GetBackend();
+  return backend == kBackendMSBackend;
 }
 }  // namespace common
 }  // namespace mindspore

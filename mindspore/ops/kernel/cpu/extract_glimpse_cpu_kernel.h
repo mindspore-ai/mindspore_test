@@ -23,11 +23,12 @@
 #include <unordered_map>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace extract_glimpse_cpu {
 class ExtractGlimpseCpuKernelMod : public NativeCpuKernelMod {
  public:
   ExtractGlimpseCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class ExtractGlimpseCpuKernelMod : public NativeCpuKernelMod {
   bool uniform_noise_;
   string noise_;
 };
+}  // namespace extract_glimpse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_EXTRACT_GLIMPSE_CPU_KERNEL_H_

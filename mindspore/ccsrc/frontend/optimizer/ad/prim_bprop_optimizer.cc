@@ -19,6 +19,10 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/ad/prim_bprop_optimizer.h"
 #include "pipeline/jit/ps/pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ad {

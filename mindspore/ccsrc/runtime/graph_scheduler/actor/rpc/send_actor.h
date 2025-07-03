@@ -55,10 +55,10 @@ class SendActor : public RpcActor {
 
  protected:
   // Do real send operation in this method.
-  bool LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch = false) override;
+  bool LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch = false) override;
 
   // Erase inter-process inputs for this sequential number.
-  void EraseInput(const OpContext<DeviceTensor> *context) override;
+  void EraseInput(const OpContext<KernelTensor> *context) override;
 
   // Client only supports to send MessageBase, so build MessageBase with data and url.
   std::unique_ptr<MessageBase> BuildRpcMessage(const std::string &server_url);
@@ -87,7 +87,7 @@ class SendActor : public RpcActor {
    * @param {const void} *data: Raw pointer data needs to be freed.
    * @return {std::vector<DeviceTensor *>}: The memory list needs to be freed.
    */
-  std::vector<DeviceTensor *> FindDeviceTensorNeedsFree(const void *data) const;
+  std::vector<KernelTensorPtr> FindKernelTensorNeedsFree(const void *data) const;
 
   /**
    * @description: Serialize one dynamic shape input data to a piece of memory and returns the serialized data
@@ -129,7 +129,7 @@ class SendActor : public RpcActor {
   friend class GraphScheduler;
 
   // OpC ontext passed by graph scheduler.
-  OpContext<DeviceTensor> *context_;
+  OpContext<KernelTensor> *context_;
 
   // This send actor's destination peers' actor ids and route table.
   std::vector<std::string> peer_actor_ids_;

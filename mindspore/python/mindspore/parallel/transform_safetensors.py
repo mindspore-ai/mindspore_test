@@ -16,29 +16,268 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import glob
 import math
 import json
 import re
-from collections import defaultdict
+import mmap
+import stat
+from collections import defaultdict, OrderedDict
 
 import time
 import multiprocessing as mp
-import numpy as np
+
 from safetensors.numpy import save_file, load_file
-from safetensors import safe_open
+import psutil
+import numpy as np
 
 import mindspore as ms
 from mindspore import log as logger
+from mindspore.log import vlog_print
+from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
+from mindspore.common import np_dtype
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
-    _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src
+    _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src, _insert_expand_layout_reshape
 from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_tensor_layout, \
     _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
-    _extract_layout_item, _load_tensor_shape, _apply_operator
+    _extract_layout_item, _apply_operator
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
+from mindspore.common import dtype as mstype
+
+safetensors_to_mstype = {'Int4': mstype.qint4x2}
+
+np.bfloat16 = np_dtype.bfloat16
+
+MAX_HEADER_SIZE = 100 * 1000 * 1000
+
+dtype_size = {
+    "BOOL": 1,
+    "U8": 1,
+    "I8": 1,
+    "I16": 2,
+    "U16": 2,
+    "I32": 4,
+    "U32": 4,
+    "I64": 8,
+    "U64": 8,
+    "F16": 2,
+    "BF16": 2,
+    "F32": 4,
+    "F64": 8,
+}
+np_dtype_size = {
+    "bool_": 1,
+    "uint8": 1,
+    "int8": 1,
+    "int16": 2,
+    "uint16": 2,
+    "int32": 4,
+    "uint32": 4,
+    "int64": 8,
+    "uint64": 8,
+    "float16": 2,
+    "bfloat16": 2,
+    "float32": 4,
+    "float64": 8,
+}
+numpy_dtype = {
+    "BOOL": np.bool_,
+    "U8": np.uint8,
+    "I8": np.int8,
+    "I16": np.int16,
+    "U16": np.uint16,
+    "I32": np.int32,
+    "U32": np.uint32,
+    "I64": np.int64,
+    "U64": np.uint64,
+    "F16": np.float16,
+    "BF16": np.bfloat16,  # no bf16
+    "F32": np.float32,
+    "F64": np.float64,
+}
+
+
+def getSize(fileobject):
+    fileobject.seek(0, 2)  # move the cursor to the end of the file
+    size = fileobject.tell()
+    fileobject.seek(0)  # move the cursor to the start of the file
+    return size
+
+
+def _save_file_atomically(transform_param_dict, save_file_name, metadata=None):
+    """Atomically save file using temporary name and rename."""
+    if metadata is None:
+        metadata = {"format": "ms"}
+    file_name_list = list(os.path.splitext(save_file_name))
+    file_name_list[1] = file_name_list[1].replace('.safetensors', '.tmp')
+    tmp_name = ''.join(file_name_list)
+    try:
+        if os.path.exists(save_file_name):
+            os.chmod(save_file_name, stat.S_IWUSR)
+            os.remove(save_file_name)
+        if os.path.exists(tmp_name):
+            os.chmod(tmp_name, stat.S_IWUSR)
+            os.remove(tmp_name)
+        save_file(transform_param_dict, tmp_name, metadata=metadata)
+        os.rename(tmp_name, save_file_name)
+        os.chmod(save_file_name, stat.S_IRUSR)
+    except Exception as e:
+        if not os.path.exists(save_file_name):
+            logger.warning(f"Save failed, {save_file_name} not found. "
+                           f"This may indicate multiple processes modifying the same file "
+                           f"or insufficient disk space.")
+        raise e
+
+
+def metadata_validate(metadata):
+    """validation metadata"""
+    start = 0
+    for key, info in metadata.items():
+        s, e = info["data_offsets"]
+        if s != start or e < s:
+            raise ValueError(f"SafeTensorError::InvalidOffset({key})")
+        start = e
+        nelements = np.prod(info["shape"])
+        nbytes = nelements * dtype_size[info["dtype"]]
+        if (e - s) != nbytes:
+            raise ValueError("SafeTensorError::TensorInvalidInfo")
+    return start
+
+
+def read_metadata(buffer):
+    """read metadata by buffer"""
+    buffer_len = getSize(buffer)
+    if buffer_len < 8:
+        raise ValueError("SafeTensorError::HeaderTooSmall")
+
+    n = np.frombuffer(buffer.read(8), dtype=np.uint64).item()
+    if n > MAX_HEADER_SIZE:
+        raise ValueError("SafeTensorError::HeaderTooLarge")
+
+    stop = n + 8
+    if stop > buffer_len:
+        raise ValueError("SafeTensorError::InvalidHeaderLength")
+
+    tensors = json.loads(buffer.read(n), object_pairs_hook=OrderedDict)
+    metadata = tensors.pop("__metadata__", None)
+    buffer_end = metadata_validate(tensors)
+
+    if buffer_end + 8 + n != buffer_len:
+        raise ValueError("SafeTensorError::MetadataIncompleteBuffer")
+
+    return stop, tensors, metadata
+
+
+class PySafeSlice:
+    """Create PySafeSlice by file"""
+
+    def __init__(self, info, bufferfile, base_ptr, buffermmap):
+        self.info = info
+        self.bufferfile = bufferfile
+        self.buffermmap = buffermmap
+        self.base_ptr = base_ptr
+
+        self.start = [0 for dim in self.shape]
+        self.stop = [dim for dim in self.shape]
+        self.step = [1 for dim in self.shape]
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    def get(self, *args, **kwargs):
+        """Get tensor from buffer by data_offset"""
+        nbytes = int(np.prod(self.shape)) * np.dtype(self.dtype).itemsize
+        offset = self.start_offset
+        tensor = np.frombuffer(self.buffermmap, dtype=self.dtype, offset=offset,
+                               count=nbytes // np.dtype(self.dtype).itemsize)
+        tensor = tensor.reshape(self.shape)
+        if not tensor.flags["ALIGNED"]:
+            logger.info("This safetensors file is not aligned.")
+            tensor = tensor.copy()
+        return tensor
+
+    @property
+    def start_offset(self):
+        return self.base_ptr + self.info["data_offsets"][0]
+
+    def get_shape(self):
+        return self.shape
+
+    @property
+    def shape(self):
+        return self.info["shape"]
+
+    @property
+    def dtype(self):
+        return numpy_dtype[self.info["dtype"]]
+
+    @property
+    def nelements(self):
+        return np.prod(self.info["shape"])
+
+    @property
+    def bits(self):
+        return dtype_size[self.info["dtype"]]
+
+    @property
+    def nbytes(self):
+        return self.nelements * dtype_size[self.info["dtype"]]
+
+
+class _fast_safe_open:
+    """
+    Open a safetensors file and access its metadata and tensors efficiently.
+
+    This function is designed to work similarly to `safetensors.safe_open`,
+    providing a fast way to open and interact with safetensors files.
+    """
+
+    def __init__(self, filename, framework=None, device="cpu"):
+        self.filename = filename
+        self.framework = framework
+        self.file = open(self.filename, "rb")
+        self.file_mmap = mmap.mmap(self.file.fileno(), 0, access=mmap.ACCESS_COPY)
+        try:
+            self.base, self.tensors_decs, self.__metadata__ = read_metadata(self.file)
+        except ValueError:
+            raise ValueError(f"Fail to parse the input safetensors file: '{self.filename}'. "
+                             f"Please check the correctness of the file.")
+        self.tensors = OrderedDict()
+        for key, info in self.tensors_decs.items():
+            self.tensors[key] = PySafeSlice(info, self.file, self.base, self.file_mmap)
+            self.tensors[key].key = key
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.file.close()
+
+    def metadata(self):
+        return self.__metadata__
+
+    def keys(self):
+        return list(self.tensors.keys())
+
+    def get_tensor(self, name):
+        return self.tensors[name].get()
+
+
+def _fast_load_file(filename):
+    """
+    Load safetensors info from a specified file.
+    """
+    result = {}
+    with _fast_safe_open(filename, framework="np") as f:
+        for k in f.keys():
+            result[k] = f.get_tensor(k)
+    return result
 
 
 def _progress_bar(iterable, total=None):
@@ -65,6 +304,7 @@ def _progress_bar(iterable, total=None):
         elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
         remaining_time_str = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
 
+        sys.stdout.reconfigure(encoding="utf-8")
         print(f'\r{percent}%|{bar}|[{elapsed_time_str}<{remaining_time_str}]', end='')
         if iteration == total:
             print()
@@ -263,15 +503,22 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
             pipe_param_list[layout[6][0]].append(name)
     part_list_dict = _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num)
     processes = []
-    for i in range(process_num):
-        p = mp.Process(target=_transform_safetensors_single, args=(
-            part_list_dict[i], all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
-            src_strategy_dict, dst_strategy_dict, origin_src_strategy_list, origin_dst_strategy_list,
-            ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list, pipe_param_list[i]))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    if process_num > 1:
+        for i in range(process_num):
+            p = mp.Process(target=_transform_safetensors_single, args=(
+                part_list_dict[i], all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
+                src_strategy_dict, dst_strategy_dict, origin_src_strategy_list, origin_dst_strategy_list,
+                ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list, pipe_param_list[i]))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+    else:
+        _transform_safetensors_single(part_list_dict[0], all_safetensor_files_map, src_stage_device_num,
+                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
+                                      origin_src_strategy_list, origin_dst_strategy_list, ckpt_prefix,
+                                      dst_safetensors_dir, output_format, _transform_param_list,
+                                      pipe_param_list[0])
 
 
 def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
@@ -284,9 +531,10 @@ def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
     return set()
 
 
-def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict, redundancy_dict,
-                                    needed_rank, device_num):
+def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, safetensor_dict, redundancy_dict,
+                                    needed_rank, device_num, choice_func):
     """Find the rank_id under redundant groups."""
+    io_time = 0
     for param_name in pipe_param_list:
         rank_num = int(needed_rank)
         redundancy_ranks = _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num)
@@ -299,11 +547,23 @@ def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dic
                     open_file_id = real_rank
                     break
         if open_file_id is not None:
+            start_time = time.time()
             output = file_dict[open_file_id].get_tensor(param_name)
-            saftensor_dict[param_name] = output
+            end_time = time.time()
+            cost_time = end_time - start_time
+            io_time += cost_time
+            if choice_func is not None:
+                choice_out = choice_func(param_name)
+                if isinstance(choice_out, bool) and not choice_out:
+                    continue
+                if not isinstance(choice_out, (bool, str)):
+                    raise ValueError("For 'unified_safetensors', the return value type of the function "
+                                     f"'choice_func' must be bool or str, but got {type(choice_out)}.")
+            safetensor_dict[param_name] = output
         else:
             raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
                              f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
+    return io_time
 
 
 def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
@@ -316,9 +576,11 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
+    io_cost_time = 0
+    meta_data = {"format": "ms"}
     if src_strategy_file is not None:
         from mindspore.train._utils import get_parameter_redundancy
-        redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file)
+        redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file, initial_rank=0)
         redundancy_dict = {}
         device_num = 0
         for param_name, redundancy in redundancy_dict_tmp.items():
@@ -335,13 +597,15 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         file_dict = {}
         single_param_dict = {}
         for file_id, _ in all_safetensor_files_map.items():
-            f = safe_open(all_safetensor_files_map.get(file_id), framework="np")
+            f = _fast_safe_open(all_safetensor_files_map.get(file_id), framework="np")
             file_dict[file_id] = f
             for param_name in f.keys():
                 if param_name not in single_param_dict.keys():
                     single_param_dict[param_name] = {file_id}
                 else:
                     single_param_dict[param_name].add(file_id)
+            if f.metadata() is not None:
+                meta_data.update(f.metadata())
     src_strategy_list_keys = _convert_to_list(src_strategy_dict).keys() if src_strategy_dict else []
     dst_strategy_list_keys = _convert_to_list(dst_strategy_dict).keys() if dst_strategy_dict else []
     for needed_rank_list_key, transform_rank_list in needed_rank_list_map.items():
@@ -350,38 +614,49 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         needed_rank_list = needed_rank_list_key.split("-")
         for needed_rank in needed_rank_list:
             if pipe_param_list:
-                saftensor_dict = dict()
+                safetensor_dict = dict()
                 if src_strategy_file is not None:
-                    _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict,
-                                                    redundancy_dict, needed_rank, device_num)
+                    io_time = _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict,
+                                                              safetensor_dict, redundancy_dict, needed_rank,
+                                                              device_num, choice_func)
+                    io_cost_time += io_time
                 else:
-                    with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
+                    with _fast_safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
                         if not unified_flag:
                             all_param_name_set = set(f.keys())
                             src_param_name_set = set(src_strategy_list_keys)
                             dst_param_name_set = set(dst_strategy_list_keys)
                             hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
                             pipe_param_list.extend(list(hyper_param_set))
+                        if f.metadata() is not None:
+                            meta_data.update(f.metadata())
+                        io_time = 0
                         for param_name in pipe_param_list:
                             if param_name not in f.keys():
                                 # param not in ckpt file, check reason
                                 continue
+                            start_time = time.time()
                             output = f.get_tensor(param_name)
-                            save_param_name = param_name
+                            end_time = time.time()
+                            cost_time = end_time - start_time
+                            io_time += cost_time
+                            io_cost_time += io_time
                             if choice_func is not None:
                                 choice_out = choice_func(param_name)
-                                if isinstance(choice_out, bool):
-                                    if not choice_out:
-                                        continue
-                                elif isinstance(choice_out, str):
-                                    save_param_name = choice_out
-                                else:
+                                if isinstance(choice_out, bool) and not choice_out:
+                                    continue
+                                if not isinstance(choice_out, (bool, str)):
                                     raise ValueError("For 'unified_safetensors', the return value type of the function "
                                                      f"'choice_func' must be bool or str, but got {type(choice_out)}.")
-                            saftensor_dict[save_param_name] = output
+                            safetensor_dict[param_name] = output
             else:
-                saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
-            for param_name, param in saftensor_dict.items():
+                start_time = time.time()
+                safetensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
+                end_time = time.time()
+                cost_time = end_time - start_time
+                io_cost_time += cost_time
+
+            for param_name, param in safetensor_dict.items():
                 src_rank = int(needed_rank) % src_stage_device_num
                 param_total_dict[param_name][src_rank] = param
                 param_attr_dict[param_name][src_rank] = (True, False)
@@ -399,7 +674,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             local_rank_id = transform_rank % dst_stage_device_num
             transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                                   param_attr_dict, src_strategy_list, dst_strategy_list,
-                                                                  param_total_dict_keys, src_strategy_file)
+                                                                  param_total_dict_keys, src_strategy_file, choice_func)
             if file_index is not None:
                 save_safetensor_file = f"part{file_index}.{output_format}"
                 save_safetensor_file_dir = dst_safetensors_dir
@@ -413,15 +688,17 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             if _transform_param_list is not None:
                 _transform_param_list.append({save_file_name: transform_param_dict})
             else:
-                if output_format == "safetensors":
-                    save_file(transform_param_dict, save_file_name)
-                else:
-                    transform_param_dict = _load_and_transform(transform_param_dict, None, None,
-                                                               transform_func=lambda v, name: ms.Parameter(v,
-                                                                                                           name=name))
-                    ms.save_checkpoint(transform_param_dict, save_file_name)
+                if transform_param_dict:
+                    if output_format == "safetensors":
+                        _save_file_atomically(transform_param_dict, save_file_name, metadata=meta_data)
+                    else:
+                        transform_param_dict = _load_and_transform(transform_param_dict, None, None,
+                                                                   transform_func=lambda v, name: Parameter(v,
+                                                                                                            name=name))
+                        ms.save_checkpoint(transform_param_dict, save_file_name)
             del param_total_dict_keys
         del param_total_dict
+    return io_cost_time
 
 
 def _save_final_safetensors(_transform_param_list, output_format):
@@ -435,10 +712,10 @@ def _save_final_safetensors(_transform_param_list, output_format):
                 new_transform_dict[save_file_name].update(transform_param_dict)
     for save_file_name, transform_param_dict in new_transform_dict.items():
         if output_format == "safetensors":
-            save_file(transform_param_dict, save_file_name)
+            _save_file_atomically(transform_param_dict, save_file_name, metadata={"format": "ms"})
         else:
             transform_param_dict = _load_and_transform(transform_param_dict, None, None,
-                                                       transform_func=lambda v, name: ms.Parameter(v, name=name))
+                                                       transform_func=lambda v, name: Parameter(v, name=name))
             ms.save_checkpoint(transform_param_dict, save_file_name)
 
 
@@ -472,8 +749,8 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
         if not os.path.exists(local_file):
             raise ValueError("safetensor file {} in rank {} not exits: ".format(local_file, rank))
     for rank, file_name in safetensor_files_map.items():
-        saftensor_dict = load_file(file_name)
-        for param_name, param in saftensor_dict.items():
+        safetensor_dict = load_file(file_name)
+        for param_name, param in safetensor_dict.items():
             # cut the parameter not in the pipeline stage.
             if _parameter_not_in_local_stage(param_name, origin_src_strategy_list, src_strategy_list) \
                     and _parameter_not_in_local_stage(param_name, origin_dst_strategy_list, dst_strategy_list):
@@ -491,7 +768,7 @@ def transform_safetensors_by_stage(src_safetensors_dir, dst_safetensors_dir, ckp
         if not os.path.exists(save_safetensor_file_dir):
             _make_dir(save_safetensor_file_dir, "path")
         save_safetensor_file_name = os.path.join(save_safetensor_file_dir, save_safetensor_file)
-        save_file(transform_param_dict, save_safetensor_file_name)
+        _save_file_atomically(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor_file_name,
@@ -527,8 +804,8 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     origin_dst_strategy_list = _extract_layout_map(dst_strategy_file)
     origin_src_strategy_list = _extract_layout_map(src_strategy_file)
     for rank, file_name in safetensor_files_map.items():
-        saftensor_dict = load_file(file_name)
-        for param_name, param in saftensor_dict.items():
+        safetensor_dict = load_file(file_name)
+        for param_name, param in safetensor_dict.items():
             # cut the parameter not in the pipeline stage.
             if _parameter_not_in_local_stage(param_name, origin_src_strategy_list, src_strategy_list) \
                     and _parameter_not_in_local_stage(param_name, origin_dst_strategy_list, dst_strategy_list):
@@ -543,7 +820,7 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                           param_attr_dict, src_strategy_list, dst_strategy_list,
                                                           param_type_dict)
-    save_file(transform_param_dict, save_safetensor_file_name)
+    _save_file_atomically(transform_param_dict, save_safetensor_file_name, metadata={"format": "ms"})
 
 
 def _extrace_number(file_name):
@@ -551,6 +828,7 @@ def _extrace_number(file_name):
     number_ls = re.findall(r'\d+', file_name)
     number_ls = [int(i) for i in number_ls]
     return number_ls[-2:]
+
 
 def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
     """
@@ -589,7 +867,7 @@ def _find_needed_ranks(src_strategy_dict, dst_strategy_dict):
     dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
     dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
     dst_device_num = dst_stage_device_num * dst_stage_num
-    for rank in _progress_bar(range(dst_device_num)):
+    for rank in range(dst_device_num):
         needed_rank_list = ms.rank_list_for_transform(rank, src_strategy_dict, dst_strategy_dict)
         needed_rank_list_key = "-".join([str(r) for r in needed_rank_list])
         needed_rank_list_map[needed_rank_list_key].append(rank)
@@ -598,14 +876,15 @@ def _find_needed_ranks(src_strategy_dict, dst_strategy_dict):
 
 def load_file_by_param_name(filename, parme_name_list):
     result = {}
-    with safe_open(filename, framework="np") as f:
+    with _fast_safe_open(filename, framework="np") as f:
         for k in parme_name_list:
             result[k] = f.get_tensor(k)
     return result
 
 
 def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, src_strategy_list,
-                                   dst_strategy_list, param_total_dict_keys=None, src_strategy_file=None):
+                                   dst_strategy_list, param_total_dict_keys=None, src_strategy_file=None,
+                                   choice_func=None):
     """
     Transform model parallel dimension for distributed safetensor files.
     """
@@ -646,6 +925,9 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
                 continue
             origin_tensor_shape += (item * param_strategy[i],)
 
+        has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+        has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
         from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
         to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
@@ -658,43 +940,181 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
         # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
         device_list = list(range(0, np.prod(from_tensor_layout[0])))
         if rank_id % device_num not in param_attr_dict[param_name] and src_strategy_file is None:
-            raise ValueError("The safetensor of rank {} is missing.".format(rank_id % device_num))
+            raise ValueError("The param: {} in rank {} is missing.".format(param_name, rank_id % device_num))
         param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
                                                                             device_list, rank_id)
 
         from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
         to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
         _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+        _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple, has_layout_from, has_layout_to)
         transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
         param_total_dict_copy = param_total_dict[param_name].copy()
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
-
+        if choice_func is not None:
+            choice_out = choice_func(param_name)
+            if isinstance(choice_out, str):
+                param_name = choice_out
         transform_param_dict[param_name] = param_total_dict_copy[rank_id % device_num]
 
     # Handle those parameter like learning_rate, global_step which not in strategy_file.
     for param_name in param_total_dict_keys:
+        if choice_func is not None:
+            choice_out = choice_func(param_name)
+            if isinstance(choice_out, str):
+                continue
         if param_name not in transform_param_dict:
             transform_para = param_total_dict[param_name][rank_id % device_num]
             transform_param_dict[param_name] = transform_para
     return transform_param_dict
 
 
+def _cal_param_size(shape, dtype):
+    """cal param size by dtype and shape"""
+    num_elements = math.prod(shape)
+    element_size = np_dtype_size.get(dtype, 4)
+    total_bytes = num_elements * element_size
+    return total_bytes
+
+
+def _split_weight_dict(weights, num_groups):
+    """split weights by num"""
+    sorted_items = sorted(weights.items(), key=lambda x: -x[1])
+    groups = [[] for _ in range(num_groups)]
+    total_bytes = [0] * num_groups
+    for weight_name, byte_size in sorted_items:
+        min_index = total_bytes.index(min(total_bytes))
+        groups[min_index].append(weight_name)
+        total_bytes[min_index] += byte_size
+
+    return groups
+
+
+def _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir):
+    """save hyper param"""
+    if not split_dst_file or (split_dst_file and split_dst_file[0] == 1):
+        with _fast_safe_open(all_safetensor_files_map.get(0), framework="np") as f:
+            all_key = f.keys()
+            hyper_parameter = set(all_key) - set(name_list)
+            if hyper_parameter:
+                hyper_dict = {}
+                for key in hyper_parameter:
+                    hyper_dict[key] = f.get_tensor(key)
+                _save_file_atomically(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"),
+                                      metadata={"format": "ms"})
+
+
+def _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size):
+    """save parameter map json file"""
+    param_name_dict = dict()
+    for index, part_list in enumerate(split_list):
+        for name in part_list:
+            save_param_name = name
+            if choice_func is not None:
+                choice_out = choice_func(name)
+                if isinstance(choice_out, str):
+                    save_param_name = choice_out
+            if save_param_name == -1:
+                break
+            param_name_dict[save_param_name] = f"part{index}.safetensors"
+    output_dict = {"metadata": {"total_size": param_total_size}, "weight_map": param_name_dict}
+    if not split_dst_file or (split_dst_file and split_dst_file[0] == 1):
+        json_str = json.dumps(output_dict, indent=4)
+        map_file = os.path.join(dst_dir, "param_name_map.json")
+        with open(map_file, 'w') as f:
+            f.write(json_str)
+
+
+def _get_dst_shape(param_name, param_shape, src_strategy_list):
+    """get dst shape by strategy"""
+    from_dev_matrix = [1]
+    from_tensor_map = [-1] * len(param_shape)
+    from_opt_shard_size = 0
+    if src_strategy_list is not None:
+        from_dev_matrix, from_tensor_map, _, from_opt_shard_size = _extract_layout_item(
+            src_strategy_list.get(param_name))
+    to_dev_matrix_origin = [1]
+    to_tensor_map_origin = [-1] * len(param_shape)
+    to_opt_shard_step = 0
+    to_opt_shard_size = 0
+
+    param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+    origin_tensor_shape = ()
+    for i, item in enumerate(param_shape):
+        if i == 0 and from_opt_shard_size > 0:
+            origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
+            continue
+        origin_tensor_shape += (item * param_strategy[i],)
+
+    _, _, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
+    return to_full_tensor_shape
+
+
+def _check_remove_redundancy(merge_with_redundancy, f):
+    """Check whether remove_redundancy is consistent with the safetensors file."""
+    if f.metadata() is not None and "remove_redundancy" in f.metadata().keys():
+        if f.metadata()["remove_redundancy"] == "True" and merge_with_redundancy:
+            logger.warning("For 'unified_safetensors', the safetensors file is deduplicated, "
+                           "but merge_with_redundancy is set to True.")
+            return False
+        if f.metadata()["remove_redundancy"] == "False" and not merge_with_redundancy:
+            logger.warning("For 'unified_safetensors', the safetensors file is non-deduplicated, "
+                           "but merge_with_redundancy is set to False.")
+            return True
+    return merge_with_redundancy
+
+
+def set_affinity_pid():
+    """Set CPU affinity pid"""
+    pid = os.getpid()
+    total_cores = os.cpu_count()
+    all_cores = set(range(total_cores))
+    os.sched_setaffinity(pid, all_cores)
+
+
+def _validate_safetensors_files(target_directory, expected_file_ids):
+    """Validate whether safetensors files are completely generated in the target directory."""
+    missing_file_ids = []
+    for file_id in expected_file_ids:
+        safetensors_file = os.path.join(target_directory, f"part{file_id}.safetensors")
+        if os.path.exists(safetensors_file):
+            continue
+        missing_file_ids.append(file_id)
+
+    if missing_file_ids:
+        logger.warning(
+            f"For unified_safetensors, target file part {missing_file_ids} does not exist. "
+            f"Possible causes: file rename failed, insufficient permissions, or disk space shortage."
+        )
+
+
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
-                        max_process_num=64, choice_func=None):
+                        max_process_num=64, choice_func=None, split_dst_file=()):
     """
     Merge multiple safetensor files into a unified safetensor file.
 
+    Note:
+        When merging weights, it will verify whether the `merge_with_redundancy` parameter differs from
+        the deduplication flag in the merged safetensors files. If they are the same, the merging will be performed
+        according to the deduplication flag in the files.
+
     Args:
         src_dir (str): Source weight saving directory.
-        src_strategy_file (str): Source weight segmentation strategy file.
+        src_strategy_file (str): Source weight segmentation strategy file with the file extension `.ckpt` .
         dst_dir (str): Target save directory.
         merge_with_redundancy (bool, optional): Whether the merged source weight files are de-duplicated and
             saved safetensors files. Default: ``True``, indicating that the merged source weight files are complete.
         file_suffix (str, optional): Specify the filename suffix for merging safetensors files. Default: ``None``,
             meaning all safetensors files in the source weight directory will be merged.
-        max_process_num (int): Maximum number of processes. Default: 64.
-        choice_func (callable): A callable function used to filter parameters or modify parameter names.
-            The return value of the function must be of type str (string) or bool (boolean). Default: None.
+        max_process_num (int, optional): Maximum number of processes. Default: ``64``.
+        choice_func (callable, optional): A callable function used to filter parameters or modify parameter names.
+            The return value of the function must be of type str (string) or bool (boolean). Default: ``None``.
+        split_dst_file (tuple, optional) - A parameter used to manually split a task into multiple subtasks for
+            execution, represented as a tuple containing two elements. The first element indicates the number of
+            the current subtask, and the second element indicates the total number of tasks. This parameter supports
+            splitting and executing tasks multiple times on a single machine, and also supports executing different
+            subtasks on multiple machines respectively. Default: ``()``.
 
     Raises:
         ValueError: If the safetensors file of rank is missing.
@@ -707,8 +1127,9 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         >>> src_dir = "/usr/safetensors/llama31B/4p_safetensors/"
         >>> src_strategy_file = "/usr/safetensors/llama31B/strategy_4p.ckpt"
         >>> dst_dir = "/usr/safetensors/llama31B/merge_llama31B_4p/"
-        >>> ms.unified_safetensors(src_dir, src_strategy_file, dst_dir)
+        >>> ms.parallel.unified_safetensors(src_dir, src_strategy_file, dst_dir)
     """
+    set_affinity_pid()
     _check_transform_safetensors(src_dir, "", src_strategy_file, None)
     _make_dir(dst_dir, "path")
     if os.path.isfile(src_dir):
@@ -732,13 +1153,12 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
                                  "but it is missing.".format(needed_rank, rank))
     layout_map = _convert_to_list(src_strategy_dict)
 
-    total_size = 0
     actual_params = set()
     for _, file_name in all_safetensor_files_map.items():
-        total_size += os.path.getsize(file_name) / 1024 / 1024 / 1024
-        with safe_open(file_name, framework="np") as f:
+        with _fast_safe_open(file_name, framework="np") as f:
             actual_params.update(f.keys())
-    split_num = math.ceil(total_size / 3)
+            merge_with_redundancy = _check_remove_redundancy(merge_with_redundancy, f)
+
     params_to_store = actual_params & set(layout_map.keys())
 
     name_list = []
@@ -746,51 +1166,77 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         if name.startswith("accu_grads"):
             continue
         name_list.append(name)
-    split_list = _split_list(name_list, split_num)
 
-    with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
-        all_key = f.keys()
-        hyper_parameter = set(all_key) - set(name_list)
-        if hyper_parameter:
-            hyper_dict = {}
-            for key in hyper_parameter:
-                hyper_dict[key] = f.get_tensor(key)
-            save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"))
+    param_size_dict = {}
+    param_total_size = 0
+    for _, file_name in all_safetensor_files_map.items():
+        with _fast_safe_open(file_name, framework="np") as f:
+            for k in f.keys():
+                if k in name_list:
+                    py_slice = f.get_tensor(k)
+                    param_total_size += _cal_param_size(py_slice.shape, py_slice.dtype)
+                    param_dst_shape = _get_dst_shape(k, py_slice.shape, origin_src_strategy_list)
+                    # Convert the shape of np.int32 type to int type to prevent overflow in subsequent calculations.
+                    param_dst_shape = [int(item) for item in param_dst_shape]
+                    if choice_func is not None:
+                        choice_out = choice_func(k)
+                        if isinstance(choice_out, bool):
+                            if not choice_out:
+                                name_list.remove(k)
+                                continue
+                    if k not in param_size_dict:
+                        param_size_dict[k] = _cal_param_size(param_dst_shape, py_slice.dtype)
+    split_num = math.ceil(sum(param_size_dict.values()) / 1024 / 1024 / 1024 / 3)
+    split_num = min(split_num, len(name_list))
+    split_list = _split_weight_dict(param_size_dict, split_num)
 
-    # save parameter map json
-    param_name_dict = dict()
-    for index, part_list in enumerate(split_list):
-        for name in part_list:
-            save_param_name = name
-            if choice_func is not None:
-                choice_out = choice_func(name)
-                if isinstance(choice_out, bool):
-                    if not choice_out:
-                        continue
-                elif isinstance(choice_out, str):
-                    save_param_name = choice_out
-            param_name_dict[save_param_name] = f"part{index}.safetensors"
-    json_str = json.dumps(param_name_dict, indent=4)
-    map_file = os.path.join(dst_dir, "param_name_map.json")
-    with open(map_file, 'w') as f:
-        f.write(json_str)
+    if split_dst_file:
+        current_machine_num = split_dst_file[0]
+        total_machine_num = split_dst_file[1]
+        n = len(split_list)
+        avg_length = n // total_machine_num
+        remainder = n % total_machine_num
+        start_index = (avg_length * (current_machine_num - 1)) + min(current_machine_num - 1, remainder)
+        end_index = start_index + avg_length + (1 if current_machine_num <= remainder else 0)
+        sub_list = []
+        for i, item in enumerate(split_list):
+            if start_index <= i < end_index:
+                sub_list.append(item)
+            else:
+                sub_list.append([-1])
+        split_num = end_index - start_index
+        res = list(range(start_index, end_index))
+    else:
+        sub_list = split_list
+        res = [i for i in range(split_num)]
+
+    _save_hyper_param(split_dst_file, all_safetensor_files_map, name_list, dst_dir)
+    _save_parameter_map_json(split_list, choice_func, split_dst_file, dst_dir, param_total_size)
 
     max_process = min(split_num, max_process_num)
-    res = [i for i in range(split_num)]
+    file_ids = res[:]
     res = _split_list(res, max_process)
     processes = []
     src_strategy_name = None
     if not merge_with_redundancy:
         src_strategy_name = src_strategy_file
-    for i in range(max_process):
-        p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
-            needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
-            src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
-            "", dst_dir, "safetensors", None, split_list, res[i], True, src_strategy_name, choice_func))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    if max_process > 1:
+        for i in range(max_process):
+            p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
+                needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
+                src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
+                "", dst_dir, "safetensors", None, sub_list, res[i], True, src_strategy_name, choice_func))
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
+    else:
+        _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
+                                                dst_stage_device_num, src_strategy_dict, None,
+                                                origin_src_strategy_list, origin_dst_strategy_list, "",
+                                                dst_dir, "safetensors", None, sub_list,
+                                                res[0], True, src_strategy_name, choice_func)
+    _validate_safetensors_files(dst_dir, file_ids)
 
 
 def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map,
@@ -801,13 +1247,20 @@ def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor
                                             ckpt_prefix, dst_safetensors_dir, output_format,
                                             _transform_param_list, pipe_param_list=None, file_index=None,
                                             unified_flag=False, src_strategy_file=None, choice_func=None):
+    """transform safetensors single semaphore"""
+    total_io_cost_time = 0
     for i in file_index:
-        _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
-                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
-                                      origin_src_strategy_list,
-                                      origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
-                                      _transform_param_list, pipe_param_list[i], i, unified_flag, src_strategy_file,
-                                      choice_func)
+        io_cost_time = _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map,
+                                                     src_stage_device_num, dst_stage_device_num, src_strategy_dict,
+                                                     dst_strategy_dict, origin_src_strategy_list,
+                                                     origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir,
+                                                     output_format, _transform_param_list, pipe_param_list[i], i,
+                                                     unified_flag, src_strategy_file, choice_func)
+        while psutil.virtual_memory().percent > 50:
+            time.sleep(1)
+        total_io_cost_time += io_cost_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+               f"Unified safetensors io cost time:{total_io_cost_time}.")
 
 
 def _split_list(split_list, split_num):
@@ -818,7 +1271,7 @@ def _split_list(split_list, split_num):
 def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num):
     """apply safetensors object operators"""
     if not transform_operator_stack:
-        return sf_obj[:]
+        return sf_obj
     level = transform_operator_stack[-1][1]
     level_operators = []
     while True:
@@ -843,7 +1296,7 @@ def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_n
                 allgather_list = [sf_obj for _ in operator[1][:-1]]
                 tmp_tensor_dict[rank_id % device_num] = _apply_operator(operator[0])(allgather_list, operator)
             if op_name == "AllConcat":
-                for rank, value in tmp_tensor_dict.items():
+                for _, value in tmp_tensor_dict.items():
                     sf_obj = value
             level_operators.clear()
         if not transform_operator_stack:
@@ -854,26 +1307,30 @@ def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_n
     return sf_obj
 
 
-def _check_name_map_value_is_str(value):
-    """check input is bool"""
-    if not isinstance(value, str):
-        raise ValueError(
-            f"For 'load_distributed_checkpoint', the value of name_map must be str, but got {type(value)}.")
-
-
-def _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param):
+def _process_hyper_params(file_list, total_safetensors_dir, total_param):
     """process hyper params"""
     if 'hyper_param.safetensors' in file_list:
         hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
-        with safe_open(hyper_parameter_file_name, framework="np") as f:
+        with _fast_safe_open(hyper_parameter_file_name, framework="np") as f:
             for key in f.keys():
-                cur_param_name = name_map.get(key) if name_map is not None and key in name_map else key
-                _check_name_map_value_is_str(cur_param_name)
-                total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(f.get_tensor(key)))
+                total_param[key] = Parameter(Tensor.from_numpy(f.get_tensor(key)))
     return total_param
 
 
-def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_files, dst_strategy_file, rank_id):
+def _get_param_name_map_by_file(file_name, file_list, name_map):
+    """get param_name_map by file"""
+    with _fast_safe_open(file_name, framework="np") as f:
+        keys = f.keys()
+        values = len(keys) * [file_list[0]]
+        if name_map:
+            flipped_name_map = {value: key for key, value in name_map.items()}
+            keys = [flipped_name_map.get(key, key) for key in keys]
+        param_name_map = dict(zip(keys, values))
+    return param_name_map
+
+
+def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_files,
+                                       dst_strategy_file, rank_id, name_map=None):
     """calculate param_name_map and param_list"""
     if len(file_list) == 1:
         logger.info("There is only one weight file in the directory, which will be automatically mapped.")
@@ -882,17 +1339,17 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
         if not is_file:
             raise ValueError(f"For 'load_parallel_checkpoint', weight files must be included "
                              f"in the `unified_safetensors_dir`.")
-        with safe_open(file_name, framework="np") as f:
-            keys = f.keys()
-            values = len(keys) * [file_list[0]]
-            param_name_map = dict(zip(keys, values))
+        param_name_map = _get_param_name_map_by_file(file_name, file_list, name_map)
     else:
-        if len(json_files) != 1:
-            raise ValueError(f"For 'load_parallel_checkpoint', the number of json files in 'total_safetensors_dir' "
-                             f"must be 1, but got {len(json_files)}.")
+        if not json_files:
+            raise ValueError(
+                f"For 'load_parallel_checkpoint', there must be a JSON file named 'param_name_map.json' in "
+                f"the 'total_safetensors_dir'.")
         param_name_json = os.path.join(total_safetensors_dir, json_files[0])
         with open(param_name_json, 'r') as f:
             param_name_map = json.load(f)
+            if "weight_map" in param_name_map:
+                param_name_map = param_name_map["weight_map"]
 
     if dst_strategy_file is not None:
         _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
@@ -903,29 +1360,88 @@ def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_fi
     return param_name_map, param_list, dst_strategy_list
 
 
+def _cal_transform_operator_stack_and_device_num(from_dev_matrix, from_tensor_map, from_opt_shard_step,
+                                                 from_opt_shard_size, param_name, dst_strategy_list, tensor_shape,
+                                                 local_rank_id):
+    """cal transform_operator_stack and device_num"""
+    to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
+        dst_strategy_list.get(param_name))
+
+    device_num = np.prod(from_dev_matrix)
+    param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+    origin_tensor_shape = ()
+    for i, item in enumerate(tensor_shape):
+        if i == 0 and from_opt_shard_size > 0:
+            origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
+            continue
+        origin_tensor_shape += (item * param_strategy[i],)
+
+    has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+    has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
+
+    from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+        from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
+    to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
+    # Convert tensor layout to same device num
+    from_tensor_layout, to_tensor_layout = _construct_from_to_tensor_layout(from_full_tensor_shape,
+                                                                            from_dev_matrix,
+                                                                            from_tensor_map,
+                                                                            to_full_tensor_shape,
+                                                                            to_dev_matrix, to_tensor_map)
+
+    # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
+    device_list = list(range(0, np.prod(from_tensor_layout[0])))
+    param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
+                                                                        device_list, local_rank_id)
+
+    from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
+    to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
+    _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+    _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                  has_layout_from, has_layout_to)
+    transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
+    return transform_operator_stack, device_num
+
+
+def check_param_dtype(file, param_name):
+    dtype_need_changed = False
+    changed_dtype = None
+    if file.metadata() is not None and param_name in file.metadata().keys():
+        dtype_need_changed = True
+        sf_dtype = file.metadata()[param_name]
+        changed_dtype = safetensors_to_mstype[sf_dtype]
+    return dtype_need_changed, changed_dtype
+
+
 def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
     total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, \
-    rank_id, output_format, name_map, return_param_dict = file_info
+        rank_id, output_format, name_map, return_param_dict = file_info
+    set_affinity_pid()
     file_list = os.listdir(total_safetensors_dir)
-    json_files = [file for file in file_list if file.endswith('.json')]
-    param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(file_list, total_safetensors_dir,
+    json_files = [file for file in file_list if file == "param_name_map.json"]
+    sf_files = [file for file in file_list if file.endswith('.safetensors')]
+    param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(sf_files, total_safetensors_dir,
                                                                                        json_files, dst_strategy_file,
-                                                                                       rank_id)
+                                                                                       rank_id, name_map)
     total_param = dict()
     dst_stage_device_num = np.prod(dst_strategy_list.get(list(dst_strategy_list.keys())[0])[0]) if dst_strategy_list \
                                                                                                    is not None else 1
     local_rank_id = rank_id % dst_stage_device_num
-    for param_name in param_list:
+    total_io_cost_time = 0
+    for param_name in _progress_bar(param_list):
         if param_name not in param_name_map:
             continue
         file_name = os.path.join(total_safetensors_dir, param_name_map[param_name])
-        with safe_open(file_name, framework="np") as f:
-            if param_name not in f.keys():
+        with _fast_safe_open(file_name, framework="np") as f:
+            cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
+            if cur_param_name not in f.keys():
                 continue
-            sf_obj = f.get_slice(param_name)
+            sf_obj = f.get_tensor(cur_param_name)
+            dtype_need_changed, changed_dtype = check_param_dtype(f, param_name)
 
-        tensor_shape = sf_obj.get_shape()
+        tensor_shape = sf_obj.shape
         from_dev_matrix = [1]
         from_tensor_map = [-1] * len(tensor_shape)
         from_opt_shard_step = 0
@@ -933,79 +1449,44 @@ def _load_parallel_checkpoint(file_info):
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
                 continue
-            to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
-                dst_strategy_list.get(param_name))
-
-            device_num = np.prod(from_dev_matrix)
-            param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
-            origin_tensor_shape = ()
-            for i, item in enumerate(tensor_shape):
-                if i == 0 and from_opt_shard_size > 0:
-                    origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
-                    continue
-                origin_tensor_shape += (item * param_strategy[i],)
-
-            from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
-                from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
-            to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
-                to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
-            # Convert tensor layout to same device num
-            from_tensor_layout, to_tensor_layout = _construct_from_to_tensor_layout(from_full_tensor_shape,
-                                                                                    from_dev_matrix,
-                                                                                    from_tensor_map,
-                                                                                    to_full_tensor_shape,
-                                                                                    to_dev_matrix, to_tensor_map)
-
-            # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
-            device_list = list(range(0, np.prod(from_tensor_layout[0])))
-            param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
-                                                                                device_list, local_rank_id)
-
-            from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
-            to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
-            _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
-            transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
-
+            transform_operator_stack, device_num = _cal_transform_operator_stack_and_device_num(from_dev_matrix,
+                                                                                                from_tensor_map,
+                                                                                                from_opt_shard_step,
+                                                                                                from_opt_shard_size,
+                                                                                                param_name,
+                                                                                                dst_strategy_list,
+                                                                                                tensor_shape,
+                                                                                                local_rank_id)
+            start_time = time.time()
             slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)
+            end_time = time.time()
+            cost_time = end_time - start_time
+            total_io_cost_time += cost_time
         else:
-            slice_param = sf_obj[:]
-        cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
-        _check_name_map_value_is_str(cur_param_name)
-        total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
-
-    total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
+            start_time = time.time()
+            slice_param = sf_obj
+            end_time = time.time()
+            cost_time = end_time - start_time
+            total_io_cost_time += cost_time
+        slice_param_copy = np.copy(slice_param)
+        if dtype_need_changed:
+            total_param[param_name] = Parameter(Tensor(slice_param_copy, dtype=changed_dtype))
+        else:
+            total_param[param_name] = Parameter(Tensor.from_numpy(slice_param_copy))
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+               f"load distributed safetensors io cost time:{total_io_cost_time}.")
+    total_param = _process_hyper_params(file_list, total_safetensors_dir, total_param)
     if net is not None:
         if not return_param_dict:
+            logger.info("start load param into net...")
             param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
+            logger.info("load param into net is end...")
             return param_not_load, ckpt_not_load
         return total_param
     _make_dir(os.path.join(dst_safetensors_dir, f"rank_{rank_id}"), "path")
     ms.save_checkpoint(total_param, os.path.join(dst_safetensors_dir, f"rank_{rank_id}", f"net.{output_format}"),
                        format=output_format)
     return None
-
-
-def _get_slice(rank_id, sf_obj, param_name, dst_strategy_list):
-    """get slice op"""
-    tensor_shape = sf_obj.get_shape()
-    to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
-        dst_strategy_list.get(param_name))
-    # Add optimizer sharding dim for tensor layout
-    to_dev_matrix, to_tensor_map, _ = _construct_tensor_layout_for_opt_shard(
-        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, tensor_shape)
-    slice_op = _load_tensor_shape(to_dev_matrix, to_tensor_map, full_shape=tensor_shape, rank_id=rank_id)
-    shape = None
-    if to_opt_shard_size > 0:
-        to_tensor_strategy = _get_tensor_strategy(to_dev_matrix_origin, to_tensor_map_origin)
-        to_slice_tensor_shape = ()
-        for i, item in enumerate(tensor_shape):
-            if i == 0 and to_opt_shard_size > 0:
-                to_slice_tensor_shape += (item // (to_tensor_strategy[i] * to_opt_shard_size),)
-                continue
-            to_slice_tensor_shape += (item // to_tensor_strategy[i],)
-        shape = list(to_slice_tensor_shape)
-
-    return slice_op, shape
 
 
 __all__ = ["_transform_safetensors", "transform_safetensors_by_stage",

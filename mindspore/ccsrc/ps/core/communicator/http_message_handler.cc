@@ -110,7 +110,7 @@ RequestProcessResult HttpMessageHandler::ParsePostMessageToJson() {
     }
     size_t dest_size = len;
     size_t src_size = len;
-    if (memcpy_s(message.data(), dest_size, buffer, src_size) != EOK) {
+    if (Memcpy(message.data(), dest_size, buffer, src_size) != EOK) {
       ERROR_STATUS(result, RequestProcessResultCode::kInvalidInputs, "Copy message failed.");
       return result;
     }
@@ -310,9 +310,9 @@ void HttpMessageHandler::ReceiveMessage(const void *buffer, size_t num) {
   MS_EXCEPTION_IF_NULL(body_);
   size_t dest_size = num;
   size_t src_size = num;
-  int ret = memcpy_s(body_->data() + offset_, dest_size, buffer, src_size);
+  int ret = Memcpy(body_->data() + offset_, dest_size, buffer, src_size);
   if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+    MS_LOG(EXCEPTION) << "The Memcpy error, errorno(" << ret << ")";
   }
   offset_ += num;
 }

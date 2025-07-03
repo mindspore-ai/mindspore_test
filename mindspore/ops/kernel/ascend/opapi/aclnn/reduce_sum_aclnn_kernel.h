@@ -20,11 +20,12 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace reduce_sum {
+using TensorParams = device::ascend::TensorParams;
 
 class ReduceSumAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -43,6 +44,7 @@ class ReduceSumAclnnKernelMod : public AclnnKernelMod {
   std::vector<int64_t> dims_{};
   bool keep_dim_{false};
 };
+}  // namespace reduce_sum
 }  // namespace kernel
 }  // namespace mindspore
 

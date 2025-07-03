@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,19 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
+#include "pipeline/jit/ps/static_analysis/prim_utils.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/core_ops_primitive.h"
 #include "ops/op_def.h"
 #include "utils/flags.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -52,29 +58,56 @@ const std::vector<Signature> &GetSignature(const ValuePtr &function) {
   return empty;
 }
 
-void ProcessDefault(const std::string &func_name, size_t actual_param_number, const std::vector<Signature> &signature,
-                    bool has_var, std::vector<AnfNodePtr> *op_inputs, std::vector<TypePtr> *input_types) {
-  std::size_t sig_size = signature.size();
-  auto positional_size = sig_size;
-  if (has_var) {
-    positional_size = sig_size - 1;
+void ProcessDefault(const FuncGraphPtr &graph, const std::string &func_name, const AbstractBasePtrList &args_abs_list,
+                    const std::vector<Signature> &signature, AnfNodePtrList *op_inputs,
+                    std::vector<TypePtr> *input_types) {
+  auto args_size = args_abs_list.size();
+  if (args_size != op_inputs->size() || op_inputs->size() != input_types->size()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "For " << func_name << ", the number of args_abs_list is " << args_size
+                               << ", but the number of cnodes is " << op_inputs->size() << ", the number of types is "
+                               << input_types->size();
   }
-  if (actual_param_number < positional_size) {
-    for (size_t i = actual_param_number; i < sig_size; ++i) {
-      auto default_value = signature[i].default_value;
-      if (default_value == nullptr) {
-        MS_LOG(EXCEPTION) << "For '" << func_name << "', the size of input should be " << sig_size << ", but got "
-                          << actual_param_number << ". Please check inputs of the operator.";
-      } else {
-        (*op_inputs).push_back(NewValueNode(default_value));
-        if (default_value->type() == nullptr) {
-          (*input_types).push_back(std::make_shared<TypeNone>());
-        } else {
-          (*input_types).push_back(default_value->type());
-        }
+  std::set<std::string> sig_names;
+  for (const auto &sig : signature) {
+    (void)sig_names.insert(sig.name);
+  }
+  std::map<std::string, AnfNodePtr> key_node_map;
+  std::map<std::string, TypePtr> key_type_map;
+  AnfNodePtrList new_op_inputs;
+  std::vector<TypePtr> new_input_types;
+  for (size_t i = 0; i < args_size; ++i) {
+    if (args_abs_list[i]->isa<abstract::AbstractKeywordArg>()) {
+      const auto &key = args_abs_list[i]->cast<abstract::AbstractKeywordArgPtr>()->get_key();
+      if (sig_names.find(key) == sig_names.end()) {
+        MS_LOG(EXCEPTION) << "Got an unexpected keyword argument '" << key << "' for '" << func_name << "'.";
       }
+      key_node_map[key] =
+        graph->NewCNodeInOrder({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(key), op_inputs->at(i)});
+      key_type_map[key] = input_types->at(i);
+    } else {
+      (void)new_op_inputs.emplace_back(op_inputs->at(i));
+      (void)new_input_types.emplace_back(input_types->at(i));
     }
   }
+  for (size_t i = new_op_inputs.size(); i < signature.size(); ++i) {
+    const auto &arg_name = signature[i].name;
+    const auto &iter = key_node_map.find(arg_name);
+    if (iter != key_node_map.end()) {
+      (void)new_op_inputs.emplace_back(iter->second);
+      (void)new_input_types.emplace_back(key_type_map[arg_name]);
+    } else {
+      auto default_value = signature[i].default_value;
+      if (default_value == nullptr) {
+        MS_LOG(EXCEPTION) << "For '" << func_name << "', the size of input should be " << signature.size()
+                          << ", but got " << args_size << ". Please check inputs of the operator.";
+      }
+      auto type = default_value->type() != nullptr ? default_value->type() : std::make_shared<TypeNone>();
+      (void)new_op_inputs.emplace_back(NewValueNode(default_value));
+      (void)new_input_types.emplace_back(type);
+    }
+  }
+  *op_inputs = new_op_inputs;
+  *input_types = new_input_types;
 }
 
 TypeInfoPair GetTypeInfo(const std::vector<TypePtr> &input_types) {
@@ -349,7 +382,8 @@ bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &f
 }
 
 void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std::set<size_t> &write_indices,
-                const std::pair<TypeInfoPair, TypeInfoPair> &type_info_pair, std::vector<AnfNodePtr> *op_inputs) {
+                const std::pair<TypeInfoPair, TypeInfoPair> &type_info_pair, std::vector<AnfNodePtr> *op_inputs,
+                const AnfNodePtr &old_cnode) {
   auto source_type_info = type_info_pair.first;
   auto target_type_info = type_info_pair.second;
   for (size_t i = 0; i < source_type_info.first.size(); ++i) {
@@ -364,7 +398,8 @@ void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std:
       continue;
     }
     if (write_indices.find(i) != write_indices.end()) {
-      RaiseExceptionForConvertRefDtype(func, TypeIdToString(source_type_id), TypeIdToString(target_type_id), i);
+      MS_EXCEPTION(TypeError) << ErrorMessageForConvertRefDtype(func, TypeIdToString(source_type_id),
+                                                                TypeIdToString(target_type_id), i);
     }
     auto param = (*op_inputs)[i];
     auto target_type_node = NewValueNode(static_cast<int64_t>(target_type_id));
@@ -372,15 +407,37 @@ void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std:
                   << ", target_is_tensor: " << target_is_tensor
                   << ", source_type_id: " << TypeIdToString(source_type_id)
                   << ", target_type_id: " << TypeIdToString(target_type_id);
+    // For generating new_cnode to replace old_cnode, we insert kPrimCast before old_cnode to maintain orderlist
     if (!source_is_tensor && target_is_tensor) {
       // Scalar needs to be converted to Tensor.
       auto source_type_node = NewValueNode(static_cast<int64_t>(source_type_id));
-      param = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimScalarToTensor), param, source_type_node});
+      AnfNodePtrList scalar_to_tensor_inputs = {NewValueNode(prim::kPrimScalarToTensor), param, source_type_node};
+      param = (old_cnode == nullptr ? func_graph->NewCNodeAfter(param, scalar_to_tensor_inputs)
+                                    : func_graph->NewCNodeBefore(old_cnode, scalar_to_tensor_inputs));
+      MS_LOG(DEBUG) << "Using " << (old_cnode == nullptr ? "param" : "old cnode") << " as anchor to insert cast op.";
       (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimCast), param, target_type_node});
     } else {
       // If target type is not Tensor but scalar, use ScalarCast.
       PrimitivePtr cast_op = target_is_tensor ? prim::kPrimCast : prim::kPrimScalarCast;
-      (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(cast_op), param, target_type_node});
+      AnfNodePtrList cast_inputs = {NewValueNode(cast_op), param, target_type_node};
+      MS_LOG(DEBUG) << "Using " << (old_cnode == nullptr ? "param" : "old cnode") << " as anchor to insert cast op.";
+      (*op_inputs)[i] = (old_cnode == nullptr ? func_graph->NewCNodeAfter(param, cast_inputs)
+                                              : func_graph->NewCNodeBefore(old_cnode, cast_inputs));
+    }
+  }
+}
+
+void InsertCastForToFloat(const FuncGraphPtr &func_graph, const TypePtr &cast_type, AnfNodePtr *param, TypePtr *type) {
+  auto source_tensor_type = (*type)->cast<TensorTypePtr>();
+  if (source_tensor_type != nullptr) {
+    const auto &source_element = source_tensor_type->element();
+    if (cast_type != nullptr && (IsSubType(source_element, kFloat) || IsSubType(source_element, kBFloat)) &&
+        *source_element != *cast_type) {
+      auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
+      *param = func_graph->NewCNodeAfter(*param, {NewValueNode(cast), *param, NewValueNode(cast_type)});
+      *type = cast_type->type_id() == kNumberTypeFloat16
+                ? kTensorTypeFP16
+                : (cast_type->type_id() == kNumberTypeBFloat16 ? kTensorTypeBF16 : kTensorTypeFP32);
     }
   }
 }
@@ -388,7 +445,8 @@ void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std:
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                                  const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
-                                                 const std::vector<AnfNodePtr> &params_list) {
+                                                 const std::vector<AnfNodePtr> &params_list,
+                                                 const AnfNodePtr &old_cnode) {
   // args: original inputs
   auto &signature = GetSignature(function);
   std::size_t sig_size = signature.size();
@@ -398,37 +456,25 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   std::vector<AnfNodePtr> op_inputs;
   std::set<size_t> write_indices;
   std::vector<TypePtr> input_types;
+  bool is_inplace_prim = function->isa<Primitive>() && function->cast<PrimitivePtr>()->inplace_prim();
   auto cast_type = GetMixedPrecisionTargetType(func_graph);
   // Assume, the write input of op is always the first input. We check if any write op,
   // and add cast op on other inputs to keep the same type with assigned parameter.
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(args_abs_list[i]);
     AnfNodePtr param = params_list[i];
-    if (args_abs_list[i] == nullptr) {
-      op_inputs.push_back(param);
-      continue;
-    }
-
     SignatureEnumRW sig = GetSignatureEnumRW(i, signature, has_var);
     TypePtr type = args_abs_list[i]->BuildType();
     if (type && type->isa<RefType>()) {
       if (sig == SignatureEnumRW::kRWRead) {
-        auto source_tensor_type = type->cast<TensorTypePtr>();
-        if (source_tensor_type != nullptr) {
-          auto source_element = source_tensor_type->element();
-          if (cast_type != nullptr && (IsSubType(source_element, kFloat) || IsSubType(source_element, kBFloat)) &&
-              *source_element != *cast_type) {
-            auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
-            param = func_graph->NewCNodeAfter(param, {NewValueNode(cast), param, NewValueNode(cast_type)});
-            type = cast_type->type_id() == kNumberTypeFloat16
-                     ? kTensorTypeFP16
-                     : (cast_type->type_id() == kNumberTypeBFloat16 ? kTensorTypeBF16 : kTensorTypeFP32);
-          }
-        }
+        InsertCastForToFloat(func_graph, cast_type, &param, &type);
       } else if (sig == SignatureEnumRW::kRWWrite) {
         (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
-    } else if (IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
+    } else if (is_inplace_prim && sig == SignatureEnumRW::kRWWrite) {
+      (void)write_indices.insert(i);
+    } else if (type && IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
       MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
                               << "but got " << type->ToString() << ".";
     }
@@ -438,7 +484,10 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
     op_inputs.push_back(param);
   }
   // process default
-  ProcessDefault(func_name, args_abs_list.size(), signature, has_var, &op_inputs, &input_types);
+  auto positional_size = has_var ? signature.size() - 1 : signature.size();
+  if (args_abs_list.size() < positional_size) {
+    ProcessDefault(func_graph, func_name, args_abs_list, signature, &op_inputs, &input_types);
+  }
   // Record type info.
   auto source_type_info = GetTypeInfo(input_types);
   auto target_type_info = source_type_info;
@@ -448,13 +497,15 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   bool promote_type_changed = GetImplicitPromoteType(signature, write_indices, &target_type_info);
   // Do type cast.
   if (promote_type_changed || amp_type_changed) {
-    DoTypeCast(func_graph, function, write_indices, std::make_pair(source_type_info, target_type_info), &op_inputs);
+    DoTypeCast(func_graph, function, write_indices, std::make_pair(source_type_info, target_type_info), &op_inputs,
+               old_cnode);
   }
   return op_inputs;
 }
 
-AnfNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const std::string &func_name, const ValuePtr &function,
-                         const AbstractBasePtrList &args_abs_list, const AnfNodePtrList &old_node_inputs) {
+AnfNodePtr GenerateCNodeBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
+                                     const ValuePtr &function, const AbstractBasePtrList &args_abs_list,
+                                     const AnfNodePtrList &old_node_inputs) {
   auto new_inputs = GetNewInputsBySignatures(func_graph, func_name, function, args_abs_list, old_node_inputs);
   AnfNodePtrList op_inputs{NewValueNode(function)};
   (void)std::copy(new_inputs.begin(), new_inputs.end(), std::back_inserter(op_inputs));
@@ -467,14 +518,14 @@ FuncGraphPtr DoSignatureMetaFuncGraph::GenerateFuncGraph(const AbstractBasePtrLi
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
     (void)func_graph->add_parameter();
   }
-  auto new_cnode = GenerateCNode(func_graph, name_, function_, args_abs_list, func_graph->parameters());
+  auto new_cnode = GenerateCNodeBySignatures(func_graph, name_, function_, args_abs_list, func_graph->parameters());
   func_graph->set_output(new_cnode);
   func_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   return func_graph;
 }
 
-void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &ref_type, const std::string &target_type,
-                                      size_t index) {
+std::string ErrorMessageForConvertRefDtype(const ValuePtr &func, const std::string &ref_type,
+                                           const std::string &target_type, size_t index) {
   std::ostringstream buffer;
   if (func->isa<Primitive>()) {
     auto prim = func->cast<PrimitivePtr>();
@@ -489,8 +540,10 @@ void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &r
   if (buffer.str().empty()) {
     buffer << " so data type ";
   }
-  MS_EXCEPTION(TypeError) << "Data type conversion of 'Parameter' is not supported," << buffer.str() << ref_type
-                          << ", which cannot be converted to data type " << target_type << " automatically.\n";
+  std::ostringstream ss;
+  ss << "Data type conversion is not supported for a 'Parameter', nor for the input tensor of an in-place operator,"
+     << buffer.str() << ref_type << ", which cannot be converted to data type " << target_type << " automatically.\n";
+  return ss.str();
 }
 
 bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const ValuePtr &function,

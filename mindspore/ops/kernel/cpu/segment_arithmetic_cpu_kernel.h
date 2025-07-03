@@ -22,11 +22,12 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace segment_arithmetic_cpu {
 class SegmentArithmeticCPUKernelMod : public NativeCpuKernelMod {
  public:
   SegmentArithmeticCPUKernelMod() = default;
@@ -74,6 +75,7 @@ class SegmentArithmeticCPUKernelMod : public NativeCpuKernelMod {
   TypeId segment_ids_dtype_{kTypeUnknown};
   TypeId output_dtype_{kTypeUnknown};
 };
+}  // namespace segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

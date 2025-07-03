@@ -18,6 +18,7 @@
 #include <numeric>
 #include "NvInferRuntimeCommon.h"
 #include "infer/all_gather.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(AllGatherPluginCreater);

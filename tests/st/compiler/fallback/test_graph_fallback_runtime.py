@@ -26,6 +26,7 @@ from mindspore import mutable, jit
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
+ms.set_context(jit_level="O0")
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -295,6 +296,7 @@ def test_dynamic_shape_tensor():
     Description: Set PyExecute output type by the annotation from comment.
     Expectation: No error.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = CreateDynTensor()
     x = Tensor(dtype=ms.int32, input_data=[2, 2])
     out = net(x)
@@ -387,7 +389,7 @@ class MakeTensorWithShapeDtype(nn.Cell):
         return output1 + output2
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_make_tensor_with_dynamic_shape_dtype():
     """
@@ -395,6 +397,7 @@ def test_make_tensor_with_dynamic_shape_dtype():
     Description: Test tensor API, in which the PyExecute output type is set by the annotation from comment.
     Expectation: No error.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = MakeTensorWithShapeDtype()
     x = Tensor(dtype=ms.int32, input_data=[2, 2])
     out = net(x)
@@ -450,7 +453,7 @@ def test_np_save():
     Description: Use numpy.save().
     Expectation: No error.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func(x):
         if isinstance(x, ms.Tensor):
             np.save("x_data.npy", x.asnumpy())
@@ -539,7 +542,7 @@ def test_np_save_with_call_kw2():
     os.remove("data_from_kw_with_if.npy")
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_pyexecute_raise_error_with_dynamic_length_sequence():
     """
@@ -561,6 +564,7 @@ def test_pyexecute_raise_error_with_dynamic_length_sequence():
             _check_dim_shape_valid(x1, idx2)
             return x1
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = InnerNet()
     input_x = Tensor(np.arange(6).reshape(3, 2).astype(np.float32))
     ret = net(input_x)

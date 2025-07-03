@@ -7,7 +7,7 @@ mindspore.numpy.remainder
 
     计算与 `floor_divide` 函数互补的余数。相当于 Python 的取模运算符 ``x1 % x2`` ，并且具有与除数 `x2` 相同的符号。与 `np.remainder` 等效的 MATLAB 函数是 mod 。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 
     参数：

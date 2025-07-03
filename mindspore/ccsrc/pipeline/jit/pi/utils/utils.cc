@@ -24,6 +24,7 @@
 #include "pipeline/jit/pi/utils/opcode_util.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -36,52 +37,31 @@ static const char kDynamicLengthAttr[] = "__ms_dynamic_len__";
 static const char kMsClassAttr[] = "__ms_class__";
 static const int DefaultPercision = 6;
 
-std::string GetStopTraceReasonDesc(StopTraceReason res) {
-#define STOP_TRACE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                           \
-    return description;                           \
-  }
-#include "stop_trace_reason.def"
-#undef STOP_TRACE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined STOP_TRACE_REASON");
-  return "";
-}
-
-std::string GetInlineReasonDesc(InlineReason res) {
-#define INLINE_REASON_KIND(kind, description) \
-  if (res == k##kind) {                       \
-    return description;                       \
-  }
-#include "inline_reason.def"
-#undef INLINE_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined INLINE_REASON");
-  return "";
-}
-
-std::string GetLoopUnrollingReasonDesc(LoopUnrollingReason res) {
-#define LOOP_UNROLLING_REASON_KIND(kind, description) \
-  if (res == k##kind) {                               \
-    return description;                               \
-  }
-#include "loop_unrolling_reason.def"
-#undef LOOP_UNROLLING_REASON_KIND
-  MS_EXCEPTION_IF_CHECK_FAIL(false, "Undefined LOOP_UNROLLING_REASON");
-  return "";
-}
-
 std::string Utils::GetPyName(PyObject *obj) {
   const char *str = PyUnicode_AsUTF8(obj);
   return str != nullptr ? std::string(str) : "";
 }
 
-void Utils::PyBuiltinPrint(PyObject *str) {
+void Utils::PyBuiltinPrint(PyObject *str, bool flush) {
   static _PyCFunctionFastWithKeywords pyprint = nullptr;
   if (!pyprint) {
     PyObject *p = PyDict_GetItemString(PyEval_GetBuiltins(), "print");
     MS_EXCEPTION_IF_CHECK_FAIL(p && PyCFunction_Check(p), "can't get python 'print' function");
     pyprint = (_PyCFunctionFastWithKeywords)PyCFunction_GET_FUNCTION(p);
   }
-  pyprint(nullptr, &str, 1, nullptr);
+  // The arguments of _PyCFunctionFastWithKeywords, refer to: https://docs.python.org/3/c-api/structures.html
+  // This api has four arguments:
+  // - PyObject *self, the `self` object of bounded method, or the module object.
+  // - PyObject *const *args, an array of positional-args and keyword-args.
+  // - Py_ssize_t nargs, the num of positional-args (not include keyword-args).
+  // - PyObject *kwnames, a tuple of keyword-args names.
+  if (flush) {
+    PyObject *args[2]{str, Py_True};
+    py::tuple kwnames = py::make_tuple("flush");
+    pyprint(nullptr, args, 1, kwnames.ptr());
+  } else {
+    pyprint(nullptr, &str, 1, nullptr);
+  }
   if (PyErr_Occurred()) {
     PyErr_Print();
     PyErr_Clear();
@@ -93,15 +73,21 @@ void Utils::DisFuncObject(PyObject *func) {
     GRAPH_JIT_LOG_F("(nil)\n");
     return;
   }
-  auto dis = py::module::import("dis").attr("dis");
-  // py::print("*** Dump ByteCode After CodeGen on [", py::cast<py::object>(func), "] ***");
-  PY_PRINT_F("*** Dump ByteCode After CodeGen on [%A] ***", func);
-  auto args = PyTuple_Pack(1, func);
-  Py_XDECREF(PyObject_Call(dis.ptr(), args, NULL));
-  Py_DECREF(args);
-  if (PyErr_Occurred()) {
+  py::object dis = py::module::import("dis").attr("dis");
+  py::object args = py::reinterpret_steal<py::object>(PyTuple_Pack(1, func));
+  py::object kw;
+#if IS_PYTHON_3_11_PLUS
+  kw = py::dict();
+  PyDict_SetItemString(kw.ptr(), "show_caches", Py_True);
+  PyDict_SetItemString(kw.ptr(), "adaptive", Py_True);
+#endif
+  py::object res = py::reinterpret_steal<py::object>(PyObject_Call(dis.ptr(), args.ptr(), kw.ptr()));
+  if (res.ptr() == nullptr) {
     PyErr_Print();
   }
+  // By adding `print("", flush=True)`, the output of `dis` can be immediately printed out without being truncated
+  // by `MS_LOG`.
+  PyBuiltinPrint(py::str("").ptr(), true);
 }
 
 py::object Utils::GetModuleAttr(const std::string &mod_name, const std::string &attr_name, bool _import, bool _throw) {
@@ -178,17 +164,21 @@ static std::pair<py::object, py::object> PackExArgs(const std::vector<py::object
     if (ret_vector_args) {
       PyObject *vals = PyDict_Values(kwargs.ptr());
       PyObject *keys = PyDict_Keys(kwargs.ptr());
-      PyObject *new_args = PySequence_Concat(pargs.ptr(), vals);
+      PyObject *keys_tuple = PySequence_Tuple(keys);
+      PyObject *vals_tuple = PySequence_Tuple(vals);
+      PyObject *new_args = PySequence_Concat(pargs.ptr(), vals_tuple);
+      Py_DECREF(keys);
       Py_DECREF(vals);
+      Py_DECREF(vals_tuple);
       pargs = py::reinterpret_steal<py::tuple>(new_args);
-      kwargs = py::reinterpret_steal<py::tuple>(keys);
+      kwargs = py::reinterpret_steal<py::tuple>(keys_tuple);
     }
   } while (0);
   return {pargs, kwargs};
 }
 
 std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py::object> &args, int callop,
-                                                           bool ret_vector_args) {
+                                                           const py::object &kw_names, bool ret_vector_args) {
   std::pair<py::object, py::object> failed;
   size_t args_size = args.size();
   if (std::find_if(args.begin(), args.end(), [](const py::object &o) { return o.ptr() == nullptr; }) != args.end()) {
@@ -198,13 +188,15 @@ std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py:
   Py_ssize_t kwsize = 0;
   py::object pargs;
   py::object kwargs;
-  if (callop == CALL_FUNCTION_KW || callop == CALL_FUNCTION || callop == CALL_METHOD) {
-    if (callop == CALL_FUNCTION_KW) {
-      py::object keys = args.back();
+  if (callop == CALL_FUNCTION_KW || callop == CALL_FUNCTION || callop == CALL || callop == CALL_METHOD) {
+    if (kw_names.ptr() != nullptr) {
+      py::object keys = kw_names;
       if (!PyTuple_Check(keys.ptr())) {
         return failed;
       }
+#if !IS_PYTHON_3_11_PLUS
       psize--;
+#endif
       kwsize = PyTuple_GET_SIZE(keys.ptr());
       if (psize < kwsize) {
         return failed;
@@ -269,6 +261,29 @@ PyObject *Utils::MixedPrecisionTypeToDType(MixedPrecisionType mixed_type) {
   return dst_dtype;
 }
 
+std::vector<Py_ssize_t> Utils::FormatSubscript(const py::object &subscr, Py_ssize_t size) {
+  if (subscr.ptr() == nullptr || subscr.is_none()) {
+    return {};
+  }
+  if (PyIndex_Check(subscr.ptr())) {
+    Py_ssize_t index = PyNumber_AsSsize_t(subscr.ptr(), NULL);
+    if (index >= -size && index < size) {
+      return {(index + size) % size, 1, 1, 0};
+    }
+  }
+  if (PySlice_Check(subscr.ptr())) {
+    Py_ssize_t start = 0;
+    Py_ssize_t stop = 0;
+    Py_ssize_t step = 0;
+    if (PySlice_Unpack(subscr.ptr(), &start, &stop, &step) == 0) {
+      auto len = PySlice_AdjustIndices(size, &start, &stop, step);
+      return {start, step, (len < 0 ? 0 : len), 1};
+    }
+  }
+  PyErr_Clear();
+  return {};
+}
+
 bool HasMutableOrConstAttr(PyObject *obj) {
   auto pyObj = py::cast<py::object>(obj);
   return py::hasattr(pyObj, kMutableAttr) || py::hasattr(pyObj, kConstArgAttr);
@@ -311,10 +326,21 @@ bool CheckContainer(PyObject *obj) {
 }
 
 bool IsTensorPyObject(PyObject *obj) {
-  return py::isinstance<mindspore::tensor::MapTensor>(obj) || py::isinstance<mindspore::tensor::Tensor>(obj) ||
-         py::isinstance<mindspore::tensor::MetaTensor>(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
-         py::isinstance<mindspore::tensor::RowTensor>(obj) || py::isinstance<mindspore::tensor::COOTensor>(obj) ||
-         py::isinstance<mindspore::tensor::TensorData>(obj);
+  return py::isinstance<mindspore::tensor::MapTensor>(obj) || mindspore::tensor::IsTensorPy(obj) ||
+         py::isinstance<mindspore::tensor::CSRTensor>(obj) || py::isinstance<mindspore::tensor::RowTensor>(obj) ||
+         py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::TensorData>(obj);
+}
+
+bool IsCTensorPyObject(PyObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *tar = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+  if (tar == nullptr) {
+    return false;
+  }
+  return Py_TYPE(obj) == tar;
 }
 
 bool IsMsClass(PyObject *obj) {
@@ -332,6 +358,13 @@ bool IsNumpyObject(PyObject *op) {
   PyTypeObject *tp = Py_TYPE(op);
   constexpr const char numpy[] = "numpy";
   return tp->tp_name ? strncmp(tp->tp_name, numpy, sizeof(numpy) - 1) == 0 : false;
+}
+
+bool IsZipPyObject(PyTypeObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  return obj == &PyZip_Type;
 }
 
 bool IsNoGradEnterFunc(const py::object &handle) {
@@ -432,37 +465,43 @@ bool CheckConstPyObject(PyObject *cnst) {
   return cnst_types.find(Py_TYPE(cnst)) != cnst_types.end();
 }
 
-static py::object GetAdapterTensorType() {
-  py::object registry = Utils::GetModuleAttr("mindspore.common._register_for_adapter", "ms_adapter_registry");
-  return registry.ptr() == nullptr ? py::object() : py::getattr(registry, "tensor", nullptr);
-}
-
-bool CheckAdapterTensor(const py::object &tensor) {
-  PyTypeObject *tp = reinterpret_cast<PyTypeObject *>(GetAdapterTensorType().ptr());
-  return Py_TYPE(tensor.ptr()) == tp;
-}
-
-py::object ConvertToAdapterTensor(const py::object &tensor) {
-  py::object adapter_tensor_type = GetAdapterTensorType();
-  PyTypeObject *tp = reinterpret_cast<PyTypeObject *>(adapter_tensor_type.ptr());
-  if (Py_TYPE(tensor.ptr()) == tp) {
-    return tensor;
-  }
-  MS_EXCEPTION_IF_NULL(adapter_tensor_type.ptr());
-  PyObject *args[] = {tensor.ptr(), Py_True, nullptr};
-  py::tuple kw(1);
-  kw[0] = py::str("cast_tensor");
-  PyObject *adapter_tensor = PyObject_Vectorcall(adapter_tensor_type.ptr(), args, 1, kw.ptr());
-  if (!PyErr_Occurred()) {
-    return py::reinterpret_steal<py::object>(adapter_tensor);
-  }
-  throw py::error_already_set();
-}
-
 py::object ConvertToMsTensor(const py::object &tensor) {
   py::object common_tensor_type = Utils::GetModuleAttr("mindspore", "Tensor", false, true);
   PyTypeObject *tp = reinterpret_cast<PyTypeObject *>(common_tensor_type.ptr());
   return Py_TYPE(tensor.ptr()) == tp ? tensor : common_tensor_type(tensor);
+}
+
+PyObject *GetMsTensorType();
+py::object ConvertCppTensorToMsTensor(const py::object &any) {
+  PyObject *op = any.ptr();
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *cpp_tensor_type = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+
+  if (Py_IS_TYPE(op, cpp_tensor_type)) {
+    py::object tp = py::reinterpret_borrow<py::object>(GetMsTensorType());
+    return tp(any);
+  }
+
+  if (PyTuple_Check(op) || PyList_Check(op)) {
+    for (Py_ssize_t i = 0; i < Py_SIZE(op); ++i) {
+      PyObject **item = PyTuple_Check(op) ? &PyTuple_GET_ITEM(op, i) : &PyList_GET_ITEM(op, i);
+      PyObject *new_item = ConvertCppTensorToMsTensor(py::cast<py::object>(*item)).inc_ref().ptr();
+      Py_SETREF(*item, new_item);
+    }
+    return any;
+  }
+
+  if (PyDict_Check(op)) {
+    Py_ssize_t pos = 0;
+    PyObject *key;
+    PyObject *value;
+    while (PyDict_Next(op, &pos, &key, &value)) {
+      py::object new_value = ConvertCppTensorToMsTensor(py::cast<py::object>(value));
+      PyDict_SetItem(op, key, new_value.ptr());
+    }
+    return any;
+  }
+  return any;
 }
 
 size_t DeviceAvailableMemSize() {
@@ -574,6 +613,19 @@ std::string TimeRecorder::TimeData::ToString() {
   }
   s << "========================================" << std::endl;
   return s.str();
+}
+
+static size_t GetPIJitLogMinSize() {
+  if (!(IS_OUTPUT_ON(mindspore::kWarning))) {
+    // if MS_LOG is disable, print all to stderr
+    return 0;
+  }
+  return 20000;
+}
+
+size_t PIJitLogMinSize() {
+  static size_t s = GetPIJitLogMinSize();
+  return s;
 }
 
 }  // namespace pijit

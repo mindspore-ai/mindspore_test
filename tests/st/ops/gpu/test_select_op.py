@@ -48,7 +48,7 @@ def test_select(dtype, mode):
     """
     context.set_context(mode=mode, device_target="GPU")
     select = Net()
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     error_tol = np.ones(shape=[2, 2]) * 1.0e-3
 
     x = np.array([[1, 0], [1, 0]]).astype(dtype)
@@ -65,7 +65,7 @@ def test_functional_select_scalar():
     Expectation: Assert result.
     """
     context.set_context(device_target="GPU")
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = 2
     output = ops.select(Tensor(cond), Tensor(x), y)

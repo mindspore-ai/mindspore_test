@@ -19,11 +19,12 @@
 #include <limits>
 #include <algorithm>
 #include <map>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace logit_grad_cpu {
 namespace {
 constexpr size_t kLogitGradInputsNum = 2;
 constexpr size_t kLogitGradOutputsNum = 1;
@@ -144,5 +145,6 @@ std::vector<KernelAttr> LogitGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogitGrad, LogitGradCpuKernelMod);
+}  // namespace logit_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

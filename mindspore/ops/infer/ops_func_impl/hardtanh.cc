@@ -16,7 +16,6 @@
 
 #include "infer/ops_func_impl/hardtanh.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 ShapeArray HardtanhFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {

@@ -17,7 +17,8 @@
 
 import mindspore.ops.functional as F
 from mindspore.ops import operations as P
-from mindspore.ops._grad_experimental.grad_base import bprop_getters
+from mindspore.ops.composite import multitype_ops as C
+from mindspore.ops._grad_experimental.grad_base import bprop_getters, bprops
 
 # Unused parameters are placeholders.
 
@@ -33,4 +34,24 @@ def get_bprop_insert_gradient_of(self):
             dout = F.depend(dout, fdout)
             return (dout,)
         return (fdout,)
+    return bprop
+
+
+@bprops.register("TensorDump")
+def bprop_tensor_dump(file, input_x, out, dout):
+    """Generate bprop for TensorDump"""
+    return file, C.zeros_like(input_x)
+
+
+@bprop_getters.register(P.DumpGradient)
+def get_bprop_dump_gradient(self):
+    """Generate bprop for DumpGradient"""
+    td = P.TensorDump()
+    td.add_prim_attr("side_effect_io", False)
+    td.add_prim_attr("td_flag", True)
+
+    def bprop(path, x, input_output, out, dout):
+        tded = td(path, dout)
+        fdout = F.depend(dout, tded)
+        return C.zeros_like(path), fdout, C.zeros_like(input_output)
     return bprop

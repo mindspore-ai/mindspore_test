@@ -25,6 +25,10 @@
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/backend/optimizer/helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -46,12 +50,11 @@ const BaseRef AddCastRmsNormCastFusion::DefinePattern() const {
 
 const AnfNodePtr AddCastRmsNormCastFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                    const EquivPtr &equiv) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(equiv);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   const std::string fusion_op_name = "AddRmsNorm";
   auto &enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =

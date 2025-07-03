@@ -1,0 +1,14 @@
+#deprecated addcdiv
+addcdiv:
+  args:
+    input: 
+      dtype: tensor
+    tensor1: 
+      dtype: tensor
+    tensor2: 
+      dtype: tensor
+    value: 
+      dtype: tensor
+  returns:
+    out: 
+      dtype: tensor

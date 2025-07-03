@@ -273,4 +273,4 @@ def test_assign_check_in_sig():
     y = Tensor(3, ms.uint8)
     with pytest.raises(TypeError) as e:
         net(x, y)
-    assert "Data type conversion of 'Parameter' is not supported" in e.value.args[0]
+    assert "Data type conversion is not supported for a 'Parameter'" in e.value.args[0]

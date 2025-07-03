@@ -20,7 +20,7 @@
 #include <functional>
 #include <algorithm>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "abstract/utils.h"
 #include "ops_utils/op_utils.h"
 

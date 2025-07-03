@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/equal_count_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace equal_count_cpu {
 namespace {
 constexpr size_t kEqualCountInputsNum = 2;
 constexpr size_t kEqualCountOutputsNum = 1;
@@ -55,5 +56,6 @@ bool EqualCountCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &i
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, EqualCount, EqualCountCpuKernelMod);
+}  // namespace equal_count_cpu
 }  // namespace kernel
 }  // namespace mindspore

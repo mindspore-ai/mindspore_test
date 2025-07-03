@@ -27,11 +27,11 @@ std::vector<GeneralInferParam> prepare_params() {
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeInt64}})
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt8}})
-    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat16}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat16});
   return generator.Generate();
 }
 }  // namespace

@@ -28,7 +28,7 @@ def cell_attr_register(fn=None, attrs=None):
 
     Args:
         fn (function): __init__ function of cell.
-        attrs (list(string) | string): attr list.
+        attrs (list(str) | str): attr list.
 
     Returns:
         function, original function.

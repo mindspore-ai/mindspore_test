@@ -25,6 +25,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace ops {
@@ -66,6 +67,10 @@ BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   const int64_t N = x_shape[0];
   const int64_t channel = x_shape[1];
+  if (num_groups <= 0) {
+    MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_groups' must be greater than 0, but got "
+                             << num_groups;
+  }
   if (!IsDynamic(x_shape) && (channel % num_groups != 0)) {
     MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_channels' must be divided by 'num_groups', "
                              << "but got 'num_channels': " << channel << " ,'num_groups': " << num_groups;
@@ -105,9 +110,9 @@ TypePtr GroupNormFuncImpl::InferType(const PrimitivePtr &primitive,
 
 TypePtrList GroupNormFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &prim_name = primitive->name();
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(weight_tensor);
   MS_EXCEPTION_IF_NULL(bias_tensor);
@@ -129,9 +134,9 @@ TypePtrList GroupNormFuncImpl::InferType(const PrimitivePtr &primitive, const Va
 }
 
 ShapeArray GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &weight_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &bias_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(weight_tensor);
   MS_EXCEPTION_IF_NULL(bias_tensor);
@@ -161,6 +166,10 @@ ShapeArray GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   int64_t num_groups = num_groups_opt.value();
   auto N = x_shape[0];
   const int64_t channel = x_shape[1];
+  if (num_groups <= 0) {
+    MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_groups' must be greater than 0, but got "
+                             << num_groups;
+  }
   if (!IsDynamic(x_shape) && (channel % num_groups != 0)) {
     MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", the 'num_channels' must be divided by 'num_groups', "
                              << "but got 'num_channels': " << channel << " ,'num_groups': " << num_groups;

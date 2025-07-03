@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """run os.env test"""
-import sys  
 import pytest 
 import os
 import numpy as np
@@ -21,11 +20,6 @@ import mindspore as ms
 from mindspore._c_expression import get_code_extra
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_os_env_mapping_get():
@@ -38,7 +32,7 @@ def test_os_env_mapping_get():
         device_id = os.environ.get("DEVICE_ID")
     os.environ["DEVICE_ID"] = "3"
     context.set_context(mode=context.PYNATIVE_MODE)
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0
 
@@ -54,7 +48,7 @@ def test_os_env_mapping_get_with_set():
         device_id = os.environ.get("DEVICE_ID")
     os.environ["DEVICE_ID"] = "3"
     context.set_context(mode=context.PYNATIVE_MODE)
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0
 
@@ -74,6 +68,6 @@ def test_os_env_mapping_get_with_tensor(a, b):
         return a + b
     context.set_context(mode=context.PYNATIVE_MODE)
     os.environ["DEVICE_ID"] = "3"
-    jit(fn=func, mode="PIJit")(a, b)
+    jit(function=func, capture_mode="bytecode")(a, b)
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0

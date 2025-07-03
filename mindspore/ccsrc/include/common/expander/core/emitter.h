@@ -34,7 +34,6 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "infer/shape_calc.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace expander {
@@ -63,12 +62,12 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr TupleGetItem(const NodePtr &input, const NodePtr &i) { return Emit(kTupleGetItemOpName, {input, i}); }
   NodePtr Len(const NodePtr &input) { return Emit(kSequenceLenOpName, {input}); }
-  NodePtr ScalarAdd(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarAdd, {lhs, rhs}); }
-  NodePtr ScalarSub(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarSub, {lhs, rhs}); }
-  NodePtr ScalarMul(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarMul, {lhs, rhs}); }
-  NodePtr ScalarDiv(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarDiv, {lhs, rhs}); }
-  NodePtr ScalarFloorDiv(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarFloorDiv, {lhs, rhs}); }
-  NodePtr ScalarNeg(const NodePtr &node) { return Emit(ops::kNameScalarUsub, {node}); }
+  NodePtr ScalarAdd(const NodePtr &lhs, const NodePtr &rhs);
+  NodePtr ScalarSub(const NodePtr &lhs, const NodePtr &rhs);
+  NodePtr ScalarMul(const NodePtr &lhs, const NodePtr &rhs);
+  NodePtr ScalarDiv(const NodePtr &lhs, const NodePtr &rhs);
+  NodePtr ScalarFloorDiv(const NodePtr &lhs, const NodePtr &rhs);
+  NodePtr ScalarNeg(const NodePtr &node);
   virtual NodePtr Cast(const NodePtr &node, const TypePtr &type);
   NodePtr Cast(const NodePtr &node, TypeId type_id) { return Cast(node, TypeIdToType(type_id)); }
 
@@ -96,6 +95,7 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr Mul(const NodePtr &lhs, const NodePtr &rhs) {
     return UnifyDtypeAndEmit(mindspore::kMulOpName, lhs, rhs);
   }
+  virtual NodePtr Muls(const NodePtr &input, const NodePtr &other) { return Emit("Muls", {input, other}); }
   virtual NodePtr Div(const NodePtr &lhs, const NodePtr &rhs) { return UnifyDtypeAndEmit(kDivOpName, lhs, rhs); }
   NodePtr RealDiv(const NodePtr &lhs, const NodePtr &rhs) {
     return UnifyDtypeAndEmit(mindspore::kRealDivOpName, lhs, rhs);
@@ -277,7 +277,7 @@ class COMMON_EXPORT Emitter {
   }
 
   virtual NodePtr InplaceCopy(const NodePtr &variable, const NodePtr &value) {
-    return Emit("InplaceCopy", {variable, value});
+    return Emit("InplaceCopy", {variable, value}, {{GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true)}});
   }
   virtual NodePtr AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
                             const NodePtr &storage_offset) {
@@ -490,8 +490,8 @@ class COMMON_EXPORT Emitter {
     return Emit("DropoutGradExt", {input, mask, p});
   }
   virtual NodePtr EluExt(const NodePtr &input, const NodePtr &alpha) { return Emit("EluExt", {input, alpha}); }
-  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) {
-    return Emit("EluGradExt", {dout, x, alpha});
+  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) {
+    return Emit("EluGradExt", {dout, x, alpha, is_result});
   }
   virtual NodePtr EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
                                          const NodePtr &padding_idx, const NodePtr &scale_grad_by_freq) {
@@ -556,6 +556,9 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr GeLUGrad(const NodePtr &dy, const NodePtr &x, const NodePtr &y) {
     return Emit("GeLUGrad", {dy, x, y});
   }
+  virtual NodePtr GeluGradExt(const NodePtr &dy, const NodePtr &x, const NodePtr &approximate) {
+    return Emit("GeluGradExt", {dy, x, approximate});
+  }
   virtual NodePtr GeLU(const NodePtr &input) { return Emit("GeLU", {input}); }
   virtual NodePtr Generator(const NodePtr &cmd, const NodePtr &inputs) { return Emit("Generator", {cmd, inputs}); }
   virtual NodePtr GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
@@ -592,9 +595,9 @@ class COMMON_EXPORT Emitter {
                             const NodePtr &padding, const NodePtr &stride) {
     return Emit("Im2ColExt", {input, kernel_size, dilation, padding, stride});
   }
-  virtual NodePtr IndexAddExt(const NodePtr &input, const NodePtr &index, const NodePtr &source, const NodePtr &axis,
+  virtual NodePtr IndexAddExt(const NodePtr &input, const NodePtr &dim, const NodePtr &index, const NodePtr &source,
                               const NodePtr &alpha) {
-    return Emit("IndexAddExt", {input, index, source, axis, alpha});
+    return Emit("IndexAddExt", {input, dim, index, source, alpha});
   }
   virtual NodePtr IndexSelect(const NodePtr &input, const NodePtr &dim, const NodePtr &index) {
     return Emit("IndexSelect", {input, dim, index});
@@ -890,9 +893,10 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr GroupedMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &bias, const NodePtr &scale,
                                 const NodePtr &offset, const NodePtr &antiquant_scale, const NodePtr &antiquant_offset,
-                                const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type) {
+                                const NodePtr &group_list, const NodePtr &split_item, const NodePtr &group_type,
+                                const NodePtr &transpose_a, const NodePtr &transpose_b) {
     return Emit("GroupedMatmul", {x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list,
-                                  split_item, group_type});
+                                  split_item, group_type, transpose_a, transpose_b});
   }
   virtual NodePtr MoeFinalizeRouting(const NodePtr &expanded_x, const NodePtr &x1, const NodePtr &x2,
                                      const NodePtr &bias, const NodePtr &scales, const NodePtr &expanded_row_idx,

@@ -19,6 +19,8 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "tools/converter/quantizer/weight_quantizer.h"
 #include "tools/converter/quantizer/insert_quant_node_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::lite::quant {
 int DynamicQuantizer::DoQuantize(FuncGraphPtr func_graph) {

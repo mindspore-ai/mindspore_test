@@ -27,6 +27,7 @@
 #include "frontend/parallel/strategy.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "pipeline/jit/ps/resource.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace parallel {
@@ -56,6 +57,7 @@ Status TileInfo::GetAttrs() {
   for (auto &element : elements) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t axis = static_cast<int64_t>(element->cast<Int64ImmPtr>()->value());
       full_multiples_.push_back(axis);
     } else {
@@ -85,7 +87,7 @@ Status TileInfo::GetAttrs() {
 
 // the len of strategy is equal to multiples
 // 1. If multiple > 1,split the multiple.
-// 2. If multiple = 1:
+// 2. If multiple = 1
 //    1) If the dimension corresponding to multiple is empty: can not split
 //    2) Otherwise, split the input shape
 // 3. If multiple = -1: can not split
@@ -109,6 +111,176 @@ Status TileInfo::CheckStrategy(const StrategyPtr &strategy) {
   MS_LOG(INFO) << name_ << ": The input shape is " << ShapeToString(inputs_shape_[0]) << ", the dims is "
                << ShapeToString(full_multiples_) << ", so the 'shape' can be split is " << ShapeToString(tmp);
   return CheckStrategyValue(strategy, multiples);
+}
+
+void log_func_tile(std::ostringstream &oss, bool is_in_layout_propagation) {
+  if (is_in_layout_propagation) {
+    MS_LOG(INFO) << oss.str();
+  } else {
+    MS_LOG(ERROR) << oss.str();
+  }
+}
+
+Status TileInfo::CheckInputLayout() {
+  // Check all device matrix should be the same
+  if (inputs_tensor_info_.size() != kSizeOne) {
+    std::ostringstream oss;
+    oss << name_ << ": The size of input_tensor_layout for tile is " << inputs_tensor_info_.size() << " rather than 1.";
+    log_func_tile(oss, is_in_layout_propagation_);
+    return FAILED;
+  }
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_shape0 = in_layout0.tensor_shape_before().array();
+  auto input_tensor_map = in_layout0.tensor_map_before();
+
+  auto pre_offset = full_multiples_.size() - input_shape0.size();
+
+  // when shape>1 and multiple>1, this dim of the input can't be split：
+  // example, data=AB, multiple=2, when not split: output=ABAB; when split: output=AABB
+  for (size_t i = 0; i < full_multiples_.size(); ++i) {
+    if (full_multiples_[i] > 1 && i >= pre_offset && input_shape0[i - pre_offset] > 1) {
+      int64_t axis_shard = 1;
+      for (const auto &dim : input_tensor_map[i - pre_offset]) {
+        if (dim == -1) {
+          continue;
+        }
+        int64_t divisor = in_layout0.device_arrangement_origin().GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+      MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
+      if (axis_shard > 1) {
+        std::ostringstream oss;
+        oss << name_ << ": The dimension " << i - pre_offset
+            << " of input should not be split, because the multiple and shape are both greater than 1.";
+        log_func_tile(oss, is_in_layout_propagation_);
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status TileInfo::CheckOutputLayout() {
+  if (outputs_tensor_info_.size() != kSizeOne) {
+    std::ostringstream oss;
+    oss << name_ << ": The size of output_tensor_layout for tile is " << outputs_tensor_info_.size()
+        << " rather than 1.";
+    log_func_tile(oss, is_in_layout_propagation_);
+    return FAILED;
+  }
+  auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto in_tensor_map = in_layout0.tensor_map_before();
+  auto out_layout = outputs_tensor_info_[kIndex0].tensor_layout();
+  auto out_tensor_map = out_layout.tensor_map_before();
+  auto out_shape = out_layout.tensor_shape_before().array();
+  auto offset = out_shape.size() - full_multiples_.size();
+  if (offset < 0) {
+    std::ostringstream oss;
+    oss << name_ << ": The size of output shape is " << out_shape.size()
+        << " rather than greater than or equal to the size of multiples.";
+    log_func_tile(oss, is_in_layout_propagation_);
+    return FAILED;
+  }
+
+  // compute slice_multiples_
+  // when shape>1 and multiple>1, this dim of the input can't be split.
+  // then，the slice_multiple of the output should be changed to the multiple/out_axis_shard
+  slice_multiples_ = full_multiples_;
+  for (size_t i = 0; i < full_multiples_.size(); ++i) {
+    if (full_multiples_[i] > 1) {  // split the multiple only when multiple > 1
+      auto shape_index = i + offset;
+      int64_t axis_shard = 1;
+      for (const auto &dim : out_tensor_map[shape_index]) {
+        if (dim == -1) {
+          continue;
+        }
+        int64_t divisor = out_layout.device_arrangement_origin().GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+      MS_EXCEPTION_IF_ZERO("axis_shard", axis_shard);
+      // slice_multiples_[i] should be divided by the axis_shard
+      if (slice_multiples_[i] % axis_shard != 0) {
+        std::ostringstream oss;
+        oss << "The multiple of output dimension " << i << " should be divisible by axis_shard ";
+        log_func_tile(oss, is_in_layout_propagation_);
+        return FAILED;
+      }
+      slice_multiples_[i] = slice_multiples_[i] / axis_shard;
+    }
+  }
+  for (size_t i = 0; i < out_tensor_map.size(); ++i) {
+    if (i - offset >= 0 && full_multiples_[i - offset] > 1) {
+      continue;
+    } else {
+      // when the multiple <= 1, the output tensor map should be the same as the input tensor map
+      auto input_offset = out_tensor_map.size() - in_tensor_map.size();
+      if (i > input_offset && out_tensor_map[i] != in_tensor_map[i - input_offset]) {
+        std::ostringstream oss;
+        oss << "When the dim <= 1, the output tensor map should be the same as the input tensor map.";
+        log_func_tile(oss, is_in_layout_propagation_);
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+TensorLayout TileInfo::InferOutputLayout() {
+  auto input_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_shape = input_layout0.tensor_shape_before().array();
+  auto input_tensor_map = input_layout0.tensor_map_before();
+  auto offset = full_multiples_.size() - input_shape.size();
+
+  std::vector<Shape> output_extended_tensor_map;
+  Shape output_tensor_shape;
+  if (offset <= 0) {
+    // input_shape: (1, 1, 2, 4) input_tensor_map: (-1, -1, 0, 1)  full_multiples_:(2, 1, 1)
+    // output_shape: (1, 2, 2, 4) output_tensor_map: (-1, -1, 0, 1)
+    for (size_t i = 0; i < input_shape.size(); ++i) {
+      auto map_dim = input_tensor_map[i];
+      auto shp_dim = input_shape[i];
+      if (i >= -offset && full_multiples_[i + offset] > 1) {
+        shp_dim = shp_dim * full_multiples_[i + offset];
+      }
+      output_extended_tensor_map.push_back(map_dim);
+      output_tensor_shape.push_back(shp_dim);
+    }
+  } else {
+    // input_shape: (1, 2, 4) input_tensor_map: (-1, 0, 1)  full_multiples_:(2, 2, 1, 1)
+    // output_shape: (2, 1, 2, 4) output_tensor_map: (-1, -1, 0, 1)
+    for (size_t i = 0; i < full_multiples_.size(); ++i) {
+      if (i < offset) {
+        auto map_dim = {NO_SPLIT_MAP};
+        auto shp_dim = 1;
+        output_extended_tensor_map.push_back(map_dim);
+        output_tensor_shape.push_back(shp_dim);
+      } else {
+        auto map_dim = input_tensor_map[i - offset];
+        auto shp_dim = input_shape[i - offset];
+        if (full_multiples_[i] > 1) {
+          shp_dim = shp_dim * full_multiples_[i];
+        }
+        output_extended_tensor_map.push_back(map_dim);
+        output_tensor_shape.push_back(shp_dim);
+      }
+    }
+  }
+  TensorLayout output_tensor_layout;
+  output_tensor_layout.InitFromExtendVector(input_layout0.device_arrangement_origin().array(),
+                                            output_extended_tensor_map, output_tensor_shape);
+  return output_tensor_layout;
+}
+
+Status TileInfo::InferOutputTensorInfo() {
+  auto output_infer_tensor_layout = InferOutputLayout();
+  if (output_infer_tensor_layout.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
+    MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout.tensor_shape_before().array()
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
+    return FAILED;
+  }
+  TensorInfo output_tensor_info(output_infer_tensor_layout);
+  outputs_tensor_info_.push_back(output_tensor_info);
+  return SUCCESS;
 }
 
 Status TileInfo::InferDevMatrixShape() {

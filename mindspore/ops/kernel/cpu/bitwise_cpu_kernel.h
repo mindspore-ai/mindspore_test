@@ -26,12 +26,13 @@
 #include <map>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bitwise_cpu {
 constexpr size_t kBitwiseInitThreadNum = 50;
 constexpr float kBitwiseInitBlockSize = 100000;
 const size_t kBitwiseBigShapeNum = 5000000;
@@ -85,11 +86,12 @@ class BitwiseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   ShapeVector input_shape_2_;
   ShapeVector output_shape_;
   size_t output_size_ = 1;
-  const size_t max_dims_{7};
+  const size_t max_dims_{8};
   bool broadcast_ = false;
   size_t thread_num_{kBitwiseInitThreadNum};
   float block_size_{kBitwiseInitBlockSize};
 };
+}  // namespace bitwise_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

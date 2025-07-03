@@ -17,7 +17,7 @@
 #include <map>
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "kernel/cpu/eigen/bessel_i1_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/bessel_i1.h"
 #include "abstract/utils.h"
 

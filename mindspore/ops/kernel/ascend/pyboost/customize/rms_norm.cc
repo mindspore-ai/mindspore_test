@@ -15,18 +15,17 @@
  */
 
 #include "kernel/ascend/pyboost/customize/rms_norm.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> RmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                                const BaseTensorPtr &x_tensor,
-                                                                                const BaseTensorPtr &gamma_tensor,
-                                                                                const FP32ImmPtr &epsilon) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> RmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                        const TensorPtr &x_tensor,
+                                                                        const TensorPtr &gamma_tensor,
+                                                                        const FP32ImmPtr &epsilon) {
   OpRunner::InferOpOutput(op, x_tensor, gamma_tensor, epsilon);
   auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
 

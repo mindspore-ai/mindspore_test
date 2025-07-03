@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """Test basic operation with one stage"""
-import sys  
 import pytest 
 import math
 import numpy as np
@@ -22,18 +21,14 @@ from math import cos
 from mindspore import Tensor, context
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+
         
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
@@ -54,7 +49,7 @@ def test_return_dict():
     net = Net()
     a = Tensor([1])
     b = Tensor([2])
-    jit(net.construct, mode="PIJit", jit_config=cfg)
+    pi_jit_with_config(net.construct, jit_config=cfg)
     ret = net(a, b)
     assert ret == {"1": Tensor([2]), "2": Tensor([3])}
 
@@ -74,12 +69,11 @@ def test_return_dict_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    jit(net.construct, mode="PIJit", jit_config=cfg)
+    pi_jit_with_config(net.construct, jit_config=cfg)
     ret = net(a)
     assert ret == {"1": Tensor([2])}
 
 
-@pytest.mark.skip(reason="CodeHook for one stage failed")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_break_in_subgraph():
     """
@@ -105,7 +99,7 @@ def test_break_in_subgraph():
     inner_net = InnerNet()
     net = Net(inner_net)
     a = Tensor([1])
-    jit(net.construct, mode="PIJit", jit_config=cfg)
+    pi_jit_with_config(net.construct, jit_config=cfg)
     ret = net(a)
     assert not ret
 
@@ -117,7 +111,7 @@ def test_break_in_subgraph_2():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def out(x, y):
         m = x + y
         n = inner(x, y)
@@ -140,7 +134,7 @@ def test_break_in_subgraph_3():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def out(x, y):
         m = x + y
         n = inner(x, y)
@@ -157,14 +151,13 @@ def test_break_in_subgraph_3():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip
 def test_break_with_control_flow():
     """
     Feature: One stage basic operation.
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def out():
         x = np.array([3, 2])
         if x[0] > 1:
@@ -176,7 +169,6 @@ def test_break_with_control_flow():
     assert np.all(ret == np.array([6, 5]))
 
 
-@pytest.mark.skip(reason="Random error occurs when run whole files")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_break_with_control_flow_2():
     """
@@ -184,7 +176,7 @@ def test_break_with_control_flow_2():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def out(a):
         a = a + 1
         x = np.array([3, 2])
@@ -206,7 +198,7 @@ def test_break_with_same_value():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def out(x):
         a, b, c, d = x
         return type(a), type(b), type(c), type(d)
@@ -221,6 +213,7 @@ def test_break_with_same_value():
     assert ret[3] == int
 
 
+@pytest.mark.skip(reason='fix it later')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ud_collect_capture_output():
     """
@@ -228,7 +221,7 @@ def test_ud_collect_capture_output():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x, y):
         m = ((x, x+1), x+2)
         n = ((y, y-1), y+2)
@@ -242,7 +235,6 @@ def test_ud_collect_capture_output():
     assert not a4
 
 
-@pytest.mark.skip # One-stage will fix it later
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_4():
     """
@@ -251,7 +243,7 @@ def test_while_after_for_in_if_4():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo():
         x = [3, 2]
         y = [1, 2, 3, 4]

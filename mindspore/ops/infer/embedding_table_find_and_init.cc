@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops/primitive_c.h"
 #include "infer/ops_func_impl/embedding_table_find_and_init.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {

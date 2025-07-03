@@ -39,6 +39,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace ops {
@@ -106,7 +107,7 @@ class OPS_API DynamicBroadcastGradientArgsInfer : public abstract::OpInferBase {
   ValuePtr InferValue(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(prim);
     if (input_args.empty()) {
-      MS_LOG(ERROR) << "DynamicBroadcastGradientArgs input args dose not exist.";
+      MS_LOG(ERROR) << "DynamicBroadcastGradientArgs input args does not exist.";
       return nullptr;
     }
 

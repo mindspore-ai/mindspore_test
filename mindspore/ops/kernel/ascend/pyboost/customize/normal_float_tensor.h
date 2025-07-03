@@ -21,14 +21,14 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const FP32ImmPtr &mean_float, const BaseTensorPtr &std_tensor,
-                                                       const BaseTensorPtr &seed, const BaseTensorPtr &offset);
+tensor::TensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP32ImmPtr &mean_float,
+                                                   const TensorPtr &std_tensor, const TensorPtr &seed,
+                                                   const TensorPtr &offset);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

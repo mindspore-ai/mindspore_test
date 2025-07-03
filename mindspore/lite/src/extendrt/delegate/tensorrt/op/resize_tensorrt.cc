@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include "nnacl/nnacl_common.h"
 #include "infer/resize.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::lite {
 int ResizeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

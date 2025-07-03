@@ -30,7 +30,7 @@ class BatchNormElemtNet(nn.Cell):
         return self.batch_norm_elemt(input_data, weight, bias, mean, invstd, eps)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -46,8 +46,8 @@ def test_batch_norm_elemt_fwd(mode):
     batch_norm_elemt_net = BatchNormElemtNet()
 
     input_data = Tensor(np.array([[1.], [2.], [3.]]), mstype.float32)
-    weight = Parameter(Tensor(np.array([1.]), mstype.float32))
-    bias = Parameter(Tensor(np.array([10.]), mstype.float32))
+    weight = Parameter(Tensor(np.array([1.]), mstype.float32), name="weight")
+    bias = Parameter(Tensor(np.array([10.]), mstype.float32), name="bias")
 
     mean = Tensor(np.array([2.]), mstype.float32)
     invstd = Tensor(np.array([2.]), mstype.float32)

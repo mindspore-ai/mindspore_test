@@ -23,11 +23,12 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "nnacl/transpose_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_cpu {
 class TransposeFwdCpuKernelMod : public NativeCpuKernelMod {
  public:
   TransposeFwdCpuKernelMod() = default;
@@ -90,6 +91,7 @@ class TransposeFwdCpuKernelMod : public NativeCpuKernelMod {
   bool is_scalar_tensor_{false};
   bool is_empty_tensor_{false};
 };
+}  // namespace transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRANSPOSE_CPU_KERNEL_H_

@@ -17,10 +17,11 @@
 #include "kernel/cpu/eye_cpu_kernel.h"
 #include <algorithm>
 #include <memory>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace eye_cpu {
 namespace {
 constexpr size_t kEyeInputsNum = 3;
 constexpr size_t kEyeOutputsNum = 1;
@@ -104,5 +105,6 @@ const std::vector<std::pair<KernelAttr, EyeCpuKernelMod::KernelRunFunc>> &EyeCpu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Eye, EyeCpuKernelMod);
+}  // namespace eye_cpu
 }  // namespace kernel
 }  // namespace mindspore

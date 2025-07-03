@@ -4,7 +4,7 @@ mindspore.runtime
 Runtime encapsulates interfaces for executor, memory, stream and event. MindSpore abstracts the corresponding modules from different backends, allowing users to schedule hardware resources at the Python layer.
 
 Executor
------------- 
+------------
 
 .. autosummary::
     :toctree: runtime
@@ -14,6 +14,7 @@ Executor
     mindspore.runtime.set_cpu_affinity
     mindspore.runtime.launch_blocking
     mindspore.runtime.dispatch_threads_num
+    mindspore.runtime.set_kernel_launch_group
 
 Memory
 ------------
@@ -26,6 +27,7 @@ Memory
     mindspore.runtime.max_memory_allocated
     mindspore.runtime.max_memory_reserved
     mindspore.runtime.memory_allocated
+    mindspore.runtime.memory_replay
     mindspore.runtime.memory_reserved
     mindspore.runtime.memory_stats
     mindspore.runtime.memory_summary

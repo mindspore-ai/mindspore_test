@@ -18,11 +18,12 @@
 #include <algorithm>
 #include <utility>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/fractional_avg_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_avg_pool_cpu {
 namespace {
 constexpr size_t kInputsNum = 1;
 constexpr size_t kOutputsNum = 3;
@@ -297,5 +298,6 @@ std::vector<KernelAttr> FractionalAvgPoolCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FractionalAvgPool, FractionalAvgPoolCpuKernelMod);
+}  // namespace fractional_avg_pool_cpu
 }  // namespace kernel
 }  // namespace mindspore

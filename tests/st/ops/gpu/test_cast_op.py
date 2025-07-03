@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.common.dtype as mstype
 import mindspore.context as context
@@ -76,7 +75,7 @@ def test_cast():
 def test_cast1():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int32))
     t0 = mstype.float32
-    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t1 = mstype.float32
 
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -204,7 +203,7 @@ def test_cast8():
 def test_cast9():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int8))
     t0 = mstype.int64
-    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t1 = mstype.float16
 
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -218,9 +217,9 @@ def test_cast9():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast10():
-    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t0 = mstype.int8
-    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t1 = mstype.float64
 
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -234,9 +233,9 @@ def test_cast10():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast11():
-    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t0 = mstype.int16
-    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t1 = mstype.int32
 
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -250,7 +249,7 @@ def test_cast11():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast12():
-    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
+    x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool_))
     t0 = mstype.int64
     x1 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.uint8))
     t1 = mstype.float32

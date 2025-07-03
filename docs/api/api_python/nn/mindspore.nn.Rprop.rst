@@ -26,7 +26,7 @@ mindspore.nn.Rprop
         .. include:: mindspore.nn.optim_note_weight_decay.rst
 
     参数：
-        - **params** (Union[list[Parameter], list[dict]]) - 必须是 `Parameter` 组成的列表或字典组成的列表。当列表元素是字典时，字典的键可以是"params"、"lr"、"weight_decay"、"grad_centralization"和"order_params"：
+        - **params** (Union[list[Parameter], list[dict]]) - 需为 `Parameter` 组成的列表或字典组成的列表。当列表元素是字典时，字典的键可以是 `"params"`、 `"lr"` 、 `"weight_decay"` 、 `"grad_centralization"` 和 `"order_params"` ：
 
           .. include:: mindspore.nn.optim_group_param.rst
           .. include:: mindspore.nn.optim_group_lr.rst
@@ -34,13 +34,13 @@ mindspore.nn.Rprop
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 学习率。默认值： ``0.1`` 。
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 学习率。默认值： ``0.1`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **etas** (tuple[float, float]) - 乘法的增加或减少的因子（etaminus, etaplus）。默认值： ``(0.5, 1.2)`` 。
-        - **step_sizes** (tuple[float, float]) - 允许的最小和最大步长（min_step_sizes, max_step_size）。默认值： ``(1e-6, 50.)``。
-        - **weight_decay** (Union[float, int, Cell]) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
+        - **etas** (tuple[float, float]，可选) - 乘法的增加或减少的因子（etaminus, etaplus）。默认值： ``(0.5, 1.2)`` 。
+        - **step_sizes** (tuple[float, float]，可选) - 允许的最小和最大步长（min_step_sizes, max_step_size）。默认值： ``(1e-6, 50.)``。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_wd.rst
 
@@ -57,6 +57,6 @@ mindspore.nn.Rprop
         - **ValueError** - 如果最大步长小于最小步长。
         - **ValueError** - 如果 `step_sizes` 或 `etas` 的长度不等于2。
         - **TypeError** - 如果 `etas` 或 `step_sizes` 中的元素不是float。
-        - **ValueError** - 如果 `etaminus` 不在（0,1）的范围内，或者 `etaplus` 不大于1。
+        - **ValueError** - 如果 `etaminus` 不在 ``(0,1)`` 的范围内，或者 `etaplus` 不大于1。
         - **TypeError** - 如果 `weight_decay` 既不是float也不是int。
         - **ValueError** - 如果 `weight_decay` 小于0。

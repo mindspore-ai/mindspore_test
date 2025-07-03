@@ -17,10 +17,12 @@
 #include <complex>
 #include "kernel/cpu/segment_arithmetic_cpu_kernel.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
+namespace segment_arithmetic_cpu {
 namespace {
 const size_t kSegmentsThreshold = 2 * 1024;
 const size_t kDataSizeThreshold = 2 * 1024;
@@ -269,5 +271,6 @@ bool SegmentArithmeticCPUKernelMod::LaunchKernel(const std::vector<kernel::Kerne
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentSum, SegmentArithmeticCPUKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SegmentProd, SegmentArithmeticCPUKernelMod);
+}  // namespace segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

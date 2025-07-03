@@ -1,14 +1,14 @@
 mindspore.Tensor.std
 ====================
 
-.. py:method:: mindspore.Tensor.std(axis=None, ddof=0, keepdims=False)
+.. py:method:: mindspore.Tensor.std(axis=None, ddof=0, keepdims=False) -> Tensor
 
     详情请参考 :func:`mindspore.ops.std`。
 
-    .. py:method:: mindspore.Tensor.std(dim=None, *, correction=1, keepdim=False)
+    .. py:method:: mindspore.Tensor.std(dim=None, *, correction=1, keepdim=False) -> Tensor
         :noindex:
 
-    计算指定维度 `dim` 上的标准差。 `dim` 可以是单个维度、维度列表，也可以是 `None` ，表示移除所有维度。
+    计算指定维度 `dim` 上的标准差。 `dim` 可以是单个维度或维度列表，也可以是 `None` ，表示移除所有维度。
 
     标准差 (:math:`\sigma`) 计算如下：
 
@@ -22,11 +22,11 @@ mindspore.Tensor.std
 
     参数：
         - **dim** (None, int, tuple(int), 可选) - 用来进行规约计算的维度。默认值为 ``None`` ，所有维度都进行规约计算。
-    
+
     关键字参数：
         - **correction** (int, 可选) - 样本大小和样本自由度之间的差异。默认为Bessel校正，默认值为 ``1`` 。
         - **keepdim** (bool, 可选) - 是否保留输出Tensor的维度。如果为 ``True`` ，则保留缩小的维度，其大小为1，否则移除维度。默认值为 ``False`` 。
-    
+
     返回：
         Tensor，标准差。
 
@@ -38,8 +38,8 @@ mindspore.Tensor.std
 
     异常：
         - **TypeError** - 如果 `self` 不是Tensor。
-        - **TypeError** - 如果 `self` 的数据类型不是bfloat16，float16或float32。
-        - **TypeError** - 如果 `dim` 不是None，int或tuple类型。
+        - **TypeError** - 如果 `self` 的数据类型不是bfloat16、float16或float32。
+        - **TypeError** - 如果 `dim` 不是None、int或tuple类型。
         - **TypeError** - 如果 `correction` 不是int类型。
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **ValueError** - 如果 `dim` 不在 :math:`[-self.ndim, self.ndim)` 范围内。

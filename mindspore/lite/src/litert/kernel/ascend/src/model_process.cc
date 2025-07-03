@@ -23,10 +23,10 @@
 #include "src/common/utils.h"
 #include "src/common/log_util.h"
 #include "src/litert/kernel/ascend/src/acl_mem_manager.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -106,7 +106,7 @@ static std::string ShapeToString(const std::vector<int64_t> &shape) {
 STATUS ModelProcess::PreInitModelResource() {
   model_desc_ = CALL_ASCEND_API(aclmdlCreateDesc);
   aclError acl_ret = CALL_ASCEND_API(aclmdlGetDesc, model_desc_, model_id_);
-  if (acl_ret != ACL_ERROR_NONE) {
+  if (acl_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Read model desc failed, ret = " << acl_ret;
     return lite::RET_ERROR;
   }
@@ -176,7 +176,7 @@ STATUS ModelProcess::InitInputsBuffer() {
     void *data_mem_buffer = nullptr;
     if (!is_run_on_device_) {  // need to copy input/output to/from device
       ret = CALL_ASCEND_API(aclrtMalloc, &data_mem_buffer, buffer_size, ACL_MEM_MALLOC_NORMAL_ONLY);
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "Malloc device input buffer failed , input size " << buffer_size;
         return lite::RET_ERROR;
       }
@@ -184,7 +184,7 @@ STATUS ModelProcess::InitInputsBuffer() {
 
     aclmdlIODims dims;
     ret = CALL_ASCEND_API(aclmdlGetInputDims, model_desc_, i, &dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Get input shape failed, ret = " << ret;
       if (!is_run_on_device_) {
         CALL_ASCEND_API(aclrtFree, data_mem_buffer);
@@ -221,13 +221,13 @@ STATUS ModelProcess::CreateDataBuffer(void **data_mem_buffer, size_t buffer_size
 
   if (!is_run_on_device_) {
     ret = CALL_ASCEND_API(aclrtMalloc, data_mem_buffer, buffer_size, ACL_MEM_MALLOC_NORMAL_ONLY);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Malloc device buffer failed , buffer size " << buffer_size;
       return lite::RET_ERROR;
     }
   } else {
     ret = CALL_ASCEND_API(aclrtMallocHost, data_mem_buffer, buffer_size);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Malloc host buffer failed , buffer size " << buffer_size;
       return lite::RET_ERROR;
     }
@@ -240,7 +240,7 @@ STATUS ModelProcess::CreateDataBuffer(void **data_mem_buffer, size_t buffer_size
     return lite::RET_ERROR;
   }
   ret = CALL_ASCEND_API(aclmdlAddDatasetBuffer, dataset, data_buffer);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "add data buffer failed";
     free_data_buffer(*data_mem_buffer);
     CALL_ASCEND_API(aclDestroyDataBuffer, data_buffer);
@@ -268,7 +268,7 @@ STATUS ModelProcess::InitOutputsBuffer() {
     }
     aclmdlIODims dims;
     ret = CALL_ASCEND_API(aclmdlGetOutputDims, model_desc_, i, &dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Get output shape failed";
       if (!is_run_on_device_) {
         CALL_ASCEND_API(aclrtFree, data_mem_buffer);
@@ -342,13 +342,13 @@ void ModelProcess::DestroyOutputsBuffer() {
 
 STATUS ModelProcess::UnLoad() {
   auto ret = CALL_ASCEND_API(aclmdlUnload, model_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Unload model failed, ret = " << ret;
     return lite::RET_ERROR;
   }
   if (model_desc_ != nullptr) {
     ret = CALL_ASCEND_API(aclmdlDestroyDesc, model_desc_);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Unload model failed, ret = " << ret;
       return lite::RET_ERROR;
     }
@@ -377,13 +377,13 @@ STATUS ModelProcess::SetBatchSize(const std::vector<mindspore::MSTensor> &inputs
   aclError ret;
   size_t index;
   ret = CALL_ASCEND_API(aclmdlGetInputIndexByName, model_desc_, ACL_DYNAMIC_TENSOR_NAME, &index);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Get index failed";
     return lite::RET_ERROR;
   }
   MS_LOG(INFO) << "Set Batch size(" << batch_size << ") of input " << index << ".";
   ret = CALL_ASCEND_API(aclmdlSetDynamicBatchSize, model_id_, inputs_, index, batch_size);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set dynamic batch size failed, model_id is " << model_id_;
     return lite::RET_ERROR;
   }
@@ -406,15 +406,15 @@ STATUS ModelProcess::SetImageSize(const std::vector<mindspore::MSTensor> &inputs
   int32_t height = hw[0];
   int32_t width = hw[1];
   size_t index;
-  aclError ret = ACL_ERROR_NONE;
+  aclError ret = ACL_SUCCESS;
   ret = CALL_ASCEND_API(aclmdlGetInputIndexByName, model_desc_, ACL_DYNAMIC_TENSOR_NAME, &index);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Get index failed";
     return lite::RET_ERROR;
   }
   MS_LOG(INFO) << "Set Image size(" << height << "," << width << ") of input " << index << ".";
   ret = aclmdlSetDynamicHWSize(model_id_, inputs_, index, height, width);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set dynamic batch size failed, model_id is " << model_id_;
     return lite::RET_ERROR;
   }
@@ -503,7 +503,7 @@ STATUS ModelProcess::CheckAndInitInput(const std::vector<mindspore::MSTensor> &i
       info.cur_device_data = info.device_data;
       ret = CALL_ASCEND_API(aclrtMemcpy, info.cur_device_data, info.buffer_size, data, input.DataSize(),
                             ACL_MEMCPY_HOST_TO_DEVICE);
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "Acl memcpy input " << i << " data to device failed, src input size: " << input.DataSize()
                       << ", dst device buffer size: " << info.buffer_size;
         return lite::RET_ERROR;
@@ -518,7 +518,7 @@ STATUS ModelProcess::CheckAndInitInput(const std::vector<mindspore::MSTensor> &i
       return lite::RET_ERROR;
     }
     ret = CALL_ASCEND_API(aclmdlAddDatasetBuffer, inputs_, data_buffer);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Add data buffer failed";
       CALL_ASCEND_API(aclDestroyDataBuffer, data_buffer);
       return lite::RET_ERROR;
@@ -539,7 +539,7 @@ STATUS ModelProcess::ResetOutputSize() {
     size_t dims = 1;
     struct aclmdlIODims output_dims;
     ret = CALL_ASCEND_API(aclmdlGetCurOutputDims, model_desc_, index, &output_dims);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "get output dim error.";
       return lite::RET_ERROR;
     }
@@ -634,7 +634,7 @@ STATUS ModelProcess::PredictFromHost(const std::vector<mindspore::MSTensor> &inp
   }
 
   DestroyInputsDataset();
-  if (acl_ret != ACL_ERROR_NONE) {
+  if (acl_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Execute Model Failed, ret = " << acl_ret;
     return lite::RET_ERROR;
   }
@@ -702,7 +702,7 @@ STATUS ModelProcess::ConstructTensor(std::vector<mindspore::MSTensor> *outputs) 
     }
     auto ret = CALL_ASCEND_API(aclrtMemcpy, (*outputs)[i].MutableData(), (*outputs)[i].DataSize(),
                                output_infos_[i].cur_device_data, output_infos_[i].buffer_size, kind);
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Memcpy input " << i << " from " << (is_run_on_device_ ? "host" : "device")
                     << " to host failed, memory size " << output_infos_[i].buffer_size;
       return lite::RET_ERROR;

@@ -15,8 +15,8 @@
  */
 
 #include "include/common/utils/compile_cache_context.h"
+#include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "utils/log_adapter.h"
 
 namespace mindspore {
 bool CompileCacheEnable() {

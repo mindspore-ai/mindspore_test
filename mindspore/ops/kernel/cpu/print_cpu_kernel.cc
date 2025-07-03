@@ -22,10 +22,11 @@
 #include <complex>
 #include "ir/tensor.h"
 #include "infer/print.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace print_cpu {
 using mindspore::tensor::Tensor;
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -144,5 +145,6 @@ std::vector<KernelAttr> PrintCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Print, PrintCpuKernelMod);
+}  // namespace print_cpu
 }  // namespace kernel
 }  // namespace mindspore

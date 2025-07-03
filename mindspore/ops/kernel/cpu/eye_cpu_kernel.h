@@ -20,11 +20,12 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace eye_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -54,6 +55,7 @@ class EyeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EyeC
   int64_t num_n_ = 0;
   int64_t num_m_ = 0;
 };
+}  // namespace eye_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

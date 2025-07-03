@@ -19,10 +19,11 @@
 #include <vector>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace spacetodepth_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -149,5 +150,6 @@ std::vector<KernelAttr> SpaceToDepthCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SpaceToDepth, SpaceToDepthCpuKernelMod);
+}  // namespace spacetodepth_cpu
 }  // namespace kernel
 }  // namespace mindspore

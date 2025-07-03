@@ -23,14 +23,13 @@
  public:                                                                                          \
   template <typename... Args>                                                                     \
   static return_type name(const Args &... argss) {                                                \
-    if (name##_handler_ == nullptr) {                                                             \
-      return return_type();                                                                       \
-    }                                                                                             \
+    MS_EXCEPTION_IF_NULL(name##_handler_);                                                        \
     return name##_handler_(argss...);                                                             \
   }                                                                                               \
+  static bool name##HandlerValid() { return name##_handler_ != nullptr; }                         \
   using name##Handler = std::function<decltype(name<__VA_ARGS__>)>;                               \
   static void Set##name##Handler(name##Handler handler) { name##_handler_ = std::move(handler); } \
                                                                                                   \
  private:                                                                                         \
-  inline static name##Handler name##_handler_;
+  inline static name##Handler name##_handler_
 #endif  // MINDSPORE_CORE_UTILS_CALLBACK_HANDLER_H_

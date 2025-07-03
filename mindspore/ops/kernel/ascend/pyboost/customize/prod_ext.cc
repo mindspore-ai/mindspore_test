@@ -15,17 +15,17 @@
  */
 
 #include "kernel/ascend/pyboost/customize/prod_ext.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ProdExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const std::optional<Int64ImmPtr> &axis, const BoolImmPtr &keep_dims,
-                                             const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr ProdExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const std::optional<Int64ImmPtr> &axis, const BoolImmPtr &keep_dims,
+                                         const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims, dtype);
 
   int64_t axis_imm = 0;

@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/argmax_with_value_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_with_value_cpu {
 namespace {
 constexpr char kKernelName[] = "ArgMaxWithValue";
 
@@ -251,5 +252,6 @@ std::vector<KernelAttr> ArgMaxWithValueCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ArgMaxWithValue, ArgMaxWithValueCpuKernelMod);
+}  // namespace argmax_with_value_cpu
 }  // namespace kernel
 }  // namespace mindspore

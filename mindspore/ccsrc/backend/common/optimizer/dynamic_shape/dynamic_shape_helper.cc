@@ -26,7 +26,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
@@ -34,11 +34,12 @@
 #include "ops/op_def.h"
 #include "utils/ms_context.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
-#include "include/common/profiler.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "debug/profiler/profiler.h"
 #include "ir/anf.h"
 #include "ir/functor.h"
 #include "backend/operator/ops_backend_infer_function.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt::dynamic_shape {
@@ -79,108 +80,9 @@ void InferShapeForNopNode(const AnfNodePtr &input_node) {
   }
 }
 
-TypeId GetSequenceType(const abstract::AbstractSequencePtr &seq_abs) {
-  MS_EXCEPTION_IF_NULL(seq_abs);
-  auto elems = seq_abs->elements();
-  MS_EXCEPTION_IF_CHECK_FAIL(elems.size() >= 1, "Element size is less than 1.");
-  MS_EXCEPTION_IF_NULL(elems[0]);
-  if (!elems[0]->isa<abstract::AbstractScalar>() && !elems[0]->isa<abstract::AbstractTensor>()) {
-    MS_LOG(EXCEPTION) << "The 0'th element of sequence must be a scalar, but got:" << seq_abs->ToString();
-  }
-
-  auto fixed_type = (elems[0]->isa<abstract::AbstractScalar>()
-                       ? elems[0]->BuildType()->type_id()
-                       : elems[0]->cast<abstract::AbstractTensorPtr>()->element()->BuildType()->type_id());
-  for (size_t i = 1; i < elems.size(); i++) {
-    MS_EXCEPTION_IF_NULL(elems[i]);
-    if (!elems[i]->isa<abstract::AbstractScalar>() && !elems[i]->isa<abstract::AbstractTensor>()) {
-      MS_LOG(EXCEPTION) << "The " << i << "'th element of sequence must be a scalar, but got:" << elems[i]->ToString();
-    }
-    MS_EXCEPTION_IF_NULL(elems[i]->BuildType());
-    auto follow_type = (elems[i]->isa<abstract::AbstractScalar>()
-                          ? elems[i]->BuildType()->type_id()
-                          : elems[i]->cast<abstract::AbstractTensorPtr>()->element()->BuildType()->type_id());
-    if (fixed_type != follow_type) {
-      MS_LOG(EXCEPTION) << "Different type found between 0'th element[Type: " << fixed_type << "] and " << i
-                        << "'th element[Type: " << follow_type << "]";
-    }
-  }
-  return fixed_type;
-}
-
-tensor::TensorPtr CreateTensorFromIndexedNode(const std::pair<AnfNodePtr, size_t> &input_node_with_index) {
-  auto real_input = input_node_with_index.first;
-  MS_EXCEPTION_IF_NULL(real_input);
-  auto real_input_index = input_node_with_index.second;
-  auto abs = real_input->abstract();
-  MS_EXCEPTION_IF_NULL(abs);
-
-  ShapeVector shape;
-  TypeId type;
-  if (abs->isa<abstract::AbstractScalar>()) {
-    shape = {1};
-    MS_EXCEPTION_IF_NULL(abs->BuildType());
-    type = abs->BuildType()->type_id();
-  } else if (AnfAlgo::IsRealSquenceOutput(real_input)) {
-    auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
-    MS_EXCEPTION_IF_NULL(seq_abs);
-    auto elem_num = seq_abs->size();
-    if (elem_num == 0) {
-      MS_LOG(DEBUG) << "Empty sequence for node:" << real_input->fullname_with_scope();
-      return std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt64, ShapeVector({0}));
-    }
-    type = GetSequenceType(seq_abs);
-    shape = {SizeToLong(elem_num)};
-  } else if (abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractSequence>()) {
-    shape = trans::GetRuntimePaddingShape(real_input, real_input_index);
-    if (real_input->isa<ValueNode>()) {
-      // the type of ValueNode in KernelInfo is kTypeUnknown
-      type = common::AnfAlgo::GetOutputInferDataType(real_input, real_input_index);
-    } else {
-      type = AnfAlgo::GetOutputDeviceDataType(real_input, real_input_index);
-      if (type == TypeId::kTypeUnknown) {
-        type = common::AnfAlgo::GetOutputInferDataType(real_input, real_input_index);
-      }
-    }
-  } else {
-    MS_LOG_WITH_NODE(EXCEPTION, real_input)
-      << "For node:" << real_input->fullname_with_scope() << ", abstract(" << abs->ToString() << ") is invalid.";
-  }
-
-  MS_LOG(DEBUG) << "Create tensor by node:" << input_node_with_index.first->DebugString()
-                << " index:" << input_node_with_index.second << " type:" << type << " shape:" << shape
-                << " abstract:" << abs->ToString();
-  return std::make_shared<tensor::Tensor>(type, shape);
-}
-
 tensor::TensorPtr CreateTensorMem(const std::pair<AnfNodePtr, size_t> &input_node_with_index, const AnfNodePtr &node,
                                   size_t i, void *args) {
-  if (node != nullptr && common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute)) {
-    MS_EXCEPTION_IF_NULL(args);
-    auto input_list = reinterpret_cast<std::vector<device::DeviceAddress *> *>(args);
-    MS_EXCEPTION_IF_NULL(input_list);
-    if (i >= input_list->size() || input_list->at(i) == nullptr) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to get device address by input num:" << i
-                                        << " for node:" << node->DebugString();
-    }
-    const auto &device_address = input_list->at(i);
-    MS_EXCEPTION_IF_NULL(device_address->kernel_tensor());
-    MS_LOG(DEBUG) << "input node:" << input_node_with_index.first->DebugString()
-                  << " abstract:" << input_node_with_index.first->abstract()->ToString()
-                  << " device address:" << device_address << " type id:" << device_address->kernel_tensor()->dtype_id()
-                  << " shape vector:" << device_address->kernel_tensor()->GetShapeVector();
-    auto type_id = device_address->kernel_tensor()->dtype_id();
-    if (device_address->kernel_tensor()->GetType() != nullptr &&
-        ((device_address->kernel_tensor()->GetType()->isa<Tuple>() &&
-          device_address->kernel_tensor()->GetType()->cast<TuplePtr>()->size() == 0) ||
-         (device_address->kernel_tensor()->GetType()->isa<List>() &&
-          device_address->kernel_tensor()->GetType()->cast<ListPtr>()->size() == 0))) {
-      type_id = TypeId::kNumberTypeInt64;
-    }
-    return std::make_shared<tensor::Tensor>(type_id, device_address->kernel_tensor()->GetShapeVector());
-  }
-
-  return CreateTensorFromIndexedNode(input_node_with_index);
+  MS_LOG(EXCEPTION) << "Not supported.";
 }
 
 tensor::TensorPtr GetDependValueTensor(const AnfNodePtr &node, size_t i,
@@ -491,14 +393,14 @@ inline bool IsCpuKernelMod(kernel::KernelModType kernel_mod_type) {
 
 BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
+  const auto &op_name = primitive->name();
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInferInner,
+                                     op_name, true);
   if (primitive->HasAttr(kAttrInferShapeFunctor)) {
     auto functor = primitive->GetAttr(kAttrInferShapeFunctor)->cast<InferShapeFunctorPtr>();
     MS_EXCEPTION_IF_NULL(functor);
     return functor->InferShape(input_args);
   }
-  const auto &op_name = primitive->name();
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelInferInner,
-                                     op_name, true);
   auto shape_optional = abstract::InferShapeByFuncImpl(primitive, input_args, false);
   if (shape_optional.has_value()) {
     return shape_optional.value();

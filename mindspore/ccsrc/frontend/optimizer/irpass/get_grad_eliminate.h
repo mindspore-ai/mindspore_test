@@ -125,7 +125,11 @@ class GetGradEliminater : public AnfVisitor {
     }
   }
 
-  void Visit(const ValueNodePtr &node) override { id_ = GetValueNode<Int64ImmPtr>(node)->value(); }
+  void Visit(const ValueNodePtr &node) override {
+    auto value_node = GetValueNode<Int64ImmPtr>(node);
+    MS_EXCEPTION_IF_NULL(value_node);
+    id_ = value_node->value();
+  }
 
   void Reset() {
     id_ = -1;

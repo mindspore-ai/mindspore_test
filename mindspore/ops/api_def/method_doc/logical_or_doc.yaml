@@ -2,36 +2,5 @@ logical_or:
   description: |
     logical_or(other) -> Tensor
 
-    Computes the "logical OR" of two tensors element-wise.
+    For details, please refer to :func:`mindspore.ops.logical_or`.
 
-    .. math::
-        out_{i} = self_{i} \vee other_{i}
-
-    .. note::
-        - Inputs of `self` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-        - When the `other` is bool, it could only be a constant.
-
-    Inputs:
-        - **other** (Union[Tensor, bool]) - A bool or a tensor whose data type can be implicitly converted to bool.
-  
-    Outputs:
-        Tensor, the shape is the same as that of `self` and `other` after broadcasting, and the data type is bool.
-  
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-  
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([True, False, True]), mindspore.bool_)
-        >>> other = Tensor(np.array([True, True, False]), mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        [ True  True  True]
-        >>> input = Tensor(1, mindspore.bool_)
-        >>> other = Tensor(0, mindspore.bool_)
-        >>> output = input.logical_or(other)
-        >>> print(output)
-        True

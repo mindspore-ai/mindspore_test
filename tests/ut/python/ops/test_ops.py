@@ -2225,7 +2225,7 @@ test_case_math_ops = [
     ('IsFinite', {
         'block': P.IsFinite(),
         'desc_inputs': [Tensor(np.random.random((3, 4, 5)).astype(np.float32))],
-        'desc_bprop': [Tensor(np.random.random((3, 4, 5)).astype(np.bool))]}),
+        'desc_bprop': [Tensor(np.random.random((3, 4, 5)).astype(np.bool_))]}),
     ('Div', {
         'block': P.Div(),
         'desc_inputs': [[4, 5], [2, 3, 4, 5]],
@@ -2631,7 +2631,7 @@ test_case_math_ops = [
         'desc_bprop': [Tensor(np.array([1, 1, 1]).astype(np.float32))]}),
     ('Bucketize', {
         'block': Bucketize(boundaries=[1., 3., 5., 7., 9.]),
-        'desc_inputs': [Tensor(np.array([[-1, 6, 8], [3, 6, 9]]).astype(np.float))],
+        'desc_inputs': [Tensor(np.array([[-1, 6, 8], [3, 6, 9]]).astype(np.float_))],
         'skip': ['backward']}),
     ('TridiagonalMatMul', {
         'block': TridiagonalMatMul(),
@@ -3481,10 +3481,6 @@ test_case_nn_ops = [
                         Tensor(np.zeros((1, 1, 2, 2)), mstype.int32)],
         'desc_bprop': [],
         'skip': ['backward']}),
-    ('Roll', {
-        'block': nn.Roll(shift=[1, -2], axis=[0, 1]),
-        'desc_inputs': [Tensor([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]], mstype.float32)],
-        'desc_bprop': [Tensor([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]], mstype.float32)]}),
     ('SoftShrink', {
         'block': P.SoftShrink(),
         'desc_inputs': [Tensor(np.array([[0.5297, 0.7871, 1.1754], [0.7836, 0.6218, -1.1542]]), mstype.float32)],
@@ -3546,10 +3542,10 @@ test_case_nn_ops = [
         'skip': ['backward']}),
     ('SparseApplyCenteredRMSProp', {
         'block': SparseApplyCenteredRMSPropNet(),
-        'desc_inputs': [Parameter(Tensor(np.array([[0.6, 0.4], [0.1, 0.5]]).astype(np.float32))),
-                        Parameter(Tensor(np.array([[0.1, 0.3], [0.1, 0.5]]).astype(np.float32))),
-                        Parameter(Tensor(np.array([[0.2, 0.1], [0.1, 0.2]]).astype(np.float32))),
-                        Parameter(Tensor(np.array([[0.2, 0.1], [0.1, 0.2]]).astype(np.float32))),
+        'desc_inputs': [Parameter(Tensor(np.array([[0.6, 0.4], [0.1, 0.5]]).astype(np.float32)), name="var"),
+                        Parameter(Tensor(np.array([[0.1, 0.3], [0.1, 0.5]]).astype(np.float32)), name="mg"),
+                        Parameter(Tensor(np.array([[0.2, 0.1], [0.1, 0.2]]).astype(np.float32)), name="ms"),
+                        Parameter(Tensor(np.array([[0.2, 0.1], [0.1, 0.2]]).astype(np.float32)), name="mom"),
                         Tensor(0.001, mstype.float32),
                         Tensor(1e-10, mstype.float32),
                         Tensor(0.001, mstype.float32),
@@ -3610,9 +3606,11 @@ test_case_nn_ops = [
                        Tensor(np.ones([2, 2, 5], np.float32))]}),
     ('SparseApplyAdagradDA', {
         'block': SparseApplyAdagradDANet(),
-        'desc_inputs': [Parameter(Tensor(np.array([[0.4, 0.5], [0.3, 0.1]]).astype(np.float32))),
-                        Parameter(Tensor(np.array([[0.3, 0.6], [0.3, 0.6]]).astype(np.float32))),
-                        Parameter(Tensor(np.array([[0.3, 0.6], [0.3, 0.6]]).astype(np.float32))),
+        'desc_inputs': [Parameter(Tensor(np.array([[0.4, 0.5], [0.3, 0.1]]).astype(np.float32)), name="var"),
+                        Parameter(Tensor(np.array([[0.3, 0.6], [0.3, 0.6]]).astype(np.float32)), name="grad_accum"),
+                        Parameter(
+                            Tensor(np.array([[0.3, 0.6], [0.3, 0.6]]).astype(np.float32)),
+                            name="grad_square_accum"),
                         Tensor(np.array([[0.4, 0.5], [0.2, 0.1]]).astype(np.float32)),
                         Tensor(np.array([0, 1]).astype(np.int32)),
                         Tensor(0.001, mstype.float32),
@@ -3622,7 +3620,7 @@ test_case_nn_ops = [
         'skip': ['backward']}),
     ('SparseApplyProximalGradientDescent', {
         'block': SparseApplyProximalGradientDescentNet(),
-        'desc_inputs': [Parameter(Tensor(np.array([[0.4, 0.5], [0.3, 0.1]]).astype(np.float32))),
+        'desc_inputs': [Parameter(Tensor(np.array([[0.4, 0.5], [0.3, 0.1]]).astype(np.float32)), name="var"),
                         Tensor(0.01, mstype.float32),
                         Tensor(0.88, mstype.float32),
                         Tensor(0.3, mstype.float32),

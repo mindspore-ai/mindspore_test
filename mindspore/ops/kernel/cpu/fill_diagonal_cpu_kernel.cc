@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/fill_diagonal.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_diagonal_cpu {
 namespace {
 const size_t kFillDiagonalInputNum = 1;
 const size_t kFillDiagonalOutputNum = 1;
@@ -151,5 +152,6 @@ std::vector<KernelAttr> FillDiagonalCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FillDiagonal, FillDiagonalCpuKernelMod);
+}  // namespace fill_diagonal_cpu
 }  // namespace kernel
 }  // namespace mindspore

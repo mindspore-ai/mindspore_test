@@ -160,10 +160,15 @@ bool SolveTriangularCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &outputs) {
   SolveTriangularCheck(inputs, outputs);
   auto a_addr = GetDeviceAddress<T_in>(inputs, kIndexA);
+  MS_EXCEPTION_IF_NULL(a_addr);
   auto b_addr = GetDeviceAddress<T_in>(inputs, kIndexB);
+  MS_EXCEPTION_IF_NULL(b_addr);
   auto output_addr = GetDeviceAddress<T_out>(outputs, kIndexX);
+  MS_EXCEPTION_IF_NULL(output_addr);
   T_out *casted_a_addr = GetDeviceAddress<T_out>(workspace, kIndex0);
+  MS_EXCEPTION_IF_NULL(casted_a_addr);
   T_out *casted_b_addr = GetDeviceAddress<T_out>(workspace, kIndex1);
+  MS_EXCEPTION_IF_NULL(casted_b_addr);
   for (size_t i = 0; i < batch_; ++i) {
     T_in *a_batch_addr = a_addr + i * a_batch_size_;
     T_in *b_batch_addr = b_addr + i * b_batch_size_;

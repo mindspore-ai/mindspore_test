@@ -21,11 +21,12 @@
 #include <utility>
 #include <algorithm>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace self_adjoint_eig_cpu {
 class SelfAdjointEigCpuKernelMod : public NativeCpuKernelMod {
  public:
   SelfAdjointEigCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class SelfAdjointEigCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   bool compute_v_;
 };
+}  // namespace self_adjoint_eig_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SELF_ADJOINT_EIG_KERNEL_H_

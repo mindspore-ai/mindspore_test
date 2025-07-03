@@ -20,10 +20,11 @@
 #include <thread>
 #include <map>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_v2_cpu {
 namespace {
 constexpr size_t kFillV2InputsNum = 2;
 constexpr size_t kFillV2OutputsNum = 1;
@@ -107,5 +108,6 @@ std::vector<KernelAttr> FillV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FillV2, FillV2CpuKernelMod);
+}  // namespace fill_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

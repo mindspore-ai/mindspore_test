@@ -19,6 +19,7 @@ from mindspore import context, nn, Tensor
 from mindspore import dtype as mstype
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
+from mindspore.ops.operations._sequence_ops import TensorToTuple
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -37,6 +38,9 @@ def double_elements_fg_for_tensor_tuple(x, y):
 def double_elements_fg_for_tensor_list(x, y):
     return x + y[0]
 
+@double_elements_fg.register("Number", "Number")
+def double_elements_fg_for_Number(x, y):
+    return x + y
 
 class HyperMapNet(nn.Cell):
     def __init__(self, fg):
@@ -160,3 +164,31 @@ def test_double_elements_hypermap_inconsistent_inputs():
     common_map = HyperMapNet(double_elements_fg)
     with pytest.raises(Exception, match="the types of arguments in HyperMap must be consistent"):
         common_map((x, y))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_double_elements_hypermap_with_dynamic_element():
+    """
+    Feature: HyperMap
+    Description: When the inputs to hypermap is inconsistent, error will be raised.
+    Expectation: error.
+    """
+
+    class HyperNet(nn.Cell):
+        def __init__(self, fg):
+            super(HyperNet, self).__init__()
+            self.common_map = C.HyperMap()
+            self.fg = fg
+
+        def construct(self, x, y):
+            output = self.common_map(self.fg, (TensorToTuple()(
+                x), TensorToTuple()(x)), (TensorToTuple()(y), TensorToTuple()(y)))
+            return output
+
+    x = Tensor(np.array([1, 2, 3]), mstype.float32)
+    y = Tensor(np.array([4, 5, 6]), mstype.float32)
+    common_map = HyperNet(double_elements_fg)
+    dyn_input = Tensor(shape=(None,), dtype=x.dtype)
+    common_map.set_inputs(x, dyn_input)
+    res = common_map(x, y)
+    assert res == ((5, 7, 9), (5, 7, 9))

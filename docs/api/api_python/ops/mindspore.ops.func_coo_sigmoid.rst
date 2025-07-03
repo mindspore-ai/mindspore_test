@@ -3,7 +3,7 @@ mindspore.ops.coo_sigmoid
 
 .. py:function:: mindspore.ops.coo_sigmoid(x: COOTensor)
 
-    Sigmoid激活函数，COOTensor逐元素计算Sigmoid激活函数。Sigmoid函数定义为：
+    Sigmoid激活函数，对COOTensor逐元素计算Sigmoid激活函数。Sigmoid函数定义为：
 
     .. math::
 
@@ -15,7 +15,7 @@ mindspore.ops.coo_sigmoid
         - **x** (COOTensor) - 任意维度的COOTensor，数据类型为float16、float32、float64、complex64或complex128。
 
     返回：
-        COOTensor，数据类型和shape与 `x` 的相同。
+        COOTensor，数据类型和shape与 `x` 相同。
 
     异常：
         - **TypeError** - `x` 的数据类型不是float16、float32、float64、complex64或complex128。

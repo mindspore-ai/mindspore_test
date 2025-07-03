@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 import numpy as np
 import torch
 from mindspore import Tensor
@@ -85,6 +84,7 @@ def test_reduce_sum_dyn_rank():
     Description: test reduce sum dynamic rank with input tensor's type float32
     Expectation: none.
     """
+    context.set_context(jit_level='O0')
     dtype = np.float32
     x = np.random.randn(22, 20, 28, 36, 24, 23).astype(dtype)
     indices = np.array([0, -1])

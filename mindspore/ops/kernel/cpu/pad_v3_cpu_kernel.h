@@ -27,11 +27,12 @@
 #include <utility>
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pad_v3_cpu {
 class PadV3CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<PadV3CpuKernelMod> {
  public:
   PadV3CpuKernelMod() = default;
@@ -87,6 +88,7 @@ class PadV3CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Pa
   std::vector<int64_t> input_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace pad_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -29,6 +29,9 @@
 #include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -60,6 +63,7 @@ bool GetGraphKernelGetitemList(const FuncGraphManagerPtr &mng, const AnfNodePtr 
   auto func_graph = GetCNodeFuncGraph(node);
   MS_EXCEPTION_IF_NULL(func_graph);
   auto output = func_graph->output();
+  MS_EXCEPTION_IF_NULL(output);
   if (!IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
     MS_LOG_WITH_NODE(EXCEPTION, output) << "The output should be a MakeTuple, but got "
                                         << output->fullname_with_scope();

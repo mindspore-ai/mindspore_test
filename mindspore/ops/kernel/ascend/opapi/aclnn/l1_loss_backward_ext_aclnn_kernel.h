@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_backward_ext {
 class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
  public:
   L1LossBackwardExtAclnnKernelMod() : AclnnKernelMod("aclnnL1LossBackward") {}
@@ -46,6 +47,7 @@ class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
   int64_t reduction_{1};
 };
 
+}  // namespace l1_loss_backward_ext
 }  // namespace kernel
 }  // namespace mindspore
 

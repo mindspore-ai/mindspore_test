@@ -15,20 +15,20 @@
 """adadelta"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import _checkparam as validator
 from mindspore import jit
 
-_adadelta_opt = C.MultitypeFuncGraph("adadelta_opt")
+_adadelta_opt = ops.MultitypeFuncGraph("adadelta_opt")
 
 
 @_adadelta_opt.register("Function", "Number", "Number", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor")
 def _tensor_run_opt(opt, rho, epsilon, learning_rate, weight, accum, accum_update, gradient):
     """Apply adadelta optimizer to the weight parameter."""
     success = True
-    success = F.depend(success, opt(weight, accum, accum_update, learning_rate, rho, epsilon, gradient))
+    success = ops.depend(success, opt(weight, accum, accum_update, learning_rate, rho, epsilon, gradient))
     return success
 
 
@@ -37,32 +37,28 @@ class Adadelta(Optimizer):
     Implements Adadelta algorithm.
 
     .. math::
-        \newcommand{\grad}[2]{\nabla_{#1} f_{#2}(#2_{#2 - 1})}
-        \newcommand{\updateVar}[3]{#1_{#2} \leftarrow #1_{#2 - 1} \rho + #3_{#2} (1 - \rho)}
-
-        \begin{align*}
-            &\rule{150mm}{0.4pt} \\
-            &\textbf{Input}:
-                \gamma \text{ (lr)}, \: \theta_0 \text{ (params)}, \: f(\theta) \text{ (objective)},
-                \: \rho \text{ (decay)}, \: \lambda \text{ (weight decay)} \\
-            &\textbf{Initialize}:
-                \begin{cases}
-                    v_0 \leftarrow 0 \text{ (square avg)} \\
-                    u_0 \leftarrow 0 \text{ (accumulate variables)}
-                \end{cases} \\
-            &\rule{110mm}{0.4pt} \\
-            &\textbf{For } t = 1 \text{ to } \ldots \text{ do}: \\
-            &\quad g_t \leftarrow \grad{\theta}{t} \\
-            &\quad \text{If } \lambda \neq 0: \\
-            &\quad\quad g_t \leftarrow g_t + \lambda \theta_{t - 1} \\
-            &\quad v_t \leftarrow \updateVar{v}{t}{g^2} \\
-            &\quad \Delta x_t \leftarrow \frac{\sqrt{u_{t - 1} + \epsilon}}{\sqrt{v_t + \epsilon}} g_t \\
-            &\quad u_t \leftarrow \updateVar{u}{t}{\Delta x^2} \\
-            &\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \Delta x_t \\
-            &\rule{110mm}{0.4pt} \\
-            &\bf{Return}: \theta_t \\
-            &\rule{110mm}{0.4pt}
-        \end{align*}
+        \begin{aligned}
+            &\rule{180mm}{0.4pt}                                                                 \\
+            &\textbf{input}      : \gamma \text{ (lr)}, \: \theta_0 \text{ (params)},
+                \: f(\theta) \text{ (objective)}, \: \rho \text{ (decay)},
+                \: \lambda \text{ (weight decay)}                                                \\
+            &\textbf{initialize} :  v_0  \leftarrow 0 \: \text{ (square avg)},
+                \: u_0 \leftarrow 0 \: \text{ (accumulate variables)}                     \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                                 \\
+            &\textbf{for} \: t=1 \: \textbf{to} \: \ldots \: \textbf{do}                         \\
+            &\hspace{5mm}g_t           \leftarrow   \nabla_{\theta} f_t (\theta_{t-1})           \\
+            &\hspace{5mm}if \: \lambda \neq 0                                                    \\
+            &\hspace{10mm} g_t \leftarrow g_t + \lambda  \theta_{t-1}                            \\
+            &\hspace{5mm} v_t      \leftarrow v_{t-1} \rho + g^2_t (1 - \rho)                    \\
+            &\hspace{5mm}\Delta x_t    \leftarrow   \frac{\sqrt{u_{t-1} +
+                \epsilon }}{ \sqrt{v_t + \epsilon}  }g_t \hspace{21mm}                           \\
+            &\hspace{5mm} u_t  \leftarrow   u_{t-1}  \rho +
+                 \Delta x^2_t  (1 - \rho)                                                        \\
+            &\hspace{5mm}\theta_t      \leftarrow   \theta_{t-1} - \gamma  \Delta x_t            \\
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
+            &\bf{return} \:  \theta_t                                                     \\[-1.ex]
+            &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
+        \end{aligned}
 
     .. warning::
         This is an experimental optimizer API that is subject to change.
@@ -133,18 +129,18 @@ class Adadelta(Optimizer):
 
         self.accum = self.parameters.clone(prefix="accum", init=0)
         self.accum_update = self.parameters.clone(prefix="accum_update", init=0)
-        self.opt = P.ApplyAdadelta()
-        self.op_cast = P.Cast()
+        self.opt = ops.ApplyAdadelta()
+        self.op_cast = ops.Cast()
 
     @jit
     def implementation(self, lr, rho, eps, maximize, weight_decay, start_id, end_id, gradients):
         """Extract the common computing part for acceleration"""
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
         accum = self.accum[start_id: end_id]
         accum_update = self.accum_update[start_id: end_id]
-        self.hyper_map(F.partial(_adadelta_opt, self.opt, rho, eps, lr),
+        self.hyper_map(ops.partial(_adadelta_opt, self.opt, rho, eps, lr),
                        params, accum, accum_update, grads)
         return True
 

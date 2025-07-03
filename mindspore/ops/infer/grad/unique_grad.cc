@@ -34,6 +34,7 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/base_operator.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace ops {
@@ -50,6 +51,7 @@ class OPS_API UniqueGradInfer : public abstract::OpInferBase {
     auto dout = input_args[0];
     auto dout_shape = dout->GetShape();
     auto dout_tuple_shape = dout_shape->cast<abstract::TupleShapePtr>();
+    MS_EXCEPTION_IF_NULL(dout_tuple_shape);
     auto ids_shape = (*dout_tuple_shape)[0];
     auto ids_idx_shape = (*dout_tuple_shape)[1];
     MS_EXCEPTION_IF_NULL(ids_shape);

@@ -17,7 +17,7 @@ from mindspore.common import dtype as mstype
 import pytest
 
 
-@jit
+@jit(backend="ms_backend")
 def t1_while(x, y):
     y = y + 4
     while x < y:
@@ -26,7 +26,7 @@ def t1_while(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def const_branch(y):
     if y >= 0:
         while y > 1:

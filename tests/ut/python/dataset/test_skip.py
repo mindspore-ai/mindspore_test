@@ -53,8 +53,6 @@ def generator_md():
         yield (np.array([i]),)
 
 
-# Run this test in separate process since this test updates shared memory config
-@pytest.mark.forked
 def test_generator_skip():
     """
     Feature: Skip op

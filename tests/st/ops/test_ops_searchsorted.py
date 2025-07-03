@@ -40,6 +40,10 @@ def searchsorted_forward_func(x, y, out_int32=False, right=False, sorter=None):
     return SearchSortedNet()(x, y, out_int32=out_int32, right=right, side="right", sorter=sorter)
 
 
+def searchsorted_forward_func_static_dtype(x, y, right=False, sorter=None):
+    return SearchSortedNet()(x, y, right=right, side="right", sorter=sorter)
+
+
 def generate_expect_forward_output(x, y, side="right", sorter=None):
     return np.searchsorted(x, y, side=side, sorter=sorter)
 
@@ -105,16 +109,14 @@ def test_ops_searchsorted_dynamic(context_mode):
 
     x1, _ = generate_random_input((20), np.float32)
     _, other1 = generate_random_input((2, 3, 4, 5), np.float32)
-    out_int32_1 = False
     right_1 = False
     sorter_1 = ms.Tensor(np.argsort(x1, axis=-1))
 
     x2, _ = generate_random_input((2, 3, 4), np.float32)
     _, other2 = generate_random_input((2, 3, 4), np.float32)
-    out_int32_2 = True
     right_2 = True
     sorter_2 = ms.Tensor(np.argsort(x2, axis=-1))
 
-    TEST_OP(searchsorted_forward_func,
-            [[ms.Tensor(x1), ms.Tensor(other1), out_int32_1, right_1, sorter_1],
-             [ms.Tensor(x2), ms.Tensor(other2), out_int32_2, right_2, sorter_2]], 'searchsorted')
+    TEST_OP(searchsorted_forward_func_static_dtype,
+            [[ms.Tensor(x1), ms.Tensor(other1), right_1, sorter_1],
+             [ms.Tensor(x2), ms.Tensor(other2), right_2, sorter_2]], 'searchsorted')

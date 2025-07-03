@@ -46,7 +46,6 @@ class Net(nn.Cell):
 
 
 def compile_net(net, *inputs):
-    net.set_auto_parallel()
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, *inputs)
     context.reset_auto_parallel_context()
@@ -219,7 +218,7 @@ def test_scatter_mul_mix_split_auto_parallel():
     Expectation: compile success
     """
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=64,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=64,
                                       full_batch=True)
     inputs = Tensor(np.ones([32 * 4, 64]).astype(np.float32))
     input_shape = [32 * 4, 64]

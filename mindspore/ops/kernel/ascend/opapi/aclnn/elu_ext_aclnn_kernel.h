@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace elu_ext {
 
 class EluExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class EluExtAscend : public AclnnKernelMod {
   ScalarPtr scale_ = nullptr;
   ScalarPtr input_scale_ = nullptr;
 };
+}  // namespace elu_ext
 }  // namespace kernel
 }  // namespace mindspore
 

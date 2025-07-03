@@ -19,8 +19,9 @@ import mindspore.nn as nn
 from mindspore import context, jit
 from typing import NamedTuple
 from collections import namedtuple
-from mindspore import ops
+from mindspore import ops, Tensor
 from tests.mark_utils import arg_mark
+from tests.st.compiler.utils import match_array
 
 context.set_context(mode=context.GRAPH_MODE)
 
@@ -32,6 +33,7 @@ def test_namedtuple_get_attr1():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Data(NamedTuple):
         label1: ms.Tensor
         label2: ms.Tensor
@@ -60,6 +62,7 @@ def test_namedtuple_get_attr2():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Data(NamedTuple):
         label1: ms.Tensor
         label2: ms.Tensor
@@ -88,6 +91,7 @@ def test_namedtuple_get_attr3():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Data(NamedTuple):
         label1: ms.Tensor
         label2: ms.Tensor
@@ -112,6 +116,7 @@ def test_namedtuple_get_attr4():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Data(NamedTuple):
         label1: ms.Tensor
         label2: ms.Tensor
@@ -136,6 +141,7 @@ def test_namedtuple_get_attr5():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self, data):
             super().__init__()
@@ -145,7 +151,6 @@ def test_namedtuple_get_attr5():
             label1 = self.data.label1
             label2 = self.data.label2
             return label1, label2
-
 
     Data = namedtuple('User', ['label1', 'label2'])
     data = Data(label1=ops.randn(6, 5), label2=ops.randn(6, 1))
@@ -162,6 +167,7 @@ def test_namedtuple_get_attr6():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self, data):
             super().__init__()
@@ -187,6 +193,7 @@ def test_namedtuple_get_attr7():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, data):
             label1 = data.label1
@@ -208,6 +215,7 @@ def test_namedtuple_get_attr8():
     Description: Support NamedTuple in graph mode.
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, data):
             label1 = data[0]
@@ -222,6 +230,29 @@ def test_namedtuple_get_attr8():
     assert label2.shape == data.label2.shape
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_namedtuple_get_attr9():
+    """
+    Feature: Support NamedTuple in graph mode.
+    Description: Support NamedTuple in graph mode.
+    Expectation: No exception.
+    """
+
+    Point = namedtuple('Point', ['x', 'y'])
+
+    @jit
+    def fn(point: Point):
+        return ops.add(point[0], point[1]), ops.sub(point.x, point.y)
+
+    x = Tensor([1, 2, 3])
+    y = Tensor([1., 1., 1.])
+    point = Point(x, y)
+    o = fn(point)
+
+    match_array(x + y, o[0])
+    match_array(x - y, o[1])
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_namedtuple():
     """
@@ -229,11 +260,13 @@ def test_create_namedtuple():
     Description: Support create namedtuple in graph mode.
     Expectation: No exception.
     """
+
     @ms.jit
     def _max():
         point = namedtuple('max', 'values, indices')
         rtl = point(1, 2)
         return rtl.values, rtl.indices
+
     output = _max()
     point = namedtuple('max', 'values, indices')
     expect = point(1, 2)
@@ -242,19 +275,66 @@ def test_create_namedtuple():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_create_and_return_namedtuple():
+def test_create_and_return_namedtuple_1():
     """
     Feature: Support namedtuple in graph mode.
     Description: Support create and return namedtuple in graph mode.
     Expectation: No exception.
     """
+
     @jit
     def _max():
         point = namedtuple('max', 'values, indices')
         rtl = point(1, 2)
         return rtl
+
     output = _max()
     point = namedtuple('max', 'values, indices')
     expect = point(1, 2)
     assert output.values == expect.values
     assert output.indices == expect.indices
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_create_and_return_namedtuple_2():
+    """
+    Feature: Support namedtuple in graph mode.
+    Description: Support create and return namedtuple in graph mode.
+    Expectation: No exception.
+    """
+    Point = namedtuple('Point', 'x, y')
+
+    @jit
+    def fn(x: Tensor, y: Tensor):
+        p = Point(x, y)
+        return p
+
+    x = Tensor([1, 2, 3])
+    y = Tensor([1., 1., 1.])
+    o = fn(x, y)
+
+    match_array(x, o.x)
+    match_array(y, o.y)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_create_and_return_namedtuple_3():
+    """
+    Feature: Support namedtuple in graph mode.
+    Description: Support create and return namedtuple in graph mode.
+    Expectation: No exception.
+    """
+    Point = namedtuple('Point', 'x, y')
+
+    @jit
+    def fn(x: Tensor, y: Tensor):
+        a = ops.add(x, y)
+        b = ops.sub(x, y)
+        return Point(a, b)
+
+    x = Tensor([1, 2, 3])
+    y = Tensor([1., 1., 1.])
+    o = fn(x, y)
+
+    match_array(x + y, o.x)
+    match_array(x - y, o.y)

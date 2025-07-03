@@ -394,6 +394,9 @@ int32_t KernelPool::Wait() const {
   return -1;
 }
 
+std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)>
+  GraphKernelBuilder::build_func_ = nullptr;
+
 KernelPackPtr GraphKernelBuilder::SearchKernelCache(const std::string &kernel_name) {
   auto processor = GetStrProcessorFromContext();
   return SearchCache(kernel_name, processor);

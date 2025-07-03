@@ -2,16 +2,6 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/include)
 include_directories(${CMAKE_BINARY_DIR})
 
-# Pyboost
-if(NOT BUILD_LITE)
-    file(GLOB_RECURSE PYBOOST_SRC ${OPS_DIR}/kernel/common/pyboost/*.cc ${OPS_DIR}/kernel/functions/*.cc)
-    add_library(_mindspore_common_pyboost_obj OBJECT ${PYBOOST_SRC})
-    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-        target_compile_definitions(_mindspore_common_pyboost_obj PRIVATE BACKEND_DLL)
-    endif()
-    add_dependencies(_mindspore_common_pyboost_obj proto_input)
-endif()
-
 # CPU kernel objects
 if(ENABLE_CPU)
     if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64")
@@ -25,25 +15,19 @@ if(ENABLE_CPU)
     add_subdirectory(kernel/cpu/nnacl)
 endif()
 
-set(CPU_KERNEL_OBJECTS "")
-foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
-    if(TARGET _mindspore_ops_cpu_kernel_obj_${number})
-        list(APPEND CPU_KERNEL_OBJECTS $<TARGET_OBJECTS:_mindspore_ops_cpu_kernel_obj_${number}>)
-        add_dependencies(_mindspore_ops_cpu_kernel_obj_${number} proto_input)
-        if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-            target_compile_definitions(_mindspore_ops_cpu_kernel_obj_${number} PRIVATE BACKEND_DLL)
-        endif()
+if((NOT ENABLE_CPU) OR (BUILD_LITE OR ENABLE_TESTCASES))
+    add_library(mindspore_ops_host INTERFACE)
+else()
+    add_library(mindspore_ops_host SHARED $<TARGET_OBJECTS:_mindspore_ops_cpu_kernel_obj>)
+    target_link_libraries(mindspore_ops_host PRIVATE mindspore_core mindspore_ops mindspore_memory_pool
+        mindspore_common mindspore_ops_kernel_common mindspore_ms_backend mindspore_pyboost mindspore_profiler
+        mindspore_runtime_pipeline mindspore_backend_common nnacl mindspore::dnnl mindspore::mkldnn
+        mindspore_cpu_res_manager)
+    target_link_libraries(mindspore_ops_host PRIVATE securec)
+    add_dependencies(mindspore_ops_host proto_input)
+    if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+        target_compile_definitions(mindspore_ops_host PRIVATE OPS_HOST_DLL)
     endif()
-endforeach()
-set(OPS_HOST_OBJECTS ${CPU_KERNEL_OBJECTS} $<TARGET_OBJECTS:_mindspore_common_pyboost_obj> PARENT_SCOPE)
-
-# if((NOT ENABLE_CPU) AND BUILD_LITE)
-#     add_library(mindspore_ops_host INTERFACE)
-# else()
-#     add_library(mindspore_ops_host OBJECT
-#                     ${PYBOOST_SRC}
-#                     ${CPU_KERNEL_OBJECTS})
-#     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-#         target_compile_definitions(mindspore_ops_host PRIVATE BACKEND_DLL)
-#     endif()
-# endif()
+    set_target_properties(mindspore_ops_host PROPERTIES INSTALL_RPATH
+            "$ORIGIN:$ORIGIN/..:$ORIGIN/cpu")
+endif()

@@ -17,7 +17,7 @@
 #include <algorithm>
 #include "mindspore/lite/src/extendrt/cxx_api/dlutils.h"
 #include "load_mindir/load_model.h"
-#include "mindspore/ccsrc/transform/graph_ir/transform_util.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/transform_util.h"
 #include "mindspore/lite/src/extendrt/utils/tensor_utils.h"
 #include "mindspore/lite/src/common/common.h"
 #include "mindspore/lite/src/common/utils.h"
@@ -128,7 +128,7 @@ void LLMEnginePlugin::InitInputOptions(const LLMEngineModelInfo &model_info, boo
     return str;
   };
   auto dtype_as_string = [](TypeId type_id) {
-    auto ge_type = transform::TransformUtil::ConvertDataType(type_id);
+    auto ge_type = device::ascend::TransformUtil::ConvertDataType(type_id);
     return std::to_string(static_cast<uint64_t>(ge_type));
   };
   std::string input_shapes;
@@ -587,8 +587,8 @@ Status LLMEnginePlugin::MSTensorToGeTensor(const std::vector<MSTensor> &inputs, 
     auto &input = inputs[i];
     MS_LOG(INFO) << "Input " << i << " shape " << input.Shape() << ", datatype " << input.DataType();
     // create ge tensor
-    auto desc =
-      transform::TransformUtil::GetGeTensorDesc(input.Shape(), static_cast<TypeId>(input.DataType()), kOpFormat_NCHW);
+    auto desc = device::ascend::TransformUtil::GetGeTensorDesc(input.Shape(), static_cast<TypeId>(input.DataType()),
+                                                               kOpFormat_NCHW);
     if (desc == nullptr) {
       MS_LOG(ERROR) << "Failed to get Tensor Desc";
       return kLiteError;
@@ -943,7 +943,7 @@ Status LLMEnginePlugin::UnlinkClusters(const std::vector<LLMClusterInfo> &cluste
 MSTensor LLMEnginePlugin::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor_ptr) {
   auto &ge_tensor = *ge_tensor_ptr;
   auto ge_tensor_desc = ge_tensor.GetTensorDesc();
-  auto me_shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
+  auto me_shape = device::ascend::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());
   if (ge_tensor_desc.GetPlacement() != ::ge::kPlacementHost) {
     MS_LOG(ERROR) << "It is not supported that graph output data's placement is device now.";
     return MSTensor(nullptr);
@@ -966,7 +966,7 @@ MSTensor LLMEnginePlugin::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor_ptr) {
     elem_num *= me_shape[i];
   }
   auto tensor_data = std::make_shared<TensorRefData>(ge_data, elem_num, ge_tensor.GetSize(), me_shape.size(), deleter);
-  auto type_id = transform::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
+  auto type_id = device::ascend::TransformUtil::ConvertGeDataType(ge_tensor_desc.GetDataType());
   auto tensor = std::make_shared<tensor::Tensor>(type_id, me_shape, tensor_data);
   auto tensor_impl = std::make_shared<TensorTensorImpl>(tensor);
   return MSTensor(tensor_impl);

@@ -93,16 +93,14 @@
 #include "minddata/dataset/kernels/ir/vision/vertical_flip_ir.h"
 #include "minddata/dataset/util/log_adapter.h"
 
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/ir/vision/pad_ir.h"
 #include "minddata/dataset/kernels/ir/vision/rescale_ir.h"
 #include "minddata/dataset/kernels/ir/vision/swap_red_blue_ir.h"
 #endif
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#endif
-#if !defined(ENABLE_ANDROID) && defined(ENABLE_FFMPEG)
+#if defined(ENABLE_FFMPEG)
 #include "minddata/dataset/kernels/image/video_utils.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -145,7 +143,6 @@ std::shared_ptr<TensorOperation> Affine::Parse() {
                                            data_->interpolation_, data_->fill_value_);
 }
 
-#ifndef ENABLE_ANDROID
 // AdjustBrightness Transform Operation.
 struct AdjustBrightness::Data {
   explicit Data(float brightness_factor) : brightness_factor_(brightness_factor) {}
@@ -274,7 +271,6 @@ BoundingBoxAugment::BoundingBoxAugment(const std::reference_wrapper<TensorTransf
 std::shared_ptr<TensorOperation> BoundingBoxAugment::Parse() {
   return std::make_shared<BoundingBoxAugmentOperation>(data_->transform_, data_->ratio_);
 }
-#endif  // not ENABLE_ANDROID
 
 // CenterCrop Transform Operation.
 struct CenterCrop::Data {
@@ -302,7 +298,6 @@ std::shared_ptr<TensorOperation> CenterCrop::Parse(const MapTargetDevice &env) {
   return nullptr;
 }
 
-#ifndef ENABLE_ANDROID
 // ConvertColor Transform Operation.
 struct ConvertColor::Data {
   explicit Data(ConvertMode convert_mode) : convert_mode_(convert_mode) {}
@@ -314,7 +309,6 @@ ConvertColor::ConvertColor(ConvertMode convert_mode) : data_(std::make_shared<Da
 std::shared_ptr<TensorOperation> ConvertColor::Parse() {
   return std::make_shared<ConvertColorOperation>(data_->convert_mode_);
 }
-#endif  // not ENABLE_ANDROID
 
 // Crop Transform Operation.
 struct Crop::Data {
@@ -331,7 +325,6 @@ std::shared_ptr<TensorOperation> Crop::Parse() {
   return std::make_shared<CropOperation>(data_->coordinates_, data_->size_);
 }
 
-#ifndef ENABLE_ANDROID
 // CutMixBatch Transform Operation.
 struct CutMixBatch::Data {
   Data(ImageBatchFormat image_batch_format, float alpha, float prob)
@@ -363,7 +356,6 @@ CutOut::CutOut(int32_t length, int32_t num_patches, bool is_hwc)
 std::shared_ptr<TensorOperation> CutOut::Parse() {
   return std::make_shared<CutOutOperation>(data_->length_, data_->num_patches_, data_->is_hwc_);
 }
-#endif  // not ENABLE_ANDROID
 
 // Decode Transform Operation.
 struct Decode::Data {
@@ -387,12 +379,12 @@ std::shared_ptr<TensorOperation> Decode::Parse(const MapTargetDevice &env) {
   return nullptr;
 }
 
-#if !defined(ENABLE_ANDROID) && defined(ENABLE_FFMPEG)
+#if defined(ENABLE_FFMPEG)
 // DecodeVideo Transform Operation.
 DecodeVideo::DecodeVideo() {}
 
 std::shared_ptr<TensorOperation> DecodeVideo::Parse() { return std::make_shared<DecodeVideoOperation>(); }
-#endif  // not ENABLE_ANDROID
+#endif
 
 #if defined(WITH_BACKEND) || defined(ENABLE_ACL) || defined(ENABLE_DVPP)
 // DvppDecodeVideo Transform Operation.
@@ -481,7 +473,6 @@ std::shared_ptr<TensorOperation> DvppDecodePng::Parse(const MapTargetDevice &env
   return nullptr;
 }
 #endif
-#ifndef ENABLE_ANDROID
 
 // EncodeJpeg Function.
 Status EncodeJpeg(const mindspore::MSTensor &image, mindspore::MSTensor *output, int quality) {
@@ -533,7 +524,6 @@ std::shared_ptr<TensorOperation> Erase::Parse() {
   return std::make_shared<EraseOperation>(data_->top_, data_->left_, data_->height_, data_->width_, data_->value_,
                                           data_->inplace_);
 }
-#endif  // not ENABLE_ANDROID
 
 // GaussianBlur Transform Operation.
 struct GaussianBlur::Data {
@@ -550,7 +540,6 @@ std::shared_ptr<TensorOperation> GaussianBlur::Parse() {
   return std::make_shared<GaussianBlurOperation>(data_->kernel_size_, data_->sigma_);
 }
 
-#ifndef ENABLE_ANDROID
 // GetImageNumChannels Function.
 Status GetImageNumChannels(const mindspore::MSTensor &image, dsize_t *channels) {
   RETURN_UNEXPECTED_IF_NULL(channels);
@@ -577,14 +566,12 @@ Status GetImageSize(const mindspore::MSTensor &image, std::vector<dsize_t> *size
 HorizontalFlip::HorizontalFlip() = default;
 
 std::shared_ptr<TensorOperation> HorizontalFlip::Parse() { return std::make_shared<HorizontalFlipOperation>(); }
-#endif  // not ENABLE_ANDROID
 
 // HwcToChw Transform Operation.
 HWC2CHW::HWC2CHW() = default;
 
 std::shared_ptr<TensorOperation> HWC2CHW::Parse() { return std::make_shared<HwcToChwOperation>(); }
 
-#ifndef ENABLE_ANDROID
 // Invert Transform Operation.
 Invert::Invert() = default;
 
@@ -599,7 +586,6 @@ struct MixUpBatch::Data {
 MixUpBatch::MixUpBatch(float alpha) : data_(std::make_shared<Data>(alpha)) {}
 
 std::shared_ptr<TensorOperation> MixUpBatch::Parse() { return std::make_shared<MixUpBatchOperation>(data_->alpha_); }
-#endif  // not ENABLE_ANDROID
 
 // Normalize Transform Operation.
 struct Normalize::Data {
@@ -618,12 +604,10 @@ std::shared_ptr<TensorOperation> Normalize::Parse() {
 }
 
 std::shared_ptr<TensorOperation> Normalize::Parse(const MapTargetDevice &env) {
-#ifdef ENABLE_ANDROID
   if (data_->is_hwc_ == false) {
     MS_LOG(ERROR) << "Normalize op on Lite does not support 'is_hwc' = false.";
     return nullptr;
   }
-#endif
   if (env == MapTargetDevice::kAscend310) {
 #if defined(WITH_BACKEND) || defined(ENABLE_ACL) || defined(ENABLE_DVPP)
     return std::make_shared<DvppNormalizeOperation>(data_->mean_, data_->std_);
@@ -635,7 +619,6 @@ std::shared_ptr<TensorOperation> Normalize::Parse(const MapTargetDevice &env) {
   return nullptr;
 }
 
-#ifndef ENABLE_ANDROID
 // NormalizePad Transform Operation.
 struct NormalizePad::Data {
   Data(const std::vector<float> &mean, const std::vector<float> &std, const std::string &dtype, bool is_hwc)
@@ -653,7 +636,6 @@ NormalizePad::NormalizePad(const std::vector<float> &mean, const std::vector<flo
 std::shared_ptr<TensorOperation> NormalizePad::Parse() {
   return std::make_shared<NormalizePadOperation>(data_->mean_, data_->std_, data_->dtype_, data_->is_hwc_);
 }
-#endif  // not ENABLE_ANDROID
 
 // Pad Transform Operation.
 struct Pad::Data {
@@ -668,7 +650,7 @@ Pad::Pad(const std::vector<int32_t> &padding, const std::vector<uint8_t> &fill_v
     : data_(std::make_shared<Data>(padding, fill_value, padding_mode)) {}
 
 std::shared_ptr<TensorOperation> Pad::Parse() {
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
   return std::make_shared<PadOperation>(data_->padding_, data_->fill_value_, data_->padding_mode_);
 #else
   MS_LOG(ERROR) << "Unsupported Pad.";
@@ -676,7 +658,6 @@ std::shared_ptr<TensorOperation> Pad::Parse() {
 #endif
 }
 
-#ifndef ENABLE_ANDROID
 // PadToSize Transform Operation.
 struct PadToSize::Data {
   Data(const std::vector<int32_t> &size, const std::vector<int32_t> &offset, const std::vector<uint8_t> &fill_value,
@@ -761,7 +742,6 @@ RandomAdjustSharpness::RandomAdjustSharpness(float degree, float prob) : data_(s
 std::shared_ptr<TensorOperation> RandomAdjustSharpness::Parse() {
   return std::make_shared<RandomAdjustSharpnessOperation>(data_->degree_, data_->probability_);
 }
-#endif  // not ENABLE_ANDROID
 
 // RandomAffine Transform Operation.
 struct RandomAffine::Data {
@@ -792,7 +772,6 @@ std::shared_ptr<TensorOperation> RandomAffine::Parse() {
                                                  data_->shear_ranges_, data_->interpolation_, data_->fill_value_);
 }
 
-#ifndef ENABLE_ANDROID
 // RandomAutoContrast Transform Operation.
 struct RandomAutoContrast::Data {
   Data(float cutoff, const std::vector<uint32_t> &ignore, float prob)
@@ -1249,7 +1228,6 @@ Status ReadVideoTimestamps(const std::string &filename, std::tuple<std::vector<f
   return Status::OK();
 }
 #endif
-#endif  // not ENABLE_ANDROID
 
 // Rescale Transform Operation.
 struct Rescale::Data {
@@ -1261,7 +1239,7 @@ struct Rescale::Data {
 Rescale::Rescale(float rescale, float shift) : data_(std::make_shared<Data>(rescale, shift)) {}
 
 std::shared_ptr<TensorOperation> Rescale::Parse() {
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
   return std::make_shared<RescaleOperation>(data_->rescale_, data_->shift_);
 #else
   MS_LOG(ERROR) << "Unsupported Rescale.";
@@ -1300,7 +1278,6 @@ std::shared_ptr<TensorOperation> Resize::Parse(const MapTargetDevice &env) {
   return nullptr;
 }
 
-#ifndef ENABLE_ANDROID
 // ResizedCrop Transform Operation.
 struct ResizedCrop::Data {
   Data(int32_t top, int32_t left, int32_t height, int32_t width, const std::vector<int32_t> &size,
@@ -1322,7 +1299,6 @@ std::shared_ptr<TensorOperation> ResizedCrop::Parse() {
   return std::make_shared<ResizedCropOperation>(data_->top_, data_->left_, data_->height_, data_->width_, data_->size_,
                                                 data_->interpolation_);
 }
-#endif  // not ENABLE_ANDROID
 
 // ResizePreserveAR Transform Operation.
 struct ResizePreserveAR::Data {
@@ -1340,7 +1316,6 @@ std::shared_ptr<TensorOperation> ResizePreserveAR::Parse() {
   return std::make_shared<ResizePreserveAROperation>(data_->height_, data_->width_, data_->img_orientation_);
 }
 
-#ifndef ENABLE_ANDROID
 // ResizeWithBBox Transform Operation.
 struct ResizeWithBBox::Data {
   Data(const std::vector<int32_t> &size, InterpolationMode interpolation)
@@ -1355,7 +1330,6 @@ ResizeWithBBox::ResizeWithBBox(const std::vector<int32_t> &size, InterpolationMo
 std::shared_ptr<TensorOperation> ResizeWithBBox::Parse() {
   return std::make_shared<ResizeWithBBoxOperation>(data_->size_, data_->interpolation_);
 }
-#endif  // not ENABLE_ANDROID
 
 // RGB2BGR Transform Operation.
 std::shared_ptr<TensorOperation> RGB2BGR::Parse() { return std::make_shared<RgbToBgrOperation>(); }
@@ -1385,22 +1359,16 @@ Rotate::Rotate(float degrees, InterpolationMode resample, bool expand, const std
     : data_(std::make_shared<Data>(degrees, resample, expand, center, fill_value)) {}
 
 std::shared_ptr<TensorOperation> Rotate::Parse() {
-#ifndef ENABLE_ANDROID
   if (!data_->lite_impl_) {
     return std::make_shared<RotateOperation>(data_->degrees_, data_->interpolation_mode_, data_->expand_,
                                              data_->center_, data_->fill_value_);
   }
-#else
-  if (data_->lite_impl_) {
-    return std::make_shared<RotateOperation>(data_->angle_id_);
-  }
-#endif  // not ENABLE_ANDROID
+
   std::string platform = data_->lite_impl_ ? "Cloud" : "Android";
   MS_LOG(ERROR) << "This Rotate API is not supported for " + platform + ", use another Rotate API.";
   return nullptr;
 }
 
-#ifndef ENABLE_ANDROID
 // RgbaToBgr Transform Operation.
 RGBA2BGR::RGBA2BGR() = default;
 
@@ -1438,12 +1406,11 @@ struct Solarize::Data {
 Solarize::Solarize(const std::vector<float> &threshold) : data_(std::make_shared<Data>(threshold)) {}
 
 std::shared_ptr<TensorOperation> Solarize::Parse() { return std::make_shared<SolarizeOperation>(data_->threshold_); }
-#endif  // not ENABLE_ANDROID
 
 // SwapRedBlue Transform Operation.
 SwapRedBlue::SwapRedBlue() = default;
 std::shared_ptr<TensorOperation> SwapRedBlue::Parse() {
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
   return std::make_shared<SwapRedBlueOperation>();
 #else
   MS_LOG(ERROR) << "Unsupported SwapRedBlue.";
@@ -1451,7 +1418,6 @@ std::shared_ptr<TensorOperation> SwapRedBlue::Parse() {
 #endif
 }
 
-#ifndef ENABLE_ANDROID
 // ToTensor Transform Operation.
 struct ToTensor::Data {
   explicit Data(const std::string &output_type) : output_type_(DataType(output_type)) {}
@@ -1547,7 +1513,6 @@ Status WritePng(const std::string &filename, const mindspore::MSTensor &image, i
   RETURN_IF_NOT_OK(mindspore::dataset::WritePng(filename, image_de_tensor, compression_level));
   return Status::OK();
 }
-#endif  // not ENABLE_ANDROID
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

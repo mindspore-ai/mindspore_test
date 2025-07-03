@@ -15,19 +15,17 @@
  */
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "include/common/utils/utils.h"
-#include "frontend/expander/bprop/common_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "grad/grad_utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradScipyOps)
 REG_BPROP_BUILDER("SolveTriangular").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto a = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex6);
-  auto trans = ib->GetInput(kIndex2);
-  auto lower = ib->GetInput(kIndex3);
-  auto unit_diagonal = ib->GetInput(kIndex4);
+  auto a = ib->GetInput(i0);
+  auto out = ib->GetInput(i5);
+  auto dout = ib->GetInput(i6);
+  auto trans = ib->GetInput(i2);
+  auto lower = ib->GetInput(i3);
+  auto unit_diagonal = ib->GetInput(i4);
   auto target = ib->GetTargetFromContext();
   if (target == "GPU") {
     constexpr int64_t KTransN = 0;
@@ -83,9 +81,9 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
   auto is_compute_v = GetValue<bool>(ib->GetAttr("compute_eigenvectors"));
   auto is_lower = GetValue<bool>(ib->GetAttr("lower"));
   auto lower = static_cast<int64_t>(is_lower);
-  auto a = ib->GetInput(kIndex0);
-  auto out = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex2);
+  auto a = ib->GetInput(i0);
+  auto out = ib->GetInput(i1);
+  auto dout = ib->GetInput(i2);
 
   // helper functions
   auto Adjoint = [](BpropBuilder *ib, const NodePtr &x) -> NodePtr {
@@ -169,7 +167,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
   NodePtr grad_a_diagonal;
   auto grad_a_shape = ib->GetShape(grad_a);
   auto eye_node_for_diag =
-    EyeTensor(ib, LongToInt(grad_a_shape[grad_a_shape.size() - kDim2]), LongToInt(grad_a_shape.back()));
+    EyeTensor(ib, LongToInt(grad_a_shape[grad_a_shape.size() - i2]), LongToInt(grad_a_shape.back()));
   auto eye_tensor_broadcast = ib->BroadcastTo(eye_node_for_diag, grad_a);
 
   auto prod = ib->Mul(grad_a, ib->Cast(eye_tensor_broadcast, ib->GetDtype(grad_a)));
@@ -181,7 +179,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
   for (int idx = 0; idx < static_cast<int>(grad_a_shape.size()) - 2; idx++) {
     size_vec.push_back(grad_a_shape[IntToSize(idx)]);
   }
-  size_vec.push_back(std::min(grad_a_shape[grad_a_shape.size() - kDim2], grad_a_shape.back()));
+  size_vec.push_back(std::min(grad_a_shape[grad_a_shape.size() - i2], grad_a_shape.back()));
 
   grad_a_diagonal =
     ib->Cast(ib->Slice(res, ib->Value<ShapeVector>(begin), ib->Value<ShapeVector>(size_vec)), ib->GetDtype(grad_a));

@@ -16,10 +16,11 @@
 #include "kernel/cpu/lower_bound_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lower_bound_cpu {
 namespace {
 constexpr size_t kInputsNum = 2;
 constexpr size_t kOutputsNum = 1;
@@ -137,5 +138,6 @@ const std::vector<std::pair<KernelAttr, LowerBoundCpuKernelMod::KernelRunFunc>> 
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LowerBound, LowerBoundCpuKernelMod);
+}  // namespace lower_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore

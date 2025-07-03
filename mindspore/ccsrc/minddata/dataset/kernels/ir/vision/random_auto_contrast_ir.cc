@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/random_auto_contrast_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_auto_contrast_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomAutoContrastOperation
 RandomAutoContrastOperation::RandomAutoContrastOperation(float cutoff, const std::vector<uint32_t> &ignore, float prob)
     : cutoff_(cutoff), ignore_(ignore), probability_(prob) {}
@@ -71,7 +68,6 @@ Status RandomAutoContrastOperation::from_json(nlohmann::json op_params, std::sha
   *operation = std::make_shared<vision::RandomAutoContrastOperation>(cutoff, ignore, prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

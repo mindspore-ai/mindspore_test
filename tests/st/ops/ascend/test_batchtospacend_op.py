@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
@@ -74,6 +73,6 @@ def test_batch_to_space_nd_dynamic():
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     output = dyn_net(input_x, y, z, input_y)
     assert (output.asnumpy() == expect).all()
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_level="O0")
     output = dyn_net(input_x, y, z, input_y)
     assert (output.asnumpy() == expect).all()

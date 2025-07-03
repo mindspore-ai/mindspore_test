@@ -18,13 +18,14 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace lite {
 namespace {
 STATUS ReplaceConstant(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
-  MS_ASSERT(func_graph != nullptr);
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_NULL_PTR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_NULL_PTR, "cnode is nullptr!");
   if (cnode->size() != opt::kInputSizeTwo) {
     MS_LOG(ERROR) << "TF's constant-op must have two inputs, but got " << cnode->size();
     return RET_ERROR;

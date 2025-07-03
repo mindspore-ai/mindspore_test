@@ -32,7 +32,7 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 // The dummy cluster context interface. This class is for ut test and windows compiling.
-class BACKEND_EXPORT ClusterContext {
+class BACKEND_COMMON_EXPORT ClusterContext {
  public:
   ~ClusterContext() = default;
   DISABLE_COPY_AND_ASSIGN(ClusterContext)

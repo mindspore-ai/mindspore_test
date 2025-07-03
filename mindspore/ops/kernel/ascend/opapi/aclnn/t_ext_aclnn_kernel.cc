@@ -19,11 +19,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace t_ext {
 
 void TExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
@@ -45,5 +46,6 @@ bool TExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TExt, TExtAscend);
+}  // namespace t_ext
 }  // namespace kernel
 }  // namespace mindspore

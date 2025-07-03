@@ -21,7 +21,15 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph_cloner.h"
-#include "pipeline/pynative/pynative_execute.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -29,9 +37,9 @@ namespace irpass {
 namespace internal {
 // White list of ops with taylor rule.
 const mindspore::HashSet<std::string> taylor_ops{
-  prim::kPrimAdd->name(), prim::kPrimSub->name(), prim::kPrimRealDiv->name(),
-  prim::kPrimMul->name(), prim::kPrimSin->name(), prim::kPrimCos->name(),
-  prim::kPrimTan->name(), prim::kPrimExp->name(), prim::kPrimLog->name()};
+  prim::kPrimAdd->name(), prim::kPrimSub->name(), prim::kPrimRealDiv->name(), prim::kPrimDiv->name(),
+  prim::kPrimMul->name(), prim::kPrimSin->name(), prim::kPrimCos->name(),     prim::kPrimTan->name(),
+  prim::kPrimExp->name(), prim::kPrimLog->name()};
 // The ops below are excluded when considering taylor rules.
 const mindspore::HashSet<std::string> taylor_exception_ops{prim::kPrimReturn->name(), prim::kPrimMakeTuple->name(),
                                                            prim::kPrimTupleGetItem->name(), prim::kPrimCast->name()};

@@ -21,11 +21,12 @@
 #include <utility>
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_reshape_cpu {
 class SparseReshapeCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseReshapeCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseReshapeCpuKernelMod : public NativeCpuKernelMod {
   bool SameConvert(int64_t input_size, int64_t output_size, int64_t input_rank, int64_t output_rank, int64_t *in0,
                    const int64_t *in1, int64_t *out0, const int64_t *out1) const;
 };
+}  // namespace sparse_reshape_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

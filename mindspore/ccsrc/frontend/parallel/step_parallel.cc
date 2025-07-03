@@ -127,10 +127,15 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     return false;
   }
 
+  const auto &root_all_cnodes = root->GetOrderedCnodes();
   if (root->has_flag(SEMI_AUTO_PARALLEL_RUN_ONCE_ONLY)) {
-    // whole graph (forward and backward) process
-    auto whole_graph_processor = std::make_shared<ParallelWholeGraphProcessor>(processor_context);
-    whole_graph_processor->Process();
+    if (std::find_if(root_all_cnodes.begin(), root_all_cnodes.end(), [](const CNodePtr &cnode) {
+          return IsPrimitiveCNode(cnode, prim::kPrimJ);
+        }) == root_all_cnodes.end()) {
+      // whole graph (forward and backward) process
+      auto whole_graph_processor = std::make_shared<ParallelWholeGraphProcessor>(processor_context);
+      whole_graph_processor->Process();
+    }
     return false;
   }
 

@@ -37,6 +37,7 @@ using PassItem = std::pair<std::string, std::function<bool(ResourcePtr)>>;
 extern std::vector<PassItem> kVmPasses;
 extern std::vector<PassItem> kInlinePasses;
 extern std::vector<PassItem> kPynativePasses;
+extern std::vector<PassItem> kAddAttrWithInlinePass;
 
 bool OptPassAGroup(const ResourcePtr &resource);
 bool CconvPass(const ResourcePtr &resource);
@@ -46,21 +47,41 @@ bool PipelineParallelScheduler(const ResourcePtr &resource);
 bool AutoParallelPass(const ResourcePtr &resource);
 bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource);
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource);
+bool EliminateUnusedParamsPass(const ResourcePtr &resource);
 bool ValidatePass(const ResourcePtr &resource);
 bool ConvertPrepareAdapt(const ResourcePtr &resource);
 bool AddCacheEmbeddingPass(const ResourcePtr &resource);
 bool GradPartialTransformPass(const ResourcePtr &resource);
-void ReclaimOptimizer();
+FRONTEND_EXPORT void ReclaimOptimizer();
 bool PynativeOptPass(const ResourcePtr &resource);
-bool EliminateSpecialOpOptPass(const ResourcePtr &resource);
-bool ME_EXPORT AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
+bool OptAfterJitGradPass(const ResourcePtr &resource);
+bool FRONTEND_EXPORT AutoMonadElimOptPass(const FuncGraphPtr &func_graph);
 FuncGraphPtr PrimBpOptPassStep1(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource);
 FuncGraphPtr PrimBpOptPassStep2(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource,
                                 const std::vector<bool> &need_grad_flags);
 FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormalize);
-FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource);
-FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow);
+FuncGraphPtr CheckInvalidDoutGraphPass(const ResourcePtr &resource);
+FRONTEND_EXPORT FuncGraphPtr HighGradBpropGraphPass(const ResourcePtr &resource);
+FRONTEND_EXPORT FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_flow);
 void UpdateArgsSpec(const FuncGraphPtr &func_graph, const ResourcePtr &resource);
+bool RewriterBeforeOptAPass(const ResourcePtr &resource);
+bool ExpandDumpFlagPass(const ResourcePtr &resource);
+bool JitOptPassAGroup(const ResourcePtr &resource);
+bool JitRewriterAfterOptAPass(const ResourcePtr &resource);
+bool JitOptPassBGroup(const ResourcePtr &resource);
+bool LoopUnrollPass(const ResourcePtr &resource);
+bool JitOptPassAfterCconvGroup(const ResourcePtr &resource);
+bool RemoveValueNodeDuplicationsPassForJit(const ResourcePtr &resource);
+bool PartialUnusedArgsEliminatePass(const ResourcePtr &resource);
+bool EnvironConversionPass(const ResourcePtr &resource);
+bool PyInterpretToExecutePass(const ResourcePtr &resource);
+bool ConvertAfterRewriterPass(const ResourcePtr &resource);
+bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource);
+bool RewriterAfterOptAPass(const ResourcePtr &resource);
+bool AddRecomputationPass(const ResourcePtr &resource);
+bool OptAfterRecomputeGroup(const ResourcePtr &resource);
+bool SetTrainingFlagPass(const ResourcePtr &resource);
+bool BackendPass(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore
 

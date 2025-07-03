@@ -30,7 +30,7 @@ def test_graph_conj():
     Expectation: the result match numpy conj
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Conj()(ms_x)
     expect = np.conj(x)
@@ -46,7 +46,7 @@ def test_pynative_conj():
     Expectation: the result match numpy conj
     """
     context.set_context(mode=context.PYNATIVE_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Conj()(ms_x)
     expect = np.conj(x)
@@ -62,7 +62,7 @@ def test_graph_real():
     Expectation: the result match numpy real
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Real()(ms_x)
     expect = np.real(x)
@@ -78,7 +78,7 @@ def test_pynative_real():
     Expectation: the result match numpy real
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Real()(ms_x)
     expect = np.real(x)
@@ -94,7 +94,7 @@ def test_graph_imag():
     Expectation: the result match numpy conj
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Imag()(ms_x)
     expect = np.imag(x)
@@ -110,7 +110,7 @@ def test_pynative_imag():
     Expectation: the result match numpy image
     """
     context.set_context(mode=context.GRAPH_MODE)
-    x = np.asarray(np.complex(1.3 + 0.4j), dtype=np.complex64)
+    x = np.asarray(np.complex_(1.3 + 0.4j), dtype=np.complex64)
     ms_x = Tensor(x, mstype.complex64)
     output = P.Imag()(ms_x)
     expect = np.imag(x)

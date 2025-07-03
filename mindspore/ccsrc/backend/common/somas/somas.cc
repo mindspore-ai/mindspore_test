@@ -41,6 +41,7 @@
 #include "include/common/thread_pool.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #endif
 namespace mindspore {
 namespace somas {
@@ -81,11 +82,6 @@ void SetSomasResult(std::vector<std::pair<size_t, size_t>> &&output_somas_result
   if (!kernel_info->SetSomasResult(std::move(output_somas_result), std::move(workspace_somas_result))) {
     MS_LOG(INTERNAL_EXCEPTION) << "Node " << node->DebugString() << "set somas result fail. ";
   }
-}
-
-bool ShouldSkipNode(const SomasNodePtr &node) {
-  return node->GetType() != kCommunicationNode ||
-         node->scope_full_name_.find(kMatMulAllReduceOpName) != std::string::npos;
 }
 
 void MergeBlocks(std::vector<Block> *block_list, std::stack<Block> *merged_blocks) {
@@ -712,7 +708,8 @@ void Somas::InitSomasStreamAndNode(const session::KernelGraph &graph) {
       type = kCommunicationNode;
     }
     MS_EXCEPTION_IF_NULL(stream);
-    auto node = std::make_shared<SomasNode>(kernel->fullname_with_scope(), i, type, stream->GetId());
+    bool is_need_contigous = AnfAlgo::IsNeedContinuesMemoryOp(kernel);
+    auto node = std::make_shared<SomasNode>(kernel->fullname_with_scope(), i, type, is_need_contigous, stream->GetId());
     MS_EXCEPTION_IF_NULL(node);
     MS_EXCEPTION_IF_CHECK_FAIL(nodes_list_.size() == i, "node_list_ size error!!!");
     nodes_list_.push_back(node);
@@ -1232,7 +1229,7 @@ void Somas::UnReuseNodeProcess(const session::KernelGraph &graph) {
 void Somas::CommunicationNodeProcess() {
   for (const auto &node : nodes_list_) {
     MS_EXCEPTION_IF_NULL(node);
-    if (ShouldSkipNode(node)) {
+    if (!node->IsNeedContigous()) {
       continue;
     }
 

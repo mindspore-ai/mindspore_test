@@ -290,7 +290,7 @@ def test_gather_tensor(data_type):
     Expectation: the result match to numpy
     """
     x = np.array([1, 2, 3, 4, 5, 6, 7]).astype(data_type)
-    input_indices = Tensor(np.array([0, 2, 4, 2, 6], dtype=np.int))
+    input_indices = Tensor(np.array([0, 2, 4, 2, 6], dtype=np.int_))
     axis = 0
     y_expect = np.array([1, 3, 5, 3, 7]).astype(data_type)
 
@@ -321,7 +321,7 @@ def test_gather_tensor_out_of_bound(data_type):
     Expectation: raise out of bound runtime error
     """
     x = np.array([1, 2, 3, 4, 5, 6, 7]).astype(data_type)
-    input_indices = Tensor(np.array([0, 100, 4, 2, 6], dtype=np.int))
+    input_indices = Tensor(np.array([0, 100, 4, 2, 6], dtype=np.int_))
     axis = 0
 
     graph_table_tensor = Tensor(x)
@@ -341,7 +341,7 @@ def test_gather_tensor_8d(data_type):
     Expectation: the result match to numpy
     """
     x = np.random.randn(1, 2, 3, 4, 5, 6, 7, 8).astype(data_type)
-    indices = np.array([3, 1, 2], dtype=np.int)
+    indices = np.array([3, 1, 2], dtype=np.int_)
     axis = 7
     y_expect = np.take(x, indices, axis)
 

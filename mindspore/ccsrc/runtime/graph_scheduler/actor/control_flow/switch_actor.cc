@@ -16,7 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/control_flow/switch_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
-#include "kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
 #include "abstract/utils.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "utils/log_adapter.h"
@@ -34,7 +34,7 @@ SwitchActor::SwitchActor(const std::string &name, const AID &memory_manager_aid,
   output_data_by_output_index_.resize(kSwitchDefaultOutputNum);
 }
 
-void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
+void SwitchActor::FetchInput(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
   // Call the base class interface to get input data and input partial.
@@ -43,7 +43,7 @@ void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
   MS_LOG(INFO) << "Sync stream in the condition switch.";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   size_t index = GetIndex(context);
-  if (common::IsDryRun()) {
+  if (IsSkippedLaunch()) {
     // dry run switch index is always 0.
     index = input_partials_.size() - kSwitchCondPos - 1;
   }
@@ -62,16 +62,16 @@ void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
 
   for (auto &output_data : output_data_by_output_index_[0]) {
     MS_EXCEPTION_IF_NULL(output_data);
-    MS_EXCEPTION_IF_NULL(input_device_tensors_[index + kSwitchCondPos]);
-    output_data->data_ = input_device_tensors_[index + kSwitchCondPos];
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[index + kSwitchCondPos]);
+    output_data->data_ = input_kernel_tensors_[index + kSwitchCondPos];
   }
 }
 
-size_t SwitchActor::GetIndex(const OpContext<DeviceTensor> *const context) const {
+size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
+  MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
 
-  DeviceTensor *device_tensor = input_device_tensors_[0];
+  DeviceTensor *device_tensor = input_kernel_tensors_[0]->device_address().get();
   TypeId type_id = device_tensor->type_id();
   size_t size = abstract::TypeIdSize(type_id);
   if (size > sizeof(int64_t)) {

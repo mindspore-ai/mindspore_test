@@ -29,6 +29,7 @@
 #include "infer/range_v2.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace opt {
@@ -48,6 +49,7 @@ STATUS AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, cons
     value = value_node->value();
   } else if (input_node->isa<Parameter>()) {
     auto parameter_node = input_node->cast<ParameterPtr>();
+    CHECK_NULL_RETURN(parameter_node->abstract());
     value = parameter_node->abstract()->BuildValue();
   }
   if (value == nullptr) {
@@ -59,12 +61,12 @@ STATUS AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, cons
     return lite::RET_ERROR;
   }
 
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     primitive->AddAttr(arg_name, value);
     return RET_OK;
   }
   auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(arg_name, value, primitive->name());
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   auto tensor_shape = tensor->shape_c();
   MS_LOG(DEBUG) << cnode->ToString() << " 's input[" << input_index << "] is tensor.";
   if (tensor_shape.empty()) {

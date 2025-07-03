@@ -72,22 +72,6 @@ def split_network(network, checkpoint_filenames, train_strategy_filename, strict
             - dataset (Dataset): Specifies the preprocessing method of the dataset, which is used to import the
               preprocessing of the dataset into MindIR.
 
-            - obf_config (dict): obfuscation config.
-
-              - type (str): The type of obfuscation, only 'dynamic' is supported until now.
-              - obf_ratio (float, str): The ratio of nodes in original model that would be obfuscated. `obf_ratio`
-                should be in range of (0, 1] or in ["small", "medium", "large"].
-              - customized_func (function): A python function used for customized function mode, which used for control
-                the switch branch of obfuscation structure. The outputs of customized_func should be boolean. This
-                function needs to ensure that its result is constant for any input. Users can refer to opaque
-                predicates. If customized_func is set, then it should be passed to `load()` interface when loading
-                obfuscated model.
-              - obf_random_seed (int): The random seed used for determine the distribution of confusion branches and the
-                weight confusion coefficient, which should be in (0, 9223372036854775807]. If `obf_random_seed` is set,
-                then it should be passed to :class:`nn.GraphCell()` interface when loading obfuscated model. It should
-                be noted that at least one of `customized_func` or `obf_random_seed` should be set, and the latter mode
-                would be applied if both of them are set.
-
 
     Raises:
         TypeError: The type of inputs do not match the requirements.

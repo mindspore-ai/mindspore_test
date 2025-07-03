@@ -18,11 +18,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_cpu {
 class GatherDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<GatherDCpuKernelMod> {
  public:
   GatherDCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class GatherDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<size_t> index_shape_;
   std::vector<size_t> output_shape_;
 };
+}  // namespace gather_d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

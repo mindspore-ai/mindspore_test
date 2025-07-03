@@ -33,6 +33,14 @@
 #include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore::opt {
 namespace {
@@ -57,6 +65,7 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   if (utils::isa<ValueNode>(first_input)) {
     auto value_node = first_input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, RET_ERROR);
     MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = first_input;
@@ -64,6 +73,7 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   if (utils::isa<ValueNode>(second_input)) {
     auto value_node = second_input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, RET_ERROR);
     MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = second_input;
@@ -87,12 +97,14 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   auto first_input = cnode->input(1);
   MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr!");
   if (CheckPrimitiveType(first_input, prim::kPrimTranspose)) {
+    MS_CHECK_TRUE_MSG(cnode->input(1)->cast<CNodePtr>() != nullptr, RET_ERROR, "cnode input is nullptr!");
     first_input = cnode->input(1)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr");
   }
   auto second_input = cnode->input(kInputIndexTwo);
   MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr!");
   if (CheckPrimitiveType(second_input, prim::kPrimTranspose)) {
+    MS_CHECK_TRUE_MSG(cnode->input(kInputIndexTwo)->cast<CNodePtr>() != nullptr, RET_ERROR, "cnode input is nullptr!");
     second_input = cnode->input(kInputIndexTwo)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr");
   }
@@ -332,6 +344,8 @@ int RemoveRedundantOpPass::RemoveDropoutOp(const AnfNodePtr &anf_node, const Fun
         MS_LOG(ERROR) << "dropout out node is invalid.";
         return lite::RET_ERROR;
       }
+      MS_CHECK_TRUE_RET(node->cast<CNodePtr>() != nullptr, RET_ERROR);
+      MS_CHECK_TRUE_RET(node->cast<CNodePtr>()->size() > kInputSizeThree, RET_ERROR);
       auto get_index_node = node->cast<CNodePtr>()->input(kInputIndexTwo)->cast<ValueNodePtr>();
       if (get_index_node == nullptr) {
         MS_LOG(ERROR) << "tuple get item node is invalid.";

@@ -54,7 +54,7 @@ def test_while_grad():
     x = Tensor([2.0], dtype=mstype.float32)
     y = Tensor([2.0], dtype=mstype.float32)
     ms_net = GradNet(Net())
-    jit(GradNet.construct, mode="PIJit")(ms_net, x, y)
+    jit(GradNet.construct, capture_mode="bytecode")(ms_net, x, y)
     GradNet(ms_net)(x, y)
 
 
@@ -83,7 +83,7 @@ def test_while_header_spec_twice():
     x = Tensor(np.array([3], np.float32))
     y = Tensor(np.array([1], np.float32))
     net = WhileSpecTwiceNet()
-    jit(WhileSpecTwiceNet.construct, mode="PIJit")(net, x, y)
+    jit(WhileSpecTwiceNet.construct, capture_mode="bytecode")(net, x, y)
     grad_net = F.grad(net, grad_position=(0, 1))
     fgrad = grad_net(x, y)
     print('ms backward: ', fgrad)

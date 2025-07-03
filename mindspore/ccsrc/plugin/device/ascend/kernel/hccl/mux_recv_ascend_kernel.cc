@@ -15,8 +15,8 @@
  */
 #include "plugin/device/ascend/kernel/hccl/mux_recv_ascend_kernel.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 namespace mindspore {
@@ -49,6 +49,10 @@ bool MuxRecvAscendKernel::Launch(const std::vector<KernelTensor *> &, const std:
   }
   MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (NeedReGetHcom()) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(outputs[0]->device_ptr(), hccl_count_,
                                                                hccl_data_type_list_[0], src_rank_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace scale_and_translate_cpu {
 namespace {
 constexpr size_t kScaleAndTranslateInputsNum = 4;
 constexpr size_t kScaleAndTranslateOutputsNum = 1;
@@ -560,5 +561,6 @@ std::vector<KernelAttr> ScaleAndTranslateGradCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScaleAndTranslate, ScaleAndTranslateCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScaleAndTranslateGrad, ScaleAndTranslateGradCpuKernelMod);
+}  // namespace scale_and_translate_cpu
 }  // namespace kernel
 }  // namespace mindspore

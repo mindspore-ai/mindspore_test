@@ -20,7 +20,7 @@ leaky_relu_ext:
     
         Args:
             input (Tensor): The input of leaky_relu is a Tensor of any dimension.
-            negative_slope (Union[int, float]): Slope of the activation function when the element of `input` is less than 0.
+            negative_slope (Union[int, float], optional): Slope of the activation function when the element of `input` is less than 0.
               Default: ``0.01`` .
     
         Returns:

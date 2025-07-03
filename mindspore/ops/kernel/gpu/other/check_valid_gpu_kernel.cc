@@ -22,6 +22,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/infer/check_valid.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/check_valid_impl.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {

@@ -18,7 +18,7 @@ mindspore.nn.CELU
         :align: center
 
     参数：
-        - **alpha** (float) - CELU公式中的 :math:`\alpha` 值。默认值： ``1.0`` 。
+        - **alpha** (float，可选) - CELU公式中的 :math:`\alpha` 值。默认值： ``1.0`` 。
 
     输入：
         - **x** (Tensor) - CELU的输入。其数据类型为float16或float32，shape为 :math:`(N,*)` ，其中 :math:`*` 表示任何数量的附加维度。

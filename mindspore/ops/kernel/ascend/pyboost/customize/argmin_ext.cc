@@ -16,24 +16,24 @@
 
 #include "kernel/ascend/pyboost/customize/argmin_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                            const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
+tensor::TensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                        const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
   MS_LOG(DEBUG) << "aclnnArgmin call start";
   OpRunner::InferOpOutput(op, input_tensor, dim, keepdim);
 
   int64_t real_dim = 0;
   bool dim_is_none = true;
   auto real_keepdim = false;
-  BaseTensorPtr real_input;
+  TensorPtr real_input;
   if (dim.has_value()) {
     dim_is_none = false;
     real_dim = GetValue<int64_t>(dim.value());
@@ -41,8 +41,7 @@ tensor::BaseTensorPtr ArgMinAscendCustomize(const std::shared_ptr<OpRunner> &op,
     real_input = input_tensor;
   } else {
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    real_input = reshape_op->Call(
-      input_tensor, std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(-1)})));
+    real_input = reshape_op->Call(input_tensor, {-1});
   }
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), real_input);

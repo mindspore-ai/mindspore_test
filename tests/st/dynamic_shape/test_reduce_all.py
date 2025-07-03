@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -66,7 +66,7 @@ def test_reduce_all_vmap(mode):
     """
     ms.context.set_context(mode=mode)
     in_axes = -1
-    x = ms.Tensor(np.random.randint(low=0, high=2, size=(4, 3, 2, 2)).astype(np.bool))
+    x = ms.Tensor(np.random.randint(low=0, high=2, size=(4, 3, 2, 2)).astype(np.bool_))
     nest_vmap = ops.vmap(ops.vmap(reduce_all_forward_func, in_axes=in_axes, out_axes=-1), in_axes=in_axes, out_axes=-1)
     out = nest_vmap(x)
     expect_out = reduce_all_forward_func(x)

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_k.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {
@@ -32,6 +34,7 @@ int KVCacheMgrLoadFusion::RemoveLoadOp(const AnfNodePtr &anf_node, const FuncGra
                                        const CNodePtr &kv_cache_cnode) {
   const int expected_load_input_count = 3;
   auto load_cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(load_cnode);
   MS_CHECK_TRUE_RET(load_cnode->size() == expected_load_input_count, lite::RET_NO_CHANGE);
   const size_t past_input_index = 1;
   const size_t input_para_index = 1;

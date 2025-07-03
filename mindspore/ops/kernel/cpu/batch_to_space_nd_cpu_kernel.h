@@ -23,11 +23,12 @@
 #include <algorithm>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batch_to_space_nd_cpu {
 class BatchToSpaceNDCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<BatchToSpaceNDCpuKernelMod> {
  public:
   BatchToSpaceNDCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class BatchToSpaceNDCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
   int64_t input_size_{0};
   int64_t output_size_{0};
 };
+}  // namespace batch_to_space_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

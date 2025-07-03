@@ -16,11 +16,10 @@
 
 #include "tools/converter/adapter/acl/mapper/gather_d_mapper.h"
 #include <memory>
-#include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "include/registry/converter_context.h"
 #include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_g.h"
 
 namespace mindspore {
 namespace lite {
@@ -81,6 +80,9 @@ STATUS ReplaceDimFromInt32ParameterToInt64Value(const CNodePtr &cnode, int64_t d
 }
 }  // namespace
 
+using mindspore::ops::kNameGatherD;
+
+GatherDMapper::GatherDMapper() : PrimitiveMapper(kNameGatherD) {}
 // ascend op_adaptor only supports transforming from ValueNode input to ge op attribute, but NOT ParameterNode,
 // which lite used to represent const value.
 // this mapper replaces the 3rd input('dim') of type ParamterNode to ValueNode-typed input.

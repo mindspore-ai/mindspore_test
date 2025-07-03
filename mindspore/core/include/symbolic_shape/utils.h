@@ -43,7 +43,12 @@ MS_CORE_API SymbolPtr IntValues2Symbol(const std::vector<int64_t> &shape, const 
 MS_CORE_API int64_t AsInt(const Symbol *s);
 inline int64_t AsInt(const SymbolPtr &s) { return AsInt(s.get()); }
 
-inline int64_t NormAxis(int64_t axis, size_t rank) { return axis >= 0 ? axis : axis + static_cast<int64_t>(rank); }
+inline int64_t NormAxis(int64_t axis, size_t rank) {
+  if (MS_UNLIKELY(axis < -static_cast<int64_t>(rank) || axis >= static_cast<int64_t>(rank))) {
+    MS_LOG(INTERNAL_EXCEPTION) << "The axis should be in range [-" << rank << ", " << rank << "), but got " << axis;
+  }
+  return axis >= 0 ? axis : axis + static_cast<int64_t>(rank);
+}
 MS_CORE_API std::set<int64_t> NormAxis(const ListSymbol *axis, size_t rank);
 
 MS_CORE_API std::string SymbolListToStr(const SymbolPtrList &slist, const std::string &pre, const std::string &post,

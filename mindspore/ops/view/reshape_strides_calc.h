@@ -21,7 +21,8 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
+                                                      const std::vector<int64_t> &shape);
 OPS_API TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 OPS_API TensorStorageInfoPtrList ReshapeCalcImpl(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
                                                  const std::vector<int64_t> &shape);

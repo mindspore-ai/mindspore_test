@@ -18,10 +18,11 @@
 
 #include "mindspore/ops/infer/dynamic_broadcast_gradient_args.h"
 #include "kernel/cpu/dynamic_broadcast_grad_args_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_broadcast_grad_args_cpu {
 namespace {
 constexpr size_t kDynamicBroadcastGradientArgsInputsNum = 2;
 constexpr size_t kDynamicBroadcastGradientArgsOutputsNum = 2;
@@ -199,5 +200,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &DynamicBroadcastGradien
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicBroadcastGradientArgs, DynamicBroadcastGradientArgsCpuKernelMod);
+}  // namespace dynamic_broadcast_grad_args_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -5,7 +5,12 @@ echo "cpp dir: ${LITE_ST_CPP_DIR}"
 echo "model path: ${LITE_ST_MODEL}"
 echo "lite home: ${LITE_HOME}"
 
-source /usr/local/Ascend/latest/bin/setenv.bash
+export ASCEND_PATH=/usr/local/Ascend
+if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+    source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+else
+    source ${ASCEND_PATH}/latest/bin/setenv.bash
+fi
 export LD_LIBRARY_PATH=$LITE_HOME/runtime/lib:$LITE_HOME/tools/converter/lib:$LD_LIBRARY_PATH
 
 cd ${LITE_ST_CPP_DIR}/device_example_cpp || exit 1

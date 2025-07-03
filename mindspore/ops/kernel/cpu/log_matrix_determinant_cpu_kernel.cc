@@ -15,11 +15,12 @@
  */
 
 #include "kernel/cpu/log_matrix_determinant_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/LU"
 
 namespace mindspore {
 namespace kernel {
+namespace log_matrix_determinant_cpu {
 namespace {
 constexpr size_t kInputSize = 1;
 constexpr size_t kOutputSize = 2;
@@ -177,5 +178,6 @@ void LogMatrixDeterminantCpuKernelMod::LaunchLogMatrixDeterminant(const std::vec
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogMatrixDeterminant, LogMatrixDeterminantCpuKernelMod);
+}  // namespace log_matrix_determinant_cpu
 }  // namespace kernel
 }  // namespace mindspore

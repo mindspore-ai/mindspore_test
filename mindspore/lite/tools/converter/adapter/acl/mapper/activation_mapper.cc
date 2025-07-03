@@ -25,9 +25,6 @@
 #include "infer/softsign.h"
 #include "infer/softplus.h"
 #include "infer/selu.h"
-#include "infer/ops_func_impl/hswish.h"
-#include "infer/ops_func_impl/sign.h"
-#include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 

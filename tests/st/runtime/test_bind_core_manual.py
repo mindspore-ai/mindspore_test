@@ -29,7 +29,8 @@ class Net(nn.Cell):
 
 
 context.set_context(mode=context.PYNATIVE_MODE)
-affinity_cpu_list = {"device0": ["0-10"]}
-ms.runtime.set_cpu_affinity(True, affinity_cpu_list)
+affinity_cpu_list = ["0-10", "21-30"]
+module_to_cpu_dict = {"main": [0, 1, 2, 3], "minddata": [4, 5, 6, 7], "other": [8, 9], "pynative": [10, 11, 100]}
+ms.runtime.set_cpu_affinity(True, affinity_cpu_list, module_to_cpu_dict)
 net = Net()
 net(Tensor(2.0))

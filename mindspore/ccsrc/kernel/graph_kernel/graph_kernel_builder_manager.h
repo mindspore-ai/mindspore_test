@@ -27,7 +27,7 @@ namespace mindspore {
 namespace kernel {
 using GraphKernelBuildCreator = std::function<std::shared_ptr<GraphKernelBuilder>()>;
 
-class BACKEND_EXPORT GraphKernelBuildManager {
+class BACKEND_COMMON_EXPORT GraphKernelBuildManager {
  public:
   static GraphKernelBuildManager &Instance();
   void Register(const std::string &device_type, bool is_dynamic, GraphKernelBuildCreator &&creator);

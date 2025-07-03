@@ -14,9 +14,11 @@
 # ============================================================================
 
 import numpy as np
+import os
 import pytest
 import mindspore.context as context
 from mindspore import Tensor, nn, JitConfig
+from mindspore import Parameter
 import mindspore as ms
 import mindspore.ops as ops
 import mindspore.ops.operations as P
@@ -88,7 +90,7 @@ def fuse(shape1, shape2, dtype):
     np.testing.assert_allclose(expects[2], outputs[2], 0, 0)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("shape1, shape2", [((32, 1024), (32, 1024)), ((1, 32, 1), (256, 1, 64))])
 @pytest.mark.parametrize("dtype", [np.float16, np.float32])
 def test_easy_fuse_dvm(shape1, shape2, dtype):
@@ -113,13 +115,14 @@ class Net(nn.Cell):
         return y1
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dvm_dynamic_shape():
     """
     Feature: dynamic shape test case
     Description: test dvm dynamic shape
     Expectation: the result match with expect
     """
+    os.environ["GLOG_v"] = "1"
     np.random.seed(1)
     context.set_context(mode=context.GRAPH_MODE)
     x0 = np.random.normal(0, 1, (8, 32)).astype(np.float16)
@@ -132,6 +135,7 @@ def test_dvm_dynamic_shape():
     expect = get_output(Net, args, args_dyn, enable_graph_kernel=False)
     output = get_output(Net, args, args_dyn, enable_graph_kernel=True)
     assert np.allclose(expect[0].asnumpy(), output[0].asnumpy(), 1e-3, 1e-3)
+    del os.environ["GLOG_v"]
 
 
 class NetD(nn.Cell):
@@ -223,6 +227,18 @@ class NetBool(nn.Cell):
         return y3
 
 
+class SelectNet(nn.Cell):
+    def __init__(self, shape):
+        super(SelectNet, self).__init__()
+        self.param = Parameter(Tensor(np.ones(shape), dtype=ms.float16), "param")
+
+    def construct(self, x0, x1, x2, x3):
+        y0 = ops.Add()(x0, x1)
+        y1 = ops.Select()(x2, x3, y0)
+        y2 = ops.Assign()(self.param, y1)
+        return y2
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dvm_bool():
     """
@@ -230,20 +246,36 @@ def test_dvm_bool():
     Description: test dvm boolean data type
     Expectation: the result match with expect
     """
-    np.random.seed(1)
+
+    def case1():
+        np.random.seed(1)
+        x0 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x1 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x2 = np.array(True)
+        x3 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        x4 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
+        with AssertGKEnable(True):
+            net = NetBool()
+            output = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3), Tensor(x4))
+            output = output.asnumpy()
+        expect = x1 * x3
+        assert np.allclose(expect, output, 1e-3, 1e-3)
+
+    def case2():
+        x0 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        x1 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        x2 = np.random.randint(2, size=(1,), dtype=bool)
+        x3 = np.random.normal(0, 1, (1, 4, 8192, 96)).astype(np.float16)
+        net = SelectNet((1, 4, 8192, 96))
+        _ = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3))
+        output = net.param.asnumpy()
+        expect = np.select(x2, x3, x0 + x1)
+        assert np.allclose(expect, output, 1e-3, 1e-3)
+
     context.set_context(mode=context.GRAPH_MODE)
     context.set_context(jit_config={"jit_level": "O1"})
-    x0 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x1 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x2 = np.array(True)
-    x3 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    x4 = np.random.normal(0, 1, (3, 1, 1, 1)).astype(np.float16)
-    with AssertGKEnable(True):
-        net = NetBool()
-        output = net(Tensor(x0), Tensor(x1), Tensor(x2), Tensor(x3), Tensor(x4))
-        output = output.asnumpy()
-    expect = x1 * x3
-    assert np.allclose(expect, output, 1e-3, 1e-3)
+    case1()
+    case2()
 
 
 class NetPow(nn.Cell):
@@ -261,7 +293,7 @@ class NetPow(nn.Cell):
         return y3
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fuse_pow():
     """
     Feature: Pow fuse net
@@ -277,5 +309,22 @@ def test_fuse_pow():
     expect = get_output(NetPow, [x0_ms, x1_ms], enable_graph_kernel=False)
     expect = expect.asnumpy()
     output = get_output(NetPow, [x0_ms, x1_ms], enable_graph_kernel=True)
+    output = output.asnumpy()
+    assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_hsigmoid():
+    """
+    Feature: HSigmoid
+    Description: test O1 HSigmoid precision
+    Expectation: the result match with expect
+    """
+    np.random.seed(1)
+    context.set_context(mode=context.GRAPH_MODE)
+    x0 = np.random.randn(2, 20, 10, 22, 35, 8, 10).astype(np.float32)
+    expect = np.maximum(np.minimum(x0 / 6.0 + 0.5, 1.0), 0.0)
+    x0_ms = Tensor(x0)
+    output = get_output(nn.HSigmoid, [x0_ms], enable_graph_kernel=True)
     output = output.asnumpy()
     assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)

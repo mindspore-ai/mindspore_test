@@ -20,10 +20,11 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace count_nonzero {
 
 class CountNonZeroAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class CountNonZeroAscend : public AclnnKernelMod {
   TypeId out_dtype_{kNumberTypeInt64};
   ScalarPtr other_;
 };
+}  // namespace count_nonzero
 }  // namespace kernel
 }  // namespace mindspore
 

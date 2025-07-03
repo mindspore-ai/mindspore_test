@@ -20,11 +20,12 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conv2d_padding {
 
 class Conv2DPaddingAscend : public AclnnKernelMod {
  public:
@@ -65,7 +66,10 @@ class Conv2DPaddingAscend : public AclnnKernelMod {
 
   size_t expand_count_{0};
   std::vector<size_t> expand_indices_{};
+  std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
 };
+}  // namespace conv2d_padding
 }  // namespace kernel
 }  // namespace mindspore
 

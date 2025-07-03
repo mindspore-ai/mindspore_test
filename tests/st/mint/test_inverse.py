@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -45,7 +45,7 @@ def inverse_backward_func(x):
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_inverse_std(mode):
     """
@@ -63,8 +63,8 @@ def test_inverse_std(mode):
         output_forward = inverse_forward_func(ms.Tensor(x))
         output_grad = inverse_backward_func(ms.Tensor(x))
     else:
-        output_forward = (jit(inverse_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(inverse_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output_forward = (jit(inverse_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(inverse_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
 
     assert np.allclose(output_forward.asnumpy(), expect_forward, 1e-2, 1e-2)
     assert np.allclose(output_grad.asnumpy(), expect_grad, 5e-1, 5e-1)

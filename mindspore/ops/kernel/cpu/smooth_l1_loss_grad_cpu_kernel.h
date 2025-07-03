@@ -22,11 +22,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_grad_cpu {
 class SmoothL1LossGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SmoothL1LossGradCpuKernelMod> {
  public:
   SmoothL1LossGradCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class SmoothL1LossGradCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   int64_t tensor_size_{1};
   Reduction reduction_{Reduction::MEAN};
 };
+}  // namespace smooth_l1_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICES_CPU_KERNEL_SMOOTH_L1_LOSS_GRAD_CPU_KERNEL_H_

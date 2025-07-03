@@ -22,13 +22,12 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void SiLUGradCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
-                          const BaseTensorPtr &x_tensor);
+void SiLUGradCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dout_tensor, const TensorPtr &x_tensor);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

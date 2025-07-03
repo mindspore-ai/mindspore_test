@@ -36,30 +36,6 @@ constexpr auto kTwo = 2;
 constexpr auto kThree = 3;
 constexpr auto kFive = 5;
 
-enum StopTraceReason : uint8_t {
-#define STOP_TRACE_REASON_KIND(kind, description) k##kind,
-#include "stop_trace_reason.def"
-#undef STOP_TRACE_REASON_KIND
-};
-
-std::string GetStopTraceReasonDesc(StopTraceReason res);
-
-enum InlineReason : uint8_t {
-#define INLINE_REASON_KIND(kind, description) k##kind,
-#include "inline_reason.def"
-#undef INLINE_REASON_KIND
-};
-
-std::string GetInlineReasonDesc(InlineReason res);
-
-enum LoopUnrollingReason : uint8_t {
-#define LOOP_UNROLLING_REASON_KIND(kind, description) k##kind,
-#include "loop_unrolling_reason.def"
-#undef LOOP_UNROLLING_REASON_KIND
-};
-
-std::string GetLoopUnrollingReasonDesc(LoopUnrollingReason res);
-
 class Utils {
  public:
   Utils() = default;
@@ -87,30 +63,65 @@ class Utils {
    * \return a pair of arguments for object call
    */
   static std::pair<py::object, py::object> PackCallStackArgs(const std::vector<py::object> &args, int opcode,
-                                                             bool ret_vector_args = false);
+                                                             const py::object &kw, bool ret_vector_args = false);
 
   // alias python 'print(func); import dis; dis.dis(func)'
   static void DisFuncObject(PyObject *);
   // alias python 'print(...)'
-  static void PyBuiltinPrint(PyObject *);
+  static void PyBuiltinPrint(PyObject *, bool flush = false);
 
   static PyObject *MixedPrecisionTypeToDType(MixedPrecisionType mixedPrecisionType);
+
+  /// \brief Convert index and slice to {start, step, len, is_slice}
+  ///
+  /// \param subscr the index or slice
+  /// \param size the size of the object being accessed
+  ///
+  /// \return Format : {start, step, len, is_slice}, if the subscript is valid
+  ///                  {}, if the subscript is invalid
+  static std::vector<Py_ssize_t> FormatSubscript(const py::object &subscr, Py_ssize_t size);
 };
 
-#define GRAPH_JIT_LOG_F PY_PRINT_F
+/* use python format pattern */
+template <typename... Args>
+py::str PyStringFormat(std::string fmt, Args &&...args) {
+  if (fmt.back() == '\n') {
+    fmt.back() = ' ';
+  }
+  PyObject *py_format = PyUnicode_FromFormat(fmt.c_str(), std::forward<Args>(args)...);
+  if (py_format != nullptr) {
+    return py::reinterpret_steal<py::str>(py_format);
+  }
+  throw py::error_already_set();
+}
 
-#define PY_PRINT_F(fmt, ...)                                       \
-  do {                                                             \
-    PyObject *_pystr;                                              \
-    if (fmt[strlen(fmt) - 1] == '\n') {                            \
-      std::string _fstr = fmt;                                     \
-      _fstr[_fstr.size() - 1] = ' ';                               \
-      _pystr = PyUnicode_FromFormat(_fstr.c_str(), ##__VA_ARGS__); \
-    } else {                                                       \
-      _pystr = PyUnicode_FromFormat(fmt, ##__VA_ARGS__);           \
-    }                                                              \
-    Utils::PyBuiltinPrint(_pystr);                                 \
-    Py_DECREF(_pystr);                                             \
+/**
+ * if the log string size is greater than logger size, print it to stderr
+ * if MS_LOG(WARNING) is disable, print all to stderr, default logger size is 20000
+ * MS_LOG is limit log string size
+ */
+size_t PIJitLogMinSize();
+#define GRAPH_JIT_LOG_F(fmt, ...)                                                                                      \
+  do {                                                                                                                 \
+    if (PIJitLogMinSize() != 0) {                                                                                      \
+      std::string logger_helper;                                                                                       \
+      MS_LOG(WARNING) << std::endl                                                                                     \
+                      << ((logger_helper = std::string(PyStringFormat(fmt, ##__VA_ARGS__))).size() < PIJitLogMinSize() \
+                            ? logger_helper                                                                            \
+                            : (((void)operator<<(std::cout, logger_helper).operator<<(std::endl)), ""));               \
+    } else {                                                                                                           \
+      std::cerr << std::string(PyStringFormat(fmt, ##__VA_ARGS__)) << std::endl;                                       \
+    }                                                                                                                  \
+  } while (0)
+
+#define PY_PRINTF(fmt, ...)                                          \
+  do {                                                               \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr()); \
+  } while (0)
+
+#define PY_PRINTF_WITH_FLUSH(fmt, ...)                                     \
+  do {                                                                     \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr(), true); \
   } while (0)
 
 #define REPLACE_PY_MEMBER(member, o)     \
@@ -121,21 +132,6 @@ class Utils {
     Py_XDECREF(py_replace_tmp);          \
   } while (0)
 
-#ifdef DEBUG
-#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)                                         \
-  do {                                                                                   \
-    static const char *slot_key_##hook = #hook;                                          \
-    PyObject *attr_##hook = PyObject_GetAttrString(op, slot_key_##hook);                 \
-    if (attr_##hook && (PyMethod_Check(attr_##hook) || PyFunction_Check(attr_##hook))) { \
-      PY_PRINT_F("%A has hook " #hook, PyType_Check(op) ? op : (PyObject *)Py_TYPE(op)); \
-    } else {                                                                             \
-      PyErr_Clear();                                                                     \
-    }                                                                                    \
-    Py_XDECREF(attr_##hook);                                                             \
-  } while (0)
-#else
-#define PRINT_IF_HAS_USER_DEFINED_HOOK(op, hook)
-#endif
 class ReprRecursionScope {
  public:
   explicit ReprRecursionScope(PyObject *v) : v_(v), stat_(v == nullptr ? -1 : Py_ReprEnter(v)) {}
@@ -153,6 +149,19 @@ class ReprRecursionScope {
   int stat_;
 };
 
+/// \brief Change the jit-syntax-level to strict mode, and revert it back after the scope ends.
+class JitSyntaxLevelScope {
+ public:
+  JitSyntaxLevelScope() {
+    origin_jit_syntax_level_ = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");
+    common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", "0");
+  }
+  ~JitSyntaxLevelScope() { common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", origin_jit_syntax_level_.c_str()); }
+
+ private:
+  std::string origin_jit_syntax_level_;
+};
+
 bool HasMutableOrConstAttr(PyObject *obj);
 bool IsMutableObj(const py::object &obj);
 bool CheckMutableOrNonConstAttr(PyObject *obj);
@@ -161,16 +170,17 @@ bool CheckDynamicLength(PyObject *obj);
 bool CheckScalar(PyObject *obj);
 bool CheckContainer(PyObject *obj);
 bool IsTensorPyObject(PyObject *obj);
+bool IsCTensorPyObject(PyObject *obj);
 bool IsMsClass(PyObject *obj);
 bool IsNumpyObject(PyObject *obj);
+bool IsZipPyObject(PyTypeObject *obj);
 bool IsNoGradEnterFunc(const py::object &handle);
 bool IsNoGradExitFunc(const py::object &handle);
 bool IsPartialFunc(const py::object &handle);
 const char *GetFuncName(const py::object &handle);
 
-bool CheckAdapterTensor(const py::object &tensor);
 py::object ConvertToMsTensor(const py::object &tensor);
-py::object ConvertToAdapterTensor(const py::object &tensor);
+py::object ConvertCppTensorToMsTensor(const py::object &tensor);
 
 std::string GetTopModule(const py::object &o);
 py::object GetPyCodeObject(const py::object &any, bool exact_func = false);
@@ -188,22 +198,25 @@ class PackCallStackHelper {
   explicit PackCallStackHelper(int opcode) : opcode_(opcode) {}
   auto &result() { return result_; }
 
-  template <typename CastKeys, typename CastSequence, typename CastKeyWords>
-  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map) {
+  template <typename CastSequence, typename CastKeyWords>
+  bool Pack(const std::vector<T> &stack_args, CastSequence to_seq, CastKeyWords to_map, PyObject *kw_names) {
     if (opcode_ == CALL_FUNCTION_EX) {
       result_.args_ = to_seq(stack_args[0]);
       result_.kw_ = stack_args.size() > 1 ? to_map(stack_args[1]) : std::map<std::string, T>();
       return true;
     }
-    if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION) {
+    if (!Opcode(opcode_).IsCall()) {
       return false;
     }
     size_t size = stack_args.size();
-    if (opcode_ == CALL_FUNCTION_KW) {
-      std::vector<std::string> keys = to_keys(stack_args.back());
-      size = size - keys.size() - 1;
-      for (size_t i = 0; i < keys.size(); ++i) {
-        result_.kw_[std::move(keys[i])] = stack_args[size + i];
+    if (kw_names != nullptr) {
+#if !IS_PYTHON_3_11_PLUS
+      size--;
+#endif
+      size_t keys_size = PyTuple_GET_SIZE(kw_names);
+      size = size - keys_size;
+      for (size_t i = 0; i < keys_size; ++i) {
+        result_.kw_[PyUnicode_AsUTF8(PyTuple_GET_ITEM(kw_names, i))] = stack_args[size + i];
       }
     }
     std::copy(stack_args.begin(), stack_args.begin() + size, std::back_inserter(result_.args_));
@@ -258,7 +271,8 @@ class BindArgumentsHelper {
       MS_LOG(ERROR) << "takes " << co_->co_argcount << " positional arguments but " << argc << " was given";
       return false;
     }
-    PyObject **begin = &PyTuple_GET_ITEM(PyCodeWrapper(co_).VarNames().ptr(), 0);
+    auto vars = PyCodeWrapper(co_).VarNames();
+    PyObject **begin = &PyTuple_GET_ITEM(vars.ptr(), 0);
     PyObject **end = begin + parameter_argc;
     for (const auto &item : kw) {
       const auto &k = item.first;

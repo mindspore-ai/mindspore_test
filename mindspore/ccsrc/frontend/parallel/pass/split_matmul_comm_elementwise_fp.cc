@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,15 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace parallel {
@@ -75,7 +84,9 @@ static void CopyAllAttrs(const CNodePtr &dst_cnode, const CNodePtr &src_cnode) {
   MS_EXCEPTION_IF_NULL(src_cnode);
   dst_cnode->set_attrs(src_cnode->attrs());
   auto dst_prim_node = GetCNodePrimitive(dst_cnode);
+  MS_EXCEPTION_IF_NULL(dst_prim_node);
   auto src_prim_node = GetCNodePrimitive(src_cnode);
+  MS_EXCEPTION_IF_NULL(src_prim_node);
   auto src_attrs = src_prim_node->attrs();
   for (const auto &attr : src_attrs) {
     dst_prim_node->set_attr(attr.first, attr.second);
@@ -85,11 +96,16 @@ static void CopyAllAttrs(const CNodePtr &dst_cnode, const CNodePtr &src_cnode) {
 static void SplitIntoInterleaved(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager,
                                  const AnfNodePtr &comm_node) {
   auto comm_cnode = comm_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_cnode);
   auto matmul_cnode = comm_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(matmul_cnode);
   auto add_cnode = manager->node_users()[comm_cnode].front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(add_cnode);
 
-  bool transpose_a = GetValue<bool>(GetCNodePrimitive(matmul_cnode)->GetAttr("transpose_a"));
-  bool transpose_b = GetValue<bool>(GetCNodePrimitive(matmul_cnode)->GetAttr("transpose_b"));
+  auto matmul_primitive = GetCNodePrimitive(matmul_cnode);
+  MS_EXCEPTION_IF_NULL(matmul_primitive);
+  bool transpose_a = GetValue<bool>(matmul_primitive->GetAttr("transpose_a"));
+  bool transpose_b = GetValue<bool>(matmul_primitive->GetAttr("transpose_b"));
   const int64_t axis_a_0 = transpose_a ? 1 : 0;
   const int64_t axis_b_1 = transpose_b ? 0 : 1;
 
@@ -118,6 +134,7 @@ static void SplitIntoInterleaved(const FuncGraphPtr &func_graph, const FuncGraph
   auto tuple_get_item_a = func_graph->NewCNode({NewValueNode(prim::kPrimTupleGetItem->Clone()), split_cnode, value0});
   auto matmul_a = func_graph->NewCNode({NewValueNode(prim::kPrimMatMul->Clone()), tuple_get_item_a, matmul_input2});
   CopyAllAttrs(matmul_a, matmul_cnode);
+  MS_EXCEPTION_IF_NULL(comm_primtive);
   auto comm_a = func_graph->NewCNode({NewValueNode(comm_primtive->Clone()), matmul_a});
   CopyAllAttrs(comm_a, comm_cnode);
   CNodePtr add_a = func_graph->NewCNode({NewValueNode(prim::kPrimAdd->Clone()), comm_a, add_input2});
@@ -171,12 +188,12 @@ static void SplitIntoInterleaved(const FuncGraphPtr &func_graph, const FuncGraph
   }
 }
 
-// From:
-// MatMul -> AllReduce -> Add
-// To:
-//        --> TupleGetItem(0) -> MatMul_a ->                        AllReduce_a -> Add_a
-// Split                                                                                 -> Concat
-//        --> TupleGetItem(1) -> MatMul_b -> Depend(AllReduce_a) -> AllReduce_b -> Add_b
+/*
+ * From:   MatMul -> AllReduce -> Add
+ * To:     --> TupleGetItem(0) -> MatMul_a                        -> AllReduce_a -> Add_a
+ * Split                                                                                  -> Concat
+ *         --> TupleGetItem(1) -> MatMul_b -> Depend(AllReduce_a) -> AllReduce_b -> Add_b
+ */
 void SplitMatmulCommElementwiseFp(const FuncGraphPtr &func_graph) {
   if (parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kSemiAutoParallel &&
       parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kAutoParallel) {
@@ -194,10 +211,12 @@ void SplitMatmulCommElementwiseFp(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(func_graph);
   auto todo = DeepScopedGraphSearchWithFilter(func_graph->get_return(), AlwaysInclude, PatternFilter);
   for (const auto &node : todo) {
     SplitIntoInterleaved(func_graph, manager, node);
   }
+  circle_handler::DetectAndRevertGraphCircle(func_graph, manager, "SplitMatmulCommElementwiseFp");
 }
 }  // namespace parallel
 }  // namespace mindspore

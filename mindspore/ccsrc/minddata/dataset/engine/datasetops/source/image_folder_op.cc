@@ -30,7 +30,7 @@ namespace dataset {
 ImageFolderOp::ImageFolderOp(int32_t num_wkrs, std::string file_dir, int32_t queue_size, bool recursive, bool do_decode,
                              const std::set<std::string> &exts, const std::map<std::string, int32_t> &map,
                              std::unique_ptr<DataSchema> data_schema, std::shared_ptr<SamplerRT> sampler,
-                             py::function decrypt)
+                             const py::function &decrypt)
     : MappableLeafOp(num_wkrs, queue_size, std::move(sampler)),
       folder_path_(std::move(file_dir)),
       recursive_(recursive),
@@ -39,10 +39,20 @@ ImageFolderOp::ImageFolderOp(int32_t num_wkrs, std::string file_dir, int32_t que
       class_index_(map),
       data_schema_(std::move(data_schema)),
       sampler_ind_(0),
-      dirname_offset_(0),
-      decrypt_(std::move(decrypt)) {
+      dirname_offset_(0) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
   folder_name_queue_ = std::make_unique<Queue<std::string>>(num_wkrs * queue_size);
   image_name_queue_ = std::make_unique<Queue<FolderImagesPair>>(num_wkrs * queue_size);
+}
+
+ImageFolderOp::~ImageFolderOp() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
 }
 #else
 ImageFolderOp::ImageFolderOp(int32_t num_wkrs, std::string file_dir, int32_t queue_size, bool recursive, bool do_decode,
@@ -60,6 +70,8 @@ ImageFolderOp::ImageFolderOp(int32_t num_wkrs, std::string file_dir, int32_t que
   folder_name_queue_ = std::make_unique<Queue<std::string>>(num_wkrs * queue_size);
   image_name_queue_ = std::make_unique<Queue<FolderImagesPair>>(num_wkrs * queue_size);
 }
+
+ImageFolderOp::~ImageFolderOp() = default;
 #endif
 
 // Master thread that pulls the prescan worker's results.

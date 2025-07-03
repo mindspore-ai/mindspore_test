@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inner_inplace_index_put {
 class InnerInplaceIndexPutAscend : public AclnnKernelMod {
  public:
   InnerInplaceIndexPutAscend() : AclnnKernelMod(std::move("aclnnIndexPutImpl")) {}
@@ -29,12 +30,14 @@ class InnerInplaceIndexPutAscend : public AclnnKernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  std::vector<KernelTensor *> RemoveTrailingEmptyTensor(const std::vector<KernelTensor *> &indices);
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
   bool accumulate_{false};
 };
+}  // namespace inner_inplace_index_put
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -6,7 +6,7 @@ Hal encapsulates interfaces for device, stream, event, and memory. MindSpore abs
 Device
 -----------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -22,7 +22,7 @@ Device
 Stream
 ---------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -38,7 +38,7 @@ Stream
 Event
 ---------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -48,7 +48,7 @@ Event
 Memory
 ------------
 
-.. msplatformautosummary::
+.. autosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst

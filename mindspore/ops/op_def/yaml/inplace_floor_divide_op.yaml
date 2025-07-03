@@ -1,0 +1,20 @@
+#operator inplace_floor_divide
+inplace_floor_divide:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceFloorDivideAscend

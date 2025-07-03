@@ -16,6 +16,7 @@
 """Implementation for internal polymorphism `setitem` operations."""
 
 from __future__ import absolute_import
+import os
 from mindspore.ops.composite.multitype_ops import _compile_utils as compile_utils
 from mindspore.ops import functional as F
 from mindspore.ops.operations._inner_ops import SliceGetItem
@@ -293,6 +294,8 @@ def _tensor_setitem_by_tensor_with_tensor(data, index, value_tensor):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value_tensor)
     return compile_utils.tensor_setitem_by_tensor_with_tensor(data, index, value_tensor)
 
 
@@ -316,6 +319,8 @@ def _tensor_setitem_by_tensor_with_number(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_tensor_with_number(data, index, value)
 
 
@@ -337,6 +342,8 @@ def _tensor_setitem_by_tuple_with_number(data, tuple_index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, tuple_index, value)
     return compile_utils.tensor_setitem_by_tuple_with_number(data, tuple_index, value)
 
 
@@ -358,6 +365,8 @@ def _tensor_setitem_by_tuple_with_tensor(data, tuple_index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, tuple_index, value)
     return compile_utils.tensor_setitem_by_tuple_with_tensor(data, tuple_index, value)
 
 
@@ -380,6 +389,8 @@ def _tensor_setitem_by_tuple_with_tuple(data, tuple_index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, tuple_index, value)
     return compile_utils.tensor_setitem_by_tuple_with_sequence(data, tuple_index, value)
 
 
@@ -402,6 +413,8 @@ def _tensor_setitem_by_tuple_with_list(data, tuple_index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, tuple_index, value)
     return compile_utils.tensor_setitem_by_tuple_with_sequence(data, tuple_index, value)
 
 
@@ -418,6 +431,8 @@ def _tensor_setitem_by_tensor_with_tuple(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_tensor_with_sequence(data, index, value)
 
 
@@ -434,6 +449,8 @@ def _tensor_setitem_by_tensor_with_list(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_tensor_with_sequence(data, index, value)
 
 
@@ -456,6 +473,8 @@ def _tensor_setitem_by_slice_with_tensor(data, input_slice, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, input_slice, value)
     return compile_utils.tensor_setitem_by_slice(data, input_slice, value)
 
 
@@ -478,6 +497,8 @@ def _tensor_setitem_by_slice_with_number(data, input_slice, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, input_slice, value)
     return compile_utils.tensor_setitem_by_slice(data, input_slice, value)
 
 
@@ -500,6 +521,8 @@ def _tensor_setitem_by_slice_with_list(data, input_slice, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, input_slice, value)
     return compile_utils.tensor_setitem_by_slice(data, input_slice, value)
 
 
@@ -522,6 +545,8 @@ def _tensor_setitem_by_slice_with_tuple(data, input_slice, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, input_slice, value)
     return compile_utils.tensor_setitem_by_slice(data, input_slice, value)
 
 
@@ -543,6 +568,8 @@ def _tensor_setitem_by_number_with_number(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     if isinstance(index, bool):
         return compile_utils.tensor_setitem_by_bool(data, index, value)
     return compile_utils.tensor_setitem_by_number_with_number(data, index, value)
@@ -566,6 +593,8 @@ def _tensor_setitem_by_number_with_tensor(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     if isinstance(index, bool):
         return compile_utils.tensor_setitem_by_bool(data, index, value)
     return compile_utils.tensor_setitem_by_number_with_tensor(data, index, value)
@@ -589,6 +618,8 @@ def _tensor_setitem_by_number_with_tuple(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     if isinstance(index, bool):
         return compile_utils.tensor_setitem_by_bool(data, index, value)
     return compile_utils.tensor_setitem_by_number_with_sequence(data, index, value)
@@ -612,6 +643,8 @@ def _tensor_setitem_by_number_with_list(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     if isinstance(index, bool):
         return compile_utils.tensor_setitem_by_bool(data, index, value)
     return compile_utils.tensor_setitem_by_number_with_sequence(data, index, value)
@@ -634,6 +667,8 @@ def _tensor_setitem_by_ellipsis_with_number(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_number(data, value)
 
 
@@ -654,6 +689,8 @@ def _tensor_setitem_by_ellipsis_with_tensor(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_tensor(data, value)
 
 
@@ -674,6 +711,8 @@ def _tensor_setitem_by_ellipsis_with_list(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_sequence(data, value)
 
 
@@ -694,6 +733,8 @@ def _tensor_setitem_by_ellipsis_with_tuple(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_sequence(data, value)
 
 
@@ -714,6 +755,8 @@ def _tensor_setitem_by_none_with_number(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_number(data, value)
 
 
@@ -734,6 +777,8 @@ def _tensor_setitem_by_none_with_tensor(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_tensor(data, value)
 
 
@@ -754,6 +799,8 @@ def _tensor_setitem_by_none_with_list(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_sequence(data, value)
 
 
@@ -774,6 +821,8 @@ def _tensor_setitem_by_none_with_tuple(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_ellipsis_with_sequence(data, value)
 
 
@@ -794,6 +843,8 @@ def _tensor_setitem_by_list_with_number(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     value = F.cast(value, F.dtype(data))
     return compile_utils.tensor_setitem_by_list(data, index, value)
 
@@ -815,6 +866,8 @@ def _tensor_setitem_by_list_with_tensor(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     return compile_utils.tensor_setitem_by_list(data, index, value)
 
 
@@ -835,6 +888,8 @@ def _tensor_setitem_by_list_with_tuple(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     value = compile_utils.sequence_to_tensor(value, F.dtype(data))
     return compile_utils.tensor_setitem_by_list(data, index, value)
 
@@ -856,6 +911,8 @@ def _tensor_setitem_by_list_with_list(data, index, value):
     Outputs:
         Tensor, element type and shape is same as data.
     """
+    if os.environ.get("MS_DEV_TENSOR_INDEX_BOOST") == "1":
+        return compile_utils._tensor_setitem(data, index, value)
     value = compile_utils.sequence_to_tensor(value, F.dtype(data))
     return compile_utils.tensor_setitem_by_list(data, index, value)
 
@@ -877,7 +934,8 @@ def _map_tensor_setitem(map_tensor, key_tensor, value_tensor):
     return map_tensor
 
 
-@setitem.register_default()
+# pylint: disable=protected-access
+@setitem._register_default()
 def default_getitem(x, y, z):
     """Default function for setitem."""
     x[y] = z

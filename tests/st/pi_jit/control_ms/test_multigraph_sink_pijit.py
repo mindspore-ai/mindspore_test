@@ -13,19 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """test mutigraph sink in PIJit and pynative mode"""
-import sys  
-import pytest 
-
 from mindspore.common import dtype as mstype
 from mindspore.common import jit
 from mindspore.common.tensor import Tensor
 from mindspore import context
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 c1 = Tensor([2], mstype.int32)
 c2 = Tensor([14], mstype.int32)
@@ -67,7 +60,7 @@ def if_in_if(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def simple_while(x, y):
     y = y + 4
     while x < y:
@@ -76,7 +69,7 @@ def simple_while(x, y):
     return x
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_by_while(x, y, z):
     while x < y:
         x = x + 1
@@ -87,7 +80,7 @@ def while_by_while(x, y, z):
     return x
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_in_while(x, y, z):
     out = c4
     while x < y:
@@ -100,7 +93,7 @@ def while_in_while(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_by_while_in_while(x, y, z):
     out = c4
     while x < c2:
@@ -117,7 +110,7 @@ def while_by_while_in_while(x, y, z):
     return out
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def while_in_while_in_while(x, y, z):
     out = c4
     while x < c2:

@@ -75,7 +75,7 @@ def test_fused_cast_add(compute_dtype, enable_fused_cast_add_opt):
             return out
 
     net = Net16()
-    net.set_jit_config(JitConfig(jit_level="O2"))
+    net.set_jit_config(JitConfig(backend="GE"))
     x1 = Tensor(2000., dtype=compute_dtype)
     x2 = Tensor(2000., dtype=compute_dtype)
     y = Tensor(1000., dtype=mstype.float32)

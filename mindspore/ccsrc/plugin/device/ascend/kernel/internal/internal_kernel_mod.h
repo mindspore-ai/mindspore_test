@@ -20,16 +20,16 @@
 #include <vector>
 #include <string>
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/internal.h"
 #include "plugin/device/ascend/kernel/internal/tiling_mem_mgr.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 #include "plugin/device/ascend/kernel/internal/internal_tiling_cache.h"
 #include "plugin/device/ascend/kernel/internal/internal_spinlock.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/kernel/internal/internal_helper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace kernel {
@@ -91,7 +91,7 @@ class InternalKernelMod : public KernelMod {
   std::vector<size_t> recreate_cared_indices_;
   std::vector<size_t> nz_output_indices_;
   std::string fullname_;
-  SimpleSpinLock lock_;
+  static SimpleSpinLock lock_;
 };
 
 using InternalKernelModPtr = std::shared_ptr<InternalKernelMod>;

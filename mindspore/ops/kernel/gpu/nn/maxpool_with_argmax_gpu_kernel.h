@@ -28,8 +28,8 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_with_argmax_impl.cuh"
 #include "kernel/gpu/kernel_constants.h"
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
-#include "include/common/factory/ms_factory.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

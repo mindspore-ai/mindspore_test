@@ -17,16 +17,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_crop_and_resize_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 RandomResizedCropOperation::RandomResizedCropOperation(const RandomResizedCropOperation &) = default;
 
 // RandomResizedCropOperation
@@ -111,7 +108,6 @@ Status RandomResizedCropOperation::from_json(nlohmann::json op_params, std::shar
   *operation = std::make_shared<vision::RandomResizedCropOperation>(size, scale, ratio, interpolation, max_attempts);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

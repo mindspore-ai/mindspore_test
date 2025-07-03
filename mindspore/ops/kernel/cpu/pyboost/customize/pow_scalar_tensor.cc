@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/pow_scalar_tensor.h"
-#include "kernel/cpu/pyboost/auto_generate/pow.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/pow_scalar_tensor.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/pow.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void PowScalarTensorCPUCustomize(const std::shared_ptr<OpRunner> &op, const ScalarPtr &input,
-                                 const BaseTensorPtr &exponent_tensor) {
+                                 const TensorPtr &exponent_tensor) {
   MS_LOG(DEBUG) << "PowScalarTensor Call start";
   OpRunner::InferOpOutput(op, input, exponent_tensor);
 

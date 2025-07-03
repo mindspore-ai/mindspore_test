@@ -39,6 +39,13 @@ using mindspore::kernel::KernelTensor;
 // pair<KernelWithIndex, size_t>: Front node and parameter store addr index.
 using ParameterInfo = std::pair<KernelWithIndex, size_t>;
 
+template <typename T>
+using OpData = OpRTData<T>;
+template <typename T>
+using OpDataUniquePtr = OpRTDataUniquePtr<T>;
+template <typename T>
+using OpContext = OpRTContext<T>;
+
 // The flag of output data.
 constexpr size_t kOutputDataFlagInit = 0;
 // Indicates that the output data destination is stack actor, and the output data cannot be reused.
@@ -94,9 +101,9 @@ class CallbackCounter {
 };
 using CallbackCounterPtr = std::shared_ptr<CallbackCounter>;
 
-// The abstract common attributes of actors. The actor inheritance relationship:  OpActor --> AbstractActor -->
+// The abstract common attributes of actors. The actor inheritance relationship:  OpRTActor --> AbstractActor -->
 // MemoryAwareActor --> DebugAwareActor --> KernelActor/DataSourceActor/CopyActor/LoopCountActor/OutputActor.
-class AbstractActor : public OpActor<DeviceTensor> {
+class AbstractActor : public OpRTActor<KernelTensor> {
  public:
   explicit AbstractActor(const std::string &name, KernelTransformType type, const AID *recorder_aid);
   ~AbstractActor() override = default;
@@ -104,16 +111,17 @@ class AbstractActor : public OpActor<DeviceTensor> {
   bool IsActive(int msg_num) override { return msg_num >= running_dependent_msg_num_ ? true : false; }
 
   // The actor run when receive the input data.
-  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
+  void RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) override;
   // The actor run when receive the input control.
-  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) override;
   // The actor run when receive the batch input data.
-  void RunBatchOpData(std::vector<OpData<DeviceTensor> *> *const batch_input_data,
-                      OpContext<DeviceTensor> *const context);
+  void RunBatchOpData(std::vector<OpData<KernelTensor> *> *const batch_input_data,
+                      OpContext<KernelTensor> *const context);
 
   // Get the position of node in the actor.
   virtual size_t FetchNodePosition(const KernelWithIndex &node) const { return 0; }
-
+  virtual void HandleWaitMessage(OpContext<KernelTensor> *const context, const AID &from_aid);
+  virtual void HandleNotifyMessage(OpContext<KernelTensor> *const context, const AID &from_aid) {}
   // Get the member.
   KernelTransformType type() const { return type_; }
   int64_t actor_id() const { return actor_id_; }
@@ -145,6 +153,8 @@ class AbstractActor : public OpActor<DeviceTensor> {
 
   // Reset state for UCE.
   virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
+  virtual void IncreaseNewRefCounts(OpContext<KernelTensor> *const context);
+  virtual void IncreaseNewRefCount(const OpData<KernelTensor> *op_data) const;
 
  protected:
   friend class GraphScheduler;
@@ -153,49 +163,47 @@ class AbstractActor : public OpActor<DeviceTensor> {
   friend class SchedulerHelper;
 
   // Check whether satisfy the actor running condition.
-  virtual bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const;
+  virtual bool CheckRunningCondition(const OpContext<KernelTensor> *context) const;
   // The actor run really when satisfy the actor running condition.
-  virtual void Run(OpContext<DeviceTensor> *const context) {}
+  virtual void Run(OpContext<KernelTensor> *const context) {}
 
   // Erase input data and input controls when finish actor running.
-  virtual void EraseInput(const OpContext<DeviceTensor> *context);
+  virtual void EraseInput(const OpContext<KernelTensor> *context);
 
   // Fetch input data from the device tensor store.
-  void FetchInputByTensorStore(std::vector<DeviceTensor *> *const input_device_tensors,
-                               std::vector<KernelTensor *> *const input_kernel_tensors,
+  void FetchInputByTensorStore(std::vector<KernelTensor *> *const input_launch_tensors,
+                               std::vector<KernelTensorPtr> *const input_kernel_tensors,
                                std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
-                               std::vector<DeviceTensor *> *const memory_free_tensors,
-                               OpContext<DeviceTensor> *const context) const;
+                               std::vector<KernelTensorPtr> *const memory_free_tensors,
+                               OpContext<KernelTensor> *const context) const;
 
   // Fetch input parameter data from the device tensor store.
-  void FetchParameterByTensorStore(std::vector<DeviceTensor *> *const input_device_tensors,
-                                   std::vector<KernelTensor *> *const input_kernel_tensors,
+  void FetchParameterByTensorStore(std::vector<KernelTensor *> *const input_launch_tensors,
+                                   std::vector<KernelTensorPtr> *const input_kernel_tensors,
                                    std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
-                                   std::vector<DeviceTensor *> *const memory_free_tensors,
-                                   OpContext<DeviceTensor> *const context);
+                                   std::vector<KernelTensorPtr> *const memory_free_tensors,
+                                   OpContext<KernelTensor> *const context);
 
   // Init the member output_data_ and batch_output_data_ by output data arrows.
   void InitOutputData();
   // Update the output data before send output data.
-  virtual void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                                const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) {}
+  virtual void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                                const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) {}
   // Send output to downstream actors to trigger running.
-  virtual void SendOutput(OpContext<DeviceTensor> *const context);
+  virtual void SendOutput(OpContext<KernelTensor> *const context);
   // Send recorder info to recorder actor.
-  virtual void SendRecorderInfo(OpContext<DeviceTensor> *const context) const {}
-  void SendOutputData(OpContext<DeviceTensor> *const context, const std::vector<AnfNodePtr> &output_data_nodes,
+  virtual void SendRecorderInfo(OpContext<KernelTensor> *const context) const {}
+  void SendOutputData(OpContext<KernelTensor> *const context, const std::vector<AnfNodePtr> &output_data_nodes,
                       const std::vector<DataArrowPtr> &output_data_arrows,
-                      const std::vector<std::pair<OpDataUniquePtr<DeviceTensor>, size_t>> &output_data_list,
+                      const std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> &output_data_list,
                       const mindspore::HashMap<DataArrow *, size_t> &data_arrow_to_fusion_actor_indexs,
-                      mindspore::HashMap<std::string, std::vector<OpData<DeviceTensor> *>> *batch_output_data);
+                      mindspore::HashMap<std::string, std::vector<OpData<KernelTensor> *>> *batch_output_data);
   // Fetch the sub actor in the fusion actor by the name.
   AbstractActor *FetchSubActorInFusionActor(const std::string &sub_actor_name) const;
   bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
 
   // Stores info required by to_actor
-  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
-    parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
-  }
+  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info);
 
   KernelTransformType type_;
 
@@ -211,18 +219,18 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // The output_data_nodes_ and output_data_ corresponds to the output_data_arrows_ one by one.
   std::vector<AnfNodePtr> output_data_nodes_;
   // The second of pair indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
-  std::vector<std::pair<OpDataUniquePtr<DeviceTensor>, size_t>> output_data_;
+  std::vector<std::pair<OpDataUniquePtr<KernelTensor>, size_t>> output_data_;
   // Record the fusion output index for output data arrow.
   mindspore::HashMap<DataArrow *, size_t> data_arrow_to_fusion_actor_indexs_;
   // Used to send batch data in the message which RunBatchOpData needs, the key is the actor name of destination actor.
-  mindspore::HashMap<std::string, std::vector<OpData<DeviceTensor> *>> batch_output_data_;
+  mindspore::HashMap<std::string, std::vector<OpData<KernelTensor> *>> batch_output_data_;
   mindspore::HashMap<std::string, std::vector<DataArrowPtr>> batch_output_data_arrows_;
 
   // When there is recursion in the graph, the actor will send data to the same stack actor multiple times. Since
   // messages are sent asynchronously between actors, there will be multiple messages that remain unprocessed in
   // the channel. In order to prevent old data from being overwritten, it is necessary to allocate a new op data,
   // and these op data will be uniformly cleared by the scheduler after the step ends.
-  std::vector<OpDataUniquePtr<DeviceTensor>> to_stack_data_;
+  std::vector<OpDataUniquePtr<KernelTensor>> to_stack_data_;
 
   // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
   // Index is the input position, AnfNode is the key of the device tensor store.
@@ -263,9 +271,9 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // The information used for integration of dynamic and static memory.
   AbstractActor *memory_alloc_insert_position_;
   AbstractActor *memory_free_insert_position_;
-
   // Whether use input optimize.
   bool enable_input_optimize_;
+  std::string debug_info_;
 };
 
 using AbstractActorPtr = std::shared_ptr<AbstractActor>;

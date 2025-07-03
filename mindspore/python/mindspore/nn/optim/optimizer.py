@@ -122,10 +122,10 @@ class Optimizer(Cell):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        weight_decay (Union[float, int]): An int or a floating point value for the weight decay.
+        weight_decay (Union[float, int], optional): An int or a floating point value for the weight decay.
             It must be equal to or greater than 0.
             If the type of `weight_decay` input is int, it will be converted to float. Default: ``0.0`` .
-        loss_scale (float): A floating point value for the loss scale. It must be greater than 0. If the
+        loss_scale (float, optional): A floating point value for the loss scale. It must be greater than 0. If the
             type of `loss_scale` input is int, it will be converted to float. In general, use the default value. Only
             when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , this value needs to be the same as the `loss_scale` in
@@ -514,7 +514,7 @@ class Optimizer(Cell):
             raise ValueError("For 'Optimizer', the property 'target' cannot be set to 'Ascend' "
                              "in the 'GPU' environment.")
 
-        self._is_device = (value != 'CPU')
+        self._is_device = value != 'CPU'
         self._target = value
 
     def _grad_sparse_indices_deduplicate(self, gradients):

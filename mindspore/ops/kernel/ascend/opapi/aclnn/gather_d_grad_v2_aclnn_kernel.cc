@@ -21,15 +21,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_grad_v2 {
 
 void GatherDGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   ClearOpsWorkSpaceList();
   GetWorkspaceForResizeInplaceZero(outputs[kIndex0]);
   GetWorkspaceForResizeScatterAdd(inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
@@ -44,5 +45,6 @@ bool GatherDGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GatherDGradV2, GatherDGradAscend);
+}  // namespace gather_d_grad_v2
 }  // namespace kernel
 }  // namespace mindspore

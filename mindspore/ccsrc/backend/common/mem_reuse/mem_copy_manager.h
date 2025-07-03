@@ -24,8 +24,8 @@
 #include <memory>
 #include <utility>
 #include "include/backend/kernel_graph.h"
-#include "kernel/kernel.h"
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
+#include "common/device_address.h"
 
 // todo: delete with kernel-runtime
 using HostAddress = mindspore::kernel::Address;

@@ -19,11 +19,12 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace batch_matmul {
+using TensorParams = device::ascend::TensorParams;
 
 class BMMAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -56,6 +57,7 @@ class BMMExtAclnnKernelMod : public AclnnKernelMod {
 
   int8_t cube_math_type_;
 };
+}  // namespace batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

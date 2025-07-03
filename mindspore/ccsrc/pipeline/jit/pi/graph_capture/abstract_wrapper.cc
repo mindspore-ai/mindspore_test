@@ -17,44 +17,48 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <algorithm>
 
 #include "ir/cell.h"
+#include "ir/core_ops_primitive.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "abstract/abstract_function.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
+#include "include/common/utils/tensor_py.h"
+#include "frontend/ir/primitive_py.h"
+#include "frontend/operator/composite/composite.h"
+#include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
 namespace mindspore {
-constexpr auto kAdapterFlag = "adapter_flag";
+namespace pijit {
 constexpr auto kTensorModule = "mindspore.common";
-constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
-using PyTensorConverter = std::function<py::object(const py::object &)>;
 
 namespace {
 py::object ConvertCppTensorToPyTensor(const py::object &cpp_tensor) {
-  if (cpp_tensor.ptr() == nullptr || !py::isinstance<tensor::Tensor>(cpp_tensor)) {
+  if (cpp_tensor.ptr() == nullptr || !tensor::IsTensorPy(cpp_tensor)) {
     return py::object();
   }
-  bool is_adapter_tensor =
-    py::hasattr(cpp_tensor, kAdapterFlag) && py::cast<bool>(py::getattr(cpp_tensor, kAdapterFlag));
   py::module mod = python_adapter::GetPyModule(kTensorModule);
-  auto py_tensor = python_adapter::CallPyModFn(mod, "Tensor", cpp_tensor, py::none(), py::none(), py::none(), true);
-  if (is_adapter_tensor) {
-    mod = python_adapter::GetPyModule(kInnerOpsModule);
-    py_tensor = python_adapter::CallPyModFn(mod, "convert_to_adapter_tensor", py_tensor);
-  }
-  return py_tensor;
+  return python_adapter::CallPyModFn(mod, "Tensor", cpp_tensor, py::none(), py::none(), py::none(), true);
 }
 
 py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
-  if (cpp_tensor.ptr() == nullptr || !py::isinstance<tensor::Tensor>(cpp_tensor)) {
+  if (cpp_tensor.ptr() == nullptr || !tensor::IsTensorPy(cpp_tensor)) {
     return py::object();
   }
-  auto tensor = py::cast<tensor::TensorPtr>(cpp_tensor);
+  auto tensor = tensor::ConvertToTensor(cpp_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->is_parameter()) {
-    return cpp_tensor;
+    ParamInfoPtr param_info = tensor->param_info();
+    MS_EXCEPTION_IF_NULL(param_info);
+    py::object parameter = ParameterManager::GetInstance().FindParameter(param_info->name());
+    if (parameter.ptr() == nullptr) {
+      MS_LOG(DEBUG) << "Cannot find parameter: " << param_info->name();
+    }
+    return parameter;
   }
 
   return ConvertCppTensorToPyTensor(cpp_tensor);
@@ -92,10 +96,13 @@ ValuePtr MaybeMakeEmptyTensor(const AbstractBasePtr &abs) {
     auto tensor = std::make_shared<tensor::Tensor>(tensor_type_ptr->type_id(), tensor_shape);
     if (abs->isa<abstract::AbstractRefTensor>()) {
       auto abs_ref_tensor = abs->cast<abstract::AbstractRefPtr>();
-      // We only need the parameter name, it was used to find the python Parameter object later
-      auto param_info = std::make_shared<ParamInfo>();
-      param_info->set_name(abs_ref_tensor->ref_key_value()->ToString());
-      tensor->set_param_info(param_info);
+      if (abs_ref_tensor->is_parameter()) {
+        // It is a nn.Parameter.
+        // We only need the parameter name, it was used to find the python Parameter object later
+        auto param_info = std::make_shared<ParamInfo>();
+        param_info->set_name(abs_ref_tensor->ref_key_value()->ToString());
+        tensor->set_param_info(param_info);
+      }
     }
     return tensor;
   }
@@ -107,7 +114,7 @@ py::object ConvertToPythonTensor(const py::object &obj) {
   if (py::hasattr(obj, ms_class_attr) && py::cast<bool>(py::getattr(obj, ms_class_attr))) {
     return obj;
   }
-  if (py::isinstance<tensor::Tensor>(obj)) {
+  if (tensor::IsTensorPy(obj)) {
     return ConvertToPyTensorOrParameter(obj);
   }
   if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
@@ -131,11 +138,8 @@ py::object ConvertToPythonTensor(const py::object &obj) {
   return obj;
 }
 
-py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
-  if (abs->isa<abstract::AbstractNone>()) {
-    return py::none();
-  }
-
+py::object GetPyObjFromAbstractClosure(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
     auto abs_func = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
     auto fg = abs_func->func_graph();
@@ -154,6 +158,42 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
     }
     return py::object();
   }
+  if (abs->isa<abstract::PrimitiveAbstractClosure>()) {
+    auto val = abs->BuildValue();
+    if (val == nullptr) {
+      return py::object();
+    }
+    if (val->isa<prim::DoSignaturePrimitive>()) {
+      auto do_sig_prim = val->cast_ptr<prim::DoSignaturePrimitive>();
+      auto value = do_sig_prim->function();
+      MS_EXCEPTION_IF_NULL(value);
+      if (!value->isa<PrimitivePy>()) {
+        return py::object();
+      }
+      auto prim_py = value->cast_ptr<PrimitivePy>();
+      return prim_py->GetPyObj();
+    }
+    if (val->isa<PrimitivePy>()) {
+      auto prim_py = val->cast_ptr<PrimitivePy>();
+      return prim_py->GetPyObj();
+    }
+  }
+  return py::object();
+}
+
+py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
+  if (abs->isa<abstract::AbstractNone>()) {
+    return py::none();
+  }
+
+  if (abs->isa<abstract::AbstractFuncAtom>()) {
+    auto ret = GetPyObjFromAbstractClosure(abs);
+    if (ret.ptr() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert AbstractFuncAtom " << abs->ToString() << " to python object.";
+    }
+    return ret;
+  }
+
   auto build_value = MaybeMakeEmptyTensor(abs);
   auto py_obj = ValueToPyData(build_value, abs);
   // Return none means failed converting.
@@ -161,51 +201,108 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
     return py::object();
   }
 
-  if (pijit::kPIJitConfigDefault.GetBoolConfig(pijit::GraphJitConfig::kTraceFlag)) {
-    return ConvertToPythonTensor(py_obj);
-  }
-
-  return py_obj;
+  return ConvertToPythonTensor(py_obj);
 }
+
+// Create namedtuple python object.
+py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract);
 
 py::object ConvertToPyObj(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  bool succ = true;
   if (abs->isa<abstract::AbstractList>()) {
     auto abs_list = abs->cast<abstract::AbstractListPtr>();
     py::list ret = py::list(abs_list->size());
     const auto &elements = abs_list->elements();
-    for (size_t i = 0; succ && i < elements.size(); ++i) {
+    for (size_t i = 0; i < elements.size(); ++i) {
       auto tmp = ConvertToPyObj(elements[i]);
-      succ = tmp.ptr() != nullptr;
+      if (tmp.ptr() == nullptr) {
+        return py::object();
+      }
       ret[i] = tmp;
     }
-    return succ ? ret : py::object();
+    return ret;
+  } else if (abs->isa<abstract::AbstractNamedTuple>()) {
+    return ConvertToPyNamedtuple(abs->cast<abstract::AbstractNamedTuplePtr>());
   } else if (abs->isa<abstract::AbstractTuple>()) {
     auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
     py::tuple ret = py::tuple(abs_tuple->size());
     const auto &elements = abs_tuple->elements();
-    for (size_t i = 0; succ && i < elements.size(); ++i) {
+    for (size_t i = 0; i < elements.size(); ++i) {
       auto tmp = ConvertToPyObj(elements[i]);
-      succ = tmp.ptr() != nullptr;
+      if (tmp.ptr() == nullptr) {
+        return py::object();
+      }
       ret[i] = tmp;
     }
-    return succ ? ret : py::object();
+    return ret;
   } else if (abs->isa<abstract::AbstractDictionary>()) {
     auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
     py::dict ret = py::dict();
     const auto &key_value_pairs = abs_dict->elements();
-    for (size_t i = 0; succ && i < key_value_pairs.size(); ++i) {
+    for (size_t i = 0; i < key_value_pairs.size(); ++i) {
       py::object key = ConvertToPyObj(key_value_pairs[i].first);
+      if (key.ptr() == nullptr) {
+        return py::object();
+      }
       // The key should be unique.
       key = py::isinstance<py::none>(key) ? py::str(std::to_string(i)) : key;
       auto tmp = ConvertToPyObj(key_value_pairs[i].second);
-      succ = tmp.ptr() != nullptr;
+      if (tmp.ptr() == nullptr) {
+        return py::object();
+      }
       ret[key] = tmp;
     }
-    return succ ? ret : py::object();
+    return ret;
   }
   return ConvertToPyObjInner(abs);
+}
+
+py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract) {
+  MS_EXCEPTION_IF_NULL(abstract);
+  auto sz = abstract->key().size();
+  MS_EXCEPTION_IF_CHECK_FAIL(abstract->elements().size() == sz, "keys.size and elements.size not equal!");
+  // Collect namedtuple's elements into a tuple.
+  py::tuple values(sz);
+  for (size_t i = 0; i < sz; ++i) {
+    values[i] = ConvertToPyObj(abstract->elements()[i]);
+    if (values[i].ptr() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert elements[" << i << "] to python obj";
+      return py::object();
+    }
+  }
+
+  if (abstract->has_user_data(kPijitNamedtupleType)) {
+    std::shared_ptr<py::object> namedtuple_type = abstract->user_data<py::object>(kPijitNamedtupleType);
+    MS_EXCEPTION_IF_NULL(namedtuple_type);
+    py::object make_method = py::getattr(*namedtuple_type, "_make");
+    if (make_method.ptr() == nullptr || !PyMethod_Check(make_method.ptr())) {
+      MS_LOG(INFO) << "Failed to get _make() method of namedtuple " << py::str(*namedtuple_type);
+      return py::object();
+    }
+    try {
+      py::object namedtuple = make_method(values);
+      if (namedtuple.ptr() == nullptr) {
+        MS_LOG(INFO) << "Failed to create namedtuple, _make() method return null";
+      }
+      return namedtuple;
+    } catch (py::error_already_set &e) {
+      MS_LOG(INFO) << "Failed to create namedtuple, python error occur: " << e.what();
+      if (PyErr_Occurred()) {
+        PyErr_Clear();
+      }
+      return py::object();
+    }
+  } else {
+    // This situation should not occur.
+    MS_LOG(INFO) << "Cannot find namedtuple type in abstract";
+    py::tuple keys(sz);
+    for (size_t i = 0; i < sz; ++i) {
+      keys[i] = ConvertToPyObj(abstract->key()[i]);
+    }
+    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+    py::str sub_class_name = py::str(abstract->sub_class_name());
+    return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CONVERT_TO_NAMEDTUPLE, sub_class_name, keys, values);
+  }
 }
 }  // namespace
 
@@ -267,6 +364,87 @@ bool AbstractWrapper::IsConstant() const {
     MS_LOG(DEBUG) << "Failed to find abstract in wrapper.";
     return false;
   }
-  return abstract_->BuildValue() != kValueAny;
+  if (abstract_->isa<abstract::AbstractFunction>()) {
+    return true;
+  }
+  return !abstract_->BuildValue()->ContainsValueAny();
 }
+
+size_t AbstractWrapper::size() const {
+  MS_EXCEPTION_IF_NULL(abstract_);
+  if (IsConstant()) {
+    const auto &object = ConvertToPyObject(abstract_);
+    if (object.ptr() == nullptr) {
+      MS_LOG(EXCEPTION) << "Failed to get python object when trying to get size for constant abstract "
+                        << abstract_->ToString();
+    }
+    MS_LOG(INFO) << "Try to get size for object: " << py::str(object);
+    return py::len(object);
+  }
+  if (!abstract_->isa<abstract::AbstractTensor>() && !abstract_->isa<abstract::AbstractSequence>() &&
+      !abstract_->isa<abstract::AbstractDictionary>()) {
+    MS_LOG(EXCEPTION) << "Can not get size for current wrapper: " << ToString();
+  }
+  if (abstract_->isa<abstract::AbstractTensor>()) {
+    const auto &shape = abstract_->BuildShape()->GetShapeVector();
+    auto first_shape = shape[0];
+    if (first_shape < 0) {
+      MS_LOG(EXCEPTION) << "Can not get size for dynamic shape/rank abstract " << abstract_->ToString();
+    }
+    return first_shape;
+  }
+  if (abstract_->isa<abstract::AbstractSequence>()) {
+    return abstract_->cast<abstract::AbstractSequencePtr>()->size();
+  }
+  return abstract_->cast<abstract::AbstractDictionaryPtr>()->size();
+}
+
+int AbstractWrapper::TryToGetSize() const {
+  int ret = -1;
+  try {
+    ret = size();
+  } catch (const std::exception &e) {
+    MS_LOG(INFO) << "Failed to get size for wrapper: " << ToString() << " The exception:\n" << e.what();
+  }
+  return ret;
+}
+
+bool AbstractWrapper::IsDict() const {
+  if (abstract_ == nullptr) {
+    return false;
+  }
+  return abstract_->isa<abstract::AbstractDictionary>();
+}
+
+std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
+  if (!IsDict()) {
+    MS_LOG(EXCEPTION) << "Can not get keys non-dict abstract wrapper: " << ToString();
+  }
+  auto dict_abstract = abstract_->cast<abstract::AbstractDictionaryPtr>();
+  MS_EXCEPTION_IF_NULL(dict_abstract);
+  const auto &pairs = dict_abstract->elements();
+  std::vector<py::object> ret;
+  std::transform(pairs.begin(), pairs.end(), std::back_inserter(ret), [](const auto &e) {
+    if (e.first->BuildValue() == kValueAny) {
+      MS_LOG(INFO) << "Encounter non-constant dictionary key abstract " << e.first->ToString();
+      return py::object();
+    }
+    return ConvertToPyObject(e.first);
+  });
+  return ret;
+}
+
+std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {
+  MS_EXCEPTION_IF_NULL(abstract_);
+  if (!abstract_->isa<abstract::AbstractSlice>()) {
+    MS_LOG(EXCEPTION) << "Can not get slice input for abstract: " << abstract_->ToString();
+  }
+  auto abstract_slice = abstract_->cast<abstract::AbstractSlicePtr>();
+  std::vector<py::object> ret;
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->start()));
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->stop()));
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->step()));
+  return ret;
+}
+}  // namespace pijit
 }  // namespace mindspore

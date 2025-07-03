@@ -33,6 +33,12 @@
 #include "utils/check_convert_utils.h"
 #include "ops/op_def.h"
 #include "ir/primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace expander {
@@ -104,6 +110,24 @@ PrimitivePtr Emitter::NewPrimitive(const std::string &op_name, const DAttr &attr
   PrimitivePtr prim = nullptr;
   if (mindspore::ops::IsPrimitiveFunction(op_name)) {
     prim = std::make_shared<Primitive>(op_name);
+    auto op_def = mindspore::ops::GetOpDef(op_name);
+    MS_EXCEPTION_IF_NULL(op_def);
+    auto signatures = op_def->signatures_;
+    std::vector<size_t> rw_write_input_indexes;
+    for (size_t i = 0; i < signatures.size(); ++i) {
+      if (signatures[i].rw == SignatureEnumRW::kRWWrite) {
+        (void)rw_write_input_indexes.emplace_back(i);
+        prim->set_inplace_prim(true);
+      }
+    }
+    auto inplace_input_indexes = prim->GetInplaceIndexes();
+    prim->set_inplace_input_indexes(inplace_input_indexes);
+    prim->set_rw_write_input_indexes(rw_write_input_indexes);
+    prim->set_graph_view_prim(op_def->is_graph_view_);
+
+    if (prim->inplace_prim() || prim->graph_view_prim()) {
+      prim->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
+    }
   } else {
     auto &func = Emitter::primc_func_cache()[op_name];
     if (func == nullptr) {
@@ -186,6 +210,14 @@ NodePtr Emitter::Reshape(const NodePtr &node, const NodePtr &shape) {
   }
   return node;
 }
+NodePtr Emitter::ScalarAdd(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarAdd, {lhs, rhs}); }
+NodePtr Emitter::ScalarSub(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarSub, {lhs, rhs}); }
+NodePtr Emitter::ScalarMul(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarMul, {lhs, rhs}); }
+NodePtr Emitter::ScalarDiv(const NodePtr &lhs, const NodePtr &rhs) { return Emit(ops::kNameScalarDiv, {lhs, rhs}); }
+NodePtr Emitter::ScalarFloorDiv(const NodePtr &lhs, const NodePtr &rhs) {
+  return Emit(ops::kNameScalarFloorDiv, {lhs, rhs});
+}
+NodePtr Emitter::ScalarNeg(const NodePtr &node) { return Emit(ops::kNameScalarUsub, {node}); }
 
 NodePtr Emitter::MatMul(const NodePtr &a, const NodePtr &b, bool transpose_a, bool transpose_b) {
   return Emit(prim::kPrimMatMul->name(), {a, b, Value(transpose_a), Value(transpose_b)});
@@ -200,7 +232,7 @@ NodePtr Emitter::MatMulExt(const NodePtr &a, const NodePtr &b) {
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, int64_t dim0, int64_t dim1) {
-  return Emit(prim::kPrimTransposeExt->name(), {node, Value(dim0), Value(dim1)});
+  return Emit(prim::kPrimTransposeExtView->name(), {node, Value(dim0), Value(dim1)});
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, const NodePtr &perm) {
@@ -232,7 +264,8 @@ NodePtr Emitter::Tile(const NodePtr &node, const NodePtr &dims) {
     return Emit(kTileOpName, {node, tuple_multiples});
   }
   bool is_all_one = std::all_of(multiples_list.begin(), multiples_list.end(), [](int64_t shp) { return shp == 1; });
-  if (is_all_one && node->shape().size() >= multiples_list.size()) {
+  if ((is_all_one && node->shape().size() >= multiples_list.size()) ||
+      (node->shape().size() == 0 && multiples_list.size() == 0)) {
     return node;
   }
   return Emit(kTileOpName, {node, dims});
@@ -263,6 +296,8 @@ NodePtr Emitter::ZerosLike(const NodePtr &node) {
     } else if (v->isa<Monad>()) {
       return Tensor(0);
     }
+  } else if (node->dtype()->type_id() == kObjectTypeString) {
+    return Tensor(0);
   }
 
   auto abs = node->abstract();

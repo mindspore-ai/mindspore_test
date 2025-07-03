@@ -21,11 +21,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hypot_cpu {
 class HypotCpuKernelMod : public NativeCpuKernelMod {
  public:
   HypotCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class HypotCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector y_shape_;
   bool need_bcast_{false};
 };
+}  // namespace hypot_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

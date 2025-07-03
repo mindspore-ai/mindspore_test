@@ -22,6 +22,7 @@
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const std::string &name) const {
@@ -66,7 +67,7 @@ void ReplaceNodeWithTupleGetItem(const AnfNodePtr &node, const AnfNodePtr &newno
     new_out->set_abstract(elements[output_indices[0]]);
     mng->Replace(node, new_out);
   } else {
-    MS_LOG(EXCEPTION) << "Unsupported at present";
+    mng->Replace(node, newnode);
   }
 }
 

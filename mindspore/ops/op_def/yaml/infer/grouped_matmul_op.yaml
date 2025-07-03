@@ -38,6 +38,14 @@ grouped_matmul:
       dtype: int
       default: -1
       prim_init: True
+    transpose_a:
+      dtype: bool
+      default: False
+      prim_init: True
+    transpose_b:
+      dtype: bool
+      default: False
+      prim_init: True
   returns:
     y:
       dtype: tuple[tensor]

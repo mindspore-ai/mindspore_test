@@ -17,11 +17,13 @@
 #include <algorithm>
 #include <functional>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/fft_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dct_cpu {
 namespace {
 constexpr int64_t kNormFactor = 2;
 constexpr int64_t kDCTType = 2;
@@ -246,5 +248,6 @@ std::vector<KernelAttr> DCTCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DCT, DCTCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IDCT, DCTCpuKernelMod);
+}  // namespace dct_cpu
 }  // namespace kernel
 }  // namespace mindspore

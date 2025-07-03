@@ -23,8 +23,6 @@
 #include <vector>
 #include <list>
 #include <mutex>
-#include "utils/hash_map.h"
-#include "utils/convert_utils_base.h"
 #include "include/backend/visible.h"
 #include "distributed/embedding_cache/cache_strategy/cache.h"
 
@@ -50,7 +48,7 @@ struct HashMapElement {
 
 // EmbeddingHashMap is used to manage the id -> index mapping of the embedding cache table on the host
 // side. The cache content can be stored on the device or host side.
-class BACKEND_EXPORT EmbeddingHashMap {
+class BACKEND_COMMON_EXPORT EmbeddingHashMap {
  public:
   using Element = typename Cache<int, int>::Element;
 

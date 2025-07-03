@@ -39,19 +39,19 @@ Status Sampler::BuildChildren(std::shared_ptr<SamplerObj> *const sampler) const 
 }
 
 // DistributedSampler
-DistributedSampler::DistributedSampler(int64_t num_shards, int64_t shard_id, bool shuffle, int64_t num_samples,
-                                       uint32_t seed, int64_t offset, bool even_dist)
+DistributedSampler::DistributedSampler(int64_t num_shards, int64_t shard_id, dataset::ShuffleMode shuffle_mode,
+                                       int64_t num_samples, uint32_t seed, int64_t offset, bool even_dist)
     : num_shards_(num_shards),
       shard_id_(shard_id),
-      shuffle_(shuffle),
+      shuffle_mode_(shuffle_mode),
       num_samples_(num_samples),
       seed_(seed),
       offset_(offset),
       even_dist_(even_dist) {}
 
 std::shared_ptr<SamplerObj> DistributedSampler::Parse() const {
-  std::shared_ptr<SamplerObj> output =
-    std::make_shared<DistributedSamplerObj>(num_shards_, shard_id_, shuffle_, num_samples_, seed_, offset_, even_dist_);
+  std::shared_ptr<SamplerObj> output = std::make_shared<DistributedSamplerObj>(
+    num_shards_, shard_id_, shuffle_mode_, num_samples_, seed_, offset_, even_dist_);
   Status s = BuildChildren(&output);
   if (s.IsError()) {
     MS_LOG(ERROR) << "[Internal ERROR] Error in Parse. Message: " << s;
@@ -73,11 +73,12 @@ std::shared_ptr<SamplerObj> PKSampler::Parse() const {
 }
 
 // RandomSampler
-RandomSampler::RandomSampler(bool replacement, int64_t num_samples)
-    : replacement_(replacement), num_samples_(num_samples) {}
+RandomSampler::RandomSampler(bool replacement, int64_t num_samples, dataset::ShuffleMode shuffle_mode)
+    : replacement_(replacement), num_samples_(num_samples), shuffle_mode_(shuffle_mode) {}
 
 std::shared_ptr<SamplerObj> RandomSampler::Parse() const {
-  std::shared_ptr<SamplerObj> output = std::make_shared<RandomSamplerObj>(replacement_, num_samples_);
+  std::shared_ptr<SamplerObj> output =
+    std::make_shared<RandomSamplerObj>(replacement_, num_samples_, true, shuffle_mode_);
   Status s = BuildChildren(&output);
   if (s.IsError()) {
     MS_LOG(ERROR) << "[Internal ERROR] Error in Parse. Message: " << s;

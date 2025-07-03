@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nansum {
 
 class NansumAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class NansumAscend : public AclnnKernelMod {
   bool keep_dim_{false};
   TypeId dtype_;
 };
+}  // namespace nansum
 }  // namespace kernel
 }  // namespace mindspore
 

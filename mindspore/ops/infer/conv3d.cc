@@ -46,6 +46,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {

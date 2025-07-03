@@ -17,7 +17,8 @@
 #include <memory>
 #include <algorithm>
 #include "runtime/device/move_to.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
@@ -33,10 +34,19 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
     auto ret = memcpy_s(dst_tensor->data_c(), size, src_tensor->data_c(), size);
     return ret == EOK;
   }
-  if (blocking && !src_device_ptr->SyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c())) {
-    MS_LOG(EXCEPTION) << "SyncDeviceToHost failed.";
-  } else if (!src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c())) {
-    MS_LOG(EXCEPTION) << "AsyncDeviceToHost failed.";
+  auto shape = src_tensor->shape();
+  auto type_id = src_tensor->data_type();
+  auto ret = true;
+  std::string status;
+  if (blocking) {
+    status = "SyncDeviceToHost";
+    ret = src_device_ptr->SyncDeviceToHost(shape, dst_tensor->Size(), type_id, dst_tensor->data_c());
+  } else {
+    status = "AsyncDeviceToHost";
+    ret = src_device_ptr->AsyncDeviceToHost(dst_tensor->Size(), dst_tensor->data_c());
+  }
+  if (!ret) {
+    MS_LOG(EXCEPTION) << status << " failed.";
   }
   return true;
 }
@@ -45,19 +55,27 @@ void MoveToH2D(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
                const DeviceAddressPtr &dst_device_ptr, bool blocking) {
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
+  auto shape = src_tensor->shape();
+  auto type_id = src_tensor->data_type();
   auto src_size = src_tensor->Size();
   if (src_device_ptr != nullptr) {
     src_size = src_device_ptr->GetSize();
   }
   size_t size = std::min(src_size, dst_device_ptr->GetSize());
   auto src_data = src_device_ptr == nullptr ? src_tensor->data_c() : src_device_ptr->GetPtr();
-  if (blocking && !dst_device_ptr->SyncHostToDevice(size, src_data)) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed.";
-  } else if (!dst_device_ptr->AsyncHostToDevice(size, src_data)) {
-    MS_LOG(EXCEPTION) << "AsyncHostToDevice failed.";
+  auto ret = true;
+  std::string status;
+  if (blocking) {
+    ret = dst_device_ptr->SyncHostToDevice(shape, size, type_id, src_data);
+    status = "SyncHostToDevice";
+  } else {
+    ret = dst_device_ptr->AsyncHostToDevice(size, src_data);
+    status = "AsyncHostToDevice";
+  }
+  if (!ret) {
+    MS_LOG(EXCEPTION) << status << " failed.";
   }
 }
-
 }  // namespace
 
 void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
@@ -86,6 +104,11 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   }
   // D2H copy, src_device_ptr: GPU/ASCEND; dst_device_ptr: CPU.
   if (to == "CPU") {
+    if (src_device_ptr == nullptr) {
+      MS_LOG(INFO) << "Src tensor device ptr is null, means tensor on: " << to << ", no need move again!";
+      *return_self = true;
+      return;
+    }
     if (!MoveToD2H(src_tensor, src_device_ptr, dst_tensor, blocking)) {
       MS_LOG(EXCEPTION) << "Move tensor to " << to << "failed.";
     }
@@ -97,7 +120,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
-    auto host_shape = src_device_ptr != nullptr ? src_device_ptr->host_shape() : src_tensor->shape();
+    auto host_shape = src_tensor->shape();
     auto device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     auto target_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({to, device_id});
     MS_EXCEPTION_IF_NULL(target_context);
@@ -106,10 +129,13 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
       stream_id = kDefaultStreamIndex;
     }
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-      nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, host_shape, to, device_id);
-    dst_addr = target_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT),
+                                                     type_id, host_shape, to, device_id);
+    MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
+    dst_addr = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(dst_addr);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
+                                                   dst_addr->GetSize(), dst_addr.get());
     if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
                         << ") isn't enough. Allocate size: " << size;

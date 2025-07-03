@@ -2,28 +2,4 @@ masked_select:
   description: |
     masked_select(mask) -> Tensor
     
-    Returns a new 1-D Tensor which indexes `self` according to the boolean `mask`.
-    The shapes of `mask` and `self` don't need to match, but they must be broadcastable.
-    
-    Args:
-        mask (Tensor[bool]): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-    
-    Returns:
-        A 1-D Tensor, with the same type as `self`.
-    
-    Raises:
-        TypeError: If `mask` is not a Tensor.
-        TypeError: If dtype of `mask` is not bool.
-    
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-    
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1, 2, 3, 4]), mindspore.int64)
-        >>> mask = Tensor(np.array([1, 0, 1, 0]), mindspore.bool_)
-        >>> output = x.masked_select(mask)
-        >>> print(output)
-        [1 3]
+    For details, please refer to :func:`mindspore.ops.masked_select`.

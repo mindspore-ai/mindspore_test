@@ -43,6 +43,19 @@
 #include "base/effect_info.h"
 #include "abstract/abstract_value.h"
 #include "pipeline/jit/ps/debug/trace.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -236,8 +249,20 @@ prim::MultitypeFuncGraphPtr GetFuncMultitypeFuncGraph(const CNodePtr &cnode) {
 }
 
 // The cnode is non-effect-node, and the cnode is real node, and the inputs of cnode is dynamic.
-bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode) {
+bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(manager);
+  if (IsPrimitiveCNode(cnode, prim::kPrimMakeDict)) {
+    const auto &node_users_map = manager->node_users();
+    auto users_iter = node_users_map.find(cnode);
+    if (users_iter == node_users_map.end()) {
+      return false;
+    }
+    return std::any_of(users_iter->second.begin(), users_iter->second.end(),
+                       [](const std::pair<AnfNodePtr, int> &node_index) {
+                         return IsPrimitiveCNode(node_index.first, prim::kPrimPyInterpret);
+                       });
+  }
   static const PrimitiveSet dynamic_input_node_prims = {prim::kPrimStack,
                                                         prim::kPrimConcat,
                                                         prim::kPrimAddN,
@@ -247,7 +272,6 @@ bool IsNonEffectRealNodeAndInputIsDynamic(const CNodePtr &cnode) {
                                                         prim::kPrimDynamicStitch,
                                                         prim::kPrimPyExecute,
                                                         prim::kPrimPyInterpret,
-                                                        prim::kPrimMakeDict,
                                                         prim::kPrimIncreFlashAttention,
                                                         prim::kPrimFusedInferAttentionScore};
   PrimitivePtr prim = cnode->empty() ? nullptr : GetValueNode<PrimitivePtr>(cnode->input(0));
@@ -322,7 +346,11 @@ class SccFinder {
           visit_stack.push(std::move(used_info));
         } else if (used_graph->extra_seen_ == seen) {
           // Visited before AND in stack, update low.
-          auto min_low = std::min(*current_info.graph->user_data<size_t>("low"), *used_graph->user_data<size_t>("low"));
+          auto current_low = current_info.graph->user_data<size_t>("low");
+          auto used_graph_low = used_graph->user_data<size_t>("low");
+          MS_EXCEPTION_IF_NULL(current_low);
+          MS_EXCEPTION_IF_NULL(used_graph_low);
+          auto min_low = std::min(*current_low, *used_graph_low);
           current_info.graph->set_user_data<size_t>("low", std::make_shared<size_t>(min_low));
           MS_LOG(DEBUG) << "Update low [" << min_low << "] for " << current_info.graph->ToString() << " by "
                         << used_graph->ToString();
@@ -331,11 +359,17 @@ class SccFinder {
       }
       // If all used func graphs are visited, pop it and check if it's SCC root.
       auto current_graph = current_info.graph;
-      if (*current_graph->user_data<size_t>("low") != *current_graph->user_data<size_t>("index")) {
+      auto user_low = current_graph->user_data<size_t>("low");
+      MS_EXCEPTION_IF_NULL(user_low);
+      auto user_index = current_graph->user_data<size_t>("index");
+      MS_EXCEPTION_IF_NULL(user_index);
+      if (*user_low != *user_index) {
         // Update low when pop.
         visit_stack.pop();
         auto &next_info = visit_stack.top();
-        auto min_low = std::min(*next_info.graph->user_data<size_t>("low"), *current_graph->user_data<size_t>("low"));
+        auto next_low = next_info.graph->user_data<size_t>("low");
+        MS_EXCEPTION_IF_NULL(next_low);
+        auto min_low = std::min(*next_low, *user_low);
         next_info.graph->set_user_data<size_t>("low", std::make_shared<size_t>(min_low));
         MS_LOG(DEBUG) << "Update low [" << min_low << "] for " << next_info.graph->ToString() << " by "
                       << current_graph->ToString();
@@ -1038,7 +1072,7 @@ class SideEffectFinder {
         // load is inserted inside the func_graph f.
         info.load = HasRefInput(cnode);
       }
-      if (!info.memory && IsNonEffectRealNodeAndInputIsDynamic(cnode)) {
+      if (!info.memory && IsNonEffectRealNodeAndInputIsDynamic(cnode, root_->manager())) {
         info.load = HasRefSequenceInput(cnode);
       }
       return info;
@@ -1201,7 +1235,7 @@ class SideEffectFinder {
     MS_EXCEPTION_IF_NULL(switch_node);
     auto fg = switch_node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(switch_node);
@@ -1415,7 +1449,7 @@ class AutoMonadConverter {
   bool CheckNoEliminateNodeHasUsers(const CNodePtr &cnode) {
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1472,9 +1506,10 @@ class AutoMonadConverter {
 
   // Check has UpdateState user
   bool CheckHasUpdateStateUsers(const CNodePtr &cnode) const {
+    MS_EXCEPTION_IF_NULL(cnode);
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1501,9 +1536,10 @@ class AutoMonadConverter {
   // %0 = AllReduce(x)
   // %1 = Depend(x, %0)
   bool CheckHasOtherUsers(const CNodePtr &cnode) const {
+    MS_EXCEPTION_IF_NULL(cnode);
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    auto manager = fg->manager();
+    auto manager = Manage(fg, false);
     MS_EXCEPTION_IF_NULL(manager);
     const auto &node_users = manager->node_users();
     auto found = node_users.find(cnode);
@@ -1625,7 +1661,7 @@ class AutoMonadConverter {
   void HandleLoad(const CNodePtr &cnode, bool update_state) {
     MS_EXCEPTION_IF_NULL(cnode);
     // Check if a sequence which has ref exists in the inputs of the cnode, and the cnode is a real node.
-    if (IsNonEffectRealNodeAndInputIsDynamic(cnode)) {
+    if (IsNonEffectRealNodeAndInputIsDynamic(cnode, manager_)) {
       return InsertLoadForSequenceRef(cnode, update_state);
     }
     if (IsValueNode<Primitive>(cnode->input(0))) {
@@ -1663,17 +1699,16 @@ class AutoMonadConverter {
   // params = (param1, param2, ..., value)
   // addn(params, xxx)  non-effect-node need insert load for params.
   void InsertLoadForSequenceRef(const CNodePtr &cnode, bool update_state) {
-    abstract::AbstractBasePtrList new_seq_abstracts;
     for (size_t index = 1; index < cnode->size(); ++index) {
       const auto &input = cnode->input(index);
       const auto &input_abs = input->abstract();
       MS_EXCEPTION_IF_NULL(input_abs);
       if (!input_abs->isa<abstract::AbstractTuple>() && !input_abs->isa<abstract::AbstractList>()) {
-        (void)new_seq_abstracts.emplace_back(input_abs);
         continue;
       }
       // Handle the input which is sequence.
       std::vector<AnfNodePtr> new_sequence_inputs;
+      abstract::AbstractBasePtrList new_sequence_abstracts;
       if (input_abs->isa<abstract::AbstractTuple>()) {
         (void)new_sequence_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
       } else if (input_abs->isa<abstract::AbstractList>()) {
@@ -1686,15 +1721,15 @@ class AutoMonadConverter {
         const auto &item_abs = elements[item_index];
         auto item = NewItemNode(input, input_abs, item_abs, item_index);
         (void)new_sequence_inputs.emplace_back(item);
-        (void)new_seq_abstracts.emplace_back(item->abstract());
+        (void)new_sequence_abstracts.emplace_back(item->abstract());
       }
       auto new_seq = func_graph_->NewCNode(std::move(new_sequence_inputs));
       MS_LOG(DEBUG) << "Replace the input of non-effect-node:" << cnode->DebugString()
                     << " with:" << new_seq->DebugString();
       if (input_abs->isa<abstract::AbstractTuple>()) {
-        new_seq->set_abstract(std::make_shared<abstract::AbstractTuple>(new_seq_abstracts));
+        new_seq->set_abstract(std::make_shared<abstract::AbstractTuple>(new_sequence_abstracts));
       } else if (input_abs->isa<abstract::AbstractList>()) {
-        new_seq->set_abstract(std::make_shared<abstract::AbstractList>(new_seq_abstracts));
+        new_seq->set_abstract(std::make_shared<abstract::AbstractList>(new_sequence_abstracts));
       }
       manager_->SetEdge(cnode, SizeToInt(index), new_seq);
       if (update_state) {
@@ -1827,12 +1862,6 @@ class AutoMonadConverter {
     auto depend_cnode = func_graph_->NewCNode({depend, output, node});
     depend_cnode->set_abstract(output->abstract());
     func_graph_->set_output(depend_cnode);
-    auto need_check = output->user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD);
-    if (need_check != nullptr && (*need_check)) {
-      MS_LOG(DEBUG) << "node need check:" << output->DebugString();
-      output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(false));
-      depend_cnode->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));
-    }
   }
 
   AnfNodePtr GetGraphOutput() const {

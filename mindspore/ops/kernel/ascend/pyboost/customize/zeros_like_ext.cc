@@ -16,17 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/zeros_like_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ZerosLikeExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr ZerosLikeExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, dtype);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   // No need to convert input

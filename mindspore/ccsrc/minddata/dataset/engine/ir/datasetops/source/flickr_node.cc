@@ -22,9 +22,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/flickr_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 #include "minddata/dataset/util/status.h"
 

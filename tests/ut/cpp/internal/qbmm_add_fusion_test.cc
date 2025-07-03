@@ -33,9 +33,9 @@ class QbmmAddFusionUT : public UT::Common {
 /// Description: Convert QuantBatchMatmul + Add to QuantBatchMatmul
 /// Expectation: After optimize, match QuantBatchMatmul.
 TEST_F(QbmmAddFusionUT, QbmmAddFusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kInt8, {1024, 1024});
   auto input_1 = c.NewTensorInput("input_1", kInt8, {1024, 1024});

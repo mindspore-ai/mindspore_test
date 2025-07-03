@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/tensorlist_parameter.h"
 #include "infer/tensor_list_reserve.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 using mindspore::ops::kNameTensorListReserve;
 using mindspore::schema::PrimitiveType_TensorListReserve;
 namespace mindspore {

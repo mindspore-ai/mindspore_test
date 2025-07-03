@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 class UniqueCpuKernelTest : public UT::Common {
  public:
-  UniqueCpuKernelTest() : unique_(std::make_shared<UniqueCpuKernelMod>()) {}
+  UniqueCpuKernelTest() : unique_(std::make_shared<unique_cpu::UniqueCpuKernelMod>()) {}
 
   void SetUp() override {
     unique_->input_size_ = 9;
@@ -58,7 +58,7 @@ class UniqueCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> inputs_;
   std::vector<KernelTensor *> workspace_;
   std::vector<KernelTensor *> outputs_;
-  std::shared_ptr<UniqueCpuKernelMod> unique_;
+  std::shared_ptr<unique_cpu::UniqueCpuKernelMod> unique_;
 };
 
 TEST_F(UniqueCpuKernelTest, compute_test) {

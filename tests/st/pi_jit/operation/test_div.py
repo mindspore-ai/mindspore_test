@@ -2,14 +2,8 @@ from ..share.ops.primitive.div_ops import DivFactory
 from ..share.ops.primitive.div_ops import Div
 from mindspore import jit, context
 import numpy as np
-import sys  
 import pytest 
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_div_input_245520_245520():
@@ -316,7 +310,7 @@ def test_p_div_normal_input_1_32x64():
     """
     fact = DivFactory((1,), (32, 64))
     pi_net = Div()
-    jit(pi_net.construct, mode="PIJit")(fact.inputx_ms, fact.inputy_ms)
+    jit(pi_net.construct, capture_mode="bytecode")(fact.inputx_ms, fact.inputy_ms)
     context.set_context(mode=context.PYNATIVE_MODE)
     out = fact.forward_mindspore_impl(pi_net)
     assert out.shape == (32, 64), out.dtype == np.float32

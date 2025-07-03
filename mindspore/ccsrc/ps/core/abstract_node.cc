@@ -792,9 +792,9 @@ void AbstractNode::ProcessReceiveSchedulerResp(const std::shared_ptr<MessageMeta
   if (size > 0) {
     size_t dest_size = size;
     size_t src_size = size;
-    auto ret = memcpy_s(received_data.get()->data(), dest_size, data, src_size);
+    auto ret = Memcpy(received_data.get()->data(), dest_size, data, src_size);
     if (ret != EOK) {
-      MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+      MS_LOG(EXCEPTION) << "The Memcpy error, errorno(" << ret << ")";
     }
   }
   received_scheduler_messages_[request_id] = received_data;
@@ -1252,9 +1252,9 @@ void AbstractNode::RunReceiveCallback(const std::shared_ptr<MessageMeta> &meta, 
   std::shared_ptr<std::vector<unsigned char>> received_data = std::make_shared<std::vector<unsigned char>>(size, 0);
   size_t dest_size = size;
   size_t src_size = size;
-  int ret = memcpy_s(received_data->data(), dest_size, data, src_size);
+  int ret = Memcpy(received_data->data(), dest_size, data, src_size);
   if (ret != 0) {
-    MS_LOG(EXCEPTION) << "The memcpy_s error, errorno(" << ret << ")";
+    MS_LOG(EXCEPTION) << "The Memcpy error, errorno(" << ret << ")";
   }
   if (meta->collective_meta().enable_flag()) {
     OnRecvCollectiveData(*meta, received_data);

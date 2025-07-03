@@ -17,12 +17,13 @@
 #include "kernel/cpu/group_norm_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_cpu {
 namespace {
 constexpr size_t kGroupNormInputsNum = 5;
 constexpr size_t kGroupNormOutputsNum = 3;
@@ -159,5 +160,6 @@ std::vector<KernelAttr> GroupNormCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GroupNorm, GroupNormCpuKernelMod);
+}  // namespace group_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore

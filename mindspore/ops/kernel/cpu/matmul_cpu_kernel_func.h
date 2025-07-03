@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 class MatMulCpuKernelFunc : public CpuKernelFunc {
  public:
   MatMulCpuKernelFunc() = default;
@@ -55,6 +56,7 @@ class MatMulCpuKernelFunc : public CpuKernelFunc {
   size_t out_size_ = 0;
   OpParameter *op_parameter_ = nullptr;
 };
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

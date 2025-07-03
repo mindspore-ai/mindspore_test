@@ -27,7 +27,7 @@ mindspore.ops.FractionalMaxPool3DWithFixedKsize
         - **random_samples** (Tensor) - 随机步长，是一个3-D Tensor，数据类型为：float16、float32、double，值在(0, 1)之间。支持的shape为 :math:`(N, C, 3)`。
 
     输出：
-        - **y** (Tensor) - 一个Tensor，与 `x` 具有相同的dtype，shape为 :math:`(N, C, D_{out}, H_{out}, W_{out})` 
+        - **y** (Tensor) - 一个Tensor，与 `x` 具有相同的dtype，shape为 :math:`(N, C, D_{out}, H_{out}, W_{out})`
           或者 :math:`(N, D_{out}, H_{out}, W_{out}, C)`。
 
         - **argmax** (Tensor) - 一个Tensor，输出的索引值。与 `y` 具有相同的shape，dype为int32或者int64。

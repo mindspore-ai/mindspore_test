@@ -17,7 +17,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 
 #include "ir/tensor.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
@@ -302,9 +302,9 @@ void PSContext::set_client_password(const char *password) {
   if (strlen(password) >= kMaxPasswordLen) {
     MS_LOG(EXCEPTION) << "Client password is longer than max password length " << kMaxPasswordLen;
   }
-  int ret = memcpy_s(client_password_, kMaxPasswordLen, password, strlen(password));
+  int ret = Memcpy(client_password_, kMaxPasswordLen, password, strlen(password));
   if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "memcpy_s client password failed, error: " << ret;
+    MS_LOG(EXCEPTION) << "Memcpy client password failed, error: " << ret;
   }
 }
 
@@ -323,9 +323,9 @@ void PSContext::set_server_password(const char *password) {
   if (strlen(password) >= kMaxPasswordLen) {
     MS_LOG(EXCEPTION) << "Client password is longer than max password length " << kMaxPasswordLen;
   }
-  int ret = memcpy_s(server_password_, kMaxPasswordLen, password, strlen(password));
+  int ret = Memcpy(server_password_, kMaxPasswordLen, password, strlen(password));
   if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "memcpy_s server password failed, error: " << ret;
+    MS_LOG(EXCEPTION) << "Memcpy server password failed, error: " << ret;
   }
 }
 
@@ -353,22 +353,26 @@ void PSContext::set_checkpoint_load_status(bool status) {
 #endif
 }
 
-int32_t PSContext::StoreWarmUpPtrByTensor(const int32_t param_key, const tensor::TensorPtr &tensor_ptr) {
-  MS_EXCEPTION_IF_NULL(tensor_ptr);
+int32_t PSContext::StoreWarmUpPtrByTensor(const int32_t param_key, const py::object &tensorpy_ptr) {
+  MS_EXCEPTION_IF_NULL(tensorpy_ptr);
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
+  auto tensor_ptr = tensor::ConvertToTensor(tensorpy_ptr);
   return embedding_cache_table_manager.StoreWarmUpPtr(param_key, tensor_ptr);
 #else
   return -1;
 #endif
 }
 
-int32_t PSContext::StoreWarmUpPtrByTensorList(const int32_t param_key, const tensor::TensorPtr &key_ptr,
-                                              const tensor::TensorPtr &value_ptr, const tensor::TensorPtr &status_ptr) {
+int32_t PSContext::StoreWarmUpPtrByTensorList(const int32_t param_key, const py::object &key_ptr,
+                                              const py::object &value_ptr, const py::object &status_ptr) {
   MS_EXCEPTION_IF_NULL(key_ptr);
   MS_EXCEPTION_IF_NULL(value_ptr);
   MS_EXCEPTION_IF_NULL(status_ptr);
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
-  return embedding_cache_table_manager.StoreWarmUpPtr(param_key, key_ptr, value_ptr, status_ptr);
+  auto key_ptr_ = tensor::ConvertToTensor(key_ptr);
+  auto value_ptr_ = tensor::ConvertToTensor(value_ptr);
+  auto status_ptr_ = tensor::ConvertToTensor(status_ptr);
+  return embedding_cache_table_manager.StoreWarmUpPtr(param_key, key_ptr_, value_ptr_, status_ptr_);
 #else
   return -1;
 #endif

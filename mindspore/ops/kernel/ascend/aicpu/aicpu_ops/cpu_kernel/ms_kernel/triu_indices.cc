@@ -70,7 +70,7 @@ uint32_t TriuIndicesCpuKernel::DoCompute(CpuKernelContext &ctx) {
   auto m_last_row = std::max<int64_t>(0, std::min<int64_t>(col, row + offset1));
   auto n_row_all = std::max<int64_t>(0, std::min<int64_t>(row, row + offset1));
   auto n_row_trapezoid = (m_last_row - m_first_row + 1);
-  auto tril_size = (m_first_row + m_last_row) * n_row_trapezoid >> 1;
+  auto tril_size = ((m_first_row + m_last_row) * n_row_trapezoid) >> 1;
   auto diff_row = n_row_all - n_row_trapezoid;
   if (diff_row > 0) {
     tril_size += diff_row * col;

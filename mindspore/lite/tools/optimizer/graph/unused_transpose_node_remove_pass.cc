@@ -24,6 +24,8 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "include/errorcode.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 constexpr size_t kTransposeInput = 1;
@@ -46,7 +48,7 @@ std::vector<int> GetTransposePerm(const CNodePtr &node) {
     return perm;
   }
   auto perm_param = perm_node->cast<ParameterPtr>();
-  MS_ASSERT(perm_param != nullptr);
+  MS_EXCEPTION_IF_NULL(perm_param);
   if (!perm_param->has_default() || perm_param->default_param() == nullptr) {
     return perm;
   }
@@ -77,7 +79,10 @@ bool RemoveUnusedTransposeOpPass::Run(const FuncGraphPtr &func_graph) {
     }
     if (CheckPrimitiveType(node, prim::kPrimTranspose)) {
       auto transpose_cnode = node->cast<CNodePtr>();
-      MS_ASSERT(transpose_cnode != nullptr);
+      if (transpose_cnode == nullptr) {
+        MS_LOG(ERROR) << "transpose_cnode is nullptr.";
+        return false;
+      }
       if (!CheckPrimitiveType(transpose_cnode->input(kTransposeInput), prim::kPrimConv2DFusion)) {
         continue;
       }
@@ -91,12 +96,18 @@ bool RemoveUnusedTransposeOpPass::Run(const FuncGraphPtr &func_graph) {
       }
     } else if (CheckPrimitiveType(node, prim::kPrimConv2DFusion)) {
       auto conv_node = node->cast<CNodePtr>();
-      MS_ASSERT(conv_node != nullptr);
+      if (conv_node == nullptr) {
+        MS_LOG(ERROR) << "conv_node is nullptr.";
+        return false;
+      }
       if (!CheckPrimitiveType(conv_node->input(kTransposeInput), prim::kPrimTranspose)) {
         continue;
       }
       auto transpose_cnode = conv_node->input(kTransposeInput)->cast<CNodePtr>();
-      MS_ASSERT(transpose_cnode != nullptr);
+      if (transpose_cnode == nullptr) {
+        MS_LOG(ERROR) << "transpose_cnode is nullptr.";
+        return false;
+      }
       auto perm = GetTransposePerm(transpose_cnode);
       if (perm == kPermNHWC) {
         manager->Replace(transpose_cnode, transpose_cnode->input(1));

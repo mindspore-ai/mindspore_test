@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore.common import dtype as mstype
 from mindspore import nn
 from mindspore import Tensor
@@ -24,6 +23,7 @@ from mindspore import context
 from mindspore.common.parameter import Parameter
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
@@ -58,9 +58,8 @@ class ForBreakForwardNet(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_break_forward():
     """
     Feature: Control flow
@@ -74,9 +73,8 @@ def test_for_break_forward():
     assert graph_out == Tensor(np.array(3), mstype.int32)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_for_break_backward():
     """
     Feature: Control flow
@@ -114,9 +112,8 @@ class WhileBreakForwardNet(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_break_forward():
     """
     Feature: Control flow
@@ -130,8 +127,7 @@ def test_while_break_forward():
     assert graph_mode_out == Tensor(np.array(15))
 
 
-@case_register.level0
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_break_backward():
     """
     Feature: Control flow
@@ -177,9 +173,8 @@ class IfAfterIfInWhileBreakForwardNet(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_while_break_forward():
     """
     Feature: Control flow
@@ -195,9 +190,8 @@ def test_if_after_if_in_while_break_forward():
     assert graph_mode_out == Tensor(np.array(16), mstype.int32)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_while_break_backward():
     """
     Feature: Control flow
@@ -215,9 +209,8 @@ def test_if_after_if_in_while_break_backward():
     assert graph_mode_grads == (Tensor(np.array(15), mstype.int32), Tensor(np.array(5), mstype.int32))
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_for_in_if_break():
     """
     Feature: Control flow
@@ -251,23 +244,19 @@ def test_if_after_for_in_if_break():
     x = Tensor(2, mstype.int32)
 
     # graph mode
-    with pytest.raises(RuntimeError) as info:
-        forward_net = IfAfterForInIfNet()
-        graph_forward_res = forward_net(x)
+    forward_net = IfAfterForInIfNet()
+    graph_forward_res = forward_net(x)
 
-        context.set_context(mode=context.GRAPH_MODE)
-        if_after_for_in_if_net = IfAfterForInIfNet()
-        net = Grad(if_after_for_in_if_net)
-        graph_backward_res = net(x)
+    context.set_context(mode=context.GRAPH_MODE)
+    if_after_for_in_if_net = IfAfterForInIfNet()
+    net = Grad(if_after_for_in_if_net)
+    graph_backward_res = net(x)
 
-        assert graph_forward_res == Tensor(-6, mstype.int32)
-        assert graph_backward_res == (Tensor(1, mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    assert graph_forward_res == Tensor(-6, mstype.int32)
+    assert graph_backward_res == (Tensor(1, mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_after_for_in_for_break():
     """
     Feature: Control flow
@@ -299,20 +288,16 @@ def test_if_after_for_in_for_break():
             return out
 
     x = Tensor(2, mstype.int32)
-    with pytest.raises(RuntimeError) as info:
-        # graph mode
-        forward_net = IfAfterForInForNet()
-        graph_forward_res = forward_net(x)
+    # graph mode
+    forward_net = IfAfterForInForNet()
+    graph_forward_res = forward_net(x)
 
-        if_after_for_in_for_net = IfAfterForInForNet()
-        net = Grad(if_after_for_in_for_net)
-        graph_backward_res = net(x)
+    if_after_for_in_for_net = IfAfterForInForNet()
+    net = Grad(if_after_for_in_for_net)
+    graph_backward_res = net(x)
 
-        assert graph_forward_res == Tensor(106, mstype.int32)
-        assert graph_backward_res == (Tensor(16, mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
-
+    assert graph_forward_res == Tensor(106, mstype.int32)
+    assert graph_backward_res == (Tensor(16, mstype.int32),)
 
 
 class WhileAfterWhileInWhileBreakForwardNet(nn.Cell):
@@ -342,9 +327,8 @@ class WhileAfterWhileInWhileBreakForwardNet(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_while_break_forward():
     """
     Feature: Control flow
@@ -360,9 +344,8 @@ def test_while_after_while_in_while_break_forward():
     assert graph_out == Tensor(np.array(54), mstype.int32)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_while_in_while_break_backward():
     """
     Feature: Control flow
@@ -396,9 +379,8 @@ class TwoBreakDeadForwardNet(nn.Cell):
         return x
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_2break_dead_block():
     """
     Feature: Control flow
@@ -431,9 +413,8 @@ class ForInFor2BreakForwardNet(nn.Cell):
         return out
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_for_in_for_break():
     """
     Feature: Control flow
@@ -448,9 +429,8 @@ def test_for_in_for_break():
     print("test_for_in_for_break graph out:", graph_out)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_true_break():
     """
     Feature: Control flow
@@ -484,9 +464,8 @@ def test_while_true_break():
     print(grad_out)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_continue_stuck_in_vm():
     """
     Feature: Control flow
@@ -518,18 +497,14 @@ def test_continue_stuck_in_vm():
     x = Tensor(2, mstype.int32)
     t = 8
     y = Tensor(1, mstype.int32)
-    with pytest.raises(RuntimeError) as info:
-        net = NetWork(t)
-        grad_net = Grad(net)
-        grad = grad_net(x, y)
-        print(grad)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    net = NetWork(t)
+    grad_net = Grad(net)
+    grad = grad_net(x, y)
+    print(grad)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_partial_eliminate_while_for_if_break():
     """
     Feature: nest control flow.

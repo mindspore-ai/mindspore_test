@@ -17,17 +17,17 @@
 #include "kernel/ascend/pyboost/customize/t_ext.h"
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "kernel/common/pyboost/auto_generate/copy.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/copy.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "TExt Launch start";
   OpRunner::InferOpOutput(op, input_tensor);
   auto device_context = op->device_context();
@@ -35,11 +35,11 @@ void TExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
 
   const auto &device_name = device_context->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
-  std::vector<ValuePtr> perm(input_rank);
+  std::vector<int64_t> perm(input_rank);
   for (size_t i = 0; i < input_rank; ++i) {
-    perm[i] = MakeValue(static_cast<int64_t>(input_rank - i - 1));
+    perm[i] = static_cast<int64_t>(input_rank - i - 1);
   }
-  auto output_tensor = transpose_op->Call(input_tensor, std::make_shared<ValueTuple>(perm));
+  auto output_tensor = transpose_op->Call(input_tensor, perm);
   op->set_outputs({output_tensor});
 
   MS_LOG(DEBUG) << "TExt Launch end";

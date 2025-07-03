@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,13 @@ class ParallelPreprocessor {
   void Process();
 
   static void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes);
-  static void ReshapeInit(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleRootReshapeAndSaveStrategy(const std::vector<AnfNodePtr> &all_nodes);
   static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all_nodes);
 
  private:
   void MarkAndModifyGraph();
   void SetOperatorInfo();
+  void SetParameterInfo();
   void PipelinePreProcess();
 
   const ParallelProcessorContextPtr &processor_context_;

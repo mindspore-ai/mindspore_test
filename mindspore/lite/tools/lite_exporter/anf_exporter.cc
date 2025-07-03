@@ -47,6 +47,17 @@
 #include "tools/common/node_util.h"
 #include "tools/converter/converter_context.h"
 #include "tools/converter/quantizer/quantize_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 using mindspore::ops::PrimitiveC;
 
@@ -577,11 +588,11 @@ size_t AnfExporter::NewFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_
 
 void AnfExporter::InsertFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_graphT,
                                  mindspore::schema::TensorT *tensor) {
-  if (meta_graphT != nullptr) {
+  if (meta_graphT == nullptr) {
     MS_LOG(ERROR) << "meta_graphT is nullptr!";
     return;
   }
-  if (tensor != nullptr) {
+  if (tensor == nullptr) {
     MS_LOG(ERROR) << "tensor is nullptr!";
     return;
   }

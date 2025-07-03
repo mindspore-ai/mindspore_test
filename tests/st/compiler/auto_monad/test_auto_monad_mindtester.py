@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 import os
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.ops.operations as P
@@ -27,7 +26,7 @@ from mindspore.common import ParameterTuple
 from tests.security_utils import security_off_wrap
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
 class _Grad(Cell):
@@ -284,7 +283,7 @@ class ControlOneIfOneParaOneAddn(Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_ctrl_if_para_addn_true():
     """
@@ -340,18 +339,16 @@ def test_grad_memory_addn():
     Description: Verify control flow.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        net = SideEffectMemoryCellAddnNet()
-        grad_ys = Tensor([18.0], ms.float32)
-        inputs = Tensor([9.0], ms.float32)
-        context.set_context(mode=context.GRAPH_MODE)
-        graph_out = net.grad_mindspore_impl(inputs, grad_ys)
-        context.set_context(mode=context.PYNATIVE_MODE)
-        pynative_out = net.grad_mindspore_impl(inputs, grad_ys)
-        allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
-        allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
-        context.set_context(mode=context.GRAPH_MODE)
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+    net = SideEffectMemoryCellAddnNet()
+    grad_ys = Tensor([18.0], ms.float32)
+    inputs = Tensor([9.0], ms.float32)
+    context.set_context(mode=context.GRAPH_MODE)
+    graph_out = net.grad_mindspore_impl(inputs, grad_ys)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    pynative_out = net.grad_mindspore_impl(inputs, grad_ys)
+    allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
+    allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
+    context.set_context(mode=context.GRAPH_MODE)
 
 
 class SideEffectIOCellAddnNet(Cell):
@@ -425,18 +422,16 @@ def test_grad_read_dependency_return_parameter():
     Description: Verify parameter.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        net = SideEffectReturnParameterNet()
-        grad_ys = Tensor([18.0], ms.float32)
-        inputs = Tensor([9.0], ms.float32)
-        context.set_context(mode=context.GRAPH_MODE)
-        graph_out = net.grad_mindspore_impl(inputs, grad_ys)
-        context.set_context(mode=context.PYNATIVE_MODE)
-        pynative_out = net.grad_mindspore_impl(inputs, grad_ys)
-        allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
-        allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
-        context.set_context(mode=context.GRAPH_MODE)
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+    net = SideEffectReturnParameterNet()
+    grad_ys = Tensor([18.0], ms.float32)
+    inputs = Tensor([9.0], ms.float32)
+    context.set_context(mode=context.GRAPH_MODE)
+    graph_out = net.grad_mindspore_impl(inputs, grad_ys)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    pynative_out = net.grad_mindspore_impl(inputs, grad_ys)
+    allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
+    allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
+    context.set_context(mode=context.GRAPH_MODE)
 
 
 class SideEffectPrintInHighOrdeAddnNet(Cell):
@@ -519,29 +514,28 @@ class SideEffectControlFlowAssignDependTwoIfNet(Cell):
         return grad_out
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_side_effect_grad_control_flow_assign_depend_of_two_if():
     """
     Feature: Auto monad feature.
     Description: Verify control flow.
     Expectation: No exception.
     """
-    with pytest.raises(RuntimeError) as info:
-        net = SideEffectControlFlowAssignDependTwoIfNet()
-        grad_ys = Tensor([18.0], ms.float32)
-        inputs1 = Tensor([9.0], ms.float32)
-        inputs2 = Tensor([6.0], ms.float32)
-        net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
-        context.set_context(mode=context.GRAPH_MODE)
-        graph_out = net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
-        context.set_context(mode=context.PYNATIVE_MODE)
-        pynative_out = net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
-        allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
-        allclose_nparray(graph_out[0][1].asnumpy(), pynative_out[0][1].asnumpy(), 0.0001, 0.0001)
-        allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
-        context.set_context(mode=context.GRAPH_MODE)
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+    ms.set_context(jit_level='O0')
+    net = SideEffectControlFlowAssignDependTwoIfNet()
+    grad_ys = Tensor([18.0], ms.float32)
+    inputs1 = Tensor([9.0], ms.float32)
+    inputs2 = Tensor([6.0], ms.float32)
+    net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
+    context.set_context(mode=context.GRAPH_MODE)
+    graph_out = net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    pynative_out = net.grad_mindspore_impl(inputs1, inputs2, grad_ys)
+    allclose_nparray(graph_out[0][0].asnumpy(), pynative_out[0][0].asnumpy(), 0.0001, 0.0001)
+    allclose_nparray(graph_out[0][1].asnumpy(), pynative_out[0][1].asnumpy(), 0.0001, 0.0001)
+    allclose_nparray(graph_out[1][0].asnumpy(), pynative_out[1][0].asnumpy(), 0.0001, 0.0001)
+    context.set_context(mode=context.GRAPH_MODE)
 
 
 class SideEffectTwoAddnSwitchNet(Cell):
@@ -572,6 +566,7 @@ def test_side_effect_grad_two_addn_switch():
     Description: Verify control flow.
     Expectation: No exception.
     """
+    ms.set_context(jit_level='O0')
     net = SideEffectTwoAddnSwitchNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs = Tensor([9.0], ms.float32)
@@ -615,7 +610,7 @@ def test_side_effect_grad_if():
     Description: Verify control flow.
     Expectation: No exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
     net = SideEffectGradIfNet()
     grad_ys = Tensor([18.0], ms.float32)
     inputs = Tensor([9.0], ms.float32)
@@ -718,24 +713,21 @@ def test_side_effect_grad_control_flow_assign_depend_while_net():
     Description: Verify control flow.
     Expectation: No exception.
     """
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
+    net = SideEffectControlFlowAssignDependWhileNet()
+    grad_ys = Tensor([18.0], ms.float32)
+    inputs1 = Tensor([9.0], ms.float32)
+    inputs2 = Tensor([6.0], ms.float32)
+    inputs3 = Tensor([3.0], ms.float32)
+    out1 = net.grad_mindspore_impl(inputs1, inputs2, inputs3, grad_ys)
 
-    with pytest.raises(RuntimeError) as info:
+    try:
+        expect1 = 18.0
+        expect2 = 0
+        allclose_nparray(out1[0][0].asnumpy(), expect1, 0.001, 0.001)
+        allclose_nparray(out1[1][0].asnumpy(), expect2, 0.001, 0.001)
+    finally:
         context.set_context(mode=context.GRAPH_MODE)
-        net = SideEffectControlFlowAssignDependWhileNet()
-        grad_ys = Tensor([18.0], ms.float32)
-        inputs1 = Tensor([9.0], ms.float32)
-        inputs2 = Tensor([6.0], ms.float32)
-        inputs3 = Tensor([3.0], ms.float32)
-        out1 = net.grad_mindspore_impl(inputs1, inputs2, inputs3, grad_ys)
-
-        try:
-            expect1 = 18.0
-            expect2 = 0
-            allclose_nparray(out1[0][0].asnumpy(), expect1, 0.001, 0.001)
-            allclose_nparray(out1[1][0].asnumpy(), expect2, 0.001, 0.001)
-        finally:
-            context.set_context(mode=context.GRAPH_MODE)
-    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
 
 
 

@@ -11,14 +11,14 @@ mindspore.nn.TrainOneStepCell
     参数：
         - **network** (Cell) - 训练网络。只支持单输出网络。
         - **optimizer** (Union[Cell]) - 用于更新网络参数的优化器。
-        - **sens** (numbers.Number) - 反向传播的输入，缩放系数。默认值为 ``None`` ，取 ``1.0`` 。
-        - **return_grad** (bool) - 是否返回梯度，若为 ``True`` ，则会在返回loss的同时以字典的形式返回梯度，字典的key为梯度对应的参数名，value为梯度值。默认值为 ``False`` 。
+        - **sens** (numbers.Number，可选) - 反向传播的输入，缩放系数。默认值： ``None`` ，即取系数为 ``1.0`` 。
+        - **return_grad** (bool，可选) - 是否返回梯度。若为 ``True`` ，则会在返回损失函数值（loss）的同时以字典的形式返回梯度，字典的key为梯度对应的参数名，value为梯度值。默认值： ``False`` 。
 
     输入：
-        - **\*inputs** (Tuple(Tensor)) - shape为 :math:`(N, \ldots)` 的Tensor组成的元组。
+        - **\*inputs** (Tuple(Tensor)) - shape为 :math:`(N, \ldots)` 的Tensor组成的tuple。
 
     输出：
-        Tensor，损失函数值，其shape通常为 :math:`()` 。
+        Tensor，损失函数值（loss），其shape通常为 :math:`()` 。
 
     异常：
         - **TypeError** - `sens` 不是numbers.Number。

@@ -19,9 +19,7 @@
 #include <mutex>
 
 #include "minddata/dataset/core/config_manager.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/core/cv_tensor.h"
-#endif
 #include "minddata/dataset/core/device_tensor.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/engine/perf/profiling.h"
@@ -59,7 +57,7 @@ Status GlobalContext::Init() {
 
   // Create some tensor allocators for the different types and hook them into the pool.
   tensor_allocator_ = std::make_unique<Allocator<Tensor>>(mem_pool_);
-#if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
+#if defined(ENABLE_MINDDATA_PYTHON)
   cv_tensor_allocator_ = std::make_unique<Allocator<CVTensor>>(mem_pool_);
 #endif
   device_tensor_allocator_ = std::make_unique<Allocator<DeviceTensor>>(mem_pool_);

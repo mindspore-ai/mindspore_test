@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace opt {
 // @brief ANF Node level optimization base pass
-class BACKEND_EXPORT NodePass : public Pass {
+class BACKEND_COMMON_EXPORT NodePass : public Pass {
  public:
   explicit NodePass(const std::string &name) : Pass(name) {}
   ~NodePass() override = default;

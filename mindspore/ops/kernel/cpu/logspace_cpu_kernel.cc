@@ -17,11 +17,12 @@
 #include "kernel/cpu/logspace_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/log_space.h"
 
 namespace mindspore {
 namespace kernel {
+namespace logspace_cpu {
 namespace {
 constexpr size_t kLogSpaceInputsNum = 2;
 constexpr size_t kLogSpaceOutputsNum = 1;
@@ -117,5 +118,6 @@ std::vector<KernelAttr> LogSpaceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogSpace, LogSpaceCpuKernelMod);
+}  // namespace logspace_cpu
 }  // namespace kernel
 }  // namespace mindspore

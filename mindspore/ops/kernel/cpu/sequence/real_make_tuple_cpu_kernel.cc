@@ -21,10 +21,9 @@
 #include <utility>
 #include <complex>
 #include <vector>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindapi/base/type_id.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/thread_pool.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "base/user_data.h"
 namespace mindspore {
 namespace kernel {

@@ -23,7 +23,7 @@ from copy import copy
 import numbers
 import mindspore as ms
 from mindspore.common.parameter import Parameter, _get_unique_parameter_key
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import MapTensor_
 from mindspore.ops.operations import _map_tensor_ops
 
@@ -78,12 +78,12 @@ class MapParameter(Parameter):
         if value_dtype is not None:
             if isinstance(value_shape, numbers.Number):
                 value_shape = (value_shape,)
-            data = Tensor_(value_dtype, value_shape)
+            data = Tensor_(dtype=value_dtype, shape=value_shape)
         elif value_tensor is not None:
-            data = Tensor_(value_tensor.dtype, value_tensor.shape)
+            data = Tensor_(dtype=value_tensor.dtype, shape=value_tensor.shape)
         else:
             # default
-            data = Tensor_(ms.float32, (1,))
+            data = Tensor_(dtype=ms.float32, shape=(1,))
         obj = Tensor_.__new__(cls)
         Tensor_.__init__(obj, data)
         # Compatible attributes with Parameter.

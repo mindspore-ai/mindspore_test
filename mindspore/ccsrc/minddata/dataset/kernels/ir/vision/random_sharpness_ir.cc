@@ -18,15 +18,12 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_sharpness_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 constexpr size_t dimension_zero = 0;
 constexpr size_t dimension_one = 1;
 constexpr size_t size_two = 2;
@@ -73,7 +70,6 @@ Status RandomSharpnessOperation::from_json(nlohmann::json op_params, std::shared
   *operation = std::make_shared<vision::RandomSharpnessOperation>(degrees);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

@@ -25,9 +25,7 @@
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/engine/ir/datasetops/source/generator_node.h"
 #endif
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/minddata_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/skip_first_epoch_sampler_ir.h"
 
 namespace mindspore {

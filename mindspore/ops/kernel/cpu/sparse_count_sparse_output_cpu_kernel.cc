@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/sparse_count_sparse_output_cpu_kernel.h"
 #include <algorithm>
 #include <cstdio>
 #include <vector>
 #include <map>
 #include <limits>
 #include <memory>
-#include "kernel/cpu/sparse_count_sparse_output_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/sparse_count_sparse_output.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_count_sparse_output_cpu {
 namespace {
 constexpr size_t kSparseCountSparseOutputInputsNum = 4;
 constexpr size_t kSparseCountSparseOutputOutputsNum = 3;
@@ -322,5 +323,6 @@ std::vector<KernelAttr> SparseCountSparseOutputCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseCountSparseOutput, SparseCountSparseOutputCpuKernelMod);
+}  // namespace sparse_count_sparse_output_cpu
 }  // namespace kernel
 }  // namespace mindspore

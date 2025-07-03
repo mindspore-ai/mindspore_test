@@ -31,11 +31,7 @@
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
 #include "minddata/dataset/engine/datasetops/source/mappable_leaf_op.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/services.h"
@@ -169,6 +165,7 @@ class RenderedSST2Op : public MappableLeafOp {
   std::unique_ptr<Queue<std::string>> folder_path_queue_;
   std::unique_ptr<Queue<uint32_t>> folder_classId_queue_;  // the class Id of the images under the folder
   std::unique_ptr<Queue<FolderImagesPair>> image_name_queue_;
+  std::mutex access_mutex_;
 };
 }  // namespace dataset
 }  // namespace mindspore

@@ -54,7 +54,7 @@ uint32_t MedianCpuKernel::Compute(CpuKernelContext &ctx) {
   auto data_type = ctx.Input(0)->GetDataType();
   AttrValue *global_ptr = ctx.GetAttr("global_median");
   bool global_median_bool = global_ptr->GetBool();
-  if (global_median_bool == false) {
+  if (!global_median_bool) {
     switch (data_type) {
       MEDIAN_COMPUTE_CASE(DT_INT16, int16_t, ctx)
       MEDIAN_COMPUTE_CASE(DT_INT32, int32_t, ctx)
@@ -84,7 +84,7 @@ uint32_t MedianCpuKernel::MedianCheck(CpuKernelContext &ctx) {
   auto global_median = ctx.GetAttr("global_median");
   CUST_KERNEL_CHECK_NULLPTR(ctx, global_median, KERNEL_STATUS_PARAM_INVALID, "Get attr global_median failed.");
   bool global_median_value = global_median->GetBool();
-  if (global_median_value == false) {
+  if (!global_median_value) {
     CUST_KERNEL_HANDLE_ERROR(ctx, NormalCheck(ctx, kInputNum, kOutputNum),
                              "Median check input and output number failed.");
     auto input_shape_ptr = ctx.Input(0)->GetTensorShape();
@@ -112,7 +112,7 @@ uint32_t MedianCpuKernel::MedianCheck(CpuKernelContext &ctx) {
     CUST_KERNEL_CHECK_NULLPTR(ctx, output_0, KERNEL_STATUS_PARAM_INVALID, "Get output_0 failed.");
     CUST_KERNEL_CHECK_NULLPTR(ctx, output_0->GetData(), KERNEL_STATUS_PARAM_INVALID, "Get output data 0 failed.");
   }
-  if (global_median_value == false) {
+  if (!global_median_value) {
     CUST_KERNEL_LOG_DEBUG(ctx,
                           "MedianCpuKernel[%s], input0: size[%llu];"
                           "output0: size[%llu], output1: size[%llu].",

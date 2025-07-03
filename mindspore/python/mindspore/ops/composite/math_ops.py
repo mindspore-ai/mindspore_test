@@ -85,8 +85,9 @@ def matmul(x1, x2, dtype=None):
 def mm(input, mat2):
     r"""
     Returns the matrix product of two arrays.
-    If `input` is a :math:`(n \times m)` Tensor, `mat2` is a
-    :math:`(m \times p)` Tensor, `out` will be a :math:`(n \times p)` Tensor.
+
+    If `input` is a :math:`(n \times m)` tensor, `mat2` is a
+    :math:`(m \times p)` tensor, `out` will be a :math:`(n \times p)` tensor.
 
     Note:
         - This function cannot support broadcasting.
@@ -95,28 +96,17 @@ def mm(input, mat2):
 
     Args:
         input (Tensor): The first matrix of matrix multiplication.
-            The last dimension of `input` must be the same size as the first dimension of `mat2`.
         mat2 (Tensor): The second matrix of matrix multiplication.
-            The last dimension of `input` must be the same size as the first dimension of `mat2`.
 
     Returns:
-        Tensor or scalar, the matrix product of the inputs.
-
-    Raises:
-        ValueError: If the last dimension of `input` is not the same size as the
-            second-to-last dimension of `mat2`.
-        ValueError: If `input` or `mat2` is not a Tensor.
+        Tensor or scalar
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x1 = ms.Tensor(np.random.rand(2, 3), ms.float32)
-        >>> x2 = ms.Tensor(np.random.rand(3, 4), ms.float32)
-        >>> out = ops.mm(x1, x2)
+        >>> import mindspore
+        >>> out = mindspore.ops.mm(mindspore.ops.ones((2, 3)), mindspore.ops.ones((3, 4)))
         >>> print(out.shape)
         (2, 4)
     """

@@ -21,10 +21,10 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore::kernel::pyboost {
-void TileAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void TileAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                          const ValueTuplePtr &multiples);
 }  // namespace mindspore::kernel::pyboost
 #endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_TILE_H_

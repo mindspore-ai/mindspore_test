@@ -39,6 +39,7 @@
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_utils.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace parallel {
@@ -47,6 +48,7 @@ using MirrorOps = std::vector<OperatorVector>;
 using Ops = std::vector<OperatorVector>;
 using VirtualDivOp = OperatorVector;
 using TensorMaps = std::vector<Shape>;
+using TensorMapBefores = std::vector<std::vector<Shape>>;
 using TensorLayouts = std::vector<TensorLayout>;
 using different_type = std::vector<int64_t>::difference_type;
 using PrimitiveAttrs = mindspore::HashMap<std::string, ValuePtr>;
@@ -330,7 +332,11 @@ class OperatorInfo {
   // This is a common method for setting operator cost for a given strategy, in which the validity of this strategy
   // is checked
   Status SetCostUnderStrategyBase(const StrategyPtr &strategy);
-  CostPtrList GetCostByStrategyPtr(const StrategyPtr &strategy);
+  Status SetCostUnderLayout(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                            const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                            const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
+  Status SetCostUnderStrategyWithCost(const std::shared_ptr<StrategyWithCost> &swc);
+  void SetDefaultLayoutInfo();
   std::vector<std::shared_ptr<StrategyWithCost>> GetStrategyCost() { return strategy_cost_; }
   void SetStrategyCost(const std::vector<std::shared_ptr<StrategyWithCost>> &stra_cost);
   // In the training phase, when the input of a operator contains WEIGHT or a output from other operators involving
@@ -360,7 +366,6 @@ class OperatorInfo {
   }
   std::vector<TensorInfo> outputs_tensor_info() const { return outputs_tensor_info_; }
   std::vector<TensorInfoBasePtr> outputs_tensor_info_new() const { return outputs_tensor_info_new_; }
-  std::vector<std::shared_ptr<StrategyWithCost>> strategy_cost() const { return strategy_cost_; }
   const std::string &name() const { return name_; }
   void set_name(const std::string &name) { name_ = name; }
   void set_mirror_ops(const MirrorOps &mirror_ops) { mirror_ops_ = mirror_ops; }
@@ -389,14 +394,26 @@ class OperatorInfo {
   TensorLayout GetOutputLayoutFromSWCByStrategy(const StrategyPtr &stra, size_t output_index);
   StrategyPtr GetStrategyFromSWCByInputLayout(const TensorLayout &input_layout, size_t input_index);
   StrategyPtr GetStrategyFromSWCByOutputLayout(const TensorLayout &output_layout, size_t output_index);
+
+  std::vector<std::shared_ptr<StrategyWithCost>> GetSwcByInputLayout(const TensorLayout &input_layout,
+                                                                     size_t input_index);
+  std::vector<std::shared_ptr<StrategyWithCost>> GetSwcByOutputLayout(const TensorLayout &output_layout,
+                                                                      size_t output_index);
   bool IsReshape() const;
   bool IsVirtualOutput() const;
   bool IsConcat() const;
   bool IsStandAlone() const;
   bool IsTmpIdentity() const;
+  bool IsMultiInput() const;
+  bool AllInputsVisited() const;
+  void AddVisitedEdge(const std::shared_ptr<Edge> &e) { visited_edges_.push_back(e); }
+  void ClearVisitedEdges() { visited_edges_.clear(); }
+  std::shared_ptr<StrategyWithCost> GetStrategyByVisitedEdges();
 
   void set_swc_index(int64_t swc, int64_t depth);
   int64_t swc_index() const { return swc_index_; }
+  void set_topo_index(int64_t index) { topo_index_ = index; }
+  int64_t get_topo_index() { return topo_index_; }
   // Approximate the list of available strategies
   void ApproximateStrategies();
   // Make the list of available strategies exact and re-init the related edges incident to this operator
@@ -426,6 +443,7 @@ class OperatorInfo {
   bool is_alive() const { return is_alive_; }
   void SetNotAlive() { is_alive_ = false; }
   std::vector<bool> split_flag_list() const { return split_flag_list_; }
+  std::vector<std::shared_ptr<Edge>> &get_visited_edges() { return visited_edges_; }
   StrategyPtr strategy() const { return strategy_; }
   StrategyPtr out_strategy() const { return out_strategy_; }
   void set_out_strategy(const StrategyPtr &strategy) { out_strategy_ = strategy; }
@@ -434,6 +452,8 @@ class OperatorInfo {
   void clear_out_strategy() { out_strategy_ = nullptr; }
   void set_config_by_layout(bool is_config_by_layout) { is_config_by_layout_ = is_config_by_layout; }
   bool is_config_by_layout() { return is_config_by_layout_; }
+  void set_is_new_shape_node(bool is_new_shape_node) { is_new_shape_node_ = is_new_shape_node; }
+  bool is_new_shape_node() { return is_new_shape_node_; }
   void set_refkey_parameter_name(std::string p_name) { refkey_parameter_name_ = std::move(p_name); }
   const std::string &refkey_parameter_name() const { return refkey_parameter_name_; }
   // When the output of a Parameter (require_grad) being used by multiple operators, the Parameter's cost is calculated
@@ -460,6 +480,26 @@ class OperatorInfo {
   void set_assigned_parallel(bool is_assigned_parallel) { is_assigned_parallel_ = is_assigned_parallel; }
   bool repeated_num_in_dev_matrix_right() const { return repeated_num_in_dev_matrix_right_; }
   void set_repeated_num_in_dev_matrix_right(bool is_right) { repeated_num_in_dev_matrix_right_ = is_right; }
+
+  void LayoutPropagationBegin() { is_in_layout_propagation_ = true; }
+  void LayoutPropagationEnd() { is_in_layout_propagation_ = false; }
+
+  Status AddSwcUnderPrevOpDevMatrixSingle(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                                          size_t layout_index);
+  Status AddSwcUnderNextOpDevMatrixSingle(const std::shared_ptr<OperatorInfo> &next_op,
+                                          const std::shared_ptr<Edge> &edge);
+  std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(const StrategyPtr &strategy_ptr,
+                                                                    const std::vector<Shape> &prev_op_tensor_map,
+                                                                    size_t layout_index);
+
+  bool StrategyMatchTensorMap(const StrategyPtr &strategy_ptr,
+                              const std::vector<std::vector<Shape>> &prev_op_tensor_maps);
+  Status AddSwcUnderPrevOpDevMatrixMulti();
+  bool CheckPrevOpStatus(const Shape &prev_op_dev_matrix, const std::vector<Shape> &prev_op_tensor_map,
+                         size_t layout_index);
+  std::vector<std::shared_ptr<TensorLayout>> InferLayoutsByStrategy(
+    const StrategyPtr &strategy_ptr, const std::vector<std::vector<Shape>> &prev_op_tensor_maps);
+  void InitVisitedEdges();
 
   TensorRedistributionPtr CreateTensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false) {
     if (this->tensor_redistribution_ != nullptr) {
@@ -498,6 +538,8 @@ class OperatorInfo {
   TensorMaps outputs_tensor_map() const { return outputs_tensor_map_; }
   NewTensorMaps inputs_tensor_map_new() const { return inputs_tensor_map_new_; }
   NewTensorMaps outputs_tensor_map_new() const { return outputs_tensor_map_new_; }
+  TensorMapBefores inputs_tensor_map_before() const { return inputs_tensor_map_before_; }
+  TensorMapBefores outputs_tensor_map_before() const { return outputs_tensor_map_before_; }
 
  protected:
   // needed by rec_parser
@@ -520,7 +562,6 @@ class OperatorInfo {
   virtual Status InferMirrorOps();
   virtual Status InferTensorInfo();
   virtual Status InferTensorInfoNew();
-
   virtual void InferReplaceOps() {}
   virtual void UpdateOutputTensorInfoForInterleaved();
   virtual Status CheckOutputStrategy(const StrategyPtr &out_strategy);
@@ -543,6 +584,7 @@ class OperatorInfo {
                               const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
   Status InitWithTensorLayoutForNewShape(const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
                                          const std::vector<TensorLayoutBasePtr> &out_tensor_layouts);
+  Status InitWithTensorLayoutPostProcess();
   Status InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
   Status InferRepeatedCalcInfo();
   Status InferVirtualDivOps();
@@ -550,6 +592,7 @@ class OperatorInfo {
   bool IsDynamicShape();
   bool IsDynamicRank();
   bool IsSelfDefineShard();
+  CostPtr ComputeCost(const StrategyPtr &strategy);
 
   // Calculate the number of repeated calculations for the output by the number of devices and the output tensor map.
   // The tensor map of Outputs[0] is used by default. If there are multiple outputs, need to identify which output
@@ -598,6 +641,8 @@ class OperatorInfo {
   int64_t as_loss_divisor_ = 1;
   TensorMaps inputs_tensor_map_;
   TensorMaps outputs_tensor_map_;
+  TensorMapBefores inputs_tensor_map_before_;
+  TensorMapBefores outputs_tensor_map_before_;
   NewTensorMaps inputs_tensor_map_new_;
   NewTensorMaps outputs_tensor_map_new_;
   ForwardOp forward_op_;
@@ -614,6 +659,7 @@ class OperatorInfo {
   bool infer_attrs_completed_ = false;
   bool is_layout_config_ = false;
   bool is_config_by_layout_ = false;
+  bool is_new_shape_node_ = false;
   bool is_dynamic_shape_ = false;
   bool is_dynamic_rank_ = false;
   Shapes strategy_from_layout_;
@@ -645,8 +691,10 @@ class OperatorInfo {
   std::vector<size_t> outputs_type_lengths_;
   std::vector<std::shared_ptr<Edge>> prev_edges_;
   std::vector<std::shared_ptr<Edge>> succ_edges_;
+  std::vector<std::shared_ptr<Edge>> visited_edges_;
   StrategyPtr selected_strategy_;
   int64_t selected_strategy_depth_ = -1;
+  int64_t topo_index_ = -1;
   // Used in DP algorithm
   bool is_alive_;
   CostPtr selected_cost_;
@@ -662,13 +710,24 @@ class OperatorInfo {
   bool self_define_shard_;
   bool use_shape_base_ = false;
 
+  // for strategy propagation in auto parallel
+  bool is_in_layout_propagation_ = false;
+
  private:
   OperatorCostPtr operator_cost_;
   std::vector<TypePtr> outputs_type_;
   int64_t swc_index_ = -1;
+  std::map<int64_t, std::vector<Shape>> tensor_map_possibility;
   Status GetLayoutConfig();
   Status GetRepeatedNumInDevMatrixRight();
   Status CheckLayoutConfigBase();
+
+  Status SetDevMatrixShapeByLayout();
+  Status SetTensorMapByLayout();
+  Status SetTensorMapBeforeByLayout();
+  Status SetOutDevMatrixShapeByLayout();
+  Status SetOutTensorMapByLayout();
+  Status SetOutTensorMapBeforeByLayout();
 };
 
 Shape GetSliceShape(const Shape &tensor_shape, const Dimensions &strategy);
@@ -716,6 +775,7 @@ AnfNodePtr CreateValueTupleAnfNodePtr(const std::vector<int64_t> &value_tuple);
 AnfNodePtr CreateTensorTupleAnfNodePtr(const tensor::TensorPtrList &tensor_tuple);
 
 ForwardOp CreateReduceMeanForwardOp(const std::vector<Group> &forward_group, const TypePtr &dtype);
+ForwardOp CreateMeanExtForwardOp(const Group &forward_group, const TypePtr &dtype);
 Operator CreateDivOpWithType(float divisor, const TypePtr &dtype);
 std::vector<int64_t> GetTensorValue(const ValuePtr &ori_value);
 
@@ -752,7 +812,33 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
   if (!input_node->isa<ValueNode>()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input index (" << index << ") is not a value node.";
   }
-  auto value = input_node->cast<ValueNodePtr>()->value();
+  auto value_temp = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_temp);
+  auto value = value_temp->value();
+  MS_EXCEPTION_IF_NULL(value);
+  return GetValue<T>(value);
+}
+
+// Return default value if get value from input failed
+template <typename T>
+T GetInputValueFromCNodeWithDefaultValue(const CNodePtr &cnode, size_t index, T default_value) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto inputs = cnode->inputs();
+  if (index >= inputs.size()) {
+    MS_LOG_WITH_NODE(DEBUG, cnode) << "The input index (" << index << ") is exceed of inputs size (" << inputs.size()
+                                   << "). Return default value: " << default_value;
+    return default_value;
+  }
+  auto input_node = inputs[index];
+  MS_EXCEPTION_IF_NULL(input_node);
+  if (!input_node->isa<ValueNode>()) {
+    MS_LOG_WITH_NODE(DEBUG, cnode) << "The input index (" << index
+                                   << ") is not a value node. Return default value: " << default_value;
+    return default_value;
+  }
+  auto value_ptr = input_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+  auto value = value_ptr->value();
   MS_EXCEPTION_IF_NULL(value);
   return GetValue<T>(value);
 }

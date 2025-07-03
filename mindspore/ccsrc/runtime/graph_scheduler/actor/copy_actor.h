@@ -46,19 +46,20 @@ class CopyActor : public MemoryAwareActor {
   ~CopyActor() override = default;
 
   // The memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryAllocReq(OpContext<KernelTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
   // The copy processing after memory alloc finished.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
-  const DeviceTensorPtr &output() const { return output_; }
+  const KernelTensorPtr &output() const { return output_; }
   bool is_need_update_output_size() const { return is_need_update_output_size_; }
 
  protected:
   void Init() override;
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
-                        const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
+  void UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,
+                        const AnfNodePtr &output_node, OpContext<KernelTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class GraphScheduler;
@@ -66,20 +67,21 @@ class CopyActor : public MemoryAwareActor {
   friend class SchedulerHelper;
 
   // Fetch the device tensor for copy.
-  void FetchDeviceTensor(OpContext<DeviceTensor> *const context);
-
-  void FetchParameterInput(OpContext<DeviceTensor> *const context);
+  void FetchKernelTensor(OpContext<KernelTensor> *const context);
 
   // The copy source.
   AnfNode *from_kernel_;
   KernelGraphPtr from_graph_;
 
   // The input device tensor is saved from the input data or fetched by device_tensor_store_keys_.
-  std::vector<DeviceTensor *> input_device_tensor_;
+  std::vector<KernelTensorPtr> input_kernel_tensors_;
   // The output device tensor is saved from the output or fetched by device_tensor_store_keys_.
-  std::vector<DeviceTensor *> output_device_tensor_;
+  std::vector<KernelTensorPtr> output_kernel_tensors_;
 
-  DeviceTensorPtr output_;
+  KernelTensorPtr output_;
+  // If to actor does not need the output the address, such as "only shape depend" of kernel actor or "is not used" of
+  // super kernel actor, the output ref count needs to be released when sending output.
+  size_t output_free_size_{0};
   // The output size needs to be updated in the dynamic shape scene.
   bool is_need_update_output_size_;
   // The ref internal parameter device address of the copy actor output.

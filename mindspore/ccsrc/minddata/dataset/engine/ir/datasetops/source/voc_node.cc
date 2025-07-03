@@ -23,9 +23,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/voc_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
@@ -35,7 +33,7 @@ namespace dataset {
 // Constructor for VOCNode
 VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
                  const std::map<std::string, int32_t> &class_indexing, bool decode, std::shared_ptr<SamplerObj> sampler,
-                 std::shared_ptr<DatasetCache> cache, bool extra_metadata, py::function decrypt)
+                 std::shared_ptr<DatasetCache> cache, bool extra_metadata, const py::function &decrypt)
     : MappableSourceNode(std::move(cache)),
       dataset_dir_(dataset_dir),
       task_(task),
@@ -43,8 +41,19 @@ VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const 
       class_index_(class_indexing),
       decode_(decode),
       sampler_(sampler),
-      extra_metadata_(extra_metadata),
-      decrypt_(decrypt) {}
+      extra_metadata_(extra_metadata) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+VOCNode::~VOCNode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 // Constructor for VOCNode
 VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
@@ -58,6 +67,8 @@ VOCNode::VOCNode(const std::string &dataset_dir, const std::string &task, const 
       decode_(decode),
       sampler_(sampler),
       extra_metadata_(extra_metadata) {}
+
+VOCNode::~VOCNode() = default;
 #endif
 
 std::shared_ptr<DatasetNode> VOCNode::Copy() {
@@ -213,7 +224,6 @@ Status VOCNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status VOCNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kTFRecordNode));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kTFRecordNode));
@@ -244,6 +254,5 @@ Status VOCNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> 
   (*ds)->SetNumWorkers(json_obj["num_parallel_workers"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

@@ -16,16 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/muls.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                          const ScalarPtr &other_scalar) {
+tensor::TensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                      const ScalarPtr &other_scalar) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(other_scalar);
   OpRunner::InferOpOutput(op, input_tensor, other_scalar);
@@ -33,17 +34,10 @@ tensor::BaseTensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, c
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  ScalarPtr other_scalar_aclnn = nullptr;
-
-  if (other_scalar->isa<FP32Imm>()) {
-    double other_imm = static_cast<double>(GetValue<float>(other_scalar));
-    other_scalar_aclnn = std::make_shared<FP64Imm>(other_imm);
-  } else {
-    other_scalar_aclnn = other_scalar;
-  }
+  ScalarPtr other_scalar_real = ops::FetchRealScalar(other_scalar);
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_scalar_aclnn]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, other_scalar_real]() {
     MS_LOG(DEBUG) << "Run device task Muls start";
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
@@ -51,7 +45,7 @@ tensor::BaseTensorPtr MulsAscendCustomize(const std::shared_ptr<OpRunner> &op, c
     PyBoostUtils::MallocOpInputs(device_context, input_tensor);
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    LAUNCH_ACLNN(aclnnMuls, device_context, op->stream_id(), input_tensor, other_scalar_aclnn, outputs[0]);
+    LAUNCH_ACLNN(aclnnMuls, device_context, op->stream_id(), input_tensor, other_scalar_real, outputs[0]);
     MS_LOG(DEBUG) << "Run device task Muls end";
   }));
   return op->output(0);

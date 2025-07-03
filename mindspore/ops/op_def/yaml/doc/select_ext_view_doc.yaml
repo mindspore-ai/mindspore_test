@@ -1,0 +1,28 @@
+select_ext_view:
+    description: |
+        Slices the input tensor along the selected dimension at the given index.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): the input tensor.
+            dim (int): the dimension to slice.
+            index (int): the index to select with.
+
+        Returns:
+            Tensor.
+
+        Raises:
+            TypeError: If input is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+        
+        Examples:
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor([[2, 3, 4, 5],[3, 2, 4, 5]])
+            >>> y = ops.auto_generate.select_ext_view(input, 0, 0)
+            >>> print(y)
+            [2 3 4 5]
+            

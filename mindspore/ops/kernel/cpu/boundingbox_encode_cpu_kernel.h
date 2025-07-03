@@ -22,11 +22,12 @@
 #include <algorithm>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace boundingbox_encode_cpu {
 constexpr size_t INPUT_NUMS = 2;
 class BoundingBoxEncodeCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -58,6 +59,7 @@ class BoundingBoxEncodeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<float> means_;
   std::vector<float> stds_;
 };
+}  // namespace boundingbox_encode_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

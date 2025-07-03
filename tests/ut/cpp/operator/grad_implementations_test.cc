@@ -25,7 +25,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "ir/manager.h"
 #include "ir/value.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace prim {
@@ -36,10 +36,10 @@ class TestGradImplementations : public UT::Common {
 };
 
 TEST_F(TestGradImplementations, DISABLED_TestGetAugmentedGraph) {
-  FuncGraphPtr fg = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr);
+  FuncGraphPtr fg = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr, false);
   ASSERT_TRUE(fg != nullptr);
 
-  auto fg1 = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr);
+  auto fg1 = ad::g_k_prims.KPrimitive(nullptr, NewValueNode(kPrimScalarMul), nullptr, false);
 
   FuncGraphPairMapEquiv equiv_graph;
   NodeMapEquiv equiv_node;

@@ -21,11 +21,12 @@
 #include <vector>
 #include <random>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace truncated_normal_cpu {
 class TruncatedNormalCPUKernelMod : public NativeCpuKernelMod {
  public:
   TruncatedNormalCPUKernelMod() = default;
@@ -53,6 +54,7 @@ class TruncatedNormalCPUKernelMod : public NativeCpuKernelMod {
   std::default_random_engine rng_;
   bool flag_{true};
 };
+}  // namespace truncated_normal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_TRUNCATEDNORMAL_CPU_KERNEL_H_

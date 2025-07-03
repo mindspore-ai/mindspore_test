@@ -19,10 +19,11 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_scatter_value {
 
 class InplaceScatterValueAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class InplaceScatterValueAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_scatter_value
 }  // namespace kernel
 }  // namespace mindspore
 

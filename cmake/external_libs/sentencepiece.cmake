@@ -4,14 +4,14 @@ if(ENABLE_GITEE_EULER)
     set(SHA256 "4f88df28544b5f1a351f3dbf6b6413b8")
     set(SENTENCEPIECE_SRC "${TOP_DIR}/build/mindspore/_deps/sentencepiece-src")
     __download_pkg_with_git(sentencepiece ${GIT_REPOSITORY} ${GIT_TAG} ${SHA256})
-    execute_process(COMMAND tar -xf ${SENTENCEPIECE_SRC}/v0.1.92.tar.gz --strip-components 1 -C ${SENTENCEPIECE_SRC})
+    execute_process(COMMAND tar -xf ${SENTENCEPIECE_SRC}/v0.1.98.tar.gz --strip-components 1 -C ${SENTENCEPIECE_SRC})
 else()
 if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/sentencepiece/repository/archive/v0.1.92.tar.gz")
-    set(SHA256 "650325f998fb97f360bfa886a761fb5cd34d51d684b26ea53edcb5a0d9fa7601")
+    set(REQ_URL "https://gitee.com/mirrors/sentencepiece/repository/archive/v0.1.98.tar.gz")
+    set(SHA256 "623cb16369626c14ddebd02323dc35b87c63717fbf5c1c684f999a9f0c1e3c6a")
 else()
-    set(REQ_URL "https://github.com/google/sentencepiece/archive/v0.1.92.tar.gz")
-    set(SHA256 "6e9863851e6277862083518cc9f96211f334215d596fc8c65e074d564baeef0c")
+    set(REQ_URL "https://github.com/google/sentencepiece/archive/v0.1.98.tar.gz")
+    set(SHA256 "e8e09beffacd9667ed40c4652306f7e7990100164dfa26d8bd8a66b097471cb2")
 endif()
 endif()
 
@@ -27,16 +27,17 @@ if(WIN32)
     set(sentencepiece_CFLAGS "-D_FORTIFY_SOURCE=2 -O2")
     if(MSVC)
         mindspore_add_pkg(sentencepiece
-            VER 0.1.92
+            VER 0.1.98
             LIBS sentencepiece sentencepiece_train
             URL ${REQ_URL}
-            CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DSPM_USE_BUILTIN_PROTOBUF=ON -DSPM_ENABLE_SHARED=OFF
+            CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DSPM_USE_BUILTIN_PROTOBUF=OFF -DSPM_ENABLE_SHARED=OFF
+                -DPROTOBUF_INC=${protobuf_INC}
             SHA256 ${SHA256}
             PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sentencepiece/sentencepiece_msvc.patch001
             )
     else()
         mindspore_add_pkg(sentencepiece
-            VER 0.1.92
+            VER 0.1.98
             LIBS sentencepiece sentencepiece_train
             URL ${REQ_URL}
             CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DSPM_USE_BUILTIN_PROTOBUF=ON -DSPM_ENABLE_SHARED=OFF
@@ -48,7 +49,7 @@ else()
     set(sentencepiece_CFLAGS "-D_FORTIFY_SOURCE=2 -O2")
     if(ENABLE_GLIBCXX)
         mindspore_add_pkg(sentencepiece
-            VER 0.1.92
+            VER 0.1.98
             LIBS sentencepiece sentencepiece_train
             URL ${REQ_URL}
             CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DSPM_USE_BUILTIN_PROTOBUF=OFF -DSPM_ENABLE_SHARED=OFF
@@ -58,7 +59,7 @@ else()
             )
     else()
         mindspore_add_pkg(sentencepiece
-            VER 0.1.92
+            VER 0.1.98
             LIBS sentencepiece sentencepiece_train
             URL ${REQ_URL}
             CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DSPM_USE_BUILTIN_PROTOBUF=OFF -DSPM_ENABLE_SHARED=OFF

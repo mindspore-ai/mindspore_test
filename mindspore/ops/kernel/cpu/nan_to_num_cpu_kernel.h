@@ -21,11 +21,12 @@
 #include <utility>
 #include <vector>
 #include "ops/base_operator.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num_cpu {
 class NanToNumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<NanToNumCpuKernelMod> {
  public:
   NanToNumCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class NanToNumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace nan_to_num_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

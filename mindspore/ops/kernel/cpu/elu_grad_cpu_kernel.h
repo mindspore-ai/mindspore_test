@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace elu_grad_cpu {
 class EluGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EluGradCpuKernelMod> {
  public:
   EluGradCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class EluGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace elu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ELU_GRAD_CPU_KERNEL_H_

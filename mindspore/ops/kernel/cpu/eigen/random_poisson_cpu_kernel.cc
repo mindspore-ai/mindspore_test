@@ -18,8 +18,8 @@
 #include <random>
 #include "Eigen/Core"
 #include "unsupported/Eigen/CXX11/Tensor"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 #include "kernel/philox_random.h"
 
 namespace mindspore {

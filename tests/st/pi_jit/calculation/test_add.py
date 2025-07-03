@@ -1,16 +1,11 @@
-import sys  
 import pytest 
 from mindspore import numpy as np
 from mindspore import Tensor, jit, context
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def add(a, b):
     return a + b
 
@@ -72,7 +67,6 @@ def test_add_float(func, ms_func, test_data):
 @pytest.mark.parametrize('func', [add])
 @pytest.mark.parametrize('ms_func', [jit_add])
 @pytest.mark.parametrize('test_data', [(2.0, Tensor(np.ones((2, 3)).astype(np.float32)))])
-@pytest.mark.skip(reason="GetDevicePtr is NULL")
 def test_add_float_tensor(func, ms_func, test_data):
     """
     Feature:

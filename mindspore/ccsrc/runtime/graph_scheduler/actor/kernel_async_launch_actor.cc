@@ -16,6 +16,8 @@
 
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "runtime/graph_scheduler/actor/kernel_runner.h"
+#include "pipeline/jit/ps/debug/trace.h"
 
 namespace mindspore {
 namespace runtime {
@@ -27,17 +29,48 @@ std::shared_ptr<KernelAsyncLaunchActor> &KernelAsyncLaunchActor::GetInstance() {
 
 void KernelAsyncLaunchActor::Initialize() {
   Async(this->GetAID(), &KernelAsyncLaunchActor::GetThreadId);
+  // Bind LaunchKernel thread to current device.
+  Async(this->GetAID(), &KernelAsyncLaunchActor::BindDevice);
   Wait();
 }
 
-void KernelAsyncLaunchActor::LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
+void KernelAsyncLaunchActor::LaunchKernel(OpContext<KernelTensor> *const context, KernelActor *kernel_actor) {
   try {
     kernel_actor->ExecuteLaunchKernelTask(context);
   } catch (const std::exception &e) {
     if (context->error_info_.empty()) {
       MsException::Instance().SetException();
-      MS_LOG(INFO) << "Failed to launch kernel: " << kernel_actor->kernel()->fullname_with_scope()
-                   << " and catch exception: " << e.what();
+      auto error_line = trace::DumpSourceLines(kernel_actor->kernel());
+      MS_LOG(ERROR) << "Failed to launch kernel: " << kernel_actor->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
+    }
+  }
+}
+
+void KernelAsyncLaunchActor::LaunchKernelV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner) {
+  try {
+    kernel_runner->ExecuteLaunchKernelTask(context);
+  } catch (const std::exception &e) {
+    if (context->error_info_.empty()) {
+      MsException::Instance().SetException();
+      auto error_line = trace::DumpSourceLines(kernel_runner->kernel());
+      MS_LOG(ERROR) << "Failed to launch kernel: " << kernel_runner->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
+      SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
+    }
+  }
+}
+
+void KernelAsyncLaunchActor::LaunchKernelV2HP(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner) {
+  try {
+    kernel_runner->ExecuteLaunchKernelTaskHP(context);
+  } catch (const std::exception &e) {
+    if (context->error_info_.empty()) {
+      MsException::Instance().SetException();
+      auto error_line = trace::DumpSourceLines(kernel_runner->kernel());
+      MS_LOG(ERROR) << "Failed to launch kernel: " << kernel_runner->kernel()->fullname_with_scope()
+                    << " and catch exception: " << e.what() << error_line;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context), e.what());
     }
   }
@@ -48,13 +81,22 @@ void KernelAsyncLaunchActor::Wait() {
   if (thread_id_ == std::this_thread::get_id()) {
     return;
   }
-  MS_LOG(DEBUG) << "Begin wait kernel launch finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Begin wait kernel launch finish";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kWaitKernelsLaunchFinish, GetAID().Name());
   Future<bool> f = Async(this->GetAID(), &KernelAsyncLaunchActor::OnTaskFinish);
   f.Wait();
-  MS_LOG(DEBUG) << "End wait kernel launch finish";
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End wait kernel launch finish";
 }
 
 Future<bool> KernelAsyncLaunchActor::OnTaskFinish() { return Future<bool>(true); }
+
+void KernelAsyncLaunchActor::AddDeviceContext(DeviceContext *device_context) {
+  (void)device_contexts_.insert(device_context);
+}
+
+void KernelAsyncLaunchActor::BindDevice() {
+  std::for_each(device_contexts_.begin(), device_contexts_.end(),
+                [](const DeviceContext *item) { item->device_res_manager_->BindDeviceToCurrentThread(false); });
+}
 }  // namespace runtime
 }  // namespace mindspore

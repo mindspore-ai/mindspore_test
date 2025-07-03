@@ -32,13 +32,47 @@
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#ifdef BUILDING_ME_DLL
-#define ME_EXPORT __declspec(dllexport)
+#ifdef PROFILER_DLL
+#define PROFILER_EXPORT __declspec(dllexport)
 #else
-#define ME_EXPORT __declspec(dllimport)
+#define PROFILER_EXPORT __declspec(dllimport)
+#endif
+#define PROFILER_LOCAL
+#else
+#define PROFILER_EXPORT __attribute__((visibility("default")))
+#define PROFILER_LOCAL __attribute__((visibility("hidden")))
+#endif
+
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef DUMP_DLL
+#define DUMP_EXPORT __declspec(dllexport)
+#else
+#define DUMP_EXPORT __declspec(dllimport)
+#endif
+#define DUMP_LOCAL
+#else
+#define DUMP_EXPORT __attribute__((visibility("default")))
+#define DUMP_LOCAL __attribute__((visibility("hidden")))
+#endif
+
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef PYNATIVE_DLL
+#define PYNATIVE_EXPORT __declspec(dllexport)
+#else
+#define PYNATIVE_EXPORT __declspec(dllimport)
 #endif
 #else
-#define ME_EXPORT __attribute__((visibility("default")))
+#define PYNATIVE_EXPORT __attribute__((visibility("default")))
+#endif
+
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef FRONTEND_DLL
+#define FRONTEND_EXPORT __declspec(dllexport)
+#else
+#define FRONTEND_EXPORT __declspec(dllimport)
+#endif
+#else
+#define FRONTEND_EXPORT __attribute__((visibility("default")))
 #endif
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_VISIBLE_H_

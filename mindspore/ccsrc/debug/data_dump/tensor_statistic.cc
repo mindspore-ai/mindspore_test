@@ -19,11 +19,13 @@
 #include <vector>
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/dump/utils.h"
 #include "debug/utils.h"
 #include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "backend/common/session/session_basic.h"
 
 namespace mindspore {
 namespace {
@@ -54,7 +56,7 @@ namespace datadump {
 TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::vector<string> &stat_name_list,
                                 const std::uint32_t stream_id) {
   auto tensor = tensor_info.tensor;
-  if (tensor == nullptr) {
+  if (tensor == nullptr || tensor->device_ptr() == nullptr) {
     MS_LOG(WARNING) << "Tensor is nullptr, returning empty tensor statistics.";
     return TensorStat();
   }
@@ -93,7 +95,7 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
   return stat;
 }
 
-void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::DeviceAddress *> tensors, bool is_input,
+void DumpKernelTensorStats(const DeviceContext *device_context, std::vector<KernelTensor *> tensors, bool is_input,
                            const CNodePtr &node, uint32_t graph_id) {
   string node_name = GetKernelNodeName(node);
   GetFileKernelName(NOT_NULL(&node_name));
@@ -102,12 +104,12 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
   MS_LOG(DEBUG) << "Start calc " << node_name << " node statistics.";
   const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
   const std::vector<string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
-  uint32_t rank_id = GetRankId();
+  uint32_t rank_id = GetRankID();
   string filename = GenerateDumpPath(graph_id, rank_id) + "/" + kCsvFileName;
   CsvWriter csv;
   std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
 
-  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input, device_context);
+  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input, device_context, tensors);
   if (!valid_index.empty()) {
     if (!csv.OpenFile(filename, csv_header)) {
       MS_LOG(WARNING) << "filename is " << filename;
@@ -116,7 +118,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
     }
   }
   for (auto i : valid_index) {
-    auto tensor = tensors[i]->kernel_tensor().get();
+    auto tensor = tensors[i];
     DumpTensorInfo tensor_info(device_context, tensor, is_input, i, node_name, node_type);
     auto stat = GetKernelTensorStats(tensor_info, stat_name_list, stream_id);
     if (stat.data_size_ == 0) {

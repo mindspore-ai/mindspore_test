@@ -1,0 +1,14 @@
+logaddexp2:
+  - op_yaml: logaddexp2_op.yaml
+    py_method: deprecated_tensor_logaddexp2 # callback to python function "def deprecated_tensor_logaddexp2"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/logaddexp2_method.yaml
+    py_method: deprecated_tensor_logaddexp2 # callback to python function "def deprecated_tensor_logaddexp2"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

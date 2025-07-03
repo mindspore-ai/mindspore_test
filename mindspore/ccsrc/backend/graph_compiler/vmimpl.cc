@@ -30,6 +30,9 @@
 #include "ir/func_graph_cloner.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/primitive_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace compile {

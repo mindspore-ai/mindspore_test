@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_clamp_scalar {
 
 class InplaceClampScalarAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -36,8 +37,11 @@ class InplaceClampScalarAclnnKernelMod : public AclnnKernelMod {
   void GetScalarVal(TypeId dtype_id, KernelTensor *input);
 
  private:
+  ScalarPtr min_scalar_ = nullptr;
+  ScalarPtr max_scalar_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_clamp_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -22,9 +22,6 @@ import mindspore.dataset as ds
 import mindspore.dataset.engine.iterators as it
 from mindspore import log as logger
 
-# Run these tests in separate processes since many tests update config parameters, like shared memory config
-pytestmark = pytest.mark.forked
-
 DATA_DIR = ["../data/dataset/testPyfuncMap/data.data"]
 SCHEMA_DIR = "../data/dataset/testPyfuncMap/schema.json"
 

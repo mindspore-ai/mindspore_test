@@ -19,17 +19,17 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "include/backend/visible.h"
+#include "include/common/visible.h"
 #include "ir/tensor.h"
-#include "mindspore/core/include/ir/base_tensor.h"
+#include "mindspore/core/include/ir/tensor.h"
 
 namespace mindspore {
 namespace silentcheck {
 const char kAttrSilentCheckOpType[] = "silent_check_type";
 enum SilentCheckOpType : int { kSilentCheckGradLastOp = 0, kSilentCheckGradCommOp = 1 };
-using tensor::BaseTensorPtr;
+using tensor::TensorPtr;
 
-class BACKEND_EXPORT SilentCheckerBase {
+class COMMON_EXPORT SilentCheckerBase {
  public:
   static std::shared_ptr<SilentCheckerBase> GetInstance();
 
@@ -43,12 +43,13 @@ class BACKEND_EXPORT SilentCheckerBase {
 
   virtual void Clear() {}
 
+  virtual void ClearCheckObjects() {}
+
   virtual bool IsNpuAsdEnable() { return false; }
 
   virtual void SetBackProp(bool is_back_prop) {}
 
-  virtual void DoSilentCheck(const std::string &op_name, const std::string &comm_group,
-                             const BaseTensorPtr &input_grad) {}
+  virtual void DoSilentCheck(const std::string &op_name, const std::string &comm_group, const TensorPtr &input_grad) {}
 
   bool NeedInsertCheckForLastGrad();
 

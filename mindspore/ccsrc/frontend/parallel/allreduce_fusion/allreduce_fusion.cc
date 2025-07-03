@@ -31,6 +31,9 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/step_parallel.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {
@@ -39,6 +42,7 @@ void SetMirrorFusion(const CNodePtr &mirror_cnode, int64_t fusion, const std::st
   MS_LOG(DEBUG) << "Set Mirror " << mirror_cnode->DebugString() << " fusion " << fusion;
   auto node_prim = GetValueNode<PrimitivePtr>(mirror_cnode->input(0));
   (void)node_prim->AddAttr(FUSION, MakeValue(std::make_shared<Int64Imm>(fusion)));
+  MS_EXCEPTION_IF_NULL(node_prim);
   (void)node_prim->AddAttr(PARAMETER, MakeValue(std::make_shared<StringImm>(parameter_name)));
 }
 
@@ -49,6 +53,7 @@ void AdjustRelatedFusionNode(const CNodePtr &ret, const std::unordered_map<std::
       continue;
     }
     auto related_cnode = related_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(related_cnode);
     if (!related_cnode->HasAttr(kRelatedCommNodeId)) {
       continue;
     }
@@ -61,6 +66,7 @@ void AdjustRelatedFusionNode(const CNodePtr &ret, const std::unordered_map<std::
       continue;
     }
     auto node_prim = GetValueNode<PrimitivePtr>(comm_cnode->input(0));
+    MS_EXCEPTION_IF_NULL(node_prim);
     if (!node_prim->HasAttr(FUSION)) {
       continue;
     }
@@ -147,6 +153,7 @@ Status AllCommFusion::SetFusionBySizeReduceScatter(const CNodePtr &ret, int64_t 
   std::unordered_map<std::string, CNodePtr> comm_node_map;
   for (auto &node : todo) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(1) == nullptr) {
       continue;
     }

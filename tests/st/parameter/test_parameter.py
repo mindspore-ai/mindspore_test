@@ -16,8 +16,9 @@ import pytest
 import numpy as np
 
 import mindspore as ms
+import mindspore.ops.operations as op
 from mindspore.nn import Cell
-from mindspore.common.parameter import Parameter
+from mindspore.common.parameter import Parameter, _is_parameter_generated
 from mindspore.common import ParameterTuple
 from mindspore import Tensor, context
 from tests.mark_utils import arg_mark
@@ -167,11 +168,17 @@ def test_parameter_list_tuple_no_name(mode):
     context.set_context(mode=mode)
     net = ParamNet()
     res = net()
+    name_set = set("")
+    name_set.add(net.param_tuple[0].name)
+    name_set.add(net.param_tuple[1].name)
+    name_set.add(net.param_list[0].name)
+    name_set.add(net.param_list[1].name)
     assert res == 26
-    assert net.param_tuple[0].name == "Parameter$1"
-    assert net.param_tuple[1].name == "Parameter$2"
-    assert net.param_list[0].name == "Parameter$3"
-    assert net.param_list[1].name == "Parameter$4"
+    assert len(name_set) == 4
+    assert _is_parameter_generated(net.param_tuple[0].name)
+    assert _is_parameter_generated(net.param_tuple[1].name)
+    assert _is_parameter_generated(net.param_list[0].name)
+    assert _is_parameter_generated(net.param_list[1].name)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -273,16 +280,22 @@ def test_parameter(mode):
     output1, output2 = net(x)
     output1_expect = Tensor(21, ms.float32)
     output2_expect = Tensor(11, ms.float32)
+    name_set = set("")
+    name_set.add(net.param_tuple[0].name)
+    name_set.add(net.param_tuple[1].name)
+    name_set.add(net.param_list[0].name)
+    name_set.add(net.param_list[1].name)
+    assert len(name_set) == 4
     assert output1 == output1_expect
     assert output2 == output2_expect
     assert net.param_a.name == "name_a"
     assert net.param_b.name == "name_b"
     assert net.param_c.name == "param_c"
     assert net.param_d.name == "param_d"
-    assert net.param_tuple[0].name == "Parameter$1"
-    assert net.param_tuple[1].name == "Parameter$2"
-    assert net.param_list[0].name == "Parameter$3"
-    assert net.param_list[1].name == "Parameter$4"
+    assert _is_parameter_generated(net.param_tuple[0].name)
+    assert _is_parameter_generated(net.param_tuple[1].name)
+    assert _is_parameter_generated(net.param_list[0].name)
+    assert _is_parameter_generated(net.param_list[1].name)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -354,21 +367,51 @@ def test_parameter_argument_grad():
 
 
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as err1:
-        param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
-        x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
-        y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
-        net = ParameterArgumentCell()
-        net(param, x, y)
+    param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
+    x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
+    y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
+    net = ParameterArgumentCell()
+    net(param, x, y)
 
-        bparam = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='bparam')
-        bx = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='bx')
-        by = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='by')
-        grad_by_list = ms.ops.GradOperation(get_by_list=True)
-        grad_by_list(net, ParameterTuple(net.trainable_params()))(bparam, bx, by)
+    bparam = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='bparam')
+    bx = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='bx')
+    by = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='by')
+    grad_by_list = ms.ops.GradOperation(get_by_list=True)
+    grad_by_list(net, ParameterTuple(net.trainable_params()))(bparam, bx, by)
 
-        assert np.array_equal(param.asnumpy(), bparam.asnumpy())
-        assert np.array_equal(x.asnumpy(), bx.asnumpy())
-        assert np.array_equal(y.asnumpy(), by.asnumpy())
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
-            in str(err1.value))
+    assert np.array_equal(param.asnumpy(), bparam.asnumpy())
+    assert np.array_equal(x.asnumpy(), bx.asnumpy())
+    assert np.array_equal(y.asnumpy(), by.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_parameter_set_in_class_attributes_between_iterations_name_diff():
+    """
+    Feature: Return Parameter argmument itself.
+    Description: Use Parameter as input argmument, and return itself.
+    Expectation: No exception.
+    """
+
+    inputx_1 = np.random.rand(2, 3).astype(np.float32)
+    inputy_1 = np.random.rand(2, 3).astype(np.float32)
+    inputy_2 = np.random.rand(2, 3).astype(np.float16)
+
+    class Net(Cell):
+        def __init__(self, inputx):
+            super().__init__()
+            self.sub = op.Sub()
+            self.inputx = Parameter(inputx, name="weight")
+
+        def construct(self, inputy):
+            self.sub(self.inputx, inputy)
+            return self.inputx
+
+    context.set_context(mode=context.GRAPH_MODE)
+    net = Net(Tensor(inputx_1))
+    net(Tensor(inputy_1))
+    net.inputx.name = "name_changed"
+    output = net(Tensor(inputy_2))
+    assert output.name == "name_changed"

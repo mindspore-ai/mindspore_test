@@ -33,6 +33,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace pijit {
@@ -59,8 +60,10 @@ void ExpandFuncGraphKwargs(const FuncGraphPtr &func_graph, AbstractBasePtrList *
   if (!func_graph->has_kwarg()) {
     return;
   }
-  MS_EXCEPTION_IF_CHECK_FAIL(args_spec->back()->isa<abstract::AbstractDictionary>(), "Kwargs should be a dict.");
-  auto elems = args_spec->back()->cast<abstract::AbstractDictionaryPtr>()->elements();
+  auto args_back = args_spec->back();
+  MS_EXCEPTION_IF_NULL(args_back);
+  MS_EXCEPTION_IF_CHECK_FAIL(args_back->isa<abstract::AbstractDictionary>(), "Kwargs should be a dict.");
+  auto elems = args_back->cast<abstract::AbstractDictionaryPtr>()->elements();
   args_spec->pop_back();
   for (const auto &elem : elems) {
     auto key = GetValue<std::string>(elem.first->BuildValue());
@@ -75,7 +78,7 @@ void PrepareEvalFuncGraph(const AnfNodePtr &func, AbstractBasePtrList *args_spec
   }
   auto func_graph = GetValueNode<FuncGraphPtr>(func);
   pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
-  res->set_func_graph(func_graph);
+  res->set_func_graph(parse::Parser::GetTopFuncGraph());
   res->set_args_abs(*args_spec);
   parse::ResolveFuncGraph(func_graph, res);
   ExpandFuncGraphVarargs(func_graph, args_spec);
@@ -83,6 +86,7 @@ void PrepareEvalFuncGraph(const AnfNodePtr &func, AbstractBasePtrList *args_spec
 }
 
 abstract::AbstractBasePtr EvalFunctionValue(const AnfNodePtr &func, AbstractBasePtrList *args_spec) {
+  MS_EXCEPTION_IF_NULL(func);
   if (func->isa<Primitive>()) {
     auto prim = GetValueNode<PrimitivePtr>(func);
     auto res = abstract::EvalOnePrim(prim, *args_spec);

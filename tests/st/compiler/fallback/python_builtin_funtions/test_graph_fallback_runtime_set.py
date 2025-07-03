@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 from mindspore import jit, context
 from tests.mark_utils import arg_mark
 
@@ -28,7 +27,7 @@ def test_fallback_runtime_set():
     Description: Test set() in graph mode.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = set([1, 2, 1])
         return x

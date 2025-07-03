@@ -46,6 +46,9 @@ do
   if [ -f "./$i/mindspore/lib/libmindspore.so" ]; then
     \cp -rf ./$i/mindspore/lib/libmindspore.so $BASE_PACKAGE_UNZIP_DIR/mindspore/lib/
   fi;
+  if [ -f "./$i/mindspore/lib/libmindspore_ge_backend.so" ]; then
+    \cp -rf ./$i/mindspore/lib/libmindspore_ge_backend.so $BASE_PACKAGE_UNZIP_DIR/mindspore/lib/
+  fi;
 
   # dataset library "mindspore/_c_dataengine.*.so" with 910b dvpp which is biggest should be used
   file_size_src=`du ./$i/mindspore/_c_dataengine.*.so | awk '{print $1;}'`
@@ -55,7 +58,7 @@ do
     \cp -rf ./$i/mindspore/_c_dataengine.*.so $BASE_PACKAGE_UNZIP_DIR/mindspore/
   fi;
 
-  CUR_GPU_VERSION=`find "./$i/mindspore/lib/plugin" -name 'gpu*' -exec sh -c 'echo ${0##*gpu}' {} \;`
+  CUR_GPU_VERSION=`find "./$i/mindspore/lib/plugin" -name 'gpu1*' -exec sh -c 'echo ${0##*gpu}' {} \;`
   if [ -n "$CUR_GPU_VERSION" ]; then
     GPU_VERSION_MAP[$CUR_GPU_VERSION]=$i
   else

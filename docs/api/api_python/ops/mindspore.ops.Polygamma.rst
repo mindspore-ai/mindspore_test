@@ -15,4 +15,4 @@ mindspore.ops.Polygamma
         - **x** (Tensor) - 用于计算多伽马函数的 :math:`a` 阶导数的Tensor，支持的数据类型为：float16、float32和float64。
 
     输出：
-        Tensor。数据类型与 `x` 一致。
+        Tensor，数据类型与 `x` 一致。

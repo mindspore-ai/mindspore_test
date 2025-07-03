@@ -24,3 +24,6 @@ apply_rotary_pos_emb:
         name: ApplyRotaryPosEmb
     function:
         name: apply_rotary_pos_emb_
+    dispatch:
+        enable: True
+        InternalOpAscend: AutoGen

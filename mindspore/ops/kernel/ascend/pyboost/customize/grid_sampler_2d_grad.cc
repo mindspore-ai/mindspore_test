@@ -20,17 +20,16 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler2DGradAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad_tensor, const BaseTensorPtr &input_x_tensor,
-  const BaseTensorPtr &grid_tensor, const Int64ImmPtr &interpolation_mode, const Int64ImmPtr &padding_mode,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> GridSampler2DGradAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &grad_tensor, const TensorPtr &input_x_tensor,
+  const TensorPtr &grid_tensor, const Int64ImmPtr &interpolation_mode, const Int64ImmPtr &padding_mode,
   const BoolImmPtr &align_corners, const ValueTuplePtr &output_mask) {
   constexpr char op_name[] = "GridSampler2DGrad";
   MS_LOG(DEBUG) << op_name << " call start";

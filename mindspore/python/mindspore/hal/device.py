@@ -120,23 +120,21 @@ def _check_device_id(fn):
 
 def is_initialized(device_target):
     """
-    Returns whether specified backend is initialized.
+    Return whether specified device is initialized, this api will be deprecated and removed in future versions.
 
     Note:
-        - The api will be deprecated.
+        MindSpore's devices "CPU", "GPU" and "Ascend" will be initialized in the following scenarios:
 
-    Note:
-        MindSpore's backends "CPU", "GPU" and "Ascend" will be initialized in the following scenarios:
-
-        - For distributed job, backend will be initialized after `mindspore.communication.init` method is called.
-        - For standalone job, backend will be initialized after running
+        - For distributed job, device will be initialized after `mindspore.communication.init` method is called.
+        - For standalone job, device will be initialized after running
           the first operator or calling creating stream/event interfaces.
 
     Args:
-        device_target (str): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` .
 
     Returns:
-        Bool, whether the specified backend is initialized.
+        bool
 
     Examples:
         >>> import mindspore as ms
@@ -162,25 +160,21 @@ def is_initialized(device_target):
 
 def is_available(device_target):
     """
-    Returns whether specified backend is available.
-    All dependent libraries should be successfully loaded if this backend is available.
-
-    Note:
-        - The api will be deprecated.
-        - CPU hardware, please use the interface :func:`mindspore.device_context.cpu.is_available`.
-        - GPU hardware, please use the interface :func:`mindspore.device_context.gpu.is_available`.
-        - Ascend hardware, please use the interface :func:`mindspore.device_context.ascend.is_available`.
+    Return whether specified device is available, this api will be deprecated and removed in future versions, please
+    use the api :func:`mindspore.device_context.cpu.is_available` , :func:`mindspore.device_context.gpu.is_available`,
+    :func:`mindspore.device_context.ascend.is_available` instead.
 
     Args:
-        device_target (str): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
-        Bool, whether the specified backend is available for this MindSpore package.
+        bool
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.is_available(device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.is_available(device_target))
         True
     """
     if device_target not in valid_targets:
@@ -201,29 +195,24 @@ def is_available(device_target):
 @_check_inputs_validation
 def device_count(device_target=None):
     """
-    Returns device count of specified backend.
+    Return device count of specified device, this api will be deprecated and removed in future versions, please use
+    the api :func:`mindspore.device_context.cpu.device_count` , :func:`mindspore.device_context.gpu.device_count`,
+    :func:`mindspore.device_context.ascend.device_count` instead.
 
     Note:
-        - The api will be deprecated.
-        - CPU hardware, please use the interface :func:`mindspore.device_context.cpu.device_count`.
-        - GPU hardware, please use the interface :func:`mindspore.device_context.gpu.device_count`.
-        - Ascend hardware, please use the interface :func:`mindspore.device_context.ascend.device_count`.
-
-
-    Note:
-        If `device_target` is not specified, get the device count of the current backend set by context.
-        For CPU backend, this method always returns 1.
+        For CPU device, this method always returns 1.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
-        int.
+        int
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.device_count(device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.device_count(device_target))
     """
     hal_instance = hal_instances.get(device_target)
     if hal_instance is None:
@@ -235,20 +224,15 @@ def device_count(device_target=None):
 @_check_inputs_validation
 def get_device_capability(device_id, device_target=None):
     """
-    Get specified device's capability.
-
-    Note:
-        - The api will be deprecated.
-
-    Note:
-        If `device_target` is not specified, get the device capability of the current backend set by context.
+    Get specified device's capability, this api will be deprecated and removed in future versions.
 
     Args:
         device_id (int): The device id of which the capability will be returned.
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str, optional):  The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
-        tuple(int, int) for GPU.
+        tuple(param1, param2) for GPU.
 
         - param1 - int, cuda major revision number.
         - param2 - int, cuda minor revision number.
@@ -256,9 +240,9 @@ def get_device_capability(device_id, device_target=None):
         None for Ascend and CPU.
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.get_device_capability(0, device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.get_device_capability(0, device_target))
     """
     hal_instance = hal_instances.get(device_target)
     if hal_instance is None:
@@ -270,20 +254,17 @@ def get_device_capability(device_id, device_target=None):
 @_check_inputs_validation
 def get_device_properties(device_id, device_target=None):
     """
-    Get specified device's properties.
+    Get specified device's properties, this api will be deprecated and removed in future versions.
 
     Note:
-        - The api will be deprecated.
-
-    Note:
-        If `device_target` is not specified, get the device properties of the current backend set by context.
-        For Ascend, backend must be initialized before calling this method,
+        For Ascend, device must be initialized before calling this method,
         or `total_memory` and `free_memory` will be 0,
         and `device_id` will be ignored since this method only returns current device's properties.
 
     Args:
         device_id (int): The device id of which the properties will be returned.
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         - `cudaDeviceProp` for GPU.
@@ -314,9 +295,9 @@ def get_device_properties(device_id, device_target=None):
         - None for CPU.
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.get_device_properties(0, device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.get_device_properties(0, device_target))
     """
     hal_instance = hal_instances.get(device_target)
     if hal_instance is None:
@@ -328,26 +309,23 @@ def get_device_properties(device_id, device_target=None):
 @_check_inputs_validation
 def get_device_name(device_id, device_target=None):
     """
-    Get specified device's name.
+    Get specified device's name, this api will be deprecated and removed in future versions.
 
     Note:
-        - The api will be deprecated.
-
-    Note:
-        If `device_target` is not specified, get the device name of the current backend set by context.
-        This method always returns "CPU" for CPU backend.
+        This method always returns "CPU" for CPU device.
 
     Args:
         device_id (int): The device id of which the name will be returned.
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
-        str.
+        str
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.get_device_name(0, device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.get_device_name(0, device_target))
     """
     hal_instance = hal_instances.get(device_target)
     if hal_instance is None:
@@ -358,25 +336,21 @@ def get_device_name(device_id, device_target=None):
 @_check_inputs_validation
 def get_arch_list(device_target=None):
     """
-    Get the architecture list this MindSpore was compiled for.
-
-    Note:
-        - The api will be deprecated.
-
-    Note:
-        If `device_target` is not specified, get the device name of the current backend set by context.
+    Get the architecture list this MindSpore was compiled for, this api will be deprecated and removed in future
+    versions.
 
     Args:
-        device_target (str, optional): The device name of backend, should be one of "CPU", "GPU" and "Ascend".
+        device_target (str, optional): The target device specified, should be one of ``"CPU"`` , ``"GPU"`` and
+            ``"Ascend"`` . Default ``None`` , represents the current device set by context.
 
     Returns:
         str for GPU.
         None for Ascend and CPU.
 
     Examples:
-        >>> import mindspore as ms
-        >>> device_target = ms.context.get_context("device_target")
-        >>> print(ms.hal.get_arch_list(device_target))
+        >>> import mindspore
+        >>> device_target = mindspore.context.get_context("device_target")
+        >>> print(mindspore.hal.get_arch_list(device_target))
     """
     hal_instance = hal_instances.get(device_target)
     if hal_instance is None:

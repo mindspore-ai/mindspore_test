@@ -18,14 +18,16 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/get_tuple_index_info.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace get_tuple_index_info_cpu {
 static const size_t max_indices_num = 8;
 bool GetTupleIndexInfoCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
@@ -119,11 +121,7 @@ std::vector<std::pair<KernelAttr, GetTupleIndexInfoCpuKernelMod::GetTupleIndexIn
 
 std::vector<KernelAttr> GetTupleIndexInfoCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
-  std::vector<TypeId> data_type_ids = {kNumberTypeFloat16,   kNumberTypeFloat32,   kNumberTypeFloat64, kNumberTypeInt8,
-                                       kNumberTypeInt16,     kNumberTypeInt32,     kNumberTypeInt64,   kNumberTypeUInt8,
-                                       kNumberTypeUInt16,    kNumberTypeUInt32,    kNumberTypeUInt64,  kNumberTypeBool,
-                                       kNumberTypeComplex64, kNumberTypeComplex128};
-  (void)std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  (void)std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                        [](TypeId data_type_id) -> std::pair<KernelAttr, GetTupleIndexInfoFunc> {
                          auto kernel_attr = KernelAttr();
                          (void)kernel_attr.AddInputAttr(data_type_id);
@@ -145,5 +143,6 @@ std::vector<KernelAttr> GetTupleIndexInfoCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GetTupleIndexInfo, GetTupleIndexInfoCpuKernelMod);
+}  // namespace get_tuple_index_info_cpu
 }  // namespace kernel
 }  // namespace mindspore

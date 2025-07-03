@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,13 @@
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/pass/interleave_branches_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace parallel {
@@ -109,6 +110,7 @@ CNodePtr GetForkNode(const CNodePtr &merge_node, size_t scope_id) {
       }
 
       auto input_cnode = input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       if (!input_cnode->HasAttr(kAttrTempScopeId)) {
         input_cnode->AddAttr(kAttrTempScopeId, scope_id_value);
       } else if (input_cnode->GetAttr(kAttrTempScopeId) != scope_id_value) {
@@ -142,6 +144,7 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
 
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   std::vector<InterLeaveScopePtr> interleave_scopes;
   size_t scope_id = 0;
   std::unordered_map<std::string, bool> target_unique_id_map;
@@ -210,6 +213,8 @@ void InterleaveParallelBranches(const FuncGraphPtr &graph) {
   for (auto &interleave_scope : interleave_scopes) {
     InterleaveParallelBranches(interleave_scope, true);
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "InterleaveParallelBranches",
+                                             "enable_interleave_parallel_branch");
 }
 }  // namespace parallel
 }  // namespace mindspore

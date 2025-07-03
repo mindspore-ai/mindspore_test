@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/base/broadcast_to.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 using mindspore::ops::kNameBroadcastTo;
 using mindspore::schema::PrimitiveType_BroadcastTo;

@@ -23,12 +23,13 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cpu {
 class SparseSoftmaxCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseSoftmaxCpuKernelMod> {
  public:
   SparseSoftmaxCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseSoftmaxCpuKernelMod : public NativeCpuKernelMod, public MatchKernelH
   size_t values_size_{0};
   size_t shape_size_{0};
 };
+}  // namespace sparse_softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SOFTMAX_CPU_KERNEL_H_

@@ -24,12 +24,13 @@
 
 #include "ir/tensor.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bicubic2d {
 namespace {
 std::tuple<std::vector<int64_t>, std::tuple<double, double>, bool> UpsampleBicubic2DGenerate(
   const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -69,5 +70,6 @@ bool UpsampleBicubic2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleBicubic2D, UpsampleBicubic2DAscend);
+}  // namespace upsample_bicubic2d
 }  // namespace kernel
 }  // namespace mindspore

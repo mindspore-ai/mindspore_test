@@ -4670,7 +4670,7 @@ def bincount(x, weights=None, minlength=0, length=None):
         weights = _to_tensor(weights)
         if ops.shape(x) != ops.shape(weights):
             _raise_value_error('`x` and `weights` must have the same length')
-        idx_mapping *= weights
+        idx_mapping = weights * idx_mapping
     return ops.reduce_sum(idx_mapping.astype(mstype.float32), 1).ravel()
 
 
@@ -5809,7 +5809,7 @@ def correlate(a, v, mode='valid'):
 
     Note:
         - `correlate` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `correlate` is not supported on Windows platform yet.
 
     Args:

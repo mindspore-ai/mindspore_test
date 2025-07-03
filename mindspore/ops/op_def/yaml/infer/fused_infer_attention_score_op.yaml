@@ -53,8 +53,31 @@ fused_infer_attention_score:
     kv_padding_size:
       dtype: tensor
       default: None
+    key_antiquant_scale:
+      dtype: tensor
+      default: None
+    key_antiquant_offset:
+      dtype: tensor
+      default: None
+    value_antiquant_scale:
+      dtype: tensor
+      default: None
+    value_antiquant_offset:
+      dtype: tensor
+      default: None
+    key_shared_prefix:
+      dtype: tensor
+      default: None
+    value_shared_prefix:
+      dtype: tensor
+      default: None
+    actual_shared_prefix_len:
+      dtype: tensor
+      default: None
+      type_cast: list[int], tuple[int]
     num_heads:
       dtype: int
+      default: 1
       prim_init: True
     scale_value:
       dtype: float
@@ -97,6 +120,14 @@ fused_infer_attention_score:
       dtype: bool
       default: False
       prim_init: True
+    key_antiquant_mode:
+      dtype: int
+      default: 0
+      prim_init: True
+    value_antiquant_mode:
+      dtype: int
+      default: 0
+      prim_init: True
   returns:
     attention_out:
       dtype: tensor
@@ -105,4 +136,5 @@ fused_infer_attention_score:
   function:
     disable: True
   dispatch:
-    enable: False
+    enable: True
+    Ascend: FusedInferAttentionScoreAscend

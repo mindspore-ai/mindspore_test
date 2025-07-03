@@ -22,9 +22,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/food101_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -127,7 +125,6 @@ Status Food101Node::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status Food101Node::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kFood101Node));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kFood101Node));
@@ -147,6 +144,5 @@ Status Food101Node::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNo
   (*ds)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

@@ -16,24 +16,23 @@
 
 #include "kernel/ascend/pyboost/customize/argmax_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ArgMaxAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor,
-                                            const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
+tensor::TensorPtr ArgMaxAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
+                                        const std::optional<Int64ImmPtr> &dim, const BoolImmPtr &keepdim) {
   OpRunner::InferOpOutput(op, input_x_tensor, dim, keepdim);
   int64_t dim_imm = 0;
   bool keepdim_imm = GetValue<bool>(keepdim);
 
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto input_x_imm = reshape_op->Call(
-    input_x_tensor, std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(-1)})));
+  auto input_x_imm = reshape_op->Call(input_x_tensor, {-1});
 
   if (dim.has_value()) {
     dim_imm = GetValue<int64_t>(dim.value());

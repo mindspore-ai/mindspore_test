@@ -19,10 +19,10 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "utils/profile.h"
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
-#include "mindspore/ccsrc/kernel/format_utils.h"
+#include "common/common_utils.h"
+#include "common/format_utils.h"
 
 namespace mindspore {
 namespace kernel {

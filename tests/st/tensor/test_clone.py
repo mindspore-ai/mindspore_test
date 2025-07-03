@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -46,7 +46,7 @@ def clone_backward_func(x):
     return ops.grad(clone_forward_func, (0,))(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_clone_std(mode):
     """
@@ -62,8 +62,8 @@ def test_clone_std(mode):
         output = clone_forward_func(ms.Tensor(x))
         output_grad = clone_backward_func(ms.Tensor(x))
     else:
-        output = (jit(clone_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(clone_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(clone_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(clone_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
 
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)

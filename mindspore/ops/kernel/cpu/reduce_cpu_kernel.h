@@ -25,9 +25,9 @@
 #include <functional>
 #include <complex>
 #include "base/bfloat16.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 #define REDUCE_DO_BOOL_CAST(TYPE_ID, TYPE)                   \
   case TYPE_ID:                                              \
@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_cpu {
 class ReduceCpuKernelMod : public NativeCpuKernelMod {
  public:
   ReduceCpuKernelMod() = default;
@@ -95,6 +96,7 @@ class ReduceCpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace reduce_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_REDUCE_CPU_KERNEL_H_

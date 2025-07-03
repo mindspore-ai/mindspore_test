@@ -27,17 +27,18 @@
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "availability/silent_check/silent_check.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace silentcheck {
 namespace ascend {
 
-using BaseTensor = tensor::BaseTensor;
-using BaseTensorPtr = tensor::BaseTensorPtr;
+using Tensor = tensor::Tensor;
+using TensorPtr = tensor::TensorPtr;
 using kernel::pyboost::OpRunner;
 
 using device::DeviceAddressPtr;
@@ -47,9 +48,9 @@ using mindspore::device::DeviceContext;
 using TensorPtr = tensor::TensorPtr;
 
 struct DynamicCheckState {
-  BaseTensorPtr sfda;  // for SilentCheckV2
-  BaseTensorPtr step;  // for SilentCheckV2 and SilentCheckV3
-  BaseTensorPtr avg;   // for SilentCheckV3
+  TensorPtr sfda;  // for SilentCheckV2
+  TensorPtr step;  // for SilentCheckV2 and SilentCheckV3
+  TensorPtr avg;   // for SilentCheckV3
 
   bool is_first_call = true;
 };
@@ -60,26 +61,26 @@ class CheckObject {
   CheckObject();
   ~CheckObject() = default;
 
-  void DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
-  void DoSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
-  void DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheck(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void DoSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
-  void LaunchNorm(const BaseTensorPtr &input_grad);
-  void LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm = true);
+  void LaunchSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
-  void LaunchSquare(const BaseTensorPtr &input_grad);
-  void LaunchMax();
+  void LaunchSquare();
   void LaunchInplaceCopy(const DynamicCheckStatePtr &state);
-  void LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state);
+  void LaunchSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state);
 
  private:
-  // operators for aclnnSilentCheck
+  // operators for both aclnnSilentCheck and aclnnSilentCheckV2
   std::shared_ptr<OpRunner> norm_op_ = nullptr;
+
+  // operators for aclnnSilentCheck
   std::shared_ptr<OpRunner> silent_check_op_ = nullptr;
 
   // operators for aclnnSilentCheckV2
   std::shared_ptr<OpRunner> square_op_ = nullptr;
-  std::shared_ptr<OpRunner> max_op_ = nullptr;
   std::shared_ptr<OpRunner> silent_check_v3_op_ = nullptr;
   // operators only used for aclnnSilentCheckV2 first time call
   std::shared_ptr<OpRunner> inplace_copy_op_ = nullptr;
@@ -96,6 +97,8 @@ class DynamicSilentChecker : public SilentCheckerBase {
 
   ~DynamicSilentChecker() override = default;
 
+  void ClearCheckObjects() override { check_objects_.clear(); }
+
   void Clear() override {
     check_objects_.clear();
     states_.clear();
@@ -105,17 +108,11 @@ class DynamicSilentChecker : public SilentCheckerBase {
 
   bool IsBackProp() { return is_back_prop_; }
 
-  void SetBackProp(bool is_back_prop) override {
-    is_back_prop_ = is_back_prop;
-    if (is_back_prop) {
-      check_objects_.clear();
-    }
-  }
+  void SetBackProp(bool is_back_prop) override { is_back_prop_ = is_back_prop; }
 
-  void DoSilentCheck(const std::string &op_name, const std::string &comm_group,
-                     const BaseTensorPtr &input_grad) override;
+  void DoSilentCheck(const std::string &op_name, const std::string &comm_group, const TensorPtr &input_grad) override;
 
-  DynamicCheckStatePtr CreateDynamicCheckState(const BaseTensorPtr &input_grad);
+  DynamicCheckStatePtr CreateDynamicCheckState(const TensorPtr &input_grad);
 
  private:
   bool is_back_prop_ = false;
@@ -126,7 +123,7 @@ class DynamicSilentChecker : public SilentCheckerBase {
 // silent checker implementation for static graph
 
 // SilentCheckV2 computing flow
-// [dout] --> Norm(aclnnNorm) --> aclnnSilentCheck{step, sfda} --> [comm-operator]
+// [dout] --> L2Norm(aclnnNorm) --> aclnnSilentCheck{step, sfda} --> [comm-operator]
 
 // SilentCheckV3 computing flow
 // ====================================================================
@@ -134,9 +131,9 @@ class DynamicSilentChecker : public SilentCheckerBase {
 // ---------------------------------------+----------------------------
 // [dout]                                 | [dout]
 //   v                                    |   v
-// Square(aclnnMul)                       | Square(aclnnMul)
+// InfinityNorm(aclnnNorm)                | InfinityNorm(aclnnNorm)
 //   v                                    |   v
-// Max(aclnnMax)                          | Max(aclnnMax)
+// Square(aclnnMul)                       | Square(aclnnMul)
 //   |    \                               |   |
 //   |     |                              |   |
 //   |     v                              |   |
@@ -174,7 +171,6 @@ struct CheckState {
   // kernel modules for checking
   OpExecState kernel_norm = {nullptr, nullptr, nullptr};
   OpExecState kernel_square = {nullptr, nullptr, nullptr};
-  OpExecState kernel_max = {nullptr, nullptr, nullptr};
   OpExecState kernel_copy = {nullptr, nullptr, nullptr};
 
   // used by both SilentCheckV2 and SilentCheckV3
@@ -182,9 +178,10 @@ struct CheckState {
 };
 using CheckStatePtr = std::shared_ptr<CheckState>;
 
-class SilentChecker {
+class OPS_ASCEND_API SilentChecker {
  public:
   static SilentChecker &GetInstance();
+  static bool IsNpuAsdEnable();
   ~SilentChecker();
   void InitOpExecState(OpExecState *op_exec_state, const std::string &op_name,
                        const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
@@ -206,9 +203,8 @@ class SilentChecker {
   void LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckV2Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
-  void LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSquareAsync(const CheckStatePtr &state, void *stream_ptr);
+  void LaunchInplaceCopyAsync(const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckV3Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
   KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr,
@@ -222,8 +218,6 @@ class SilentChecker {
   KernelTensorPtr p_scalar_ = nullptr;
   KernelTensorPtr dim_ = nullptr;
   KernelTensorPtr keep_dim_ = nullptr;
-  // constants used by aclnnNeTensor to find no-zero values
-  KernelTensorPtr zero_ = nullptr;
 
   // constants used by aclnnSilentCheck and aclnnSilentCheckV2
   KernelTensorPtr c_thresh_l1_ = nullptr;     // for silent check v2 and v3
@@ -235,7 +229,7 @@ class SilentChecker {
   KernelTensorPtr beta1_ = nullptr;           // for silent check v3
 
   // fields for computing
-  DeviceAddrInfo out_val_ = {nullptr, 0};     // norm or max's output
+  DeviceAddrInfo out_val_ = {nullptr, 0};     // norm output
   DeviceAddrInfo out_square_ = {nullptr, 0};  // square output
   DeviceAddrInfo out_result_ = {nullptr, 0};  // silent check result
 

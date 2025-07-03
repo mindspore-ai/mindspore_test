@@ -23,12 +23,13 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_v2_grad_cpu {
 class ResizeNearestNeighborV2GradCpuKernelMod : public NativeCpuKernelMod {
  public:
   ResizeNearestNeighborV2GradCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class ResizeNearestNeighborV2GradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> grads_shape_;
   std::vector<int64_t> y_shape_;
 };
+}  // namespace resize_nearest_neighbor_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RESIZE_NEAREST_NEIGHBOR_V2_GRAD_CPU_KERNEL_H_

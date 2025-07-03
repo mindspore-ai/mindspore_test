@@ -26,11 +26,11 @@ class ScalarAffine(Bijector):
     .. math::
         Y = a * X + b
 
-    where a is the scale factor and b is the shift factor.
+    where :math:`a` is the scale factor and :math:`b` is the shift factor.
 
     Args:
-        scale (float, list, numpy.ndarray, Tensor): The scale factor. Default: ``1.0`` .
-        shift (float, list, numpy.ndarray, Tensor): The shift factor. Default: ``0.0`` .
+        scale (float, list, numpy.ndarray, Tensor): The scale factor. :math:`a` in the formula. Default: ``1.0`` .
+        shift (float, list, numpy.ndarray, Tensor): The shift factor. :math:`b` in the formula. Default: ``0.0`` .
         name (str): The name of the bijector. Default: ``'ScalarAffine'`` .
 
     Note:

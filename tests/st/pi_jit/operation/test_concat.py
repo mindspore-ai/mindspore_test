@@ -14,9 +14,7 @@
 # ============================================================================
 """Test concat operation"""
 import numpy as np
-import pytest
 from tests.mark_utils import arg_mark
-import sys
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context
@@ -24,10 +22,6 @@ from mindspore import ops
 from mindspore.common.api import jit
 from ..share.utils import match_array, assert_executed_by_graph_mode
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat():
@@ -36,7 +30,7 @@ def test_cat():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x: Tensor, y: Tensor):
         return ops.cat((x, y))
 
@@ -54,7 +48,7 @@ def test_cat_axis_0():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x: Tensor, y: Tensor):
         return ops.cat((x, y), axis=0)
 
@@ -72,7 +66,7 @@ def test_cat_axis_1():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y):
         return ops.cat((x, y), axis=1)
 
@@ -90,7 +84,7 @@ def test_cat_three_tensors_at_axis_0():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y, z):
         return ops.cat([x, y, z], axis=0)
 
@@ -109,7 +103,7 @@ def test_cat_three_tensors_at_axis_negative_1():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y, z):
         return ops.cat([x, y, z], axis=-1)
 

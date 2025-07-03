@@ -25,7 +25,7 @@ class MAE(Metric):
     Calculates the mean absolute error(MAE).
 
     Creates a criterion that measures the MAE between each element
-    in the input: :math:`x` and the target: :math:`y`.
+    in the input: :math:`y\_pred` and the target: :math:`y`.
 
     .. math::
         \text{MAE} = \frac{\sum_{i=1}^n \|{y\_pred}_i - y_i\|}{n}
@@ -142,8 +142,8 @@ class MSE(Metric):
         Updates the internal evaluation result :math:`y_{pred}` and :math:`y`.
 
         Args:
-            inputs: Input `y_pred` and `y` for calculating the MSE where the shape of
-                `y_pred` and `y` are both N-D and the shape should be the same.
+            inputs: Input :math:`y_pred` and :math:`y` for calculating the MSE where the shape of
+                :math:`y_pred` and :math:`y` are both N-D and the shape should be the same.
 
         Raises:
             ValueError: If the number of inputs is not 2.

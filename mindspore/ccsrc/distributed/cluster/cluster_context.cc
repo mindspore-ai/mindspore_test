@@ -30,6 +30,7 @@
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
 #include "utils/file_utils.h"
+#include "utils/distributed_meta.h"
 #include "nlohmann/json.hpp"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "ps/core/comm_util.h"
@@ -321,8 +322,7 @@ bool ClusterContext::IsEnableCrossCluster() {
     return false;
   }
   try {
-    nlohmann::json rank_table_file_data;
-    rank_table_file_data = nlohmann::json::parse(jsonFile);
+    nlohmann::json rank_table_file_data = nlohmann::json::parse(jsonFile);
     if (rank_table_file_data.is_null()) {
       MS_LOG(WARNING) << "Failed to read data from rank table file.";
       return false;
@@ -373,6 +373,7 @@ void ClusterContext::PostProcess() {
     if (IsEnableCrossCluster()) {
       MS_LOG(WARNING) << "This node enable the cross cluster communication.";
       enable_cross_cluster_ = true;
+      DistributedMeta::GetInstance()->set_enable_cross_cluster(enable_cross_cluster_);
     }
   }
 }

@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul {
 class QuantMatmulV4Ascend : public AclnnKernelMod {
  public:
   QuantMatmulV4Ascend() : AclnnKernelMod(std::move("aclnnQuantMatmulV4")) {}
@@ -30,7 +31,6 @@ class QuantMatmulV4Ascend : public AclnnKernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
@@ -38,6 +38,7 @@ class QuantMatmulV4Ascend : public AclnnKernelMod {
   bool transpose_x1_;
   bool transpose_x2_;
 };
+}  // namespace quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

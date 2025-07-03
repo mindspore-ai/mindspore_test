@@ -21,7 +21,6 @@ import numbers
 import hashlib
 import numpy as np
 import mindspore.ops as ops
-from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, Initializer
@@ -98,35 +97,34 @@ class _BatchNorm(Cell):
 
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
 
-        self.shape = P.Shape()
-        self.reduce_mean = P.ReduceMean(keep_dims=True)
-        self.square = P.Square()
-        self.sqrt = P.Sqrt()
-        self.cast = P.Cast()
-        self.dtype = P.DType()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reduce_mean = ops.ReduceMean(keep_dims=True)
+        self.square = ops.Square()
+        self.sqrt = ops.Sqrt()
+        self.cast = ops.Cast()
+        self.dtype = ops.DType()
+        self.reshape = ops.Reshape()
         self._target = context.get_context("device_target")
-        self.is_graph_mode = context.get_context("mode") == context.GRAPH_MODE
         self.momentum = 1.0 - momentum
 
-        self.bn_train = P.BatchNorm(is_training=True,
-                                    epsilon=self.eps,
-                                    momentum=self.momentum,
-                                    data_format=self.format)
+        self.bn_train = ops.BatchNorm(is_training=True,
+                                      epsilon=self.eps,
+                                      momentum=self.momentum,
+                                      data_format=self.format)
 
-        self.bn_infer = P.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
+        self.bn_infer = ops.BatchNorm(is_training=False, epsilon=self.eps, data_format=self.format)
         if _is_in_auto_parallel_mode():
             data_parallel_strategy = ((1,), (1,))
             data_parallel_strategy_one = ((1,), ())
         else:
             data_parallel_strategy = None
             data_parallel_strategy_one = None
-        self.sub_mean = P.Sub().shard(data_parallel_strategy)
-        self.sub_var = P.Sub().shard(data_parallel_strategy)
-        self.mul_mean = P.Mul().shard(data_parallel_strategy_one)
-        self.mul_var = P.Mul().shard(data_parallel_strategy_one)
-        self.assign_sub_mean = P.AssignSub().shard(data_parallel_strategy)
-        self.assign_sub_var = P.AssignSub().shard(data_parallel_strategy)
+        self.sub_mean = ops.Sub().shard(data_parallel_strategy)
+        self.sub_var = ops.Sub().shard(data_parallel_strategy)
+        self.mul_mean = ops.Mul().shard(data_parallel_strategy_one)
+        self.mul_var = ops.Mul().shard(data_parallel_strategy_one)
+        self.assign_sub_mean = ops.AssignSub().shard(data_parallel_strategy)
+        self.assign_sub_var = ops.AssignSub().shard(data_parallel_strategy)
 
     @staticmethod
     @_primexpr
@@ -286,37 +284,40 @@ class BatchNorm2d(_BatchNorm):
         Note that the formula for updating the :math:`moving\_mean` and :math:`moving\_var` is
 
         .. math::
-            \text{moving_mean}=\text{moving_mean*momentum}+μ_β\text{*(1−momentum)}\\
-            \text{moving_var}=\text{moving_var*momentum}+σ^2_β\text{*(1−momentum)}
+            \text{moving_mean}=\text{moving_mean*momentum}+μ_β\text{*(1-momentum)}\\
+            \text{moving_var}=\text{moving_var*momentum}+σ^2_β\text{*(1-momentum)}
 
         where :math:`moving\_mean` is the updated mean, :math:`moving\_var` is the updated variance,
-        :math:`μ_β, σ^2_β` are the observed value (mean and variance) of each batch of data.
+        :math:`μ_β, σ^2_β` are the observed value (mean and variance respectively) of each batch of data.
 
     Args:
         num_features (int): The number of channels of the input tensor. Expected input size is :math:`(N, C, H, W)`,
             `C` represents the number of channels.
-        eps (float): :math:`\epsilon` added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon` added to the denominator for numerical stability. Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.9`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
             Default: ``True`` .
-        gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
+        gamma_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the
+            :math:`\gamma` weight.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'ones'`` .
-        beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
+        beta_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the
+            :math:`\beta` weight.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'zeros'`` .
-        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving mean.
+        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving mean.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'zeros'`` .
-        moving_var_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving variance.
+        moving_var_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for
+            the moving variance.
             The values of str refer to the function `mindspore.common.initializer
             <https://www.mindspore.cn/docs/en/master/api_python/mindspore.common.initializer.html>`_
             including ``'zeros'`` , ``'ones'`` , etc. Default: ``'ones'`` .
-        use_batch_statistics (bool): Default: ``None`` .
+        use_batch_statistics (bool, optional): Default: ``None`` .
 
             - If ``true`` , use the mean value and variance value of current batch data and track running mean
               and running variance.
@@ -325,9 +326,9 @@ class BatchNorm2d(_BatchNorm):
               training and evaluation mode. During training, the parameter is set to true, and during evaluation, the
               parameter is set to false.
 
-        data_format (str): The optional value for data format, is ``'NHWC'`` or ``'NCHW'`` .
+        data_format (str, optional): The optional value for data format, is ``'NHWC'`` or ``'NCHW'`` .
             Default: ``'NCHW'`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C, H, W)`. Supported types: float16, float32.
@@ -340,7 +341,7 @@ class BatchNorm2d(_BatchNorm):
         TypeError: If `eps` is not a float.
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
-        ValueError: If `data_format` is neither 'NHWC' not 'NCHW'.
+        ValueError: If `data_format` is neither ``'NHWC'`` not ``'NCHW'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -461,8 +462,8 @@ class BatchNorm3d(Cell):
                                 use_batch_statistics=use_batch_statistics,
                                 data_format="NCHW",
                                 dtype=dtype)
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
 
     @staticmethod
     @_primexpr
@@ -508,32 +509,38 @@ class SyncBatchNorm(_BatchNorm):
 
     Args:
         num_features (int): `C` from an expected input of size :math:`(N, C, H, W)`.
-        eps (float): :math:`\epsilon`, a value added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon`, a value added to the denominator for numerical stability.
+            Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.9`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` are learnable
+            parameters. When set to ``False`` , :math:`\gamma` and :math:`\beta` are unlearnable parameters.
             Default: ``True`` .
-        gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        gamma_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\gamma`
+            weight. The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
-        beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        beta_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the :math:`\beta` weight.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
-        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving mean.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        moving_mean_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving mean.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
-        moving_var_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the moving variance.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+        moving_var_init (Union[Tensor, str, Initializer, numbers.Number], optional): Initializer for the moving
+            variance. The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
-        use_batch_statistics (bool): If ``true`` , use the mean value and variance value of current batch data. If
-            ``false`` , use the mean value and variance value of specified value. If ``None`` , training process will
-            use the mean and variance of current batch data and track the running mean and variance, eval process will
-            use the running mean and variance. Default: ``None`` .
-        process_groups (list): A list to divide devices into different sync groups, containing N subtraction lists.
-            Each subtraction list contains int numbers identifying rank ids which need to be synchronized in the same
-            group. All int values must be in [0, rank_size) and different from each other. Default: ``None`` ,
+        use_batch_statistics (bool, optional): If ``true`` , use the mean value and variance value of current batch
+            data. If ``false`` , use the mean value and variance value of specified value. If ``None`` , training
+            process will use the mean and variance of current batch data and track the running mean and variance, eval
+            process will use the running mean and variance. Default: ``None`` .
+        process_groups (list, optional): A list to divide devices into different sync groups, containing N subtraction
+            lists. Each subtraction list contains int numbers identifying rank ids which need to be synchronized in the
+            same group. All int values must be in [0, rank_size) and different from each other. Default: ``None`` ,
             indicating synchronization across all devices.
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``mstype.float32`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
@@ -558,14 +565,14 @@ class SyncBatchNorm(_BatchNorm):
 
             For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
             Please see the `Ascend tutorial
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/rank_table.html>`_
             for more details.
 
             For the GPU devices, users need to prepare the host file and mpi, please see the `mpirun Startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html>`_ .
+            <https://www.mindspore.cn/tutorials/en/master/parallel/mpirun.html>`_ .
 
             For the CPU device, users need to write a dynamic cluster startup script, please see the `Dynamic Cluster
-            Startup <https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html>`_ .
+            Startup <https://www.mindspore.cn/tutorials/en/master/parallel/dynamic_cluster.html>`_ .
 
             This example should be run with multiple devices.
 
@@ -700,10 +707,12 @@ class LayerNorm(Cell):
         begin_params_axis (int): The begin axis of the parameter input :math:`(\gamma, \beta)` to
             apply LayerNorm, the value should be in [-1, R). Default: ``-1`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
         epsilon (float): A value added to the denominator for numerical stability(:math:`\epsilon`). Default: ``1e-7`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
@@ -761,9 +770,9 @@ class LayerNorm(Cell):
             gamma_init, normalized_shape, dtype=dtype), name="gamma")
         self.beta = Parameter(initializer(
             beta_init, normalized_shape, dtype=dtype), name="beta")
-        self.layer_norm = P.LayerNorm(begin_norm_axis=self.begin_norm_axis,
-                                      begin_params_axis=self.begin_params_axis,
-                                      epsilon=self.epsilon)
+        self.layer_norm = ops.LayerNorm(begin_norm_axis=self.begin_norm_axis,
+                                        begin_params_axis=self.begin_params_axis,
+                                        epsilon=self.epsilon)
 
     def construct(self, input_x):
         y, _, _ = self.layer_norm(input_x, self.gamma.astype(input_x.dtype), self.beta.astype(input_x.dtype))
@@ -797,11 +806,12 @@ class LayerNormExt(Cell):
         normalized_shape (Union(tuple[int], list[int], int)): The normalized shape of `x` for LayerNorm.
         eps (float, optional): A value added to the denominator for numerical stability( :math:`\epsilon` ).
             Default: ``1e-5`` .
-        elementwise_affine (bool): Whether affine transformation is required. When this parameter is set to ``True``,
+        elementwise_affine (bool, optional): Whether affine transformation is required.
+            When this parameter is set to ``True``,
             the weight parameter is initialized to 1 and the offset is initialized to 0. Default: ``True``.
-        bias (bool): If set to ``False``, the layer will not learn an additive bias (only relevant if
+        bias (bool, optional): If set to ``False``, the layer will not learn an additive bias (only relevant if
              `elementwise_affine` is ``True``). Default: ``True``.
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
         - **x** (Tensor) - The shape is :math:`(N, *)`, where :math:`*` is equal to normalized_shape.
@@ -905,9 +915,9 @@ class _InstanceNorm(Cell):
         self.beta = Parameter(initializer(
             beta_init, num_features, dtype=dtype), name="beta", requires_grad=affine)
 
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         self.momentum = momentum
-        self.instance_bn = P.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
+        self.instance_bn = ops.InstanceNorm(epsilon=self.eps, momentum=self.momentum)
 
     def construct(self, x):
         self._check_input_dim(self.shape(x), self.cls_name)
@@ -962,10 +972,12 @@ class InstanceNorm1d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to True, gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -986,8 +998,8 @@ class InstanceNorm1d(_InstanceNorm):
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
         ValueError: If the shape of `gamma_init` / `beta_init` is not :math:`(C)`.
-        KeyError: If any of `gamma_init`/`beta_init` is str and the homonymous class inheriting from `Initializer` not
-            exists.
+        KeyError: If any of `gamma_init`/`beta_init` is str and
+            there is no homonymous class inheriting from `Initializer`.
 
     Supported Platforms:
         ``GPU``
@@ -1040,10 +1052,12 @@ class InstanceNorm2d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to ``True`` , gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -1064,8 +1078,8 @@ class InstanceNorm2d(_InstanceNorm):
         ValueError: If `num_features` is less than 1.
         ValueError: If `momentum` is not in range [0, 1].
         ValueError: If the shape of `gamma_init` / `beta_init` is not :math:`(C)`.
-        KeyError: If any of `gamma_init`/`beta_init` is str and the homonymous class inheriting from `Initializer` not
-            exists.
+        KeyError: If any of `gamma_init`/`beta_init` is str and
+            there is no homonymous class inheriting from `Initializer`.
 
     Supported Platforms:
         ``GPU``
@@ -1117,10 +1131,12 @@ class InstanceNorm3d(_InstanceNorm):
             running_mean and running_var computation. Default: ``0.1`` .
         affine (bool): A bool value. When set to ``True`` , gamma and beta can be learned. Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'ones'`` .
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` , etc.
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` , etc.
             When initialized with Tensor, the shape should be :math:`(C)`. Default: ``'zeros'`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -1170,10 +1186,11 @@ class GroupNorm(Cell):
 
     Group Normalization is widely used in recurrent neural networks. It applies
     normalization on a mini-batch of inputs for each single training case as described
-    in the paper `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_. Group Normalization
-    divides the channels into groups and computes within each group the mean and variance for normalization,
-    and it performs very stable over a wide range of batch size. :math:`\gamma` and :math:`\beta` are trainable scale
-    and shift.
+    in the paper `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_.
+    Group Normalization
+    divides the channels into groups and computes within each group the mean and variance for normalization.
+    :math:`\gamma` and :math:`\beta` are scale
+    and shift values obtained by training learning.
     It can be described using the following formula:
 
     .. math::
@@ -1186,11 +1203,13 @@ class GroupNorm(Cell):
         affine (bool): A bool value, this layer will have learnable affine parameters when set to ``true`` .
             Default: ``True`` .
         gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the gamma weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` . If gamma_init is a Tensor, the shape
             must be :math:`(num\_channels)`.
         beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the beta weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`
+            including ``'zeros'`` , ``'ones'`` ,
             ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` . If beta_init is a Tensor, the shape
             must be :math:`(num\_channels)`.
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .

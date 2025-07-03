@@ -98,6 +98,17 @@ class DatasetGeneratorMixed:
         return 10
 
 
+class CustomizedData:
+    def __init__(self, low, mid, high):
+        self.input_ids = np.ones((low, mid, high), dtype=np.int32)
+
+    def __getitem__(self, index):
+        return self.input_ids
+
+    def __len__(self):
+        return 10
+
+
 def test_generator_0():
     """
     Feature: GeneratorDataset
@@ -592,8 +603,6 @@ def test_generator_17():
         i = i + 1
 
 
-# Run this test in separate process since this test updates shared memory config
-@pytest.mark.forked
 def test_generator_18():
     """
     Feature: GeneratorDataset
@@ -1467,11 +1476,11 @@ def test_generator_single_input_6():
 
     def generator_nested_np():
         for i in range(64):
-            yield np.array([[i, i + 1], [i, i + 1, i + 2]])
+            yield np.array([[i, i + 1, None], [i, i + 1, i + 2]])
 
     class RandomAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
 
         def __getitem__(self, item):
             return self.__data[item]
@@ -1481,7 +1490,7 @@ def test_generator_single_input_6():
 
     class SequentialAccessDatasetInner:
         def __init__(self):
-            self.__data = [np.array([[i, i + 1], [i, i + 1, i + 2]]) for i in range(64)]
+            self.__data = [np.array([[i, i + 1, None], [i, i + 1, i + 2]]) for i in range(64)]
             self.__index = 0
 
         def __next__(self):
@@ -3214,6 +3223,51 @@ def test_generator_dataset_with_parallel_convert_exception():
     ds.config.set_iterator_mode(parallel_convert=False)
 
 
+def test_generator_dataset_debug_mode():
+    """
+    Feature: GeneratorDataset random access
+    Description: Test GeneratorDataset on debug_mode
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    origin_seed = ds.config.get_seed()
+
+    ds.config.set_debug_mode(True)
+    ds.config.set_seed(200)
+    dataset = ds.GeneratorDataset(small_dataset, column_names=["col1"], shuffle=False, num_samples=None,
+                                  num_shards=4, shard_id=3)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+    ds.config.set_seed(origin_seed)
+    ds.config.set_debug_mode(False)
+
+
+def test_perf_do_copy_parameter():
+    """
+    Feature: Performance comparison of the do_copy parameter
+    Description: Testing do_copy parameter False outperforms True
+    Expectation: SUCCESS
+    """
+    source = CustomizedData(256, 1, 8193)
+    dataset = ds.GeneratorDataset(source, ["input_ids"], shuffle=False)
+
+    start_time = time.time()
+    for _ in range(20):
+        for _ in dataset.create_dict_iterator(output_numpy=False, do_copy=False):
+            pass
+    do_copy_false_time = (time.time() - start_time) / 20
+
+    dataset1 = ds.GeneratorDataset(source, ["input_ids"], shuffle=False)
+    start_time1 = time.time()
+    for _ in range(20):
+        for _ in dataset1.create_dict_iterator(output_numpy=False, do_copy=True):
+            pass
+    do_copy_true_time = (time.time() - start_time1) / 20
+    assert do_copy_false_time < do_copy_true_time
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -3298,3 +3352,5 @@ if __name__ == "__main__":
     test_generator_dataset_with_parallel_convert()
     test_generator_dataset_with_parallel_convert_break()
     test_generator_dataset_with_parallel_convert_exception()
+    test_generator_dataset_debug_mode()
+    test_perf_do_copy_parameter()

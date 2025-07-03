@@ -18,7 +18,7 @@ from __future__ import absolute_import
 
 import math
 
-import mindspore.ops as P
+from mindspore import ops
 import mindspore.common.dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import initializer, Uniform
@@ -41,9 +41,9 @@ def check_dense_inputs_same_shape(input1, input2, prim_name=None):
 @constexpr(check=False)
 def _check_is_tensor(param_name, input_data, cls_name):
     """Internal function, used to check whether the input data is Tensor."""
-    if input_data is not None and not isinstance(P.typeof(input_data), mstype.TensorType):
+    if input_data is not None and not isinstance(ops.typeof(input_data), mstype.TensorType):
         raise TypeError(f"For '{cls_name}', the '{param_name}' must be '{mstype.TensorType}', "
-                        f"but got '{P.typeof(input_data)}'")
+                        f"but got '{ops.typeof(input_data)}'")
 
 
 @_primexpr
@@ -73,9 +73,11 @@ class BiDense(Cell):
         in2_channels (int): The number of channels in the input2 space.
         out_channels (int): The number of channels in the output space.
         weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter.
-            The values of str refer to the function `initializer`. Default: ``None`` .
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
+            Default: ``None`` .
         bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter.
-            The values of str refer to the function `initializer`. Default: ``None`` .
+            The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
+            Default: ``None`` .
         has_bias (bool): Specifies whether the layer uses :math:`\text{bias}` vector. Default: ``True`` .
         dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
 
@@ -170,8 +172,8 @@ class BiDense(Cell):
                                      f"be equal to 1, and the first dim must be equal to 'out_channels'. But got "
                                      f"'bias_init': {bias_init}, 'out_channels': {out_channels}.")
             self.bias = Parameter(initializer(bias_init, [out_channels], dtype=dtype), name="bias")
-            self.bias_add = P.BiasAdd()
-        self.matmul = P.MatMul()
+            self.bias_add = ops.BiasAdd()
+        self.matmul = ops.MatMul()
 
     def construct(self, input1, input2):
         _check_is_tensor("input1", input1, self.cls_name)

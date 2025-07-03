@@ -29,6 +29,7 @@
 #include "infer/return.h"
 #include "infer/tuple_get_item.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace lite {

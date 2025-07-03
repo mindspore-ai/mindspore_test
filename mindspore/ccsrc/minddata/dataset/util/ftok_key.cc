@@ -24,8 +24,7 @@
 #include <cstring>
 #include <memory>
 #include <vector>
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -48,8 +47,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 std::atomic<uint32_t> inc_id(0);
 
 Status GetKey(key_t *key) {

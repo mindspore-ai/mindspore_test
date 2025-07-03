@@ -28,6 +28,9 @@ class DeviceEvent {
   virtual void WaitEvent() = 0;
   virtual bool WaitEvent(uint32_t stream_id) = 0;
   virtual void WaitEventWithoutReset() = 0;
+  virtual void WaitEventWithoutReset(uint32_t stream_id) {}
+  virtual void ResetEvent() {}
+  virtual void ResetEvent(uint32_t stream_id) {}
   virtual void RecordEvent() = 0;
   virtual void RecordEvent(uint32_t stream_id) = 0;
   virtual bool NeedWait() = 0;

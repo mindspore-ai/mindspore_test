@@ -49,7 +49,7 @@ class MeanSurfaceDistance(Metric):
         \left | S(B) \right |}
 
     Args:
-        distance_metric (string): Three measurement methods are supported: ``"euclidean"`` (Euclidean Distance) ,
+        distance_metric (str): Three measurement methods are supported: ``"euclidean"`` (Euclidean Distance) ,
                                 ``"chessboard"`` (Chessboard Distance, Chebyshev Distance) or
                                 ``"taxicab"`` (Taxicab Distance, Manhattan Distance) Default: ``"euclidean"`` .
         symmetric (bool): Whether to calculate the Mean Surface Distance between y_pred and y.
@@ -125,8 +125,8 @@ class MeanSurfaceDistance(Metric):
         Raises:
             ValueError: If the number of the inputs is not 3.
             TypeError: If the data type of label_idx is not int or float.
-            ValueError: If the value of label_idx is not in y_pred or y.
-            ValueError: If y_pred and y have different shapes.
+            ValueError: If the value of label_idx is not in `y_pred` or `y`.
+            ValueError: If `y_pred` and `y` have different shapes.
         """
         if len(inputs) != 3:
             raise ValueError("For 'MeanSurfaceDistance.update', it needs 3 inputs (predicted value, true value, "

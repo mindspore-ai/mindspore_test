@@ -16,11 +16,9 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
+from tests.mark_utils import arg_mark
 from mindspore import ops
 import mindspore as ms
-from tests.mark_utils import arg_mark
-
 
 @test_utils.run_with_cell
 def fastgelu_forward_func(x):
@@ -54,7 +52,7 @@ def test_fastgelu_op_forward(context_mode, data_type):
     np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 @pytest.mark.parametrize("data_type", [np.float32])
 def test_fastgelu_op_forward_ascend(context_mode, data_type):
@@ -87,7 +85,7 @@ def test_fastgelu_op_backward(context_mode, data_type):
     np.testing.assert_allclose(grads.asnumpy(), expect_out, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 @pytest.mark.parametrize("data_type", [np.float32])
 def test_fastgelu_op_backward_ascend(context_mode, data_type):

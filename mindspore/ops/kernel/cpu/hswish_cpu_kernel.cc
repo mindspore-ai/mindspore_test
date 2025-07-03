@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/hswish_cpu_kernel.h"
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hswish_cpu {
 namespace {
 constexpr size_t kHSwishInputsNum = 1;
 constexpr size_t kHSwishOutputsNum = 1;
@@ -104,5 +105,6 @@ std::vector<KernelAttr> HSwishCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HSwish, HSwishCpuKernelMod);
+}  // namespace hswish_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -15,8 +15,34 @@
  */
 
 #include "src/extendrt/delegate/tensorrt/op/unary_tensorrt.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
+UnaryTensorRT::UnaryTensorRT(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,
+                             const std::vector<TensorInfo> &out_tensors, std::string name)
+    : TensorRTOp(base_operator, in_tensors, out_tensors, name) {
+  unary_ops_ = {
+    {ops::kNameSqrt, nvinfer1::UnaryOperation::kSQRT},
+    {ops::kNameAbs, nvinfer1::UnaryOperation::kABS},
+    {ops::kNameNeg, nvinfer1::UnaryOperation::kNEG},
+    {ops::kNameLog, nvinfer1::UnaryOperation::kLOG},
+    {ops::kNameSin, nvinfer1::UnaryOperation::kSIN},
+    {ops::kNameCos, nvinfer1::UnaryOperation::kCOS},
+    {ops::kNameCeil, nvinfer1::UnaryOperation::kCEIL},
+    {ops::kNameFloor, nvinfer1::UnaryOperation::kFLOOR},
+    {ops::kNameExpFusion, nvinfer1::UnaryOperation::kEXP},
+#if TRT_VERSION_GE(7, 2)
+    {ops::kNameLogicalNot, nvinfer1::UnaryOperation::kNOT},
+#endif
+  };
+}
+
 int UnaryTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,
                              const std::vector<TensorInfo> &out_tensors) {
   if (!IsShapeKnown()) {

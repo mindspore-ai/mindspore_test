@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -233,8 +233,13 @@ Status RmsNormInfo::InitShapes() {
 Status RmsNormInfo::CheckInputLayout() {
   // Check all device matrix should be the same
   if (inputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
+                   << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for rmsnorm is " << inputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   auto in_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -246,17 +251,28 @@ Status RmsNormInfo::CheckInputLayout() {
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
       norm_axis_splitted_ = true;
-      MS_LOG(WARNING) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
-                      << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
-                      << "splitting after begin_norm_axis";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
+                     << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
+                     << "splitting after begin_norm_axis";
+      } else {
+        MS_LOG(WARNING) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
+                        << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
+                        << "splitting after begin_norm_axis";
+      }
     }
   }
 
   size_t gamma_diff = in_layout.tensor_map_before().size() - gamma_layout.tensor_map_before().size();
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
-      MS_LOG(ERROR) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
-                    << "th tensor map in gamma must equal to input layout";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
+                     << "th tensor map in gamma must equal to input layout";
+      } else {
+        MS_LOG(ERROR) << "RmsNorm Invalid gamma layout " << gamma_layout.tensor_map_before() << ", " << j
+                      << "th tensor map in gamma must equal to input layout";
+      }
       return FAILED;
     }
   }
@@ -267,12 +283,21 @@ Status RmsNormInfo::CheckInputLayout() {
 Status RmsNormInfo::CheckOutputLayout() {
   // Check all device matrix should be the same
   if (outputs_tensor_info_.size() != kSizeTwo) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
-                  << " rather than 2.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
+                   << " rather than 2.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for rmsnorm is " << outputs_tensor_info_.size()
+                    << " rather than 2.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
-    MS_LOG(ERROR) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Parameter of output tensor layout for rmsnorm is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";
@@ -377,7 +402,9 @@ AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode
 
   auto pre_node_eps = cnode->input(kIndex3);  // eps
   MS_EXCEPTION_IF_NULL(pre_node_eps);
-  float eps_number = GetValue<float>(pre_node_eps->cast<ValueNodePtr>()->value());
+  auto pre_node_eps_ptr = pre_node_eps->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(pre_node_eps_ptr);
+  float eps_number = GetValue<float>(pre_node_eps_ptr->value());
   mindspore::tensor::TensorPtr eps_tensor_ptr =
     std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(eps_number));
   AnfNodePtr add_eps = gen_g->PushBack({gen_g->NewOpInst(ADD), real_div_node, NewValueNode(MakeValue(eps_tensor_ptr))});
@@ -507,12 +534,12 @@ Status RmsNormInfo::InferOutputTensorInfo() {
   InferOutputLayout();
   if (output_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
     MS_LOG(ERROR) << "The infer output shape " << output_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
+                  << " does not match the output shape " << outputs_shape_[kIndex0];
     return FAILED;
   }
   if (rstd_infer_tensor_layout_.tensor_shape_before().array() != outputs_shape_[kIndex1]) {
     MS_LOG(ERROR) << "The infer output rstd shape " << rstd_infer_tensor_layout_.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex1];
+                  << " does not match the output shape " << outputs_shape_[kIndex1];
     return FAILED;
   }
   TensorInfo output_tensor_info(output_infer_tensor_layout_);

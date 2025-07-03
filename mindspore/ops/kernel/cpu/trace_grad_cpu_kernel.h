@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <algorithm>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace trace_grad_cpu {
 class TraceGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   TraceGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class TraceGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   TypeId values_type_{kTypeUnknown};
 };
+}  // namespace trace_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

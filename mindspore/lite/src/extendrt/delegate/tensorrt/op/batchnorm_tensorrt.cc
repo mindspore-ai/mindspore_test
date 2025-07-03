@@ -18,6 +18,7 @@
 #include <memory>
 #include <numeric>
 #include "infer/fused_batch_norm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::lite {
 int BatchNormTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

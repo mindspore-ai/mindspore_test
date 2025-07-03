@@ -22,6 +22,7 @@
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {
@@ -36,13 +37,13 @@ TypePtr MaskedSelectGradFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList MaskedSelectGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }
 
 ShapeArray MaskedSelectGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto broadcast_shape = BroadCastInferShape(primitive->name(), input_values);
   return {broadcast_shape};

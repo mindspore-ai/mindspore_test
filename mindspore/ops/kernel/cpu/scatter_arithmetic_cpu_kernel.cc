@@ -23,11 +23,13 @@
 #include <utility>
 #include <functional>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_arithmetic_cpu {
 namespace {
 template <typename T>
 void UpdateOutputData(T *output, size_t sz_out, T *input, size_t sz_in, const std::string &kernel_name) {
@@ -236,5 +238,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterDiv, ScatterArithmeticCpuKernel
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterMax, ScatterArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterMin, ScatterArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterUpdate, ScatterArithmeticCpuKernelMod);
+}  // namespace scatter_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

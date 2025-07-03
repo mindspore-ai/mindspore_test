@@ -24,7 +24,6 @@
 #include <set>
 #include "utils/hash_map.h"
 #include "backend/common/session/kernel_graph_mgr.h"
-#include "backend/common/session/session_context.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -35,7 +34,7 @@
 #include "include/common/utils/contract.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
 #include "include/backend/debug/debugger/debugger.h"
@@ -90,15 +89,15 @@ struct OutputTensorInfo {
 struct GraphOutputInfo {
   VectorRef *graph_outputs;
   std::map<KernelWithIndex, std::vector<std::vector<size_t>>> output_indexes;
-  std::vector<tensor::BaseTensorPtr> graph_output_tensors;
+  std::vector<tensor::TensorPtr> graph_output_tensors;
 };
 
 class Executor;
 
-class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
+class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
  public:
   using KernelGraphMgr::ConstructKernelGraph;
-  SessionBasic() : context_(nullptr), summary_callback_(nullptr), device_id_(0) {
+  SessionBasic() : summary_callback_(nullptr), device_id_(0) {
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
     debugger_ = nullptr;
 #endif
@@ -109,8 +108,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   virtual void SyncStream() const {}
   virtual ~SessionBasic() { summary_callback_ = nullptr; }
 
-  GraphId CompileGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs);
-  GraphId CompileGraph(NotNull<FuncGraphPtr> func_graph);
   void BuildGraph(GraphId graphId);
   void RunGraph(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
   void RunGraphAsync(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
@@ -137,6 +134,10 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   virtual void ReportWarningMessage() {}
   virtual void ReportErrorMessage() {}
   virtual void SetThreadContext() {}
+  void DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const;
+  void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
+  void Summary(KernelGraph *graph);
+
 #ifdef ENABLE_DEBUGGER
   // set debugger
   void SetDebugger() {
@@ -167,11 +168,11 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_tensors,
                               std::map<std::string, size_t> *forward_op_output_tensor_id) const;
   void HandleOpInputs(const std::set<KernelWithIndex> &input_kernel, std::map<KernelWithIndex, size_t> *ref_count,
-                      std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map) const;
+                      std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const;
 
   void HandleOpOutputs(const AnfNodePtr &kernel, const VectorRef &op_outputs,
                        const std::map<KernelWithIndex, size_t> &ref_count,
-                       std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map,
+                       std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map,
                        GraphOutputInfo *const graph_output_info) const;
 
  protected:
@@ -217,7 +218,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void ProcessInputTensorsForHeterogeneous(const std::string &cur_target,
                                            const std::vector<tensor::TensorPtr> &input_tensors) const;
   virtual void SetSummaryNodes(KernelGraph *graph);
-  void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
 
   void LoadInputs(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs_const) const {
     MS_LOG(INFO) << "Status record: start load input. graph id: " << graph_id;
@@ -239,7 +239,6 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_graph, VectorRef *const outputs,
                      const std::vector<tensor::TensorPtr> &input_tensors,
                      std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node) const;
-  void Summary(KernelGraph *graph);
   // create graph output for RunOp
   void CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const;
 
@@ -249,28 +248,25 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   tensor::TensorPtr GetParameterOutputTensor(const AnfNodePtr &node,
                                              const std::map<AnfNodePtr, size_t> &parameter_index,
                                              const std::vector<tensor::TensorPtr> &graph_inputs) const;
-  tensor::BaseTensorPtr GetCNodeOutputTensor(const KernelWithIndex &kernel_with_index,
-                                             const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output) const;
-  void GetOpInputTensors(const CNodePtr &cnode, const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
+  tensor::TensorPtr GetCNodeOutputTensor(const KernelWithIndex &kernel_with_index,
+                                         const std::map<KernelWithIndex, tensor::TensorPtr> &op_output) const;
+  void GetOpInputTensors(const CNodePtr &cnode, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
                          const std::map<AnfNodePtr, size_t> &parameter_index,
                          const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info) const;
-  void GetOpInputTensorsFromCNode(const CNodePtr &cnode,
-                                  const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
+  void GetOpInputTensorsFromCNode(const CNodePtr &cnode, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
                                   const std::map<AnfNodePtr, size_t> &parameter_index,
                                   const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info) const;
-  tensor::BaseTensorPtr GetOpInputTensorByIndex(const CNodePtr &cnode,
-                                                const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
-                                                const std::map<AnfNodePtr, size_t> &parameter_index,
-                                                const std::vector<tensor::TensorPtr> &graph_inputs,
-                                                InputInfo *input_info, size_t input_index) const;
+  tensor::TensorPtr GetOpInputTensorByIndex(const CNodePtr &cnode,
+                                            const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
+                                            const std::map<AnfNodePtr, size_t> &parameter_index,
+                                            const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info,
+                                            size_t input_index) const;
 
   AnfNodePtr FindPullNode(const AnfNodePtr &push_node, const std::vector<AnfNodePtr> &node_list) const;
   std::vector<uint32_t> GetAllReduceSplitIndex();
   virtual std::string GetCommWorldGroup() { return std::string(); }
-  void DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const;
   void GetConstValueDepend(const CNodePtr &cnode, std::set<int64_t> *const_input_attr_index) const;
   mindspore::HashMap<GraphInfo, std::shared_ptr<KernelGraph>> run_op_graphs_;
-  std::shared_ptr<Context> context_;
   CallBackFunc summary_callback_;
   uint32_t device_id_;
   // rank id of physical device
@@ -284,8 +280,8 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
 using SessionPtr = std::shared_ptr<session::SessionBasic>;
 using NamedSummaryOutputs = std::map<std::string, std::pair<AnfNodePtr, int>>;
 }  // namespace session
-BACKEND_EXPORT void DumpGraphExeOrder(const std::string &file_name, const std::string &target_dir,
-                                      const std::vector<CNodePtr> &execution_order);
-BACKEND_EXPORT uint32_t GetRankId();
+BACKEND_COMMON_EXPORT void DumpGraphExeOrder(const std::string &file_name, const std::string &target_dir,
+                                             const std::vector<CNodePtr> &execution_order);
+BACKEND_COMMON_EXPORT uint32_t GetRankId();
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_SESSION_SESSION_BASIC_H

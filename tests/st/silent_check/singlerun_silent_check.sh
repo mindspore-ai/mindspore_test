@@ -23,14 +23,18 @@ fi
 py_file=$1
 shift
 
-LOG_PATH="ascend_log"
-export ASCEND_PROCESS_LOG_PATH=`pwd`/${LOG_PATH}
+if [ "x${ASCEND_PROCESS_LOG_PATH}" == "x" ]; then
+  LOG_PATH="ascend_log"
+  export ASCEND_PROCESS_LOG_PATH=`pwd`/${LOG_PATH}
+fi
 export ASCEND_SLOG_PRINT_TO_STDOUT=0
 export ASCEND_GLOBAL_LOG_LEVEL=1
 export ASCEND_GLOBAL_EVENT_ENABLE=0
 
 # NOTE: set environment variable `NPU_ASD_ENABLE` to `3` to enable silent_check
-export NPU_ASD_ENABLE=3
+if [ "x${NPU_ASD_ENABLE}" == "x" ]; then
+  export NPU_ASD_ENABLE=3
+fi
 
 rm -rf ${LOG_PATH}
 

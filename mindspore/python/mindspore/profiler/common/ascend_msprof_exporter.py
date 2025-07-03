@@ -38,6 +38,7 @@ class AscendMsprofExporter:
         self._msprof_profile_output_path = kwargs.get("msprof_profile_output_path")
         self._msprof_profile_path = kwargs.get("msprof_profile_path")
         self._step_list = kwargs.get("step_list")
+        self._export_type = kwargs.get("export_type")
         self._msprof_tool = MsprofCmdTool(self._msprof_profile_path)
 
     def export(self) -> None:
@@ -47,7 +48,7 @@ class AscendMsprofExporter:
             self._single_export(self._step_list)
         else:
             self._all_export()
-        self._msprof_tool.run_ms_analyze_cmd()
+        self._msprof_tool.run_ms_analyze_cmd(self._export_type)
 
     def _single_export(self, step_list: Optional[List[int]]) -> None:
         """Perform single export for each model and iteration.
@@ -63,11 +64,11 @@ class AscendMsprofExporter:
             model_iteration_dict = {self._DEFAULT_MODEL_ID: step_list}
 
         for model_id, iter_list in model_iteration_dict.items():
-            self._msprof_tool.run_ms_py_export_cmd(model_id, iter_list)
+            self._msprof_tool.run_ms_py_export_cmd(model_id, iter_list, self._export_type)
 
     def _all_export(self) -> None:
         """Perform all-export for all data."""
-        self._msprof_tool.run_ms_export_cmd()
+        self._msprof_tool.run_ms_export_cmd(self._export_type)
 
     def _check_drv_version(self) -> bool:
         """Check if the driver version supports all-export.
@@ -99,7 +100,7 @@ class AscendMsprofExporter:
         """
         try:
             # step1: run msprof command
-            self._msprof_tool.run_ms_export_cmd()
+            self._msprof_tool.run_ms_export_cmd(self._export_type)
             step_trace_file = glob.glob(
                 os.path.join(
                     self._msprof_profile_output_path, self._STEP_TRACE_FILE_PATTERN

@@ -26,11 +26,12 @@
 #include <utility>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/arithmetic_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace div_cpu {
 namespace {
 constexpr float kMaxSubSerialSize = 10000.0;
 constexpr float kMaxPowSerialSize = 700.0;
@@ -259,5 +260,6 @@ std::vector<KernelAttr> DivCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Div, DivCpuKernelMod);
+}  // namespace div_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace is_close_cpu {
 class IsCloseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IsCloseCpuKernelMod> {
  public:
   IsCloseCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class IsCloseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   bool is_need_broadcast_{false};
   bool has_null_input_{false};
 };
+}  // namespace is_close_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

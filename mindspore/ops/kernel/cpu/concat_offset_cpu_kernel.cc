@@ -19,10 +19,11 @@
 #include <utility>
 #include <vector>
 #include "mindspore/ops/infer/concat_offset.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat_offset_cpu {
 namespace {
 constexpr size_t kConcatOffsetOutputNum = 1;
 constexpr size_t kConcatOffsetOutputShapeSize = 2;
@@ -151,5 +152,6 @@ std::vector<KernelAttr> ConcatOffsetCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConcatOffset, ConcatOffsetCpuKernelMod);
+}  // namespace concat_offset_cpu
 }  // namespace kernel
 }  // namespace mindspore

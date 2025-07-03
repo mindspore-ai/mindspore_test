@@ -23,11 +23,12 @@
 #include <numeric>
 #include <string>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_dense_set_operation_cpu {
 namespace {
 const size_t kOutputNum = 3;
 const size_t kInputNum = 2;
@@ -329,5 +330,6 @@ std::vector<KernelAttr> DenseToDenseSetOperationCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DenseToDenseSetOperation, DenseToDenseSetOperationCpuKernelMod);
+}  // namespace dense_to_dense_set_operation_cpu
 }  // namespace kernel
 }  // namespace mindspore

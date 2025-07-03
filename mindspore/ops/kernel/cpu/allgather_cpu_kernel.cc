@@ -15,12 +15,13 @@
  */
 
 #include "kernel/cpu/allgather_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/mpi/mpi_interface.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 namespace {
 constexpr auto kRanksGroup = "group";
 }  // namespace
@@ -51,5 +52,6 @@ std::vector<KernelAttr> AllGatherCpuKernelMod::GetOpSupport() {
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, _HostAllGather, AllGatherCpuKernelMod);
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import mindspore.context as context
-import mindspore.nn as nn
 import numpy as np
 import pytest
+import mindspore.context as context
+import mindspore.nn as nn
+from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _pynative_executor
-
-from mindspore import Tensor
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
+
 
 np.random.seed(100)
 
@@ -136,7 +136,8 @@ def test_matmul_dtypes():
     matmul = P.MatMul()
     valid_dtypes = (mstype.uint8, mstype.int8, mstype.int16, mstype.int32, mstype.int64, mstype.float16,
                     mstype.float32, mstype.float64, mstype.complex64, mstype.complex128)
-    all_dtypes = mstype.all_types
+    fp8_dtypes = (mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8)
+    all_dtypes = (dtype for dtype in mstype.all_types if dtype not in fp8_dtypes)
     for dtype in all_dtypes:
         # bfloat16 is not supported yet
         if dtype == mstype.bfloat16:

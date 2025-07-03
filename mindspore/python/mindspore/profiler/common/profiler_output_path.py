@@ -14,7 +14,10 @@
 # ============================================================================
 """Profiler output path"""
 import os
+import glob
+import re
 from typing import Any, Dict, Optional
+from mindspore import log as logger
 from mindspore.profiler.common.path_manager import PathManager
 
 
@@ -49,12 +52,9 @@ class ProfilerOutputPath:
     _MINISTUDIO_PROFILER_OUTPUT = "mindstudio_profiler_output"
     _MINISTUDIO_ANALYZE_OUTPUT = "analyze"
 
-    def __init__(self, rank_id: int, device_id: int):
-        if not isinstance(rank_id, int) or not isinstance(device_id, int):
-            raise ValueError("rank_id and device_id must be integers")
+    def __init__(self, rank_id: int):
 
         self._rank_id = rank_id
-        self._device_id = device_id
         self._output_path: Optional[str] = None
         self._ascend_ms_dir: Optional[str] = None
         self._ascend_profiler_output_path: Optional[str] = None
@@ -269,10 +269,25 @@ class ProfilerOutputPath:
         self._msprof_profile_host_path = os.path.join(
             self._msprof_profile_path, ProfilerOutputPath._MINISTUDIO_PROFILER_HOST
         )
-        self._msprof_profile_device_path = os.path.join(
-            self._msprof_profile_path,
-            ProfilerOutputPath._MINISTUDIO_PROFILER_DEVICE.format(self._device_id)
-        )
+
+        device_pattern = os.path.join(self._msprof_profile_path, "device_*")
+        device_dirs = glob.glob(device_pattern)
+        valid_device_dirs = [d for d in device_dirs if re.match(r'^device_\d+$', os.path.basename(d))]
+
+        if valid_device_dirs:
+            device_dir = os.path.basename(valid_device_dirs[0])
+            device_id = device_dir.replace("device_", "")
+            self._msprof_profile_device_path = os.path.join(
+                self._msprof_profile_path,
+                ProfilerOutputPath._MINISTUDIO_PROFILER_DEVICE.format(device_id)
+            )
+        else:
+            logger.error(f"No device_* directory found in {self._msprof_profile_path}, using device_0 as default")
+            self._msprof_profile_device_path = os.path.join(
+                self._msprof_profile_path,
+                ProfilerOutputPath._MINISTUDIO_PROFILER_DEVICE.format("0")
+            )
+
         self._msprof_profile_log_path = os.path.join(
             self._msprof_profile_path, ProfilerOutputPath._MINISTUDIO_PROFILER_LOG
         )

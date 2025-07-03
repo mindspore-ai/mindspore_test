@@ -28,8 +28,8 @@ import numpy as np
 import mindspore._c_dataengine as cde
 from mindspore import log as logger
 
-from .datasets import UnionBaseDataset, SourceDataset, MappableDataset, Shuffle, Schema, \
-    shuffle_to_shuffle_mode, shuffle_to_bool
+from .datasets import UnionBaseDataset, SourceDataset, MappableDataset, Schema
+from .samplers import Shuffle, shuffle_to_shuffle_mode
 from .datasets_user_defined import GeneratorDataset
 from .obs.obs_mindrecord_dataset import MindRecordFromOBS
 from .validators import check_csvdataset, check_minddataset, check_tfrecorddataset, check_obsminddataset
@@ -75,12 +75,12 @@ class CSVDataset(SourceDataset, UnionBaseDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None``. This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None``, which means no cache is used.
 
     Raises:
@@ -128,25 +128,30 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
-        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
-            Default: ``None``, performs `mindspore.dataset.Shuffle.GLOBAL`.
-            Bool type and Shuffle enum are both supported to pass in.
-            If `shuffle` is ``False`` , no shuffling will be performed.
-            If `shuffle` is ``True`` , performs global shuffle.
-            There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
+        shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch, bool type and ``Shuffle``
+            enum are both supported to pass in. Default: ``None``, performs ``mindspore.dataset.Shuffle.ADAPTIVE`` .
+            If `shuffle` is set to ``False`` , no shuffling will be performed.
+            If `shuffle` is set to ``True`` , `shuffle` is set to ``mindspore.dataset.Shuffle.ADAPTIVE`` .
+            There are several levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
-            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset, same as setting shuffle to True.
+            - ``Shuffle.ADAPTIVE`` : When the number of dataset samples is less than or equal to 100 million,
+              ``Shuffle.GLOBAL`` is used. When the number of dataset samples is greater than 100
+              million, ``Shuffle.PARTIAL`` is used. The shuffle is performed once
+              every 1 million samples.
+
+            - ``Shuffle.GLOBAL`` : Global shuffle of all rows of data in dataset. The memory usage is large.
+
+            - ``Shuffle.PARTIAL`` : Partial shuffle of data in dataset for every 1 million samples.
+              The memory usage is less than ``Shuffle.GLOBAL`` .
 
             - ``Shuffle.FILES`` : Shuffle the file sequence but keep the order of data within each file.
-              Not supported when the number of samples in the dataset is greater than 100 million.
 
             - ``Shuffle.INFILE`` : Keep the file sequence the same but shuffle the data within each file.
-              Not supported when the number of samples in the dataset is greater than 100 million.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         sampler (Sampler, optional): Object used to choose samples from the
@@ -161,7 +166,7 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         num_samples (int, optional): The number of samples to be included in the dataset.
             Default: ``None`` , all samples.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -170,10 +175,13 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         RuntimeError: If `num_shards` is specified but `shard_id` is None.
         RuntimeError: If `shard_id` is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
+        TypeError: If `shuffle` is not of type None, bool or Shuffle.
 
     Note:
         - When sharding MindRecord (by configuring `num_shards` and `shard_id`), there are two strategies to implement
-          the data sharding logic. This API uses the strategy 2.
+          the data sharding logic. This API uses the strategy 1 by default, which can be switched to strategy 2 by
+          setting the environment variable `MS_DEV_MINDRECORD_SHARD_BY_BLOCK=True` . This environment variable only
+          applies to the `DistributedSampler` sampler.
 
         .. list-table:: Data sharding strategy 1
             :widths: 50 50 50 50
@@ -230,14 +238,25 @@ class MindDataset(MappableDataset, UnionBaseDataset):
     """
 
     def parse(self, children=None):
+        child_sampler = self.sampler.get_child()
+        if (child_sampler is not None and not isinstance(child_sampler, samplers.DistributedSampler)
+                and self.num_padded > 0):
+            raise RuntimeError("When the padded sample logic is enabled and use sampler chain,"
+                               "the first sampler which is specified by parameter "
+                               "sampler or (num_shards, shard_id) is not distributed sampling.")
         return cde.MindDataNode(self.dataset_files, self.columns_list, self.sampler, self.new_padded_sample,
                                 self.num_padded, shuffle_to_shuffle_mode(self.shuffle_option))
 
     @check_minddataset
     def __init__(self, dataset_files, columns_list=None, num_parallel_workers=None, shuffle=None, num_shards=None,
                  shard_id=None, sampler=None, padded_sample=None, num_padded=None, num_samples=None, cache=None):
+        if sampler is None:
+            if shuffle is None or shuffle is True:
+                shuffle = Shuffle.ADAPTIVE
+            elif shuffle is False:
+                shuffle = Shuffle.FALSE
         super().__init__(num_parallel_workers=num_parallel_workers, sampler=sampler, num_samples=num_samples,
-                         shuffle=shuffle_to_bool(shuffle), num_shards=num_shards, shard_id=shard_id, cache=cache)
+                         shuffle=shuffle, num_shards=num_shards, shard_id=shard_id, cache=cache)
         if num_samples and shuffle in (Shuffle.FILES, Shuffle.INFILE):
             raise ValueError("'Shuffle.FILES' or 'Shuffle.INFILE' and 'num_samples' "
                              "cannot be specified at the same time.")
@@ -357,8 +376,8 @@ class TFRecordDataset(SourceDataset, UnionBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the maximum sample number per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         shard_equal_rows (bool, optional): Get equal rows for all shards. Default: ``False``. If `shard_equal_rows`
@@ -368,7 +387,7 @@ class TFRecordDataset(SourceDataset, UnionBaseDataset):
             When `compression_type` is not ``None``, and `num_samples` or numRows (parsed from `schema` ) is provided,
             `shard_equal_rows` will be implied as ``True``.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
         compression_type (str, optional): The type of compression used for all files, must be either ``''``,
             ``'GZIP'``, or ``'ZLIB'``. Default: ``None`` , as in empty string. It is highly recommended to
@@ -474,8 +493,8 @@ class OBSMindDataset(GeneratorDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` .
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within num_shards. Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         shard_equal_rows (bool, optional): Get equal rows for all shards. Default: ``True``. If shard_equal_rows

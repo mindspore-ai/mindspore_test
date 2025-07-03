@@ -15,16 +15,16 @@
  */
 
 #include "kernel/ascend/pyboost/customize/cumsum_ext.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr CumsumExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const Int64ImmPtr &dim, const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr CumsumExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const Int64ImmPtr &dim, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, dim, dtype);
 
   auto dim_value = GetValue<int64_t>(dim);

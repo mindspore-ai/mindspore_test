@@ -24,12 +24,13 @@
 
 #include "ir/tensor.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest3d_grad {
 namespace {
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double, double>>
 UpsampleNearest3DGradGenerate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -70,5 +71,6 @@ bool UpsampleNearest3DGradAscend::Launch(const std::vector<KernelTensor *> &inpu
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleNearest3DGrad, UpsampleNearest3DGradAscend);
+}  // namespace upsample_nearest3d_grad
 }  // namespace kernel
 }  // namespace mindspore

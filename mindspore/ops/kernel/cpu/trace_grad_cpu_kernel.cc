@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 #include "kernel/cpu/trace_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace trace_grad_cpu {
 namespace {
 constexpr size_t kInputNum = 2;
 constexpr size_t kOutputNum = 1;
@@ -105,5 +106,6 @@ void TraceGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   }
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TraceGrad, TraceGradCpuKernelMod);
+}  // namespace trace_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

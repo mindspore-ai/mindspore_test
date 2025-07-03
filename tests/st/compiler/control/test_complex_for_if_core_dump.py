@@ -17,7 +17,7 @@ from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype, Parameter
 import mindspore.ops.functional as F
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 class Net(Cell):
@@ -60,8 +60,7 @@ class Net(Cell):
         return x + y
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_watch_core_dump():
     """
     Feature: Control flow.

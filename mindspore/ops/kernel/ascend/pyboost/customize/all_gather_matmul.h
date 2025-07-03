@@ -22,14 +22,14 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> AllGatherMatmulAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const BaseTensorPtr &x2, const StringImmPtr &group,
-  const Int64ImmPtr &world_size, const std::optional<BaseTensorPtr> &bias, const Int64ImmPtr &gather_index,
+std::vector<tensor::TensorPtr> AllGatherMatmulAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input, const TensorPtr &x2, const StringImmPtr &group,
+  const Int64ImmPtr &world_size, const std::optional<TensorPtr> &bias, const Int64ImmPtr &gather_index,
   const BoolImmPtr &gather_output, const Int64ImmPtr &comm_turn, const BoolImmPtr &trans_input,
   const BoolImmPtr &trans_x2);
 }  // namespace pyboost

@@ -59,7 +59,7 @@ def test_convert_resize_nearest_neighbor_x_dtype_with_dynamic_shape_input():
     Description: test convert data type to int32 for ResizeNearestNeighborX with dynamic shape input
     Expectation: success
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
     x = Tensor(np.array([[[[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]]]), mindspore.float32)
     expect = np.array([[[[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]]], dtype=np.float32)
@@ -72,4 +72,5 @@ def test_convert_resize_nearest_neighbor_x_dtype_with_dynamic_shape_input():
 
 if __name__ == "__main__":
     test_convert_resize_nearest_neighbor_x_dtype_with_static_shape_input()
+    # GE don't support dynamic shape
     test_convert_resize_nearest_neighbor_x_dtype_with_dynamic_shape_input()

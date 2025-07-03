@@ -53,7 +53,7 @@ class FlopsUtilizationCollector(Callback):
     The FlopsUtilizationCollector interface counts the model utilization information MFU
     and the hardware utilization information HFU.
     Currently, the API counts only the forward and backward flops of MatMul,
-    BatchMatMul, FlashAttentionScore, and Conv2D operators.
+    BatchMatMul, flash_attention_score, and Conv2D operators.
     Only used in graph mode with static shape.
 
     Args:
@@ -89,7 +89,7 @@ class FlopsUtilizationCollector(Callback):
         Train per step time: 135.572 ms, mfu:0.47% hfu:0.47%
         Train per step time: 1.317 ms, mfu:48.59% hfu:48.59%
     """
-    def __init__(self, data_size=None, computility=1, full_flops=True, enable_ma_collector=False):
+    def __init__(self, data_size, computility=1, full_flops=True, enable_ma_collector=False):
         super(FlopsUtilizationCollector, self).__init__()
         self.step_time = time.time()
         self.computility = computility
@@ -110,8 +110,7 @@ class FlopsUtilizationCollector(Callback):
         self.batch_step_size = None
         Validator.check_bool(full_flops, "full_flops")
         Validator.check_bool(enable_ma_collector, "enable_ma_collector")
-        if data_size:
-            Validator.check_positive_int(data_size, "data_size")
+        Validator.check_positive_int(data_size, "data_size")
 
     def step_begin(self, run_context):
         """

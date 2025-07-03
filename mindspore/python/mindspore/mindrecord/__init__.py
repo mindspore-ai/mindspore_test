@@ -15,13 +15,26 @@
 """
 Introduction of MindRecord.
 
-MindRecord is a module to implement reading, writing, searching and
-converting for MindSpore format dataset. Users could use the FileWriter
-API to generate MindRecord data and use the MindDataset API to load
-MindRecord data. Users could also convert other format datasets to
-mindrecord data through corresponding sub-module. You can also
-configure encryption, decryption, and integrity check to ensure
-the security of MindRecord datasets.
+MindRecord is an efficient data storage and reading module provided by MindSpore.
+This module provides several methods to help users convert various public datasets into the MindRecord format,
+as well as methods to read, write, and retrieve data from MindRecord files.
+
+.. image:: data_conversion_concept_en.png
+
+MindSpore format data allows for more convenient saving and loading of data,
+with the goal of normalizing user datasets and optimizing performance for different data scenarios.
+Using the MindRecord data format can reduce disk I/O and network I/O overhead,
+thereby providing a better data loading experience.
+
+Users can generate MindRecord format data files using `mindspore.mindrecord.FileWriter` and load MindRecord format
+datasets using `mindspore.dataset.MindDataset <https://www.mindspore.cn/docs/en/master/api_python/dataset/
+mindspore.dataset.MindDataset.html>`_ .
+
+Users can also convert datasets from other formats to the MindRecord format.
+For more details, please refer to `Converting Dataset to MindRecord <https://www.mindspore.cn/docs/en/master/
+model_train/dataset/record.html>`_ .
+Additionally, MindRecord supports file encryption, decryption,
+and integrity checks to ensure the security of MindRecord format datasets.
 """
 
 from .filewriter import FileWriter

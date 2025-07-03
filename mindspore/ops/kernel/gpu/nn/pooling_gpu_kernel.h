@@ -24,9 +24,10 @@
 #include <functional>
 #include "kernel/gpu/gpu_kernel.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
-#include "mindspore/ccsrc/kernel/format_utils.h"
+#include "common/common_utils.h"
+#include "common/format_utils.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/avg_pool3d_helper_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"

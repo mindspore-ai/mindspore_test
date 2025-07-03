@@ -32,6 +32,11 @@
 #include "infer/cxx_api/kv_cache_mgr.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/make_tuple.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 namespace mindspore::opt {
 const BaseRef KVCacheMgrOneBranchFusion::DefinePattern() const {
   if (!InitVar()) {

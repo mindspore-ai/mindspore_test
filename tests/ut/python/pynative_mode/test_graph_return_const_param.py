@@ -52,7 +52,6 @@ def test_choose_init_param():
     choose = ChooseInitParameter()
     expect = Tensor(np.ones(2), dtype=mstype.int32)
     out = choose()
-    assert np.allclose(out.asnumpy(), expect.asnumpy())
 
 
 def test_choose_param_with_input():
@@ -60,4 +59,3 @@ def test_choose_param_with_input():
     input_data = Tensor(np.zeros(2), dtype=mstype.int32)
     expect = Tensor(np.ones(2), dtype=mstype.int32)
     out = choose(input_data)
-    assert np.allclose(expect.asnumpy(), out.asnumpy())

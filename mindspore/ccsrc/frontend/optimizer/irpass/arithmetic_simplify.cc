@@ -24,6 +24,12 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 namespace mindspore {
 namespace opt {
 namespace irpass {
@@ -41,45 +47,53 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
   // if node has keep_alive attr, it would not be eliminated.
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     if (prim->HasAttr("keep_alive") && GetValue<bool>(prim->GetAttr("keep_alive"))) {
       MS_LOG(INFO) << "keep node " << node->fullname_with_scope() << " alive";
       return nullptr;
     }
   }
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
-    auto IsAddByZeroSimplifiable = [node](const AnfNodePtr &real_x) {
-      // If real_x is Load CNode, We should not simplify it as Load is a no-op at backend, after simplification, the
-      // result of the Load may be incorrect.
-      if (IsPrimitiveCNode(real_x, prim::kPrimLoad)) {
-        MS_LOG(DEBUG) << "Cannot simplify as real_x is CNode Load: " << real_x->ToString();
-        return false;
-      }
+  auto IsAddByZeroSimplifiable = [&node](const AnfNodePtr &real_x) {
+    // If real_x is Load CNode, We should not simplify it as Load is a no-op at backend, after simplification, the
+    // result of the Load may be incorrect.
+    if (IsPrimitiveCNode(real_x, prim::kPrimLoad)) {
+      MS_LOG(DEBUG) << "Cannot simplify as real_x is CNode Load: " << real_x->ToString();
+      return false;
+    }
 
-      if (real_x->abstract() != nullptr && real_x->abstract()->GetShapeTrack() != nullptr &&
-          node->abstract() != nullptr && node->abstract()->GetShapeTrack() != nullptr &&
-          *real_x->abstract()->GetShapeTrack() == *node->abstract()->GetShapeTrack()) {
-        MS_LOG(DEBUG) << "Can simplify when their shapes are same: real_x shape:"
-                      << real_x->abstract()->GetShapeTrack()->ToString()
-                      << ", node shape: " << node->abstract()->GetShapeTrack()->ToString();
-        return true;
-      }
-      MS_LOG(DEBUG) << "Cannot simplify when their shapes are not same: real_x shape:"
+    if (real_x->abstract() != nullptr && real_x->abstract()->GetShapeTrack() != nullptr &&
+        node->abstract() != nullptr && node->abstract()->GetShapeTrack() != nullptr &&
+        *real_x->abstract()->GetShapeTrack() == *node->abstract()->GetShapeTrack()) {
+      MS_LOG(DEBUG) << "Can simplify when their shapes are same: real_x shape:"
                     << real_x->abstract()->GetShapeTrack()->ToString()
                     << ", node shape: " << node->abstract()->GetShapeTrack()->ToString();
-      return false;
-    };
-    MATCH_REPLACE_IF(node, x + zero_, x, x.CheckFunc(IsAddByZeroSimplifiable, node));  // Add by zero
+      return true;
+    }
+    MS_LOG(DEBUG) << "Cannot simplify when their shapes are not same: real_x shape:"
+                  << real_x->abstract()->GetShapeTrack()->ToString()
+                  << ", node shape: " << node->abstract()->GetShapeTrack()->ToString();
+    return false;
+  };
+  auto IsRefTensorNode = [&node]() {
+    // If node is AbstractRefTensor, We should not simplify it, after simplification, the result may be incorrect.
+    return node->abstract() != nullptr && node->abstract()->isa<abstract::AbstractRefTensor>();
+  };
+  MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimAdd, x.get_object(), zero_.get_object(), true), x,
+                   x.CheckFunc(IsAddByZeroSimplifiable, node));  // Add by zero
 
-    MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarAdd, x, zero_scalar_, true), x);          // Scalar Add by zero
-    MATCH_REPLACE_IF(node, x * one_, any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node));  // Multiply by one
-    MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarMul, x, one_scalar_, true), x);           // Scalar Mul by one
-  }
+  MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarAdd, x, zero_scalar_, true), x);  // Scalar Add by zero
+  // Multiply by one
+  MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMul, x.get_object(), one_.get_object(), true),
+                   any_const.WithValueOf(x), !one_.CheckFunc(IsParam, node) && !IsRefTensorNode());
+  MATCH_REPLACE(node, PBinOperation(prim::kPrimScalarMul, x, one_scalar_, true), x);  // Scalar Mul by one
+  // Muls Scalar by one
+  MATCH_REPLACE_IF(node, PBinOperation(mindspore::prim::kPrimMuls, x.get_object(), one_scalar_, false), x,
+                   !IsRefTensorNode());
+
   // Prim Eliminate (identity)
   MATCH_REPLACE(node, PPrimitive(prim::kPrimidentity, x), x);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return nullptr;
-  }
 
   // ConstantDuplicateMul
   auto const_dup_lambda = [&node, &x, &const_, &const_2]() -> AnfNodePtr {
@@ -97,7 +111,9 @@ AnfNodePtr ArithmeticSimplify::operator()(const OptimizerPtr &, const AnfNodePtr
     new_cnode->set_abstract(node->abstract());
     return new_cnode;
   };
-  MATCH_REPLACE_LAMBDA(node, const_ * (const_2 * x), const_dup_lambda);
+  auto ret = PBinOperation(mindspore::prim::kPrimMul, const_2.get_object(), x.get_object(), true);
+  MATCH_REPLACE_LAMBDA(node, PBinOperation(mindspore::prim::kPrimMul, const_.get_object(), ret.get_object(), true),
+                       const_dup_lambda);
 
   if (node->func_graph() == nullptr) {
     return nullptr;

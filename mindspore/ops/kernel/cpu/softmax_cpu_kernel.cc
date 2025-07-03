@@ -18,11 +18,12 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/softmax_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_cpu {
 namespace {
 #define SOFTMAX_CPU_REG(M_T, T)                                                                       \
   KernelAttr().AddInputAttr(M_T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt64).AddOutputAttr(M_T), \
@@ -192,5 +193,6 @@ std::vector<KernelAttr> SoftmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Softmax, SoftmaxCpuKernelMod);
+}  // namespace softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

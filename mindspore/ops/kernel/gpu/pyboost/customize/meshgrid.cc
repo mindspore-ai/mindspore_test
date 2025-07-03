@@ -17,17 +17,23 @@
 #include "kernel/gpu/pyboost/customize/meshgrid.h"
 #include <memory>
 #include <utility>
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "mindspore/ops/kernel/common/pyboost/customize/meshgrid.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "mindspore/ccsrc/pyboost/customize/meshgrid.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const ValueTuplePtr &tensors_list,
-                                                        const Int64ImmPtr &indexing) {
+std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
-  std::vector<tensor::BaseTensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kGPUDevice);
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kGPUDevice);
+  MS_LOG(DEBUG) << "Meshgrid call end";
+  return output;
+}
+std::vector<tensor::TensorPtr> MeshgridGPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
+  MS_LOG(DEBUG) << "Meshgrid call start";
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kGPUDevice);
   MS_LOG(DEBUG) << "Meshgrid call end";
   return output;
 }

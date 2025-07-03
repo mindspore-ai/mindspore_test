@@ -15,10 +15,11 @@
  */
 #include "kernel/cpu/adaptive_max_pool_3d_grad_cpu_kernel.h"
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_3d_grad_cpu {
 bool AdaptiveMaxPool3DGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
@@ -36,6 +37,10 @@ int AdaptiveMaxPool3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
 
   input_x_shape_ = inputs[kIndex1]->GetShapeVector();
   output_shape_ = input_x_shape_;
+  if (CHECK_SHAPE_NULL(input_x_shape_, kernel_name_, "input") ||
+      CHECK_SHAPE_NULL(output_shape_, kernel_name_, "output")) {
+    return KRET_RESIZE_FAILED;
+  }
   const size_t dim_num = input_x_shape_.size();
   const size_t kDimNum4 = 4;
   const size_t kDimNum5 = 5;
@@ -205,5 +210,6 @@ bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernelHalf(const std::vector<Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool3DGrad, AdaptiveMaxPool3DGradCpuKernelMod);
+}  // namespace adaptive_max_pool_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

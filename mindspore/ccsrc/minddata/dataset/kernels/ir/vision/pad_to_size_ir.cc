@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/pad_to_size_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/pad_to_size_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // PadOperation
 PadToSizeOperation::PadToSizeOperation(const std::vector<int32_t> &size, const std::vector<int32_t> &offset,
                                        const std::vector<uint8_t> &fill_value, BorderType padding_mode)
@@ -85,7 +82,6 @@ Status PadToSizeOperation::from_json(nlohmann::json op_params, std::shared_ptr<T
   *operation = std::make_shared<vision::PadToSizeOperation>(size, offset, fill_value, padding_mode);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

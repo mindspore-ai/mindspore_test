@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,12 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
@@ -52,6 +58,7 @@ bool IsBpropNode(const AnfNodePtr &node) {
 bool CheckCommNodeEqual(const CNodePtr comm_node1, const CNodePtr comm_node2) {
   auto prim1 = GetCNodePrimitive(comm_node1);
   auto prim2 = GetCNodePrimitive(comm_node2);
+  MS_EXCEPTION_IF_NULL(prim2);
   if (!IsCommunicationOp(prim1) && !IsCommunicationOp(prim2)) {
     return true;
   }
@@ -123,7 +130,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
       continue;
     }
     if (block_id >= 0 && !cnode->HasPrimalAttr(block_index)) {
-      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " dose not contains " << block_index
+      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " does not contains " << block_index
                    << " info.";
       continue;
     }
@@ -199,9 +206,9 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   auto node_users = manager->node_users();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  const bool not_o2 = context->GetJitLevel() != kAttrJitLevelO2;
+  const bool not_ge = !common::AnfAlgo::IsBackendGe();
   AnfNodePtr comm_node_a_user = nullptr;
-  if (not_o2) {
+  if (not_ge) {
     for (const auto &pair : manager->node_users()[comm_node_a]) {
       comm_node_a_user = pair.first;
       if (IsPrimitiveCNode(pair.first, prim::kPrimMatMul)) {
@@ -217,6 +224,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   if (IsPrimitiveCNode(comm_node_a->input(kIndex1), prim::kPrimMatMul)) {
     auto comm_id = comm_node_a->UniqueId();
     comm_node_a->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
+    MS_EXCEPTION_IF_NULL(comm_node_a->input(kIndex1)->cast<CNodePtr>());
     comm_node_a->input(kIndex1)->cast<CNodePtr>()->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
   }
   std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), comm_node_a, comm_node_b_input_node};
@@ -241,7 +249,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   depend_node2->set_abstract(comm_node_b->abstract()->Clone());
   SetEdgeForDepend(node_users, manager, comm_node_b, depend_node2, !grad_comm_opt_enabled);
 
-  if (not_o2) {
+  if (not_ge) {
     if (comm_node_a_user != nullptr) {
       std::vector<AnfNodePtr> depend5_inputs{NewValueNode(prim::kPrimDepend), comm_node_b, comm_node_a_user};
       auto depend_node5 = comm_node_b->func_graph()->NewCNode(depend5_inputs);
@@ -292,6 +300,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
       auto next_comm_node_a = next_comm_node_list[0];
       // comm_node_b -> next_comm_node_a
       auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(next_comm_node_a_input_node);
       std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), next_comm_node_a_input_node, comm_node_b};
       auto depend_node1 = comm_node_b->func_graph()->NewCNode(depend1_inputs);
       MS_EXCEPTION_IF_NULL(depend_node1);
@@ -305,6 +314,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
     // comm_node_a -> comm_node_b
     auto comm_node_a = comm_node_list[0];
     auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(comm_node_b_input_node);
     std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), comm_node_b_input_node, comm_node_a};
     auto depend_node2 = comm_node_a->func_graph()->NewCNode(depend2_inputs);
     depend_node2->set_abstract(comm_node_b_input_node->abstract()->Clone());
@@ -323,6 +333,7 @@ CNodePtr GetInputBorderNode(const CNodePtr &node) {
     for (size_t i = 1; i < queue_end->size(); ++i) {
       if (IsPrimitiveCNode(queue_end->input(i))) {
         auto queue_end_input_cnode = queue_end->input(i)->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(queue_end_input_cnode);
         if (queue_end_input_cnode->HasAttr("fine_grained_interleaved_border")) {
           if (IsPrimitiveCNode(queue_end_input_cnode, prim::kPrimStridedSliceGrad)) {
             return queue_end_input_cnode;
@@ -348,6 +359,7 @@ CNodePtr GetOutputBorderNode(const FuncGraphManagerPtr &manager, const CNodePtr 
     for (const auto &node_pair : node_users) {
       if (IsPrimitiveCNode(node_pair.first)) {
         auto queue_end_output_cnode = node_pair.first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(queue_end_output_cnode);
         if (queue_end_output_cnode->HasAttr("fine_grained_interleaved_border")) {
           return queue_end;
         }
@@ -395,6 +407,7 @@ void InsertDependForBegin(const FuncGraphManagerPtr &manager,
     begin_input = begin;
   }
   auto comm_node_a_input_node = comm_node_a->input(kIndex1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_node_a_input_node);
   std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), begin_input, comm_node_a_input_node};
   auto depend_node2 = comm_node_a_input_node->func_graph()->NewCNode(depend2_inputs);
   MS_EXCEPTION_IF_NULL(depend_node2);
@@ -527,6 +540,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (!parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved()) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -535,6 +549,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
 
   if (graph_reuse) {
     CellReuseProcess(manager, kAttrFineGrainedInterleavedBlockIndex);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
@@ -543,6 +558,7 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (is_fine_grained) {
     MicroInterleavedOrderControlInBlock(graph, manager, origin_nodes_topological,
                                         kAttrFineGrainedInterleavedBlockIndex);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   if (parallel::ParallelContext::GetInstance()->pipeline_stage_split_num() == 1) {
@@ -560,9 +576,11 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
     }
     MicroInterleavedOrderControlProcess(manager, micro_interleaved_forward_node_list,
                                         micro_interleaved_backward_node_list, origin_nodes_topological);
+    circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
     return;
   }
   MicroInterleavedOrderControlInBlock(graph, manager, origin_nodes_topological);
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "MicroInterleavedOrderControl");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -20,10 +20,11 @@
 #include <utility>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace lower_bound_cpu {
 class LowerBoundCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<LowerBoundCpuKernelMod> {
  public:
   LowerBoundCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class LowerBoundCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   size_t values_num_;
   size_t output_num_;
 };
+}  // namespace lower_bound_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

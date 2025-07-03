@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dilation2d_backprop_filter_cpu {
 namespace {
 constexpr size_t kDimSize3 = 3;
 constexpr size_t kDimSize4 = 4;
@@ -26,7 +27,7 @@ constexpr size_t kOutputNum = 1;
 constexpr size_t kInputIndexf = 0;
 constexpr size_t kFilterIndexf = 1;
 constexpr size_t kBackpropIndexf = 2;
-constexpr size_t kOutputIndexf = 0;
+constexpr size_t kOutputIdxf = 0;
 constexpr size_t kFormatNCHWIndexN = 0;
 constexpr size_t kFormatNCHWIndexC = 1;
 constexpr size_t kFormatNCHWIndexH = 2;
@@ -63,7 +64,7 @@ int Dilation2DBackpropFilterCpuKernelMod::Resize(const std::vector<KernelTensor 
   f_input_shape_ = inputs[kInputIndexf]->GetShapeVector();
   f_filter_shape_ = inputs[kFilterIndexf]->GetShapeVector();
   f_out_backprop_shape_ = inputs[kBackpropIndexf]->GetShapeVector();
-  f_output_shape_ = outputs[kOutputIndexf]->GetShapeVector();
+  f_output_shape_ = outputs[kOutputIdxf]->GetShapeVector();
   CheckKernelParam();
   return KRET_OK;
 }
@@ -77,7 +78,7 @@ bool Dilation2DBackpropFilterCpuKernelMod::LaunchKernel(const std::vector<kernel
   T *input = static_cast<T *>(inputs[kInputIndexf]->device_ptr());
   T *filter = static_cast<T *>(inputs[kFilterIndexf]->device_ptr());
   T *out_backprop = static_cast<T *>(inputs[kBackpropIndexf]->device_ptr());
-  T *output = static_cast<T *>(outputs[kOutputIndexf]->device_ptr());
+  T *output = static_cast<T *>(outputs[kOutputIdxf]->device_ptr());
 
   size_t num_batch = LongToSize(f_input_shape_[kFormatNCHWIndexN]);
   size_t input_height = LongToSize(f_input_shape_[kFormatNCHWIndexH]);
@@ -287,5 +288,6 @@ bool Dilation2DBackpropFilterCpuKernelMod::CheckKernelParam() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dilation2DBackpropFilter, Dilation2DBackpropFilterCpuKernelMod);
+}  // namespace dilation2d_backprop_filter_cpu
 }  // namespace kernel
 }  // namespace mindspore

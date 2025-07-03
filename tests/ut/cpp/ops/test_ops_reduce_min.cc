@@ -19,8 +19,8 @@
 #include "infer/ops_func_impl/reduce_min.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {
@@ -70,7 +70,7 @@ class TestReduceMinSimple : public TestOps, public testing::WithParamInterface<R
 
 TEST_P(TestReduceMinSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.input_dtype->type_id(), param.input_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.input_dtype->type_id(), param.input_shape);
   auto dim = param.dim->ToAbstract();
   auto keepdim = param.keepdim->ToAbstract();
 

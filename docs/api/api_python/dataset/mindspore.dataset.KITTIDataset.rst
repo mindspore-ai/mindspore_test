@@ -24,9 +24,9 @@ mindspore.dataset.KITTIDataset
         - **shuffle** (bool, 可选) - 是否混洗数据集。默认值： ``None`` 。下表中会展示不同参数配置的预期行为。
         - **decode** (bool, 可选) - 是否对读取的图片进行解码操作。默认值： ``False`` ，不解码。
         - **sampler** (Sampler, 可选) - 指定从数据集中选取样本的采样器。默认值： ``None`` 。下表中会展示不同配置的预期行为。
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - 同时指定了 `sampler` 和 `shuffle` 参数。
@@ -45,7 +45,7 @@ mindspore.dataset.KITTIDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于KITTI数据集：**
-    
+
     KITTI（Karlsruhe Institute of Technology and Toyota Technological Institute）是移动机器人和自动驾驶领域的常用数据集之一。
     它由用高分辨率的RGB、灰度立体相机和三维激光扫描仪等各种传感器记录的数小时的交通场景组成。
     尽管它很常用，但该数据集本身并不包含用于语义分割的目标值。然而，许多研究人员已经对该数据集的部分内容进行了手工标注以适应需求。

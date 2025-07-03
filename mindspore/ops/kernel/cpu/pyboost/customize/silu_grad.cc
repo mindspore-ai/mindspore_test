@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/silu_grad.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/cpu/pyboost/auto_generate/sigmoid.h"
-#include "kernel/cpu/pyboost/auto_generate/sigmoid_grad.h"
-#include "kernel/cpu/pyboost/auto_generate/mul.h"
-#include "kernel/cpu/pyboost/auto_generate/add_ext.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/silu_grad.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/sigmoid.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/sigmoid_grad.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/mul.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/add_ext.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-OpPtr SiLUGradCPUCall(const device::DeviceContext *device_context, const BaseTensorPtr &dout_tensor,
-                      const BaseTensorPtr &x_tensor) {
+OpPtr SiLUGradCPUCall(const device::DeviceContext *device_context, const TensorPtr &dout_tensor,
+                      const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Call start";
   const auto &sigmoid = CREATE_PYBOOST_OP(Sigmoid, device_context->device_context_key_.device_name_);
   const auto &mul_a = CREATE_PYBOOST_OP(Mul, device_context->device_context_key_.device_name_);
@@ -48,8 +47,8 @@ OpPtr SiLUGradCPUCall(const device::DeviceContext *device_context, const BaseTen
 }
 }  // namespace
 
-void SiLUGradCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
-                          const BaseTensorPtr &x_tensor) {
+void SiLUGradCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dout_tensor,
+                          const TensorPtr &x_tensor) {
   auto device_context = op->device_context();
   const auto &output = SiLUGradCPUCall(device_context, dout_tensor, x_tensor);
   op->set_outputs(output->outputs());

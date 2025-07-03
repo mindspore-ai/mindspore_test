@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/internal/add_layer_norm.h"
 
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

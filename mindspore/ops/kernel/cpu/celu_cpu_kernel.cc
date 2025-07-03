@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace celu_cpu {
 namespace {
 
 const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
@@ -71,5 +72,6 @@ bool CeluCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CeLU, CeluCpuKernelMod);
+}  // namespace celu_cpu
 }  // namespace kernel
 }  // namespace mindspore

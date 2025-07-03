@@ -72,7 +72,7 @@ def test_avgpool3d_auto_parallel():
     Description:
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = AvgPool3DNet(_w)
     phase = compile_net(net, _x, _b)

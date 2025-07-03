@@ -14,7 +14,7 @@ mindspore.nn.Conv3d
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
     - :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
@@ -44,7 +44,7 @@ mindspore.nn.Conv3d
         - **pad_mode** (str，可选) - 指定填充模式，填充值为0。可选值为 ``"same"`` ， ``"valid"`` 或 ``"pad"`` 。默认值： ``"same"`` 。
 
           - ``"same"``：在输入的深度、高度和宽度维度进行填充，使得当 `stride` 为 ``1`` 时，输入和输出的shape一致。待填充的量由算子内部计算，若为偶数，则均匀地填充在四周，若为奇数，多余的填充量将补充在前方/底部/右侧。如果设置了此模式， `padding` 必须为0。
-          - ``"valid"``：不对输入进行填充，返回输出可能的最大深度、高度和宽度，不能构成一个完整stride的额外的像素将被丢弃。如果设置了此模式， `padding` 必须为0。
+          - ``"valid"``：不对输入进行填充，返回输出可能的最大深度、高度和宽度，如果不能构成一个完整stride，那么额外的像素将被丢弃。如果设置了此模式， `padding` 必须为0。
           - ``"pad"``：对输入填充指定的量。在这种模式下，在输入的深度、高度和宽度方向上填充的量由 `padding` 参数指定。如果设置此模式， `padding` 必须大于或等于0。
 
         - **padding** (Union(int, tuple[int])，可选) - 输入的深度、高度和宽度方向上填充的数量。数据类型为int或包含6个整数的tuple。如果 `padding` 是一个整数，则前部、后部、顶部，底部，左边和右边的填充都等于 `padding` 。如果 `padding` 是6个整数的tuple，则前部、尾部、顶部、底部、左边和右边的填充分别等于填充padding[0]、padding[1]、padding[2]、padding[3]、padding[4]和padding[5]。值应该要大于等于0，默认值： ``0`` 。
@@ -76,24 +76,24 @@ mindspore.nn.Conv3d
 
         .. math::
             \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
-                {\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
-                {\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
-                {\text{stride[2]}} + 1} \right \rfloor \\
+                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) - 1}
+                {\text{stride[0]}}} \right \rfloor + 1 \\
+                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) - 1}
+                {\text{stride[1]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) - 1}
+                {\text{stride[2]}}} \right \rfloor + 1 \\
             \end{array}
 
         pad_mode为 ``"pad"`` 时：
 
         .. math::
             \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} + padding[0] + padding[1] - (\text{dilation[0]} - 1) \times
-                \text{kernel_size[0]} - 1 }{\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} + padding[2] + padding[3] - (\text{dilation[1]} - 1) \times
-                \text{kernel_size[1]} - 1 }{\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} + padding[4] + padding[5] - (\text{dilation[2]} - 1) \times
-                \text{kernel_size[2]} - 1 }{\text{stride[2]}} + 1} \right \rfloor \\
+                D_{out} = \left \lfloor{\frac{D_{in} + padding[0] + padding[1] - \text{dilation[0]} \times
+                (\text{kernel_size[0]} - 1) - 1}{\text{stride[0]}}} \right \rfloor + 1 \\
+                H_{out} = \left \lfloor{\frac{H_{in} + padding[2] + padding[3] - \text{dilation[1]} \times
+                (\text{kernel_size[1]} - 1) - 1}{\text{stride[1]}}} \right \rfloor + 1 \\
+                W_{out} = \left \lfloor{\frac{W_{in} + padding[4] + padding[5] - \text{dilation[2]} \times
+                (\text{kernel_size[2]} - 1) - 1}{\text{stride[2]}}} \right \rfloor + 1 \\
             \end{array}
 
     异常：

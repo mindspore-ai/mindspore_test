@@ -19,15 +19,16 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul_all_reduce {
 void QuantBatchMatmulAllReduceAscend::InitializeCommonAttributes() {
   trans_a_ = GetRequiredAttr<bool>(kAttrIsTransA);
   trans_b_ = GetRequiredAttr<bool>(kAttrIsTransB);
   group_ = GetRequiredAttr<std::string>(kAttrGroup);
-  hccl_inner_comm_name_ = mindspore::transform::OpApiUtil::GetCommName(group_);
+  hccl_inner_comm_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_);
   reduce_op_ = GetRequiredAttr<std::string>(kAttrOp);
 }
 
@@ -46,6 +47,10 @@ bool QuantBatchMatmulAllReduceAscend::Launch(const std::vector<KernelTensor *> &
                                              const std::vector<KernelTensor *> &workspace,
                                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_, hccl_inner_comm_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need rebuild workspace size";
+    GetWorkSpaceInfo(inputs, outputs);
+  }
 
   input_a_.first = inputs[kIndex0];
   input_b_.first = inputs[kIndex1];
@@ -55,5 +60,6 @@ bool QuantBatchMatmulAllReduceAscend::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(QuantBatchMatmulAllReduce, QuantBatchMatmulAllReduceAscend);
+}  // namespace quant_batch_matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore

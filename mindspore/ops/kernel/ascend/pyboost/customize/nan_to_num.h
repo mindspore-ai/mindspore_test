@@ -21,15 +21,14 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                              const std::optional<FP32ImmPtr> &nan,
-                                              const std::optional<FP32ImmPtr> &posinf,
-                                              const std::optional<FP32ImmPtr> &neginf);
+tensor::TensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                          const std::optional<FP32ImmPtr> &nan, const std::optional<FP32ImmPtr> &posinf,
+                                          const std::optional<FP32ImmPtr> &neginf);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

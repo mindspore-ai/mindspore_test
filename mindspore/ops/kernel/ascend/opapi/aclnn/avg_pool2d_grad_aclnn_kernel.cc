@@ -23,12 +23,13 @@
 #include <functional>
 
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool2d_grad {
 namespace {
 std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::vector<int64_t>, std::tuple<bool, bool, int64_t, int8_t>>
 AvgPool2DGradGenerate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -74,5 +75,6 @@ bool AvgPool2DGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AvgPool2DGrad, AvgPool2DGradAscend);
+}  // namespace avg_pool2d_grad
 }  // namespace kernel
 }  // namespace mindspore

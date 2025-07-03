@@ -22,8 +22,24 @@
 #include "kernel/framework_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::graphkernel {
+namespace {
+void AddRefPairForNode(const AnfNodePtr &node, size_t output_idx, size_t input_idx) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->kernel_info() == nullptr) {
+    MS_LOG(DEBUG) << "node " << node->DebugString() << " " << node->fullname_with_scope() << " has no kernel_info";
+    return;
+  }
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  MS_LOG(INFO) << "AddRefMap(" << output_idx << "," << input_idx << ") for node " << node->DebugString() << " "
+               << node->fullname_with_scope();
+  kernel_info->AddRefMap(output_idx, input_idx);
+}
+}  // namespace
+
 void DealWithSideEffect::MarkSideEffect(const FuncGraphPtr &sub_graph) {
   MS_EXCEPTION_IF_NULL(sub_graph);
   bool has_side_effect_mem = false;
@@ -38,7 +54,7 @@ void DealWithSideEffect::MarkSideEffect(const FuncGraphPtr &sub_graph) {
     }
   }
   if (has_side_effect_mem) {
-    sub_graph->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(int64_t(1)));
+    sub_graph->set_attr(GRAPH_FLAG_SIDE_EFFECT_MEM, MakeValue(true));
   }
 }
 
@@ -82,6 +98,7 @@ bool DealWithSideEffect::Run(const FuncGraphPtr &func_graph) {
                       << "}, origin {node ptr " << origin_pair.first.get() << ", info is "
                       << origin_pair.first->fullname_with_scope() << " : index " << origin_pair.second << "}";
         kernel_graph->AddRefCorrespondPairs(final_pair, origin_pair);
+        AddRefPairForNode(node, i, static_cast<size_t>(input_idx));
         changed = true;
       }
     }

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,14 @@ using ElemwiseMap = mindspore::HashMap<std::string, PrimitivePtr>;
 using ArgsPairList = std::vector<std::pair<AnfNodePtr, TypePtr>>;
 using AbstractListPtr = abstract::AbstractListPtr;
 
+typedef enum OpsType {
+  Type_Any = -1,
+  Type_Normal = 0,
+  Type_View,
+  Type_Inplace,
+  Type_Variable,
+} OpsType;
+
 class HyperMap : public MetaFuncGraph {
  public:
   explicit HyperMap(bool reverse = false, const std::shared_ptr<MultitypeFuncGraph> &fn_leaf = nullptr);
@@ -83,11 +91,12 @@ class HyperMap : public MetaFuncGraph {
   AnfNodePtr Make(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const;
   std::pair<std::string, std::string> GetHyperMapInputIndex(size_t num) const;
   template <typename T>
-  void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const;
+  void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size, bool *contains_dyn) const;
   AnfNodePtr HyperMapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map,
                                TypeId type_id, std::size_t size) const;
+  template <typename T>
   AnfNodePtr HyperMapDynamicConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
-                                      const ArgsPairList &arg_map, const TypePtr &type) const;
+                                      const ArgsPairList &arg_map, const TypePtr &element_type) const;
 
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;
@@ -183,7 +192,7 @@ class MutableGradient : public MetaFuncGraph {
 };
 using MutableGradientPtr = std::shared_ptr<MutableGradient>;
 
-class GradOperation : public MetaFuncGraph {
+class FRONTEND_EXPORT GradOperation : public MetaFuncGraph {
  public:
   explicit GradOperation(const std::string &name, bool get_all = false, bool get_by_list = false,
                          bool sens_param = false, bool get_by_position = false, bool has_aux = false,
@@ -212,8 +221,7 @@ class GradOperation : public MetaFuncGraph {
                        const AnfNodePtr &weights, const AnfNodePtr &position, const FuncGraphPtr &forward_graph,
                        bool is_weights_none) const;
   CNodePtr SetNodeByParameter(const CNodePtr &grad, const FuncGraphPtr &fg) const;
-  CNodePtr AddBackwardCallbackToFuncGraph(const FuncGraphPtr &k_child, const FuncGraphPtr &forward_graph,
-                                          const CNodePtr &fv_bprop) const;
+
   AbstractBasePtr weight_value_;
 };
 using GradOperationPtr = std::shared_ptr<GradOperation>;
@@ -345,6 +353,21 @@ class Shard : public MetaFuncGraph {
   size_t kShardInputSize = 0;
 };
 
+class AddAttr : public MetaFuncGraph {
+ public:
+  explicit AddAttr(const std::string &name) : MetaFuncGraph(name) {
+    signatures_ = std::vector<Signature>({{"func", SignatureEnumRW::kRWRead, SignatureEnumKind::kKindDefault},
+                                          {"attr_dict", SignatureEnumRW::kRWRead, SignatureEnumKind::kKindDefault}});
+    kAddAttrInputSize = signatures_.size();
+  }
+  ~AddAttr() override = default;
+  MS_DECLARE_PARENT(AddAttr, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+
+ private:
+  size_t kAddAttrInputSize = 0;
+};
+
 class VmapOperation : public MetaFuncGraph {
  public:
   explicit VmapOperation(const std::string &name);
@@ -421,6 +444,16 @@ class ListFunc : public MetaFuncGraph {
 };
 using ListFuncPtr = std::shared_ptr<ListFunc>;
 
+class DictFunc : public MetaFuncGraph {
+ public:
+  explicit DictFunc(const std::string &name) : MetaFuncGraph(name) {}
+  ~DictFunc() override = default;
+  MS_DECLARE_PARENT(DictFunc, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const DictFunc &lhs, const DictFunc &rhs) { return lhs.name_ == rhs.name_; }
+};
+using DictFuncPtr = std::shared_ptr<DictFunc>;
+
 class ForHalfUnrollLess : public MetaFuncGraph {
  public:
   ForHalfUnrollLess() : MetaFuncGraph("ForHalfUnrollLess") {}
@@ -428,6 +461,69 @@ class ForHalfUnrollLess : public MetaFuncGraph {
   MS_DECLARE_PARENT(ForHalfUnrollLess, MetaFuncGraph)
   FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
   friend bool operator==(const ForHalfUnrollLess &lhs, const ForHalfUnrollLess &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class AccumulateDout : public MetaFuncGraph {
+ public:
+  explicit AccumulateDout(const std::string &name) : MetaFuncGraph(name) {}
+  ~AccumulateDout() override = default;
+  MS_DECLARE_PARENT(AccumulateDout, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const AccumulateDout &lhs, const AccumulateDout &rhs) { return lhs.name_ == rhs.name_; }
+
+ private:
+  void CheckAccumulateDoutInputAbstract(const AbstractBasePtrList &args_abs_list);
+  bool IsAddDout();
+  bool IsBuildSwitchNode();
+  FuncGraphPtr BuildAddOutputFG(const std::string &name, const AbstractBasePtrList &args_abs_list);
+  FuncGraphPtr BuildAccumulateInplaceOutputFG(const std::string &name);
+  FuncGraphPtr BuildSelectOutputFG(const std::string &name);
+  FuncGraphPtr BuildChooseOutputFG(const std::string &name);
+  std::map<std::string, int64_t> types_;
+};
+
+class GenerateMask : public MetaFuncGraph {
+ public:
+  explicit GenerateMask(const std::string &name) : MetaFuncGraph(name) {}
+  ~GenerateMask() override = default;
+  MS_DECLARE_PARENT(GenerateMask, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GenerateMask &lhs, const GenerateMask &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class GenerateBpropOutTuple : public MetaFuncGraph {
+ public:
+  explicit GenerateBpropOutTuple(const std::string &name) : MetaFuncGraph(name) {}
+  ~GenerateBpropOutTuple() override = default;
+  MS_DECLARE_PARENT(GenerateBpropOutTuple, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GenerateBpropOutTuple &lhs, const GenerateBpropOutTuple &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
+  void set_ops_type(int64_t ops_type) { ops_type_ = ops_type; }
+
+ private:
+  int64_t ops_type_ = OpsType::Type_Normal;
+};
+
+class GetRealBpropOut : public MetaFuncGraph {
+ public:
+  explicit GetRealBpropOut(const std::string &name) : MetaFuncGraph(name) {}
+  ~GetRealBpropOut() override = default;
+  MS_DECLARE_PARENT(GetRealBpropOut, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GetRealBpropOut &lhs, const GetRealBpropOut &rhs) { return lhs.name_ == rhs.name_; }
+};
+
+class GetDependDoutTuple : public MetaFuncGraph {
+ public:
+  explicit GetDependDoutTuple(const std::string &name) : MetaFuncGraph(name) {}
+  ~GetDependDoutTuple() override = default;
+  MS_DECLARE_PARENT(GetDependDoutTuple, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const GetDependDoutTuple &lhs, const GetDependDoutTuple &rhs) {
+    return lhs.name_ == rhs.name_;
+  }
 };
 }  // namespace prim
 }  // namespace mindspore

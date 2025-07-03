@@ -43,7 +43,7 @@ print(stree.get_code())
 
 The results are as follows:
 
-``` log
+```python
 import sys
 sys.path.append('...') # Current working directory
 import mindspore
@@ -83,7 +83,7 @@ stree.print_node_tabulate()
 
 The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -122,7 +122,7 @@ stree.print_node_tabulate()
 
 The results are as follows:
 
-``` log
+```text
 [MyNet_2Opt]
 node type          name        codes                         arg providers             target users
 -----------------  ----------  ----------------------------  ------------------------  --------------------------
@@ -162,7 +162,7 @@ In this example, the process for inserting a node is as follows:
 
 The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                 arg providers           target users
 -----------------  --------  --------------------  ----------------------  ------------------------
@@ -214,7 +214,7 @@ and the input of old relu node is changed to the output of new node.
 
 The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                   arg providers           target users
 -----------------  --------  ----------------------  ----------------------  ------------------------
@@ -252,7 +252,7 @@ stree.print_node_tabulate()
 
 The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -301,7 +301,7 @@ The specific parameter name modification strategy depends on the actual scenario
 
 The results are as follows:
 
-``` log
+```text
 [MyNet_3Opt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -331,7 +331,7 @@ stree.print_node_tabulate()
 
 This example replaces relu node in the original network with new_relu node. The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                 arg providers           target users
 -----------------  --------  --------------------  ----------------------  ------------------------
@@ -368,7 +368,7 @@ stree.print_node_tabulate()
 The example replaces relu node with two new nodes, where the output of first node ``y1`` is used as the return value in the
 return node. The results are as follows:
 
-``` log
+```text
 [MyNetOpt]
 node type          name        codes                    arg providers             target users
 -----------------  ----------  -----------------------  ------------------------  ---------------------------------------------

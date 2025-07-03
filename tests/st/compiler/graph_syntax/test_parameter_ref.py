@@ -13,8 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
 import mindspore as ms
-from mindspore import nn, mint
+from mindspore import nn, mint, context, Tensor, Parameter
 from tests.mark_utils import arg_mark
 
 
@@ -48,3 +49,77 @@ def test_parameter_ref_key():
     net = Block()
     [_, _, w1, w2] = net(x)
     assert np.allclose(w1 * 2, w2)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_parameter_as_input1():
+    """
+    Feature: Test parameter.
+    Description: Test cell parameter as input
+    Expectation: No exception.
+    """
+    class ParamNet(nn.Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param = Parameter(Tensor(2, ms.float32), name="myname")
+
+        @ms.jit
+        def func(self, same_param):
+            return same_param * self.param
+
+        def construct(self, x):
+            return self.func(self.param) * x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = ParamNet()
+    x = ms.Tensor(3, ms.float32)
+    net(x)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_parameter_as_input2():
+    """
+    Feature: Test parameter.
+    Description: Test cell parameters as input
+    Expectation: No exception.
+    """
+    class ParamNet(nn.Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param1 = Parameter(Tensor(2, ms.float32), name="myname1")
+            self.param2 = Parameter(Tensor(3, ms.float32), name="myname2")
+
+        @ms.jit
+        def func(self, same_param1, same_param2):
+            return same_param1 * same_param2 * self.param1 * self.param2
+
+        def construct(self, x):
+            return self.func(self.param1, self.param2) * x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = ParamNet()
+    x = ms.Tensor(3, ms.float32)
+    net(x)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_parameter_as_input3():
+    """
+    Feature: Test parameter.
+    Description: Test cell parameter and another parameter with same name as inputs
+    Expectation: Get the expected exception report.
+    """
+    class ParamNet(nn.Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param = Parameter(Tensor(2, ms.float32), name="myname")
+
+        @ms.jit
+        def func(self, same_param, same_name_param):
+            return self.param * same_param * same_name_param
+
+        def construct(self, same_name_param):
+            return self.func(self.param, same_name_param)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = ParamNet()
+    same_name_param = ms.Parameter(ms.Tensor(1), name="myname")
+    with pytest.raises(ValueError, match="its name 'myname' already exists."):
+        net(same_name_param)

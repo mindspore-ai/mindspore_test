@@ -16,18 +16,23 @@
 
 #include "kernel/ascend/pyboost/customize/std.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr StdAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                         const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
-                                         const BoolImmPtr &keepdim) {
+tensor::TensorPtr StdAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                     const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
+                                     const BoolImmPtr &keepdim) {
   OpRunner::InferOpOutput(op, input_tensor, dim, correction, keepdim);
-
-  std::vector<int64_t> dim_vector = ConvertValueTupleToVector<int64_t>(dim);
+  std::vector<int64_t> dim_vector{};
+  if (dim.has_value()) {
+    dim_vector = ConvertValueTupleToVector<int64_t>(dim.value());
+  }
+  if (dim_vector.empty()) {
+    dim_vector = GetRealDims(input_tensor->shape());
+  }
   auto correction_imm = GetValue<int64_t>(correction);
   auto keepdim_imm = GetValue<bool>(keepdim);
 

@@ -17,11 +17,12 @@
 #include <string>
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_cpu {
 namespace {
 constexpr size_t kArgMaxInputsNum = 3;
 constexpr size_t kArgMaxOutputsNum = 1;
@@ -272,5 +273,6 @@ std::vector<KernelAttr> ArgmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Argmax, ArgmaxCpuKernelMod);
+}  // namespace argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

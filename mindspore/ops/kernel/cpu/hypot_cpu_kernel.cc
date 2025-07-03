@@ -24,11 +24,12 @@
 #include <utility>
 #include <numeric>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hypot_cpu {
 namespace {
 const size_t kHypotInputsNum = 2;
 const size_t kHypotOutputsNum = 1;
@@ -96,5 +97,6 @@ std::vector<KernelAttr> HypotCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Hypot, HypotCpuKernelMod);
+}  // namespace hypot_cpu
 }  // namespace kernel
 }  // namespace mindspore

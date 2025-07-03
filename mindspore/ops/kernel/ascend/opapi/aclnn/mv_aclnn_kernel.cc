@@ -16,11 +16,12 @@
 #include "kernel/ascend/opapi/aclnn/mv_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mv {
 void MvAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
@@ -33,5 +34,6 @@ bool MvAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Mv, MvAclnnKernelMod);
+}  // namespace mv
 }  // namespace kernel
 }  // namespace mindspore

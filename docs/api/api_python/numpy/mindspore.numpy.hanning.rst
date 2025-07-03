@@ -10,6 +10,6 @@ mindspore.numpy.hanning
 
     返回：
         Tensor，生成一个长度为 ``M`` 且最大值归一化为1的Hanning窗口（仅当样本数为奇数时才会出现值1）。
-        
+
     异常：
         - **TypeError** - 如果 ``M`` 不是int型。

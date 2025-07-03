@@ -7,13 +7,6 @@ from mindspore import context, jit
 from mindspore.common.parameter import Parameter
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlWhilebyIfBR(Cell):
@@ -51,11 +44,11 @@ def test_control_flow_while_by_if_break_return():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhilebyIfBR(t)
-    jit(fn=CtrlWhilebyIfBR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhilebyIfBR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhilebyIfBR(t)
-    jit(fn=CtrlWhilebyIfBR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhilebyIfBR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)
 
@@ -96,10 +89,10 @@ def test_control_flow_while_by_if_continue_return():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhilebyIfCR(t)
-    jit(fn=CtrlWhilebyIfCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhilebyIfCR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhilebyIfCR(t)
-    jit(fn=CtrlWhilebyIfCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhilebyIfCR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)

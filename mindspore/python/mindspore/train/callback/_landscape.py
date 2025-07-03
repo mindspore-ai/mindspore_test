@@ -256,9 +256,6 @@ class SummaryLandscape:
         """
         Clean the checkpoint.
 
-        Tutorial Examples:
-            - `Training Optimization Process Visualization
-              <https://www.mindspore.cn/mindinsight/docs/en/master/landscape.html>`_
         """
         shutil.rmtree(self._ckpt_dir, ignore_errors=True)
 
@@ -407,7 +404,6 @@ class SummaryLandscape:
     def _set_context(device_id):
         """Set context."""
         context.set_context(device_id=device_id)
-        context.set_context(mode=context.GRAPH_MODE)
 
     def _create_landscape_by_pca(self, epochs, proz, landscape_size, device_ids=None, callback_fn=None, executor=None):
         """Create landscape by PCA."""

@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/debug_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace debug_cpu {
 namespace {
 constexpr size_t kDebugInputsNum = 1;
 constexpr size_t kDebugOutputsNum = 1;
@@ -51,5 +52,6 @@ std::vector<KernelAttr> DebugCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Debug, DebugCpuKernelMod);
+}  // namespace debug_cpu
 }  // namespace kernel
 }  // namespace mindspore

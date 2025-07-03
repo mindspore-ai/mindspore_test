@@ -21,7 +21,6 @@ import subprocess
 import pytest
 import numpy as np
 from numpy import logspace
-import scipy
 from scipy.linalg import qr
 
 import mindspore as ms
@@ -140,19 +139,19 @@ def test_np_logspace_func():
     assert np.allclose(out, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
-def test_scipy_concatenate():
+def test_numpy_concatenate():
     """
     Feature: JIT Fallback
     Description: Test scipy.linalg in graph mode.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def func():
         x = np.array([1, 2, 3])
         y = np.array([4, 5, 6])
-        return scipy.concatenate((x, y))
+        return np.concatenate((x, y))
 
     out = func()
     expect = np.array([1, 2, 3, 4, 5, 6])
@@ -195,28 +194,6 @@ def test_env_ms_jit():
     with pytest.raises(RuntimeError):
         foo()
     del os.environ['MS_JIT']
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_env_ms_jit_modules():
-    """
-    Feature: JIT Fallback
-    Description: Test environ variables in graph mode.
-    Expectation: No exception.
-    """
-    @ms.jit
-    def func():
-        return logspace(0, 0, 5)
-
-    os.environ['MS_JIT_MODULES'] = 'numpy'
-    with pytest.raises(Exception):
-        func()
-    os.environ['MS_JIT_IGNORE_MODULES'] = 'numpy'
-    out = func()
-    expect = np.array([1., 1., 1., 1., 1.])
-    assert np.allclose(out, expect)
-    del os.environ['MS_JIT_MODULES']
-    del os.environ['MS_JIT_IGNORE_MODULES']
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

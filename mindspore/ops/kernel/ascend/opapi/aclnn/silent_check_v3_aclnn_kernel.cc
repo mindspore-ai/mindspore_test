@@ -22,17 +22,18 @@
 #include <functional>
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v3 {
 namespace {
 std::vector<int64_t> GetTensorStride(const KernelTensor *tensor) {
   auto storage = tensor->tensor_storage_info();
@@ -87,5 +88,6 @@ bool SilentCheckV3Ascend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SilentCheckV3, SilentCheckV3Ascend);
+}  // namespace silent_check_v3
 }  // namespace kernel
 }  // namespace mindspore

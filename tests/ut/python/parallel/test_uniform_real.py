@@ -37,19 +37,6 @@ class Net(Cell):
         return out
 
 
-def test_uniform_real_auto_parallel():
-    """
-    Features: test UniformReal auto parallel
-    Description: auto parallel
-    Expectation: compile success
-    """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
-                                      global_rank=0)
-    net = Net(SEED_, SEED2_)
-    shape = (4, 4, 4)
-    compile_net(net, shape)
-
-
 def test_uniform_real_data_parallel():
     """
     Features: test UniformReal data parallel

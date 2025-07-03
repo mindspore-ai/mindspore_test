@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_add_grad_cpu {
 class SparseAddGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseAddGradCpuKernelMod> {
  public:
   SparseAddGradCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class SparseAddGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelH
   std::vector<size_t> out_indices_shape_{};
   int64_t indices_column_ = 0;
 };
+}  // namespace sparse_add_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -20,10 +20,11 @@
 #include <cstdint>
 #include <functional>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_grad_cpu {
 namespace {
 size_t get_element_num(const std::vector<size_t> &shape) {
   return std::accumulate(shape.begin(), shape.end(), static_cast<std::size_t>(1), std::multiplies<size_t>());
@@ -168,7 +169,6 @@ const std::vector<std::pair<KernelAttr, GatherDGradV2CpuKernelMod::KernelRunFunc
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeComplex128, std::complex<double>),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat64, double),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat32, float),
-    GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeFloat16, float16),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeUInt8, uint8_t),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeInt8, int8_t),
     GATHER_D_GRAD_V2_CPU_REGISTER(kNumberTypeUInt16, uint16_t),
@@ -182,5 +182,6 @@ const std::vector<std::pair<KernelAttr, GatherDGradV2CpuKernelMod::KernelRunFunc
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GatherDGradV2, GatherDGradV2CpuKernelMod);
+}  // namespace gather_d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

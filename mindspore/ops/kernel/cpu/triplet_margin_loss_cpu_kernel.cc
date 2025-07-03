@@ -15,11 +15,12 @@
  */
 
 #include "kernel/cpu/triplet_margin_loss_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/triplet_margin_loss.h"
 
 namespace mindspore {
 namespace kernel {
+namespace triplet_margin_loss_cpu {
 bool TripletMarginLossCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNumber, kernel_name_);
@@ -841,5 +842,6 @@ void TripletMarginLossCPUKernelMod::complextype_swap(size_t start, std::vector<T
     calc_swap_sum += calculate_swap_float;
   }
 }
+}  // namespace triplet_margin_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

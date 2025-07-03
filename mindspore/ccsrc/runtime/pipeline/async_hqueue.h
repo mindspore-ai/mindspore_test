@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <condition_variable>
 
-#include "include/backend/visible.h"
+#include "runtime/pipeline/visible.h"
 #include "runtime/pipeline/task/task.h"
 #include "thread/hqueue.h"
 #ifndef USE_HQUEUE
@@ -39,7 +39,7 @@ namespace runtime {
 constexpr int kThreadBusy = 0;  // busy, the thread is running task
 constexpr int kThreadIdle = 1;  // idle, the thread is waiting
 // Create a new thread to execute the tasks in the queue sequentially.
-class BACKEND_EXPORT AsyncHqueue {
+class RUNTIME_PIPELINE_EXPORT AsyncHqueue {
  public:
   explicit AsyncHqueue(std::string name) : name_(std::move(name)) {}
   virtual ~AsyncHqueue();

@@ -17,7 +17,7 @@ import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, context
 
 
 class Net(nn.Cell):
@@ -25,7 +25,7 @@ class Net(nn.Cell):
         return x.tolist()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -37,6 +37,7 @@ def test_tensor_tolist(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     x = Tensor([[1, 2, 3], [4, 5, 6]])
     net = Net()
     output = net(x)

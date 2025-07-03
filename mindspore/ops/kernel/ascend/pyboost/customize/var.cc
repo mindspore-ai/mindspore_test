@@ -16,15 +16,15 @@
 
 #include "kernel/ascend/pyboost/customize/var.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr VarAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                         const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
-                                         const BoolImmPtr &keepdim) {
+tensor::TensorPtr VarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                     const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
+                                     const BoolImmPtr &keepdim) {
   OpRunner::InferOpOutput(op, input_tensor, dim, correction, keepdim);
 
   std::vector<int64_t> dim_vector = ConvertValueTupleToVector<int64_t>(dim);

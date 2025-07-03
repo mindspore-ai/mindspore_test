@@ -334,10 +334,12 @@ class TFReaderOp : public NonMappableLeafOp {
   /// @param filenames - a list of tf data filenames.
   /// @param begin - index of first file to read.
   /// @param end - one greater than the index of the last file to read.
-  /// @param compression_type - compression type of the TFRecord files
+  /// @param compression_type - compression type of the TFRecord files.
+  /// @param async_flag - flags for asynchronous thread binding cores.
   /// @return int63_t - the total number of rows of files read.
   static int64_t CountTotalRowsSectioned(const std::vector<std::string> &filenames, const int64_t begin,
-                                         const int64_t end, CompressionType compression_type = CompressionType::NONE);
+                                         const int64_t end, CompressionType compression_type = CompressionType::NONE,
+                                         bool async_flag = false);
 
   enum ZLIBReadFlag { RecordLength = 0, Header = 1, Content = 2, Footer = 3 };
 

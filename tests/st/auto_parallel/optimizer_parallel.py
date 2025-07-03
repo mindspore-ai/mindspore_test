@@ -39,7 +39,7 @@ from mindspore.common.parameter import Parameter
 from mindspore import context
 from mindspore.context import ParallelMode
 
-context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+context.set_context(mode=context.GRAPH_MODE, device_target='Ascend', jit_config={"jit_level": "O0"})
 
 def _count_unequal_element(data_expected, data_me, rtol, atol):
     assert data_expected.shape == data_me.shape
@@ -276,10 +276,10 @@ class OptimizerSemiAutoAndAutoParallelFactory:
                                      epoch,
                                      device_num):
         set_algo_parameters(fully_use_devices=False)
-        context.set_context(jit_level="O2")
+        context.set_context(jit_level="O0")
         context.reset_auto_parallel_context()
         context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL,
-                                          device_num=device_num, search_mode="dynamic_programming")
+                                          device_num=device_num, search_mode="sharding_propagation")
         parallel_mode_net = self.net(self.strategy_dict)
         self.parallel_ckpt = self._model_train_and_save_ckpt(net=parallel_mode_net,
                                                              dataset=dataset, epoch=epoch)
@@ -290,10 +290,10 @@ class OptimizerSemiAutoAndAutoParallelFactory:
                                                epoch,
                                                device_num):
         set_algo_parameters(fully_use_devices=False)
-        context.set_context(jit_level="O2")
+        context.set_context(jit_level="O0")
         context.reset_auto_parallel_context()
         context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL,
-                                          device_num=device_num, search_mode="dynamic_programming",
+                                          device_num=device_num, search_mode="sharding_propagation",
                                           enable_parallel_optimizer=True)
         parallel_mode_net = self.net(self.strategy_dict)
         self.optimizer_parallel_ckpt = self._model_train_and_save_ckpt(net=parallel_mode_net,

@@ -16,17 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/gather_d_grad_v2.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr GatherDGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x,
-                                                 const Int64ImmPtr &dim, const BaseTensorPtr &index,
-                                                 const BaseTensorPtr &d_out) {
+tensor::TensorPtr GatherDGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x,
+                                             const Int64ImmPtr &dim, const TensorPtr &index, const TensorPtr &d_out) {
   MS_EXCEPTION_IF_NULL(dim);
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(x);

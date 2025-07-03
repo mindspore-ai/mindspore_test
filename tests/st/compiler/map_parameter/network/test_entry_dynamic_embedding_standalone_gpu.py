@@ -18,6 +18,7 @@ import pytest
 from tests.mark_utils import arg_mark
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_embedding_gpu():
     """

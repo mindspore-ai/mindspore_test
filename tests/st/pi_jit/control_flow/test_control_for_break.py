@@ -7,13 +7,7 @@ from mindspore import context, jit
 from ..share.utils import match_array
 import mindspore.ops.operations as P
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class CtrlForBreakRange1(Cell):
     def __init__(self):
@@ -39,11 +33,11 @@ def test_control_flow_for_range_1_10_3_break():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBreakRange1()
-    jit(fn=CtrlForBreakRange1.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForBreakRange1.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBreakRange1()
-    jit(fn=CtrlForBreakRange1.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForBreakRange1.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -72,11 +66,11 @@ def test_control_flow_for_range_4_n8_n4_break():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBreakRange2()
-    jit(fn=CtrlForBreakRange2.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForBreakRange2.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBreakRange2()
-    jit(fn=CtrlForBreakRange2.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForBreakRange2.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -105,11 +99,11 @@ def test_control_flow_for_range_n5_5_2_break():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBreakRange3()
-    jit(fn=CtrlForBreakRange3.construct, mode="PSJit")(ps_net, x) 
+    jit(function=CtrlForBreakRange3.construct, capture_mode="ast")(ps_net, x) 
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBreakRange3()
-    jit(fn=CtrlForBreakRange3.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForBreakRange3.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -138,11 +132,11 @@ def test_control_flow_for_range_n2_n8_n2_break():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBreakRange4()
-    jit(fn=CtrlForBreakRange4.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForBreakRange4.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBreakRange4()
-    jit(fn=CtrlForBreakRange4.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForBreakRange4.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -179,11 +173,11 @@ def test_control_flow_for_enumerate_if_break():
     x = Tensor([4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForEnumerateIfBreak(t1, t2, t3)
-    jit(fn=CtrlForBreakRange4.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForBreakRange4.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForEnumerateIfBreak(t1, t2, t3)
-    jit(fn=CtrlForEnumerateIfBreak.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForEnumerateIfBreak.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -221,10 +215,10 @@ def test_control_flow_for_break_in_elif_else():
     x = Tensor([0.5], ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForBreakElifElse()
-    jit(fn=CtrlForBreakElifElse.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForBreakElifElse.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForBreakElifElse()
-    jit(fn=CtrlForBreakElifElse.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForBreakElifElse.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)

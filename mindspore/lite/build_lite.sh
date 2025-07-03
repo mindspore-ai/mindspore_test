@@ -340,6 +340,9 @@ build_python_wheel_package() {
       if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtransformer-shared.so" ]; then
         cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtransformer-shared.so package/mindspore_lite/lib/
       fi
+      if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libmindspore_graph_ir.so" ]; then
+        cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libmindspore_graph_ir.so package/mindspore_lite/lib/
+      fi
       if [ -f "${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtensorrt_plugin.so" ]; then
         cp ${INSTALL_PREFIX}/${pkg_name}/runtime/lib/libtensorrt_plugin.so package/mindspore_lite/lib/
       fi
@@ -426,7 +429,7 @@ build_lite() {
       CMAKE_TOOLCHAIN_FILE=${BASEPATH}/cmake/lite_ios.cmake
     fi
 
-    BRANCH_NAME=nnie_r2.4_dev1
+    BRANCH_NAME=nnie_r2.6_dev
     if [[ ("${MSLITE_REGISTRY_DEVICE}" == "Hi3516D" || "${TOOLCHAIN_NAME}" == "himix200") && "${local_lite_platform}" == "arm32" ]]; then
       TOOLCHAIN_NAME="himix200"
       MSLITE_REGISTRY_DEVICE=Hi3516D

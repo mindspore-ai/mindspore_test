@@ -20,18 +20,21 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 ListSymbolPtr GkUtils::GetOutputSymbolicShape(const AnfNodePtr &node, size_t i) {
@@ -165,6 +168,22 @@ std::vector<PrimitivePtr> GkUtils::FilterExcludedOps(const std::vector<Primitive
 #else
   return ops;
 #endif
+}
+
+void GkUtils::CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel> &ops_with_level,
+                           unsigned int target_level) {
+  static std::unordered_set<std::string> checked_ops;
+  auto name = AnfUtils::GetCNodeName(node);
+  if (checked_ops.find(name) == checked_ops.end()) {
+    (void)checked_ops.insert(name);
+    auto iter =
+      std::find_if(ops_with_level.begin(), ops_with_level.end(), [&node, &target_level](const OpWithLevel &item) {
+        return IsPrimitiveCNode(node, std::get<kIndex2>(item)) && std::get<kIndex1>(item) <= target_level;
+      });
+    if (iter == ops_with_level.end()) {
+      MS_LOG(WARNING) << "For Graph Kernel fusion, [" << name << "] is an experimental op.";
+    }
+  }
 }
 
 bool GkUtils::IsKeepBasicNode(const AnfNodePtr &node) {
@@ -309,10 +328,10 @@ FuncGraphPtr GkUtils::LiteGraph2AnfGraph(const inner::LiteGraphPtr &lite_graph, 
   return func_graph;
 }
 
-tensor::BaseTensorPtr InputValue2Tensor(ValuePtr input_value) {
+tensor::TensorPtr InputValue2Tensor(ValuePtr input_value) {
   // input value of a cnode can be one of tensor, valuesequence and int,
   // in order to emit litegraph node by gb.Value, convert the type of value to tensor anyway
-  tensor::BaseTensorPtr input_tensor = nullptr;
+  tensor::TensorPtr input_tensor = nullptr;
   if (input_value->isa<Int32Imm>() || input_value->isa<Int64Imm>()) {
     auto input_num = AnfUtils::GetIntValue(input_value);
     input_tensor = std::make_shared<tensor::Tensor>(input_num);
@@ -322,8 +341,8 @@ tensor::BaseTensorPtr InputValue2Tensor(ValuePtr input_value) {
     (void)std::transform(input_seq.begin(), input_seq.end(), std::back_inserter(input_vec),
                          [](auto v) { return AnfUtils::GetIntValue(v); });
     input_tensor = std::make_shared<tensor::Tensor>(input_vec);
-  } else if (input_value->isa<tensor::BaseTensor>()) {
-    input_tensor = input_value->cast<tensor::BaseTensorPtr>();
+  } else if (input_value->isa<tensor::Tensor>()) {
+    input_tensor = input_value->cast<tensor::TensorPtr>();
   } else if (input_value->isa<BoolImm>()) {
     auto input_bool = GetValue<bool>(input_value);
     input_tensor = std::make_shared<tensor::Tensor>(input_bool);
@@ -380,6 +399,9 @@ inner::LiteGraphPtr GkUtils::AnfGraph2LiteGraph(const FuncGraphPtr &func_graph,
       if (iter != node_map.end()) {
         // input is parameter or cnode
         inputs.push_back(iter->second);
+        continue;
+      }
+      if (IsValueNode<Monad>(input_i)) {
         continue;
       }
       // input is valuenode
@@ -488,6 +510,41 @@ bool GkUtils::UseAkgCceLib(const AnfNodePtr &node) {
       return false;
     }
     return cnode->HasAttr("use_akg_cce");
+  }
+  return false;
+}
+
+bool GkUtils::InplaceWithViewInputs(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  if (cnode == nullptr) {
+    return false;
+  }
+  if (!common::AnfAlgo::HasNodeAttr(GRAPH_FLAG_SIDE_EFFECT_MEM, cnode)) {
+    return false;
+  }
+  for (size_t i = 1; i < cnode->inputs().size(); ++i) {
+    auto input = common::AnfAlgo::GetPrevNodeOutput(node, i - 1, true);
+    auto input_node = input.first;
+    if (input_node != nullptr && input_node->isa<CNode>() && common::AnfAlgo::IsViewNode(input_node)) {
+      MS_LOG(DEBUG) << "node " << node->fullname_with_scope() << " input[" << (i - 1) << "] is view "
+                    << input_node->fullname_with_scope();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool GkUtils::IsShapeZero(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cb = Callback::Instance();
+  MS_EXCEPTION_IF_NULL(cb);
+  auto output_num = AnfUtils::GetOutputTensorNum(node);
+  for (size_t i = 0; i < output_num; ++i) {
+    auto shape = cb->GetOutputShape(node, i);
+    if (IsShapeNone(shape)) {
+      return true;
+    }
   }
   return false;
 }

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 #include "kernel/cpu/trace_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace trace_cpu {
 namespace {
 constexpr size_t kInputNum = 1;
 constexpr size_t kInputDim = 2;
@@ -102,5 +103,6 @@ void TraceCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Trace, TraceCpuKernelMod);
+}  // namespace trace_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 
 namespace {
 constexpr auto kRankSize = "rank_size";
+constexpr auto kDependInputAbs = "depend_input_abs";
 }  // namespace
 
 namespace mindspore {
@@ -81,8 +82,10 @@ AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const PrimitivePtr &p
     auto abs_ref = depends->cast<AbstractRefPtr>();
     auto tensor_abs = abs_ref->ref();
     MS_EXCEPTION_IF_NULL(tensor_abs);
-    return std::make_shared<AbstractRefTensor>(tensor_abs->Broaden()->cast<AbstractTensorPtr>(),
-                                               abs_ref->ref_key_value());
+    auto res =
+      std::make_shared<AbstractRefTensor>(tensor_abs->Broaden()->cast<AbstractTensorPtr>(), abs_ref->ref_key_value());
+    res->cast<AbstractRefPtr>()->set_ref_tensor_type(abs_ref->ref_tensor_type());
+    return res;
   }
 
   auto depends_abs = depends->Broaden();  // Avoid eliminating the dependent node.
@@ -93,6 +96,8 @@ AbstractBasePtr InferImplDepend(const AnalysisEnginePtr &, const PrimitivePtr &p
       depends_abs->set_value(kValueAny);
     }
   }
+  depends_abs->set_inplace_abstract(depends->inplace_abstract());
+  depends_abs->set_user_data<abstract::AbstractBase>(kDependInputAbs, depends);
   return depends_abs;
 }
 
@@ -269,12 +274,16 @@ AbstractBasePtr InferImplIsTensorBoolCond(const AnalysisEnginePtr &, const Primi
     MS_EXCEPTION(TypeError) << "The input of " << op_name << " should be a tensor but got " << abs->ToString();
   }
 
-  auto build_shape = abs->cast<AbstractTensorPtr>()->GetShape();
+  auto tensor_ptr = abs->cast<AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
+  auto build_shape = tensor_ptr->GetShape();
   MS_EXCEPTION_IF_NULL(build_shape);
   if (build_shape->IsDimUnknown()) {
     return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(true), kBool);
   }
-  auto shape = build_shape->cast<abstract::ShapePtr>()->shape();
+  auto shape_ptr = build_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(shape_ptr);
+  auto shape = shape_ptr->shape();
   if (shape.size() == 0) {
     return std::make_shared<AbstractScalar>(std::make_shared<BoolImm>(true), kBool);
   }

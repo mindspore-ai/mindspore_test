@@ -24,8 +24,9 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/scheduler_helper.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
@@ -50,10 +51,14 @@ constexpr size_t kMapTensorValueIndex = 1;
 constexpr size_t kMapTensorStatusIndex = 2;
 constexpr size_t kPinMemThreshold = 1024 << 10;
 
-bool IsDataTakenOverByMemOffload(const DeviceContext *device_context) {
+bool IsDataTakenOverByMemOffload(const DeviceContext *device_context, const DeviceTensorPtr &device_tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
-  if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
+  if (device_context->GetDeviceType() == device::DeviceType::kCPU || device_tensor->GetSize() == 0) {
     return false;
+  }
+  const auto &hete_info = device_tensor->heterogeneous_info();
+  if (hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes) {
+    return true;
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -92,12 +97,13 @@ device::StorageInfo GetStorageInfo(const TensorPtr &host_tensor, const DeviceTen
   return {offload_ptr, ""};
 }
 
-void SetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor,
+void SetStorageInfo(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_tensor,
                     const DeviceContext *device_context, const AnfNodePtr &node) {
+  const auto &device_tensor = kernel_tensor->device_address();
   const auto storage_info = GetStorageInfo(host_tensor, device_tensor, device_context);
-  const auto hete_info = device_tensor->kernel_tensor()->heterogeneous_info();
+  const auto hete_info = kernel_tensor->heterogeneous_info();
   const bool is_param_offload =
-    hete_info != nullptr && hete_info->need_alloc_hete_res_ != kernel::NeedAllocateHeteRes::NoNeedHeteRes;
+    hete_info != nullptr && hete_info->need_alloc_hete_res_ != NeedAllocateHeteRes::NoNeedHeteRes;
   if (!is_param_offload) {
     device_tensor->SetStorageInfo(storage_info);
   } else {
@@ -108,29 +114,32 @@ void SetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
 }
 
 void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const std::string &graph_str,
-                   device::tracker::MemType mem_type, const DeviceTensorPtr &device_tensor) {
+                   memory::mem_pool::MemType mem_type, const KernelTensorPtr &kernel_tensor) {
+  auto device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node->fullname_with_scope(), graph_str);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, task_name, mem_type, device_tensor->GetSize(),
                                                  device_tensor.get());
 }
 
-void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor, const AnfNodePtr &node,
-                    const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
-                    GraphExecutionStrategy strategy) {
+void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_tensor, const AnfNodePtr &node,
+                    const DeviceContext *device_context, OpContext<KernelTensor> *const context,
+                    GraphExecutionStrategy strategy, bool skip_h2d = false) {
   MS_EXCEPTION_IF_NULL(host_tensor);
-  MS_EXCEPTION_IF_NULL(device_tensor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   MS_EXCEPTION_IF_NULL(context);
-  const bool taken_over_by_swap_manager = IsDataTakenOverByMemOffload(device_context);
-  auto allocator_type = node->isa<ValueNode>() ? device::AllocatorType::kConstantValue : device::AllocatorType::kWeight;
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), allocator_type, 0);
+  auto &device_tensor = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  const bool taken_over_by_swap_manager = IsDataTakenOverByMemOffload(device_context, device_tensor);
   bool need_alloc_memory = !taken_over_by_swap_manager && (device_tensor->GetPtr() == nullptr);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  auto mem_type = node->isa<ValueNode>() ? device::tracker::MemType::kConstantValue : device::tracker::MemType::kWeight;
+  auto mem_type =
+    node->isa<ValueNode>() ? memory::mem_pool::MemType::kConstantValue : memory::mem_pool::MemType::kWeight;
   if (need_alloc_memory) {
-    UpdateTracker("SyncTensorData", node, graph_str, mem_type, device_tensor);
+    UpdateTracker("SyncTensorData", node, graph_str, mem_type, kernel_tensor);
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *device_context, node->fullname_with_scope(),
                                                   device_tensor->GetSize());
@@ -168,7 +177,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   ShapeVector host_shape = {};
   // GetRuntimePaddingShape doesn't support the value tuple node.
   if (!node->isa<ValueNode>()) {
-    host_shape = trans::GetRuntimePaddingShape(node, 0);
+    host_shape = AnfAlgo::GetRuntimePaddingShape(node, 0);
   }
   auto get_tensor_num = (host_tensor->isa<tensor::MapTensor>() ? kMapTensorNum : kNormalTensorNum);
   for (size_t i = 0; i < get_tensor_num; ++i) {
@@ -181,10 +190,10 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
       host_shape = real_host_tensor->shape();
     }
     if (taken_over_by_swap_manager) {
-      SetStorageInfo(real_host_tensor, device_tensor, device_context, node);
-    } else if (!device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
-                                                real_host_tensor->device_info().host_format_,
-                                                real_host_tensor->data_ptr())) {
+      SetStorageInfo(real_host_tensor, kernel_tensor, device_context, node);
+    } else if (!skip_h2d && !device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
+                                                             real_host_tensor->device_info().host_format_,
+                                                             real_host_tensor->data_ptr())) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                                ", host tensor size: " + std::to_string(host_tensor_size) +
                                ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -254,34 +263,24 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
       if (modified_input_nodes.count(input_pair.first.get()) == 0) {
         continue;
       }
-      // The output device tensor of ref node actor can't be changed in the running, and only the ptr of output device
-      // address can be modified. And need set `ref_count` to `SIZE_MAX` for avoiding clean. So only support the
-      // persistent device tensor.
-      if (!IsPersistentDeviceTensor(input_pair.first)) {
-        MS_LOG(INFO) << "The input parameter: " << input_pair.first->fullname_with_scope()
-                     << " isn't the ref parameter which used by the ref node: "
-                     << output_pair.first->fullname_with_scope();
-        continue;
-      }
 
       MS_LOG(INFO) << "Update the ptr of ref node: " << output_pair.first->fullname_with_scope()
                    << " by the modified ref input parameter: " << input_pair.first->fullname_with_scope();
       auto ref_node_output_addr = AnfAlgo::GetMutableOutputAddr(output_pair.first, output_pair.second, false);
       MS_EXCEPTION_IF_NULL(ref_node_output_addr);
       const auto &front_input_node = AnfAlgo::FetchFrontNodeByBackendNode(input_pair.first, *graph);
-      auto input_addr =
+      auto input_kernel_tensor =
         DeviceTensorStore::GetInstance().Fetch(front_input_node.get(), ref_node_output_addr->GetDeviceType());
       // Maybe subgraphs share the same backend input parameter, so fetch device tensor store by front node of this
       // subgraph maybe nullptr and use the output addr of input parameter directly.
-      if (input_addr == nullptr) {
-        input_addr = AnfAlgo::GetMutableOutputAddr(input_pair.first, input_pair.second, false);
+      if (input_kernel_tensor == nullptr) {
+        input_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_pair.first, input_pair.second, false);
       }
+      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+      const auto &input_addr = input_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(input_addr);
       MS_EXCEPTION_IF_CHECK_FAIL((ref_node_output_addr->GetDeviceType() == input_addr->GetDeviceType()),
                                  "The device type of ref node is not equal.");
-      ref_node_output_addr->set_ptr(input_addr->GetMutablePtr());
-      ref_node_output_addr->set_original_ref_count(SIZE_MAX);
-      ref_node_output_addr->ResetRefCount();
     }
   }
 }
@@ -335,6 +334,69 @@ void UpdateDataNodeDeviceAddressSize(const AnfNodePtr &input_node, const TensorP
                << device_address_size;
   device_address->SetSize(device_address_size);
 }
+
+void RecordGraphInputsForInputOptimize(const GraphCompilerInfo *graph_compiler_info, const VectorRef &args,
+                                       bool has_dynamic_shape, bool has_continuous_memory) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "RecordGraphInputsForInputOptimize",
+                            true);
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  if (EnableKbkSubGraphExecute()) {
+    std::vector<size_t> input_index;
+    std::vector<ParameterPtr> parameters;
+    size_t non_weight_parameter_num = graph_parameter_store->GetNonWeightParameterNum();
+    size_t current_data_num = 0;
+    for (size_t i = 0; i < graph_compiler_info->origin_parameters_order_.size(); ++i) {
+      if (current_data_num == non_weight_parameter_num) {
+        break;
+      }
+      // The input data is front of the parameter weight.
+      if (graph_parameter_store->GetPositionWeight(i)) {
+        MS_LOG(DEBUG) << "Skip the prepare host data for parameter: "
+                      << graph_compiler_info->origin_parameters_order_[i]->fullname_with_scope();
+        continue;
+      }
+      const auto &origin_parameter = graph_compiler_info->origin_parameters_order_[i];
+      MS_EXCEPTION_IF_NULL(origin_parameter);
+      const auto parameter = origin_parameter->cast<ParameterPtr>();
+      if (i >= args.size()) {
+        MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
+        continue;
+      }
+      input_index.emplace_back(i);
+      parameters.emplace_back(parameter);
+      ++current_data_num;
+
+      std::vector<tensor::TensorPtr> flatten_tensors;
+      AnfAlgo::FlattenInputArg(args[i], origin_parameter, &flatten_tensors);
+      // Push flatten tensors into store buffers.
+      graph_parameter_store->FillBuffer(i, flatten_tensors);
+    }
+    auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(input_index, parameters);
+    if (has_dynamic_shape) {
+      MS_LOG(INFO) << "The run actor set: " << graph_compiler_info->name_ << " by static shape: " << (!isDyn);
+      ActorDispatcher::set_enable_static_shape(!isDyn);
+      const auto &phase = graph_compiler_info->graph_phase_;
+      bool is_increment_graph = (phase.find("increment") != std::string::npos);
+      if (EnableTraceMemory() && is_increment_graph) {
+        if (has_continuous_memory) {
+          MS_LOG(EXCEPTION)
+            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+        }
+        if (!ActorDispatcher::enable_static_shape()) {
+          ActorDispatcher::set_enable_trace_dynamic_memory(true);
+        } else {
+          ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info->name_
+                         << ", graph phase: " << graph_compiler_info->graph_phase_;
+          }
+        }
+      }
+    }
+  }
+}
 }  // namespace
 
 std::atomic<size_t> DataPrepareActor::execution_count_ = 0;
@@ -366,6 +428,10 @@ void DataPrepareActor::Init() {
     }
   }
   tensors_need_reprepare_[this] = {};
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  is_enable_infer_boost_ = ms_context->IsEnableInferBoost();
 }
 
 void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor) const {
@@ -378,15 +444,17 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   }
   auto input_param = input_node->cast<ParameterPtr>();
   MS_EXCEPTION_IF_NULL(input_param);
-  auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
-  if (!input_param->has_dynamic_shape() && !IsDynamic(device_address->host_shape())) {
+  if (!input_param->has_dynamic_shape() && !IsDynamic(kernel_tensor->host_shape())) {
     return;
   }
 
   // Update shape.
   MS_LOG(DEBUG) << "Update dynamic shape for parameter:" << input_param->DebugString();
-  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0);
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
     output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
@@ -401,8 +469,9 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
   };
   if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
     auto tensor_data_size = input_tensor->data().nbytes();
-    MS_LOG(DEBUG) << "Set device address:" << device_address << " size from:" << device_address->GetSize()
-                  << " to:" << tensor_data_size;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set device address:" << device_address << " size from:" << device_address->GetSize()
+      << " to:" << tensor_data_size;
     device_address->SetSize(tensor_data_size);
   } else {
     MS_LOG(DEBUG) << "Update data node device address size";
@@ -414,41 +483,36 @@ void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, c
 void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_node, const TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(input_node);
-
+  // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
+  (void)address_modified_input_nodes_.insert(input_node.get());
   auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(input_tensor->device_address());
   if (tensor_address == nullptr) {
     return;
   }
+  tensor_address->set_new_ref_count(SIZE_MAX);
 
   auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
   MS_EXCEPTION_IF_NULL(device_address);
   if (tensor_address == device_address) {
     tensor_address->SetNodeIndex(input_node, 0);
-    tensor_address->set_original_ref_count(SIZE_MAX);
-    tensor_address->ResetRefCount();
     return;
   }
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
   if (device_address->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
-      (!AnfAlgo::IsEquivalentFormat(tensor_address->format(), device_address->format())) ||
+      (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
+                                    kernel::GetFormatFromStrToEnum(device_address->format()))) ||
       (tensor_address->type_id() != device_address->type_id())) {
     MS_LOG(DEBUG) << "Cannot update address of " << input_node->DebugString();
     return;
   }
 
-  // Assign tensor address to input data node and set `ref_count` to `SIZE_MAX` for avoiding clean.
-  (void)address_modified_input_nodes_.insert(input_node.get());
   tensor_address->set_flag(device_address->flag());
-  DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(tensor_address, input_node, 0);
-  AnfAlgo::SetOutputAddr(tensor_address, 0, input_node.get());
-  MS_LOG(DEBUG) << "Update device address of " << input_node->DebugString() << " to " << tensor_address.get()
-                << ", kernel tensor addr:" << tensor_address->kernel_tensor().get()
-                << " ptr:" << tensor_address->GetPtr();
+  AnfAlgo::SetOutputAddr(tensor_address, 0, input_node);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
+                                               << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
-  tensor_address->set_original_ref_count(SIZE_MAX);
-  tensor_address->ResetRefCount();
   auto ref_iter = ref_device_tensors_.find({input_node, 0});
   if (ref_iter == ref_device_tensors_.end()) {
     return;
@@ -458,9 +522,9 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
       continue;
     }
     ref_address->set_pointer_ref_count(tensor_address->pointer_ref_count());
-    MS_LOG(DEBUG) << "Set pointer ref count:" << tensor_address->pointer_ref_count()
-                  << " from node:" << input_node->DebugString() << " device address:" << tensor_address
-                  << " to device address:" << ref_address;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Set pointer ref count:" << tensor_address->pointer_ref_count() << " from node:" << input_node->DebugString()
+      << " device address:" << tensor_address << " to device address:" << ref_address;
   }
 }
 
@@ -483,13 +547,22 @@ void DataPrepareActor::SetInitTensorsIfNeeded(const std::vector<std::vector<Tens
 }
 
 void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors,
-                                                      const VectorRef &args, OpContext<DeviceTensor> *const context,
+                                                      const VectorRef &args, OpContext<KernelTensor> *const context,
                                                       uint64_t start_time) {
-  ParameterStore::GetInstance().GetGraphParameterStore()->ResetPrepareState();
-  if (first_step_) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  graph_parameter_store->ResetPrepareState();
+  // Only prepare weight for first step, because the weight memory is not released.
+  // Allocate memory for weights in actor would have memory fragmentation.
+  if (first_step_ || UCEException::GetInstance().get_uce_flag()) {
     PrepareDataForDeviceTensorStore(input_tensors, args, context);
   }
   first_step_ = false;
+
+  if (is_enable_infer_boost_) {
+    RecordGraphInputsForInputOptimize(graph_compiler_info_, args, has_dynamic_shape_, has_continuous_memory());
+  }
+
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr && strategy_ == GraphExecutionStrategy::kPipeline) {
     SendDebugReq(context);
@@ -507,7 +580,7 @@ void DataPrepareActor::PrepareDataBeforeInputOptimize(const std::vector<std::vec
 }
 
 void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
-                                   OpContext<DeviceTensor> *const context, GraphExecutionStrategy real_strategy) {
+                                   OpContext<KernelTensor> *const context, GraphExecutionStrategy real_strategy) {
   MS_EXCEPTION_IF_NULL(context);
   uint64_t start_time = 0;
   PROFILER_START(start_time);
@@ -526,12 +599,12 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
   }
 
+  MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
   if (enable_input_optimize_) {
     PrepareDataBeforeInputOptimize(input_tensors, args, context, start_time);
     return;
   }
 
-  MS_LOG(DEBUG) << "Data prepare actor(" << GetAID().Name() << ") prepares data.";
   real_strategy_ = real_strategy;
   // Convert actor running data from input tensors.
   if (!input_tensors.empty()) {
@@ -577,7 +650,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
   PostRun(context);
 }
 
-void DataPrepareActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
+void DataPrepareActor::SendDebugReq(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepBegin, graph_compiler_info_->graphs_,
                             graph_compiler_info_->origin_parameters_order_, graph_compiler_info_->device_contexts_,
@@ -585,7 +658,7 @@ void DataPrepareActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
   OnDebugFinish(context);
 }
 
-void DataPrepareActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
+void DataPrepareActor::SendProfilerReq(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
   ActorDispatcher::SendSync(*profiler_aid_, &ProfilerActor::ProfilerOnStepBegin, graph_compiler_info_->graphs_,
                             graph_compiler_info_->origin_parameters_order_, graph_compiler_info_->device_contexts_,
@@ -593,21 +666,40 @@ void DataPrepareActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
   OnDebugFinish(context);
 }
 
-void DataPrepareActor::OnDebugFinish(OpContext<DeviceTensor> *const context) {
+void DataPrepareActor::OnDebugFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   PostRun(context);
+}
+
+void DataPrepareActor::RecordTensorsNeedReprepare(tensor::Tensor *tensor) {
+  tensor_with_graphs_[tensor].insert(this);
+  if (tensor != nullptr && tensor->is_parameter()) {
+    auto callback = [](const tensor::Tensor *tensor) {
+      const auto &graph_iter = tensor_with_graphs_.find(tensor);
+      if (graph_iter != tensor_with_graphs_.end()) {
+        const auto &data_prepare_actors = graph_iter->second;
+        for (const auto &data_prepare_actor : data_prepare_actors) {
+          const auto &iter = tensors_need_reprepare_.find(data_prepare_actor);
+          if (iter != tensors_need_reprepare_.end()) {
+            tensors_need_reprepare_[data_prepare_actor].insert(tensor);
+          }
+        }
+      }
+    };
+    tensor->set_update_value_callback(callback);
+  }
+
+  if (tensor != nullptr && !tensors_need_reprepare_[this].empty() && tensor->is_parameter()) {
+    auto erased_num = tensors_need_reprepare_[this].erase(tensor);
+    MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
+  }
 }
 
 TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index,
                                              const VectorRef &args, const KernelWithIndex &front_node) {
   if (!tensors.empty()) {
     MS_EXCEPTION_IF_CHECK_FAIL((tensor_index < tensors.size()), "The tensor index is out of range.");
-    auto tensor = tensors[tensor_index];
-    // The tensor needs to be converted to contiguous before being given to the actors.
-    // After the view feature is supported in the graph mode, the following code will be deleted.
-    DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
-    runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
-    return tensor;
+    return tensors[tensor_index];
   }
 
   MS_EXCEPTION_IF_NULL(front_node.first);
@@ -620,6 +712,11 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   auto arg_index = iter - graph_compiler_info_->origin_parameters_order_.begin();
   auto tensor = FetchInputTensorByArg(args, arg_index, front_node);
   // The tensor needs to be updated if modified.
+  RecordTensorsNeedReprepare(tensor.get());
+
+  // The tensor needs to be converted to contiguous before being given to the actors.
+  // After the view feature is supported in the graph mode, the following code will be deleted.
+  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
   tensor_with_graphs_[tensor.get()].insert(this);
   if (tensor != nullptr && tensor->is_parameter()) {
     auto callback = [](const tensor::Tensor *tensor) {
@@ -641,16 +738,11 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
     auto erased_num = tensors_need_reprepare_[this].erase(tensor.get());
     MS_LOG(DEBUG) << "Erase " << erased_num << " tensor which is reprepared.";
   }
-
-  // The tensor needs to be converted to contiguous before being given to the actors.
-  // After the view feature is supported in the graph mode, the following code will be deleted.
-  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
-  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
   return tensor;
 }
 
 void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors,
-                                                       const VectorRef &args, OpContext<DeviceTensor> *const context) {
+                                                       const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare store data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareStoreData", true);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
@@ -659,10 +751,6 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
   for (size_t i = 0; i < graph_compiler_info_->graphs_.size(); ++i) {
     const auto &graph = graph_compiler_info_->graphs_[i];
     const auto &device_context = graph_compiler_info_->device_contexts_[i];
-    // alloc graph fixed memory
-    if (device_context->graph_executor_ != nullptr) {
-      device_context->graph_executor_->AllocGEFixMemory();
-    }
 
     MS_EXCEPTION_IF_NULL(graph);
     MS_LOG(DEBUG) << "prepare data for graph:" << graph->ToString();
@@ -709,11 +797,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
                     << " front is weight:" << parser->IsRootGraphPersistentDeviceTensor(front_node);
       if (IsPersistentDeviceTensor(input_node) && parser->IsRootGraphPersistentDeviceTensor(front_node)) {
         if (enable_input_optimize_) {
-          auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-          MS_EXCEPTION_IF_NULL(graph_parameter_store);
-          auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
-          (void)FetchParameter(std::make_pair(std::make_pair(front_node, 0), outer_idx), context, real_device_context,
-                               GetAID());
+          PrepareWeightForInputOptimize(std::make_pair(front_node, 0), context);
           continue;
         }
         std::vector<TensorPtr> graph_tensors = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors[i];
@@ -725,7 +809,7 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 
   if (UCEException::GetInstance().get_uce_flag()) {
     MS_LOG(INFO) << "Clear UCE state.";
-    UCEException::GetInstance().set_uce_flag(false);
+    UCEException::GetInstance().clear_uce_error();
   }
 
   if (RecoveryContext::GetInstance()->enable_recovery() &&
@@ -735,10 +819,17 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
 
   std::vector<TensorPtr> control_input = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors.back();
   PrepareDeviceTensorStoreForControlNode(parser, control_input, args, context);
+  RaiseARFError(args);
+}
+
+void DataPrepareActor::RaiseARFError(const VectorRef &args) {
+  if (UCEException::GetInstance().enable_arf() && UCEException::GetInstance().is_reboot_node() && !args.empty()) {
+    MS_LOG(EXCEPTION) << "ARF FINISH !";
+  }
 }
 
 void DataPrepareActor::PrepareDataForHostTensorQueue(const std::vector<std::vector<TensorPtr>> &input_tensors,
-                                                     const VectorRef &args, OpContext<DeviceTensor> *const context) {
+                                                     const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Prepare host data, input tensor size: " << input_tensors.size() << ", arg size: " << args.size();
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, "PrepareHostData", true);
   MS_EXCEPTION_IF_NULL(context);
@@ -810,7 +901,36 @@ void DataPrepareActor::RecordGraphInputs(const std::vector<TensorPtr> &host_tens
   }
 }
 
-void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<DeviceTensor> *const context) {
+void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> &host_tensors,
+                                                   const std::vector<size_t> &host_param_indexes, bool isDyn) {
+  if (is_enable_infer_boost_ && EnableKbkSubGraphExecute()) {
+    RecordGraphInputs(host_tensors, host_param_indexes);
+    if (has_dynamic_shape_) {
+      ActorDispatcher::set_enable_static_shape(!isDyn);
+
+      const auto &phase = graph_compiler_info_->graph_phase_;
+      bool is_increment_graph = (phase.find("increment") != std::string::npos);
+      if (EnableTraceMemory() && is_increment_graph) {
+        if (has_continuous_memory()) {
+          MS_LOG(EXCEPTION)
+            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+        }
+        if (!ActorDispatcher::enable_static_shape()) {
+          ActorDispatcher::set_enable_trace_dynamic_memory(true);
+        } else {
+          ActorDispatcher::set_enable_use_trace_memory(true);
+          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
+          }
+        }
+      }
+    }
+  }
+}
+
+void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   size_t host_data_size = host_data_source_actor_->data_nodes().size();
   size_t current_data_num = 0;
@@ -847,7 +967,6 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
         continue;
       }
       // Single ops(run in pynative mode) output to net(context is graph mode) input.
-      runtime::DeviceAddressUtils::CreateKernelTensor(input_tensor);
       auto tensor_position = host_data_source_actor_->FetchNodePosition(origin_to_backend_pair.second);
       if (tensor_position >= host_tensors.size()) {
         std::string error_info = "The position of tensor is out of range: " + std::to_string(tensor_position);
@@ -881,36 +1000,14 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
     }
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost && EnableKbkSubGraphExecute()) {
-    RecordGraphInputs(host_tensors, host_param_indexes);
-    if (has_dynamic_shape_) {
-      ActorDispatcher::set_enable_static_shape(!isDyn);
-
-      const auto &phase = graph_compiler_info_->graph_phase_;
-      bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (EnableTraceMemory() && is_increment_graph) {
-        if (has_continuous_memory()) {
-          MS_LOG(EXCEPTION)
-            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-        }
-        if (!ActorDispatcher::enable_static_shape()) {
-          ActorDispatcher::set_enable_trace_dynamic_memory(true);
-        } else {
-          ActorDispatcher::set_enable_use_trace_memory(true);
-        }
-      }
-    }
-  }
+  RecordInputAndConvertStatic(host_tensors, host_param_indexes, isDyn);
   host_tensor_queue_->Push(host_tensors);
 }
 
 //  The branch processing of PrepareDataForValueNode that value type is tensor.
 void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, const ValuePtr &node_value,
                                                      const AnfNodePtr &front_node, const DeviceContext *device_context,
-                                                     OpContext<DeviceTensor> *const context) const {
+                                                     OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(node_value);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -926,29 +1023,30 @@ void DataPrepareActor::PrepareDataForValueNodeTensor(const ValueNodePtr &node, c
     return;
   }
 
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (device_tensor->IsPtrValid()) {
     CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
     if (UCEException::GetInstance().get_uce_flag()) {
-      SyncTensorData(tensor, device_tensor, node, device_context, context, real_strategy_);
+      SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
     }
     return;
   }
 
   tensor->set_device_address(device_tensor);
-  UpdateRefCount(device_tensor.get(), true);
-
-  SyncTensorData(tensor, device_tensor, node, device_context, context, real_strategy_);
-  MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
-                << " device address:" << device_tensor << " ptr:" << device_tensor->GetPtr();
+  SyncTensorData(tensor, kernel_tensor, node, device_context, context, real_strategy_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Prepare device data for value node: " << node->DebugString() << ", output index: " << 0
+    << " device address:" << device_tensor << " ptr:" << device_tensor->GetPtr();
   CopyDataFromDeviceTensorStore(front_node, node, device_tensor, device_context, context);
 }
 
 void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &node_with_index,
                                                       const DeviceContext *device_context,
-                                                      OpContext<DeviceTensor> *const context,
+                                                      OpContext<KernelTensor> *const context,
                                                       const ControlNodeParserPtr &parser) const {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
@@ -990,19 +1088,18 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   }
 
   MS_EXCEPTION_IF_NULL(tensor);
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (device_tensor->GetPtr() != nullptr) {
     return;
   }
 
   tensor->set_device_address(device_tensor);
-  UpdateRefCount(device_tensor.get(), true);
-
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->DebugString(), device::AllocatorType::kConstantValue, 0);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForControlValueNode", node, graph_str, device::tracker::MemType::kConstantValue,
-                device_tensor);
+  UpdateTracker("PrepareDataForControlValueNode", node, graph_str, memory::mem_pool::MemType::kConstantValue,
+                kernel_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
@@ -1035,7 +1132,7 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
 
 void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_t index, const AnfNodePtr &front_node,
                                                  const DeviceContext *device_context,
-                                                 OpContext<DeviceTensor> *const context) const {
+                                                 OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(node);
   if (!IsValueNode<StringImm>(node)) {
     return;
@@ -1043,18 +1140,20 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   auto &node_value = node->value();
   MS_EXCEPTION_IF_NULL(node_value);
 
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // Copy data from value to device.
-  auto copy_to_device = [&node_value, &device_tensor, this, &node, &context]() {
+  auto copy_to_device = [&node_value, &kernel_tensor, this, &node, &context]() {
     auto value = GetValue<std::string>(node_value);
     size_t tensor_size = value.size();
     ShapeVector shape = {1, SizeToLong(tensor_size)};
+    const auto &device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
     // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
     // `device_address_utils.cc`
     size_t string_tensor_size = tensor_size + 1;
-    const auto &kernel_tensor = device_tensor->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (!device_tensor->SyncHostToDevice(shape, string_tensor_size, kObjectTypeString, kernel_tensor->GetValuePtr())) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1073,10 +1172,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   }
   MS_LOG(INFO) << "Prepare device data for value node: " << node->DebugString();
 
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForStringValue", node, graph_str, device::tracker::MemType::kConstantValue, device_tensor);
+  UpdateTracker("PrepareDataForStringValue", node, graph_str, memory::mem_pool::MemType::kConstantValue, kernel_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
@@ -1099,7 +1196,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
 void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &node, size_t index,
                                                             const AnfNodePtr &front_node,
                                                             const DeviceContext *device_context,
-                                                            OpContext<DeviceTensor> *const context) const {
+                                                            OpContext<KernelTensor> *const context) const {
   if (!(first_step_ || UCEException::GetInstance().get_uce_flag())) {
     return;
   }
@@ -1117,11 +1214,13 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     return;
   }
 
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  auto copy_to_device = [&device_tensor, &node, this, &context]() {
-    const auto &kernel_tensor = device_tensor->kernel_tensor();
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto copy_to_device = [&kernel_tensor, &node, this, &context]() {
+    const auto &device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
     if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
                                          kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
@@ -1137,14 +1236,11 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     return;
   }
 
-  UpdateRefCount(device_tensor.get(), true);
   MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString();
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   // 1. Allocate device memory for value node.
   auto graph_str = (node->func_graph() == nullptr) ? "" : node->func_graph()->ToString();
-  UpdateTracker("PrepareDataForSequenceAndScalarValue", node, graph_str, device::tracker::MemType::kConstantValue,
-                device_tensor);
+  UpdateTracker("PrepareDataForSequenceAndScalarValue", node, graph_str, memory::mem_pool::MemType::kConstantValue,
+                kernel_tensor);
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
@@ -1170,7 +1266,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
 // Prepare the device data for persistent device tensor of value node.
 void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const AnfNodePtr &front_node,
                                                const DeviceContext *device_context,
-                                               OpContext<DeviceTensor> *const context) const {
+                                               OpContext<KernelTensor> *const context) const {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(front_node);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -1194,12 +1290,16 @@ void DataPrepareActor::PrepareDataForValueNode(const ValueNodePtr &node, const A
 void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_node, const AnfNodePtr &backend_node,
                                                      const device::DeviceAddressPtr &host_tensor_address,
                                                      const DeviceContext *device_context,
-                                                     OpContext<DeviceTensor> *context) const {
+                                                     OpContext<KernelTensor> *context) const {
   MS_EXCEPTION_IF_NULL(backend_node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(context);
-  const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
-  for (auto &another_device_tensor : device_tensors) {
+  const auto &kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
+  for (auto &another_kernel_tensor : kernel_tensors) {
+    if (another_kernel_tensor == nullptr) {
+      continue;
+    }
+    auto &another_device_tensor = another_kernel_tensor->device_address();
     if (another_device_tensor == host_tensor_address) {
       continue;
     }
@@ -1208,14 +1308,12 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
     const auto &another_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {another_device_name, device_context->device_context_key().device_id_});
     MS_EXCEPTION_IF_NULL(another_device_context);
-    auto type = backend_node->isa<ValueNode>() ? device::AllocatorType::kConstantValue : device::AllocatorType::kWeight;
-    device::DynamicMemAllocatorDebugInfo::SetDebugInfo(backend_node->fullname_with_scope(), type, 0);
     bool need_alloc_memory = (another_device_tensor->GetPtr() == nullptr);
     auto graph_str = (backend_node->func_graph() == nullptr) ? "" : backend_node->func_graph()->ToString();
     if (need_alloc_memory) {
       auto mem_type =
-        backend_node->isa<ValueNode>() ? device::tracker::MemType::kConstantValue : device::tracker::MemType::kWeight;
-      UpdateTracker("CopyDataFromDeviceTensorStore", backend_node, graph_str, mem_type, another_device_tensor);
+        backend_node->isa<ValueNode>() ? device::tracker::MemType::kConstantValue : memory::mem_pool::MemType::kWeight;
+      UpdateTracker("CopyDataFromDeviceTensorStore", backend_node, graph_str, mem_type, another_kernel_tensor);
     }
     if (need_alloc_memory && (!another_device_context->device_res_manager_->AllocateMemory(another_device_tensor.get(),
                                                                                            kDefaultStreamIndex))) {
@@ -1251,7 +1349,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
 // Prepare the device data for persistent device tensor of weight node from host tensor.
 void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node,
                                                 const TensorPtr &tensor, const DeviceContext *device_context,
-                                                OpContext<DeviceTensor> *const context) {
+                                                OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(backend_node);
   MS_EXCEPTION_IF_NULL(front_node);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -1260,6 +1358,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   auto param_node = backend_node->cast<ParameterPtr>();
   if (param_node != nullptr) {
     auto param_info = param_node->param_info();
+    MS_EXCEPTION_IF_NULL(param_info);
     bool used = !param_info->ignore_device_addr();
     if (!used) {
       MS_LOG(WARNING) << backend_node->DebugString()
@@ -1272,9 +1371,14 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     return;
   }
 
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(backend_node, 0, false);
+  auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(backend_node, 0, false);
+  MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+  auto device_tensor = node_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+  auto host_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
+  host_kernel_tensor->set_device_address(host_tensor_address);
+  MS_LOG(DEBUG) << "Create kernel tensor:" << host_kernel_tensor->ToString();
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = IsNeedSync(tensor, &is_sub_data_);
   if (host_tensor_address != device_tensor) {
@@ -1285,16 +1389,17 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
           device_tensor->host_shape(), device_context->device_context_key().device_name_,
           device_context->device_context_key().device_id_);
         kernel_tensor->set_stream_id(device_tensor->stream_id());
-        host_tensor_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+        host_kernel_tensor = kernel_tensor;
+        host_tensor_address = host_kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(host_tensor_address);
-        MS_LOG(DEBUG) << "Create device tensor:" << host_tensor_address << " type:" << host_tensor_address->type_id();
+        MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+          << "Create device tensor:" << host_tensor_address << " type:" << host_tensor_address->type_id();
         host_tensor_address->set_from_persistent_mem(tensor->is_parameter());
       } else {
         host_tensor_address = device_tensor;
       }
       is_need_sync = true;
       tensor->set_device_address(host_tensor_address);
-      UpdateRefCount(host_tensor_address.get(), true);
     }
     MS_EXCEPTION_IF_NULL(host_tensor_address);
 
@@ -1312,7 +1417,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
       if (device_tensor->is_ptr_persisted() ||
-          !AnfAlgo::IsEquivalentFormat(host_tensor_address->format(), device_tensor->format())) {
+          !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
+                                       kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
         if ((device_tensor->GetPtr() == nullptr) &&
             (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex))) {
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context,
@@ -1328,7 +1434,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         (void)address_modified_input_nodes_.insert(backend_node.get());
         host_tensor_address->set_flag(device_tensor->flag());
         DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(host_tensor_address, backend_node, 0);
-        AnfAlgo::SetOutputAddr(host_tensor_address, 0, backend_node.get());
+        AnfAlgo::SetOutputAddr(host_tensor_address, 0, backend_node);
       }
     }
   }
@@ -1336,13 +1442,15 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
   // so need update the device tensor store always.
   MS_EXCEPTION_IF_NULL(host_tensor_address);
   host_tensor_address->SetNodeIndex(backend_node, 0);
-  DeviceTensorStore::GetInstance().Insert(front_node.get(), host_tensor_address);
+  host_kernel_tensor->set_device_address(host_tensor_address);
+  DeviceTensorStore::GetInstance().Insert(front_node.get(), host_kernel_tensor);
 
   // If the ptr of device tensor is not nullptr, it indicates that the device data has been prepared.
   if (is_need_sync || (!host_tensor_address->IsPtrValid())) {
     MS_LOG(INFO) << "Prepare device data for weight node:" << backend_node->DebugString()
                  << ", device type:" << host_tensor_address->GetDeviceType();
-    SyncTensorData(tensor, host_tensor_address, backend_node, device_context, context, real_strategy_);
+    SyncTensorData(tensor, host_kernel_tensor, backend_node, device_context, context, real_strategy_,
+                   UCEException::GetInstance().is_reboot_node());
   }
 
   // Allocate another device memory and copy data from host tensor to another device(if exist).
@@ -1352,7 +1460,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
 void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeParserPtr &control_node_parser,
                                                               const std::vector<TensorPtr> &tensors,
                                                               const VectorRef &args,
-                                                              OpContext<DeviceTensor> *const context) {
+                                                              OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(control_node_parser);
   if (!control_node_parser->IsInited()) {
     return;
@@ -1379,10 +1487,7 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
     }
 
     if (enable_input_optimize_) {
-      auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
-      MS_EXCEPTION_IF_NULL(graph_parameter_store);
-      auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_parameter.get());
-      (void)FetchParameter(std::make_pair(control_node_parameters[i], outer_idx), context, nullptr, GetAID());
+      PrepareWeightForInputOptimize(control_node_parameters[i], context);
       continue;
     }
 
@@ -1391,44 +1496,47 @@ void DataPrepareActor::PrepareDeviceTensorStoreForControlNode(const ControlNodeP
       continue;
     }
 
-    auto device_tensors = DeviceTensorStore::GetInstance().Fetch(front_parameter.get());
-    if (device_tensors.empty()) {
+    auto kernel_tensors = DeviceTensorStore::GetInstance().Fetch(front_parameter.get());
+    if (kernel_tensors.empty()) {
       MS_LOG(WARNING) << "Failed to get device tensor for front node:" << front_parameter->DebugString();
       continue;
     }
-    MS_EXCEPTION_IF_NULL(device_tensors[0]);
+    auto kernel_tensor = kernel_tensors[0];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(kernel_tensor->device_address());
     auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-    if ((device_tensors[0] == host_tensor_address) || (device_tensors[0]->IsPtrValid())) {
+    if ((kernel_tensor->device_address() == host_tensor_address) || (kernel_tensor->device_address()->IsPtrValid())) {
       continue;
     }
 
-    auto node = (device_tensors[0]->GetNodeIndex()).first;
+    auto node = (kernel_tensor->device_address()->GetNodeIndex()).first;
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(INFO) << "Prepare device data for weight node by root graph parameter:"
                  << front_parameter->fullname_with_scope() << ", backend node:" << node->DebugString()
-                 << ", device type:" << device_tensors[0]->GetDeviceType();
+                 << ", device type:" << kernel_tensor->device_address()->GetDeviceType();
     if (host_tensor_address == nullptr) {
-      tensor->set_device_address(device_tensors[0]);
+      tensor->set_device_address(kernel_tensor->device_address());
       auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensors[0]->device_name(), device_tensors[0]->device_id()});
-      SyncTensorData(tensor, device_tensors[0], node, device_context, context, GraphExecutionStrategy::kPipeline);
+        {kernel_tensor->device_address()->device_name(), kernel_tensor->device_address()->device_id()});
+      SyncTensorData(tensor, kernel_tensor, node, device_context, context, GraphExecutionStrategy::kPipeline,
+                     UCEException::GetInstance().is_reboot_node());
     } else {
-      if (host_tensor_address->GetSize() != device_tensors[0]->GetSize()) {
+      if (host_tensor_address->GetSize() != kernel_tensor->device_address()->GetSize()) {
         MS_LOG(WARNING) << "Please check the size of parameter:" << front_parameter->fullname_with_scope()
                         << ", host tensor size:" << host_tensor_address->GetSize()
-                        << ", device tensor size:" << device_tensors[0]->GetSize();
+                        << ", device tensor size:" << kernel_tensor->device_address()->GetSize();
       }
       host_tensor_address->SetNodeIndex(node, 0);
-      UpdateRefCount(host_tensor_address.get(), true);
+      kernel_tensor->set_device_address(host_tensor_address);
       DeviceTensorStore::GetInstance().Remove(front_parameter.get());
-      DeviceTensorStore::GetInstance().Insert(front_parameter.get(), host_tensor_address);
+      DeviceTensorStore::GetInstance().Insert(front_parameter.get(), kernel_tensor);
     }
   }
 }
 
 void DataPrepareActor::PrepareHostTensorQueueForControlNode(const std::vector<TensorPtr> &tensors,
                                                             std::vector<TensorPtr> *const host_tensors,
-                                                            OpContext<DeviceTensor> *const context) {
+                                                            OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(graph_compiler_info_);
   MS_EXCEPTION_IF_NULL(graph_compiler_info_->control_node_parser_);
   MS_EXCEPTION_IF_NULL(host_data_source_actor_);
@@ -1464,6 +1572,22 @@ void DataPrepareActor::PrepareHostTensorQueueForControlNode(const std::vector<Te
     // Avoid the device `ptr_` being hold by the input tensor and the output tensor, the input tensor address cannot
     // be directly set to the input control node, which may be a passthrough node. The device 'ptr_' is re-malloced
     // and device to device copy by input tensor address in data source process.
+  }
+}
+
+void DataPrepareActor::PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index,
+                                                     OpContext<KernelTensor> *const context) {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  const auto &front_node = node_with_index.first;
+  MS_EXCEPTION_IF_NULL(front_node);
+  auto outer_idx = graph_parameter_store->GetFrontNodeToIndex(front_node.get());
+  (void)FetchParameter(std::make_pair(node_with_index, outer_idx), GetAID());
+  // Record the update tensors for reprepare.
+  // This will be removed after input optimization performance improved.
+  if (is_enable_infer_boost_) {
+    auto tensor = graph_parameter_store->FetchTensor(outer_idx, node_with_index);
+    RecordTensorsNeedReprepare(tensor);
   }
 }
 

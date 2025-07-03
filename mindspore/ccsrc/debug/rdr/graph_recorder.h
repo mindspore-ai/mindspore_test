@@ -47,8 +47,8 @@ class GraphRecorder : public BaseRecorder {
 using GraphRecorderPtr = std::shared_ptr<GraphRecorder>;
 
 namespace RDR {
-BACKEND_EXPORT bool RecordAnfGraph(const SubModuleId module, const std::string &name, const FuncGraphPtr &graph,
-                                   const DumpGraphParams &info, const std::string &file_type = ".ir;.pb;.dat");
+BACKEND_COMMON_EXPORT bool RecordAnfGraph(const SubModuleId module, const std::string &name, const FuncGraphPtr &graph,
+                                          const DumpGraphParams &info, const std::string &file_type = ".ir;.pb;.dat");
 }  // namespace RDR
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DEBUG_RDR_GRAPH_RECORDER_H_

@@ -16,9 +16,10 @@
 Test ImageFolderDataset
 """
 import os
-import shutil
+
 import numpy as np
 import pytest
+
 import mindspore.dataset as ds
 import mindspore.dataset.transforms as data_trans
 import mindspore.dataset.vision as vision
@@ -913,6 +914,7 @@ def test_imagefolder_exception():
         assert "should be file, but got directory" in str(e)
 
 
+@pytest.fixture(scope="function")
 def encrypt_func():
     """
     Feature: Encrypt function
@@ -922,6 +924,7 @@ def encrypt_func():
     plain_dir = os.path.realpath(DATA_DIR_2)
     cipher_dir = os.path.realpath(DATA_DIR_3)
 
+    enc_file_list = []
     for root, _, files in os.walk(plain_dir):
         for f in files:
             fn = os.path.join(root, f)
@@ -937,6 +940,14 @@ def encrypt_func():
             with open(enc_file, 'wb')as f:
                 f.write(new_content)
 
+            enc_file_list.append(enc_file)
+
+    yield
+
+    for file in enc_file_list:
+        if os.path.exists(file):
+            os.remove(file)
+
 
 def decrypt_func(cipher_file):
     """
@@ -950,6 +961,7 @@ def decrypt_func(cipher_file):
     return new_content
 
 
+@pytest.mark.usefixtures("encrypt_func")
 def test_imagefolder_decrypt():
     """
     Feature: Test imagefolder decrypt
@@ -957,8 +969,6 @@ def test_imagefolder_decrypt():
     Expectation: Success
     """
     logger.info("Test imagefolder decrypt")
-
-    encrypt_func()
 
     resize_height = 224
     resize_width = 224
@@ -1010,9 +1020,6 @@ def test_imagefolder_decrypt():
                     logger.info("====test several batch mixup ok====")
             break
         num_iter += 1
-
-    if os.path.exists(DATA_DIR_3):
-        shutil.rmtree(DATA_DIR_3)
 
 
 def test_imagefolder_error_sample_sourceop():

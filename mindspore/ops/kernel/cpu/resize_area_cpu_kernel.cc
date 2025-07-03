@@ -15,12 +15,13 @@
  */
 
 #include "kernel/cpu/resize_area_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/infer/resize_area.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_area_cpu {
 namespace {
 constexpr size_t kResizeAreaInputsNum = 2;
 constexpr size_t kResizeAreaOutputsNum = 1;
@@ -171,5 +172,6 @@ std::vector<KernelAttr> ResizeAreaCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeArea, ResizeAreaCPUKernelMod);
+}  // namespace resize_area_cpu
 }  // namespace kernel
 }  // namespace mindspore

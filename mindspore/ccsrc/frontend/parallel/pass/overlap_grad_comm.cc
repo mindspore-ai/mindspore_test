@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {
@@ -60,7 +63,10 @@ std::vector<CNodePtr> GetDwRelyNodes(const CNodePtr &dw_matmul) {
       if (!IsPrimitiveCNode(queue_front->input(i))) {
         continue;
       }
-      auto input_cnode = queue_front->input(i)->cast<CNodePtr>();
+      auto input_node = queue_front->input(i);
+      MS_EXCEPTION_IF_NULL(input_node);
+      auto input_cnode = input_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       cnode_queue.push(input_cnode);
       if (input_cnode->HasAttr(kAttrDuplicated)) {
         continue;
@@ -280,7 +286,7 @@ void OverlapGradComm(const FuncGraphPtr &graph) {
   }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (cell_reuse) {
-    MS_LOG(WARNING) << "Currently, grad communication overlap dose not support in lazy_line mode.";
+    MS_LOG(WARNING) << "Currently, grad communication overlap does not support in lazy_line mode.";
     return;
   }
   auto manager = graph->manager();

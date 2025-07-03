@@ -15,7 +15,7 @@ mindspore.ops.HammingWindow
 
     参数：
         - **periodic** (bool，可选) - 一个标志，表示返回的窗口是否修剪掉来自对称窗口的最后一个重复值。默认值： ``True`` 。
-  
+
           - 如果为True，则返回的窗口作为周期函数，在上式中， :math:`N = \text{length} + 1` 。
           - 如果为False，则返回一个对称窗口， :math:`N = \text{length}` 。
 
@@ -35,6 +35,6 @@ mindspore.ops.HammingWindow
         - **TypeError** - 如果 `periodic` 的数据类型不是bool类型。
         - **TypeError** - 如果 `alpha` 的数据类型不是float类型。
         - **TypeError** - 如果 `beta` 的数据类型不是float类型。
-        - **TypeError** - 如果 `dtype` 的取值不是 `mindspore.float16` 、 `mindspore.float32` 或 `mindspore.float64` 。
+        - **TypeError** - 如果 `dtype` 的取值不是 `mstype.float16` 、 `mstype.float32` 或 `mstype.float64` 。
         - **ValueError** - 如果 `length` 的维度不是1。
         - **ValueError** - 如果 `length` 的值是负数。

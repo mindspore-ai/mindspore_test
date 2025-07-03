@@ -21,11 +21,12 @@
 #include <memory>
 #include <map>
 #include <unordered_map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sub_and_filter_cpu {
 class SubAndFilterCpuKernelMod : public NativeCpuKernelMod {
  public:
   SubAndFilterCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class SubAndFilterCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   size_t x_dtype_size_;
 };
+}  // namespace sub_and_filter_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

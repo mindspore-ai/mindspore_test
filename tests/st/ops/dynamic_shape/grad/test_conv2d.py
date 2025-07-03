@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 from mindspore import nn, ops, context, Tensor
 from .test_grad_of_dynamic import TestDynamicGrad
 

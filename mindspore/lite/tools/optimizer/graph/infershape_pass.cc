@@ -25,6 +25,9 @@
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {
@@ -215,6 +218,7 @@ bool InferShapePass::JudgeAllOpsCanInfer(const FuncGraphPtr &func_graph) {
       return all_op_can_infer;
     }
     if (CheckPrimitiveType(node, prim::kPrimIf) || CheckPrimitiveType(node, prim::kPrimWhile)) {
+      MS_CHECK_TRUE_MSG(cnode != nullptr, false, "cnode is nullptr!");
       auto sub_func_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       if (sub_func_graph == nullptr) {
         lite::ReturnCode::GetSingleReturnCode()->UpdateReturnCode(lite::RET_NULL_PTR);
@@ -329,7 +333,7 @@ STATUS InferShapePass::SetSubGraphInput(const CNodePtr &cnode, const FuncGraphPt
   sub_inputs_map_[sub_graph] = sub_inputs;
   for (auto &node : sub_inputs) {
     auto param_node = node->cast<ParameterPtr>();
-    MS_ASSERT(param_node != nullptr);
+    MS_CHECK_TRUE_MSG(param_node != nullptr, RET_ERROR, "param_node is a nullptr.");
     auto node_name = node->fullname_with_scope();
     auto last_underline = node_name.find_last_of("_");
     node_name = node_name.substr(0, last_underline);

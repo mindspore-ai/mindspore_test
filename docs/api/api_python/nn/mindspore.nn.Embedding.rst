@@ -7,7 +7,7 @@ mindspore.nn.Embedding
 
     用于存储词向量并使用索引进行检索，根据输入Tensor中的id，从 `embedding_table` 中查询对应的embedding向量。当输入为id组成的序列时，输出为对应embedding向量构成的矩阵。
 
-    .. note:: 
+    .. note::
         当 `use_one_hot` 等于True时，x的类型必须是mindspore.int32。
 
     参数：
@@ -19,12 +19,12 @@ mindspore.nn.Embedding
         - **padding_idx** (int, None) - 将 `padding_idx` 对应索引所输出的嵌入向量用零填充。默认值： ``None`` 。该功能已停用。
 
     输入：
-        - **x** (Tensor) - Tensor的shape为 :math:`(\text{batch_size}, \text{x_length})` ，其元素为整型值，并且元素数目必须小于等于vocab_size，否则相应的嵌入向量将为零。该数据类型可以是int32或int64。
+        - **x** (Tensor) - Tensor的shape为 :math:`(\text{batch_size}, \text{x_length})` ，其元素为整数，并且元素数目必须小于等于vocab_size，否则相应的嵌入向量将为零。该数据类型可以是int32或int64。
 
     输出：
         Tensor的shape :math:`(\text{batch_size}, \text{x_length}, \text{embedding_size})` 。
 
     异常：
-        - **TypeError** - 如果 `vocab_size` 或者 `embedding_size` 不是整型值。
+        - **TypeError** - 如果 `vocab_size` 或者 `embedding_size` 不是整数。
         - **TypeError** - 如果 `use_one_hot` 不是布尔值。
         - **ValueError** - 如果 `padding_idx` 是一个不在[0, `vocab_size` ]范围内的整数。

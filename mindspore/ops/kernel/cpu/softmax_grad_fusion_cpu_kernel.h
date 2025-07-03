@@ -21,11 +21,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_grad_fusion_cpu {
 class SoftmaxGradFusionCpuKernelMod : public NativeCpuKernelMod {
  public:
   SoftmaxGradFusionCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class SoftmaxGradFusionCpuKernelMod : public NativeCpuKernelMod {
   uint64_t parallel_num_ = 1;
   uint64_t last_dim_ = 1;
 };
+}  // namespace softmax_grad_fusion_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SOFTMAX_GRAD_FUSION_H_

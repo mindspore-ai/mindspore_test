@@ -2,22 +2,4 @@ rsqrt:
   description: |
     rsqrt() -> Tensor
 
-    Computes reciprocal of square root of self tensor element-wise.
-
-    .. math::
-
-        out_{i} = \frac{1}{\sqrt{self_{i}}}
-
-    Returns:
-        Tensor, has the same shape and dtype as the `self`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor
-        >>> input = Tensor([-0.0370,  0.2970,  1.5420, -0.9105])
-        >>> output = input.rsqrt()
-        >>> print(output)
-        [       nan 1.8349396  0.8053002        nan]
+    For details, please refer to :func:`mindspore.ops.rsqrt`.

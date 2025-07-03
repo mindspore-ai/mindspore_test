@@ -19,7 +19,6 @@
 #include <utility>
 #include <memory>
 #include "ops/ops_frontend_func_impl.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "ir/dtype/number.h"
@@ -81,6 +80,7 @@ tensor::TensorPtr CreateTensorWithValueTuple(const ValueSequencePtr &value_tuple
     MS_EXCEPTION_IF_NULL(v);
     if (v->isa<Scalar>()) {
       ScalarPtr scalar = v->cast<ScalarPtr>();
+      MS_EXCEPTION_IF_NULL(scalar);
       auto cur_type = scalar->type()->type_id();
       if (cur_type != first_type) {
         MS_EXCEPTION(TypeError) << "the tuple elements type must be same, first element type = " << first_type

@@ -17,27 +17,26 @@
 #include <limits>
 
 #include "kernel/ascend/pyboost/customize/isinf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "kernel/common/pyboost/auto_generate/abs.h"
-#include "kernel/common/pyboost/auto_generate/equal.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/abs.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/equal.h"
 
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IsInfAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr IsInfAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "IsInfCustomize start";
   OpRunner::InferOpOutput(op, input_tensor);
 
   auto input_type = input_tensor->Dtype()->type_id();
   bool is_int_type = (input_type >= kNumberTypeBool) && (input_type < kNumberTypeFloat);
 
-  BaseTensorPtr abs_out = input_tensor;
+  TensorPtr abs_out = input_tensor;
   if (!is_int_type) {
     const auto abs_op = CREATE_PYBOOST_OP(Abs, op->device_context()->device_context_key().device_name_);
     abs_out = abs_op->Call(input_tensor);

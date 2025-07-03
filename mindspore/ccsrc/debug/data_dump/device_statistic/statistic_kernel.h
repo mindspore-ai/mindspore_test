@@ -26,9 +26,6 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/common/debug/common.h"
 #include "ir/dtype/tensor_type.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "runtime/device/device_address_utils.h"
-#include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
 #include "utils/log_adapter.h"
@@ -44,36 +41,34 @@ using TensorPtr = tensor::TensorPtr;
 
 class StatisticKernel {
  public:
-  StatisticKernel(const DeviceContext *device_context, const string &kernel_name, const std::set<TypeId> &dtype_id)
+  StatisticKernel(const DeviceContext *device_context, const string &kernel_name, std::set<TypeId> dtype_id)
       : device_context_(device_context), kernel_name_(kernel_name), supported_dtype_(dtype_id) {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
     MS_VLOG(VL_DUMP) << "Statistic kernel mod " << kernel_name_ << " construct.";
-    kernel_mod_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(kernel_name);
+    kernel_mod_ = device_context_->GetKernelExecutor()->CreateKernelMod(kernel_name);
     MS_EXCEPTION_IF_NULL(kernel_mod_);
   }
-  vector<DeviceAddressPtr> LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id);
-  virtual DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const uint32_t stream_id) {
+  std::vector<KernelTensorPtr> LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id);
+  virtual KernelTensorPtr LaunchKernelAsync(std::vector<KernelTensor *> inputs, const uint32_t stream_id) {
     return nullptr;
   }
 
   bool CheckDataType(const TypeId &dtype_id) { return supported_dtype_.find(dtype_id) != supported_dtype_.end(); }
 
  protected:
-  DeviceAddressPtr GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id, const ShapeVector &shape,
-                                         const ValuePtr &value = nullptr);
-  DeviceAddressPtr GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
-                                             const vector<KernelTensor *> &outputs);
-  virtual DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id);
-  virtual vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *);
+  KernelTensorPtr GetWorkSpaceDeviceAddress(const std::vector<KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &outputs);
+  virtual KernelTensorPtr GetOutputDeviceAddress(TypeId dtype_id);
+  virtual std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *);
   const DeviceContext *device_context_{nullptr};
   string kernel_name_;
-  const std::set<TypeId> &supported_dtype_;
+  std::set<TypeId> supported_dtype_;
   uint32_t stream_id_ = kDefaultStreamIndex;
   kernel::KernelModPtr kernel_mod_;
 };
 
-TensorPtr SyncDeviceToHostTensor(DeviceAddressPtr device_addr);
+TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor);
 
 }  // namespace datadump
 

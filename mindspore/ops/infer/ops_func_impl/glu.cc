@@ -16,8 +16,7 @@
 
 #include <vector>
 #include "infer/ops_func_impl/glu.h"
-#include "op_def/auto_generate/gen_ops_name.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/op_def/op_name.h"
 
@@ -38,15 +37,18 @@ ShapeArray GLUFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInf
   if (!dim.has_value()) {
     return {ShapeVector(out_shape.size(), abstract::Shape::kShapeDimAny, ShapeVector::allocator_type())};
   }
-  auto dim_val = dim.value();
-  if (MS_UNLIKELY((dim_val < -dim_range) || (dim_val >= dim_range))) {
+  const auto raw_dim_val = dim.value();
+  if (MS_UNLIKELY((raw_dim_val < -dim_range) || (raw_dim_val >= dim_range))) {
     MS_EXCEPTION(IndexError) << "For GLU, dimension should be in range of [" << -dim_range << ", " << (dim_range - 1)
-                             << "], but got " << dim_val << ".";
+                             << "], but got " << raw_dim_val << ".";
   }
-  if (dim_val < 0) {
-    dim_val += dim_range;
-  }
-  if (out_shape[dim_val] > 0) {
+  const auto dim_val = raw_dim_val < 0 ? raw_dim_val + dim_range : raw_dim_val;
+  const auto sep_dim_size = out_shape[dim_val];
+  if (sep_dim_size > 0) {
+    if (MS_UNLIKELY(sep_dim_size % 2 != 0)) {
+      MS_EXCEPTION(RuntimeError) << "For GLU, halving dimension must be even, but dimension " << raw_dim_val
+                                 << " is size " << sep_dim_size << ".";
+    }
     out_shape[dim_val] /= 2;
   }
   return {out_shape};

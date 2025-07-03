@@ -17,6 +17,7 @@
 #include "src/common/ops/populate/default_populate.h"
 #include "nnacl/random_parameter.h"
 #include "infer/uniform_real.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 using mindspore::ops::kNameUniformReal;
 using mindspore::schema::PrimitiveType_UniformReal;
 

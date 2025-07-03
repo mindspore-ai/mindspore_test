@@ -1,0 +1,23 @@
+#operator moe_token_permute
+moe_token_permute:
+  args:
+    tokens:
+      dtype: tensor
+    indices:
+      dtype: tensor
+    num_out_tokens:
+      dtype: int
+      default: None
+    padded_mode:
+      dtype: bool
+      default: False
+  returns:
+    permute_tokens:
+      dtype: tensor
+    sorted_indices:
+      dtype: tensor
+  class:
+      name: MoeTokenPermute
+  dispatch:
+    enable: True
+    Ascend: MoeTokenPermuteAscend

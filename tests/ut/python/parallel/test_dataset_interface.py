@@ -78,7 +78,7 @@ def loss_scale_manager_common(strategy1):
     momentum = 0.9
     epoch_size = 2
 
-    context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL, search_mode="dynamic_programming", 
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL, search_mode="sharding_propagation",
                                       device_num=8, dataset_strategy="data_parallel")
     predict = Tensor(np.ones([32, 128]), dtype=ms.float32)
     label = Tensor(np.ones([32]), dtype=ms.int32)

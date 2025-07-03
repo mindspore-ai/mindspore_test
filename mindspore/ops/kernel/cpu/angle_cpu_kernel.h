@@ -18,11 +18,12 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ANGLE_CPU_KERNEL_H_
 
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace angle_cpu {
 class AngleCpuKernelMod : public NativeCpuKernelMod {
  public:
   AngleCpuKernelMod() = default;
@@ -41,6 +42,7 @@ class AngleCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId input_dtype_ = kNumberTypeComplex64;
 };
+}  // namespace angle_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

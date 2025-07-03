@@ -35,6 +35,11 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/common.h"
 #include "extendrt/delegate/factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 static const std::vector<PrimitivePtr> ms_infer_cut_list = {prim::kPrimReturn, prim::kPrimPartial, prim::kPrimSwitch,

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,17 @@
 #include <string>
 #include <utility>
 #include "include/common/utils/utils.h"
+#include "include/common/utils/anfalgo.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -74,6 +80,7 @@ CNodePtr CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_no
   MS_EXCEPTION_IF_NULL(input_shape_node);
   std::vector<AnfNodePtr> reshape_inputs = {NewValueNode(prim::kPrimReshape->Clone()), input_node, input_shape_node};
   auto reshape_node = graph->NewCNode(reshape_inputs);
+  MS_EXCEPTION_IF_NULL(reshape_node);
   reshape_node->set_scope(input_node->scope());
   return reshape_node;
 }
@@ -96,6 +103,7 @@ CNodePtr CreateReduceScatterNode(const FuncGraphPtr &graph, const AnfNodePtr &in
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(allreduce_node);
   auto allreduce_prim = GetCNodePrimitive(allreduce_node);
+  MS_EXCEPTION_IF_NULL(allreduce_prim);
   if (!allreduce_prim->HasAttr(OP) || !allreduce_prim->HasAttr(GROUP)) {
     return nullptr;
   }
@@ -317,9 +325,11 @@ size_t GetReshapeDim(const CNodePtr &reshape_cnode) {
   return shape_vector.size();
 }
 
-// case1:
-// BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
-// BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+/*
+ * AllReduceSliceToReduceScatter Case1:
+ * BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
+ * BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+ */
 void AllReduceSliceToReduceScatterCase1(const AllReduceSliceToReduceScatterParams &params) {
   auto transpose_dim = k4DTransposeDim;
   auto current_node = params.batch_matmul;
@@ -487,10 +497,12 @@ std::vector<int64_t> GetCase2TargetShapeFromStridedSlice(const AllReduceSliceToR
   return target_shape;
 }
 
-// case2:
-// BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
-// AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
-// BiasAdd
+/*
+ * AllReduceSliceToReduceScatter Case2:
+ * BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
+ * AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
+ * BiasAdd
+ */
 void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParams &params) {
   auto bias_add_cnode = params.bias_add->cast<CNodePtr>();
   if (bias_add_cnode == nullptr) {
@@ -572,9 +584,11 @@ bool CheckCase3Strategy(const AllReduceSliceToReduceScatterParams &params) {
   return true;
 }
 
-// case3:
-// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
-// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+/*
+ * AllReduceSliceToReduceScatter Case3:
+ * BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+ * change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+ */
 void AllReduceSliceToReduceScatterCase3(const AllReduceSliceToReduceScatterParams &params) {
   auto bias_add_cnode = params.bias_add->cast<CNodePtr>();
   if (bias_add_cnode == nullptr) {
@@ -693,21 +707,23 @@ bool FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   return true;
 }
 
-// For Structure as following:
-// case1:
-// BatchMatMul -> AllReduce -> Reshape -> StridedSlice change to
-// BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
-//
-// case2:
-// BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
-// AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
-// (Reshape ->) BiasAdd (-> Reshape)
-//
-// case3:
-// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
-// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
-//
-// thus it can reduce half of the communication traffic.
+/*
+ * For Structure as following:
+ * AllReduceSliceToReduceScatter case1:
+ * BatchMatMul -> AllReduce -> Reshape -> StridedSlice change to
+ * BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+ *
+ * AllReduceSliceToReduceScatter case2:
+ * BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
+ * AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
+ * (Reshape ->) BiasAdd (-> Reshape)
+ *
+ * AllReduceSliceToReduceScatter case3:
+ * BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+ * change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+ *
+ * thus it can reduce half of the communication traffic.
+ */
 bool AllReduceSliceToReduceScatter(const FuncGraphPtr &graph, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(graph);
   // assume no change to graph

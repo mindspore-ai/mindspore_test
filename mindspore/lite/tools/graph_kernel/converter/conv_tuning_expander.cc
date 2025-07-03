@@ -30,6 +30,8 @@
 #include "utils/file_utils.h"
 #include "utils/hash_set.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 bool IsSameNumberList(const std::vector<int64_t> &vec, int64_t n) {
@@ -105,6 +107,7 @@ nlohmann::json GenTuneInfo(const AnfNodePtr &conv_node, const std::map<AnfNodePt
   node_info["op_type"] = "Conv2D";
   node_info["impl"] = "direct";
   node_info["origin_input_shape"] = GenConvShape(conv_node);
+  MS_EXCEPTION_IF_NULL(prim);
   node_info["dilation"] = GetValue<std::vector<int64_t>>(prim->GetAttr("dilation"));
   node_info["origin_format"] = "NHWC";
   node_info["group"] = GetValue<int64_t>(prim->GetAttr("group"));

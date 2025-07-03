@@ -18,4 +18,4 @@ mindspore.ops.coo_acosh
         COOTensor，数据类型与 `x` 相同。
 
     异常：
-        - **TypeError** - 如果 `x` 不是COOTensor。
+        - **TypeError** - `x` 不是COOTensor。

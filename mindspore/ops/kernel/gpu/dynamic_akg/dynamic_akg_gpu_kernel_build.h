@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_AKG_GPU_DYNAMIC_AKG_GPU_KERNEL_BUILD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_AKG_GPU_DYNAMIC_AKG_GPU_KERNEL_BUILD_H_
 #include <string>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/graph_kernel/dynamic_akg/dynamic_akg_kernel_build.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "base/base.h"

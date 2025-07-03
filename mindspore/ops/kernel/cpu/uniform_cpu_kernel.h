@@ -25,12 +25,13 @@
 #include <algorithm>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/philox_random.h"
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_cpu {
 class UniformCpuKernelMod : public NativeCpuKernelMod {
  public:
   UniformCpuKernelMod() = default;
@@ -72,6 +73,7 @@ class UniformCpuKernelMod : public NativeCpuKernelMod {
   float to_{1.0};
   BaseOperatorPtr kernel_ptr_{nullptr};
 };
+}  // namespace uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -37,49 +37,10 @@ using abstract::ShapePtr;
 // {reshape_op, X, Shape}
 class ReshapeSameShapeEliminater : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    Reset();
-    AnfVisitor::Match(prim::kPrimReshape, {IsNode, IsVNode})(node);
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
+  void Visit(const AnfNodePtr &node) override;
 
-    // check pattern match
-    if (shape_ == nullptr) {
-      return nullptr;
-    }
-
-    auto src_shape_abs = x_->abstract();
-    if (src_shape_abs == nullptr) {
-      return nullptr;
-    }
-
-    auto src_shape = src_shape_abs->GetShapeTrack();
-    auto tgt_shape_abs = node->abstract();
-    if (tgt_shape_abs == nullptr) {
-      return nullptr;
-    }
-    auto tgt_shape = tgt_shape_abs->GetShapeTrack();
-    if (src_shape != nullptr && tgt_shape != nullptr && src_shape->isa<Shape>() && tgt_shape->isa<Shape>()) {
-      auto elements = tgt_shape->cast<ShapePtr>();
-      auto shape = src_shape->cast<ShapePtr>();
-      if (shape->shape() == elements->shape()) {
-        return x_;
-      }
-    }
-
-    return nullptr;
-  }
-
-  void Visit(const AnfNodePtr &node) override {
-    if (x_ == nullptr) {
-      x_ = node;
-    } else {
-      shape_ = node;
-    }
-  }
-
-  void Reset() {
-    x_ = nullptr;
-    shape_ = nullptr;
-  }
+  void Reset();
 
  private:
   AnfNodePtr x_{nullptr}, shape_{nullptr};
@@ -88,44 +49,11 @@ class ReshapeSameShapeEliminater : public AnfVisitor {
 // {PrimReshape, {PrimReshape, X, Y}, Shape}
 class TwoReshapeEliminater : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    Reset();
-    AnfVisitor::Match(prim::kPrimReshape, {IsCNode, IsNode})(node);
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 
-    auto fg = node->func_graph();
-    if (fg != nullptr && x_ != nullptr && shape_ != nullptr) {
-      auto new_node = fg->NewCNode({NewValueNode(prim_), x_, shape_});
-      new_node->set_abstract(node->abstract());
-      if (node->scope() != kDefaultScope) {
-        new_node->set_scope(node->scope());
-      }
-      return new_node;
-    }
-    return nullptr;
-  }
+  void Visit(const AnfNodePtr &node) override;
 
-  void Visit(const AnfNodePtr &node) override {
-    if (prim_ == nullptr && x_ == nullptr) {
-      if (IsPrimitiveCNode(node, prim::kPrimReshape)) {
-        auto &inputs = node->cast<CNodePtr>()->inputs();
-        // {PrimReshape, X, Y}
-        constexpr auto reshape_input_size = 3;
-        if (inputs.size() != reshape_input_size) {
-          return;
-        }
-        prim_ = GetValueNode<PrimitivePtr>(inputs[0]);
-        x_ = inputs[1];
-      }
-    } else {
-      shape_ = node;
-    }
-  }
-
-  void Reset() {
-    prim_ = nullptr;
-    x_ = nullptr;
-    shape_ = nullptr;
-  }
+  void Reset();
 
  private:
   PrimitivePtr prim_{nullptr};
@@ -134,22 +62,10 @@ class TwoReshapeEliminater : public AnfVisitor {
 
 class ReshapeEliminater : public OptimizerCaller {
  public:
-  ReshapeEliminater() : reshape_same_shape_eliminater_(), two_reshape_eliminater_() {}
+  ReshapeEliminater();
   ~ReshapeEliminater() = default;
 
-  AnfNodePtr operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) override {
-    auto new_node = reshape_same_shape_eliminater_(optimizer, node);
-    if (new_node != nullptr) {
-      return new_node;
-    }
-
-    new_node = two_reshape_eliminater_(optimizer, node);
-    if (new_node != nullptr) {
-      return new_node;
-    }
-
-    return nullptr;
-  }
+  AnfNodePtr operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) override;
 
  private:
   ReshapeSameShapeEliminater reshape_same_shape_eliminater_;

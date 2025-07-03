@@ -22,7 +22,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/phase.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -35,9 +35,9 @@ class InferenceSwiGLUFusionUT : public UT::Common {
 /// Description: Convert SplitWithSize + Mul + Silu to Swiglu
 /// Expectation: After optimize, match Swiglu.
 TEST_F(InferenceSwiGLUFusionUT, InferenceSwiGLUFusionTest) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1, 1024, 11264});
   auto split_size = c.NewValueNode(MakeValue(std::vector<int64_t>{5632, 5632}));

@@ -53,9 +53,9 @@ APP_ERROR GetDVPPConvertMode(ConvertMode convertMode, acldvppConvertMode *dvpp_m
 inline int GetDVPPConvertMode(ConvertMode convertMode) {
   switch (convertMode) {
     case ConvertMode::COLOR_BGR2BGRA:              // COLOR_BGR2BGRA=COLOR_RGB2RGBA
-      return acldvppConvertMode::COLOR_BGR2BGRA;   // dvpp alpah channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
+      return acldvppConvertMode::COLOR_BGR2BGRA;   // dvpp alpha channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
     case ConvertMode::COLOR_BGRA2BGR:              // COLOR_BGRA2BGR=COLOR_RGBA2RGB
-      return acldvppConvertMode::COLOR_BGRA2BGR;   // dvpp alpah channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
+      return acldvppConvertMode::COLOR_BGRA2BGR;   // dvpp alpha channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
     case ConvertMode::COLOR_BGR2RGBA:              // COLOR_BGR2RGBA=COLOR_RGB2BGRA
       return acldvppConvertMode::COLOR_BGR2RGBA;   // dvpp COLOR_BGR2RGBA/COLOR_RGB2BGRA
     case ConvertMode::COLOR_RGBA2BGR:              // COLOR_RGBA2BGR=COLOR_BGRA2RGB
@@ -235,7 +235,7 @@ APP_ERROR DvppErase(const std::shared_ptr<DeviceTensorAscend910B> &input,
 
 /// \brief Blur input image with the specified Gaussian kernel.
 /// \param input: input containing the not decoded image 1D bytes.
-/// \param output: Blured image Tensor (type DE_FLOAT32 or DE_UINT8).
+/// \param output: Blurred image Tensor (type DE_FLOAT32 or DE_UINT8).
 /// \param kernel_size: The size of the Gaussian kernel.
 /// \param sigma:  The standard deviation of the Gaussian kernel.
 /// \param padding_mode: The method of padding.
@@ -245,7 +245,7 @@ APP_ERROR DvppGaussianBlur(const std::shared_ptr<DeviceTensorAscend910B> &input,
 
 /// \brief Returns horizontal flip image
 /// \param input: Tensor of shape <N,H,W,C>, c == 1 or c == 3
-/// \param output: Filpped image Tensor of same input shape (type DE_FLOAT32 or DE_UINT8)
+/// \param output: Flipped image Tensor of same input shape (type DE_FLOAT32 or DE_UINT8)
 APP_ERROR DvppHorizontalFlip(const std::shared_ptr<DeviceTensorAscend910B> &input,
                              std::shared_ptr<DeviceTensorAscend910B> *output);
 
@@ -336,7 +336,7 @@ APP_ERROR DvppSolarize(const std::shared_ptr<DeviceTensorAscend910B> &input,
 
 /// \brief Returns vertical flip image.
 /// \param input: Tensor of shape <N,H,W,C>, c == 1 or c == 3
-/// \param output: Filpped image Tensor of same input shape (type DE_FLOAT32 and DE_UINT8)
+/// \param output: Flipped image Tensor of same input shape (type DE_FLOAT32 and DE_UINT8)
 APP_ERROR DvppVerticalFlip(const std::shared_ptr<DeviceTensorAscend910B> &input,
                            std::shared_ptr<DeviceTensorAscend910B> *output);
 

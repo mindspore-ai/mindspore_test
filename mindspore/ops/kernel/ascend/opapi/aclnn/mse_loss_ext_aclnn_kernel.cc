@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <memory>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "abstract/utils.h"
@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace mse_loss_ext {
 
 void MSELossExtAclnnKernelMod::SetExpandTensor(KernelTensor *input_tensor, const std::vector<KernelTensor *> &inputs,
                                                const size_t &input_index) {
@@ -38,7 +39,7 @@ void MSELossExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
 
-  const auto &reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
+  const auto &reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
   // transform reduction enum value to corresponding value
   reduction_value_ = ops::ConvertReductionForAclnn(reduction_imm);
   const std::vector<int64_t> &input_shape = inputs[kIndex0]->GetShapeVector();
@@ -99,5 +100,6 @@ bool MSELossExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MSELossExt, MSELossExtAclnnKernelMod);
+}  // namespace mse_loss_ext
 }  // namespace kernel
 }  // namespace mindspore

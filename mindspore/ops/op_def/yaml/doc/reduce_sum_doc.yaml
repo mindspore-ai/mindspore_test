@@ -8,9 +8,9 @@ reduce_sum:
             The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
 
         Args:
-            keep_dims (bool): If ``True`` , keep these reduced dimensions and the length is 1.
+            keep_dims (bool, optional): If ``True`` , keep these reduced dimensions and the length is 1.
                 If ``False`` , don't keep these dimensions. Default: ``False`` .
-            skip_mode (bool): If ``True`` and `axis` is empty tuple or empty list,
+            skip_mode (bool, optional): If ``True`` and `axis` is empty tuple or empty list,
                 the ReduceSum operation isn't performed, skip it.
                 If ``True`` and `axis` is other values, the ReduceSum calculation is performed normally.
                 If ``False`` , do reduce. Default: ``False`` .
@@ -29,11 +29,11 @@ reduce_sum:
             - If `axis` is ``()`` , and `skip_mode` is ``True`` ,
               the ReduceSum operation is not performed, output tensor is equal to the input tensor.
             - If `axis` is int, set as 2, and `keep_dims` is ``False`` ,
-              the shape of output is :math:`(x_1, x_3, ..., x_R)`.
+              the shape of output is :math:`(x_0, x_1, x_3, ..., x_R)`.
             - If `axis` is tuple(int) or list(int), set as (2, 3), and `keep_dims` is ``False`` ,
-              the shape of output is :math:`(x_1, x_4, ..., x_R)`.
+              the shape of output is :math:`(x_0, x_1, x_4, ..., x_R)`.
             - If `axis` is 1-D Tensor, set as [2, 3], and `keep_dims` is ``False`` ,
-              the shape of output is :math:`(x_1, x_4, ..., x_R)`.
+              the shape of output is :math:`(x_0, x_1, x_4, ..., x_R)`.
 
         Raises:
             TypeError: If `keep_dims` is not a bool.

@@ -60,6 +60,18 @@ class ExpandMetaShardFg {
  private:
   std::vector<std::pair<std::string, ExpandMetaFGPrimPtr>> expand_meta_shard_fg_list_;
 };
+
+class ExpandMetaAddAttrFg {
+ public:
+  ExpandMetaAddAttrFg() {
+    (void)expand_meta_addattr_fg_list_.emplace_back("addattr", std::make_shared<ExpandAddAttrPrim>());
+  }
+  virtual ~ExpandMetaAddAttrFg() = default;
+  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
+
+ private:
+  std::vector<std::pair<std::string, ExpandMetaFGPrimPtr>> expand_meta_addattr_fg_list_;
+};
 }  // namespace irpass
 }  // namespace opt
 }  // namespace mindspore

@@ -19,6 +19,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {
@@ -50,13 +51,13 @@ TypePtr CummaxFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
 }
 
 TypePtrList CummaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype(), kInt64};
 }
 
 ShapeArray CummaxFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto &x_shape = x_tensor->shape();
   bool is_dynamic = IsDynamic(x_shape);

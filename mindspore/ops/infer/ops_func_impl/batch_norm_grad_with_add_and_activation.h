@@ -23,7 +23,11 @@
 #include <vector>
 
 #include "infer/ops_func_impl/batch_norm_grad.h"
+#include "utils/check_convert_utils.h"
+#include "ops_utils/op_utils.h"
 
+namespace mindspore {
+namespace ops {
 class OPS_API BatchNormGradWithAddAndActivationFuncImpl : public BatchNormGradFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
@@ -36,19 +40,21 @@ class OPS_API BatchNormGradWithAddAndActivationFuncImpl : public BatchNormGradFu
     }
     auto scale_shape_ptr = input_args[kInputIndex2]->GetShape();
     auto x_shape_ptr = std::make_shared<abstract::TensorShape>(x_shape);
-    return std::make_shared<abstract::TupleShape>(std::move(std::vector<abstract::BaseShapePtr>{
-      x_shape_ptr, scale_shape_ptr->Clone(), scale_shape_ptr->Clone(), x_shape_ptr->Clone()}));
+    return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{
+      x_shape_ptr, scale_shape_ptr->Clone(), scale_shape_ptr->Clone(), x_shape_ptr->Clone()});
   }
 
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
     auto x_type_ptr = input_args[kInputIndex1]->GetType();
     auto scale_type_ptr = input_args[kInputIndex2]->GetType();
-    return std::make_shared<Tuple>(std::move(std::vector<TypePtr>{x_type_ptr->Clone(), scale_type_ptr->Clone(),
-                                                                  scale_type_ptr->Clone(), x_type_ptr->Clone()}));
+    return std::make_shared<Tuple>(
+      std::vector<TypePtr>{x_type_ptr->Clone(), scale_type_ptr->Clone(), scale_type_ptr->Clone(), x_type_ptr->Clone()});
   }
 
  protected:
   size_t GetAttrPosZero() const override { return 8; }
 };
+}  // namespace ops
+}  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_OPS_BATCH_NORM_GRAD_WITH_ADD_AND_ACTIVATION_H_

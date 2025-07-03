@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,8 +164,7 @@ OperatorAttrs Conv3DInfo::CreateConv3DAttrs() {
   Attr group = {GROUP, MakeValue(group_)};
   Attr data_format = {DATA_FORMAT, MakeValue(format_)};
 
-  OperatorAttrs attrs;
-  attrs = {out_channel, kernel_size, mode, pad_mode, pad, stride, dilation, group, data_format};
+  OperatorAttrs attrs = {out_channel, kernel_size, mode, pad_mode, pad, stride, dilation, group, data_format};
   return attrs;
 }
 

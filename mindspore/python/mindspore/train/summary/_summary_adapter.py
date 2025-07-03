@@ -25,7 +25,7 @@ from PIL import Image
 
 from mindspore import log as logger
 from mindspore import context
-from mindspore.communication.management import get_rank
+from mindspore.communication.management import get_rank, get_group_size
 from mindspore.communication.management import GlobalComm
 
 from mindspore import _checkparam as Validator
@@ -60,7 +60,7 @@ def get_event_file_name(prefix, suffix, time_second):
     file_name = ""
     hostname = platform.node()
 
-    device_num = context.get_auto_parallel_context('device_num')
+    device_num = get_group_size()
     device_id = context.get_context('device_id')
     if device_num > 1 or GlobalComm.WORLD_COMM_GROUP == 'nccl_world_group':
         # Notice:

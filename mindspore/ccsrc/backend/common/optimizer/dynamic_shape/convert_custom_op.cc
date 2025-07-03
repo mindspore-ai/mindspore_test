@@ -19,9 +19,7 @@
 #include <memory>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "utils/ms_context.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {

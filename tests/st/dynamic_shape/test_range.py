@@ -100,6 +100,7 @@ def test_range_dynamic(mode):
     Expectation: output the right result.
     """
     ms.context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     dyn_start = Tensor(shape=[None], dtype=mstype.int64)
     dyn_limit = Tensor(shape=[None], dtype=mstype.int64)
     dyn_delta = Tensor(shape=[None], dtype=mstype.int64)

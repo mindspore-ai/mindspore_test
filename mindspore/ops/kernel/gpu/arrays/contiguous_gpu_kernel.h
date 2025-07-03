@@ -19,8 +19,8 @@
 #include <map>
 #include <utility>
 #include "ir/tensor_storage_info.h"
-#include "kernel/kernel.h"
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace kernel {
@@ -33,16 +33,19 @@ class ContiguousGpuKernel {
                         const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
                         const device::DeviceAddressPtr &outputs, const device::DeviceAddressPtr &shape_addr,
                         const device::DeviceAddressPtr &strides_addr, void *stream_ptr);
+  bool LaunchContiguous(TypeId input_type_id, device::DeviceAddress *input,
+                        const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                        device::DeviceAddress *output, const device::DeviceAddressPtr &shape_addr,
+                        const device::DeviceAddressPtr &strides_addr, void *stream_ptr);
 
  private:
-  using ContiguousFunc =
-    std::function<bool(ContiguousGpuKernel *, const device::DeviceAddressPtr &, const TensorStorageInfoPtr &,
-                       const device::DeviceAddressPtr &, const device::DeviceAddressPtr &,
-                       const device::DeviceAddressPtr &, const int64_t &, void *)>;
+  using ContiguousFunc = std::function<bool(
+    ContiguousGpuKernel *, device::DeviceAddress *, const TensorStorageInfoPtr &, device::DeviceAddress *,
+    const device::DeviceAddressPtr &, const device::DeviceAddressPtr &, const int64_t &, void *)>;
 
   template <typename T>
-  bool LaunchContiguousImpl(const device::DeviceAddressPtr &inputs, const TensorStorageInfoPtr &input_storage_info,
-                            const device::DeviceAddressPtr &outputs, const device::DeviceAddressPtr &shape_addr,
+  bool LaunchContiguousImpl(device::DeviceAddress *inputs, const TensorStorageInfoPtr &input_storage_info,
+                            device::DeviceAddress *outputs, const device::DeviceAddressPtr &shape_addr,
                             const device::DeviceAddressPtr &strides_addr, const int64_t &type_size, void *stream_ptr);
   static std::map<std::pair<TypeId, TypeId>, ContiguousFunc> func_list_;
 };

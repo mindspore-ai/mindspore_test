@@ -65,6 +65,6 @@ T DelegateRegistry<T>::GetDelegate(const mindspore::DeviceType &device_type, con
 }
 
 template class DelegateRegistry<ExtendDelegate *>;
-template class DelegateRegistry<std::shared_ptr<device::GraphExecutor>>;
+template class DelegateRegistry<std::shared_ptr<LiteGraphExecutor>>;
 
 }  // namespace mindspore

@@ -16,17 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/inplace_copy.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceCopyAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &variable_tensor,
-                                                 const BaseTensorPtr &value_tensor) {
+tensor::TensorPtr InplaceCopyAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &variable_tensor,
+                                             const TensorPtr &value_tensor) {
   MS_LOG(DEBUG) << "Call Copy start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), variable_tensor, value_tensor);
   op->set_outputs({variable_tensor});

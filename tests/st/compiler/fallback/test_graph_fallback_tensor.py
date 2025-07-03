@@ -63,7 +63,7 @@ def test_np_tensor_list():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def np_tensor_list():
         a = Tensor(np.array(4), mstype.int32)
         b = Tensor(np.array(5), mstype.int32)
@@ -130,7 +130,7 @@ def test_np_tensor_add():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def np_tensor_add():
         a = Tensor(np.array(4))
         b = Tensor(np.array(5))
@@ -186,10 +186,10 @@ def test_user_define_bprop_using_fallback():
 
     test_cell = TestCell()
     input_x = Tensor([1, 2, 3, 4], mstype.float32)
-    graph_output = ops.grad(test_cell)(input_x)
+    graph_output = ops.grad(test_cell)(input_x)  # pylint: disable=not-callable
 
     context.set_context(mode=context.PYNATIVE_MODE)
-    pynative_out = ops.grad(test_cell)(input_x)
+    pynative_out = ops.grad(test_cell)(input_x)  # pylint: disable=not-callable
     context.set_context(mode=context.GRAPH_MODE)
 
     assert np.allclose(graph_output.asnumpy(), pynative_out.asnumpy())

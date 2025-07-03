@@ -21,10 +21,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_tensor {
 
 class SplitTensorAscend : public AclnnKernelMod {
  public:
@@ -44,6 +45,7 @@ class SplitTensorAscend : public AclnnKernelMod {
 
   std::vector<KernelTensor *> GetSplitRealOutputs(const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace split_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

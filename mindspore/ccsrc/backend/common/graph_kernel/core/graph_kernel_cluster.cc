@@ -26,7 +26,6 @@
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/hash_map.h"
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"
@@ -34,6 +33,8 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 Graph::Cluster::Cluster(size_t node_id, const AnfNodePtr &node,

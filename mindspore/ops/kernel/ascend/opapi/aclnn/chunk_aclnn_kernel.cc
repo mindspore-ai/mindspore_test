@@ -21,17 +21,18 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace chunk {
 void ChunkAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   const auto &input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
-  auto chunks = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  dims_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  auto chunks = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  dims_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   if (dims_ < 0) {
     dims_ += SizeToLong(input_shape.size());
   }
@@ -41,7 +42,17 @@ void ChunkAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   MS_EXCEPTION_IF_CHECK_FAIL(chunks > 0, "For Chunk, the value of [chunks] must be larger than 0!");
 
   split_size_ = (dim_size + chunks - 1) / chunks;
-  if (split_size_ == 0 && dim_size == 0) {
+  bool is_empty_tensor = dim_size == 0 ? true : false;
+  if (!is_empty_tensor) {
+    for (int i = 0; i < SizeToLong(input_shape.size()); i++) {
+      if (input_shape[i] == 0) {
+        is_empty_tensor = true;
+        dims_ = i;
+        break;
+      }
+    }
+  }
+  if (is_empty_tensor) {
     op_type_ = "aclnnSplitWithSize";
     split_sizes_ = std::vector<int64_t>(chunks, 0);
     GetWorkspaceForResize(inputs[kIndex0], split_sizes_, dims_, outputs);
@@ -63,5 +74,6 @@ bool ChunkAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Chunk, ChunkAscend);
+}  // namespace chunk
 }  // namespace kernel
 }  // namespace mindspore

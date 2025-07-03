@@ -21,14 +21,15 @@
 #include <map>
 #include <limits>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
 namespace mindspore {
 namespace kernel {
+namespace eltwise_grad_cpu {
 constexpr size_t kInputMinNum = 2;
 constexpr size_t kOutputNum = 1;
 constexpr auto kUnKnown = "UnKnown";
@@ -66,6 +67,7 @@ class EltWiseGradCpuKernelMod : public NativeCpuKernelMod {
   bool is_null_input_{false};
   std::string kernel_name_{kUnKnown};
 };
+}  // namespace eltwise_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -33,8 +33,14 @@
 #include "ir/func_graph_cloner.h"
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#ifdef ENABLE_AKG
+#include "kernel/graph_kernel/graph_kernel_builder.h"
+#endif
 
 namespace mindspore::graphkernel {
 // find outputs of nodes
@@ -154,7 +160,7 @@ bool ConvertTensorToParameter(const FuncGraphPtr &fg, AnfNodePtrList *inputs_ptr
     auto &inputs = cnode->inputs();
     for (size_t i = 1; i < inputs.size(); ++i) {
       const auto &tnode = inputs[i];
-      auto tensor = GetValueNode<tensor::BaseTensorPtr>(tnode);
+      auto tensor = GetValueNode<tensor::TensorPtr>(tnode);
       if (tensor == nullptr) {
         continue;
       }
@@ -309,8 +315,19 @@ void EliminateRedundantParameters(const FuncGraphPtr &func_graph, AnfNodePtrList
   *inputs = std::move(new_inputs);
 }
 
-std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes,
-                                                                             const ClusterConfig &config) {
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(const AnfNodePtrList &nodes) {
+  return BuildGraphFromNodesInner(nodes, {});
+}
+
+#ifdef ENABLE_AKG
+class RegGraphKernelBuilder {
+ public:
+  RegGraphKernelBuilder() { kernel::GraphKernelBuilder::build_func_ = BuildGraphFromNodes; }
+} g_reg_graph_kernel_builder;
+#endif
+
+std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodesInner(const AnfNodePtrList &nodes,
+                                                                                  const ClusterConfig &config) {
   FuncGraphPtr fg = nullptr;
   {
     // limit the lifetime of guard.
@@ -370,7 +387,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildSingleGraphFromNod
   FuncGraphPtr fg;
   AnfNodePtrList inputs;
   AnfNodePtrList outputs;
-  std::tie(fg, inputs, outputs) = BuildGraphFromNodes(nodes, config);
+  std::tie(fg, inputs, outputs) = BuildGraphFromNodesInner(nodes, config);
 
   FuncGraphManagerPtr mng = GkUtils::GetFuncGraphManager(fg);
   MS_EXCEPTION_IF_NULL(mng);

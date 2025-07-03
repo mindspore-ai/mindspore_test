@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <complex>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sspaddmm_cpu {
 namespace {
 constexpr size_t kInputsNum = 9;
 constexpr size_t kOutputsNum = 3;
@@ -381,5 +382,6 @@ void SspaddmmCPUKernelMod::SparseMulDense(void *mat1_indices, const S *mat1_valu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Sspaddmm, SspaddmmCPUKernelMod);
+}  // namespace sspaddmm_cpu
 }  // namespace kernel
 }  // namespace mindspore

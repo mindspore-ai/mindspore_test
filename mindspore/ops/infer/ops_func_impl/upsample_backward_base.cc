@@ -44,7 +44,7 @@ ShapeArray UpsampleBackwardBaseFuncImpl::InferShape(const PrimitivePtr &primitiv
 
 TypePtrList UpsampleBackwardBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                                     const ValuePtrList &input_values) const {
-  const auto &input = input_values[0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   return {input->Dtype()};
 }

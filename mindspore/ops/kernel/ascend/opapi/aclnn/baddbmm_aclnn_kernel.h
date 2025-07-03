@@ -19,11 +19,12 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace baddbmm {
+using TensorParams = device::ascend::TensorParams;
 
 class BaddbmmAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class BaddbmmAclnnKernelMod : public AclnnKernelMod {
 
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace baddbmm
 }  // namespace kernel
 }  // namespace mindspore
 

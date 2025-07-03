@@ -19,8 +19,8 @@
 #include <utility>
 #include <string>
 #include <algorithm>
-#include "runtime/device/ms_device_shape_transfer.h"
-#include "kernel/common_utils.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

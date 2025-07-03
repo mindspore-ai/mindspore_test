@@ -19,10 +19,11 @@
 #include <utility>
 #include <complex>
 #include "mindspore/ops/infer/ops_func_impl/select.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace select_cpu {
 namespace {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
@@ -178,5 +179,6 @@ const std::vector<selectPair> &SelectCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Select, SelectCpuKernelMod);
+}  // namespace select_cpu
 }  // namespace kernel
 }  // namespace mindspore

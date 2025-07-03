@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "backend/common/somas/somas.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 
 namespace mindspore {
 namespace device {
@@ -43,7 +43,7 @@ class GPUSomas : public somas::Somas {
   void InitEventInfo(const session::KernelGraph &graph);
   std::map<uintptr_t, somas::EventPair> event_map_;
 };
-REG_SOMAS(GPU, DeviceType::kGPU, GPUSomas)
+REG_SOMAS(GPU, DeviceType::kGPU, GPUSomas);
 }  // namespace gpu
 }  // namespace device
 }  // namespace mindspore

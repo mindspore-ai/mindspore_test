@@ -17,7 +17,7 @@
 #include "kernel/gpu/pyboost/customize/grouped_matmul.h"
 #include <memory>
 #include <functional>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
@@ -30,8 +30,9 @@ void GroupedMatmulGPUCustomize(const std::shared_ptr<OpRunner> &op, const ValueT
                                const std::optional<ValueTuplePtr> &offset_tensor_list,
                                const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-                               const std::optional<BaseTensorPtr> &group_list, const Int64ImmPtr &split_item,
-                               const Int64ImmPtr &group_type) {
+                               const std::optional<TensorPtr> &group_list, const Int64ImmPtr &split_item,
+                               const Int64ImmPtr &group_type, const mindspore::BoolImmPtr &transpose_a,
+                               const mindspore::BoolImmPtr &transpose_b) {
   MS_LOG(DEBUG) << "Call start";
 
   MS_LOG(DEBUG) << "Launch end";

@@ -28,6 +28,7 @@
 #include "infer/tensor_to_scalar.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace expander {
@@ -74,7 +75,8 @@ void PynativeCallback::FreeInputDeviceAddress(const std::vector<size_t> &indices
 
 void PynativeCallback::FreeOutputDeviceAddress(const std::vector<size_t> &indices) const {
   auto output = GetOutput();
-  if (indices.empty()) {
+  if (indices.empty() ||
+      (!(*output)->isa<ValueSequence>() && indices.size() == kOutputSize1 && indices[kIndex0] == kIndex0)) {
     MS_LOG(DEBUG) << "Clear device address for output of " << opname();
     FreeDeviceAddress(output);
     return;
@@ -323,18 +325,6 @@ NodePtr IrBuilder::EmitValue(const ValuePtr &value) {
   auto node = NewIrNode(NewValueNode(value));
   infer_->Infer(node);
   return node;
-}
-
-NodePtr IrBuilder::Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) {
-  CtrlFlowBlock cfb(this, this->func_graph());
-  this->func_graph()->set_flag(kFlagIsControlFlow, true);
-  return cfb.IfThenElse(cond, true_case, false_case);
-}
-
-NodePtr IrBuilder::While(const NodePtr &cond, const BlockFunc &body, const NodePtrList &init_list) {
-  CtrlFlowBlock cfb(this, this->func_graph());
-  this->func_graph()->set_flag(kFlagIsControlFlow, true);
-  return cfb.While(cond, body, init_list);
 }
 }  // namespace bprop
 }  // namespace expander

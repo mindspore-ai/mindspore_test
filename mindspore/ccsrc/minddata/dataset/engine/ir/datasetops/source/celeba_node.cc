@@ -25,9 +25,7 @@
 
 #include "utils/file_utils.h"
 #include "minddata/dataset/engine/datasetops/source/celeba_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
 namespace dataset {
@@ -37,14 +35,25 @@ namespace dataset {
 CelebANode::CelebANode(const std::string &dataset_dir, const std::string &usage,
                        const std::shared_ptr<SamplerObj> &sampler, const bool &decode,
                        const std::set<std::string> &extensions, const std::shared_ptr<DatasetCache> &cache,
-                       py::function decrypt)
+                       const py::function &decrypt)
     : MappableSourceNode(std::move(cache)),
       dataset_dir_(dataset_dir),
       usage_(usage),
       sampler_(sampler),
       decode_(decode),
-      extensions_(extensions),
-      decrypt_(decrypt) {}
+      extensions_(extensions) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+CelebANode::~CelebANode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 // Constructor for CelebANode
 CelebANode::CelebANode(const std::string &dataset_dir, const std::string &usage,
@@ -56,6 +65,8 @@ CelebANode::CelebANode(const std::string &dataset_dir, const std::string &usage,
       sampler_(sampler),
       decode_(decode),
       extensions_(extensions) {}
+
+CelebANode::~CelebANode() = default;
 #endif
 
 std::shared_ptr<DatasetNode> CelebANode::Copy() {
@@ -237,7 +248,6 @@ Status CelebANode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status CelebANode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kCelebANode));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kCelebANode));
@@ -259,6 +269,5 @@ Status CelebANode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNod
   (void)(*ds)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

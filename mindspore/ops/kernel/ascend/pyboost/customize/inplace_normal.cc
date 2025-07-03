@@ -17,9 +17,9 @@
 #include "kernel/ascend/pyboost/customize/inplace_normal.h"
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -40,9 +40,9 @@ float GetScalarValueToFloat(const std::shared_ptr<Scalar> &scalar, const string 
   }
 }
 
-tensor::BaseTensorPtr InplaceNormalAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                   const ScalarPtr &mean, const ScalarPtr &std,
-                                                   const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceNormalAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                               const ScalarPtr &mean, const ScalarPtr &std, const TensorPtr &seed,
+                                               const TensorPtr &offset) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   op->set_outputs({input});
 

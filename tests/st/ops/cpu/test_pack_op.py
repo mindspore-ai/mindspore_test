@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import numpy as np
+import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops.operations.array_ops as P
-import numpy as np
-import pytest
 from mindspore.common.api import jit
 
 from mindspore import Tensor
@@ -37,7 +37,7 @@ class PackNet(nn.Cell):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('dtype', [np.float16, np.float32, np.int32, np.int16, np.uint8, np.bool])
+@pytest.mark.parametrize('dtype', [np.float16, np.float32, np.int32, np.int16, np.uint8, np.bool_])
 def test_pack_graph(dtype):
     """
     Feature: pack operation test

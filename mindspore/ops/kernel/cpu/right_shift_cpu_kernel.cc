@@ -17,10 +17,11 @@
 #include "kernel/cpu/right_shift_cpu_kernel.h"
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace right_shift_cpu {
 namespace {
 const size_t kRightShiftInputsNum = 2;
 const size_t kRightShiftOutputsNum = 1;
@@ -154,5 +155,6 @@ std::vector<KernelAttr> RightShiftCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RightShift, RightShiftCpuKernelMod);
+}  // namespace right_shift_cpu
 }  // namespace kernel
 }  // namespace mindspore

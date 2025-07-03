@@ -14,6 +14,7 @@ mindspore.runtime
     mindspore.runtime.set_cpu_affinity
     mindspore.runtime.launch_blocking
     mindspore.runtime.dispatch_threads_num
+    mindspore.runtime.set_kernel_launch_group
 
 内存
 ------------
@@ -26,6 +27,7 @@ mindspore.runtime
     mindspore.runtime.max_memory_allocated
     mindspore.runtime.max_memory_reserved
     mindspore.runtime.memory_allocated
+    mindspore.runtime.memory_replay
     mindspore.runtime.memory_reserved
     mindspore.runtime.memory_stats
     mindspore.runtime.memory_summary

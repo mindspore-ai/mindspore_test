@@ -18,14 +18,16 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/get_squeeze_slice_shape.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace get_squeeze_slice_shape_cpu {
 bool GetSqueezeSliceShapeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
   tuple_index_types_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrTupleIndexTypes));
@@ -107,11 +109,7 @@ std::vector<std::pair<KernelAttr, GetSqueezeSliceShapeCpuKernelMod::GetSqueezeSl
 
 std::vector<KernelAttr> GetSqueezeSliceShapeCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
-  std::vector<TypeId> data_type_ids = {kNumberTypeFloat16,   kNumberTypeFloat32,   kNumberTypeFloat64, kNumberTypeInt8,
-                                       kNumberTypeInt16,     kNumberTypeInt32,     kNumberTypeInt64,   kNumberTypeUInt8,
-                                       kNumberTypeUInt16,    kNumberTypeUInt32,    kNumberTypeUInt64,  kNumberTypeBool,
-                                       kNumberTypeComplex64, kNumberTypeComplex128};
-  (void)std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  (void)std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                        [](TypeId data_type_id) -> std::pair<KernelAttr, GetSqueezeSliceShapeFunc> {
                          return {
                            KernelAttr().AddInputAttr(data_type_id).AddOutputAttr(kObjectTypeTuple, kNumberTypeInt64),
@@ -122,5 +120,6 @@ std::vector<KernelAttr> GetSqueezeSliceShapeCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GetSqueezeSliceShape, GetSqueezeSliceShapeCpuKernelMod);
+}  // namespace get_squeeze_slice_shape_cpu
 }  // namespace kernel
 }  // namespace mindspore

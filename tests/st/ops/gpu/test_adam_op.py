@@ -196,6 +196,7 @@ def test_apply_adam_witm_adam_op_vmap():
     np.testing.assert_allclose(ms_var, np_var, rtol=error, atol=error)
 
 
+@pytest.mark.skip(reason="skip gpu hashtable")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 def test_adam_net_with_map_tensor():
     """

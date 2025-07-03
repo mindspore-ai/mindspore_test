@@ -23,14 +23,13 @@
 #include <functional>
 #include "ir/anf.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 #include "backend/common/mem_reuse/mem_reuse.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 namespace mindspore {
 namespace memreuse {
 constexpr auto kSplitC = '/';
 // todo: delete with kernel-runtime
-class BACKEND_EXPORT MemReuseChecker {
+class BACKEND_COMMON_EXPORT MemReuseChecker {
  public:
   static MemReuseChecker &GetInstance();
   MemReuseChecker(const MemReuseChecker &) = delete;

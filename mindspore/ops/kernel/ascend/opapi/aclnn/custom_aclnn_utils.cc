@@ -38,7 +38,7 @@ constexpr auto kPrefixLen = 5;
 
 template <size_t arg_num>
 std::shared_ptr<AclnnKernelMod> CreateCustomAclnnKernelModInstance(const std::string &op_type) {
-  return std::make_shared<CustomAclnnKernelMod<arg_num>>(op_type);
+  return std::make_shared<custom::CustomAclnnKernelMod<arg_num>>(op_type);
 }
 
 template <size_t arg_num>
@@ -104,6 +104,11 @@ std::shared_ptr<AclnnKernelMod> GetCustomAclnnKernelMod(const AnfNodePtr &anf_no
   auto primitive = GetCNodePrimitive(anf_node);
   auto op_type = GetValue<std::string>(primitive->GetAttr(kRegOpName));
   op_type = AddPrefixForCustomNode(op_type, primitive->GetAttr(kCustomAclop) != nullptr);
+
+  if (primitive->HasAttr(kCustomInputsType)) {
+    return std::make_shared<custom::CustomV2AclnnKernelMod>(op_type);
+  }
+
   auto arg_num = AnfUtils::GetInputTensorNum(anf_node) + AnfUtils::GetOutputTensorNum(anf_node);
   return GetCustomAclnnKernelMod(op_type, arg_num);
 }

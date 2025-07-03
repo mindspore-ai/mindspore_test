@@ -23,6 +23,7 @@
 #include "minddata/dataset/engine/datasetops/dataset_op.h"
 #include "minddata/dataset/engine/perf/info_collector.h"
 #include "minddata/dataset/util/task_manager.h"
+#include "minddata/utils.h"
 #ifdef WITH_BACKEND
 #include "utils/numa_interface.h"
 #include "utils/ms_context.h"
@@ -152,7 +153,7 @@ void ExecutionTree::PrintNode(std::ostream &out, const std::shared_ptr<DatasetOp
 Status ExecutionTree::Launch() {
   uint64_t start_time = GetSyscnt();
   // opencv limit too many threads
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #ifdef WITH_BACKEND
   // Here we do numa bind for performance optimization, as our test result,
   // if we do numa bind when get_dataset_size launch a tree, we'll get a
@@ -163,7 +164,9 @@ Status ExecutionTree::Launch() {
   // Now we only support GPU scenario and the single process scenario of Ascend,
   // now we remove the target_link of numa with _c_dataengine, and user can use
   // a config api to control whether to open numa feature.
-  if (numa_enable_ && rank_id_ >= 0) {
+  auto &bind_core_manager = runtime::ThreadBindCore::GetInstance();
+  if (numa_enable_ && rank_id_ >= 0 && !bind_core_manager.is_enable_thread_bind_core_) {
+    MS_LOG(INFO) << "Numa start bind.";
     if (handle_ == nullptr) {
       handle_ = GetNumaAdapterHandle();
       if (handle_ == nullptr) {

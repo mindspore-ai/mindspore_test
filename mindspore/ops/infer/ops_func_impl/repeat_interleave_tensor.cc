@@ -23,6 +23,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {
@@ -190,10 +191,10 @@ ShapeArray RepeatInterleaveTensorFuncImpl::InferShape(const PrimitivePtr &primit
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', Only support on Atlas A2 training series.";
   }
 
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto x_shape = x_tensor->shape();
-  const auto &repeats_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &repeats_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(repeats_tensor);
   if (repeats_tensor->device_address()) {
     repeats_tensor->data_sync();
@@ -235,7 +236,7 @@ ShapeArray RepeatInterleaveTensorFuncImpl::InferShape(const PrimitivePtr &primit
 
 TypePtrList RepeatInterleaveTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_x_type = x_tensor->Dtype();
   TypePtrList type_ptr_list{input_x_type};

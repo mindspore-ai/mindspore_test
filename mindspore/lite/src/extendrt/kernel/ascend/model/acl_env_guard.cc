@@ -17,8 +17,8 @@
 #include "extendrt/kernel/ascend/model/acl_env_guard.h"
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "common/log_adapter.h"
-#include "transform/symbol/acl_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -34,11 +34,11 @@ AclInitAdapter &AclInitAdapter::GetInstance() {
 aclError AclInitAdapter::AclInit(const char *config_file) {
   std::lock_guard<std::mutex> lock(flag_mutex_);
   if (init_flag_) {
-    return ACL_ERROR_NONE;
+    return ACL_SUCCESS;
   }
 
   init_flag_ = true;
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   auto ret = CALL_ASCEND_API(aclInit, config_file);
   if (ret == ACL_ERROR_REPEAT_INITIALIZE) {
     MS_LOG(WARNING) << "acl is repeat init";
@@ -51,7 +51,7 @@ aclError AclInitAdapter::AclFinalize() {
   std::lock_guard<std::mutex> lock(flag_mutex_);
   if (!init_flag_) {
     MS_LOG(INFO) << "Acl had been finalized.";
-    return ACL_ERROR_NONE;
+    return ACL_SUCCESS;
   }
 
   MS_LOG(INFO) << "Begin to aclFinalize.";
@@ -59,7 +59,7 @@ aclError AclInitAdapter::AclFinalize() {
   if (!is_repeat_init_) {
     MS_LOG(INFO) << "AclInitAdapter::aclFinalize begin.";
     auto rt_ret = CALL_ASCEND_API(aclFinalize);
-    if (rt_ret != ACL_ERROR_NONE) {
+    if (rt_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "aclFinalize failed.";
     }
     MS_LOG(INFO) << "AclInitAdapter::aclFinalize end.";
@@ -67,7 +67,7 @@ aclError AclInitAdapter::AclFinalize() {
   } else {
     MS_LOG(WARNING) << "has repeat init, not aclFinalize";
   }
-  return ACL_ERROR_NONE;
+  return ACL_SUCCESS;
 }
 
 aclError AclInitAdapter::ForceFinalize() {
@@ -76,18 +76,18 @@ aclError AclInitAdapter::ForceFinalize() {
   init_flag_ = false;
   if (!is_repeat_init_) {
     auto rt_ret = CALL_ASCEND_API(aclFinalize);
-    if (rt_ret != ACL_ERROR_NONE) {
+    if (rt_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "aclFinalize failed.";
     }
     return rt_ret;
   } else {
     MS_LOG(WARNING) << "has repeat init, not aclFinalize";
   }
-  return ACL_ERROR_NONE;
+  return ACL_SUCCESS;
 }
 
 AclEnvGuard::AclEnvGuard() : errno_(AclInitAdapter::GetInstance().AclInit(nullptr)) {
-  if (errno_ != ACL_ERROR_NONE && errno_ != ACL_ERROR_REPEAT_INITIALIZE) {
+  if (errno_ != ACL_SUCCESS && errno_ != ACL_ERROR_REPEAT_INITIALIZE) {
     MS_LOG(ERROR) << "Execute aclInit failed.";
     return;
   }
@@ -95,7 +95,7 @@ AclEnvGuard::AclEnvGuard() : errno_(AclInitAdapter::GetInstance().AclInit(nullpt
 }
 
 AclEnvGuard::AclEnvGuard(std::string_view cfg_file) : errno_(AclInitAdapter::GetInstance().AclInit(cfg_file.data())) {
-  if (errno_ != ACL_ERROR_NONE && errno_ != ACL_ERROR_REPEAT_INITIALIZE) {
+  if (errno_ != ACL_SUCCESS && errno_ != ACL_ERROR_REPEAT_INITIALIZE) {
     MS_LOG(ERROR) << "Execute aclInit failed.";
     return;
   }
@@ -104,7 +104,7 @@ AclEnvGuard::AclEnvGuard(std::string_view cfg_file) : errno_(AclInitAdapter::Get
 
 AclEnvGuard::~AclEnvGuard() {
   errno_ = AclInitAdapter::GetInstance().AclFinalize();
-  if (errno_ != ACL_ERROR_NONE && errno_ != ACL_ERROR_REPEAT_FINALIZE) {
+  if (errno_ != ACL_SUCCESS && errno_ != ACL_ERROR_REPEAT_FINALIZE) {
     MS_LOG(ERROR) << "Execute AclFinalize failed.";
   }
   MS_LOG(INFO) << "Execute AclFinalize success.";
@@ -120,7 +120,7 @@ std::shared_ptr<AclEnvGuard> AclEnvGuard::GetAclEnv() {
   } else {
     acl_env = std::make_shared<AclEnvGuard>();
     aclError ret = acl_env->GetErrno();
-    if (ret != ACL_ERROR_NONE && ret != ACL_ERROR_REPEAT_INITIALIZE) {
+    if (ret != ACL_SUCCESS && ret != ACL_ERROR_REPEAT_INITIALIZE) {
       MS_LOG(ERROR) << "Execute aclInit failed.";
       return nullptr;
     }
@@ -143,7 +143,7 @@ std::shared_ptr<AclEnvGuard> AclEnvGuard::GetAclEnv(std::string_view cfg_file) {
   } else {
     acl_env = std::make_shared<AclEnvGuard>(cfg_file);
     aclError ret = acl_env->GetErrno();
-    if (ret != ACL_ERROR_NONE && ret != ACL_ERROR_REPEAT_INITIALIZE) {
+    if (ret != ACL_SUCCESS && ret != ACL_ERROR_REPEAT_INITIALIZE) {
       MS_LOG(ERROR) << "Execute aclInit failed.";
       return nullptr;
     }
@@ -180,7 +180,7 @@ bool AclEnvGuard::Finalize() {
     return false;
   }
   auto ret = AclInitAdapter::GetInstance().AclFinalize();
-  if (ret != ACL_ERROR_NONE && ret != ACL_ERROR_REPEAT_FINALIZE) {
+  if (ret != ACL_SUCCESS && ret != ACL_ERROR_REPEAT_FINALIZE) {
     MS_LOG(ERROR) << "Execute acl env finalize failed.";
     return false;
   }

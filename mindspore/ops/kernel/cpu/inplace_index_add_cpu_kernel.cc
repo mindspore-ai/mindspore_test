@@ -23,10 +23,11 @@
 
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/inplace_index_add.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_index_add_cpu {
 
 bool InplaceIndexAddCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -206,5 +207,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &InplaceIndexAddCpuKerne
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InplaceIndexAdd, InplaceIndexAddCpuKernelMod);
+}  // namespace inplace_index_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

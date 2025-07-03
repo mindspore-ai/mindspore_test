@@ -23,8 +23,8 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "runtime/hardware/device_context.h"
-#include "include/backend/debug/profiler/profiling.h"
-#include "kernel/kernel.h"
+#include "debug/profiler/profiling.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace runtime {
@@ -40,11 +40,11 @@ class RecorderActor : public ActorBase {
 
   // The memory recorder of each node.
   void RecordInfo(const std::string op_name, const KernelLaunchAddr *launch_info, const DeviceContext *device_context,
-                  OpContext<DeviceTensor> *const op_context);
+                  OpContext<KernelTensor> *const op_context);
 
   // Clear memory recorder at the step end.
   // Record fp_start and iter_end op name and timestamp at the step end. (GPU)
-  void RecordOnStepEnd(OpContext<DeviceTensor> *const op_context);
+  void RecordOnStepEnd(OpContext<KernelTensor> *const op_context);
 };
 }  // namespace runtime
 }  // namespace mindspore

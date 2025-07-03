@@ -40,23 +40,17 @@
 #include "frontend/parallel/ops_info/reshape_info.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"
 #include "frontend/parallel/parameter_manager.h"
-#include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/strategy_loader.h"
-#include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/anf.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
 #include "pipeline/jit/ps/pipeline_split.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
@@ -64,6 +58,8 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {
@@ -134,13 +130,9 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   return false;
 }
 
-bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
-  MSLogTime msTime;
-  msTime.Start();
-  // Mode 'dynamic programming' will run after pipeline_split, others don't.
-  MS_EXCEPTION_IF_NULL(root);
+bool PreprocessRootGraph(const FuncGraphPtr &root) {
+  bool changes = false;
   bool is_pre_action = !root->has_flag(AUTO_PARALLEL_FINISH_PRE_ACTION);
-  bool changes;
   if (is_pre_action) {
     root->set_flag(AUTO_PARALLEL_FINISH_PRE_ACTION, true);
     auto manager = root->manager();
@@ -151,27 +143,96 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
       root->set_flag(kTraining, true);
     }
     changes = true;
-  } else {
-    changes = false;
+  }
+  return changes;
+}
+
+bool SkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_search_mode, bool is_pre_action,
+                      MSLogTime msTime) {
+  // control whether use model_parallel mode
+  bool is_skip = IsSkipAutoParallel(root, strategy_search_mode, is_pre_action);
+  if (is_skip && !ParallelContext::GetInstance()->direct_split()) {
+    msTime.End();
+    uint64_t time = msTime.GetRunTimeUS();
+    MS_LOG(INFO) << "Now leaving step auto parallel, used time: " << time << " us";
+    return true;
+  }
+  return false;
+}
+
+std::vector<AnfNodePtr> GetAllNodesForParallel(const FuncGraphPtr &root, const AnfNodePtr &ret) {
+  std::vector<AnfNodePtr> all_nodes;
+  if (CheckShardingPropagation()) {
+    all_nodes = TopoSort(ret, SuccDeeperSimple);
   }
 
+  // merge concat slice for recursive propagation
+  if (!CheckShardingPropagation()) {
+    MS_EXCEPTION_IF_NULL(root);
+    auto manager = root->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    MS_EXCEPTION_IF_NULL(ret);
+    all_nodes = DeepScopedGraphSearch(ret);
+    bool merged = MergeConcatSlice(all_nodes, manager);
+    if (merged) {
+      all_nodes = TopoSort(ret, SuccDeeperSimple);
+    }
+  }
+  return all_nodes;
+}
+
+void InferParallelStrategy(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes,
+                           const std::string &strategy_search_mode) {
+  if (strategy_search_mode == kRecursiveProgramming &&
+      ((g_device_manager->DeviceNum() & (g_device_manager->DeviceNum() - 1)) != 0)) {
+    MS_LOG(EXCEPTION)
+      << "The recursive auto parallel strategy searching mode requires the device num be the power of 2.";
+  }
+
+  if (strategy_search_mode == kDynamicProgramming) {
+    MS_LOG(WARNING) << "The dynamic programming auto parallel strategy searching mode will soon not be used.";
+  }
+
+  // set grad accumulation step
+  SetGradAccumulationStep(all_nodes);
+
+  // mark the forward cnodes, parallel only care these nodes
+  MarkForwardCNode(root);
+
+  ExceptionIfHasCommunicationOp(all_nodes);
+
+  std::vector<AnfNodePtr> final_all_nodes = all_nodes;
+  if (IsInsertVirtualOutput(root)) {
+    InsertVirtualOutput(root, all_nodes);
+    const AnfNodePtr &ret_after = root->get_return();
+    MS_EXCEPTION_IF_NULL(ret_after);
+    final_all_nodes = DeepScopedGraphSearch(ret_after);
+  }
+
+  // search parallelization strategy
+  SearchParallelStrategy(strategy_search_mode, root, final_all_nodes);
+  root->set_flag(AUTO_PARALLEL_RUN_ONCE_ONLY, true);
+}
+
+bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+  MSLogTime msTime;
+  msTime.Start();
+
+  // Mode 'dynamic programming' will run after pipeline_split, others don't.
+  MS_EXCEPTION_IF_NULL(root);
+  bool is_pre_action = !root->has_flag(AUTO_PARALLEL_FINISH_PRE_ACTION);
+  bool changes = PreprocessRootGraph(root);
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::Util::IsRoleOfPServer() || ps::Util::IsRoleOfScheduler()) {
     return changes;
   }
 #endif
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
-  // control whether use model_parallel mode
   std::string strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
-  bool is_skip = IsSkipAutoParallel(root, strategy_search_mode, is_pre_action);
-  if (is_skip && !ParallelContext::GetInstance()->direct_split()) {
-    msTime.End();
-    uint64_t time = msTime.GetRunTimeUS();
-    MS_LOG(INFO) << "Now leaving step auto parallel, used time: " << time << " us";
+  if (SkipAutoParallel(root, strategy_search_mode, is_pre_action, msTime)) {
     return changes;
   }
   MS_LOG(INFO) << "search_mode: " << strategy_search_mode;
-
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -182,7 +243,7 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_LOG(INFO) << "Now entering step auto parallel";
   TOTAL_OPS = 0;
   AnfNodePtr ret = root->get_return();
-  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  std::vector<AnfNodePtr> all_nodes = GetAllNodesForParallel(root, ret);
 
   // insert Virtual Dataset if not exist
   if (ParallelInit() != SUCCESS) {
@@ -191,33 +252,11 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   if (!mindspore::pipeline::HasVirtualDataset(all_nodes)) {
     mindspore::pipeline::InsertVirtualDataset(root, all_nodes);
   }
+
   // redo deepscoped search again to connected the Virtual Dataset into the graph
-  all_nodes = DeepScopedGraphSearch(ret);
+  all_nodes = CheckShardingPropagation() ? TopoSort(ret, SuccDeeperSimple) : DeepScopedGraphSearch(ret);
 
-  if (strategy_search_mode == kRecursiveProgramming &&
-      ((g_device_manager->DeviceNum() & (g_device_manager->DeviceNum() - 1)) != 0)) {
-    MS_LOG(EXCEPTION)
-      << "The recursive auto parallel strategy searching mode requires the device num be the power of 2.";
-  }
-
-  // set grad accumulation step
-  SetGradAccumulationStep(all_nodes);
-  // mark the forward cnodes, parallel only care these nodes
-  MarkForwardCNode(root);
-
-  ExceptionIfHasCommunicationOp(all_nodes);
-
-  if (IsInsertVirtualOutput(root)) {
-    InsertVirtualOutput(root, all_nodes);
-    AnfNodePtr ret_after = root->get_return();
-    MS_EXCEPTION_IF_NULL(ret_after);
-    all_nodes = DeepScopedGraphSearch(ret_after);
-  }
-
-  // search parallelization strategy
-  SearchParallelStrategy(strategy_search_mode, root, all_nodes);
-  root->set_flag(AUTO_PARALLEL_RUN_ONCE_ONLY, true);
-
+  InferParallelStrategy(root, all_nodes, strategy_search_mode);
   msTime.End();
   uint64_t time = msTime.GetRunTimeUS();
   MS_LOG(INFO) << "Now leaving step auto parallel, used time: " << time << " us";
@@ -247,7 +286,8 @@ bool IsElementWiseOperator(const std::string &op_name) {
                                                        SOFTSIGN,   LESS,         LESSEQUAL,
                                                        BESSELI1E,  GREATEREQUAL, APPROXIMATEEQUAL,
                                                        MOD,        REVERSEV2,    REPEAT_ELEMENTS,
-                                                       TRUNC,      LGAMMA,       CHOLESKY};
+                                                       TRUNC,      LGAMMA,       CHOLESKY,
+                                                       SWIGLU, FMODSCALAR};
   // clang-format on
   auto iter = elementwise_op.find(op_name);
   return (iter != elementwise_op.cend());
@@ -323,10 +363,38 @@ void CheckStrategyUsedDevices(const OperatorInfoPtr &operator_info) {
   }
 }
 
-void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
+void SetLayoutToOperatorForNewShape(const OperatorInfoPtr &operator_info,
+                                    const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   auto cnode = operator_info->cnode();
+  std::vector<TensorLayoutBasePtr> in_tensor_layouts_new;
+  std::vector<TensorLayoutBasePtr> out_tensor_layouts_new;
+  if (ExtractUserConfigLayoutForNewShape(attrs, operator_info->inputs_shape_new(), operator_info->outputs_shape_new(),
+                                         &in_tensor_layouts_new, &out_tensor_layouts_new) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
+                                       << " extract configured layout failed";
+  }
+
+  // Only init operator with tensor_layouts_new, new shape operator currently doesn't support propagate strategy,
+  // no need and doesn't support setting cost
+  if (operator_info->Init(nullptr, nullptr, in_tensor_layouts_new, out_tensor_layouts_new) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name() << " SetCostUnderLayout failed";
+  }
+
+  operator_info->set_is_new_shape_node(true);
+  operator_info->set_config_by_layout(true);
+}
+
+void SetLayoutToOperator(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> &attrs) {
+  auto cnode = operator_info->cnode();
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
+  if (is_new_shape_base_node) {
+    SetLayoutToOperatorForNewShape(operator_info, attrs);
+    return;
+  }
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  StrategyPtr in_strategy_ptr = nullptr;
+  StrategyPtr out_strategy_ptr = nullptr;
   if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
                               &out_tensor_layouts) != SUCCESS) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
@@ -336,28 +404,43 @@ void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::
   (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
                        [](const auto &layout) { return layout->get_in_layout_strategy(); });
   MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
-  StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
-  operator_info->set_strategy(in_strategy_ptr);
-  // Set cost for this configured strategy
-  if (operator_info->SetCostUnderStrategy(in_strategy_ptr) != SUCCESS) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name()
-                                       << " SetCostUnderStrategy failed";
-  }
-  CheckStrategyUsedDevices(operator_info);
-  operator_info->set_config_by_layout(true);
-  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  in_strategy_ptr = NewStrategy(0, in_strategy);
+
   if (OutLayoutFound(attrs)) {
-    Strategies out_strategy;
-    (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
-                         [](const auto &layout) { return layout->get_out_layout_strategy(); });
-    MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
-    StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
-    operator_info->set_out_strategy(out_strategy_ptr);
+    out_strategy_ptr = operator_info->out_strategy();
   }
+  // Set cost for this configured strategy
+  if (operator_info->SetCostUnderLayout(in_strategy_ptr, out_strategy_ptr, in_tensor_layouts, out_tensor_layouts) !=
+      SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name() << " SetCostUnderLayout failed";
+  }
+  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  operator_info->set_config_by_layout(true);
 }
 
-void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
-                              mindspore::HashMap<std::string, ValuePtr> attrs) {
+void SetOutLayoutToOperater(const OperatorInfoPtr &operator_info,
+                            const mindspore::HashMap<std::string, ValuePtr> attrs) {
+  auto cnode = operator_info->cnode();
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
+  if (is_new_shape_base_node) {
+    return;
+  }
+  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
+  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
+                              &out_tensor_layouts) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
+                                       << " extract configured layout failed";
+  }
+  Strategies out_strategy;
+  (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
+                       [](const auto &layout) { return layout->get_out_layout_strategy(); });
+  MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
+  StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
+  operator_info->set_out_strategy(out_strategy_ptr);
+}
+
+void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, mindspore::HashMap<std::string, ValuePtr> attrs) {
   // In this case, when attrs has out_strategy, the out_strategy will be set to operator
   StrategyPtr strategyPtr;
   if (!OutStrategyFound(attrs)) {
@@ -394,7 +477,38 @@ void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const Primitive
     MS_LOG(EXCEPTION) << "Failure: operator " << prim->name() << " SetCostUnderStrategy failed";
   }
   CheckStrategyUsedDevices(operator_info);
+  operator_info->SetDefaultLayoutInfo();
   (void)configured_stra_ops_.emplace(operator_info, strategyPtr);
+}
+
+OperatorInfoPtr SetStrategiesToOperator(const PrimitivePtr &prim, const OperatorInfoPtr &operator_info,
+                                        const CNodePtr &cnode, bool is_last_nodes, StrategyMap *stra_map) {
+  // key of strategy map
+  std::string strategy_key_name;
+  auto param_names = NodeParameterName(cnode, -1, 0);
+  if (!param_names.empty()) {
+    strategy_key_name = prim->name() + "_" + param_names[0].first;
+  }
+  bool load_strategy_from_ckpt =
+    StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map->find(strategy_key_name) != stra_map->end();
+  auto attrs = prim->attrs();
+  // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
+  if (OutLayoutFound(attrs)) {
+    SetOutLayoutToOperater(operator_info, attrs);
+  }
+  if (LayoutFound(attrs)) {
+    SetLayoutToOperator(operator_info, attrs);
+    return operator_info;
+  }
+  // If the user input strategy (tuple-like), set the strategy to the operator_info.
+  if (OutStrategyFound(attrs)) {
+    SetOutStrategyToOperator(operator_info, attrs);
+  }
+  if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
+    SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
+    return operator_info;
+  }
+  return nullptr;
 }
 
 void ApplyApproximationForNode(const OperatorInfoPtr &operator_info) {
@@ -425,7 +539,9 @@ bool GenerateStrategiesByOperatorInfoPtr(const OperatorInfoPtr &operator_info) {
     operator_info->addAttr(IN_STRATEGY, attrs[GEN_STRATEGY]);  // for d-rec
   } else {
     MS_LOG(INFO) << "auto-searching strategy...";
+    operator_info->LayoutPropagationBegin();
     retGenStra = operator_info->GenerateStrategies(0);
+    operator_info->LayoutPropagationEnd();
   }
   if (retGenStra != SUCCESS) {
     MS_LOG(ERROR) << "Strategy search for Operator " << operator_info->name() << " failed.";
@@ -472,31 +588,14 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   operator_info->set_auto_parallel(true);
 
   AddOperatorToIgnoreCandidates(prim, operator_info);
-  // key of strategy map
-  std::string strategy_key_name;
-  auto param_names = NodeParameterName(cnode, -1, 0);
-  if (!param_names.empty()) {
-    strategy_key_name = prim->name() + "_" + param_names[0].first;
-  }
-  bool load_strategy_from_ckpt =
-    StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map->find(strategy_key_name) != stra_map->end();
+
   // If no strategy has been configured for this operator, then candidate strategies are generated for
   // auto-strategy searching; if this primitive is CAST, we ignore the user-specified strategy.
   // if strategy is set to load from checkpoint, it is prefer to load strategy from checkpoint .
-  auto attrs = prim->attrs();
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
-    // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
-    if (LayoutFound(attrs)) {
-      SetLayoutToOperater(operator_info, attrs);
-      return operator_info;
-    }
-    // If the user input strategy (tuple-like), set the strategy to the operator_info.
-    if (OutStrategyFound(attrs)) {
-      SetOutStrategyToOperator(operator_info, prim, attrs);
-    }
-    if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
-      SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
-      return operator_info;
+    auto operator_info_with_strategies = SetStrategiesToOperator(prim, operator_info, cnode, is_last_nodes, stra_map);
+    if (operator_info_with_strategies != nullptr) {
+      return operator_info_with_strategies;
     }
   }
   // Compute split_flag_list_, indicating which input has batch dimension. This is ONLY used for preparation for
@@ -679,6 +778,22 @@ void SetOperatorToCNode(const OperatorInfoPtr &current_op_ptr, const PrimitivePt
   }
 }
 
+bool Need_Create_New_Op(const std::map<std::string, OperatorInfoPtr>::iterator &search_cnode, const CNodePtr &cnode,
+                        const PrimitivePtr &prim, bool op_in_map) {
+  bool use_sp = ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation;
+  if (!use_sp) {
+    return !op_in_map;
+  }
+  bool is_same_graph = false;
+  if (op_in_map) {
+    auto &op_created = search_cnode->second;
+    if (op_created->cnode()->func_graph() != nullptr && cnode->func_graph() != nullptr) {
+      is_same_graph = op_created->cnode()->func_graph() == cnode->func_graph();
+    }
+  }
+  return !op_in_map || is_same_graph;
+}
+
 // Using CNode's UniqueIdThroughCopys to construct nodes
 Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &) {
   MS_LOG(INFO) << "Constructing nodes for cost graph begins.";
@@ -713,10 +828,11 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
       continue;
     }
     auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
-
-    // Find the operatorInfo if it exists
+    MS_EXCEPTION_IF_NULL(prim);
     auto search_cnode = from_cnode_to_info.find(cnode->UniqueIdThroughCopy() + prim->name());
-    if (search_cnode == from_cnode_to_info.cend()) {
+    bool op_in_map = search_cnode != from_cnode_to_info.cend();
+
+    if (Need_Create_New_Op(search_cnode, cnode, prim, op_in_map)) {
       size_t loop_index = 0;
       bool is_in_loop = GetLoopIndexFromCNode(cnode, &loop_index);
       const auto single_loop = CostModelContext::GetInstance()->dp_algo_single_loop();
@@ -785,7 +901,11 @@ void PreProcessPreCastForSP(const OperatorInfoPtr &prev_op_info, const OperatorI
     if (edge_ptr->InitEdgeCost() != SUCCESS) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Edge cost initialization failed";
     }
-    const auto cast_stra = edge_ptr->GetPrevOpStrategyByNextOpStrategyWithMiniComm(next_op_stra);
+    const auto &candidate_swc = edge_ptr->GetPrevOpSwcByNextOpStrategyWithMiniComm(next_op_stra);
+    if (candidate_swc == nullptr) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available candidate swc for: " << prev_op_info->name();
+    }
+    const auto cast_stra = candidate_swc->strategy_ptr;
     if (cast_stra == nullptr) {
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available strategy for: " << prev_op_info->name();
     }
@@ -808,6 +928,8 @@ void CreateEdgeBetweenTwoOps(const OperatorInfoPtr &prev_op_info, const Operator
                              size_t *edge_count) {
   MS_EXCEPTION_IF_NULL(prev_op_info);
   MS_EXCEPTION_IF_NULL(node_op_info);
+  MS_EXCEPTION_IF_NULL(prim);
+
   std::string edge_name = prev_op_info->name() + OPERATOR_TO_OPERATOR_CONNECTOR + node_op_info->name();
   // If the edge between these two operators already has been added, then the edge will not be added again.
   if (entire_costgraph->IsEdgeInCostGraph(edge_name, output_index, input_index - 1)) {
@@ -890,8 +1012,10 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
   auto &inputs = cnode->inputs();
   ValueNodePtr prim_anf_node = inputs[0]->cast<ValueNodePtr>();
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
   size_t edge_count = 0;
   auto node_op_info = cnode->user_data<OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(node_op_info);
 
   for (size_t i = 1; i < inputs.size(); ++i) {
     AnfNodePtr prev_node = inputs[i];
@@ -914,16 +1038,21 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
     while (IsCarePrevCNode(prev_cnode, prev_prim)) {
       if (IsValueNode<FuncGraph>(prev_cnode->input(0))) {
         auto graph = GetValueNode<FuncGraphPtr>(prev_cnode->input(0));
+        MS_EXCEPTION_IF_NULL(graph);
         auto output = graph->output();
         MS_EXCEPTION_IF_NULL(output);
         prev_cnode = output->cast<CNodePtr>();
         (void)CrossInterNode(&prev_cnode, &prev_prim_anf_node, &prev_prim);
+        continue;
       } else if (IsAutoParallelCareNode(prev_cnode)) {
         auto prev_op_info = prev_cnode->user_data<OperatorInfo>();
         CreateEdgeBetweenTwoOps(prev_op_info, node_op_info, cnode, prev_cnode, prim, prev_prim, output_index, i,
                                 &edge_count);
         break;
-      } else if (prev_prim->name() == prim::kPrimTupleGetItem->name()) {
+      }
+
+      MS_EXCEPTION_IF_NULL(prev_prim);
+      if (prev_prim->name() == prim::kPrimTupleGetItem->name()) {
         // In this case, 'prev_anf_node' is 'tuple_getitem', the actual precursor node is node before
         // this 'tuple_getitem'
         output_index = LongToSize(GetValue<int64_t>(GetValueNode(prev_cnode->input(2))));
@@ -932,7 +1061,8 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
         if (is_cross) {
           break;
         }
-        if (!HasOperatorInfo(prev_cnode)) {
+        bool has_op_info = HasOperatorInfo(prev_cnode);
+        if (!has_op_info) {
           MS_LOG_WITH_NODE(EXCEPTION, prev_node) << "Did not create OperatorInfo for : " << prev_prim->name();
         }
         is_before_tuple_get_item = true;
@@ -1077,8 +1207,9 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
         continue;
       }
       auto input_index = target.second;
-      (void)target_without_duplicate.insert(std::to_string(input_index) +
-                                            target_cnode->user_data<OperatorInfo>()->name());
+      auto target_cnode_info = target_cnode->user_data<OperatorInfo>();
+      MS_EXCEPTION_IF_NULL(target_cnode_info);
+      (void)target_without_duplicate.insert(std::to_string(input_index) + target_cnode_info->name());
     }
     if (target_without_duplicate.size() <= 1 || parameter_name.empty()) {
       continue;
@@ -1096,6 +1227,7 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
       MS_EXCEPTION_IF_NULL(target_cnode);
       auto input_index = target.second;
       auto target_op_info = target_cnode->user_data<OperatorInfo>();
+      MS_EXCEPTION_IF_NULL(target_op_info);
       if (!target_op_info->repeated_num_in_dev_matrix_right() && tmp_identity_ptr->repeated_num_in_dev_matrix_right()) {
         tmp_identity_ptr->set_repeated_num_in_dev_matrix_right(false);
         tmp_identity_ptr->ClearStrategyCost();
@@ -1160,9 +1292,9 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
       auto reshape_info1 = std::dynamic_pointer_cast<ReshapeInfo>(operator_info);
       reshape_info1->SetCostForReshapeWithParameter();
       pre_operator_info = reshape_info1;
-      pre_stra_costs = reshape_info1->strategy_cost();
+      pre_stra_costs = reshape_info1->GetStrategyCost();
     } else {
-      pre_stra_costs = pre_operator_info->strategy_cost();
+      pre_stra_costs = pre_operator_info->GetStrategyCost();
     }
     // get next node's strategy_cost_
     std::vector<std::pair<OperatorInfoPtr, int64_t>> next_ops_index;
@@ -1183,7 +1315,7 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
         if (ParallelContext::GetInstance()->strategy_search_mode() == kRecursiveProgramming) {
           ConstructCNodeCostGraphEdges(op_index.first->cnode(), all_nodes);
         }
-        auto op_cost = op_index.first->strategy_cost();
+        auto op_cost = op_index.first->GetStrategyCost();
         (void)next_costs_index.emplace_back(std::make_pair(op_cost, op_index.second));
       }
       reshape_info->set_next_operator_name(next_ops_index[0].first->name());
@@ -1298,11 +1430,6 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
     for (const auto &cnode : op->cnodes()) {
       cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
     }
-    // Clear strategy if set strategy using layout
-    if (op->is_config_by_layout()) {
-      op->clear_strategy();
-      op->clear_out_strategy();
-    }
   }
   // Remove some operatorInfo from the CNODEs
   (void)IgnoreOperatorsInCostGraph();
@@ -1328,8 +1455,10 @@ std::vector<std::vector<std::string>> RecInputTensorNames(const std::map<std::st
 }
 
 CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim_anf_node) {
-  auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
   MS_EXCEPTION_IF_NULL(cnode);
+  auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
+
   if (prim->name() == prim::kPrimTupleGetItem->name() || prim->name() == DEPEND) {
     auto prev_cnode = cnode->input(1)->cast<CNodePtr>();
     if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
@@ -1339,6 +1468,7 @@ CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim
       size_t out_index = 0;
       out_index = LongToSize(GetValue<int64_t>(GetValueNode(prev_cnode->input(INDEX_TWO))));
       auto graph = GetValueNode<FuncGraphPtr>(prev_cnode->input(0));
+      MS_EXCEPTION_IF_NULL(graph);
       auto output = graph->output();
       MS_EXCEPTION_IF_NULL(output);
       while (IsPrimitiveCNode(output, prim::kPrimDepend)) {
@@ -1354,14 +1484,19 @@ CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim
       prev_cnode = output->cast<CNodePtr>();
     }
     MS_EXCEPTION_IF_NULL(prev_cnode);
-    auto prev_prim = prev_cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
+    auto prev_prim_value = prev_cnode->input(0)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(prev_prim_value);
+    auto prev_prim = prev_prim_value->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(prev_prim);
     while (prev_prim->name() == prim::kPrimTupleGetItem->name() || prev_prim->name() == DEPEND) {
       prev_cnode = prev_cnode->input(1)->cast<CNodePtr>();
       if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
         return nullptr;
       }
-      prev_prim = prev_cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
+      prev_prim_value = prev_cnode->input(0)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(prev_prim_value);
+      prev_prim = prev_prim_value->value()->cast<PrimitivePtr>();
+      MS_EXCEPTION_IF_NULL(prev_prim);
     }
     return prev_cnode;
   }
@@ -1547,6 +1682,7 @@ void TmpInferForDynamicShapeInSAPP(const std::shared_ptr<Graph> &graph) {
 bool HasUserConfiguredStrategy(const std::vector<std::shared_ptr<OperatorInfo>> &ops) {
   for (auto op : ops) {
     auto prim_anf_node = GetValueNode<PrimitivePtr>(op->cnode()->input(0));
+    MS_EXCEPTION_IF_NULL(prim_anf_node);
     bool has_user_configured_strategy = prim_anf_node->HasAttr(parallel::IN_STRATEGY);
     if (has_user_configured_strategy) {
       return true;

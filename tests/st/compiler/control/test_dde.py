@@ -14,7 +14,7 @@
 # ============================================================================
 
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
 import mindspore as ms
 from mindspore.ops import composite as C
@@ -23,11 +23,11 @@ from mindspore.ops import operations as P
 from mindspore import ops, Tensor, nn
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_dde_make_tuple_joined_with_tuple_output_primitive():
     """
     Feature: Eliminate unused element for tuple.
@@ -52,9 +52,6 @@ def test_dde_make_tuple_joined_with_tuple_output_primitive():
     assert np.allclose(out[1].asnumpy(), expect_out1.asnumpy())
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
 def test_dde_parameter_converted_to_value_tuple():
     """
     Feature: Eliminate unused element for tuple.

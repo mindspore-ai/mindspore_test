@@ -28,15 +28,12 @@ from mindspore.train.serialization import save_checkpoint, _save_graph, _wait_as
     _wait_async_thread_save_ckpt, _check_async_save
 from mindspore.parallel._cell_wrapper import destroy_allgather_cell
 from mindspore.parallel._recovery_context import _set_recovery_context, _get_recovery_context
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
-from mindspore.parallel._utils import _get_device_num
-from mindspore.communication.management import get_rank
-from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
-from mindspore.train.callback._callback import Callback, set_cur_net
+from mindspore.communication.management import get_rank, get_group_size
+from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy, _get_pp_size_from_redundancy_map
+from mindspore.train.callback._callback import Callback
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.generator import Generator
-from mindspore.common.api import _cell_graph_executor
 from mindspore._c_expression import collect_host_info, get_clock_syscnt
 
 _cur_dir = os.getcwd()
@@ -87,7 +84,7 @@ def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
         name_ext = os.path.splitext(filename)
         if exception and filename[-16:] != "_breakpoint.ckpt":
             continue
-        if not exception and (name_ext[-1] != ".ckpt" or filename[-16:] == "_breakpoint.ckpt"):
+        if not exception and (name_ext[-1] not in (".ckpt", ".safetensors") or filename[-16:] == "_breakpoint.ckpt"):
             continue
         # find same prefix file
         if filename.find(prefix) == 0 and not filename[pre_len].isalpha():
@@ -106,10 +103,10 @@ def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
     return prefix
 
 
-def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, exception_save=False,
+def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, exception_save=False,
                                    map_param_inc=False, global_step_num=None):
-    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
-                         or exception_save or map_param_inc or global_step_num is not None)
+    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or exception_save or map_param_inc
+                         or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
 
@@ -139,9 +136,9 @@ class CheckpointConfig:
         integrated_save (bool): Whether to merge and save the split Tensor in the automatic parallel scenario.
             Integrated save function is only supported in automatic parallel scene, not supported
             in manual parallel. Default: ``True`` .
-        async_save (Union[bool, str]):Whether to use asynchronous saving of the checkpoint file, if True,
-                                    the asynchronous thread is used by default. If the type is string,
-                                    the method of asynchronous saving, it can be "process" or "thread".
+        async_save (Union[bool, str], optional):Whether to use asynchronous saving of the checkpoint file or
+                                    safetensors file, if True, the asynchronous thread is used by default. If the type
+                                    is string, the method of asynchronous saving, it can be "process" or "thread".
                                     Default: ``False`` .
         saved_network (Cell): Network to be saved in checkpoint file. If the saved_network has no relation
             with the network in training, the initial value of saved_network will be saved. Default: ``None`` .
@@ -261,8 +258,7 @@ class CheckpointConfig:
         self.enable_redundance = kwargs.get('enable_redundance', False)
         self.remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
 
-        _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, exception_save,
-                                       self._map_param_inc)
+        _check_format_and_other_params(format, enc_key, enc_mode, crc_check, exception_save, self._map_param_inc)
 
     @property
     def save_checkpoint_steps(self):
@@ -415,8 +411,6 @@ class CheckpointConfig:
             handle_append_info["epoch_num"] = 0
         if "step_num" in append_info:
             handle_append_info["step_num"] = 0
-        if "random_op" in append_info:
-            handle_append_info["random_op"] = 0
         dict_num = 0
         for element in append_info:
             if not isinstance(element, str) and not isinstance(element, dict):
@@ -452,8 +446,9 @@ class ModelCheckpoint(Callback):
     Note:
         In the distributed training scenario, please specify different directories for each training process
         to save the checkpoint file. Otherwise, the training may fail.
-        If this callback is used in the `model` function, the checkpoint file will saved
-        parameters of the optimizer by default.
+        If this callback is used in the
+        `Model <https://www.mindspore.cn/docs/en/master/api_python/train/mindspore.train.Model.html>`_ function,
+        the checkpoint file will saved parameters of the optimizer by default.
 
     Args:
         prefix (Union[str, callable object]): The prefix name or callable object to generate name of checkpoint files.
@@ -514,7 +509,7 @@ class ModelCheckpoint(Callback):
         if callable(prefix):
             self._prefix_func = prefix
 
-        if _get_recovery_context("enable_recovery"):
+        if context.get_context("device_target") == "GPU" and _get_recovery_context("enable_recovery"):
             _set_recovery_context(ckpt_path=self._directory)
 
         if config is None:
@@ -556,19 +551,17 @@ class ModelCheckpoint(Callback):
             from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
             ckpt_storage_path = self._directory
             rank_id = get_rank()
-            stage_num = _get_auto_parallel_context("pipeline_stages")
-            stage_rank_num = _get_device_num() // stage_num
+            device_num = get_group_size()
             param_layout = cb_params.train_network.parameter_layout_dict
             if not param_layout:
-                layout = {"stage_num": stage_num, "stage_rank_num": stage_rank_num, "stage_layout": None}
+                layout = {"stage_num": 1, "stage_rank_num": device_num, "stage_layout": None}
                 aiturbo.init(ckpt_storage_path, rank_id, layout, None, False, None)
             else:
-                device_num = _get_device_num()
-                chunk_size = device_num // stage_num
-                initial_rank = (rank_id // chunk_size) * chunk_size
-                param_redundancy_dict = get_parameter_redundancy(param_layout, initial_rank)
+                param_redundancy_dict = get_parameter_redundancy(param_layout)
+                pp_size = _get_pp_size_from_redundancy_map(param_redundancy_dict)
+                stage_num = device_num // pp_size
                 dp, _ = _get_dp_tp_from_layout(param_redundancy_dict)
-                layout = {"stage_num": stage_num, "stage_rank_num": stage_rank_num,
+                layout = {"stage_num": stage_num, "stage_rank_num": pp_size,
                           "stage_layout": param_redundancy_dict}
                 single_params = remove_param_redundancy(param_redundancy_dict)
                 single_params = {device_id: list(params) for device_id, params in single_params.items()}
@@ -593,8 +586,6 @@ class ModelCheckpoint(Callback):
         # save graph (only once)
         if not self._graph_saved:
             graph_file_name = os.path.join(self._directory, self._prefix + '-graph.meta')
-            if os.path.isfile(graph_file_name) and context.get_context("mode") == context.GRAPH_MODE:
-                os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
         self._save_ckpt(cb_params)
@@ -684,12 +675,6 @@ class ModelCheckpoint(Callback):
             self._last_time_for_keep = time.time()
             self._last_triggered_step = cb_params.cur_step_num
 
-            # TODO(MS_DISABLE_REF_MODE): Delete when remove MS_DISABLE_REF_MODE env.
-            if context.get_context("enable_ge") and os.getenv('MS_DISABLE_REF_MODE') \
-                    and context.get_context("mode") == context.GRAPH_MODE:
-                set_cur_net(cb_params.train_network)
-                cb_params.train_network.add_flags(ge_sync_data=True)
-                _cell_graph_executor(cb_params.train_network, phase='save')
             self._append_dict_content(cb_params.cur_epoch_num, cb_params.cur_step_num)
             network = self._config.saved_network if self._config.saved_network is not None else cb_params.train_network
             if os.getenv("AITURBO") == "1":
@@ -698,18 +683,13 @@ class ModelCheckpoint(Callback):
                                 crc_check=self._config.crc_check, incremental=self._map_param_inc,
                                 global_step_num=cb_params.cur_step_num)
             elif self._config.remove_redundancy:
-                parallel_mode = context.get_auto_parallel_context("parallel_mode")
-                if parallel_mode == "stand_alone":
+                if get_group_size() == 1:
                     raise TypeError(f"The deduplication feature for saving checkpoint can only be used "
-                                    f"in parallel scenarios, but got {parallel_mode}.")
+                                    f"in parallel scenarios, but got 'stand_alone'.")
                 param_layout = network.parameter_layout_dict
                 rank_id = get_rank()
                 if param_layout:
-                    device_num = _get_device_num()
-                    stage_num = _get_auto_parallel_context("pipeline_stages")
-                    chunk_size = device_num // stage_num
-                    initial_rank = (rank_id // chunk_size) * chunk_size
-                    param_redundancy_dict = get_parameter_redundancy(param_layout, initial_rank)
+                    param_redundancy_dict = get_parameter_redundancy(param_layout)
                     single_params = remove_param_redundancy(param_redundancy_dict)
                     save_param_names = single_params.get(rank_id)
                     param_layout_set = set(param_layout.keys())
@@ -729,12 +709,13 @@ class ModelCheckpoint(Callback):
                 save_checkpoint(network, cur_file, False, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, format=self._config.format,
-                                incremental=self._map_param_inc, choice_func=choice_func)
+                                incremental=self._map_param_inc, choice_func=choice_func,
+                                remove_redundancy=self._config.remove_redundancy)
             else:
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, format=self._config.format,
-                                incremental=self._map_param_inc)
+                                incremental=self._map_param_inc, remove_redundancy=self._config.remove_redundancy)
 
             self._latest_ckpt_file_name = cur_file
 

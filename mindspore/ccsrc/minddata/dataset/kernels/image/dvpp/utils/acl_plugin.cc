@@ -20,13 +20,13 @@
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_video.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ResourceManager.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/MDAclProcess.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/utils/dvpp_image_utils.h"
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
 #include "minddata/dataset/include/dataset/constants.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 void *PluginCreateDvppVideo(aclrtContext context, uint8_t *data, uint32_t size, uint32_t width, uint32_t height,
                             uint32_t type, uint32_t out_format, const std::string &output) {
@@ -282,7 +282,7 @@ int PluginaclrtMemcpy(void *dst, size_t dest_max, const void *src, size_t count,
   return CALL_ASCEND_API(aclrtMemcpy, dst, dest_max, src, count, static_cast<aclrtMemcpyKind>(kind));
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 // Ascend910B
 APP_ERROR PluginDvppAdjustBrightness(const std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> &input,
                                      std::shared_ptr<mindspore::dataset::DeviceTensorAscend910B> *output,

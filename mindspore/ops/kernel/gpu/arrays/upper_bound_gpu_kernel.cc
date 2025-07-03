@@ -15,7 +15,7 @@
  */
 
 #include "include/curand.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/arrays/upper_bound_gpu_kernel.h"
 
 namespace mindspore {

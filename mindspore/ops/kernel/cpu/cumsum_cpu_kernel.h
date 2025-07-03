@@ -23,11 +23,12 @@
 #include <map>
 #include <utility>
 #include <algorithm>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cumsum_cpu {
 class CumSumCpuKernelMod : public NativeCpuKernelMod {
  public:
   CumSumCpuKernelMod() = default;
@@ -64,6 +65,7 @@ class CumSumCpuKernelMod : public NativeCpuKernelMod {
   bool reverse_{false};
   bool is_dynamic_shape_{false};
 };
+}  // namespace cumsum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CUMSUM_CPU_KERNEL_H_

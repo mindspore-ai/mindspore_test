@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
@@ -73,10 +74,24 @@
 #include "utils/symbolic.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
 namespace {
+AnfNodePtr ParamNodeForMoveMirror(const CNodePtr &micro_mirror) {
+  return GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
+                  IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
+    return std::make_pair(filter, 1);
+  });
+}
+
 static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
   AnfNodePtr ret_after = root->get_return();
   MS_EXCEPTION_IF_NULL(ret_after);
@@ -87,15 +102,13 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
       continue;
     }
     auto micro_mirror = node->cast<CNodePtr>();
-    auto param_anf_node = GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
-      bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
-                    IsPrimitiveCNode(cnode, prim::kPrimDepend);
-      return std::make_pair(filter, 1);
-    });
+    auto param_anf_node = ParamNodeForMoveMirror(micro_mirror);
+    MS_EXCEPTION_IF_NULL(param_anf_node);
     if (!param_anf_node->isa<Parameter>()) {
       continue;
     }
     auto param = param_anf_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
     if (param->has_default()) {
       continue;
     }
@@ -115,6 +128,7 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
         continue;
       }
       auto cnode = node_pair.first->first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       call_nodes_func_graph = cnode->func_graph();
       auto cnode_input = cnode->input(curr_param_index + 1);
       if (!call_nodes_common_param_input) {
@@ -141,6 +155,7 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
     }
 
     // Remove MicroMirror in call_func
+    MS_EXCEPTION_IF_NULL(micro_mirror);
     (void)manager->Replace(micro_mirror, micro_mirror->input(kIndex1));
   }
 }
@@ -174,7 +189,6 @@ static void InsertAllReduceForNormValue(const AnfNodePtr &res_node) {
   MS_EXCEPTION_IF_NULL(graphs);
   auto manager = graphs->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto &node_user_map = manager->node_users();
   if (!IsSomePrimitive(cnode, EXPAND_DIMS)) {
     MS_LOG(ERROR) << "Expected the operator expand_dims, but found the " << GetPrimName(cnode)
                   << "This may cause the calculation of the global norm incorrect";
@@ -183,13 +197,28 @@ static void InsertAllReduceForNormValue(const AnfNodePtr &res_node) {
   auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   auto find_node = res_node;
   uint32_t limits = 0;
-  const uint32_t MAX_BFS_DEPTH = 7;
-  while (!IsSomePrimitive(find_node->cast<CNodePtr>(), SQRT) && limits < MAX_BFS_DEPTH) {
-    auto users = node_user_map.at(find_node);
-    if (users.empty()) {
-      return;
+  const uint32_t MAX_BFS_DEPTH = 15;
+  bool find_sqrt = false;
+  std::queue<AnfNodePtr> anf_queue;
+  anf_queue.push(res_node);
+  while (!anf_queue.empty() && limits < MAX_BFS_DEPTH) {
+    auto queue_end = anf_queue.front();
+    anf_queue.pop();
+    const auto &user_set = manager->node_users()[queue_end];
+    if (user_set.empty()) {
+      continue;
     }
-    find_node = users.front().first;
+    for (const auto &pair : user_set) {
+      anf_queue.push(pair.first);
+      if (IsSomePrimitive(pair.first->cast<CNodePtr>(), SQRT)) {
+        find_node = pair.first;
+        find_sqrt = true;
+        break;
+      }
+    }
+    if (find_sqrt) {
+      break;
+    }
     ++limits;
   }
   if (!find_node || !IsSomePrimitive(find_node->cast<CNodePtr>(), SQRT)) {
@@ -247,8 +276,8 @@ static AnfNodePtr FindExpandDimsWIthGradScale(const AnfNodePtr &node_ptr, const 
       }
       return queue_node;
     }
-    if (!IsSomePrimitiveList(
-          cnode, {ENVIRONGET, MUL, SQUARE, REDUCE_SUM, EXPAND_DIMS, DEPEND, CAST, REF_TO_EMBED, EMBED, LOAD})) {
+    if (!IsSomePrimitiveList(cnode, {ENVIRONGET, MUL, SQUARE, REDUCE_SUM, EXPAND_DIMS, DEPEND, CAST, REF_TO_EMBED,
+                                     EMBED, LOAD, SUM_EXT})) {
       continue;
     }
     auto node_set = node_users_map.at(queue_node);
@@ -322,6 +351,7 @@ static AnfNodePtr GetMirrorOp(const NodeUsersMap &node_user_map, const AnfNodePt
   for (auto &param_pair : params_user_set) {
     auto cnode = param_pair.first->cast<CNodePtr>();
     std::vector<AnfNodePtr> candidate = {cnode};
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->in_forward_flag()) {
       continue;
     }
@@ -382,6 +412,7 @@ static void MergeMicroMirrorForSharedParameter(const FuncGraphPtr &root) {
                     IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
       return std::make_pair(filter, 1);
     });
+    MS_EXCEPTION_IF_NULL(param_anf_node);
     if (!param_anf_node->isa<Parameter>()) {
       continue;
     }
@@ -412,6 +443,7 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
       for (size_t index = ops::kFlashAttentionScoreInputActualSeqQlenIndex;
            index <= ops::kFlashAttentionScoreInputActualSeqKVlenIndex; ++index) {
         auto input = fa_inputs.at(index + 1);
+        MS_EXCEPTION_IF_NULL(input);
         auto input_abs = input->abstract();
         if (IsValueNode<None>(input)) {
           continue;
@@ -419,7 +451,9 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
 
         if (IsPrimitiveCNode(input, prim::kPrimTupleToTensor)) {
           // Eliminate TupleToTensor
-          manager->SetEdge(fa_cnode, index + 1, input->cast<CNodePtr>()->input(kIndex1));
+          auto input_ptr = input->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(input_ptr);
+          manager->SetEdge(fa_cnode, index + 1, input_ptr->input(kIndex1));
           MS_LOG(DEBUG) << "Eliminate TensorToTuple for " << fa_cnode->fullname_with_scope() << ", index is "
                         << index + 1;
         } else {
@@ -435,7 +469,9 @@ static void PostProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPt
 }
 
 static void BroadcastMultiOutputs(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager, const Group &group) {
+  MS_EXCEPTION_IF_NULL(root);
   auto output = root->get_return()->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(output);
   auto output_abstract = output->abstract();
   MS_EXCEPTION_IF_NULL(output_abstract);
   auto abstract_tuple = output_abstract->cast<abstract::AbstractTuplePtr>();
@@ -557,6 +593,11 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
     if (param_names.empty()) {
       continue;
     }
+    param_names.erase(std::remove_if(param_names.begin(), param_names.end(),
+                                     [](const auto &param_pair) {
+                                       return param_pair.second->param_info()->is_pipeline_shared_param();
+                                     }),
+                      param_names.end());
     string param_name = param_names[0].first;
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     MS_EXCEPTION_IF_NULL(prim);
@@ -586,6 +627,13 @@ static void CheckpointStrategy(const std::vector<AnfNodePtr> &all_nodes, const F
     MS_EXCEPTION_IF_NULL(cloned_parameter_node);
     auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(cloned_parameter);
+
+    auto cloned_param_info = cloned_parameter->param_info();
+    if (cloned_param_info != nullptr) {
+      if (cloned_param_info->is_pipeline_shared_param()) {
+        continue;
+      }
+    }
 
     if (!ParameterIsCloned(cloned_parameter_node) && !IsStrategySaved(cloned_parameter_node)) {
       continue;
@@ -617,6 +665,48 @@ static void MicroBatchPostProcess(const FuncGraphPtr &root, const std::vector<An
 }
 }  // namespace
 
+static void SetSharedAttrForOptimizerParameter(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto root_params = root->parameters();
+  AnfNodePtrList sub_root_params;
+  GetSubRootParams(root_params, &sub_root_params);
+  for (auto &cloned_parameter_node : root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().count(cloned_parameter_node)) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(cloned_parameter_node);
+    auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(cloned_parameter);
+
+    if (!ParameterIsCloned(cloned_parameter_node)) {
+      continue;
+    }
+    auto param_value = cloned_parameter->param_info();
+    if (param_value == nullptr) {
+      continue;
+    }
+    // get the cloned index
+    int64_t cloned_index = param_value->cloned_index();
+
+    // find the be cloned parameter
+    for (auto &be_cloned_parameter_node : sub_root_params) {
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
+      auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
+      auto param_value_in = be_cloned_parameter->param_info();
+      // get the be cloned index
+      MS_EXCEPTION_IF_NULL(param_value_in);
+      auto &be_cloned_index = param_value_in->be_cloned_index();
+      if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
+        // add shared attr for cloned parameters
+        if (param_value_in->is_pipeline_shared_param()) {
+          param_value->set_is_pipeline_shared_param(true);
+        }
+      }
+    }
+  }
+}
+
 void ParallelPostprocessor::PipelinePostProcessStep1() {
   auto pipeline_processor = processor_context_->pipeline_processor;
   if (pipeline_processor != nullptr) {
@@ -645,6 +735,30 @@ void ParallelPostprocessor::PipelinePostProcessStep2() {
   }
 }
 
+static void DecorateDumpPathIfDumpOps(const AnfNodePtrList &all_nodes, const FuncGraphManagerPtr &manager) {
+  // For TensorDump and DumpGradient, If dump mode is 'in', suffix 'in' for path.
+  // For example: dumppath.npy -> dumppath_in.npy.
+  for (const AnfNodePtr &node : all_nodes) {
+    if (IsSomePrimitive(node->cast<CNodePtr>(), DUMPGRADIENT)) {
+      CNodePtr dump_gradient = node->cast<CNodePtr>();
+      const std::string hook_mode = GetDumpHookInputOutputAttr(dump_gradient);
+      if (hook_mode != IN_MODE) {
+        continue;
+      }
+      const std::string ori_path = GetValue<std::string>(GetValueNode(dump_gradient->input(kIndex1)));
+      (void)manager->SetEdge(dump_gradient, kIndex1, NewValueNode(MakeValue(GetInModeSuffixedDumpPath(ori_path))));
+    } else if (IsSomePrimitive(node->cast<CNodePtr>(), TENSORDUMP)) {
+      CNodePtr tensordump = node->cast<CNodePtr>();
+      std::string dump_mode = GetDumpInputOutputAttr(tensordump);
+      if (dump_mode != IN_MODE) {
+        continue;
+      }
+      const std::string ori_path = GetValue<std::string>(GetValueNode(tensordump->input(kIndex1)));
+      (void)manager->SetEdge(tensordump, kIndex1, NewValueNode(MakeValue(GetInModeSuffixedDumpPath(ori_path))));
+    }
+  }
+}
+
 void ParallelPostprocessor::Process() {
   auto root = processor_context_->root;
   auto manager = processor_context_->manager;
@@ -658,6 +772,7 @@ void ParallelPostprocessor::Process() {
   }
 
   PipelinePostProcessStep1();
+  SetSharedAttrForOptimizerParameter(root);
 
   // save strategy as checkpoint for multi-train
   auto all_nodes_after_pp = TopoSort(root->get_return(), SuccDeeperSimple);
@@ -665,7 +780,7 @@ void ParallelPostprocessor::Process() {
   if (StrategyCheckpoint::GetInstance().SaveCheckPointOn()) {
     CheckpointStrategy(all_nodes_after_pp, root);
   }
-
+  DecorateDumpPathIfDumpOps(all_nodes_after_pp, manager);
   auto comm_group = FindCommonMirrorGroup(root);
   StrategyCheckpoint::GetInstance().set_common_mirror_group(comm_group);
 

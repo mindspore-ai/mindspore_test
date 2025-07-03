@@ -24,7 +24,8 @@
 
 namespace mindspore {
 namespace kernel {
-class SparseApplyRMSPropCpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_r_m_s_prop_cpu {
+class SparseApplyRMSPropCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                        public MatchKernelHelper<SparseApplyRMSPropCpuKernelMod> {
  public:
   SparseApplyRMSPropCpuKernelMod() { ResetResource(); }
@@ -56,6 +57,7 @@ class SparseApplyRMSPropCpuKernelMod : public SparseOptimizerCpuKernelMod,
   float epsilon_{-1};
   ShapeVector var_shape_;
 };
+}  // namespace sparse_apply_r_m_s_prop_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SPARSE_APPLY_R_M_S_PORP_H_

@@ -17,6 +17,7 @@
 #include "kernel/gpu/arrays/inplace_op_v2_gpu_kernel.h"
 #include <unordered_map>
 #include <string>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 namespace mindspore {
 namespace kernel {
 static std::unordered_map<std::string, int> op_type_map = {{"InplaceUpdateV2", INPLACE_OP_TYPE_UPDATE}};

@@ -20,11 +20,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace triu_indices_cpu {
 class TriuIndicesCpuKernelMod : public NativeCpuKernelMod {
  public:
   TriuIndicesCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class TriuIndicesCpuKernelMod : public NativeCpuKernelMod {
   int64_t offset_ = 0;
   int64_t offset1_ = 0;
 };
+}  // namespace triu_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

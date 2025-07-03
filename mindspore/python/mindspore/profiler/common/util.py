@@ -26,6 +26,8 @@ import shutil
 import stat
 
 from mindspore import log as logger
+from mindspore.profiler.common.path_manager import PathManager
+from mindspore.profiler.common.exceptions.exceptions import ProfilerPathErrorException
 
 
 def no_exception_func(
@@ -64,6 +66,29 @@ def no_exception_func(
                 return default_ret
         return wrapper
     return decorator
+
+
+def get_cann_version():
+    """
+    get cann version from env
+    """
+    ascend_home_path = os.environ.get("ASCEND_HOME_PATH", "")
+    cann_version = "not known"
+    try:
+        PathManager.check_directory_path_readable(os.path.realpath(ascend_home_path))
+        for dirpath, _, filenames in os.walk(os.path.realpath(ascend_home_path)):
+            install_files = [file for file in filenames if re.match(r"ascend_.{1,20}_install\.info", file)]
+            if install_files:
+                filepath = os.path.realpath(os.path.join(dirpath, install_files[0]))
+                PathManager.check_directory_path_readable(filepath)
+                with open(filepath, "r") as f:
+                    for line in f:
+                        if line.find("version") != -1:
+                            cann_version = line.strip().split("=")[-1]
+                            break
+    except ProfilerPathErrorException as e:
+        logger.warning(f"Failed to read CANN version from {ascend_home_path}: {e}")
+    return cann_version
 
 
 def timeit(custom_message=None):

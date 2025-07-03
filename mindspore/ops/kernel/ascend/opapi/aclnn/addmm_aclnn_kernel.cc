@@ -16,11 +16,12 @@
 #include "kernel/ascend/opapi/aclnn/addmm_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace addmm {
 
 void AddmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
@@ -90,5 +91,6 @@ bool AddmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Addmm, AddmmAclnnKernelMod);
+}  // namespace addmm
 }  // namespace kernel
 }  // namespace mindspore

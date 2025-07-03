@@ -28,18 +28,17 @@ namespace mindspore {
 namespace opt {
 class MatMulBiasAddReluFusionCPU : public PatternProcessPass {
  public:
-  explicit MatMulBiasAddReluFusionCPU(bool multigraph = true)
-      : PatternProcessPass("matmul_biasadd_relu_fusion_cpu", multigraph) {}
+  explicit MatMulBiasAddReluFusionCPU(bool multigraph = true);
   ~MatMulBiasAddReluFusionCPU() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  protected:
   AnfNodePtr CreateMatmulWithBias(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &equiv) const;
-  VarPtr x0_ = std::make_shared<Var>();
-  VarPtr x1_ = std::make_shared<Var>();
-  VarPtr x2_ = std::make_shared<Var>();
-  VarPtr matmul_var_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimMatMul->name()));
+  VarPtr x0_;
+  VarPtr x1_;
+  VarPtr x2_;
+  VarPtr matmul_var_;
 };
 }  // namespace opt
 }  // namespace mindspore

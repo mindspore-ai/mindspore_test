@@ -77,6 +77,8 @@ def test_ops_nonzero_normal(context_mode, as_tuple):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.context.set_context(jit_config={"jit_level": "O0"})
     x = generate_random_input((2, 3, 4, 5), np.float32)
     if not as_tuple:
         output = nonzero_forward_func_2(ms.Tensor(x), as_tuple)

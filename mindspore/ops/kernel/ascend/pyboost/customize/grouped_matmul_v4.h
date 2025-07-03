@@ -22,7 +22,7 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
@@ -33,7 +33,7 @@ void GroupedMatmulV4AscendCustomize(
   const std::optional<ValueTuplePtr> &offset_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<BaseTensorPtr> &group_list,
+  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<TensorPtr> &group_list,
   const std::optional<ValueTuplePtr> &activation_input_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_offset_tensor_list, const Int64ImmPtr &split_item_imm,

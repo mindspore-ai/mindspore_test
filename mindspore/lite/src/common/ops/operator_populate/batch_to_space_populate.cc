@@ -17,6 +17,7 @@
 #include "nnacl/batch_to_space_parameter.h"
 #include "infer/batch_to_space.h"
 #include "infer/batch_to_space_nd.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 using mindspore::ops::kBlockSize;
 using mindspore::ops::kCrops;
 using mindspore::ops::kNameBatchToSpace;

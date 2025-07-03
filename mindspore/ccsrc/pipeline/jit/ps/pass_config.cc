@@ -177,6 +177,11 @@ void PassConfigure::SetOptimizeConfig(const py::list &optimize_cfg) {
   SetPasses(pass_items);
 }
 
+PassConfigure &PassConfigure::Instance() {
+  static PassConfigure instance;
+  return instance;
+}
+
 std::string PassConfigure::GetOptimizeConfig() {
   std::stringstream out;
   out << std::endl << "Opt graph functions:" << std::endl;
@@ -184,18 +189,18 @@ std::string PassConfigure::GetOptimizeConfig() {
   constexpr auto new_line_sp = "\r\n";
   constexpr int number_3 = 3;
   int i = 0;
-  for (const auto &[name, func] : opt_func_map_) {
-    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
+  for (const auto &item : opt_func_map_) {
+    out << item.first << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Pass functions:" << std::endl;
   i = 0;
-  for (const auto &[name, func] : pass_func_map_) {
-    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
+  for (const auto &item : pass_func_map_) {
+    out << item.first << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Opt substitutions:" << std::endl;
   i = 0;
-  for (const auto &[name, func] : substitution_map_) {
-    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
+  for (const auto &item : substitution_map_) {
+    out << item.first << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Opt PassItems:" << std::endl;
   i = 0;

@@ -26,7 +26,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/arithmetic_fp32.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 #include "kernel/cpu/nnacl/fp32/power_fp32.h"
@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_cpu {
 namespace {
 constexpr float kMaxSubSerialSize = 10000.0;
 constexpr float kMaxPowSerialSize = 700.0;
@@ -201,7 +202,7 @@ class ArithmeticCpuTypeFunc : public CpuKernelFunc {
       return;
     }
     string dtype_desc;
-    static std::unordered_map<std::string, TypeComputeFunc> arithmeticMathFuncMap;
+    std::unordered_map<std::string, TypeComputeFunc> arithmeticMathFuncMap;
     if constexpr (!((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>))) {
       dtype_desc = "real data";
       arithmeticMathFuncMap = {{kAdd, &ArithmeticCpuTypeFunc<T>::Add},
@@ -348,7 +349,7 @@ void ArithmeticCpuTypeFunc<T>::Sub(const T *input1, const T *input2, T *out) {
   if (!is_init_broadcast_) {
     InitBroadCast();
   }
-  auto task = [&](size_t start, size_t end) {
+  auto task = [out, input1, input2, this](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       out[i] = static_cast<T>(input1[input_index1_[i]] - input2[input_index2_[i]]);
     }
@@ -1265,5 +1266,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Atan2,
                                  []() { return std::make_shared<ArithmeticCpuKernelMod>(kAtan2); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, AddV2,
                                  []() { return std::make_shared<ArithmeticCpuKernelMod>(kAddV2); });
+}  // namespace arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

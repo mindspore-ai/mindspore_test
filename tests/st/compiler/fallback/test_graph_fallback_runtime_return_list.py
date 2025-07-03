@@ -225,7 +225,7 @@ def test_return_list_with_nest():
     Description: Support return make list in nest scene.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return [[1, 2, 3], [4, 5, 6]]
 
@@ -241,7 +241,7 @@ def test_return_list_with_nest_2():
     Description: Support return make list in nest scene.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return [([1, 1], [2, 2], (3, [4, 4])), [4, 5, 6]]
 
@@ -305,7 +305,7 @@ def test_return_buildin_list_func():
     Description: Support return result of list() function.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return list((1, "2", None, Tensor([1])))
 
@@ -321,7 +321,7 @@ def test_return_buildin_list_func_2():
     Description: Support return result of list() function.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         return list(x)
 
@@ -371,7 +371,7 @@ def test_return_list_from_third_party():
     Description: Support return list from third party.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         m = np.array([1, 2, 3, 4])
         x = m.tolist()
@@ -423,7 +423,7 @@ def test_return_list_from_dict_attribute():
     Description: Support return list from dict keys and values.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         m = {"1": x, "2": y}
         return list(m.keys()), list(m.values())
@@ -468,7 +468,7 @@ def test_grad_for_return_list_graph():
         return [y,]
 
     x = Tensor([[0.8, 0.6, 0.2], [1.8, 1.3, 1.1]], dtype=mstype.float32)
-    res = ops.grad(foo)(x)
+    res = ops.grad(foo)(x)  # pylint: disable=not-callable
     assert np.allclose(res.asnumpy(), np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]).astype(np.float32))
 
 
@@ -488,7 +488,7 @@ def test_grad_for_graph_with_list_input():
 
     t = mutable([Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32),
                  Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)])
-    output = ops.grad(foo)(t)
+    output = ops.grad(foo)(t)  # pylint: disable=not-callable
     assert isinstance(output, list)
     expect = [np.array([[1.4100001, 1.5999999, 6.6],
                         [1.4100001, 1.5999999, 6.6]]).astype(np.float32),

@@ -20,15 +20,16 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace log_softmax_grad {
 void LogSoftmaxGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  axis_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   GetWorkspaceForResize(inputs[kIndex1], inputs[kIndex0], axis_, outputs[kIndex0]);
 }
 
@@ -41,5 +42,6 @@ bool LogSoftmaxGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LogSoftmaxGrad, LogSoftmaxGradAscend);
+}  // namespace log_softmax_grad
 }  // namespace kernel
 }  // namespace mindspore

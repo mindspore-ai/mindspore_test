@@ -20,6 +20,7 @@
 #include "mindspore/ops/infer/tuple_get_item.h"
 #include "mindspore/lite/src/common/common.h"
 #include "mindspore/lite/tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace {

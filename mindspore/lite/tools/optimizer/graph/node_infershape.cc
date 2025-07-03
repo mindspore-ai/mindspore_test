@@ -41,6 +41,22 @@
 #include "tools/optimizer/format/to_nhwc_format.h"
 #include "tools/common/graph_util.h"
 #include "src/common/common.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace opt {
@@ -374,6 +390,7 @@ STATUS NodeInferShape::SetCNodeAbstractByConvert(const CNodePtr &cnode, const Ab
   size_t output_size;
   if (utils::isa<abstract::AbstractTuple>(abs)) {
     auto abs_tuple = abs->cast_ptr<abstract::AbstractTuple>();
+    MS_CHECK_TRUE_MSG(abs_tuple != nullptr, RET_ERROR, "abs_tuple is nullptr");
     AbstractBasePtrList abstract_list;
     output_size = abs_tuple->size();
     if (output_size == 0 || (*abs_tuple)[0]->isa<abstract::AbstractScalar>()) {
@@ -382,6 +399,8 @@ STATUS NodeInferShape::SetCNodeAbstractByConvert(const CNodePtr &cnode, const Ab
       TypeId type_id = static_cast<TypeId>(kNumberTypeFloat32);
 
       if (output_size != 0) {
+        MS_CHECK_TRUE_MSG((*abs_tuple)[0]->cast<abstract::AbstractScalarPtr>() != nullptr, RET_ERROR,
+                          "(*abs_tuple)[0]->cast<abstract::AbstractScalarPtr>() is nullptr");
         auto scalar_type_ptr = (*abs_tuple)[0]->cast<abstract::AbstractScalarPtr>()->GetTypeTrack();
         MS_CHECK_TRUE_MSG(scalar_type_ptr != nullptr, RET_ERROR, "type_ptr is nullptr");
         type_id = scalar_type_ptr->type_id();
@@ -420,6 +439,8 @@ STATUS NodeInferShape::SetCNodeAbstractByConvert(const CNodePtr &cnode, const Ab
   } else if (utils::isa<abstract::AbstractScalar>(abs)) {
     ShapeVector ori_shape = {1};
     BaseShapePtr new_shape = std::make_shared<abstract::Shape>(ori_shape);
+    MS_CHECK_TRUE_MSG(abs->cast<abstract::AbstractScalarPtr>() != nullptr, RET_ERROR,
+                      "abs->cast<abstract::AbstractScalarPtr>() is nullptr");
     auto scalar_type_ptr = abs->cast<abstract::AbstractScalarPtr>()->GetTypeTrack();
     MS_CHECK_TRUE_MSG(scalar_type_ptr != nullptr, RET_ERROR, "type_ptr is nullptr");
     auto out_abs = std::make_shared<abstract::AbstractTensor>(scalar_type_ptr, new_shape);

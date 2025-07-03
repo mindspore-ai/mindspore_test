@@ -15,13 +15,13 @@
  */
 
 #include "kernel/gpu/pyboost/customize/inner_comm_all_gather.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerCommAllGatherGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void InnerCommAllGatherGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                     const Int64ImmPtr &rank_size, const StringImmPtr &group) {
   CommonCommFunc(op, input_tensor, nullptr, nullptr);
 }

@@ -1,7 +1,7 @@
 mindspore.boost
 ==============================
 
-Boost能够自动加速网络，如减少BN/梯度冻结/累加梯度等。
+Boost能够自动优化网络性能，例如通过减少BN、梯度冻结、累加梯度等方式实现网络加速。
 
 .. note::
     此特性为测试版本，我们仍在改进其功能。
@@ -60,7 +60,7 @@ Boost能够自动加速网络，如减少BN/梯度冻结/累加梯度等。
 
           - boost：
 
-            - mode (str)：Boost配置模式，支持 ["auto", "manual", "enable_all", "disable_all"]。默认值：  ``"auto"`` 。
+            - mode (str)：Boost配置模式，支持 ["auto", "manual", "enable_all", "disable_all"]。默认值： ``"auto"`` 。
 
               - auto：自动配置，取决于Model类中的 `boost_level` 参数配置。
               - manual：在 `boost_config_dict` 中人工配置。

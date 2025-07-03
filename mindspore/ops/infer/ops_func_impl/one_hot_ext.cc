@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore {
 namespace ops {
@@ -81,13 +82,13 @@ int32_t OneHotExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 TypePtrList OneHotExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
 
 ShapeArray OneHotExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &in_shape = x_tensor->shape();
   if (std::any_of(in_shape.begin(), in_shape.end(), [](int64_t s) { return s == 0; })) {

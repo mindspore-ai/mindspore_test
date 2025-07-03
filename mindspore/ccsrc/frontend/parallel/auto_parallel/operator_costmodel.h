@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,11 +249,17 @@ using RsqrtCost = SqrtCost;
 using AsinhCost = SqrtCost;
 using AcoshCost = SqrtCost;
 using TopKCost = SqrtCost;
+using MaxDimCost = SqrtCost;
 using HShrinkCost = SqrtCost;
 using HSigmoidCost = SqrtCost;
 using MishCost = SqrtCost;
 using SeLUCost = SqrtCost;
 using SoftShrinkCost = SqrtCost;
+using NanToNumCost = SqrtCost;
+using ZerosCost = SqrtCost;
+using RemainderCost = SqrtCost;
+using FmodTensorCost = SqrtCost;
+using InplaceCopyCost = SqrtCost;
 
 class ReLU6Cost : public CastCost {
  public:
@@ -285,6 +291,8 @@ using ActivationInfoCost = ReLU6Cost;
 using SelectCost = ReLU6Cost;
 using XlogyCost = ReLU6Cost;
 using ErfinvCost = ReLU6Cost;
+using FmodScalarCost = ActivationInfoCost;
+using MulsCost = ActivationInfoCost;
 
 class TransposeCost : public CastCost {
  public:
@@ -307,6 +315,7 @@ using BesselI1eCost = GeLUCost;
 using L2NormalizeCost = GeLUCost;
 using MaxPoolCost = GeLUCost;
 using IndexCost = GeLUCost;
+using RepeatInterleaveCost = GeLUCost;
 
 class SoftmaxCost : public OperatorCost {
  public:
@@ -336,6 +345,7 @@ class SoftmaxCost : public OperatorCost {
 };
 
 using CumSumCost = SoftmaxCost;
+using CumsumExtCost = SoftmaxCost;
 using CumProdCost = SoftmaxCost;
 
 class TileCost : public SoftmaxCost {
@@ -698,6 +708,8 @@ using MulNoNanCost = MulCost;
 using GatherDCost = MulCost;
 using LerpCost = MulCost;
 using SquaredDifferenceCost = MulCost;
+using OuterCost = MulCost;
+using AddcmulExtCost = MulCost;
 
 class DivCost : public SubCost {
  public:

@@ -22,18 +22,18 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/unique_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_with_pad_cpu {
 inline static constexpr size_t kUniqueWithPadInputsNum = 2;
 inline static constexpr size_t kUniqueWithPadOutputsNum = 2;
 inline static constexpr size_t kPadNumIndex = 1;
-inline static constexpr size_t kInputIndex = 0;
-class UniqueWithPadCpuKernelMod : public UniqueCpuKernelMod {
+class UniqueWithPadCpuKernelMod : public unique_cpu::UniqueCpuKernelMod {
  public:
   UniqueWithPadCpuKernelMod() = default;
   ~UniqueWithPadCpuKernelMod() override = default;
@@ -80,6 +80,7 @@ class UniqueWithPadCpuKernelMod : public UniqueCpuKernelMod {
   // UniqueWithPad doesn't need.
   bool IsNeedUpdateOutputShapeAndSize() override { return false; }
 };
+}  // namespace unique_with_pad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_WITH_PAD_CPU_KERNEL_H_

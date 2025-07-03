@@ -21,14 +21,14 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
-                                             const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-                                             const std::optional<Int64ImmPtr> &dtype);
+tensor::TensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
+                                         const TensorPtr &seed, const TensorPtr &offset,
+                                         const std::optional<Int64ImmPtr> &dtype);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

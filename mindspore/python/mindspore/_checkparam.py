@@ -27,7 +27,7 @@ import numpy as np
 from mindspore import context
 from mindspore import log as logger
 from mindspore.common import dtype as mstype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 EQ = 1  # ==
 NE = 2  # !=
@@ -118,7 +118,7 @@ def _format_str_two_value(val1, val2, rel):
 
 
 def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret_five=False,
-                           greater_zero=True, third_one=False, three_input=False):
+                           greater_zero=True, third_one=False, three_input=False, pad_value=1):
     """
     Checks whether an argument is a positive int or tuple with 3 or 5(when allow_five is True) positive int elements.
     """
@@ -129,9 +129,9 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
                              f"but got {ret_value[-3]}.")
         if three_input_flag:
             raise ValueError(f"For '{prim_name}', the parameter '{arg_name}' must be an positive integer " \
-                             f"or a tuple of three positive integer, but got {arg_value}.")
+                             f"or a tuple of three positive integer, but got {ret_value}.")
         raise ValueError(f"For '{prim_name}', the parameter '{arg_name}' must be an positive integer or " \
-                         f"a tuple of three {'or five ' if allow_five else ''}positive integer, but got {arg_value}")
+                         f"a tuple of three {'or five ' if allow_five else ''}positive integer, but got {ret_value}")
 
     def _get_return_value():
         def _check():
@@ -144,9 +144,10 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
 
         _check()
         if isinstance(arg_value, int):
-            ret = (1, 1, arg_value, arg_value, arg_value) if ret_five else (arg_value, arg_value, arg_value)
+            ret = (pad_value, pad_value, arg_value, arg_value, arg_value) \
+                if ret_five else (arg_value, arg_value, arg_value)
         elif len(arg_value) == 3:
-            ret = (1, 1, arg_value[0], arg_value[1], arg_value[2]) if ret_five else arg_value
+            ret = (pad_value, pad_value, arg_value[0], arg_value[1], arg_value[2]) if ret_five else arg_value
         else:  # case: len(arg_value) == 5
             ret = arg_value if ret_five else (arg_value[2], arg_value[3], arg_value[4])
 
@@ -1252,7 +1253,7 @@ def check_symbolic_shape(dynamic_inputs, actual_inputs):
         for index, (dyn_input, net_input) in enumerate(zip(dyn_inputs, net_inputs)):
             if isinstance(dyn_input, (tuple, list)):
                 run_check(dyn_input, net_input)
-            elif hasattr(dyn_input, "symbolic_shape"):
+            elif hasattr(dyn_input, "symbolic_shape") and getattr(dyn_input, "symbolic_shape") is not None:
                 _check_symbol(dyn_input, net_input, index, symbolic_shape_data)
 
     run_check(dynamic_inputs, actual_inputs)
@@ -1283,6 +1284,33 @@ def _expand_tuple(n_dimensions):
             if not isinstance(i, int) or isinstance(i, bool):
                 raise TypeError(f"When expanding an int number to tuple, " \
                                 f"the type of element in input tuple must be an integer, but got {type(i)}.")
+        return m
+
+    return convert
+
+
+def _check_int_sequence_len(sequence, valid_len):
+    if not len(sequence) is valid_len:
+        raise TypeError(f"When expanding an sequence to tuple, input sequence dimension must be {valid_len}, " \
+                        f"but got {sequence}")
+    for i in sequence:
+        if not isinstance(i, int) or isinstance(i, bool):
+            raise TypeError(f"When expanding an sequence to tuple, " \
+                            f"the type of element in input sequence must be an integer, but got {type(i)}.")
+
+
+def _expand_sequence_to_tuple(n_dimensions):
+    """To expand an int number to tuple."""
+
+    def convert(m):
+        if not isinstance(m, (tuple, list)):
+            if isinstance(m, int) and not isinstance(m, bool):
+                return tuple(repeat(m, n_dimensions))
+            raise TypeError(f"When expanding an input to tuple, input type must be integer or tuple[int]/list[int], " \
+                            f"but got {type(m)}")
+        _check_int_sequence_len(m, n_dimensions)
+        if isinstance(m, list):
+            return tuple(m)
         return m
 
     return convert
@@ -1342,7 +1370,9 @@ def check_output_data(data):
 once = _expand_tuple(1)
 twice = _expand_tuple(2)
 triple = _expand_tuple(3)
-
+once_sequence = _expand_sequence_to_tuple(1)
+twice_sequence = _expand_sequence_to_tuple(2)
+triple_sequence = _expand_sequence_to_tuple(3)
 
 def args_type_check(*type_args, **type_kwargs):
     """Check whether input data type is correct."""
@@ -1371,7 +1401,7 @@ def args_type_check(*type_args, **type_kwargs):
     return type_check
 
 
-def check_hook_fn(hook_type, hook_fn):
+def check_hook_fn(hook_fn):
     """Check hook fn"""
     if not isinstance(hook_fn, (FunctionType, MethodType)):
         raise TypeError(f"When using 'hook_type(hook_fn)', the type of 'hook_fn' must be python "
@@ -1379,36 +1409,6 @@ def check_hook_fn(hook_type, hook_fn):
 
     if hook_fn.__code__.co_name == "staging_specialize":
         raise TypeError(f"Decorating hook function {hook_fn.__name__} with '@jit' is not supported.")
-
-    tensor_hook_func_args_num = 1
-    pre_hook_func_args_num = 2
-    forward_hook_and_backward_hook_func_args_num = 3
-    # Real args number, exclude class method self param
-    hook_fn_args_num = len(inspect.signature(hook_fn).parameters)
-
-    if hook_type == "register_hook" and hook_fn_args_num != tensor_hook_func_args_num:
-        raise TypeError(f"Tensor hook function {hook_fn.__name__} arg num should be {tensor_hook_func_args_num}, but "
-                        f"got {hook_fn_args_num}")
-
-    if hook_type == "register_forward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
-        raise TypeError(f"forward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num}, "
-                        f"but got {hook_fn_args_num}")
-
-    if (hook_type == "register_forward_hook" and
-            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(f"forward_hook function {hook_fn.__name__} args num should be "
-                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
-
-    if hook_type == "register_backward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
-        raise TypeError(f"backward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num},"
-                        f" but got {hook_fn_args_num}")
-
-    if (hook_type == "register_backward_hook" and
-            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(f"backward_hook function {hook_fn.__name__} args num should be "
-                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
-
-    return True
 
 
 _set_record = {}

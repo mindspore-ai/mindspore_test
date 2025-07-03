@@ -20,15 +20,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_elemt {
 
 void BatchNormElemtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  auto eps = transform::ConvertKernelTensor<float>(inputs[kIndex5]);
+  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
   double eps_d = static_cast<double>(eps);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4], eps_d,
                         outputs[kIndex0]);
@@ -38,7 +39,7 @@ bool BatchNormElemtAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &workspace,
                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto eps = transform::ConvertKernelTensor<float>(inputs[kIndex5]);
+  auto eps = device::ascend::ConvertKernelTensor<float>(inputs[kIndex5]);
   double eps_d = static_cast<double>(eps);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
         eps_d, outputs[kIndex0]);
@@ -46,5 +47,6 @@ bool BatchNormElemtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(BatchNormElemt, BatchNormElemtAscend);
+}  // namespace batch_norm_elemt
 }  // namespace kernel
 }  // namespace mindspore

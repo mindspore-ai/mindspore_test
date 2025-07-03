@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "frontend/parallel/step_parallel_utils.h"
 
 #include <algorithm>
@@ -39,6 +38,7 @@
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/node_check.h"
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
@@ -53,13 +53,26 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "symbolic_shape/int_symbol.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {
@@ -194,7 +207,8 @@ static bool IsRealKernelNode(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimLoad) ||
       IsPrimitiveCNode(node, prim::kPrimCast) || IsPrimitiveCNode(node, prim::kPrimVirtualDiv) ||
       IsPrimitiveCNode(node, prim::kPrimReceive) || IsPrimitiveCNode(node, prim::kPrimMicroStepAllGather) ||
-      IsPrimitiveCNode(node, prim::kPrimSend) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) {
+      IsPrimitiveCNode(node, prim::kPrimSend) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf) ||
+      IsPrimitiveCNode(node, prim::kPrimDumpGradient)) {
     return false;
   }
   return true;
@@ -202,12 +216,17 @@ static bool IsRealKernelNode(const AnfNodePtr &node) {
 
 std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t get_item_index, CNodePtr *call_node,
                                                  bool ignore_get_item) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!IsRealKernelNode(node)) {
-    return GetRealKernelNode(node->cast<CNodePtr>()->input(1), get_item_index, call_node, ignore_get_item);
+    const auto &&cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    size_t travel_index = IsPrimitiveCNode(node, prim::kPrimDumpGradient) ? kDumpGradientSkipIndex : kIndex1;
+    return GetRealKernelNode(cnode->input(travel_index), get_item_index, call_node, ignore_get_item);
   }
   if ((IsPrimitiveCNode(node, prim::kPrimTupleGetItem) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf)) &&
       ignore_get_item) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto cur_get_item_index = LongToInt(GetTupleGetItemIndex(cnode));
     auto tuple_getitem_input = cnode->input(1);
     return GetRealKernelNode(tuple_getitem_input, cur_get_item_index, call_node, ignore_get_item);
@@ -220,9 +239,13 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
     return GetRealKernelNode(make_tuple_input, -1, call_node, ignore_get_item);
   }
   if (IsControlFlowNode(node)) {
-    auto switch_cnode = node->cast<CNodePtr>()->input(0)->cast<CNodePtr>();
+    const auto &&cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    MS_EXCEPTION_IF_NULL(cnode->input(0));
+    auto switch_cnode = cnode->input(0)->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(switch_cnode);
     auto fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(3));
+    MS_EXCEPTION_IF_NULL(fg);
     return GetRealKernelNode(fg->output(), get_item_index, call_node, ignore_get_item);
   }
   if (node->isa<CNode>() && IsValueNode<FuncGraph>(node->cast<CNodePtr>()->input(0))) {
@@ -230,7 +253,9 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
       *call_node = node->cast<CNodePtr>();
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     auto output = GetRealKernelNode(graph->output(), get_item_index, call_node, ignore_get_item).first;
     MS_EXCEPTION_IF_NULL(output);
     if (output->isa<Parameter>()) {
@@ -242,6 +267,7 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
           continue;
         }
         auto cur_fg = cur_fg_use.first->first->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cur_fg);
         auto iter = std::find(parameter_list.begin(), parameter_list.end(), output);
         auto pos = std::distance(parameter_list.begin(), iter);
         auto argument = cur_fg->input(pos + 1);
@@ -513,6 +539,7 @@ std::vector<std::pair<AnfNodePtr, int>> FuncGraphNodeUsers(const std::pair<AnfNo
     auto param_node_users = manager->node_users()[param];
     for (const auto &node_user : param_node_users) {
       auto cnode = node_user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (IsValueNode<FuncGraph>(cnode->input(0))) {
         auto sub_graph_users = FuncGraphNodeUsers(node_user);
         (void)std::copy(sub_graph_users.begin(), sub_graph_users.end(), std::back_inserter(func_users_vector));
@@ -547,14 +574,23 @@ void RedistributionNextNodeInMakeTuple(
     }
     MS_LOG(DEBUG) << "use_cnode name: " << common::AnfAlgo::GetCNodeName(use_cnode) << " ,node_pos: " << node_pos;
     auto real_node = GetRealKernelNode(use_cnode->input(node_pos), -1, nullptr);
-    if (IsPrimitiveCNode(real_node.first, prim::kPrimMakeTuple)) {
+    if (IsPrimitiveCNode(real_node.first, prim::kPrimMakeTuple) &&
+        std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+          return n_pair.first.first == real_node.first && n_pair.first.second == (*make_tuple_index) + 1 &&
+                 n_pair.second == modified_get_item_idx;
+        }) == next_nodes->end()) {
       next_nodes->push_back(
         std::make_pair(std::make_pair(real_node.first, (*make_tuple_index) + 1), modified_get_item_idx));
       *make_tuple_index = -1;
       return;
     }
   }
-  next_nodes->push_back(std::make_pair(node_pair, modified_get_item_idx));
+  if (std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
+               n_pair.second == modified_get_item_idx;
+      }) == next_nodes->end()) {
+    next_nodes->push_back(std::make_pair(node_pair, modified_get_item_idx));
+  }
 }
 
 void SetAnfNode(const AnfNodePtr &param,
@@ -594,7 +630,11 @@ void FindFuncGraphNextNode(const CNodePtr &use_cnode, const std::pair<AnfNodePtr
   auto fg_parameters = fg->parameters();
   auto param = fg_parameters[IntToSize(node_pair.second - 1)];
   MS_EXCEPTION_IF_NULL(param);
-  if (param->has_user_data<OperatorInfo>()) {
+  if (param->has_user_data<OperatorInfo>() &&
+      std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
+               n_pair.second == RemovePlaceholderIdx(get_item_index);
+      }) == next_nodes->end()) {
     next_nodes->push_back(std::make_pair(node_pair, RemovePlaceholderIdx(get_item_index)));
     return;
   }
@@ -674,6 +714,7 @@ void RedistributionPreNode(const CNodePtr &cnode, const FuncGraphManagerPtr &man
     // extract true branch, false branch is usually also a control flow graph
     auto fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(2));
     MS_EXCEPTION_IF_NULL(fg);
+    MS_EXCEPTION_IF_NULL(fg->output());
     auto fg_out = fg->output()->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(fg_out);
     // control flow node, need enter graph to find redistribution pre node.
@@ -699,6 +740,7 @@ Shapes GetNodeShape(const AnfNodePtr &node) {
   BaseShapePtr base_shape_ptr = node->Shape();
   if (base_shape_ptr == nullptr && node->isa<ValueNode>()) {
     auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
     MS_EXCEPTION_IF_CHECK_FAIL(value_node->value() != nullptr, "ValueNode has no value.");
     auto abstract = value_node->value()->ToAbstract();
     MS_EXCEPTION_IF_CHECK_FAIL(abstract != nullptr, "ValueNode has no Abstract.");
@@ -718,6 +760,7 @@ Shapes GetNodeShape(const AnfNodePtr &node) {
   // If node is Depend, only first input should be used.
   if (node->isa<CNode>() && IsPrimitiveCNode(node->cast<CNodePtr>(), prim::kPrimDepend)) {
     auto depend_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_cnode);
     MS_EXCEPTION_IF_NULL(depend_cnode->input(1));
     return GetNodeShape(depend_cnode->input(1));
   }
@@ -778,6 +821,7 @@ ShapeBasePtr ExtractNewShapeFromShape(const abstract::BaseShapePtr &shape) {
 
 void UseAbstractForValueNode(const AnfNodePtr &node, BaseShapePtr *base_shape_ptr) {
   auto value_node = node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_CHECK_FAIL(value_node->value() != nullptr, "ValueNode has no value.");
   auto abstract = value_node->value()->ToAbstract();
   MS_EXCEPTION_IF_CHECK_FAIL(abstract != nullptr, "ValueNode has no Abstract.");
@@ -821,6 +865,7 @@ NewShapes GetNodeNewShape(const AnfNodePtr &node) {
   }
   if (node->isa<CNode>() && !IsControlFlowNode(node)) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(0)->isa<CNode>()) {
       if (cnode->size() < kSizeTwo) {
         MS_LOG_WITH_NODE(EXCEPTION, node) << "GetNodeShape: " << node->ToString() << " size is smaller than 2";
@@ -831,6 +876,7 @@ NewShapes GetNodeNewShape(const AnfNodePtr &node) {
   // If node is Depend, only first input should be used.
   if (node->isa<CNode>() && IsPrimitiveCNode(node->cast<CNodePtr>(), prim::kPrimDepend)) {
     auto depend_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_cnode);
     MS_EXCEPTION_IF_NULL(depend_cnode->input(1));
     return GetNodeNewShape(depend_cnode->input(1));
   }
@@ -900,8 +946,9 @@ RankList FindCommonMirrorGroup(const FuncGraphPtr &root) {
       continue;
     }
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(GROUP)) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator dose not have group attr : " << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The mirror operator does not have group attr : " << node->DebugString();
     }
     std::string group_name = GetValue<std::string>(prim->GetAttr(GROUP));
     std::vector<int64_t> group_list = g_device_manager->FindRankListByHashName(group_name);
@@ -983,7 +1030,7 @@ bool CheckTensorType(const TypePtr &node_type) {
 void FindReturnUser(const CNodePtr &cnode, const std::vector<AnfNodePtr> &all_nodes,
                     std::pair<std::shared_ptr<AnfNode>, int> *queue_node) {
   auto graph = cnode->func_graph();
-  auto is_target = [&](const AnfNodePtr &ele) {
+  auto is_target = [&graph](const AnfNodePtr &ele) {
     if (ele->isa<CNode>()) {
       auto parent_cnode = ele->cast<CNodePtr>();
       return IsValueNode<FuncGraph>(parent_cnode->input(0)) &&
@@ -1214,7 +1261,9 @@ void SetCastForParamNotRecompute(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto cnode_prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(cnode_prim);
     if (cnode_prim->HasAttr("DISABLE_MERGE_ASSIGN_ADD")) {
       cnode->AddPrimalAttr("DISABLE_MERGE_ASSIGN_ADD", cnode_prim->GetAttr("DISABLE_MERGE_ASSIGN_ADD"));
     }
@@ -1222,9 +1271,11 @@ void SetCastForParamNotRecompute(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cast_input = RealInputNode(cnode, 1);
+    MS_EXCEPTION_IF_NULL(cast_input);
     if (cast_input->isa<Parameter>() && cast_input->cast<ParameterPtr>()->has_default()) {
       MS_LOG(INFO) << "Cast for parameter no needs recompute to avoid redundant trans_data operator";
       PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0)->cast<ValueNodePtr>());
+      MS_EXCEPTION_IF_NULL(prim);
       (void)prim->AddAttr("recompute", MakeValue(false));
     }
   }
@@ -1246,36 +1297,39 @@ bool IsSplittableOperator(const std::string &op_name) {
   // clang-format off
   static const std::set<std::string> splittable_op =
     {MATMUL, TRANSPOSE, GELU, FAST_GELU, TANH, SOFTMAX, SUB, MUL, DIV, RESHAPE, GREATER, LOG_SOFTMAX, ACTIVATION, PRELU,
-     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3, FLOORDIV, L2_NORMALIZE, ADD, MAXPOOL,
+     BATCH_MATMUL_EXT, MATMUL_EXT, LAYER_NORM_V3, FLOORDIV, L2_NORMALIZE, ADD, MAX, MAXDIM, MAXPOOL, OUTER,
      AVGPOOL, MAXPOOLV2, INDEX_INFO, VIRTUAL_DATA_SET, RELU, ONEHOT, DROPOUT_DO_MASK,
-     REDUCE_MAX, REDUCE_MIN, ARGMAXWITHVALUE, ARGMINWITHVALUE, REDUCE_SUM, CONV2D, FUSE_BATCH_NORM, POOLING, STACK_EXT,
+     REDUCE_MAX, REDUCE_MIN, ARGMAXWITHVALUE, ARGMINWITHVALUE, REDUCE_SUM, SUM_EXT,
+     CONV2D, FUSE_BATCH_NORM, POOLING, STACK_EXT, LEAKYRELU_EXT, SOFTPLUS_EXT,
      MAX_POOL_WITH_ARGMAX, SIMPLE_MEAN, FLATTEN, BATCH_NORM, LAYER_NORM, BIAS_ADD, ASSIGN_SUB, COS, ACOS, EXP, STACK,
      LOG, REDUCE_MEAN, REAL_DIV, SIGMOID, POW, MAXIMUM, MINIMUM, EQUAL, NOT_EQUAL, LOGICALNOT, GATHERV2, SQRT, CONCAT,
      STRIDEDSLICE, GET_NEXT, CAST, NEG, SQUARE, BATCH_MATMUL, EXPAND_DIMS, SQUEEZE, SPARSE_GATHERV2, TILE, DROPOUT,
      SOFTMAX_CROSS_ENTROPY_WITH_LOGITS, SIGMOID_CROSS_ENTROPY_WITH_LOGITS, SPARSE_SOFTMAX_CROSS_ENTROPY_WITH_LOGITS,
      EMBEDDING_LOOKUP, FUSE_BATCH_NORM_EX, SPLIT, BROADCAST_TO, ABS, ACOSH, ASIN, ASINH, ATAN, ATANH, CEIL, COSH,
      EXPM1, LOG1P, SIN, SINH, TAN, RSQRT, INV, RECIPROCAL, ROUND, FLOOR, SIGN, ERF, ERFC, ZEROSLIKE, ONESLIKE,
-     BESSELI0E, BESSELI1E, FLOORMOD, ASSIGN, ASSIGN_ADD, ATAN2, DIVNONAN, LOGICALAND, LOGICALOR, ELU, RELU6,
-     SOFTPLUS, SOFTSIGN, GREATEREQUAL, LESSEQUAL, LESS, APPROXIMATEEQUAL, MOD, UNIQUE, UNSORTED_SEGMENT_SUM,
+     BESSELI0E, BESSELI1E, FLOORMOD, ASSIGN, ASSIGN_ADD, ATAN2, DIVNONAN, LOGICALAND, LOGICALOR, ELU, ELU_EXT,
+     RELU6, SOFTPLUS, SOFTSIGN, GREATEREQUAL, LESSEQUAL, LESS, APPROXIMATEEQUAL, MOD, UNIQUE, UNSORTED_SEGMENT_SUM,
      UNSORTED_SEGMENT_MIN, REPEAT_ELEMENTS, TENSOR_DOT, RANGE, UNIFORM_CANDIDATE_SAMPLER, SLICE, SLICE_EXT, SELECT,
      GATHERD, UNSORTED_SEGMENT_MAX, GATHER_ND, TOPK, SCATTER_UPDATE, SCATTER_ND_UPDATE, SCATTER_ND_ADD, SCATTER_ND_SUB,
      TENSOR_SCATTER_UPDATE, TENSOR_SCATTER_ADD, TENSOR_SCATTER_SUB, TENSOR_SCATTER_MAX, TENSOR_SCATTER_MIN, WKV,
-     TENSOR_SCATTER_MUL, TENSOR_SCATTER_DIV, VIRTUAL_OUTPUT, CONV2D_BACK_PROP_INPUT, CONV2D_TRANSPOSE, SORT, PAD_V3,
+     TENSOR_SCATTER_MUL, TENSOR_SCATTER_DIV, VIRTUAL_OUTPUT, CONV2D_BACK_PROP_INPUT, CONV2D_TRANSPOSE, SORT, SORT_EXT,
      MATMUL_DDS, DSD_MATMUL, UNIFORMREAL, STANDARD_NORMAL, RESIZE_BILINEAR_V2, RESIZE_NEAREST_NEIGHBOR, FAST_GELU, IOU,
      BOUNDING_BOX_ENCODE, UNSORTED_SEGMENT_PROD, SQUARE_SUM_ALL, UNIQUE_CONSECUTIVE, SILU, INDEX_SELECT, CLAMP_SCALAR,
      RANDOM_CHOICE_WITH_MASK, CROP_AND_RESIZE, ROI_ALIGN, REDUCE_PROD, REDUCE_ANY, REDUCE_ALL, ARGMAX, ARGMIN, ARGMINV2,
      RESIZE_NEAREST_NEIGHBOR, CUM_SUM, FAST_GELU, IOU, BOUNDING_BOX_ENCODE, RANDOM_CHOICE_WITH_MASK, CROP_AND_RESIZE,
      ROI_ALIGN, IS_FINITE, RINT, HSHRINK, HSIGMOID, MISH, SELU, SOFT_SHRINK, XLOGY, XDIVY, CUM_PROD, BITWISE_AND,
-     BITWISE_OR, BITWISE_XOR, MUL_NO_NAN, TRUNCATE_DIV, TRUNCATE_MOD, INPLACE_ADD, INPLACE_SUB, INPLACE_UPDATE,
+     BITWISE_OR, BITWISE_XOR, MUL_NO_NAN, TRUNCATE_DIV, TRUNCATE_MOD, INPLACE_ADD, INPLACE_SUB, INPLACE_UPDATE, PAD_V3,
      L2_LOSS, LERP, ADDN, CDIST, SQUARED_DIFFERENCE, ERFINV, MASKED_FILL, SPLITV, GAMMA, KLDIV_LOSS, LIN_SPACE,
      CHECK_VALID, INVERT, SCATTER_ADD, SCATTER_DIV, SCATTER_MUL, SCATTER_MAX, SCATTER_MIN, SCATTER_SUB, UNIQUE_WITH_PAD,
      POPULATION_COUNT, IDENTITY, BESSELI0, BESSELI1, BESSELJ0, BESSELJ1, CUM_MAX, CUM_MIN, HYPOT, IGAMMA, IGAMMAC,
      LEFT_SHIFT, RIGHT_SHIFT, NEXT_AFTER, ZETA, REVERSEV2, LGAMMA, TRUNC, BETAINC, GCD, CHOLESKY, CONV3D, MAXPOOL_3D,
      AVGPOOL_3D, FILLV2, FAKE_QUANT_PER_LAYER, FAKE_QUANT_PER_CHANNEL, MIN_MAX_UPDATE_PER_LAYER, ASCEND_QUANTV2,
      MIN_MAX_UPDATE_PER_CHANNEL, FFN, FLASH_ATTENTION_SCORE, ASCEND_QUANT, ASCEND_DEQUANT, GRID_SAMPLER_2D, ANTI_QUANT,
-     CONVOLUTION, LIN_SPACE_EXT, ONEHOTEXT, FFTSHIFT, IFFTSHIFT, FFT, IFFT, FFT2, IFFT2, FFTN, IFFTN,
+     CONVOLUTION, LIN_SPACE_EXT, ONEHOTEXT, FFTSHIFT, IFFTSHIFT, FFT, IFFT, FFT2, IFFT2, FFTN, IFFTN, CUM_SUM_EXT,
      RFFT, IRFFT, RFFT2, IRFFT2, RFFTN, IRFFTN, HFFT, IHFFT, HFFT2, IHFFT2, HFFTN, IHFFTN, DCT, IDCT, DCTN, IDCTN,
-     SOLVE_TRIANGULAR, TRACEV2, LSTSQV2, GENERATEEODMASKV2};
+     NANTONUM, ZEROS, ISCLOSE, POLAR, REMAINDER_TENSOR_TENSOR, REMAINDER_TENSOR_SCALAR, REMAINDER_SCALAR_TENSOR,
+     SOLVE_TRIANGULAR, TRACEV2, LSTSQV2, GENERATEEODMASKV2, MEANEXT, REPEAT_INTERLEAVE_INT, REPEAT_INTERLEAVE_TENSOR,
+     FMOD_TENSOR, INPLACE_COPY};
   // clang-format on
 
   auto iter = splittable_op.find(op_name);
@@ -1361,6 +1415,11 @@ OperatorInfoPtr OperatorInstanceByName(const std::string &name, const PrimitiveA
   }
   std::string origin_name = op_info->name();
   op_info->set_name(origin_name + std::to_string(TOTAL_OPS));
+  if (origin_name.find("VirtualDataset") != std::string::npos) {
+    op_info->set_topo_index(TOTAL_OPS_MAX);
+  } else {
+    op_info->set_topo_index(TOTAL_OPS);
+  }
   MS_LOG(INFO) << "Successfully created operator " << origin_name;
   ++TOTAL_OPS;
   return op_info;
@@ -1372,6 +1431,7 @@ OperatorInfoPtr OperatorInstance(const PrimitivePtr &prim, const PrimitiveAttrs 
   OperatorInfoPtr op_info;
   if (prim->HasAttr(SELF_DEFINE_SHARD)) {
     auto self_define_shard_attr = prim->GetAttr(SELF_DEFINE_SHARD);
+    MS_EXCEPTION_IF_NULL(self_define_shard_attr);
     if (self_define_shard_attr->cast_ptr<BoolImm>() == nullptr) {
       MS_LOG(EXCEPTION) << "SELF_DEFINE_SHARD attribute is not a bool";
     }
@@ -1452,8 +1512,12 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
     Shapes input_shapes;
     Symbols input_symbols;
     AnfNodePtr input = all_inputs[i];
+    if (input->Shape() == nullptr) {
+      MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is null";
+      continue;
+    }
     MS_LOG(DEBUG) << "The " << i << "th input shape of " << node->DebugString() << " is " << input->Shape()->ToString();
-    if (HasAbstractMonad(input)) {
+    if (HasAbstractMonad(input) || IsPrimitiveCNode(input, prim::kPrimTensorToScalar)) {
       continue;
     }
     if (IsValueNode<RefKey>(input)) {
@@ -1476,20 +1540,13 @@ std::pair<std::vector<NewShapes>, std::vector<Symbols>> ExtractNewShapeAndSymbol
         MS_LOG(INFO) << "may be dynamic shape, no need to get input's shape, the node is " << node->ToString();
         continue;
       }
-
-      NewShapes local_new_shapes;
-      if (IsPrimitiveCNode(input, prim::kPrimShape)) {
-        local_new_shapes = GetNodeNewShape(input->cast<CNodePtr>()->input(1));
-        input_symbols = GetNodeSymbol(input->cast<CNodePtr>()->input(1));
-      } else {
-        local_new_shapes = GetNodeNewShape(input);
-        input_symbols = GetNodeSymbol(input);
-      }
+      auto anode = IsPrimitiveCNode(input, prim::kPrimShape) ? input->cast<CNodePtr>()->input(1) : input;
+      const auto &local_new_shapes = GetNodeNewShape(anode);
+      input_symbols = GetNodeSymbol(anode);
       ObtainRealShape(input, local_new_shapes, &input_new_shapes);
     } else if (IsValueSequence(input)) {
       // Not in INPUT_IS_TUPLE_OR_LIST_OPS but has tuple input, like virtual data set
-      NewShapes local_new_shapes;
-      local_new_shapes = GetNodeNewShape(input);
+      const auto &local_new_shapes = GetNodeNewShape(input);
       input_symbols = GetNodeSymbol(input);
       ObtainRealShape(input, local_new_shapes, &input_new_shapes);
     } else if (input->isa<ValueNode>() && input->Shape()->isa<abstract::NoShape>()) {
@@ -1535,7 +1592,7 @@ std::pair<std::vector<Shapes>, std::vector<Symbols>> ExtractShapeAndSymbol(const
     Shapes input_shapes;
     Symbols input_symbols;
     AnfNodePtr input = all_inputs[i];
-    if (HasAbstractMonad(input)) {
+    if (HasAbstractMonad(input) || IsPrimitiveCNode(input, prim::kPrimTensorToScalar)) {
       continue;
     }
     if (IsValueNode<RefKey>(input)) {
@@ -1658,6 +1715,7 @@ AnfNodePtr GetInputNodeWithFilter(const AnfNodePtr &node,
 std::vector<std::pair<AnfNodePtr, int>> GetOutputNodesWithFilter(const AnfNodePtr &node,
                                                                  std::function<bool(const AnfNodePtr &)> filter,
                                                                  bool get_all_nodes_according_search) {
+  MS_EXCEPTION_IF_NULL(node);
   auto func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
@@ -1715,6 +1773,7 @@ std::pair<bool, size_t> CanMergeConcatSlice(const std::pair<std::shared_ptr<AnfN
     return {false, 0};
   }
   auto slice_cnode = pair.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(slice_cnode);
   MS_LOG(INFO) << "concat slice cnode:" << slice_cnode->fullname_with_scope();
   auto begin_value = GetValueNode(slice_cnode->input(2));
   auto end_value = GetValueNode(slice_cnode->input(3));
@@ -1728,10 +1787,13 @@ std::pair<bool, size_t> CanMergeConcatSlice(const std::pair<std::shared_ptr<AnfN
   if (!std::all_of(strided.begin(), strided.end(), [](auto s) { return s == 1; })) {
     return {false, 0};
   }
+  MS_EXCEPTION_IF_NULL(concat_cnode);
+  MS_EXCEPTION_IF_NULL(concat_cnode->input(1));
   if (!IsPrimitiveCNode(concat_cnode->input(1), prim::kPrimMakeTuple)) {
     return {false, 0};
   }
   auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(concat_input_node);
   auto concat_input_size = concat_input_node->size();
   bool can_merge = false;
   size_t concat_input_index = 0;
@@ -1761,7 +1823,143 @@ void UpdateUpdateStateForMergeConcatSlice(const FuncGraphManagerPtr &manager,
   }
 }
 
-bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<std::shared_ptr<AnfNode>, int> &pair,
+std::pair<AnfNodePtrList, AnfNodePtrList> GetParamsAndInputs(const std::pair<AnfNodePtr, int> &fg_users,
+                                                             const FuncGraphPtr &user_func_graph) {
+  //   call -> tuplegetitem -> call
+  auto user_graph_parameters = user_func_graph->parameters();
+  auto new_user_graph_parameters(user_graph_parameters);
+  new_user_graph_parameters.erase(new_user_graph_parameters.begin() + fg_users.second - 1);
+  auto fg_users_inputs_all(fg_users.first->cast<CNodePtr>()->inputs());
+  fg_users_inputs_all.erase(fg_users_inputs_all.begin() + fg_users.second);
+  return std::make_pair(new_user_graph_parameters, fg_users_inputs_all);
+}
+
+struct ConcatTransformContext {
+  std::vector<AnfNodePtr> new_concat_maketuple_inputs;
+  std::vector<AbstractBasePtr> new_maketuple_abstracts;
+  AnfNodePtrList new_user_graph_parameters;
+  std::vector<std::pair<bool, size_t>> input_index;
+  std::vector<std::pair<AnfNodePtr, int>> func_node_users;
+  std::vector<std::pair<AnfNodePtr, int>> update_list;
+  std::vector<AnfNodePtr> fg_users_inputs_all;
+  FuncGraphPtr user_func_graph;
+};
+
+std::optional<std::pair<AnfNodePtr, int>> HandleMerge(const CNodePtr &call_cnode, const FuncGraphManagerPtr &manager,
+                                                      const CNodePtr &concat_cnode,
+                                                      const ShapeVector &concat_output_shape_element,
+                                                      int64_t concat_axis, ConcatTransformContext *ctx) {
+  auto func_users = manager->node_users()[call_cnode];
+  size_t func_users_size = 0;
+  std::pair<AnfNodePtr, int> fg_users;
+
+  for (const auto &cur_fg_users : func_users) {
+    if (IsPrimitiveCNode(cur_fg_users.first, prim::kPrimUpdateState)) {
+      ctx->update_list.push_back(cur_fg_users);
+      continue;
+    }
+    ++func_users_size;
+    fg_users = cur_fg_users;
+  }
+
+  if (func_users_size > 1) {
+    return std::nullopt;
+  }
+
+  ctx->func_node_users = FuncGraphNodeUsers(fg_users);
+  if (ctx->func_node_users.empty()) {
+    return std::nullopt;
+  }
+
+  bool have_can_merge = false;
+  for (const auto &new_pair : ctx->func_node_users) {
+    auto can_merge = CanMergeConcatSlice(new_pair, concat_cnode, concat_output_shape_element, concat_axis);
+    ctx->input_index.push_back(can_merge);
+    if (can_merge.first) {
+      have_can_merge = true;
+    }
+  }
+
+  if (!have_can_merge) {
+    return std::nullopt;
+  }
+
+  return fg_users;
+}
+
+void HandleTupleReturn(const CNodePtr &call_cnode, const CNodePtr &concat_cnode, const std::pair<AnfNodePtr, int> &pair,
+                       const std::pair<AnfNodePtr, int> &fg_users, const FuncGraphManagerPtr &manager,
+                       ConcatTransformContext *ctx) {
+  // maketuple->Return
+  auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(concat_input_node);
+  (void)manager->SetEdge(pair.first, pair.second, concat_input_node);
+  MS_EXCEPTION_IF_NULL(fg_users.first->cast<CNodePtr>());
+  ctx->user_func_graph = GetValueNode<FuncGraphPtr>(fg_users.first->cast<CNodePtr>()->input(0));
+  MS_EXCEPTION_IF_NULL(ctx->user_func_graph);
+  std::tie(ctx->new_user_graph_parameters, ctx->fg_users_inputs_all) =
+    GetParamsAndInputs(fg_users, ctx->user_func_graph);
+
+  // New concat CNode in user_func_graph
+  ctx->new_concat_maketuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<AbstractBasePtr> new_maketuple_abstracts;
+  bool updated_update_state = false;
+  for (size_t i = 0; i < concat_input_node->size() - 1; ++i) {
+    std::vector<AnfNodePtr> tuple_get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), call_cnode,
+                                                  ValuePtrToAnfNodePtr(MakeValue<int64_t>(i))};
+    auto tuple_get_item_node = call_cnode->func_graph()->NewCNode(tuple_get_item_inputs);
+    if (!updated_update_state) {
+      UpdateUpdateStateForMergeConcatSlice(manager, ctx->update_list, tuple_get_item_node);
+      updated_update_state = true;
+    }
+
+    // replace fg_users->inputs(fg_users.second) to a list fg_users->inputs(fg_users.second+i)
+    ctx->fg_users_inputs_all.insert(ctx->fg_users_inputs_all.begin() + fg_users.second + i, tuple_get_item_node);
+    auto new_parameter = ctx->user_func_graph->add_parameter();
+    auto cloned_abstract = concat_input_node->input(i + 1)->abstract()->Clone();
+    new_parameter->set_abstract(cloned_abstract);
+    new_maketuple_abstracts.push_back(cloned_abstract);
+    tuple_get_item_node->set_abstract(cloned_abstract);
+    ctx->new_user_graph_parameters.insert(ctx->new_user_graph_parameters.begin() + fg_users.second - 1 + i,
+                                          new_parameter);
+    ctx->new_concat_maketuple_inputs.push_back(new_parameter);
+  }
+  ctx->new_maketuple_abstracts = new_maketuple_abstracts;
+}
+
+void UpdateUserGraphAndReplaceCall(const std::pair<AnfNodePtr, int> &fg_users, const FuncGraphManagerPtr &manager,
+                                   const CNodePtr &concat_cnode, int64_t concat_axis, ConcatTransformContext *ctx) {
+  ctx->user_func_graph->set_parameters(ctx->new_user_graph_parameters);
+  auto user_func_graph_return_cnode = ctx->user_func_graph->get_return();
+  auto return_input_cnode = user_func_graph_return_cnode->input(kIndex1);
+  auto new_call_cnode = fg_users.first->func_graph()->NewCNode(ctx->fg_users_inputs_all);
+  new_call_cnode->set_abstract(return_input_cnode->abstract()->Clone());
+  (void)manager->Replace(fg_users.first, new_call_cnode);
+
+  for (size_t j = 0; j < ctx->func_node_users.size(); ++j) {
+    auto new_pair = ctx->func_node_users[j];
+    if (!ctx->input_index[j].first) {
+      auto new_maketuple_cnode = ctx->user_func_graph->NewCNode(ctx->new_concat_maketuple_inputs);
+      new_maketuple_cnode->set_abstract(std::make_shared<abstract::AbstractTuple>(ctx->new_maketuple_abstracts));
+
+      auto old_concat_prim = GetCNodePrimitive(concat_cnode);
+      std::vector<AnfNodePtr> new_concat_inputs{NewValueNode(old_concat_prim->Clone()), new_maketuple_cnode,
+                                                NewValueNode(MakeValue<int64_t>(concat_axis))};
+      auto new_concat = ctx->user_func_graph->NewCNode(new_concat_inputs);
+      new_concat->set_abstract(concat_cnode->abstract()->Clone());
+      auto new_concat_prim = GetCNodePrimitive(new_concat);
+      if (new_concat_prim->HasAttr("fine_grained_interleaved_index")) {
+        new_concat_prim->EraseAttr("fine_grained_interleaved_index");
+      }
+      (void)manager->SetEdge(new_pair.first, new_pair.second, new_concat);
+      continue;
+    }
+    auto old_parameter = ctx->user_func_graph->parameters()[fg_users.second - kIndex2 + ctx->input_index[j].second];
+    (void)manager->Replace(new_pair.first, old_parameter);
+  }
+}
+
+bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<AnfNodePtr, int> &pair,
                            const CNodePtr &concat_cnode, const ShapeVector &concat_output_shape_element,
                            int64_t concat_axis) {
   auto fg = pair.first->func_graph();
@@ -1769,101 +1967,28 @@ bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<s
   if (fg_map.size() > 1) {
     return false;
   }
-  for (auto &fg_use : fg_map) {
+
+  for (const auto &fg_use : fg_map) {
     if (!fg_use.first->first->isa<CNode>() || fg_use.first->second > 0) {
       continue;
     }
-    auto call_cnode = fg_use.first->first->cast<CNodePtr>();
-    auto func_users = manager->node_users()[call_cnode];
-    std::vector<std::pair<AnfNodePtr, int>> update_list;
-    size_t func_users_size = 0;
-    std::pair<AnfNodePtr, int> fg_users;
-    for (auto &cur_fg_users : func_users) {
-      if (IsPrimitiveCNode(cur_fg_users.first, prim::kPrimUpdateState)) {
-        update_list.push_back(cur_fg_users);
-        continue;
-      }
-      ++func_users_size;
-      fg_users = cur_fg_users;
-    }
 
-    if (func_users_size > 1) {
+    // handle call_cnode
+    CNodePtr call_cnode = fg_use.first->first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(call_cnode);
+    MS_EXCEPTION_IF_NULL(concat_cnode);
+    ConcatTransformContext ctx;
+    auto ret = HandleMerge(call_cnode, manager, concat_cnode, concat_output_shape_element, concat_axis, &ctx);
+    if (!ret.has_value()) {
       continue;
     }
-    auto func_node_users = FuncGraphNodeUsers(fg_users);
-    if (func_node_users.empty()) {
-      continue;
-    }
-    bool have_can_merge = false;
-    std::vector<std::pair<bool, size_t>> input_index;
-    for (const auto &new_pair : func_node_users) {
-      auto can_merge = CanMergeConcatSlice(new_pair, concat_cnode, concat_output_shape_element, concat_axis);
-      input_index.push_back(can_merge);
-      if (can_merge.first) {
-        have_can_merge = true;
-      }
-    }
-    if (!have_can_merge) {
-      continue;
-    }
-    // maketuple->Return
-    auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
-    (void)manager->SetEdge(pair.first, pair.second, concat_input_node);
-    // call -> tuplegetitem -> call
-    auto user_func_graph = GetValueNode<FuncGraphPtr>(fg_users.first->cast<CNodePtr>()->input(0));
-    auto user_graph_parameters = user_func_graph->parameters();
-    auto origin_parameter = user_graph_parameters[fg_users.second - 1];
-    auto new_user_graph_parameters(user_graph_parameters);
-    new_user_graph_parameters.erase(new_user_graph_parameters.begin() + fg_users.second - 1);
-    auto fg_users_inputs_all(fg_users.first->cast<CNodePtr>()->inputs());
-    fg_users_inputs_all.erase(fg_users_inputs_all.begin() + fg_users.second);
-    // New concat CNode in user_func_graph
-    std::vector<AnfNodePtr> new_concat_maketuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
-    std::vector<AbstractBasePtr> new_maketuple_abstracts;
-    bool updated_update_state = false;
-    for (size_t i = 0; i < concat_input_node->size() - 1; ++i) {
-      std::vector<AnfNodePtr> tuple_get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), call_cnode,
-                                                    ValuePtrToAnfNodePtr(MakeValue<int64_t>(i))};
-      auto tuple_get_item_node = call_cnode->func_graph()->NewCNode(tuple_get_item_inputs);
-      if (!updated_update_state) {
-        UpdateUpdateStateForMergeConcatSlice(manager, update_list, tuple_get_item_node);
-        updated_update_state = true;
-      }
-      // replace fg_users->inputs(fg_users.second) to a list fg_users->inputs(fg_users.second+i)
-      fg_users_inputs_all.insert(fg_users_inputs_all.begin() + fg_users.second + i, tuple_get_item_node);
-      auto new_parameter = user_func_graph->add_parameter();
-      new_parameter->set_abstract(concat_input_node->input(i + 1)->abstract()->Clone());
-      new_maketuple_abstracts.push_back(concat_input_node->input(i + 1)->abstract()->Clone());
-      new_user_graph_parameters.insert(new_user_graph_parameters.begin() + fg_users.second - 1 + i, new_parameter);
-      new_concat_maketuple_inputs.push_back(new_parameter);
-    }
-    user_func_graph->set_parameters(new_user_graph_parameters);
-    auto user_func_graph_return_cnode = user_func_graph->get_return();
-    auto return_input_cnode = user_func_graph_return_cnode->input(kIndex1);
-    auto new_call_cnode = fg_users.first->func_graph()->NewCNode(fg_users_inputs_all);
-    new_call_cnode->set_abstract(return_input_cnode->abstract()->Clone());
-    (void)manager->Replace(fg_users.first, new_call_cnode);
-    // Handle user_func_graph slice cnode
-    for (size_t j = 0; j < func_node_users.size(); ++j) {
-      auto new_pair = func_node_users[j];
-      if (!input_index[j].first) {
-        auto new_maketuple_cnode = user_func_graph->NewCNode(new_concat_maketuple_inputs);
-        new_maketuple_cnode->set_abstract(std::make_shared<abstract::AbstractTuple>(new_maketuple_abstracts));
-        auto old_concat_prim = GetCNodePrimitive(concat_cnode);
-        std::vector<AnfNodePtr> new_concat_inputs{NewValueNode(old_concat_prim->Clone()), new_maketuple_cnode,
-                                                  NewValueNode(MakeValue<int64_t>(concat_axis))};
-        auto new_concat = user_func_graph->NewCNode(new_concat_inputs);
-        new_concat->set_abstract(concat_cnode->abstract()->Clone());
-        auto new_concat_prim = GetCNodePrimitive(new_concat);
-        if (new_concat_prim->HasAttr("fine_grained_interleaved_index")) {
-          new_concat_prim->EraseAttr("fine_grained_interleaved_index");
-        }
-        (void)manager->SetEdge(new_pair.first, new_pair.second, new_concat);
-        continue;
-      }
-      (void)manager->Replace(new_pair.first,
-                             user_func_graph->parameters()[fg_users.second - kIndex2 + input_index[j].second]);
-    }
+    auto fg_users = ret.value();
+
+    // TupleGetItem
+    HandleTupleReturn(call_cnode, concat_cnode, pair, fg_users, manager, &ctx);
+
+    // update parameters
+    UpdateUserGraphAndReplaceCall(fg_users, manager, concat_cnode, concat_axis, &ctx);
   }
   return true;
 }
@@ -1894,6 +2019,7 @@ bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
         continue;
       }
       auto concat_input_node = concat_cnode->input(1)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(concat_input_node);
       auto concat_real_input_node = concat_input_node->input(can_merge.second);
       (void)manager->Replace(pair.first->cast<CNodePtr>(), concat_real_input_node);
       merged = true;
@@ -1905,6 +2031,7 @@ bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
 AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const CNodePtr &micro_mirror,
                                            const AnfNodePtr &micro_mirror_new_input) {
   auto prim_origin = GetCNodePrimitive(micro_mirror);
+  MS_EXCEPTION_IF_NULL(prim_origin);
   Attr attr0 = std::make_pair(GROUP, prim_origin->GetAttr(GROUP));
   Attr attr1 = std::make_pair(DEV_NUM, prim_origin->GetAttr(DEV_NUM));
   Attr attr2 = std::make_pair(MEAN_FLAG, prim_origin->GetAttr(MEAN_FLAG));
@@ -1918,6 +2045,7 @@ AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const
                                         micro_mirror->input(kIndex2)};
   auto new_mirror_node = func_graph->NewCNode(mirror_inputs);
   auto prim = GetCNodePrimitive(new_mirror_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->SetAttrs(prim_origin->attrs());
   new_mirror_node->set_attrs(micro_mirror->attrs());
   new_mirror_node->set_primal_attrs(micro_mirror->primal_attrs());
@@ -2004,13 +2132,16 @@ void AddNodeMirrorInfo(const CNodePtr &cnode, const std::string &param_name) {
 }
 
 static ValuePtr GetMakeTupleValue(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->inputs();
 
   std::vector<int64_t> value_list;
   for (size_t index = 1; index < inputs.size(); ++index) {
     if (inputs[index]->isa<ValueNode>()) {
       auto element = GetValueNode(inputs[index]);
+      MS_EXCEPTION_IF_NULL(element);
       if (element->isa<Int64Imm>()) {
         int64_t value = element->cast<Int64ImmPtr>()->value();
         value_list.push_back(value);
@@ -2076,6 +2207,7 @@ OperatorInfoPtr CreateOperatorInfoForNewShape(const CNodePtr &cnode) {
       continue;
     } else if (IsPrimitiveCNode(inputs[index], prim::kPrimShape)) {
       auto shape_op_cnode = dyn_cast_ptr<CNode>(inputs[index]);
+      MS_EXCEPTION_IF_NULL(shape_op_cnode);
       auto dst_shape = GetNodeShape(shape_op_cnode->input(1));
       (void)input_value.emplace_back(MakeValue(dst_shape[0]));
       MS_LOG(INFO) << "The prim is " << prim->name() << ", the input index is " << index - 1
@@ -2170,26 +2302,50 @@ ShapeVector ToFullShape(const ShapeVector &input_shape, size_t index) {
     return input_shape;
   }
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
-  if (ParallelContext::GetInstance()->dataset_strategy().empty()) {
-    auto shape_value = input_shape;
-    if (!parallel::ParallelContext::GetInstance()->full_batch()) {
-      auto comm_info = parallel::GetCommInfo();
-      auto world_rank_size = comm_info.device_num / ParallelContext::GetInstance()->pipeline_stage_split_num();
-      if (shape_value[0] > 0) {
-        shape_value[0] = shape_value[0] * SizeToLong(world_rank_size);  // only for static shape
+  auto has_devmat = !ParallelContext::GetInstance()->dataset_strategy_devmat().empty();
+  auto has_tensor_map = !ParallelContext::GetInstance()->dataset_strategy_tensormap().empty();
+  std::vector<int64_t> dataset_strategy_item;
+  if (has_devmat && has_tensor_map) {
+    MS_LOG(INFO) << "Use layout dataset strategy, device matrix is " << has_devmat << ", tensor map is "
+                 << has_tensor_map;
+    // (2, 2, 2)
+    auto corresponding_devmat = ParallelContext::GetInstance()->dataset_strategy_devmat().at(index);
+    // ((2), (1), (0))
+    auto corresponding_tensormap = ParallelContext::GetInstance()->dataset_strategy_tensormap().at(index);
+    for (const auto &tensormap : corresponding_tensormap) {
+      int64_t stra = 1;
+      for (const auto &value : tensormap) {
+        if (value != -1) {
+          auto dev_mat_idx = corresponding_devmat.size() - value - 1;
+          stra *= corresponding_devmat.at(dev_mat_idx);
+        }
       }
+      dataset_strategy_item.push_back(stra);
     }
-    return shape_value;
+    MS_LOG(INFO) << "The dataset strategy is " << dataset_strategy_item;
+  } else {
+    if (ParallelContext::GetInstance()->dataset_strategy().empty()) {
+      auto shape_value = input_shape;
+      if (!parallel::ParallelContext::GetInstance()->full_batch()) {
+        auto comm_info = parallel::GetCommInfo();
+        auto world_rank_size = comm_info.device_num / ParallelContext::GetInstance()->pipeline_stage_split_num();
+        if (shape_value[0] > 0) {
+          shape_value[0] = shape_value[0] * SizeToLong(world_rank_size);  // only for static shape
+        }
+      }
+      return shape_value;
+    }
+    auto dataset_strategy = ParallelContext::GetInstance()->dataset_strategy();
+    if (index >= dataset_strategy.size()) {
+      MS_LOG(EXCEPTION) << "The input shapes size is not equal to dataset strategy size " << dataset_strategy.size();
+    }
+    dataset_strategy_item = dataset_strategy[index];
+    if (input_shape.size() != dataset_strategy_item.size()) {
+      MS_LOG(EXCEPTION) << "The input_shapes[" << index << "]'s size" << input_shape.size()
+                        << " is not equal to dataset_strategy[" << index << "]'s size " << dataset_strategy_item.size();
+    }
   }
-  auto dataset_strategy = ParallelContext::GetInstance()->dataset_strategy();
-  if (index >= dataset_strategy.size()) {
-    MS_LOG(EXCEPTION) << "The input shapes size is not equal to dataset strategy size " << dataset_strategy.size();
-  }
-  auto dataset_strategy_item = dataset_strategy[index];
-  if (input_shape.size() != dataset_strategy_item.size()) {
-    MS_LOG(EXCEPTION) << "The input_shapes[" << index << "]'s size" << input_shape.size()
-                      << " is not equal to dataset_strategy[" << index << "]'s size " << dataset_strategy_item.size();
-  }
+
   ShapeVector shape_value;
   for (size_t i = 0; i < dataset_strategy_item.size(); ++i) {
     if (input_shape[i] > 0) {
@@ -2285,6 +2441,7 @@ bool IsAutoParallelCareGraph(const FuncGraphPtr &func_graph) {
 void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index) {
   if (IsValueNode<FuncGraph>((*cnode)->input(0))) {
     auto graph = GetValueNode<FuncGraphPtr>((*cnode)->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     auto output = graph->output();
     MS_EXCEPTION_IF_NULL(output);
     while (IsPrimitiveCNode(output, prim::kPrimDepend)) {
@@ -2294,6 +2451,7 @@ void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index) {
     }
     while (IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
       auto make_tuple_cnode = output->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(make_tuple_cnode);
       output = make_tuple_cnode->input(out_index + 1);
     }
     *cnode = output->cast<CNodePtr>();
@@ -2319,6 +2477,7 @@ AnfNodePtr FindRealInputByFormalParameter(const CNodePtr &node, const AnfNodePtr
       continue;
     }
     auto parent_node = ele->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(parent_node);
     if (IsValueNode<FuncGraph>(parent_node->input(0)) && GetValueNode<FuncGraphPtr>(parent_node->input(0)) == graph) {
       return parent_node->input(param_index + 1);
     }
@@ -2487,6 +2646,7 @@ void ExceptionIfHasCommunicationOp(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
@@ -2525,6 +2685,7 @@ bool CheckStrategyWithTupleInTuple(const std::vector<ValuePtr> &elements) {
   for (size_t i = 0; i < elements.size(); ++i) {
     if (elements[i]->isa<ValueSequence>()) {
       auto value_tuple = elements[i]->cast<ValueTuplePtr>();
+      MS_EXCEPTION_IF_NULL(value_tuple);
       std::vector<ValuePtr> value_vector = value_tuple->value();
       auto local_tuple_in_tuple = std::any_of(value_vector.begin(), value_vector.end(),
                                               [](const ValuePtr &value) { return value->isa<ValueSequence>(); });
@@ -2539,6 +2700,7 @@ bool CheckStrategyWithTupleInTuple(const std::vector<ValuePtr> &elements) {
 
 NewDimensions ExtractDimensions(const ValuePtr &stra) {
   auto value_tuple = stra->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(value_tuple);
   std::vector<ValuePtr> value_vector = value_tuple->value();
   bool has_tuple_in_tuple = std::any_of(value_vector.begin(), value_vector.end(),
                                         [](const ValuePtr &value) { return value->isa<ValueSequence>(); });
@@ -2648,6 +2810,7 @@ Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<std::stri
   }
   *device_matrix_vector = GetValue<std::vector<int64_t>>(device_matrix_value);
   auto tensor_map_value_tuple = tensor_map_value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_map_value_tuple);
   *interleaved_parallel = GetValue<bool>(interleaved_parallel_value);
   std::vector<ValuePtr> tensor_map_value_tuple_vector = tensor_map_value_tuple->value();
   for (const auto &tensor_map_item : tensor_map_value_tuple_vector) {
@@ -2700,9 +2863,11 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
       return FAILED;
     }
     auto layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
     std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
     if (inputs_shape.size() != layout_value_vector.size()) {
-      MS_LOG(ERROR) << "The in_layout configured for node is not equal to its input nums";
+      MS_LOG(ERROR) << "The number of in_layout configured for the node must be equal to its input's number but got"
+                    << layout_value_vector.size() << " and " << inputs_shape.size();
       return FAILED;
     }
 
@@ -2738,6 +2903,7 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
       MS_LOG(EXCEPTION) << "The in_layout configured for node is not a tuple";
     }
     auto layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
     std::vector<ValuePtr> layout_value_vector = layout_value_tuple->value();
     if (outputs_shape.size() != layout_value_vector.size()) {
       MS_LOG(EXCEPTION) << "The out_layout configured for node is not equal to its output nums";
@@ -2778,7 +2944,9 @@ Status ConvertValueToTensorLayout(const ValuePtr &layout_value, const ShapeBaseP
       MS_LOG(ERROR) << "layout is tuple in tuple, but shape is not. Please check the input shape or layout";
       return FAILED;
     }
-    auto layout_value_vector = layout_value->cast<ValueTuplePtr>()->value();
+    const auto &layout_value_tuple = layout_value->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_value_tuple);
+    auto layout_value_vector = layout_value_tuple->value();
     std::vector<TensorLayoutBasePtr> layout_list;
     for (size_t i = 0; i < layout_value_vector.size(); ++i) {
       TensorLayoutBasePtr local_tensor_layout;
@@ -2827,6 +2995,7 @@ bool CheckNoShape(const ShapeBasePtr &shape) {
 
 Status ConvertValueTupleToTensorLayoutVector(const ValueTuplePtr &in_layout_value, const NewShapes &inputs_shape,
                                              std::vector<TensorLayoutBasePtr> *out_tensor_layouts) {
+  MS_EXCEPTION_IF_NULL(in_layout_value);
   std::vector<ValuePtr> layout_value_vector = in_layout_value->value();
   if (inputs_shape.size() < layout_value_vector.size()) {
     MS_LOG(ERROR) << "The in_layout configured for node is smaller than its input nums";
@@ -2900,7 +3069,7 @@ static bool IsCohesiveNode(const CNodePtr &cnode) {
          IsPrimitiveCNode(cnode, prim::kPrimMiniStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) ||
          IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather) || IsPrimitiveCNode(cnode, prim::kPrimMirror) ||
          IsPrimitiveCNode(cnode, prim::kPrimMirrorMiniStep) || IsPrimitiveCNode(cnode, prim::kPrimVirtualDiv) ||
-         IsPrimitiveCNode(cnode, prim::kPrimInsertGradientOf);
+         IsPrimitiveCNode(cnode, prim::kPrimInsertGradientOf) || IsPrimitiveCNode(cnode, prim::kPrimDumpGradient);
 }
 
 ParameterMap NodeParameterName(const CNodePtr &node, int64_t index, size_t curr_depth) {
@@ -3480,6 +3649,7 @@ LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
   }
   auto current_prim = GetValueNode<PrimitivePtr>(pre_cnode->input(0));
   // notice: the GetNext op has not input
+  MS_EXCEPTION_IF_NULL(current_prim);
   if (INVALID_LOSS_OPS.find(current_prim->name()) != INVALID_LOSS_OPS.end()) {
     MS_LOG(INFO) << "The loss is: " << current_prim->name();
     loss_node_info.loss_node = pre_cnode;
@@ -3547,6 +3717,7 @@ static void SetForwardFlag(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (IsValueNode<FuncGraph>(cnode->input(0))) {
       cnode->set_in_forward_flag(true);
       continue;
@@ -3613,10 +3784,12 @@ static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::v
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
     auto expect_shard_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(expect_shard_prim);
     if (expect_shard_prim->name() != SHARD) {
       continue;
     }
@@ -3625,8 +3798,33 @@ static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::v
   return real_graph;
 }
 
+Shapes ConvertDatasetLayoutToStrategy() {
+  Shapes dataset_strategy;
+  auto all_tensor_map = ParallelContext::GetInstance()->dataset_strategy_tensormap();
+  auto all_dev_mat = ParallelContext::GetInstance()->dataset_strategy_devmat();
+  for (size_t i = 0; i < all_tensor_map.size(); ++i) {
+    Shape local_stra;
+    auto cur_tensor_map = all_tensor_map.at(i);
+    auto cur_dev_mat = all_dev_mat.at(i);
+    for (size_t j = 0; j < cur_tensor_map.size(); ++j) {
+      size_t shard_size = 1;
+      for (size_t k = 0; k < cur_tensor_map.at(j).size(); ++k) {
+        auto val = cur_tensor_map.at(j).at(k);
+        if (val != -1) {
+          auto real_idx = cur_dev_mat.size() - LongToSize(val) - 1;
+          shard_size *= LongToSize(cur_dev_mat.at(real_idx));
+        }
+      }
+      local_stra.push_back(shard_size);
+    }
+    dataset_strategy.push_back(local_stra);
+  }
+  return dataset_strategy;
+}
+
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
   auto real_graph = PynativeParallelGraph(root, all_nodes);
+  MS_EXCEPTION_IF_NULL(real_graph);
   auto out_pair = GetRealKernelNode(real_graph->output(), -1, nullptr, false);
   auto out_node = out_pair.first;
   MS_EXCEPTION_IF_NULL(out_node);
@@ -3661,7 +3859,9 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
       return;
     }
     auto node_input = CreateInput(op, out_node, VIRTUAL_OUTPUT);
-    auto cur_graph = out_node->cast<CNodePtr>()->func_graph();
+    const auto out_cnode = out_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(out_cnode);
+    auto cur_graph = out_cnode->func_graph();
     MS_EXCEPTION_IF_NULL(cur_graph);
     auto new_node = cur_graph->NewCNode(node_input);
     auto manager = cur_graph->manager();
@@ -3671,6 +3871,32 @@ void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr>
     virtual_output_abstract->set_shape(virtual_output_shape);
     new_node->set_abstract(virtual_output_abstract);
   }
+}
+
+int64_t LongAdd(int64_t base, int64_t shift) {
+  int64_t result;
+  if (shift > 0) {
+    if (base > INT_MAX - shift) {
+      result = INT_MAX;
+    } else {
+      result = base + shift;
+    }
+  } else {
+    if (base < INT_MIN - shift) {
+      result = INT_MIN;
+    } else {
+      result = base + shift;
+    }
+  }
+  return result;
+}
+
+bool IsCommunicateNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  static const PrimitiveSet comm_op_type = {prim::kPrimAllReduce, prim::kPrimReduceScatter, prim::kPrimAllGather,
+                                            prim::kPrimBroadcast, prim::kPrimAlltoAll,      prim::kPrimAlltoAllV,
+                                            prim::kPrimSend,      prim::kPrimReceive};
+  return IsOneOfPrimitiveCNode(node, comm_op_type);
 }
 }  // namespace parallel
 }  // namespace mindspore

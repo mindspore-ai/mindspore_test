@@ -1,0 +1,10 @@
+__add__:
+  description: |
+    __add__(input, other, *, alpha=1) -> Tensor
+    
+    Alias for :func:`mindspore.mint.add`.
+    
+    .. method:: mint.__add__(input, other, *, alpha=1) -> Tensor
+        :noindex:
+    
+    Alias for overload function of :func:`mindspore.mint.add`.

@@ -50,9 +50,6 @@ class MemSwapScheduler {
   AbstractActor *GetActorForLink(size_t id, const std::shared_ptr<device::SwapStrategy> &strategy,
                                  const KernelGraphPtr &graph, const ControlNodeParserPtr &parser,
                                  ActorSet *actor_set) const;
-  void AddSwappableTensors(const DeviceContext *device_context, const std::shared_ptr<device::SwapStrategy> &strategy,
-                           const KernelGraphPtr &graph) const;
-  void AddSwappableRootParameter(const GraphCompilerInfo &graph_compiler_info) const;
 
  private:
   const AID *recorder_aid_;

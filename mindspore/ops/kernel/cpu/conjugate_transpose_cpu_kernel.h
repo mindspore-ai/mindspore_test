@@ -22,12 +22,13 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/transpose_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conjugate_transpose_cpu {
 class ConjugateTransposeCpuKernelMod : public NativeCpuKernelMod {
  public:
   ConjugateTransposeCpuKernelMod() = default;
@@ -133,6 +134,7 @@ class ConjugateTransposeCpuKernelMod : public NativeCpuKernelMod {
   std::unordered_map<TypeId, TypeKernel> launch_map_;
   TypeKernel launch_func_;
 };
+}  // namespace conjugate_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CONJUGATE_TRANSPOSE_CPU_KERNEL_H_

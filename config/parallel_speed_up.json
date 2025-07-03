@@ -1,11 +1,11 @@
 {
-  "recompute_comm_overlap": false,
-  "matmul_grad_comm_overlap": false,
-  "enable_task_opt": false,
-  "enable_grad_comm_opt": false,
-  "enable_opt_shard_comm_opt": false,
+  "recomputation_communication_overlap": false,
+  "grad_matmul_communication_overlap": false,
+  "enable_communication_fusion": false,
+  "grad_computation_allreduce_overlap": false,
+  "computation_allgather_overlap": false,
   "enable_concat_eliminate_opt": false,
   "enable_begin_end_inline_opt": false,
-  "recompute_allgather_overlap_fagrad": false,
-  "compute_communicate_fusion_level": 0
+  "grad_fa_allgather_overlap": false,
+  "computation_communication_fusion_level": 0
 }

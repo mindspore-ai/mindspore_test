@@ -20,18 +20,19 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_3d_grad {
 
 void GridSampler3DGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  interpolation_mode_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  padding_mode_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
-  align_corners_ = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
-  const auto &output_mask_tmp = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex6]);
+  interpolation_mode_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  padding_mode_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  align_corners_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  const auto &output_mask_tmp = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex6]);
   output_mask_.clear();
   std::transform(output_mask_tmp.begin(), output_mask_tmp.end(), std::back_inserter(output_mask_),
                  [](int64_t value) { return static_cast<uint8_t>(value); });
@@ -49,5 +50,6 @@ bool GridSampler3DGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GridSampler3DGrad, GridSampler3DGradAscend);
+}  // namespace grid_sampler_3d_grad
 }  // namespace kernel
 }  // namespace mindspore

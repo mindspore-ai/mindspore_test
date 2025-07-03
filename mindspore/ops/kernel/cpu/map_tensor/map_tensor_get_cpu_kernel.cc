@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/common/utils/utils.h"
 
-#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 #include "kernel/cpu/map_tensor/map_tensor_get_cpu_kernel.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 

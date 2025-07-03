@@ -28,6 +28,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_node.h"
 #include "plugin/device/cpu/hal/hardware/allreduce_impl.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
@@ -36,6 +37,7 @@ constexpr char kMCCLGlobalGroupName[] = "mccl_world_group";
 using ClusterContext = mindspore::distributed::cluster::ClusterContext;
 using CollectiveOpsImpl = mindspore::fl::server::CollectiveOpsImpl;
 using CommunicationGroupInfo = mindspore::fl::server::CommunicationGroupInfo;
+using GroupOptions = mindspore::device::GroupOptions;
 using ps::core::NodeCommand;
 
 // The time interval for send info or query info between worker and scheduler.
@@ -45,7 +47,7 @@ constexpr uint32_t kWaitDuration = 5;
 constexpr uint32_t kMSCollectiveRetryTime = 200;
 
 // The collective communication library for MindSpore self developed communication framework.
-class MsCollectiveCommLib : public CollectiveCommunicationLib {
+class BACKEND_EXPORT MsCollectiveCommLib : public CollectiveCommunicationLib {
  public:
   static MsCollectiveCommLib &GetInstance() {
     static MsCollectiveCommLib instance;
@@ -57,7 +59,8 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
   bool Finalize() override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   bool AllGatherHostHashName(size_t host_hash_name, std::vector<size_t> *host_hash_names) override;
 
@@ -69,6 +72,10 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
               const std::string &group_name, void *stream = nullptr) override;
   bool Scatter(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type, uint32_t root_rank,
                const std::string &group_name, void *stream = nullptr) override;
+  bool Send(const void *send_buff, size_t send_count, TypeId data_type, uint32_t dst_rank,
+            const std::string &group_name, void *stream = nullptr) override;
+  bool Recv(void *recv_buff, size_t send_count, TypeId data_type, uint32_t src_rank, const std::string &group_name,
+            void *stream = nullptr) override;
   bool AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                  CollectiveOpReduceType reduce_op, const std::string &group_name, void *stream = nullptr) override;
 
@@ -81,6 +88,9 @@ class MsCollectiveCommLib : public CollectiveCommunicationLib {
   }
   bool CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
                   CommunicationGroupInfo *group_info);
+  bool CheckIfVal(const std::string &group_name, CommunicationGroupInfo *group_info);
+  void ClearUniqueID(const std::string &group_name) const override;
+  uint32_t GetGroupRanks(const std::string &group_name);
 
  private:
   MsCollectiveCommLib();

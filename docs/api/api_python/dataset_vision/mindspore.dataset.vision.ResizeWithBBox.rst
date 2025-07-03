@@ -3,7 +3,7 @@ mindspore.dataset.vision.ResizeWithBBox
 
 .. py:class:: mindspore.dataset.vision.ResizeWithBBox(size, interpolation=Inter.LINEAR)
 
-    将输入图像调整为给定的尺寸大小并相应地调整边界框的大小。
+    将输入图像调整为给定的尺寸大小，并相应地调整边界框的大小。
 
     参数：
         - **size** (Union[int, Sequence[int]]) - 图像的输出尺寸大小。若输入整型，将调整图像的较短边长度为 `size` ，且保持图像的宽高比不变；若输入是2元素组成的序列，其输入格式需要是 (高度, 宽度) 。

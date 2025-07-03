@@ -25,9 +25,10 @@
 #include "src/extendrt/delegate_graph_executor.h"
 #include "include/api/context.h"
 #include "src/common/config_infos.h"
+#include "extendrt/session/lite_graph_executor.h"
 
 namespace mindspore {
-using mindspore::device::GraphExecutor;
+using mindspore::LiteGraphExecutor;
 // (zhaizhiqiang): Wrap graph executor as delegate.
 // typedef std::shared_ptr<GraphSinkDelegate> (*DelegateCreator)(const std::shared_ptr<Context> &);
 template <typename T>

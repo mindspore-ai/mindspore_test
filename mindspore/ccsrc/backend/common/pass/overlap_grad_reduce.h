@@ -24,7 +24,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT OverlapGradReduce : public Pass {
+class BACKEND_COMMON_EXPORT OverlapGradReduce : public Pass {
  public:
   explicit OverlapGradReduce(const std::string &name = "overlap_grad_reduce") : Pass(name) {}
   ~OverlapGradReduce() override = default;

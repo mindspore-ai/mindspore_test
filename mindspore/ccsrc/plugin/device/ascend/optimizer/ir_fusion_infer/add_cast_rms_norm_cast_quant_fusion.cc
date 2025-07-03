@@ -28,6 +28,11 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -56,10 +61,6 @@ const AnfNodePtr AddCastRmsNormCastQuantFusion::Process(const FuncGraphPtr &grap
                                                         const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   const std::string fusion_op_name = "AddCastRmsNormCastQuantV2";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =

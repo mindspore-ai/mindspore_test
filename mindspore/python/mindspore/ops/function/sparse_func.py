@@ -461,8 +461,8 @@ def dense_to_sparse_coo(tensor: Tensor) -> COOTensor:
         - shape (tuple(int)): the shape of the COOTensor, is the same as the original dense tensor.
 
     Raises:
-        TypeError: If input is not a tensor.
-        ValueError: If input tensor is not 2-D.
+        TypeError: If `tensor` is not a tensor.
+        ValueError: If `tensor` is not 2-D.
 
     Supported Platforms:
         ``GPU``
@@ -798,7 +798,7 @@ def csr_add(a: CSRTensor, b: CSRTensor, alpha: Tensor, beta: Tensor) -> CSRTenso
 
         - **indptr** -  Indicates the start and end point for non-zero values in each row.
         - **indices** - The column positions of all non-zero values of the input.
-        - **values** - The non-zero values of the dense tensor.
+        - **values** - The non-zero values.
         - **shape** - The shape of the CSRTensor.
 
     Supported Platforms:

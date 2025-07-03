@@ -20,12 +20,13 @@
 #include <utility>
 
 #include "mindspore/ops/infer/fmin.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fmin_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -267,5 +268,6 @@ std::vector<KernelAttr> FminCpuKernelMod::GetOpSupport() {
   };
   return kernel_attr_list;
 }
+}  // namespace fmin_cpu
 }  // namespace kernel
 }  // namespace mindspore

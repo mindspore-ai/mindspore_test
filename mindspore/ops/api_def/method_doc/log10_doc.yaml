@@ -2,40 +2,4 @@ log10:
   description: |
     log10() -> Tensor
 
-    Returns the logarithm to the base 10 of a tensor element-wise.
-
-    .. math::
-        y_i = \log_{10}(x_i)
-
-    .. warning::
-        - This is an experimental API that is subject ot change or deletion.
-        - If the self value of operator Log10 is within the range (0, 0.01] or [0.95, 1.05], the output accuracy
-          may be affacted.
-
-    .. note::
-        The value of `self` must be greater than 0.
-
-    Returns:
-        Tensor, has the same shape as the `self`, and the dtype changes according to the `self.dtype`.
-
-        - if `self.dtype` is in [float16, float32, float64, bfloat16, complex64, complex128], the output dtype is
-          the same as the `self.dtype`.
-        - if `self.dtype` is double type, the output dtype is float64.
-        - if `self.dtype` is integer or boolean type on Ascend, the output dtype is float32.
-
-    Raises:
-        TypeError: If `self.dtype` is not one of bool, uint8, int8, int16, int32, int64, bfloat16, float16, float32,
-            float64, double, complex64, complex128.
-        TypeError: If `self.dtype` is integer or boolean type on CPU and GPU.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1.0, 3.0, 5.0]), mindspore.float32)
-        >>> output = x.log10()
-        >>> print(output)
-        [0.         0.47712126 0.69897   ]
+    For details, please refer to :func:`mindspore.ops.log10`.

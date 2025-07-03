@@ -496,7 +496,7 @@ def kernel(fn=None, reg_info=None, compile_attrs=None):
         callable function is equal to the case when `fn` is not None.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``GPU`` ``CPU``
 
     Examples:
         >>> import numpy as np
@@ -510,12 +510,12 @@ def kernel(fn=None, reg_info=None, compile_attrs=None):
         ...     "test3": 12,
         ... }
         >>> # Create the reg info json string.
-        >>> op_gpu_info = CustomRegOp() \\
+        >>> op_cpu_info = CustomRegOp() \\
         ...     .input(0, "a") \\
         ...     .input(0, "b") \\
         ...     .output(0, "y") \\
         ...     .dtype_format(DataType.F32_None, DataType.F32_None, DataType.F32_None) \\
-        ...     .target("GPU") \\
+        ...     .target("CPU") \\
         ...     .get_op_info()
         >>>
         >>> # Create inputs for the custom op.
@@ -524,7 +524,7 @@ def kernel(fn=None, reg_info=None, compile_attrs=None):
         ...
         >>> # Write a Hybrid DSL function through the decorator @kernel.
         >>> # We can also pass the compile attrs and the reg info through the decorator.
-        >>> @kernel(reg_info=op_gpu_info, compile_attrs=attrs)
+        >>> @kernel(reg_info=op_cpu_info, compile_attrs=attrs)
         ... def outer_product(a, b):
         ...     c = output_tensor(a.shape, a.dtype)
         ...
@@ -539,12 +539,6 @@ def kernel(fn=None, reg_info=None, compile_attrs=None):
         >>> # We can use the function directly as a python function.
         >>> # In this case, the inputs should be numpy arrays.
         >>> result = outer_product(input_x, input_y)
-        ...
-        >>> # Create a custom op with mode "hybrid" (default value) by the Hybrid DSL function.
-        >>> # In this case, we will enjoy the automatic dtype/shape infer for free.
-        >>> # The inputs should be mindspore tensors.
-        >>> test_op_hybrid = ops.Custom(outer_product)
-        >>> output = test_op_hybrid(Tensor(input_x), Tensor(input_y))
     """
     if compile_attrs is None:
         compile_attrs = {}

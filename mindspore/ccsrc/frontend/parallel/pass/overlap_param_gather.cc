@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,13 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/optimizer/optimizer.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace parallel {
@@ -55,7 +61,7 @@ bool ParamGatherTopoSort(const ParamGatherUser &a, const ParamGatherUser &b) {
     }
     return a.users[i].second < b.users[i].second;
   }
-  return a.users.size() <= b.users.size();
+  return a.users.size() < b.users.size();
 }
 
 FuncGraphPtr GetNextFuncGraph(const AnfNodePtr &node) {
@@ -153,6 +159,7 @@ void OverlapParamGather(const FuncGraphPtr &func_graph) {
   }
 
   MS_EXCEPTION_IF_NULL(func_graph);
+  circle_handler::SetAttrToDepend(func_graph);
   const auto &node_list = TopoSort(func_graph->get_return());
 
   // Solve for cell_reuse
@@ -168,6 +175,9 @@ void OverlapParamGather(const FuncGraphPtr &func_graph) {
     return;
   }
   InsertDependByOrder(ordered_param_gather_nodes);
+
+  circle_handler::DetectAndRevertGraphCircle(func_graph, func_graph->manager(), "OverlapParamGather",
+                                             "enable_opt_shard_comm_opt");
 }
 }  // namespace parallel
 }  // namespace mindspore

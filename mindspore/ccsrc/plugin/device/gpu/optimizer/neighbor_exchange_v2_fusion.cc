@@ -34,6 +34,9 @@
 #include "include/backend/optimizer/helper.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #endif
 
 namespace mindspore {
@@ -432,7 +435,7 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
   common::AnfAlgo::SetNodeAttr(kAttrSendRankIds, MakeValue<std::vector<int64_t>>(real_send_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(real_recv_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
-
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), all_to_all_v);
   // add depend for input & alltoallv in send_empty condition
   common::AnfAlgo::SetNodeAttr(kAttrNeedDropInput, MakeValue<bool>(need_drop_input), all_to_all_v);
   if (all_to_all_input_num == 0) {

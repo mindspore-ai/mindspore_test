@@ -17,10 +17,11 @@
 #include "kernel/cpu/log1p_cpu_kernel.h"
 #include <cmath>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace log1p_cpu {
 namespace {
 constexpr size_t kLog1pInputsNum = 1;
 constexpr size_t kLog1pOutputsNum = 1;
@@ -75,5 +76,6 @@ void Log1pCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Log1p, Log1pCpuKernelMod);
+}  // namespace log1p_cpu
 }  // namespace kernel
 }  // namespace mindspore

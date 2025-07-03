@@ -14,10 +14,10 @@
 # ============================================================================
 import os
 import numpy as np
-
+import pytest
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, Parameter
+from mindspore import Tensor, Parameter, ops
 from tests.st.pynative.utils import GradOfAllParams, GradOfFirstInput
 from tests.mark_utils import arg_mark
 
@@ -257,7 +257,7 @@ def test_tensor_backward_hook_handle_remove():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='allcards',
           essential_mark='essential')
 def test_tensor_hook_with_reduce_scatter():
@@ -317,3 +317,105 @@ def test_tensor_backward_hook_with_weight_not_in_grad():
     not_in_grad = 1
     ms_grad(input_x)
     assert not_in_grad == 3
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_multi_output():
+    """
+    Feature: Tensor hook
+    Description: test tensor hook for multi output ops.
+    Expectation: Success
+    """
+
+    def fn(x):
+        y1, y2 = ops.split(x, 2)
+
+        y1.register_hook(hook_fn)
+        handle = y1.register_hook(hook_fn_2)
+
+        y2.register_hook(hook_fn_2)
+        assert len(y1.hooks()) == 2
+        assert len(y2.hooks()) == 1
+
+        handle.remove()
+        assert len(y1.hooks()) == 1
+        return y1 + y2
+
+    input_x = Tensor(np.arange(4).astype("float32"), dtype=ms.float32)
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_x)
+    assert np.allclose(grad.asnumpy(), np.array([2.0, 2.0, 3.0, 3.0], dtype=np.float32), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_inplace():
+    """
+    Feature: Tensor hook
+    Description: test tensor hook for inplace ops.
+    Expectation: Success
+    """
+
+    def fn(x):
+        y = x * x
+        y.register_hook(hook_fn)
+        y.add_(2.0)
+        assert not y.hooks()
+        y.register_hook(hook_fn_2)
+        assert len(y.hooks()) == 1
+        return y + 1.0
+
+    input_x = Tensor([1.0, 2.0], dtype=ms.float32)
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_x)
+    assert np.allclose(grad.asnumpy(), np.array([12.0, 24.0], dtype=np.float32), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_leaf():
+    """
+    Feature: Tensor hook
+    Description: register tensor hook for leaf node.
+    Expectation: Success
+    """
+
+    def fn(x):
+        y = x * x
+        z = ops.relu(y)
+        return z
+
+    input_x = Tensor([1.0, 2.0], dtype=ms.float32)
+    handle = input_x.register_hook(hook_fn)
+    assert len(input_x.hooks()) == 1
+
+    grad_op = GradOfFirstInput(fn, sens_param=False)
+    grad = grad_op(input_x)
+    assert np.allclose(grad.asnumpy(), np.array([4.0, 8.0], dtype=np.float32), 0.001, 0.001)
+
+    assert len(input_x.hooks()) == 1
+    handle.remove()
+    assert not input_x.hooks()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_leaf_error():
+    """
+    Feature: Tensor hook
+    Description: register tensor hook for parameters that do not require gradients.
+    Expectation: Raise RuntimeError.
+    """
+
+    param_x = Parameter(Tensor(np.array([2.0, 3.0]), ms.float32), requires_grad=False)
+    with pytest.raises(RuntimeError, match="The tensor requires grad is false, which can not register tensor hook"):
+        param_x.register_hook(hook_fn)

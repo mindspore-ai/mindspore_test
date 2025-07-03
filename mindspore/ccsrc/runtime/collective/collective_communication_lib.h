@@ -22,11 +22,25 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <variant>
+#include <unordered_map>
 #include "ir/dtype/type_id.h"
 #include "runtime/collective/communication_group.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
+// This the config passed to 'CreateCommunicationGroup' method. It controls initialization mode for communication group.
+struct BACKEND_COMMON_EXPORT GroupOptions {
+  // Whether creating communication group asynchonizely.
+  bool async = false;
+  // For sync manner, this key means whether submit init task immediately for this group. If
+  // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
+  bool submit_now = true;
+  // Used to specify some hccl settings.
+  std::unordered_map<std::string, std::variant<uint32_t, std::string>> hccl_config = {};
+};
+
 // The reduce type of collective operations.
 enum CollectiveOpReduceType : int64_t {
   Reduce_Mean = 0,
@@ -43,7 +57,7 @@ enum CollectiveOpReduceType : int64_t {
 // For collective communication on the device side like GPU, the entry is NvidiaCollectiveCommLib which calls NCCL.
 // For collective communication on the host side, the entry is MPICollectiveCommLib which call OpenMPI, or
 // MsCollectiveCommLib which uses the host-side communication library developed by MindSpore.
-class CollectiveCommunicationLib {
+class BACKEND_COMMON_EXPORT CollectiveCommunicationLib {
  public:
   CollectiveCommunicationLib()
       : initialized_(false), finalized_(false), global_rank_id_(0), local_rank_id_(0), global_rank_size_(0) {}
@@ -56,17 +70,14 @@ class CollectiveCommunicationLib {
   // method. But collective communication libraries on device side needs these inputs passed by the caller.
   virtual bool Initialize(uint32_t global_rank = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
                           uint32_t local_rank_id = UINT32_MAX) = 0;
-  virtual bool InitializeWatchDog(uint32_t global_rank_id = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
-                                  uint32_t local_rank_id = UINT32_MAX) {
-    return true;
-  }
 
   // Finalize collecitve communication library.
   virtual bool Finalize();
 
   // Create communication group. This is the precondition for all collective operations on both host and device side.
   virtual bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                        uint32_t local_group_rank, uint32_t local_group_size) {
+                                        uint32_t local_group_rank, uint32_t local_group_size,
+                                        const GroupOptions &config = {}) {
     return true;
   }
 
@@ -83,6 +94,14 @@ class CollectiveCommunicationLib {
 
   // Destroy the communication group.
   virtual bool DestroyCommunicationGroup(const std::string &group_name);
+
+  // Switch network interface card due to borrowing or switchback
+  virtual bool CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
+    return true;
+  }
+
+  // Get the inner communicator name of the specified group.
+  virtual std::string CommName(const std::string &group_name) { return ""; }
 
   // Get the rank id of this process in the specified group.
   virtual uint32_t GetRankId(const std::string &group_name);
@@ -109,6 +128,8 @@ class CollectiveCommunicationLib {
 
   // Broadcast the device root information to all nodes on host side, used to initialize collective communication.
   virtual bool BroadcastUniqueID(const std::string &group_name, size_t root_info_size, void *root_info) { return true; }
+
+  virtual void ClearUniqueID(const std::string &group_name) const {}
 
   // Primitive of collective operations.
   virtual bool AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,

@@ -18,11 +18,12 @@
 #include <utility>
 #include <limits>
 #include <cmath>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Eigen"
 
 namespace mindspore {
 namespace kernel {
+namespace xdivy_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 static constexpr size_t INPUT_NUM = 2;
@@ -183,5 +184,6 @@ const std::vector<std::pair<KernelAttr, XdivyCpuKernelMod::KernelRunFunc>> &Xdiv
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Xdivy, XdivyCpuKernelMod);
+}  // namespace xdivy_cpu
 }  // namespace kernel
 }  // namespace mindspore

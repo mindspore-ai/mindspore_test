@@ -47,8 +47,8 @@ def _greater_equal_string(x, y):
     Determine whether x is greater than or equal to y.
 
     Args:
-       x(String): String.
-       y(String): String.
+       x(str): String.
+       y(str): String.
 
     Returns:
        bool, if x >= y return true, x < y return false.
@@ -103,7 +103,8 @@ def _greater_equal_list(x, y):
     return list_greater_equal()(x, y)
 
 
-@greater_equal.register_default()
+# pylint: disable=protected-access
+@greater_equal._register_default()
 def default_greater_equal(x, y):
     """Default function for greater equal."""
     return x >= y

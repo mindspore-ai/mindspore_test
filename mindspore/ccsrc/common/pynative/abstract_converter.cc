@@ -24,8 +24,8 @@ void AbstractConverter::CacheAbstract(const AbstractBasePtr &abstract) {}
 
 AbstractBasePtr AbstractConverter::ConvertAbstract(const ValuePtr &t) {
   MS_EXCEPTION_IF_NULL(t);
-  if (t->isa<BaseTensor>()) {
-    auto tensor = t->cast<BaseTensorPtr>();
+  if (t->isa<tensor::Tensor>()) {
+    auto tensor = t->cast<tensor::TensorPtr>();
     return ConvertAbstract(tensor);
   }
   if (t->isa<ValueTuple>()) {
@@ -36,7 +36,7 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const ValuePtr &t) {
 }
 
 // Tensor is held by Abstract, may lead to memory leak.
-AbstractBasePtr AbstractConverter::ConvertAbstract(const BaseTensorPtr &t) {
+AbstractBasePtr AbstractConverter::ConvertAbstract(const tensor::TensorPtr &t) {
   MS_EXCEPTION_IF_NULL(t);
   auto abs = t->ToAbstract();
   abs->set_value(kValueAny);
@@ -49,7 +49,7 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const ValueTuplePtr &t) {
   for (size_t i = 0; i < t->value().size(); ++i) {
     auto &val = t->value()[i];
     auto abs = val->ToAbstract();
-    if (val->isa<tensor::BaseTensor>()) {
+    if (val->isa<tensor::Tensor>()) {
       abs->set_value(kValueAny);
     }
     abs_list[i] = abs;

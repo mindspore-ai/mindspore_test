@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_grad_with_indices {
 
 class MaxPoolGradWithIndicesAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class MaxPoolGradWithIndicesAscend : public AclnnKernelMod {
   std::vector<int64_t> dilation_;
   bool ceil_mode_;
 };
+}  // namespace max_pool_grad_with_indices
 }  // namespace kernel
 }  // namespace mindspore
 

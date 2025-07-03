@@ -3,6 +3,7 @@ add_compile_definitions(USE_ANDROID_LOG)
 set(LITE_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CORE_INC_DIR})
 include_directories(${OPS_DIR}/kernel/cpu)
+include_directories(${OPS_DIR}/kernel/include)
 
 set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../tools)
 if(NOT MSLITE_ENABLE_RUNTIME_CONVERT)
@@ -389,7 +390,7 @@ if(MSLITE_ENABLE_ACL)
 endif()
 
 add_library(mindspore-lite SHARED $<TARGET_OBJECTS:lite_src_mid>)
-target_link_libraries(mindspore-lite lite_src_common_mid)
+target_link_libraries(mindspore-lite lite_src_common_mid securec)
 set_target_properties(mindspore-lite PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 if(APPLE)

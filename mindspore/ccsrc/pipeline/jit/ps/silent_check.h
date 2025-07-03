@@ -22,7 +22,6 @@
 #include <map>
 #include <set>
 #include "base/base.h"
-#include "include/backend/optimizer/pass.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/log_adapter.h"
@@ -65,6 +64,7 @@ class SilentCheckV2 {
 };
 
 bool SilentCheckPass(const ResourcePtr &resource);
+bool IsEnableSilentCheck();
 }  // namespace pipeline
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_

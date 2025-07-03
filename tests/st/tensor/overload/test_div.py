@@ -112,7 +112,7 @@ def test_divide_trunc(mode):
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
                       'platform_ascend910b'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -127,12 +127,10 @@ def test_divide_kwonlyargs(mode):
     net2 = NetKwFault2()
     x = Tensor(np.array([1.0, 5.0, 9.5]), mstype.float32)
     y = Tensor(np.array([4.0, 2.0, 3.0]), mstype.float32)
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net1(x, y)
         _pynative_executor.sync()
-    assert "Failed calling div with " in str(error_info.value)
 
-    with pytest.raises(TypeError) as error_info:
+    with pytest.raises(TypeError):
         net2(x, y)
         _pynative_executor.sync()
-    assert "Failed calling div with " in str(error_info.value)

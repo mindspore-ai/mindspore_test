@@ -21,22 +21,23 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted {
 
 void SearchsortedAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto dtype = static_cast<TypeId>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto dtype = static_cast<TypeId>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   auto out_int32 = false;
   if (dtype == kNumberTypeInt32) {
     out_int32 = true;
   }
 
-  auto right = transform::ConvertKernelTensor<bool>(inputs[kIndex4]);
+  auto right = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], out_int32, right, inputs[kIndex2], outputs[kIndex0]);
 }
@@ -44,18 +45,19 @@ void SearchsortedAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inp
 bool SearchsortedAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto dtype = static_cast<TypeId>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto dtype = static_cast<TypeId>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   auto out_int32 = false;
   if (dtype == kNumberTypeInt32) {
     out_int32 = true;
   }
 
-  auto right = transform::ConvertKernelTensor<bool>(inputs[kIndex4]);
+  auto right = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex4]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], out_int32, right, inputs[kIndex2], outputs[kIndex0]);
   return true;
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SearchSorted, SearchsortedAscend);
+}  // namespace searchsorted
 }  // namespace kernel
 }  // namespace mindspore

@@ -1,13 +1,11 @@
 /*
  * Copyright (c) 2024 Huawei Technologies Co., Ltd.
- * AscendTransformerBoost is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- *          http://license.coscl.org.cn/MulanPSL2
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
- * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
- * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
  */
 #ifndef ATB_SVECTOR_H
 #define ATB_SVECTOR_H
@@ -91,10 +89,10 @@ public:
     //!
     //! \param other
     //!
-    SVector (const SVector<T> &other)
+    SVector(const SVector<T> &other)
     {
         if (other.heap_) {
-            heap_ = reinterpret_cast<T*>(malloc(other.size_ * sizeof(T)));
+            heap_ = reinterpret_cast<T *>(malloc(other.size_ * sizeof(T)));
             if (!heap_) {
                 throw std::bad_alloc();
             }
@@ -283,8 +281,8 @@ public:
     //!
     //! \note pos必须小于SVector容量，否则会抛出异常
     //!
-    void insert(const std::size_t pos, const T &value) noexcept
-        ((!CHECK_BOUND) && std::is_nothrow_assignable<T, const T &>::value)
+    void insert(const std::size_t pos,
+                const T &value) noexcept((!CHECK_BOUND) && std::is_nothrow_assignable<T, const T &>::value)
     {
         if (heap_) {
             if (pos > size_ || pos == capacity_) {
@@ -381,7 +379,7 @@ public:
             if (heap_) {
                 free(heap_);
             }
-            heap_ = reinterpret_cast<T*>(malloc(size * sizeof(T)));
+            heap_ = reinterpret_cast<T *>(malloc(size * sizeof(T)));
             if (!heap_) {
                 throw std::bad_alloc();
             }
@@ -398,7 +396,7 @@ public:
     //!
     //! \return bool值
     //!
-    bool operator == (const SVector<T> &other) const
+    bool operator==(const SVector<T> &other) const
     {
         if (heap_) {
             if (size_ != other.size_ || !other.heap_) {
@@ -428,7 +426,7 @@ public:
     //!
     //! \return bool值
     //!
-    bool operator != (const SVector<T> &other) const
+    bool operator!=(const SVector<T> &other) const
     {
         if (heap_) {
             if (size_ != other.size_ || !other.heap_) {
@@ -458,7 +456,7 @@ public:
     //!
     //! \return bool值
     //!
-    bool operator < (const SVector<T> &other) const
+    bool operator<(const SVector<T> &other) const
     {
         if (heap_) {
             if (size_ != other.size_ || !other.heap_) {
@@ -488,7 +486,7 @@ public:
     //!
     //! \return 容器引用
     //!
-    SVector &operator = (std::initializer_list<T> list)
+    SVector &operator=(std::initializer_list<T> list)
     {
         if (heap_) {
             if (CHECK_BOUND && list.size() > MAX_SVECTOR_SIZE) {
@@ -519,7 +517,7 @@ public:
     //!
     //! \return 容器引用
     //!
-    SVector &operator = (const SVector &other)
+    SVector &operator=(const SVector &other)
     {
         if (heap_) {
             size_ = other.size_;
@@ -540,7 +538,7 @@ private:
     std::size_t capacity_ = 0;
     std::size_t size_ = 0;
     T storage_[DEFAULT_SVECTOR_SIZE + 1];
-    T* heap_ = nullptr;
+    T *heap_ = nullptr;
 };
 
 //! \brief 输出容器中的元素
@@ -550,8 +548,7 @@ private:
 //!
 //! \return 输出流
 //!
-template <class T>
-std::ostream &operator << (std::ostream &os, const SVector<T> &svector)
+template <class T> std::ostream &operator<<(std::ostream &os, const SVector<T> &svector)
 {
     if (svector.size() == 0) {
         return os;
@@ -567,5 +564,5 @@ std::ostream &operator << (std::ostream &os, const SVector<T> &svector)
 
     return os;
 }
-} // namespace AsdOps
+} // namespace atb
 #endif

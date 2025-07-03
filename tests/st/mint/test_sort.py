@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -35,7 +35,7 @@ def sort_backward_func(x, dim, descending, stable):
     return ops.grad(sort_forward_func, (0, 1, 2, 3))(x, dim=dim, descending=descending, stable=stable)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("descending", [True, False])
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_sort_std(descending, mode):
@@ -77,8 +77,8 @@ def test_sort_std(descending, mode):
             output, indices = sort_forward_func(x, dim, descending, False)
             ms_grad = sort_backward_func(x, dim, descending, False)
         else:
-            output, indices = (jit(sort_forward_func, jit_config=JitConfig(jit_level="O0")))(x, dim, descending, False)
-            ms_grad = (jit(sort_backward_func, jit_config=JitConfig(jit_level="O0")))(x, dim, descending, False)
+            output, indices = (jit(sort_forward_func, backend="ms_backend", jit_level="O0"))(x, dim, descending, False)
+            ms_grad = (jit(sort_backward_func, backend="ms_backend", jit_level="O0"))(x, dim, descending, False)
 
         np.testing.assert_array_equal(output.asnumpy(), expected_output)
         np.testing.assert_array_equal(indices.asnumpy(), expected_indices)

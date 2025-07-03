@@ -25,7 +25,6 @@
 #include <mutex>
 #include <vector>
 #include <optional>
-#include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "utils/device_manager_conf.h"
 
@@ -53,9 +52,10 @@ enum JitSyntaxLevel : int {
 };
 
 enum JitStatus : int {
-  kNotJit,        // Not Jit.
-  kJitCompiling,  // Jit Compiling.
-  kJitRunning,    // Jit Running.
+  kNotJit,          // Not Jit.
+  kJitCompiling,    // Jit Compiling.
+  kGraphCompiling,  // JIt Compiling with graph mode.
+  kJitRunning,      // Jit Running.
 };
 
 enum DebugLevel : int {
@@ -121,11 +121,9 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE,
   MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE,
   MS_CTX_ENABLE_MEM_OFFLOAD,
-  MS_CTX_ENABLE_HYBRID_MODE,
   MS_CTX_ENABLE_RECOVERY,
   MS_CTX_ENABLE_GE_HETEROGENOUS,
   MS_CTX_DISABLE_FORMAT_TRANSFORM,
-  MS_CTX_RECOMPUTE_COMM_OVERLAP,
   MS_CTX_GRAD_COMM_OVERLAP,
   MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD,
   MS_CTX_ENABLE_TASK_OPT,
@@ -146,6 +144,8 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_FUSED_CAST_ADD_OPT,
   MS_CTX_NEED_CKPT,
   MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS,
+  // Used for flatten weight, remove after the feature is abort.
+  MS_ENV_FLATTEN_WEIGHT,
   MS_CTX_TYPE_BOOL_END,
 
   // parameter of type int
@@ -211,10 +211,11 @@ enum MsCtxParam : unsigned {
   MS_CTX_JIT_LEVEL,
   MS_CTX_INFER_BOOST,
   MS_CTX_HOST_SCHEDULING_MAX_THRESHOLD,
-  MS_CTX_ENABLE_EXCEPTION_DUMP,
   MS_CTX_TOPO_ORDER,
   MS_CTX_EXEC_ORDER,
   MS_CTX_OP_DEBUG_OPTION,
+  MS_CTX_PP_1F1B_OVERLAP,
+  MS_CTX_RECOMPUTE_COMM_OVERLAP,
   MS_CTX_TYPE_STRING_END,
 
   // parameter numbers of each type
@@ -309,6 +310,7 @@ class MS_CORE_API MsContext {
 
   void SetJitLevel(const std::string &jit_level) const;
   std::string GetJitLevel() const;
+  std::string GetBackend();
   bool IsKByKExecutorMode();
 
   std::string GetLoadPluginErrorStr() const { return load_plugin_error_(); }
@@ -410,7 +412,7 @@ template <>
 inline const uint32_t &MsContext::get_param<uint32_t>(MsCtxParam param) const {
   MarkReadStatus(param);
   // The configuration of api interface takes priority effect.
-  if (param == MS_CTX_DEVICE_ID && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+  if (param == MS_CTX_DEVICE_ID && !DeviceManagerConf::GetInstance()->is_default_device_id()) {
     return DeviceManagerConf::GetInstance()->device_id();
   }
 
@@ -428,7 +430,7 @@ inline const std::string &MsContext::get_param<std::string>(MsCtxParam param) co
   MarkReadStatus(param);
   // The configuration of api interface takes priority effect.
   if (param == MS_CTX_DEVICE_TARGET && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
-    return DeviceManagerConf::GetInstance()->device_target();
+    return DeviceManagerConf::GetInstance()->GetDeviceTarget();
   }
   if (param == MS_CTX_DETERMINISTIC && DeviceManagerConf::GetInstance()->IsDeterministicConfigured()) {
     return DeviceManagerConf::GetInstance()->deterministic();
@@ -455,7 +457,7 @@ MS_CORE_API bool UseSimulationApi();
   class name##InitFuncRegister {                                          \
    public:                                                                \
     name##InitFuncRegister() { MsContext::RegisterInitFunc(name, func); } \
-  } g_##name##_init_func_register;
+  } g_##name##_init_func_register
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_MS_CONTEXT_H_

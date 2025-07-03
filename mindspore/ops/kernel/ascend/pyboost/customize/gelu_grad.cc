@@ -15,16 +15,16 @@
  */
 
 #include "kernel/ascend/pyboost/customize/gelu_grad.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr GeLUGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                              const BaseTensorPtr &x_tensor, const BaseTensorPtr &y_tensor) {
+tensor::TensorPtr GeLUGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                          const TensorPtr &x_tensor, const TensorPtr &y_tensor) {
   OpRunner::InferOpOutput(op, dy_tensor, x_tensor, y_tensor);
   // Create device address for input/output tensors
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dy_tensor, x_tensor, y_tensor);

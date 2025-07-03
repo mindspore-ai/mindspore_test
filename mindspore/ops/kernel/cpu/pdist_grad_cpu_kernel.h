@@ -22,11 +22,12 @@
 #include <map>
 #include <functional>
 #include "mindspore/ops/infer/grad/pdist_grad.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pdist_grad_cpu {
 class PdistGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   PdistGradCpuKernelMod() {}
@@ -59,6 +60,7 @@ class PdistGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t temp_;
   float p_;
 };
+}  // namespace pdist_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

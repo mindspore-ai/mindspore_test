@@ -1,0 +1,50 @@
+index_add:
+    description: |
+        index_add(input, dim, index, source, *, alpha=1) -> Tensor
+
+        Accumulate the elements of `alpha` times `source` into the `input` by adding to the index in the order given in `index`. For example, if ``dim == 0`` , ``index[i] == j`` , and ``alpha = -1`` , then the `i` th row of `source` is subtracted from the `j` th row of `input` . The `dim` th dimension of `source` must have the same size as the length of `index` , and all other dimensions must match `input`, or an error will be raised. For a 3-D tensor, the output is defined as follows:
+
+        .. math::
+            \begin{array}{ll}
+            input[index[i],\ :,\ :]\ +=\ alpha * source[i,\ :,\ :]  \qquad \#if\ dim == 0 \\
+            input[:,\ \ index[i],\ :]\ +=\ alpha * source[:,\ \ i,\ :]  \qquad \#if\ dim == 1 \\
+            input[:,\ :,\ \ index[i]]\ +=\ alpha * source[:,\ :,\ \ i]  \qquad\#if\ dim == 2 \\
+            \end{array}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input Tensor.
+            dim (int): The dimension along which to index.
+            index (Tensor): Add the value of "input Tensor" and `source` along the dimension of the `dim` according to the specified index value, with data type int32. The `index` must be 1D with the same size as the size of `source` in the `dim` dimension. The values of `index` should be in [0, b), where the b is the size of "input Tensor" in the `dim` dimension.
+            source (Tensor): The input tensor with the value to add. Must have same data type as "input Tensor". The shape must be the same as "input Tensor" except the `dim` th dimension.
+        
+        Keyword Args:
+            alpha (number, optional): The scalar multiplier for source. Default: ``1``.
+
+        Returns:
+            Tensor, has the same shape and dtype as `input`.
+
+        Raises:
+            TypeError: If neither `index` nor `source` is a Tensor.
+            ValueError: If the value of `dim` is out of the dimension range of `source` shape.
+            ValueError: If `index` rank is not the same as `source` rank.
+            ValueError: If shape of `index` is not 1D or size of `index` is not equal to dimension of source[dim].
+            ValueError: If the shape of `source` is not the same as that of `input` except the `dim` axis.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor, mint
+            >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
+            >>> index = Tensor(np.array([0, 2]), mindspore.int32)
+            >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+            >>> output = mint.index_add(x, 1, index, y, alpha=1)
+            >>> print(output)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]

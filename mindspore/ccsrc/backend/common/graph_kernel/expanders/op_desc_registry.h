@@ -25,7 +25,7 @@
 #include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::expanders {
-class BACKEND_EXPORT OpDescFactory {
+class BACKEND_COMMON_EXPORT OpDescFactory {
  public:
   static OpDescFactory &Instance() {
     static OpDescFactory instance{};

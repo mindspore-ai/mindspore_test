@@ -1,0 +1,21 @@
+mindspore.mint.logaddexp2
+==========================
+
+.. py:function:: mindspore.mint.logaddexp2(input, other)
+
+    计算以2为底的输入的指数和的对数。
+
+    .. math::
+
+        out_i = \log_2(2^{input_i} + 2^{other_i})
+
+    参数：
+        - **input** (Tensor) - 输入Tensor，其数据类型必须是float。
+        - **other** (Tensor) - 输入Tensor，其数据类型必须是float。如果 `input` 的shape不等于 `other` 的shape，它们必须被广播成相同shape(输出的形状)。
+
+    返回：
+        Tensor，数据类型与输入 `input` 和 `other` 相同。
+
+    异常：
+        - **TypeError** - `input` 或 `other` 不是Tensor。
+        - **TypeError** - `input` 或 `other` 的数据类型不是float。

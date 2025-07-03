@@ -18,10 +18,9 @@
 
 #include <limits>
 
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "ops_utils/type_dispatch.h"
 
 namespace mindspore {
@@ -39,10 +38,9 @@ void GetTypeLimit(int64_t *limit) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceRandomAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                   const BaseTensorPtr &tensor_tensor, const Int64ImmPtr from,
-                                                   const std::optional<Int64ImmPtr> &to, const BaseTensorPtr &seed,
-                                                   const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceRandomAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor_tensor,
+                                               const Int64ImmPtr from, const std::optional<Int64ImmPtr> &to,
+                                               const TensorPtr &seed, const TensorPtr &offset) {
   OpRunner::InferOpOutput(op, tensor_tensor, from, to, seed, offset);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto from_imm = GetValueWithCheck<int64_t>(from);

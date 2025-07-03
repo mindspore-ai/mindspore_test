@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/utils/anfalgo.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "ir/anf.h"
 #include "ir/value.h"
@@ -79,6 +80,15 @@ std::vector<AnfNodePtr> RectifyInputsForNewCNode(const std::vector<AnfNodePtr> &
 
   std::vector<AnfNodePtr> new_inputs(inputs.begin(), inputs.end());
   auto op_inputs_num = op_def->indexes_.size();
+  auto graph_view_prim = op_def->is_graph_view_;
+  static const bool close_view_op = (common::GetEnv("MS_DEV_JIT_ENABLE_VIEW_OP") == "0");
+  auto ge_mode = common::AnfAlgo::IsBackendGe();
+  if (graph_view_prim == true && !close_view_op && !ge_mode) {
+    op_inputs_num = op_inputs_num + 1;  // for umonad input
+    auto monad_input = NewValueNode(kUMonad);
+    monad_input->set_abstract(kUMonad->ToAbstract());
+    (void)new_inputs.emplace_back(monad_input);
+  }
   new_inputs.resize(op_inputs_num + 1);  // 1 for primitive.
 
   // For new defined op, almost all old attrs is changed to inputs.
@@ -259,14 +269,13 @@ AnfNodePtr ValuePtrToAnfNodePtr(const ValuePtr &value_ptr) {
 
 AnfNodePtr CreateInt32Tensor(int64_t value, bool int64_type) {
   mindspore::tensor::TensorPtr tensor_ptr;
-  if (int64_type) {
-    tensor_ptr = std::make_shared<tensor::Tensor>(value, kInt64);
-  } else {
-    tensor_ptr = std::make_shared<tensor::Tensor>(value, kInt32);
-  }
+  auto dtype = int64_type ? kInt64 : kInt32;
+  tensor_ptr = std::make_shared<tensor::Tensor>(value, dtype);
 
   ValuePtr value_ptr = MakeValue(tensor_ptr);
   auto anf_node_ptr = ValuePtrToAnfNodePtr(value_ptr);
+  MS_EXCEPTION_IF_NULL(anf_node_ptr);
+  anf_node_ptr->set_abstract(std::make_shared<abstract::AbstractTensor>(dtype, Shape{}));
   return anf_node_ptr;
 }
 
@@ -447,6 +456,7 @@ AnfNodePtr GenerateGraph::NewOpInst(const OperatorName &op_name, const OperatorA
   }
   auto value_node = NewValueNode(op_prim_instance);
   auto prim = GetValueNode<PrimitivePtr>(value_node);
+  MS_EXCEPTION_IF_NULL(prim);
   for (const auto &[name, value] : prim_attrs) {
     prim->set_attr(name, value);
   }

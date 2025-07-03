@@ -16,7 +16,7 @@
 """Registry the relation."""
 
 from __future__ import absolute_import
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 
 class Registry:

@@ -31,17 +31,17 @@
 #include <tuple>
 #include <set>
 #include <optional>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/kernel_constants.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/common_utils.h"
+#include "common/kernel_build_info.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
@@ -178,7 +178,7 @@ void ShapeNCHW2NHWC(ShapeVector *shape);
 // transpose shape: NCDHW To NDHWC
 void ShapeNCDHW2NDHWC(ShapeVector *shape);
 
-//////////////// old: format string /////////////
+// old: format string
 void SetDimA(const ShapeVector &shape, int *dimA, size_t len, const std::string &format);
 
 void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const std::string &format);
@@ -186,8 +186,8 @@ void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const std::s
 void SetNCHW(const ShapeVector &shape, int *n, int *c, int *h, int *w, const std::string &format);
 
 void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, const std::string &format);
-////////////////////////////////////////////////
-//////////////// new: format enum///////////////
+
+// new: format enum
 void SetDimA(const ShapeVector &shape, int *dimA, size_t len, const mindspore::Format &format);
 
 void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const mindspore::Format &format);
@@ -195,7 +195,6 @@ void SetStrideA(const ShapeVector &shape, int *strideA, size_t len, const mindsp
 void SetNCHW(const ShapeVector &shape, int *n, int *c, int *h, int *w, const mindspore::Format &format);
 
 void SetNCDHW(const ShapeVector &shape, int *n, int *c, int *d, int *h, int *w, const mindspore::Format &format);
-////////////////////////////////////////////////
 
 bool CheckBroadcast4TensorOp(const std::vector<int> &A, const std::vector<int> &B, const std::vector<int> &Out);
 

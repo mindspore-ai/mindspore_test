@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include "debug/data_dump/device_statistic/statistic_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 
@@ -39,8 +40,8 @@ class MeanStatisticKernel : public StatisticKernel {
       : StatisticKernel(device_context, kernel_name, dtype_id) {}
 
  protected:
-  vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
-  DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id) override;
+  std::vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
+  KernelTensorPtr GetOutputDeviceAddress(TypeId dtype_id) override;
 };
 
 }  // namespace datadump

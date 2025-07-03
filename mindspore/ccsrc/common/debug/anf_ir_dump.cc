@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,16 @@
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/vmap.h"
 #include "frontend/operator/composite/map.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/functional_overload.h"
+#include "include/common/utils/parallel_context.h"
 
 using MetaFuncGraph = mindspore::MetaFuncGraph;
 using MetaFuncGraphPtr = std::shared_ptr<MetaFuncGraph>;
 namespace mindspore {
+
+constexpr auto kDumpIrParallelDetail = "1";
+constexpr auto kHasViewOutputFlag = "has_view_output";
 
 enum FormatLevel : int {
   // When setting to basic level, ir will only contains operator and operands of nodes and title of subgraph with
@@ -58,6 +63,7 @@ enum FormatLevel : int {
 };
 
 void GetMultitypeFuncGraphText(const prim::MultitypeFuncGraphPtr &mt_func_graph, std::ostringstream &oss) {
+  MS_EXCEPTION_IF_NULL(mt_func_graph);
   auto py_funcs = mt_func_graph->GetPyFunctions();
   if (py_funcs.empty()) {
     oss << "";
@@ -89,15 +95,19 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::TupleAdd>() || meta_func_graph->isa<prim::SequenceSliceGetItem>() ||
          meta_func_graph->isa<prim::ListSliceSetItem>() || meta_func_graph->isa<prim::UnpackCall>() ||
          meta_func_graph->isa<prim::ZipOperation>() || meta_func_graph->isa<prim::ListAppend>() ||
-         meta_func_graph->isa<prim::ListInsert>() || meta_func_graph->isa<prim::DoSignatureMetaFuncGraph>() ||
-         meta_func_graph->isa<prim::VmapMatchOutAxis>() || meta_func_graph->isa<prim::VmapGeneralPreprocess>() ||
-         meta_func_graph->isa<prim::GradAux>() || meta_func_graph->isa<prim::PyExecuteGradient>() ||
-         meta_func_graph->isa<prim::MutableGradient>() || meta_func_graph->isa<prim::ZerosLike>() ||
-         meta_func_graph->isa<prim::ListAdd>() || meta_func_graph->isa<prim::StarredGetItem>() ||
-         meta_func_graph->isa<prim::StarredUnpack>() || meta_func_graph->isa<prim::StarredUnpackMerge>() ||
-         meta_func_graph->isa<prim::IterConverter>() || meta_func_graph->isa<prim::HasNext>() ||
-         meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>() ||
-         meta_func_graph->isa<prim::DeprecatedTensorMethod>();
+         meta_func_graph->isa<prim::ListFunc>() || meta_func_graph->isa<prim::TupleFunc>() ||
+         meta_func_graph->isa<prim::DictFunc>() || meta_func_graph->isa<prim::ListInsert>() ||
+         meta_func_graph->isa<prim::DoSignatureMetaFuncGraph>() || meta_func_graph->isa<prim::VmapMatchOutAxis>() ||
+         meta_func_graph->isa<prim::VmapGeneralPreprocess>() || meta_func_graph->isa<prim::GradAux>() ||
+         meta_func_graph->isa<prim::PyExecuteGradient>() || meta_func_graph->isa<prim::MutableGradient>() ||
+         meta_func_graph->isa<prim::ZerosLike>() || meta_func_graph->isa<prim::ListAdd>() ||
+         meta_func_graph->isa<prim::StarredGetItem>() || meta_func_graph->isa<prim::StarredUnpack>() ||
+         meta_func_graph->isa<prim::StarredUnpackMerge>() || meta_func_graph->isa<prim::IterConverter>() ||
+         meta_func_graph->isa<prim::HasNext>() || meta_func_graph->isa<prim::Next>() ||
+         meta_func_graph->isa<prim::ForHalfUnrollLess>() || meta_func_graph->isa<prim::DeprecatedTensorMethod>() ||
+         meta_func_graph->isa<prim::MetaImpl>() || meta_func_graph->isa<prim::AccumulateDout>() ||
+         meta_func_graph->isa<prim::GenerateMask>() || meta_func_graph->isa<prim::GetRealBpropOut>() ||
+         meta_func_graph->isa<prim::GenerateBpropOutTuple>() || meta_func_graph->isa<prim::GetDependDoutTuple>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {
@@ -157,10 +167,10 @@ void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostrings
 }
 
 void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
+  MS_EXCEPTION_IF_NULL(prim);
   if (!prim->instance_name().empty()) {
     oss << " {";
-    oss << "instance name"
-        << ": ";
+    oss << "instance name: ";
     oss << prim->instance_name();
     oss << "}";
   }
@@ -174,9 +184,10 @@ void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (prim->isa<prim::DoSignaturePrimitive>()) {
     auto do_signature = dyn_cast<prim::DoSignaturePrimitive>(prim);
     auto &func = do_signature->function();
+    MS_EXCEPTION_IF_NULL(func);
     if (func->isa<Primitive>()) {
       auto sig_prim = dyn_cast<Primitive>(func);
-      oss << sig_prim->GetAttrsText();
+      oss << func->ToString() << sig_prim->GetAttrsText();
     } else {
       oss << func->ToString();
     }
@@ -205,6 +216,7 @@ void GetSequenceText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo
 void GetDictText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
   MS_EXCEPTION_IF_NULL(value);
   ValueDictionaryPtr dict = value->cast<ValueDictionaryPtr>();
+  MS_EXCEPTION_IF_NULL(dict);
   gsub->buffer << "{";
   bool first_flag = true;
   for (const auto &elem : dict->value()) {
@@ -308,6 +320,7 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
   StringImmPtr ref_key = nullptr;
   abstract::AbstractSequencePtr sequence_abs = nullptr;
   auto abstract = node->abstract();
+  bool is_view_output = false;
   if (abstract != nullptr) {
     if (abstract->isa<abstract::AbstractTensor>()) {
       tensor_value = abstract->BuildValue();
@@ -318,34 +331,38 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
       ref_key = dyn_cast<StringImm>(map_tensor->ref_key_value());
     }
     sequence_abs = dyn_cast<abstract::AbstractSequence>(abstract);
+    auto has_view_output = abstract->user_data<bool>(kHasViewOutputFlag);
+    if (has_view_output != nullptr && *has_view_output) {
+      is_view_output = true;
+    }
   }
 
   abstract::BaseShapePtr shape = dyn_cast<abstract::BaseShape>(node->Shape());
   TypePtr type = dyn_cast<Type>(node->Type());
-  if ((shape != nullptr) && (type != nullptr)) {
-    buffer << "<" << type << ", ";
-    shape->ToStringWithBuffer(buffer);
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else if (type != nullptr) {
-    buffer << "<" << type;
-    if (tensor_value != nullptr && tensor_value != kValueAny) {
-      buffer << ", value=...";
-    }
-    if (ref_key != nullptr) {
-      buffer << ", ref_key=" << ref_key->value();
-    }
-    PrintTupleNodeUsedFlags(buffer, sequence_abs);
-    buffer << ">";
-  } else {
+  if (type == nullptr) {
     buffer << "<null>";
+    return;
   }
+  buffer << "<" << type;
+  if (shape != nullptr) {
+    buffer << ", ";
+    shape->ToStringWithBuffer(buffer);
+  }
+  if (tensor_value != nullptr && tensor_value != kValueAny) {
+    buffer << ", value=...";
+  }
+  if (ref_key != nullptr) {
+    buffer << ", ref_key=" << ref_key->value();
+  }
+  if (abstract->isa<abstract::AbstractRefTensor>()) {
+    const auto &ref_tensor = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    buffer << ref_tensor->RefTensorTypeToString();
+  }
+  if (is_view_output) {
+    buffer << ", " << kHasViewOutputFlag;
+  }
+  PrintTupleNodeUsedFlags(buffer, sequence_abs);
+  buffer << ">";
 }
 
 void PrintNodeInputType(std::ostringstream &buffer, const AnfNodePtr &node) {
@@ -585,6 +602,7 @@ void DumpOperator(const AnfNodePtr &node, const std::shared_ptr<SubGraphIRInfo> 
       gsub->buffer << "%" << gsub->local_var_map[op];
     } else {
       auto input = op->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input);
       auto fg = input->func_graph();
       if (fg == nullptr) {
         MS_LOG(EXCEPTION) << "Get func graph nullptr, node " << node->DebugString();
@@ -703,6 +721,23 @@ void DumpParallelInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo
     gsub->buffer << out_tmp->ToString();
   }
 
+  // dump IR detail in sharding_propagation mode
+  std::string env_var = common::GetEnv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
+  auto strategy_search_mode = parallel::ParallelContext::GetInstance()->strategy_search_mode();
+  if (!env_var.empty() && env_var == kDumpIrParallelDetail && strategy_search_mode == "sharding_propagation") {
+    ValueTuplePtr in_layout_tmp = AnfDumpHandler::InLayoutValue(node);
+    if (in_layout_tmp != nullptr) {
+      gsub->buffer << ", in_layout: ";
+      gsub->buffer << in_layout_tmp->ToString();
+    }
+
+    ValueTuplePtr out_layout_tmp = AnfDumpHandler::OutLayoutValue(node);
+    if (out_layout_tmp != nullptr) {
+      gsub->buffer << ", out_layout: ";
+      gsub->buffer << out_layout_tmp->ToString();
+    }
+  }
+
   gsub->buffer << "}";
 }
 
@@ -736,10 +771,10 @@ void DumpOperateAttrs(const AnfNodePtr &op, const std::shared_ptr<SubGraphIRInfo
 
   if (IsValueNode<Primitive>(op)) {
     PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
+    MS_EXCEPTION_IF_NULL(primitive);
     if (!primitive->instance_name().empty()) {
       gsub->buffer << " {";
-      gsub->buffer << "instance name"
-                   << ": ";
+      gsub->buffer << "instance name: ";
       gsub->buffer << primitive->instance_name();
       gsub->buffer << "}";
     }
@@ -979,8 +1014,7 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
 
   // Print node's name.
   if (node != sub_graph->get_return()) {
-    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")"
-                 << " = ";
+    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ") = ";
     gsub->local_var_map[node] = gsub->local_var++;
   } else {
     gsub->buffer << "  ";
@@ -1418,7 +1452,9 @@ void DumpParallelInfo(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordere
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(0))) {
-      FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
+      auto value_node = node->input(0)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(value_node);
+      FuncGraphPtr sub_graph = value_node->value()->cast<FuncGraphPtr>();
       DumpParallelInfo(sub_graph, op_id, args, global_rank_id, group_map);
     } else if (common::AnfAlgo::IsCommunicationOp(node)) {
       (*args)[std::to_string(*op_id)] = ToJson(node, global_rank_id, group_map);
@@ -1427,13 +1463,16 @@ void DumpParallelInfo(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordere
       auto abs = node->input(0)->abstract();
       if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_func_graph);
         MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
         DumpParallelInfo(abstract_func_graph->func_graph(), op_id, args, global_rank_id, group_map);
       } else if (abs->isa<abstract::PartialAbstractClosure>()) {
         const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_partial_func);
         const auto &abstract_fn = abstract_partial_func->fn();
         if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
           const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+          MS_EXCEPTION_IF_NULL(abstract_func_graph);
           MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
           DumpParallelInfo(abstract_func_graph->func_graph(), op_id, args, global_rank_id, group_map);
         }

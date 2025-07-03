@@ -61,14 +61,19 @@ GVAR_DEF(PrimitivePtr, kPrimFakeBprop, std::make_shared<Primitive>("fake_bprop")
 GVAR_DEF(PrimitivePtr, kPrimBroadcastGradientArgs, std::make_shared<Primitive>("BroadcastGradientArgs"));
 GVAR_DEF(PrimitivePtr, kPrimDynamicBroadcastGradientArgs,
          std::make_shared<Primitive>(kDynamicBroadcastGradientArgsOpName));
-GVAR_DEF(PrimitivePtr, kPrimConvertToAdapterTensor, std::make_shared<Primitive>("ConvertToAdapterTensor"));
-GVAR_DEF(PrimitivePtr, kPrimConvertToMsTensor, std::make_shared<Primitive>("ConvertToMsTensor"));
 GVAR_DEF(PrimitivePtr, kPrimDtypeToEnum, std::make_shared<Primitive>("DtypeToEnum"));
+GVAR_DEF(PrimitivePtr, kPrimEnumToDtype, std::make_shared<Primitive>("EnumToDtype"));
 
 // Statements
 GVAR_DEF(PrimitivePtr, kPrimUnroll, std::make_shared<Primitive>("Unroll"));
-GVAR_DEF(PrimitivePtr, kPrimVmapStackAssign, std::make_shared<Primitive>(kVmapStackAssignOpName));
-GVAR_DEF(PrimitivePtr, kPrimVmapUnstackAssign, std::make_shared<Primitive>(kVmapUnstackAssignOpName));
+GVAR_DEF(PrimitivePtr, kPrimVmapStackAssign,
+         std::make_shared<Primitive>(
+           kVmapStackAssignOpName,
+           mindspore::HashMap<std::string, ValuePtr>({{std::string(GRAPH_FLAG_SIDE_EFFECT_MEM), MakeValue(true)}})));
+GVAR_DEF(PrimitivePtr, kPrimVmapUnstackAssign,
+         std::make_shared<Primitive>(
+           kVmapUnstackAssignOpName,
+           mindspore::HashMap<std::string, ValuePtr>({{std::string(GRAPH_FLAG_SIDE_EFFECT_MEM), MakeValue(true)}})));
 GVAR_DEF(PrimitivePtr, kPrimMakeSlice, std::make_shared<Primitive>(kMakeSliceOpName));
 GVAR_DEF(PrimitivePtr, kPrimSliceGetItem, std::make_shared<Primitive>(kSliceGetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimGetAttr, std::make_shared<Primitive>("getattr"));

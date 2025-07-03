@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/crop_ir.h"
 
 #include "minddata/dataset/kernels/image/crop_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_crop_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -69,7 +69,7 @@ std::shared_ptr<TensorOp> CropOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<CropOp> tensor_op = std::make_shared<CropOp>(y, x, height, width);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppCropOp> dvpp_tensor_op = std::make_shared<DvppCropOp>(y, x, height, width);
     return dvpp_tensor_op;

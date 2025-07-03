@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kNameMatMul;
 using mindspore::ops::kNameMatMulFusion;

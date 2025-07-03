@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -842,8 +842,7 @@ OperatorAttrs MaxPool3DInfo::CreateNewOpAttrs() {
   Attr ceil_mode = {CEIL_MODE, MakeValue(ceil_mode_v)};
   Attr data_format = {DATA_FORMAT, MakeValue(format_)};
 
-  OperatorAttrs attrs;
-  attrs = {kernel_size, strides, pad_mode, pad_list, ceil_mode, data_format};
+  OperatorAttrs attrs = {kernel_size, strides, pad_mode, pad_list, ceil_mode, data_format};
   return attrs;
 }
 
@@ -860,8 +859,8 @@ OperatorAttrs AvgPool3DInfo::CreateNewOpAttrs() {
   Attr divisor_override = {DIVISOR_OVERRIDE, attrs_[DIVISOR_OVERRIDE]};
   Attr data_format = {DATA_FORMAT, MakeValue(format_)};
 
-  OperatorAttrs attrs;
-  attrs = {kernel_size, strides, pad_mode, pad, ceil_mode, count_include_pad, divisor_override, data_format};
+  OperatorAttrs attrs = {kernel_size, strides,           pad_mode,         pad,
+                         ceil_mode,   count_include_pad, divisor_override, data_format};
   return attrs;
 }
 
@@ -937,6 +936,7 @@ ReplaceGraphPtr MaxPool3DInfo::replace_graph(const CNodePtr &cnode) {
   if (all_send_lens + all_recv_lens == 0) {
     std::string pad_mode = PAD;
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(PAD_MODE, MakeValue(pad_mode));
 
     if (ReplaceNodeName() == MAXPOOL_3D) {

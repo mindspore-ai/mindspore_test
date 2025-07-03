@@ -158,3 +158,48 @@ def get_num_from_log(log_path, search_str, cmd=None, is_loss=False):
     if is_loss:
         return res[0]
     return np.mean(res)
+
+
+def parse_log(file):
+    it_pattern = (r'.*\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] '
+                  r'iteration\s*(\d*)\/.*lm loss: ([\d\.]*).*grad norm: ([\d\.]*).*')
+    with open(file, 'r') as f:
+        context = f.read().split('\n')
+    data = {}
+    for l in context:
+        match = re.match(it_pattern, l)
+        if match:
+            data[int(match.group(2))] = match.groups()
+    return data
+
+
+def init_env():
+    env_path = os.path.join(os.path.dirname(__file__))
+    print("env_path:", env_path)
+    mindtorch_path = os.path.abspath(os.path.join(env_path, "msadapter/mindtorch:"))
+    llm_root_path = os.path.abspath(os.path.join(env_path, "scripts/LLM"))
+    megatron_path = os.path.abspath(os.path.join(llm_root_path, "Megatron-LM:"))
+    mindspeed_path = os.path.abspath(os.path.join(llm_root_path, "MindSpeed:"))
+    mindspeed_llm_path = os.path.abspath(os.path.join(llm_root_path, "MindSpeed-LLM:"))
+    transformers_path = os.path.abspath(os.path.join(llm_root_path, "transformers/src:"))
+    accelerate_path = os.path.abspath(os.path.join(llm_root_path, "accelerate/src:"))
+    os.environ['PYTHONPATH'] = (mindtorch_path + megatron_path + mindspeed_path + transformers_path + accelerate_path +
+                                mindspeed_llm_path + os.environ.get('PYTHONPATH', ''))
+    print("os.environ['PYTHONPATH']:", os.environ['PYTHONPATH'])
+
+def init_env_rl():
+    env_path = os.path.join(os.path.dirname(__file__))
+    print("env_path:", env_path)
+    mindtorch_path = os.path.abspath(os.path.join(env_path, "msadapter/mindtorch:"))
+    rl_root_path = os.path.abspath(os.path.join(env_path, "scripts/RL"))
+    megatron_path = os.path.abspath(os.path.join(rl_root_path, "Megatron-LM:"))
+    mindspeed_path = os.path.abspath(os.path.join(rl_root_path, "MindSpeed:"))
+    mindspeed_rl_path = os.path.abspath(os.path.join(rl_root_path, "MindSpeed-RL:"))
+    mindspeed_llm_path = os.path.abspath(os.path.join(rl_root_path, "MindSpeed-LLM:"))
+    transformers_path = os.path.abspath(os.path.join(rl_root_path, "transformers/src:"))
+    vllm_path = os.path.abspath(os.path.join(rl_root_path, "vllm:"))
+    vllm_ascend_path = os.path.abspath(os.path.join(rl_root_path, "vllm-ascend:"))
+    os.environ['PYTHONPATH'] = (mindtorch_path + megatron_path + mindspeed_path + transformers_path +
+                                mindspeed_rl_path + mindspeed_llm_path + vllm_path + vllm_ascend_path +
+                                os.environ.get('PYTHONPATH', ''))
+    print("os.environ['PYTHONPATH']:", os.environ['PYTHONPATH'])

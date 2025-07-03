@@ -49,7 +49,7 @@ bool CheckAllFormatsSame(const DefaultIrBuilder *ib,
 bool CheckAttrs(const DefaultIrBuilder *ib, const std::vector<std::string> &attrs) {
   for (auto &a : attrs) {
     if (ib->attrs().count(a) == 0) {
-      MS_LOG(INFO) << "attr " << a << " dose not exist. Op: " << ib->name();
+      MS_LOG(INFO) << "attr " << a << " does not exist. Op: " << ib->name();
       return false;
     }
   }
@@ -101,10 +101,12 @@ std::vector<int64_t> GetAxisList(const ValuePtr &value) {
   if (value->isa<ValueSequence>()) {
     const auto &vals = value->cast<ValueSequencePtr>()->value();
     (void)std::transform(vals.begin(), vals.end(), std::back_inserter(result), get_int_value);
-  } else if (value->isa<tensor::BaseTensor>()) {
+  } else if (value->isa<tensor::Tensor>()) {
     result = CheckAndConvertUtils::CheckTensorIntValue("axes value", value, "GetAxisList");
-  } else {
+  } else if (value->isa<Int64Imm>() || value->isa<Int32Imm>()) {
     result.push_back(get_int_value(value));
+  } else {
+    MS_LOG(EXCEPTION) << "Wrong value type passed in GetAxisList.";
   }
   return result;
 }

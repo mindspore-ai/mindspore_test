@@ -133,7 +133,7 @@ std::string GetOpName(CpuKernelContext &ctx);
 
 /**
  * Get primary-format from format,
- * in bits field:
+ * in bits field
  * ------------------------------------------
  * |  1 byte  |   2 bytes  |     1 byt      |
  * |----------|------------|----------------|
@@ -173,7 +173,7 @@ inline bool MulWithoutOverflow(CpuKernelContext &ctx, const int64_t x, const int
   const uint64_t uxy = ux * uy;
 
   // Check if we overflow uint64, using a cheap check if both inputs are small
-  if ((ux | uy) >> 32 != 0) {
+  if (((ux | uy) >> 32) != 0) {
     // Ensure nonnegativity.  Note that negative numbers will appear "large"
     // to the unsigned comparisons above.
     if (x < 0 || y < 0) {

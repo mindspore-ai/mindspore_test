@@ -24,7 +24,7 @@ def test_fuse():
     Description: pynative mode
     Expectation: the result match with the expected result
     """
-    os.environ["MS_DEV_LAZY_FUSION_FLAGS"] = "--opt_level=1"
+    os.environ["MS_DEV_LAZY_FUSION_FLAGS"] = "--opt_level=1 --dump_as_text"
     cur_path = os.path.split(os.path.realpath(__file__))[0]
     ret = os.system("pytest -s {}/dvm_pynative.py::test_fuse".format(cur_path))
     os.environ.pop("MS_DEV_LAZY_FUSION_FLAGS")

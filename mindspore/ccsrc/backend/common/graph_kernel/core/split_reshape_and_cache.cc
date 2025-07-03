@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 namespace mindspore::graphkernel {
 const BaseRef SplitReshapeAndCache::DefinePattern() const {
   VarPtr v0 = std::make_shared<Var>();

@@ -20,11 +20,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace range_cpu {
 class RangeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<RangeCpuKernelMod> {
  public:
   RangeCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class RangeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Ra
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace range_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

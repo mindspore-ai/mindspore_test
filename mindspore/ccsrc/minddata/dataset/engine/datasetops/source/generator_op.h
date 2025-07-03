@@ -141,7 +141,7 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
 
   std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
 
-  Status PyRowToTensorRow(py::object py_data, TensorRow *tensor_row);
+  Status PyRowToTensorRow(const py::object &py_data, TensorRow *tensor_row);
 
   /// Private function for computing the assignment of the column name map.
   /// \return - Status

@@ -21,12 +21,13 @@
 
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "mindspore/core/include/base/bfloat16.h"
 #include "mindspore/core/include/base/float16.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isinf {
 
 void IsInfAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
@@ -94,5 +95,6 @@ bool IsInfAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(IsInf, IsInfAscend);
+}  // namespace isinf
 }  // namespace kernel
 }  // namespace mindspore

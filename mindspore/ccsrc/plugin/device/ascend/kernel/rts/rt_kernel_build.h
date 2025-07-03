@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_RT_KERNEL_BUILD_H
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_RT_KERNEL_BUILD_H
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 namespace mindspore {
 namespace kernel {
 KernelModPtr RtOpBuild(const AnfNodePtr &anf_node);

@@ -17,6 +17,7 @@
 #include "backend/common/graph_kernel/compact_tensor_liveness.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::graphkernel {
 bool CompactTensorLiveness::Run(const FuncGraphPtr &func_graph) {

@@ -17,15 +17,16 @@
 #include <map>
 #include <functional>
 #include <algorithm>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/apply_adam_with_amsgrad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 #include "mindspore/ops/infer/apply_adam_with_amsgrad.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adam_with_amsgrad_cpu {
 namespace {
 constexpr size_t kApplyAdamWithAmsgradInputsNum = 8;
 constexpr size_t kApplyAdamWithAmsgradOutputsNum = 4;
@@ -233,5 +234,6 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdamWithAmsgrad, ApplyAdamWithAmsgradCpuKernelMod);
+}  // namespace apply_adam_with_amsgrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

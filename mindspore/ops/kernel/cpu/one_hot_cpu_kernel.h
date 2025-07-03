@@ -20,11 +20,12 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace one_hot_cpu {
 class OneHotCpuKernelMod : public NativeCpuKernelMod {
  public:
   OneHotCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class OneHotCpuKernelMod : public NativeCpuKernelMod {
   size_t axis_{0};
   static std::vector<KernelAttr> support_list_;
 };
+}  // namespace one_hot_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

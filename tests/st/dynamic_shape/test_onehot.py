@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
-from mindspore import ops
-import mindspore as ms
 from tests.mark_utils import arg_mark
+
+from mindspore import ops, context
+import mindspore as ms
 
 
 @test_utils.run_with_cell
@@ -70,6 +70,7 @@ def test_onehot_op_forward_depth_tensor(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     indices = ms.Tensor(np.array([0, 1, 2]).astype(np.int32))
     depth = ms.Tensor(3.0, ms.int32)
     on_value = ms.Tensor(1.0, ms.float32)

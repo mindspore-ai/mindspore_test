@@ -21,13 +21,14 @@
 #include <string>
 #include <random>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/op_def/random_ops.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/common_utils.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace random_cpu {
 constexpr auto kStandardNormal = "StandardNormal";
 constexpr auto kUniformInt = "UniformInt";
 constexpr auto kUniformReal = "UniformReal";
@@ -56,6 +57,7 @@ class RandomCpuKernelMod : public NativeCpuKernelMod {
   std::mt19937 mtrng_;
   std::default_random_engine dfrng_;
 };
+}  // namespace random_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_RANDOM_CPU_KERNEL_H_

@@ -184,3 +184,18 @@ def test_adaptivemaxpool2d_cpu_vmap():
                              [[52, 53, 54, 55],
                               [60, 61, 62, 63]]]], mindspore.float32)
     assert np.allclose(output.asnumpy(), expect_output.asnumpy(), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+def test_adaptivemaxpool2d_cpu_with_zero_dimension():
+    """
+    Feature: test adaptivemaxpool2d op in cpu.
+    Description: test the ops with zero input dimension.
+    Expectation: expect correct shape result.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
+    input_x = Tensor(np.random.uniform(-10, 10, size=()), mindspore.float32)
+    adaptivemaxpool2d = nn.AdaptiveMaxPool2d((2, 2))
+    with pytest.raises(ValueError):
+        adaptivemaxpool2d(input_x)

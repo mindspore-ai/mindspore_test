@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,17 @@
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/pattern_matcher.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore::opt::irpass {
 namespace {
@@ -204,6 +215,7 @@ bool ExistEnvironGet(const FuncGraphManagerPtr &manager) {
 // new_maketuple = maketuple(..., attach1, attach2, ..., attach_n-1)
 // new_updatestate = updatestate(umonad, new_maketuple)
 AnfNodePtr EliminateUpdateStateMakeTupleWithUselessEnv(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
   std::vector<AnfNodePtr> env_nodes;
   std::vector<AnfNodePtr> new_maketuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   size_t input_size = make_tuple->size();
@@ -266,7 +278,54 @@ AnfNodePtr EliminateUpdateStateMakeTupleWithUselessEnv(const CNodePtr &update_st
   return new_update_state;
 }
 
+// make_tuple = MakeTuple(load1, xx, load2)  or make_tuple = MakeTuple(load1, load2)
+// u2 = UpdateState(u1, make_tuple)   the make_tuple only used by UpdateState
+// convert -->
+// make_tuple = MakeTuple(xx)
+// u2 = UpdateState(u1, make_tuple) or u2 = u1
+AnfNodePtr EliminateUpdateStateMakeTupleWithUselessLoadNode(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
+  if (!OnlyUsedByOneNode(make_tuple, update_state)) {
+    return nullptr;
+  }
+  const auto &make_tuple_inputs = make_tuple->inputs();
+  std::vector<AnfNodePtr> new_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t index = 1; index < make_tuple_inputs.size(); ++index) {
+    auto input = make_tuple_inputs[index];
+    if (IsPrimitiveCNode(input, prim::kPrimLoad) && OnlyUsedByOneNode(input, make_tuple)) {
+      continue;
+    }
+    (void)new_inputs.emplace_back(input);
+  }
+  AnfNodePtr new_make_tuple = nullptr;
+  auto fg = update_state->func_graph();
+  if (fg == nullptr) {
+    return nullptr;
+  }
+  if (new_inputs.size() == make_tuple_inputs.size()) {
+    return nullptr;
+  }
+  if (new_inputs.size() > 1) {
+    new_make_tuple = fg->NewCNode(new_inputs);
+    abstract::AbstractBasePtrList element_abstracts;
+    (void)std::transform(new_inputs.begin() + 1, new_inputs.end(), std::back_inserter(element_abstracts),
+                         [](const AnfNodePtr &input) { return input->abstract(); });
+    new_make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(element_abstracts));
+  } else if (new_inputs.size() == 1) {
+    return update_state->input(kInputIndex);
+  }
+  if (new_make_tuple != nullptr) {
+    auto new_update_state =
+      fg->NewCNode({update_state->input(kFirstInputIndex), update_state->input(kInputIndex), new_make_tuple});
+    new_update_state->set_abstract(update_state->abstract());
+    new_update_state->set_scope(update_state->scope());
+    return new_update_state;
+  }
+  return nullptr;
+}
+
 AnfNodePtr EliminateUpdateStateMakeTupleWithUselessNode(const CNodePtr &update_state, const CNodePtr &make_tuple) {
+  MS_EXCEPTION_IF_NULL(make_tuple);
   if (make_tuple->size() != kMakeTupleSize) {
     return nullptr;
   }
@@ -300,6 +359,7 @@ void GetLoadsFollowTuple(const CNodePtr &update_state, const CNodePtr &make_tupl
 // Search consecutive load nodes from UpdateState node.
 void GetLoadsFromUpdateState(const CNodePtr &update_state, std::vector<CNodePtr> *update_states,
                              std::vector<CNodePtr> *loads) {
+  MS_EXCEPTION_IF_NULL(update_state);
   auto &attach = update_state->input(kAttachIndex);
   if (IsPrimitiveCNode(attach, prim::kPrimLoad)) {
     GetLoadsFollowLoad(update_state, attach->cast<CNodePtr>(), update_states, loads);
@@ -493,8 +553,11 @@ AnfNodePtr EliminateUpdateStateForLoads(const CNodePtr &old_update_state, const 
 // u3 = UpdateState(u1, t)
 AnfNodePtr EliminateUpdateStateBetweenAssigns(const CNodePtr &update_state, const AnfNodePtr &assign) {
   auto a2_cnode = assign->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(a2_cnode);
   auto u2 = a2_cnode->input(kAssignMonadInputIndex);
-  auto a1 = u2->cast<CNodePtr>()->input(kAttachIndex);
+  auto u2_cnode = u2->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(u2_cnode);
+  auto a1 = u2_cnode->input(kAttachIndex);
   if (IsPrimitiveCNode(a1, prim::kPrimAssign)) {
     auto a1_cnode = a1->cast<CNodePtr>();
     if (a1_cnode->size() != kAssignSize) {
@@ -743,12 +806,18 @@ AnfNodePtr UpdatestateUselessNodeEliminater::operator()(const OptimizerPtr &, co
     return nullptr;
   }
 
-  // Handling the case where the second input of update_state is make_tuple which contains DeadNode or useless function.
-  // UpdateState(u, MakeTuple(input, "Dead Node")) -> UpdateState(u, input)
-  // UpdateState(u, MakeTuple(Function, input) -> UpdateState(u, input)
-  // UpdateState(u, MakeTuple(input, Function) -> UpdateState(u, input)
   if (IsPrimitiveCNode(attach, prim::kPrimMakeTuple)) {
+    // Handling the case where the second input of update_state is make_tuple which contains DeadNode or useless
+    // function.
+    // UpdateState(u, MakeTuple(input, "Dead Node")) -> UpdateState(u, input)
+    // UpdateState(u, MakeTuple(Function, input) -> UpdateState(u, input)
+    // UpdateState(u, MakeTuple(input, Function) -> UpdateState(u, input)
     auto new_node = EliminateUpdateStateMakeTupleWithUselessNode(update_state_node, attach->cast<CNodePtr>());
+    if (new_node != nullptr) {
+      return new_node;
+    }
+    // Eliminate redundant Load operators in MakeTuple.
+    new_node = EliminateUpdateStateMakeTupleWithUselessLoadNode(update_state_node, attach->cast<CNodePtr>());
     if (new_node != nullptr) {
       return new_node;
     }

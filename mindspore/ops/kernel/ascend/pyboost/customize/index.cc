@@ -16,23 +16,23 @@
 
 #include "kernel/ascend/pyboost/customize/index.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_non_zero.h"
-#include "kernel/ascend/pyboost/auto_generate/select_ext.h"
+#include "kernel/ascend/pyboost/auto_generate/select_ext_view.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_index.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                        const std::vector<BaseTensorPtr> &tensors) {
+std::vector<TensorPtr> IndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const std::vector<TensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
-  std::vector<BaseTensorPtr> result{};
+  std::vector<TensorPtr> result{};
   auto input_shape = input_tensor->shape();
   if (input_shape.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'Index', too many indices for tensor of dimension " << input_shape.size();
@@ -63,10 +63,8 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
       auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
       auto nonzero_tensor = nonzero_op->Call(tensor);
       for (int64_t j = 0; j < rank; j++) {
-        const auto dim = std::make_shared<Int64Imm>(kIndex0);
-        const auto index = std::make_shared<Int64Imm>(j);
-        auto select_op = CREATE_PYBOOST_OP(SelectExt, device_name);
-        auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
+        auto select_op = CREATE_PYBOOST_OP(SelectExtView, device_name);
+        auto select_tensor = select_op->Call(nonzero_tensor, kIndex0, j);
         result.emplace_back(select_tensor);
       }
     } else {
@@ -87,14 +85,14 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
 }
 }  // namespace
 
-tensor::BaseTensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                           const ValueTuplePtr &indices_tensor_list) {
+tensor::TensorPtr IndexAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                       const ValueTuplePtr &indices_tensor_list) {
   MS_LOG(DEBUG) << "Index Ascend start";
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
   if (indices_tensor_vector.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'Index', 'indices' shape can't be empty.";
   }
-  auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
+  auto new_indices_tensor_vector = IndexGetNewTensor(op, input_tensor, indices_tensor_vector);
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 
   auto device_context = op->device_context();

@@ -32,7 +32,7 @@ namespace dataset {
 // constructor #1, called by Pybind
 BatchNode::BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, bool drop_remainder, bool pad,
                      const std::vector<std::string> &in_col_names, const std::vector<std::string> &out_col_names,
-                     py::function batch_size_func, py::function batch_map_func,
+                     const py::function &batch_size_func, const py::function &batch_map_func,
                      std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> pad_map,
                      std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime)
     : batch_size_(batch_size),
@@ -40,12 +40,26 @@ BatchNode::BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, boo
       pad_(pad),
       in_col_names_(in_col_names),
       out_col_names_(out_col_names),
-      batch_size_func_(batch_size_func),
-      batch_map_func_(batch_map_func),
       pad_map_(pad_map),
       python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    batch_size_func_ = batch_size_func;
+    batch_map_func_ = batch_map_func;
+  }
   this->AddChild(child);
 }
+
+BatchNode::~BatchNode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    batch_size_func_ = py::object();
+    batch_map_func_ = py::object();
+  }
+}
+
+#else
+BatchNode::~BatchNode() = default;
 #endif
 
 // constructor #2, called by C++ API
@@ -159,7 +173,7 @@ Status BatchNode::to_json(nlohmann::json *out_json) {
 #ifdef ENABLE_PYTHON
   args["input_columns"] = in_col_names_;
   args["output_columns"] = out_col_names_;
-  if (batch_map_func_ != nullptr) {
+  if (batch_map_func_) {
     args["per_batch_map"] = "pyfunc";
   }
 #endif

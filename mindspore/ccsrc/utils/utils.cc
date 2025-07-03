@@ -304,10 +304,7 @@ bool IsOneOfDynRankNeedPadShape(const std::string &format) {
   return kOpFormats.find(format) != kOpFormats.end();
 }
 
-bool IsEnableRefMode() {
-  static bool ret = !(common::GetEnv("MS_DISABLE_REF_MODE") == "1");
-  return ret;
-}
+bool IsEnableRefMode() { return true; }
 
 bool IsDisableGeKernel() {
   static bool config_enable_ge_kernel = common::IsEnableRuntimeConfig(common::kRuntimeGeKernel);
@@ -327,18 +324,17 @@ bool IsDisableGeKernel() {
 }
 
 bool IsNeedProfilieMemoryLog() {
-  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsDryRun();
+  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsCompileSimulation();
   return is_need_profile_memory_log;
 }
 
 bool IsMemoryPoolRecycle() {
   static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool disable_ge_kernel = IsDisableGeKernel();
-  static bool enable_ref_mode = IsEnableRefMode();
   auto context_ptr = MsContext::GetInstance();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  return disable_ge_kernel && optimize_mem && enable_ref_mode && mode == kGraphMode && task_sink;
+  return disable_ge_kernel && optimize_mem && mode == kGraphMode && task_sink;
 }
 
 bool IsEnableGraphPipeline() {
@@ -482,19 +478,44 @@ std::string GetPythonStackStr() {
 bool IsJit() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  return (context->jit_status() == JitStatus::kJitCompiling) || (context->jit_status() == JitStatus::kJitRunning);
+  return (context->jit_status() == JitStatus::kJitCompiling) || (context->jit_status() == JitStatus::kGraphCompiling) ||
+         (context->jit_status() == JitStatus::kJitRunning);
 }
 
-bool JitCompiling() {
+bool JitCompiling() { return JitPipelineCompiling() || GraphPipelineCompiling(); }
+
+bool JitPipelineCompiling() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   return context->jit_status() == JitStatus::kJitCompiling;
+}
+
+bool GraphPipelineCompiling() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return context->jit_status() == JitStatus::kGraphCompiling;
 }
 
 bool JitRunning() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   return context->jit_status() == JitStatus::kJitRunning;
+}
+
+std::string GetFormatMode() {
+  auto format_mode = common::GetEnv("MS_FORMAT_MODE");
+  if (format_mode.empty()) {
+    // default set "0" for 910a graph sink, otherwise "1"
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    if (ms_context->ascend_soc_version() == "ascend910" && ms_context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK) &&
+        GraphPipelineCompiling() && ms_context->GetBackend() == kBackendGE) {
+      format_mode = "0";
+    } else {
+      format_mode = "1";
+    }
+  }
+  return format_mode;
 }
 
 AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node) {

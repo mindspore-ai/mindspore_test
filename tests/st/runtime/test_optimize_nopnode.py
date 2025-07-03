@@ -34,7 +34,7 @@ class SqueezeMiddle(nn.Cell):
         super(SqueezeMiddle, self).__init__()
         self.add = ops.Add()
         self.squeeze = ops.Squeeze()
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x, y):
         a = self.add(x, y)
         b = self.squeeze(a)
@@ -66,7 +66,7 @@ class SqueezeGraphInput(nn.Cell):
         super(SqueezeGraphInput, self).__init__()
         self.add = ops.Add()
         self.squeeze = ops.Squeeze()
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         a = self.squeeze(x)
         b = self.add(a, a)
@@ -96,7 +96,7 @@ class SqueezeGraphOutput(nn.Cell):
         super(SqueezeGraphOutput, self).__init__()
         self.add = ops.Add()
         self.squeeze = ops.Squeeze()
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, x):
         a = self.add(x, x)
         return self.squeeze(a)

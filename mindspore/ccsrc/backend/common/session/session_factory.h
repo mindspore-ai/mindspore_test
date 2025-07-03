@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace session {
 using SessionCreator = std::function<std::shared_ptr<SessionBasic>()>;
-class BACKEND_EXPORT SessionFactory {
+class BACKEND_COMMON_EXPORT SessionFactory {
  public:
   SessionFactory() = default;
   ~SessionFactory() = default;

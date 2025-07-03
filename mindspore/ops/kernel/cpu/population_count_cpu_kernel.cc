@@ -17,10 +17,11 @@
 #include "kernel/cpu/population_count_cpu_kernel.h"
 #include <functional>
 #include <type_traits>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace population_count_cpu {
 namespace {
 const size_t kZero = 0;
 constexpr size_t kPopulationCountInputsNum = 1;
@@ -120,5 +121,6 @@ std::vector<KernelAttr> PopulationCountCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PopulationCount, PopulationCountCpuKernelMod);
+}  // namespace population_count_cpu
 }  // namespace kernel
 }  // namespace mindspore

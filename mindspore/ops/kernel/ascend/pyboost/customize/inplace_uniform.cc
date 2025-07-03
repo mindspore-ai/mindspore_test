@@ -17,9 +17,9 @@
 #include "kernel/ascend/pyboost/customize/inplace_uniform.h"
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -44,12 +44,10 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar, const string &scala
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor, const ScalarPtr &from,
-                                                    const ScalarPtr &to, const BaseTensorPtr &seed,
-                                                    const BaseTensorPtr &offset) {
+tensor::TensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const ScalarPtr &from, const ScalarPtr &to, const TensorPtr &seed,
+                                                const TensorPtr &offset) {
   MS_LOG(DEBUG) << "aclnnInplaceUniform call start";
-  OpRunner::InferOpOutput(op, input_tensor, from, to, seed, offset);
 
   // Convert ValuePtr to c++ scalar
   double from_imm = GetScalarValue(from, "from");

@@ -22,9 +22,6 @@
 
 namespace mindspore {
 namespace ops {
-static constexpr ShapeValueDType kShapeRankAny = mindspore::abstract::Shape::kShapeRankAny;
-static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
-
 ShapeArray AllGatherMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const InferInfoPtrList &input_infos) const {
   auto op_name = primitive->name();
@@ -33,7 +30,6 @@ ShapeArray AllGatherMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto &x2_tensor = input_infos[kAllGatherMatmulInputX2Index];
   auto trans_input_optional = input_infos[kAllGatherMatmulInputTransInputIndex]->GetScalarValue<bool>();
   auto trans_x2_optional = input_infos[kAllGatherMatmulInputTransX2Index]->GetScalarValue<bool>();
-  auto group_optional = input_infos[kAllGatherMatmulInputGroupIndex]->GetScalarValue<std::string>();
   auto world_size_optional = input_infos[kAllGatherMatmulInputWorldSizeIndex]->GetScalarValue<int64_t>();
   auto gather_output_optional = input_infos[kAllGatherMatmulInputGatherOutputIndex]->GetScalarValue<bool>();
 
@@ -66,9 +62,9 @@ ShapeArray AllGatherMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   MS_ASSERT(world_size_optional.has_value());
   auto world_size = world_size_optional.value();
-  MS_ASSERT(group_optional.has_value());
-  auto group = group_optional.value();
-  CheckWorldSize(group, world_size, op_name);
+
+  static constexpr ShapeValueDType kShapeRankAny = mindspore::abstract::Shape::kShapeRankAny;
+  static constexpr ShapeValueDType kShapeDimAny = mindspore::abstract::Shape::kShapeDimAny;
 
   ShapeVector output_shape(2);  // The rank of output is 2.
   output_shape[0] = input_row_known ? input_shape[input_row] * world_size : kShapeDimAny;

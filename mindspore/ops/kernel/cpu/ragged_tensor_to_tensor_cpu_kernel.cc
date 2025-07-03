@@ -24,10 +24,11 @@
 #include <type_traits>
 #include <iostream>
 #include <numeric>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_tensor_to_tensor_cpu {
 namespace {
 constexpr size_t kRaggedTensorToTensorInputsNum = 4;
 constexpr size_t kRaggedTensorToTensorOutputsNum = 1;
@@ -415,5 +416,6 @@ bool RaggedTensorToTensorCpuKernelMod::SetOutput(const std::vector<kernel::Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RaggedTensorToTensor, RaggedTensorToTensorCpuKernelMod);
+}  // namespace ragged_tensor_to_tensor_cpu
 }  // namespace kernel
 }  // namespace mindspore

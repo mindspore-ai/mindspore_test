@@ -15,14 +15,15 @@
 """Top-level reference to dtype of common module."""
 from __future__ import absolute_import
 from mindspore.common import dtype
-from mindspore.common.api import ms_function, ms_memory_recycle, ms_class, jit, jit_class, _no_grad, \
+from mindspore.common.api import ms_memory_recycle, jit, jit_class, _no_grad, \
     flops_collection, set_recursion_limit
 from mindspore.common.dtype import Type, int8, byte, int16, short, int32, intc, int64, intp, \
     uint8, ubyte, uint16, ushort, uint32, uintc, uint64, uintp, float16, half, \
     float32, single, float64, bfloat16, double, bool_, float_, list_, tuple_, int_, \
     uint, number, tensor_type, string, type_none, TensorType, Int, \
     complex64, complex128, dtype_to_nptype, _null, _NullType, \
-    dtype_to_pytype, pytype_to_dtype, get_py_obj_dtype, QuantDtype, qint4x2
+    dtype_to_pytype, pytype_to_dtype, get_py_obj_dtype, QuantDtype, qint4x2, \
+    float8_e4m3fn, float8_e5m2, hifloat8
 from mindspore.common.dump import set_dump
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.seed import set_seed, get_seed
@@ -39,6 +40,30 @@ from mindspore.common import generator
 from mindspore.common.generator import (
     Generator, default_generator, seed, manual_seed, initial_seed, get_rng_state, set_rng_state)
 from mindspore.ops.function.array_func import is_tensor, from_numpy
+from mindspore.common._grad_function import _Function
+
+try:
+    import triton
+    if isinstance(getattr(triton.runtime.jit, "type_canonicalisation_dict", None), dict):
+        ms_type_canonicalisation_dict = {
+            "Bool": "i1",
+            "Float16": "fp16",
+            "BFloat16": "bf16",
+            "Float32": "fp32",
+            "Float64": "fp64",
+            "Int8": "i8",
+            "Int16": "i16",
+            "Int32": "i32",
+            "Int64": "i64",
+            "UInt8": "u8",
+            "UInt16": "u16",
+            "UInt32": "u32",
+            "UInt64": "u64",
+        }
+        triton.runtime.jit.type_canonicalisation_dict.update(ms_type_canonicalisation_dict)
+
+except ImportError:
+    pass
 
 # symbols from dtype
 __all__ = [
@@ -65,12 +90,13 @@ __all__ = [
     # __method__ from dtype
     "dtype_to_nptype", "dtype_to_pytype",
     "pytype_to_dtype", "get_py_obj_dtype",
-    "bfloat16", "qint4x2"
+    "bfloat16", "qint4x2",
+    "float8_e4m3fn", "float8_e5m2", "hifloat8"
 ]
 
 __all__.extend([
     "tensor", "Tensor", "RowTensor", "SparseTensor", "COOTensor", "CSRTensor",  # tensor
-    "ms_function", "ms_class", 'jit', 'jit_class', '_no_grad',  # api
+    'jit', 'jit_class', '_no_grad',  # api
     "Parameter", "ParameterTuple",  # parameter
     "dtype",
     "set_seed", "get_seed", "manual_seed", # random seed
@@ -83,6 +109,6 @@ __all__.extend([
     "no_inline",
     "Symbol",
     "recompute",
-    "is_tensor", "from_numpy",
+    "is_tensor", "from_numpy", "_Function"
 ])
 __all__.extend(generator.__all__)

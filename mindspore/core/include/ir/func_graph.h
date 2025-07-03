@@ -94,6 +94,7 @@ const char FUNC_GRAPH_FLAG_CORE[] = "core";
 const char FUNC_GRAPH_FLAG_K_GRAPH[] = "k_graph";
 const char FUNC_GRAPH_ATTR_GRAPH_KERNEL[] = "graph_kernel";
 const char FUNC_GRAPH_ATTR_KERNEL_PACKET[] = "kernel_packet_node";
+const char FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON[] = "unsupport_higher_order_grad_reason";
 const char FUNC_GRAPH_FLAG_SPECIALIZE_PARAMETER[] = "spec_param";
 const char FUNC_GRAPH_OUTPUT_NO_RECOMPUTE[] = "output_no_recompute";
 const char FUNC_GRAPH_RECOMPUTE_K_GRAPH[] = "recompute_k_graph";
@@ -186,7 +187,7 @@ class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
   }
   void SetDefaultValues(const std::vector<std::string> &name_list, const AnfNodePtrList &value_list);
   void ClearDefaultValues();
-  size_t GetDefaultValueCount();
+  size_t GetDefaultValueCount() const;
   std::map<std::string, AnfNodePtr> &parameter_default_value() { return parameter_default_value_; }
   void set_has_vararg(bool has_) { has_vararg_ = has_; }
   bool has_vararg() const { return has_vararg_; }

@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/trunc_cpu_kernel.h"
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace trunc_cpu {
 namespace {
 const size_t kZero = 0;
 constexpr size_t kTruncInputsNum = 1;
@@ -106,5 +107,6 @@ std::vector<KernelAttr> TruncCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Trunc, TruncCpuKernelMod);
+}  // namespace trunc_cpu
 }  // namespace kernel
 }  // namespace mindspore

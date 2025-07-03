@@ -75,7 +75,6 @@ class ConcatNode : public DatasetNode {
   /// \return Status of the function
   Status to_json(nlohmann::json *out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json
   /// \param[in] json_obj The JSON object to be deserialized
   /// \param[in] datasets A vector of datasets for Concat input
@@ -83,7 +82,6 @@ class ConcatNode : public DatasetNode {
   /// \return Status The status code returned
   static Status from_json(nlohmann::json json_obj, std::vector<std::shared_ptr<DatasetNode>> datasets,
                           std::shared_ptr<DatasetNode> *result);
-#endif
 
   /// \brief Getter functions
   const std::vector<std::pair<int, int>> &ChildrenFlagAndNums() const { return children_flag_and_nums_; }

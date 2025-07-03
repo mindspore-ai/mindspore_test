@@ -38,7 +38,7 @@ def Flatten_forward_for_dyn(x):
     op = mint.nn.Flatten(2, 3)
     return op(x)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 def test_flatten_normal(mode):

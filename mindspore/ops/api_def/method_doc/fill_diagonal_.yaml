@@ -1,0 +1,36 @@
+fill_diagonal_:
+  description: |
+    fill_diagonal_(fill_value, warp=False) -> Tensor
+
+    Fills the main diagonal of a Tensor in-place with a specified value and returns the result.
+    The `self` has at least 2 dimensions, and all dimensions of `self` must be equal in length
+    when the dimension of `self` is greater than 2.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        fill_value (number): The value to fill the diagonal of `self`.
+        wrap (bool, optional): Controls whether the diagonal elements continue onto the
+            remaining rows in case of a tall matrix(A matrix has more rows than columns). Default: ``False`` .
+
+    Returns:
+        Tensor, has the same shape and data type as `self`.
+
+    Raises:
+        ValueError: If the dimension of `self` is not greater than 1.
+        ValueError: If the size of each dimension is not equal, when the dimension is greater than 2.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).astype(np.float32))
+        >>> fill_value = 9.9
+        >>> x.fill_diagonal_(fill_value)
+        >>> print(x)
+        [[9.9 2.  3. ]
+         [4.  9.9 6. ]
+         [7.  8.  9.9]]

@@ -20,18 +20,20 @@ Note that the APIs in the following list need to preset communication environmen
 For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
 without any third-party or configuration file dependencies.
 Please see the `msrun start up
-<https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+<https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
 for more details.
 """
 
 from mindspore.communication.management import GlobalComm, init, release, get_rank, \
     get_group_size, get_world_rank_from_group_rank, \
-    get_group_rank_from_world_rank, create_group, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
-    MCCL_WORLD_COMM_GROUP, get_local_rank, get_local_rank_size, destroy_group, get_process_group_ranks
+    get_group_rank_from_world_rank, create_group, get_comm_name, \
+    HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, MCCL_WORLD_COMM_GROUP, get_local_rank, \
+    get_local_rank_size, destroy_group, get_process_group_ranks
 
 
 __all__ = [
     "GlobalComm", "init", "release", "get_rank", "get_group_size", "get_world_rank_from_group_rank",
-    "get_group_rank_from_world_rank", "create_group", "HCCL_WORLD_COMM_GROUP", "NCCL_WORLD_COMM_GROUP",
-    "MCCL_WORLD_COMM_GROUP", "get_local_rank", "get_local_rank_size", "destroy_group", "get_process_group_ranks"
+    "get_group_rank_from_world_rank", "create_group", "get_comm_name",
+    "HCCL_WORLD_COMM_GROUP", "NCCL_WORLD_COMM_GROUP", "MCCL_WORLD_COMM_GROUP", "get_local_rank",
+    "get_local_rank_size", "destroy_group", "get_process_group_ranks"
 ]

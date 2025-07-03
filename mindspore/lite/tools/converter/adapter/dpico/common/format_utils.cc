@@ -39,6 +39,18 @@
 #include "infer/space_to_batch_nd.h"
 #include "infer/space_to_depth.h"
 #include "common/anf_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_t.h"
 
 namespace mindspore {
 namespace dpico {

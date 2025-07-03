@@ -22,12 +22,13 @@
 #include <utility>
 #include <map>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lerp_cpu {
 class LerpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<LerpCpuKernelMod> {
  public:
   LerpCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class LerpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Ler
   ShapeVector weight_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace lerp_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_LERP_CPU_KERNEL_H_

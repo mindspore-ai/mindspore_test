@@ -66,18 +66,20 @@ def _cal_total_norm(x, norm_type):
 
 def clip_by_norm(x, max_norm, norm_type=2.0, error_if_nonfinite=False):
     r"""
-    Clip norm of a set of input Tensors. This norm is the result of calculating the norm of all elements in the input
-    separately, connecting them into a vector, and then calculating the norm.
+    The input Tensor is cropped based on norm. The computation is done by concatenating the norms of
+    all the input elementsinto a vector and then computing the norm of that vector.
+    The Tensor gradient value corresponding to the `identifier`.
 
     Note:
         The interface is suitable for gradient clipping scenarios, and only supports input of type float.
 
     Args:
-          x (Union(Tensor, list[Tensor], tuple[Tensor])): Input that wishes to be clipped.
-          max_norm (Union(float, int)): The upper limit of the norm for this group of network parameters.
-          norm_type (Union(float, int)): Norm type. Default: ``2.0``.
-          error_if_nonfinite (bool): If it is ``True``, an exception is thrown if the total norm from the input
-              is nan, inf or -inf. If it is ``False``, no exception will be thrown.Default: ``False`` .
+        x (Union[Tensor, list[Tensor], tuple[Tensor]]): Input that wishes to be clipped.
+        max_norm (Union[float, int]): The upper limit of the norm for this group of network parameters.
+        norm_type (Union[float, int], optional): Norm type. Default: ``2.0``.
+        error_if_nonfinite (bool, optional): If it is ``True``,
+            an exception is thrown if the total norm from the input
+            is nan, inf or -inf. If it is ``False``, no exception will be thrown.Default: ``False`` .
 
     Returns:
         Tensors, a list or tuple of Tensors, representing clipped Tensors.
@@ -224,9 +226,7 @@ def clip_by_value(x, clip_value_min=None, clip_value_max=None):
 
 def clamp(input, min=None, max=None):
     r"""
-    Clamps tensor values between the specified minimum value and maximum value.
-
-    Limits the value of :math:`input` to a range, whose lower limit is `min` and upper limit is `max` .
+    Clamp all elements of the input tensor within the range [min, max].
 
     .. math::
 
@@ -239,41 +239,37 @@ def clamp(input, min=None, max=None):
 
     Note:
         - `min` and `max` cannot be None at the same time;
-        - When `min` is None and `max` is not None, the elements in Tensor larger than `max` will become `max`;
-        - When `min` is not None and `max` is None, the elements in Tensor smaller than `min` will become `min`;
+        - If `min` is ``None`` , there is no lower bound.
+        - if `max` is ``None`` , there is no upper bound.
         - If `min` is greater than `max`, the value of all elements in Tensor will be set to `max`;
-        - The data type of `input`, `min` and `max` should support implicit type conversion and cannot be bool type.
 
     Args:
-          input (Tensor): Input data, which type is Tensor. Tensors of arbitrary dimensions are supported.
-          min (Union(Tensor, float, int), optional): The minimum value. Default: ``None`` .
-          max (Union(Tensor, float, int), optional): The maximum value. Default: ``None`` .
+          input (Tensor): The input tensor.
+          min (Union(Tensor, float, int), optional): The minimum value. Default ``None`` .
+          max (Union(Tensor, float, int), optional): The maximum value. Default ``None`` .
 
     Returns:
-          Tensor, a clipped Tensor.
-          The data type and shape are the same as input.
-
-    Raises:
-          ValueError: If both `min` and `max` are None.
-          TypeError: If the type of `input` is not in Tensor.
-          TypeError: If the type of `min` is not in None, Tensor, float or int.
-          TypeError: If the type of `max` is not in None, Tensor, float or int.
+          Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> # case 1: the data type of input is Tensor
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> min_value = Tensor(5, mindspore.float32)
-        >>> max_value = Tensor(20, mindspore.float32)
-        >>> input = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), mindspore.float32)
-        >>> output = ops.clamp(input, min_value, max_value)
-        >>> print(output)
-        [[ 5. 20.  5.  7.]
-         [ 5. 11.  6. 20.]]
+        >>> # case 1: `min` and `max` are integer
+        >>> input = mindspore.tensor([[1, 25, 5, 7], [4, 11, 6, 21]])
+        >>> mindspore.ops.clamp(input, 5, 20)
+        Tensor(shape=[2, 4], dtype=Int64, value=
+        [[ 5, 20,  5,  7],
+         [ 5, 11,  6, 20]])
+        >>>
+        >>> # case 2: If `min` and `max` are tensors, their shapes need to be broadcastable with input.
+        >>> min = mindspore.tensor([2, 4, 6, 8])
+        >>> max = mindspore.tensor([10, 12, 14, 18])
+        >>> mindspore.ops.clamp(input, min, max)
+        Tensor(shape=[2, 4], dtype=Int64, value=
+        [[ 2, 12,  6,  8],
+         [ 4, 11,  6, 18]])
     """
     if isinstance(min, Tensor) or isinstance(max, Tensor):
         return clamp_tensor(input, min, max)
@@ -411,30 +407,27 @@ def clip_by_global_norm(x, clip_norm=1.0, use_norm=None):
     Clips tensor values by the ratio of the sum of their norms.
 
     Note:
-        - Input `x` should be a tuple or list of tensors. Otherwise, it will raise an error.
         - On the SEMI_AUTO_PARALLEL mode or AUTO_PARALLEL mode, if the input `x` is the gradient,
           the gradient norm values on all devices will be automatically aggregated by allreduce inserted after
           the local square sum of the gradients.
 
     Args:
         x (Union(tuple[Tensor], list[Tensor])): Input data to clip.
-        clip_norm (Union(float, int)): The clipping ratio, it should be greater than 0. Default: ``1.0`` .
-        use_norm (None): The global norm. Default: ``None`` . Currently only none is supported.
+        clip_norm (Union(float, int)): The clipping ratio, it should be greater than 0. Default ``1.0`` .
+        use_norm (None): The global norm. Currently only none is supported. Default ``None`` .
 
     Returns:
-        tuple[Tensor], a clipped Tensor. It has the same data type as `x` and each Tensor in the output tuple is the
-        same as the original input shape.
+        Tuple of tensors
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> from mindspore import Tensor, ops
-        >>> import numpy as np
-        >>> x1 = np.array([[2., 3.], [1., 2.]]).astype(np.float32)
-        >>> x2 = np.array([[1., 4.], [3., 1.]]).astype(np.float32)
-        >>> input_x = (Tensor(x1), Tensor(x2))
-        >>> out = ops.clip_by_global_norm(input_x, 1.0)
+        >>> import mindspore
+        >>> x1 = mindspore.tensor([[2., 3.], [1., 2.]], dtype=mindspore.float32)
+        >>> x2 = mindspore.tensor([[1., 4.], [3., 1.]], dtype=mindspore.float32)
+        >>> input_x = (x1, x2)
+        >>> out = mindspore.ops.clip_by_global_norm(input_x, 1.0)
         >>> print(out)
         (Tensor(shape=[2, 2], dtype=Float32, value=
         [[ 2.98142403e-01,  4.47213590e-01],

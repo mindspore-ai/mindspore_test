@@ -32,7 +32,6 @@
 #include "runtime/graph_scheduler/actor/super_kernel_actor.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/copy_actor.h"
-#include "runtime/graph_scheduler/actor/custom_actor.h"
 #include "runtime/graph_scheduler/actor/fusion/fusion_actor.h"
 #include "runtime/graph_scheduler/actor/memory/memory_swap_actor.h"
 #include "runtime/graph_scheduler/actor/memory/memory_alloc_actor.h"
@@ -44,9 +43,12 @@
 #include "runtime/graph_scheduler/actor/control_flow/exit_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/stack_actor.h"
 #include "runtime/graph_scheduler/control_node_scheduler.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_gather_runner.h"
+#include "runtime/graph_scheduler/actor/control_flow/condition_switch_runner.h"
 
 namespace mindspore {
 namespace runtime {
+void DumpParameterStore(std::ofstream &ofs);
 void DumpContinuousMemoryNodes(const ActorSet *actor_set, std::ofstream &ofs);
 void DumpDataPrepareActor(const DataPrepareActorPtr &actor, std::ofstream &ofs);
 void DumpLoopCountActor(const LoopCountActorPtr &actor, std::ofstream &ofs);
@@ -60,10 +62,10 @@ void DumpMemoryActors(const std::vector<MemoryAwareActorPtr> &actors, std::ofstr
 void DumpCopyActors(const std::vector<CopyActorPtr> &actors, std::ofstream &ofs);
 void DumpFusionActors(const std::vector<FusionActorPtr> &actors, std::ofstream &ofs);
 void DumpControlActors(const ControlActorSetPtr &control_actor_set, std::ofstream &ofs);
-void DumpCustomActors(const std::vector<CustomActorPtr> &actors, std::ofstream &ofs);
 void DumpSwapActors(const std::vector<std::vector<MemSwapActorPtr>> &actors, std::ofstream &ofs);
 using DeviceAddressPtr = device::DeviceAddressPtr;
-using ActorInfoMap = mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<DeviceAddressPtr>>>;
+using KernelTensorPtr = kernel::KernelTensorPtr;
+using ActorInfoMap = mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<KernelTensorPtr>>>;
 using GetInputAidFunc = std::function<std::vector<std::string>(AbstractActor *const)>;
 std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root, const GetInputAidFunc &get_input_func = nullptr);
 void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info, std::ofstream &ofs);

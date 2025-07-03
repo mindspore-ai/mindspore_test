@@ -56,7 +56,7 @@ def l1_loss_backward_func(inputx, target, reduction="mean"):
     return grad_op(inputx, target, reduction)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_l1_loss_forward(mode, reduction):
@@ -75,8 +75,8 @@ def test_ops_l1_loss_forward(mode, reduction):
         output_backward_value = l1_loss_backward_func(inputx, target, reduction)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        forward_op = ms.jit(l1_loss_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
-        backward_op = ms.jit(l1_loss_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        forward_op = ms.jit(l1_loss_forward_func, backend="ms_backend", jit_level="O0")
+        backward_op = ms.jit(l1_loss_backward_func, backend="ms_backend", jit_level="O0")
         output_forward_value = forward_op(inputx, target, reduction)
         output_backward_value = backward_op(inputx, target, reduction)
 

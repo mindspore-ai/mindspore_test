@@ -94,6 +94,7 @@ OP_REGISTER("Atan", ElemwiseOp);
 OP_REGISTER("Atan2", ElemwiseOp);
 OP_REGISTER("Expm1", ElemwiseOp);
 OP_REGISTER("FastGeLU", ElemwiseOp);
+OP_REGISTER("TensorMove", ElemwiseOp);
 // broadcast ops
 OP_REGISTER("BroadcastTo", BroadcastOp);
 OP_REGISTER("Tile", BroadcastOp);
@@ -110,7 +111,7 @@ OP_REGISTER("LayoutTransform", LayoutTransformOp);
 OP_REGISTER("MatMul", MatMulOp);
 OP_REGISTER("PadAkg", PadAkgOp);
 OP_REGISTER("UnPadAkg", UnPadAkgOp);
-OP_REGISTER("BatchMatMul", OpaqueOp);
+OP_REGISTER("BatchMatMul", MatMulOp);
 OP_REGISTER("CumSum", OpaqueOp);
 OP_REGISTER("OneHot", OpaqueOp);
 OP_REGISTER("StridedSlice", StridedSliceOp);
@@ -126,6 +127,9 @@ OP_REGISTER("Conv2D", Conv2dOp);
 OP_REGISTER("TransData", OpaqueOp);
 OP_REGISTER("ElemAny", ElemAnyOp);
 OP_REGISTER("Pool2D", Pool2DOp);
+OP_REGISTER("AllReduce", OpaqueOp);
+OP_REGISTER("AllGather", OpaqueOp);
+OP_REGISTER("ReduceScatter", OpaqueOp);
 // virtual ops
 OP_REGISTER("Assign", VirtualOp);
 OP_REGISTER("TupleGetItem", TupleGetItemOp);

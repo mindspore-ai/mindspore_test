@@ -20,10 +20,6 @@ import numpy as np
 import pytest
 import mindspore.dataset as ds
 
-# Need to run all these tests in separate processes since
-# the global configuration setting of debug_mode may impact other tests running in parallel.
-pytestmark = pytest.mark.forked
-
 SEED_VAL = 0  # seed will be set internally in debug mode, save original seed value to restore.
 
 

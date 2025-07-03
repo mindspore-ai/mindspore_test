@@ -19,11 +19,12 @@
 #include <string>
 #include <thread>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/mkldnn/mkl_cpu_kernel.h"
 #include "mindspore/ops/infer/cumulative_logsumexp.h"
 namespace mindspore {
 namespace kernel {
+namespace cumulative_logsumexp_cpu {
 namespace {
 constexpr size_t kCumulativeLogsumexpInputsNum = 2;
 constexpr size_t kCumulativeLogsumexpOutputsNum = 1;
@@ -179,5 +180,6 @@ std::vector<KernelAttr> CumulativeLogsumexpCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CumulativeLogsumexp, CumulativeLogsumexpCpuKernelMod);
+}  // namespace cumulative_logsumexp_cpu
 }  // namespace kernel
 }  // namespace mindspore

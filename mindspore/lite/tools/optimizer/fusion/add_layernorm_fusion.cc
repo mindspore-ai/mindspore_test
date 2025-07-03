@@ -32,6 +32,14 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/optimizer/graph/node_infershape.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {
@@ -292,6 +300,18 @@ AnfNodePtr LayerNormV3Fusion::Process(const std::string &pattern_name, const min
   }
   MS_LOG(INFO) << pattern_name << " fusion success, fusion node name: " << cnode->fullname_with_scope();
   return cnode;
+}
+
+FuseAddAndLayernorm::FuseAddAndLayernorm(bool multigraph)
+    : opt::LitePatternProcessPass("FuseAddAndLayernorm", multigraph) {
+  x1_ = std::make_shared<Var>();
+  x2_ = std::make_shared<Var>();
+  gamma_ = std::make_shared<Var>();
+  beta_ = std::make_shared<Var>();
+  begin_norm_axis_ = std::make_shared<Var>();
+  begin_params_axis_ = std::make_shared<Var>();
+  eps_ = std::make_shared<Var>();
+  layer_norm_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimLayerNormV3->name()));
 }
 
 const BaseRef FuseAddAndLayernorm::DefinePattern() const {

@@ -17,14 +17,14 @@
 #include "kernel/ascend/pyboost/customize/norm.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor, const FP32ImmPtr &p,
+void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor, const FP32ImmPtr &p,
                          const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
                          const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call Norm start";

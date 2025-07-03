@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <queue>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
 
 namespace mindspore {
 namespace parallel {
@@ -95,6 +96,9 @@ void ReorderSendRecvBetweenFpBp(const FuncGraphPtr &graph) {
   if (!is_step_in()) {
     return;
   }
+
+  circle_handler::SetAttrToDepend(graph);
+
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
@@ -142,6 +146,8 @@ void ReorderSendRecvBetweenFpBp(const FuncGraphPtr &graph) {
       }
     }
   }
+
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "ReorderSendRecvBetweenFpBp");
 }
 }  // namespace parallel
 }  // namespace mindspore

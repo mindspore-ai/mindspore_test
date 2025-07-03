@@ -22,6 +22,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {
@@ -42,7 +43,7 @@ TypePtr IsFiniteFuncImpl::InferType(const PrimitivePtr &primitive,
   return std::make_shared<TensorType>(kBool);
 }
 TypePtrList IsFiniteFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   static const std::set<TypePtr> number_types = {kBool,   kInt8,   kInt16,   kInt32,   kInt64,   kUInt8,   kUInt16,
@@ -51,7 +52,7 @@ TypePtrList IsFiniteFuncImpl::InferType(const PrimitivePtr &primitive, const Val
   return {kBool};
 }
 ShapeArray IsFiniteFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

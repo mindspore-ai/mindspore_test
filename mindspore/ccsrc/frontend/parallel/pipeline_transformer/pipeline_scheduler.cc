@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
 
 #include <vector>
 #include <string>
 #include <utility>
 #include <algorithm>
 #include <memory>
-#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
+
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/node_check.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -42,6 +50,7 @@ CNodePtr GetCellByReceive(const AnfNodePtr &node, const FuncGraphManagerPtr &man
     user = users.front().first;
   }
   auto fg_cnode = users.front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(fg_cnode);
   auto cnode = node->cast<CNodePtr>();
   if (cnode->HasPrimalAttr(ORDER)) {
     auto order = cnode->GetPrimalAttr(ORDER);
@@ -61,6 +70,7 @@ CNodePtr GetCellBySend(const AnfNodePtr &node) {
     fg_node = fg_node->cast<CNodePtr>()->input(1);
   }
   auto fg_cnode = fg_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(fg_cnode);
   if (cnode->HasPrimalAttr(ORDER)) {
     auto order = cnode->GetPrimalAttr(ORDER);
     fg_cnode->AddPrimalAttr(ORDER, order);

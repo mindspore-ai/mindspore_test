@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace betainc_cpu {
 namespace {
 constexpr size_t kBetaincInputsNum = 3;
 constexpr size_t kBetaincOutputsNum = 1;
@@ -100,5 +101,6 @@ const std::vector<std::pair<KernelAttr, BetaincCpuKernelMod::KernelRunFunc>> &Be
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Betainc, BetaincCpuKernelMod);
+}  // namespace betainc_cpu
 }  // namespace kernel
 }  // namespace mindspore

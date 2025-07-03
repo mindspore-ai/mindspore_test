@@ -29,7 +29,6 @@
 #include "utils/hash_set.h"
 #include "runtime/graph_scheduler/control_node_scheduler.h"
 #include "runtime/graph_scheduler/any_type_graph_scheduler.h"
-#include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include "runtime/graph_scheduler/mem_swap_scheduler.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
@@ -80,12 +79,11 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Fetch the actor set by actor info.
   ActorSet *Fetch(const ActorInfo &actor_info) const;
+  // Fetch the actor set by actor_id.
+  ActorSet *Fetch(uint32_t actor_id) const;
 
   // Whether graph scheduler is initialized.
   bool initialized() const { return init_; }
-
-  // Remove non weight parameter device address.
-  void RemoveNodeAddr(const GraphCompilerInfo &graph_compiler_info);
 
 #ifdef ENABLE_RPC_ACTOR
   // Returns pointer of RpcNodeScheduler to distributed module.
@@ -110,6 +108,8 @@ class BACKEND_EXPORT GraphScheduler {
   // The Global actors contain memory manager actor, recorder actor and debug actor.
   void BuildAndScheduleGlobalActor();
 
+  void BindCoreForRuntimeThread(ActorThreadPool *thread_pool, size_t thread_num) const;
+
   // Transform the nodes of graph to actors.
   ActorSetPtr Build(const GraphCompilerInfo &graph_compiler_info);
   // Link actors to DAG through the edge connection of graph and graph execution strategy.
@@ -131,7 +131,6 @@ class BACKEND_EXPORT GraphScheduler {
   std::vector<DataSourceActorPtr> BuildDataSourceActor(const GraphCompilerInfo &graph_compiler_info,
                                                        const HostTensorQueuePtr &host_queue);
   std::vector<KernelActorPtr> BuildKernelActor(const GraphCompilerInfo &graph_compiler_info);
-  std::vector<CustomActorPtr> BuildCustomActor(const GraphCompilerInfo &graph_compiler_info);
   std::vector<SuperKernelActorPtr> BuildSuperKernelActor(const GraphCompilerInfo &graph_compiler_info);
   LoopCountActorPtr BuildLoopCountActor(const GraphCompilerInfo &graph_compiler_info);
   OutputActorPtr BuildOutputActor(const GraphCompilerInfo &graph_compiler_info) const;
@@ -147,18 +146,9 @@ class BACKEND_EXPORT GraphScheduler {
   KernelActorPtr GenerateRpcActor(const CNodePtr &kernel, const DeviceContext *device_context,
                                   GraphExecutionStrategy strategy, const std::set<size_t> &modifiable_ref_input_indexes,
                                   const std::set<size_t> &modifiable_ref_output_indexes);
-  // Generate inner control flow actor in execution order.
-  KernelActorPtr GenerateInnerControlFlowActor(const CNodePtr &kernel, const DeviceContext *device_context,
-                                               GraphExecutionStrategy strategy,
-                                               const std::set<size_t> &ref_input_indexes,
-                                               const std::set<size_t> &ref_output_indexes);
   // Cache the information of graph output node to actor between “build” and “link”, for linking between the tail of
   // previous graph and the head of next graph.
   void CacheGraphOutputToActor(const GraphCompilerInfo &graph_compiler_info);
-  // The input and output of ref node may be in the different subgraphs, so need the global subgraphs info to update the
-  // device address of ref node.
-  void UpdateDeviceAddressByRefInternalParameter(const GraphCompilerInfo &graph_compiler_info);
-
   // The processing of actors linking.
   // 1. The processing of linking data arrows.
   void LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const GraphCompilerInfo &graph_compiler_info,
@@ -215,10 +205,6 @@ class BACKEND_EXPORT GraphScheduler {
   void LinkGlobalControlArrow(ActorSet *const actor_set, const GroupNameToCommuNodes &communication_node_groups,
                               const std::vector<AbstractActor *> &auto_monad_actors,
                               const GraphCompilerInfo &graph_compiler_info);
-  void LinkDataArrowForCustomActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info);
-  void LinkControlArrowForCustomActor(const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info);
-  void LinkControlArrowForCustomActorByAutoMonad(const ActorSet *actor_set,
-                                                 const GraphCompilerInfo &graph_compiler_info);
   void LinkControlArrowByExecutionOrder(const KernelGraphPtr &graph,
                                         const GraphCompilerInfo &graph_compiler_info) const;
   // Link the control arrows by the communication nodes in the kernel graph to ensure communication nodes running order.
@@ -281,8 +267,6 @@ class BACKEND_EXPORT GraphScheduler {
   ControlNodeScheduler control_node_scheduler_;
   // If there is an any type input in graph, it will be used to transform it.
   AnyTypeGraphScheduler any_type_graph_scheduler_;
-  // If there is inline control flow in kernel graph, it will be used to transform it.
-  InlineControlFlowScheduler inline_control_flow_scheduler_;
 
   // Build and link swap actor when memory offload is enabled.
   MemSwapScheduler swap_node_scheduler_;
@@ -311,9 +295,6 @@ class BACKEND_EXPORT GraphScheduler {
   bool init_{false};
   bool already_spawn_kernel_async_launch_actor_{false};
   bool already_spawn_kernel_async_infer_resize_actor_{false};
-
-  // Disable custom actor in scheduler.
-  bool is_enable_custom_actor{false};
 
   bool is_bind_core_{false};
   bool is_shut_spin_{false};

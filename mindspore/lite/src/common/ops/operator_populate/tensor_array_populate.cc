@@ -18,6 +18,7 @@
 #include "infer/tensor_array.h"
 #include "infer/tensor_array_read.h"
 #include "infer/tensor_array_write.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 using mindspore::ops::kNameTensorArray;
 using mindspore::ops::kNameTensorArrayRead;
 using mindspore::ops::kNameTensorArrayWrite;

@@ -79,7 +79,7 @@ bool SendActor::ConnectServer() {
 void SendActor::FlushData() {
   MS_EXCEPTION_IF_NULL(client_);
   if (!client_->Flush(server_url_)) {
-    MS_LOG(EXCEPTION) << "Failed to flush client for server " << server_url_;
+    MS_LOG(WARNING) << "Failed to flush client for server " << server_url_;
   }
 }
 
@@ -91,7 +91,15 @@ void SendActor::Clear() {
   }
 }
 
-bool SendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
+bool SendActor::LaunchKernel(OpContext<KernelTensor> *const context, bool is_skip_launch) {
+  for (const auto &kernel_tensor : workspace_kernel_tensors_) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    const auto &device_tensor = kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    device_tensor->IncreaseNewRefCount(GetAID().Name());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Increase new ref count for kernel tensor:" << kernel_tensor->ToString() << " in actor:" << GetAID();
+  }
   if (is_skip_launch) {
     return KernelActor::LaunchKernel(context, is_skip_launch);
   }
@@ -105,7 +113,7 @@ bool SendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_ski
   }
 
   // Send input data(inter-process data is the input of the Send kernel) to peers.
-  if (input_device_tensors_.empty()) {
+  if (input_kernel_tensors_.empty()) {
     MS_LOG(ERROR) << "Send kernel has no output tensor.";
     return false;
   }
@@ -120,7 +128,7 @@ bool SendActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_ski
   return true;
 }
 
-void SendActor::EraseInput(const OpContext<DeviceTensor> *context) {
+void SendActor::EraseInput(const OpContext<KernelTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   AbstractActor::EraseInput(context);
 
@@ -137,12 +145,12 @@ std::unique_ptr<MessageBase> SendActor::BuildRpcMessage(const std::string &serve
 
   // To reach optimal performance, we use workspace memory as the data sent to the remote. So the size must be
   // strictly checked to avoid illegal memory access.
-  auto send_workspace = workspace_device_tensors_;
+  auto send_workspace = workspace_kernel_tensors_;
   if (send_workspace.empty()) {
     MS_LOG(EXCEPTION) << "RpcSendKernel's workspace should not be empty.";
   }
   // Only use one piece of workspace memory to avoid extra memory copying and serialize inputs data to one message.
-  auto workspace_addr = send_workspace[kIndex0];
+  auto workspace_addr = send_workspace[kIndex0]->device_address().get();
   if (is_dynamic_shape_) {
     MS_LOG(INFO) << "This send actor builds message with dynamic shape.";
     SerializeDynamicShapeMessage(message.get(), workspace_addr);
@@ -155,7 +163,7 @@ std::unique_ptr<MessageBase> SendActor::BuildRpcMessage(const std::string &serve
 }
 
 bool SendActor::FreeMessage(void *data) {
-  auto memory_free_list = FindDeviceTensorNeedsFree(data);
+  auto memory_free_list = FindKernelTensorNeedsFree(data);
   ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::FreeMemory, &memory_free_list,
                             device_contexts_[0], context_, GetAID());
   return true;
@@ -166,18 +174,20 @@ void SendActor::Flush() {
   for (const auto &url : peer_actor_urls_) {
     MS_LOG(DEBUG) << "Flush for url " << url.second;
     if (!client_->Flush(url.second)) {
-      MS_LOG(EXCEPTION) << "Failed to flush for url " << url.second;
+      MS_LOG(WARNING) << "Failed to flush for url " << url.second;
     }
   }
 }
 
-std::vector<DeviceTensor *> SendActor::FindDeviceTensorNeedsFree(const void *data) const {
-  std::vector<DeviceTensor *> free_list;
-  // The sent data uses the memory of workspace. So query the DeviceTensor from workspace_device_tensors_.
-  for (const auto &device_tensor : workspace_device_tensors_) {
+std::vector<KernelTensorPtr> SendActor::FindKernelTensorNeedsFree(const void *data) const {
+  std::vector<KernelTensorPtr> free_list;
+  // The sent data uses the memory of workspace. So query the DeviceTensor from workspace_kernel_tensors_.
+  for (const auto &kernel_tensor : workspace_kernel_tensors_) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto &device_tensor = kernel_tensor->device_address();
     MS_ERROR_IF_NULL_W_RET_VAL(device_tensor, {});
     if (data == device_tensor->GetMutablePtr()) {
-      free_list.push_back(device_tensor);
+      free_list.push_back(kernel_tensor);
     }
   }
   return free_list;
@@ -233,8 +243,8 @@ void SendActor::SerializeDynamicShapeMessage(MessageBase *message, const DeviceT
   for (size_t i = 0; i < input_kernel_tensors_.size(); i++) {
     auto shapes = input_kernel_tensors_[i]->GetShapeVector();
     TypeId data_type = input_kernel_tensors_[i]->dtype_id();
-    size_t serialized_data_size =
-      SerializeSingleDynamicShapeInput(rpc_data + offset, shapes, data_type, input_device_tensors_[i]);
+    size_t serialized_data_size = SerializeSingleDynamicShapeInput(rpc_data + offset, shapes, data_type,
+                                                                   input_kernel_tensors_[i]->device_address().get());
     offset += serialized_data_size;
   }
 
@@ -251,9 +261,10 @@ void SendActor::SerializeCommonMessage(MessageBase *message, const DeviceTensor 
   MS_EXCEPTION_IF_NULL(workspace_addr);
   MS_EXCEPTION_IF_NULL(workspace_addr->GetMutablePtr());
   size_t total_size = 0;
-  total_size =
-    std::accumulate(input_device_tensors_.begin(), input_device_tensors_.end(), total_size,
-                    [](size_t total_size, const DeviceTensor *output) { return total_size + output->GetSize(); });
+  total_size = std::accumulate(input_kernel_tensors_.begin(), input_kernel_tensors_.end(), total_size,
+                               [](size_t total_size, const KernelTensorPtr &kernel_tensor) {
+                                 return total_size + kernel_tensor->device_address()->GetSize();
+                               });
   if (workspace_addr->GetSize() != total_size) {
     MS_LOG(EXCEPTION) << "Workspace size should be the same as inputs size. But got " << workspace_addr->GetSize()
                       << " and " << total_size;
@@ -261,10 +272,11 @@ void SendActor::SerializeCommonMessage(MessageBase *message, const DeviceTensor 
 
   RpcDataPtr rpc_data = static_cast<RpcDataPtr>(workspace_addr->GetMutablePtr());
   MS_EXCEPTION_IF_NULL(rpc_data);
-  for (size_t i = 0; i < input_device_tensors_.size(); i++) {
-    MS_EXCEPTION_IF_NULL(input_device_tensors_[i]);
-    if (!CopyRpcDataWithOffset(&rpc_data, input_device_tensors_[i]->GetMutablePtr(),
-                               input_device_tensors_[i]->GetSize())) {
+  for (size_t i = 0; i < input_kernel_tensors_.size(); i++) {
+    MS_EXCEPTION_IF_NULL(input_kernel_tensors_[i]);
+    auto input_device_tensor = input_kernel_tensors_[i]->device_address();
+    MS_EXCEPTION_IF_NULL(input_device_tensor);
+    if (!CopyRpcDataWithOffset(&rpc_data, input_device_tensor->GetMutablePtr(), input_device_tensor->GetSize())) {
       MS_LOG(EXCEPTION) << "Failed to copy data for rpc send input " << i;
     }
   }

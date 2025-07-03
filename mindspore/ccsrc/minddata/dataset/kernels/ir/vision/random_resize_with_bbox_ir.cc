@@ -18,16 +18,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_resize_with_bbox_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomResizeWithBBoxOperation
 RandomResizeWithBBoxOperation::RandomResizeWithBBoxOperation(const std::vector<int32_t> &size)
     : TensorOperation(true), size_(size) {}
@@ -73,7 +70,6 @@ Status RandomResizeWithBBoxOperation::from_json(nlohmann::json op_params, std::s
   *operation = std::make_shared<vision::RandomResizeWithBBoxOperation>(size);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

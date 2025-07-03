@@ -1,7 +1,7 @@
 mindspore.mint.min
 ===================
 
-.. py:function:: mindspore.mint.min(input)
+.. py:function:: mindspore.mint.min(input) -> Tensor
 
     返回输入Tensor的最小值。
 
@@ -11,7 +11,7 @@ mindspore.mint.min
     返回：
         Tensor，值为输入Tensor的最小值，类型与 `input` 相同。
 
-    .. py:function:: mindspore.mint.min(input, dim, keepdim=False)
+    .. py:function:: mindspore.mint.min(input, dim, keepdim=False) -> Tensor
         :noindex:
 
     在给定轴上计算输入Tensor的最小值，并返回最小值和索引值。
@@ -32,7 +32,7 @@ mindspore.mint.min
         - **TypeError** - 如果 `keepdim` 不是bool类型。
         - **TypeError** - 如果 `dim` 不是int类型。
 
-    .. py:function:: mindspore.mint.min(input, other)
+    .. py:function:: mindspore.mint.min(input, other) -> Tensor
         :noindex:
 
     详情请参考 :func:`mindspore.mint.minimum`。

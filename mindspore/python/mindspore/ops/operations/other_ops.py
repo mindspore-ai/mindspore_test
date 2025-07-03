@@ -19,7 +19,8 @@ from mindspore import log as logger
 from mindspore.ops import signature as sig
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
-from mindspore.ops.primitive import Primitive, PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register
+from mindspore.ops.primitive import Primitive, PrimitiveWithCheck, PrimitiveWithInfer
+from mindspore.ops.primitive import prim_attr_register, prim_arg_register
 from mindspore.ops.operations._pyfunc_registry import add_pyfunc
 from mindspore._c_expression import typing
 from mindspore.ops._primitive_cache import _get_cache_prim
@@ -142,9 +143,10 @@ class BoundingBoxDecode(Primitive):
 
     Args:
         max_shape (tuple): The max size limit for decoding box calculation.
-        means (tuple): The means of deltas calculation. Default: ``(0.0, 0.0, 0.0, 0.0)`` .
-        stds (tuple): The standard deviations of deltas calculation. Default: ``(1.0, 1.0, 1.0, 1.0)`` .
-        wh_ratio_clip (float): The limit of width and height ratio for decoding box calculation. Default: ``0.016`` .
+        means (tuple, optional): The means of deltas calculation. Default: ``(0.0, 0.0, 0.0, 0.0)`` .
+        stds (tuple, optional): The standard deviations of deltas calculation. Default: ``(1.0, 1.0, 1.0, 1.0)`` .
+        wh_ratio_clip (float, optional): The limit of width and height ratio for decoding box calculation.
+            Default: ``0.016`` .
 
     Inputs:
         - **anchor_box** (Tensor) - Anchor boxes. The shape of `anchor_box` must be :math:`(n, 4)`.
@@ -371,13 +373,13 @@ class IOU(Primitive):
     r"""
     Calculates intersection over union for boxes.
 
-    Computes the intersection over union (IOU) or the intersection over foreground (IOF) based on the ground-truth and
+    Computes the intersection over union (IOU) or the intersection over foreground (IOF) based on the truth and
     predicted regions.
 
     Refer to :func:`mindspore.ops.iou` for more details.
 
     Args:
-        mode (string): The mode is used to specify the calculation method,
+        mode (str): The mode is used to specify the calculation method,
                        now supporting ``'iou'`` (intersection over union) or ``'iof'``
                        (intersection over foreground) mode. Default: ``'iou'`` .
 
@@ -385,7 +387,7 @@ class IOU(Primitive):
         - **anchor_boxes** (Tensor) - Anchor boxes, tensor of shape :math:`(N, 4)`.
           "N" indicates the number of anchor boxes,
           and the value "4" refers to "x0", "y0", "x1", and "y1". Data type must be float16 or float32.
-        - **gt_boxes** (Tensor) - Ground truth boxes, tensor of shape :math:`(M, 4)`. "M" indicates the number of ground
+        - **gt_boxes** (Tensor) - The truth boxes, tensor of shape :math:`(M, 4)`. "M" indicates the number of
           truth boxes, and the value "4" refers to "x0", "y0", "x1", and "y1". Data type must be float16 or float32.
 
     Outputs:
@@ -524,6 +526,57 @@ class Depend(Primitive):
         return value
 
 
+class MoveTo(Primitive):
+    r"""
+    Copy tensor to target device synchronously or asynchronously, default synchronously.
+
+    .. note::
+        This interface currently only supports Graph mode with jit_level of O0 or O1.
+
+    Args:
+        input (Union[Tensor, list[int], tuple[int]]): The input tensor. When the input is list and tuple, it will be
+                                                      converted to tensor before copying.
+        to (str, optional): Specify the target device, with optional values of ``"Ascend"`` and ``"CPU"``.
+                            Default ``"CPU"`` .
+        blocking (bool, optional): Whether use synchronous copying. Default ``True``.
+
+    Returns:
+        A new tensor on target device.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import nn, ops, Tensor
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
+        >>> class MoveToNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         self.move_to = ops.MoveTo()
+        ...
+        ...     def construct(self, x):
+        ...         cpu_x = self.move_to(x, "CPU")
+        ...         npu_x = self.move_to(cpu_x, "Ascend")
+        ...         return npu_x
+        ...
+        >>> net = MoveToNet()
+        >>> x = Tensor([1, 2, 3], mindspore.int64)
+        >>> y = net(x)
+        >>> print(y)
+        [1 2 3]
+    """
+    __mindspore_signature__ = (
+        sig.make_sig('input'),
+        sig.make_sig('to', default='CPU'),
+        sig.make_sig('blocking', default=True)
+    )
+
+    @prim_arg_register
+    def __init__(self):
+        pass
+
+
 class UpdateState(Primitive):
     """
     UpdateState is used for update side-effect state.
@@ -584,7 +637,7 @@ class StopGradient(Primitive):
         pass
 
 
-stop_gradient_ = StopGradient()
+stop_gradient_op = StopGradient()
 
 
 class ConfusionMatrix(PrimitiveWithInfer):
@@ -650,7 +703,7 @@ class Push(PrimitiveWithInfer):
     Pushes the inputs of the corresponding optimizer to parameter server.
 
     Args:
-        optim_type (string): The optimizer type. Default: ``'ApplyMomentum'`` .
+        optim_type (str): The optimizer type. Default: ``'ApplyMomentum'`` .
         only_shape_indices (list): The indices of input of which only shape
                                    will be pushed to parameter server. Default: ``None`` .
 

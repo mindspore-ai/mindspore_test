@@ -16,17 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/normal_float_tensor.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const FP32ImmPtr &mean_float, const BaseTensorPtr &std_tensor,
-                                                       const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr NormalFloatTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP32ImmPtr &mean_float,
+                                                   const TensorPtr &std_tensor, const TensorPtr &seed,
+                                                   const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalFloatTensor call start";
   OpRunner::InferOpOutput(op, mean_float, std_tensor, seed, offset);
   // ValueTuple to std::vector

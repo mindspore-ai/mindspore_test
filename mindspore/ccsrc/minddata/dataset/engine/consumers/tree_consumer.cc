@@ -28,12 +28,10 @@
 #include "minddata/dataset/engine/perf/info_collector.h"
 #include "minddata/dataset/engine/perf/profiling.h"
 #include "minddata/dataset/engine/tree_adapter.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/mindrecord/include/shard_header.h"
 #include "minddata/mindrecord/include/shard_index_generator.h"
 #include "minddata/mindrecord/include/shard_writer.h"
-#endif
 #ifdef WITH_BACKEND
 #include "utils/ms_context.h"
 #endif
@@ -70,13 +68,11 @@ Status TreeConsumer::Terminate() {
 
 Status IteratorConsumer::RegisterProfilingManager() {
   ExecutionTree *tree = nullptr;
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (tree_adapter_->tree_) {
 #endif
     tree = tree_adapter_->tree_.get();
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   } else {
     tree = tree_adapter_->receive_tree_.get();
   }
@@ -108,13 +104,11 @@ Status IteratorConsumer::RegisterProfilingManager() {
 
 Status ToDevice::RegisterProfilingManager() {
   ExecutionTree *tree = nullptr;
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (tree_adapter_->tree_) {
 #endif
     tree = tree_adapter_->tree_.get();
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   } else {
     tree = tree_adapter_->receive_tree_.get();
   }
@@ -428,13 +422,11 @@ Status TreeConsumer::Reset(int64_t step, const int64_t dataset_size) {
   MS_LOG(INFO) << "Resetting TreeConsumer";
 
   std::string unique_id = "";
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   if (tree_adapter_->tree_) {
 #endif
     unique_id = tree_adapter_->tree_->GetUniqueId();
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
   } else {
     unique_id = tree_adapter_->receive_tree_->GetUniqueId();
   }
@@ -465,7 +457,6 @@ Status TreeConsumer::Reset(int64_t step, const int64_t dataset_size) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // SaveToDisk
 Status SaveToDisk::ValidateParams() {
   if (dataset_path_.empty()) {
@@ -889,7 +880,6 @@ Status SaveToDisk::TransformTensor(const unsigned char *src, const TensorShape &
   }
   return Status::OK();
 }
-#endif
 
 Status BuildVocabConsumer::Init(const std::shared_ptr<DatasetNode> &root) { return tree_adapter_->Compile(root, 1); }
 

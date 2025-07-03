@@ -18,11 +18,12 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_hue_cpu {
 namespace {
 constexpr size_t kAdjustHueInputNum = 2;
 constexpr size_t kAdjustHueOutputNum = 1;
@@ -310,5 +311,6 @@ std::vector<KernelAttr> AdjustHueCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdjustHue, AdjustHueCpuKernelMod);
+}  // namespace adjust_hue_cpu
 }  // namespace kernel
 }  // namespace mindspore

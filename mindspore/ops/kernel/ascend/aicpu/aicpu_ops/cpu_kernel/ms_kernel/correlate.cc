@@ -268,7 +268,7 @@ uint32_t CorrelateCpuKernel::CorrelateComputeComplex(CpuKernelContext &ctx) {
   CUST_KERNEL_HANDLE_ERROR(ctx, CpuKernelUtils::ParallelFor(ctx, out_size, out_size / maxCoreNum, shardConv),
                            "Correlate Compute failed.");
   // step3: if a is shorter than v, then we should reverse the result
-  if (a_ge_v == false) {
+  if (!a_ge_v) {
     for (int i = 0; i < out_size / 2; i++) {
       std::swap(out_array[i], out_array[out_size - 1 - i]);
     }

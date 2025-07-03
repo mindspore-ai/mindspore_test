@@ -109,6 +109,7 @@ def run_llama_compile():
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
     task_trainer.config.parallel.parallel_optimizer_config.optimizer_weight_shard_size = 1
     task_trainer.config.runner_config.gradient_accumulation_steps = 1
+    ms.set_auto_parallel_context(pipeline_stages=8)
     task_trainer.set_parallel_config(data_parallel=1,
                                      model_parallel=4,
                                      context_parallel=1,

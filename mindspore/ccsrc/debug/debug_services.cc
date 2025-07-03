@@ -142,7 +142,7 @@ std::unique_ptr<ITensorSummary> GetSummaryPtr(const std::shared_ptr<TensorData> 
                                                    prev_num_elements);
     }
     default:
-      MS_LOG(INFO) << "Unsupported tensor type";
+      MS_VLOG(VL_DUMP) << "Unsupported tensor type";
       // return a null pointer
       return std::unique_ptr<TensorSummary<int32_t>>{};
   }
@@ -243,7 +243,7 @@ bool DebugServices::LoadNewTensor(const std::shared_ptr<TensorData> &tensor, boo
 }
 
 void DebugServices::ResetLoadedTensors() {
-  MS_LOG(INFO) << "Resetting loaded tensors";
+  MS_VLOG(VL_DUMP) << "Resetting loaded tensors";
   tensor_loader_->EmptyCurrentTensor();
 }
 

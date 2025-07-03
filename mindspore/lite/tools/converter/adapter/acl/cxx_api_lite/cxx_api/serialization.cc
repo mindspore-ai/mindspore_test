@@ -125,8 +125,8 @@ Status Serialization::Load(const void *model_data, size_t data_size, ModelType m
         }
       } else {
         size_t plain_data_size;
-        auto plain_data = mindspore::Decrypt(&plain_data_size, static_cast<const unsigned char *>(model_data),
-                                             data_size, dec_key.key, dec_key.len, CharToString(dec_mode));
+        auto plain_data = lite::Decrypt(&plain_data_size, static_cast<const unsigned char *>(model_data), data_size,
+                                        dec_key.key, dec_key.len, CharToString(dec_mode));
         if (plain_data == nullptr) {
           err_msg << "Load model failed. Please check the valid of dec_key and dec_mode or the file integrity.";
           MS_LOG(ERROR) << err_msg.str();

@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/concat.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/concat.h"
 
 #include <vector>
 #include "ir/scalar.h"
 #include "ir/value.h"
 #include "ir/tensor.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
@@ -30,7 +29,7 @@ namespace kernel {
 namespace pyboost {
 void ConcatCpuCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &tensors, const Int64ImmPtr &axis) {
   OpRunner::InferOpOutput(op, tensors, axis);
-  std::vector<tensor::BaseTensorPtr> tensors_vector = ConvertValueTupleToVector<tensor::BaseTensorPtr>(tensors);
+  std::vector<tensor::TensorPtr> tensors_vector = ConvertValueTupleToVector<tensor::TensorPtr>(tensors);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), tensors_vector);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

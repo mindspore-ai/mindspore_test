@@ -18,6 +18,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {
@@ -29,7 +30,7 @@ TypePtr CumminExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList CumminExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype(), kInt64};
 }

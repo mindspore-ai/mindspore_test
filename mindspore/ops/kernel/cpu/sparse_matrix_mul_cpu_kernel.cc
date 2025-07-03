@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_mul_cpu {
 namespace {
 constexpr size_t kInputNum = 6;
 constexpr size_t kOutputNum = 5;
@@ -159,5 +160,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseMatrixMulCpuKerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseMatrixMul, SparseMatrixMulCpuKernelMod);
+}  // namespace sparse_matrix_mul_cpu
 }  // namespace kernel
 }  // namespace mindspore

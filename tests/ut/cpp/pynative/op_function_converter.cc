@@ -19,9 +19,10 @@
 #include "common/mockcpp.h"
 #include "pynative/common.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_def.h"
-#include "pipeline/pynative/op_function/converter.h"
-#include "pipeline/pynative/pynative_utils.h"
+#include "pynative/op_function/converter.h"
+#include "pynative/pynative_utils.h"
 #include "ir/tensor.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pynative {
@@ -40,32 +41,9 @@ TEST_F(PyBoostConverterTest, ToTensorTest1) {
   converter.Parse(list);
 
   auto t = converter.ToTensor(list, kIndex0);
-  ASSERT_EQ(t, tensor_py.cast<TensorPtr>());
+  ASSERT_EQ(t, tensor::ConvertToTensor(tensor_py));
 }
 
-/// Feature: Test Pyboost Converter.
-/// Description: Test ToTensor for pyboost input converter.
-/// Expectation: Python Tensor to Tensor success.
-TEST_F(PyBoostConverterTest, ToTensorTest2) {
-  Converter converter(&ops::gSin);
-
-  auto tensor = std::make_shared<tensor::BaseTensor>(1);
-  auto stub_tensor = NewPyStubTensor(tensor);
-
-  py::list list;
-  list.append(stub_tensor);
-  converter.Parse(list);
-
-  auto t = converter.ToTensor(list, kIndex0);
-  ASSERT_NE(t, nullptr);
-  ASSERT_EQ(t->isa<stub::StubNode>(), true);
-
-  auto stub_node = t->cast<stub::StubNodePtr>();
-  ASSERT_EQ(stub_node->WaitValue(), tensor);
-}
-
-/// Feature: Test Pyboost Converter.
-/// Description: Test ToTensor for pyboost input converter.
 /// Expectation: Python float to Tensor success.
 TEST_F(PyBoostConverterTest, ToTensorTest3) {
   Converter converter(&ops::gAdd);

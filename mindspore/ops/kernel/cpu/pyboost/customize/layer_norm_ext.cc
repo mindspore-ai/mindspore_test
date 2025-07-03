@@ -14,18 +14,18 @@
  * limitations under the License.plugin/device/cpu/hal/device
  */
 
-#include "kernel/cpu/pyboost/customize/layer_norm_ext.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/layer_norm_ext.h"
 #include <memory>
 #include <functional>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LayerNormExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                              const ValueTuplePtr &normalized_shape, const std::optional<BaseTensorPtr> &weight_tensor,
-                              const std::optional<BaseTensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
+void LayerNormExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                              const ValueTuplePtr &normalized_shape, const std::optional<TensorPtr> &weight_tensor,
+                              const std::optional<TensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
   MS_LOG(DEBUG) << "Call start";
 
   OpRunner::InferOpOutput(op, input_tensor, normalized_shape, weight_tensor, bias_opt_tensor, eps);

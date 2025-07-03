@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,82 @@
 #include "pipeline/jit/ps/fallback.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace abstract {
 namespace {
+constexpr auto kDependInputAbs = "depend_input_abs";
+
+FuncGraphPtr GetAbstractFuncGraph(const abstract::AbstractFuncAtomPtr &abs) {
+  if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
+    auto abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+    return abstract_func_graph->func_graph();
+  }
+  if (abs->isa<abstract::PartialAbstractClosure>()) {
+    auto abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+    auto abstract_fn = abstract_partial_func->fn();
+    if (abstract_fn != nullptr && abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
+      auto abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+      return abstract_func_graph->func_graph();
+    }
+  }
+  return nullptr;
+}
+
+bool CheckPartialAbstractClosureInCache(const std::vector<AbstractBasePtrList> &args_vector) {
+  std::vector<FuncGraphPtr> func_graphs;
+  for (const auto &args : args_vector) {
+    MS_EXCEPTION_IF_NULL(args[0]);
+    if (!args[0]->isa<PartialAbstractClosure>()) {
+      return false;
+    }
+    auto fg = GetAbstractFuncGraph(dyn_cast<abstract::PartialAbstractClosure>(args[0]));
+    (void)func_graphs.emplace_back(fg);
+  }
+  if (func_graphs.empty()) {
+    return false;
+  }
+  // Check if func_graph is same in all cache.
+  for (size_t index = 1; index < func_graphs.size(); ++index) {
+    if (func_graphs[0] != func_graphs[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckAbstractFuncUnionInCache(const std::vector<AbstractBasePtrList> &args_vector) {
+  std::vector<FuncGraphPtr> func_graphs;
+  for (const auto &args : args_vector) {
+    MS_EXCEPTION_IF_NULL(args[0]);
+    if (!args[0]->isa<AbstractFuncUnion>()) {
+      return false;
+    }
+    auto func_list = dyn_cast<abstract::AbstractFuncUnion>(args[0])->func_list();
+    for (auto func : func_list) {
+      auto fg = GetAbstractFuncGraph(func);
+      if (fg != nullptr) {
+        (void)func_graphs.emplace_back(fg);
+      }
+    }
+  }
+  if (func_graphs.empty()) {
+    return false;
+  }
+  // Check if func_graph is same in all cache.
+  for (size_t index = 1; index < func_graphs.size(); ++index) {
+    if (func_graphs[0] != func_graphs[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   try {
     MS_EXCEPTION_IF_NULL(conf);
@@ -58,8 +130,28 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
   }
 }
 
+bool ExistInplaceAbsInSequence(const AbstractBasePtr &abs_base) {
+  if (abs_base->isa<abstract::AbstractTuple>() || abs_base->isa<abstract::AbstractList>()) {
+    const auto &tuple_elements = abs_base->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::any_of(tuple_elements.begin(), tuple_elements.end(), [](const auto &ele) {
+      if (ele->inplace_abstract() != nullptr) {
+        MS_LOG(DEBUG) << "Exist inplace_abstract in Sequence: " << ele->inplace_abstract()->ToString();
+        return true;
+      }
+      return false;
+    });
+  }
+  return false;
+}
+
 AnfNodePtr BuildValueNode(const ValuePtr &v, const AnfNodePtr &origin_node, const AbstractBasePtr &abs_base) {
   MS_EXCEPTION_IF_NULL(abs_base);
+  if (ExistInplaceAbsInSequence(abs_base)) {
+    MS_LOG(DEBUG)
+      << "Do not perform constant folding on sequences whose inputs contain inplace_abstract. The Sequence node is: "
+      << origin_node->DebugString();
+    return origin_node;
+  }
   AnfNodePtr value_node = NewValueNode(v);
   value_node->set_abstract(abs_base);
   value_node->set_debug_info(origin_node->debug_info());
@@ -375,6 +467,29 @@ AbstractFunctionPtr ProgramSpecializer::SpecializeAbstractFuncRecursively(const 
   return new_abs;
 }
 
+namespace {
+void UpdateInplaceAbstract(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &old_abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(old_abs);
+  // Update for inplace abstract.
+  if (old_abs->inplace_abstract() != nullptr) {
+    node->set_abstract(old_abs->inplace_abstract());
+  }
+  // Update for inplace abstract in a sequence.
+  auto sequence_abs = dyn_cast<abstract::AbstractSequence>(old_abs);
+  if (sequence_abs != nullptr) {
+    for (size_t i = 0; i < sequence_abs->elements().size(); ++i) {
+      const auto &item = sequence_abs->elements()[i];
+      MS_EXCEPTION_IF_NULL(item);
+      if (item->inplace_abstract() != nullptr) {
+        sequence_abs->SetElement(i, item->inplace_abstract());
+      }
+    }
+  }
+}
+}  // namespace
+
 void ProgramSpecializer::SpecializeFuncGraph() {
   MS_EXCEPTION_IF_NULL(manager_);
   const auto &all_nodes = manager_->all_nodes();
@@ -384,6 +499,9 @@ void ProgramSpecializer::SpecializeFuncGraph() {
     if (old_abs == nullptr) {
       continue;
     }
+    // Update for inplace abstract.
+    UpdateInplaceAbstract(node);
+
     if (!(old_abs->isa<FuncGraphAbstractClosure>() || old_abs->isa<MetaFuncGraphAbstractClosure>() ||
           old_abs->isa<AbstractFuncUnion>() || old_abs->isa<PartialAbstractClosure>())) {
       continue;
@@ -970,7 +1088,17 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
   }
 }
 
-bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input) {
+bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs) {
+  // If node_inplace is used by the view operator or the inplace operator,
+  // don't replace it because of the constant folding.
+  if (abs != nullptr) {
+    auto inplace_abs = abs->inplace_abstract();
+    if (inplace_abs != nullptr && !inplace_abs->isa<abstract::AbstractNone>()) {
+      MS_LOG(DEBUG) << "Do not replace. The node_input is used by view operator or inplace operator: "
+                    << node_input->DebugString();
+      return true;
+    }
+  }
   bool ignore_build_value = false;
   MS_EXCEPTION_IF_NULL(specializer_->engine());
   bool back_prop = false;
@@ -991,7 +1119,7 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input)
   // Recheck input
   auto cnode = node_input->cast<CNodePtr>();
   if (IsPrimitiveCNode(cnode, prim::kPrimStopGradient)) {
-    return GetIgnoreBuildValueFlag(cnode->input(1));
+    return GetIgnoreBuildValueFlag(cnode->input(1), cnode->input(1)->abstract());
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     auto inner_inputs = cnode->inputs();
@@ -1024,13 +1152,7 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   }
   const EvalResultPtr &conf_eval_result = GetEvalResult(conf);
   MS_EXCEPTION_IF_NULL(conf_eval_result);
-  if (conf_eval_result->abstract() != nullptr && conf_eval_result->abstract()->inplace_abstract() != nullptr) {
-    MS_LOG(DEBUG) << "Use inplace abstract, " << conf_eval_result->abstract()->inplace_abstract()->ToString();
-    new_node->set_abstract(conf_eval_result->abstract()->inplace_abstract());
-  } else {
-    new_node->set_abstract(conf_eval_result->abstract());
-  }
-
+  new_node->set_abstract(conf_eval_result->abstract());
   MS_EXCEPTION_IF_NULL(new_node->abstract());
 
   // Update PartialAbstractClosure's bound node.
@@ -1065,37 +1187,24 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     AnfNodeConfigPtr input_conf = MakeConfig(node_input);
     MS_EXCEPTION_IF_NULL(input_conf);
     const auto &eval_result = GetEvalResult(input_conf);
+    MS_EXCEPTION_IF_NULL(eval_result);
     const AbstractBasePtr &abs = eval_result->abstract();
-    // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
-    } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
-    }
-    bool ignore_build_value = GetIgnoreBuildValueFlag(node_input);
-    AnfNodePtr replace_node = nullptr;
-    if (!ignore_build_value) {
-      // First try to check if node_input can be replaced by a ValueNode. If cannot, then try to check if
-      // can be replaced by another CNode from anfnode_config_map, otherwise use the replicated node.
-      replace_node = BuildPossibleValueNode(node_input, real_abs, attrs, node);
-    }
-    if (replace_node == nullptr) {
-      replace_node = BuildReplacedNode(input_conf);
-      MS_EXCEPTION_IF_NULL(replace_node);
-      replace_node->set_abstract(real_abs);
-      MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
-                    << ", NodeConfig: " << input_conf->ToString() << ", result: " << real_abs.get() << "/"
-                    << real_abs->ToString();
-    } else {
-      MS_EXCEPTION_IF_NULL(real_abs);
-      MS_LOG(DEBUG) << "Build possible value node for node: " << node_input->DebugString()
-                    << ", real_abs: " << real_abs->ToString() << ", replace_node: " << replace_node->DebugString();
-    }
+    AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
+    replace_node->set_abstract(abs);
+    MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
+                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/" << abs->ToString();
+    if (!GetIgnoreBuildValueFlag(replace_node, abs)) {
+      auto replace_value_node = BuildPossibleValueNode(replace_node, abs, attrs, node);
+      if (replace_value_node != nullptr) {
+        MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
+                      << ", real_abs: " << abs->ToString()
+                      << ", replaced value node: " << replace_value_node->DebugString();
+        replace_node = replace_value_node;
+      }
+    }
     if (enable_eliminate_unused_element) {
-      UpdateSequenceNode(replace_node, node_input, real_abs);
+      UpdateSequenceNode(replace_node, node_input, abs);
     }
     if (new_inputs[i].lock() != replace_node) {
       new_node->func_graph()->AddOwnNode(replace_node);
@@ -1284,7 +1393,7 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNodeInner(const CNodePtr &cnode
     context = context->parent();
   }
   auto fg_spec = specializer_->GetFuncGraphSpecializer(context);
-  // If func graph specializer dose not exist before, make a new specializer and push to stack, and return nullptr.
+  // If func graph specializer does not exist before, make a new specializer and push to stack, and return nullptr.
   if (fg_spec == nullptr) {
     fg_spec = specializer_->NewFuncGraphSpecializer(context, context->func_graph());
     specializer_->PushFuncGraphTodoItem(fg_spec);
@@ -1442,6 +1551,14 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
     real->SetValue(joined_args, joined_eval_result);
     eval_cache_[eval] = real;
     return std::make_pair(joined_args, joined_eval_result->abstract());
+  }
+
+  bool choose_first_cache_in_partial_cache = CheckPartialAbstractClosureInCache(args_vector);
+  bool choose_first_cache_in_func_union_cache = CheckAbstractFuncUnionInCache(args_vector);
+  if (choose_first_cache_in_partial_cache || choose_first_cache_in_func_union_cache) {
+    const auto eval_result = origin_eval_cache.get(args_vector[0]);
+    MS_EXCEPTION_IF_NULL(eval_result);
+    return std::make_pair(args_vector[0], eval_result->abstract());
   }
 
   std::unordered_set<AbstractBasePtrList, AbstractBasePtrListHasher, AbstractBasePtrListEqual> choices;
@@ -1968,20 +2085,20 @@ AnfNodePtr FuncGraphSpecializer::BuildValueNodeForAbstractFunction(const AnfNode
   return nullptr;
 }
 
-AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin_node, const AbstractBasePtr &ival,
+AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin_node, const AbstractBasePtr &abstract,
                                                         const AttrValueMapPtr &attrs, const AnfNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(origin_node);
-  MS_EXCEPTION_IF_NULL(ival);
+  MS_EXCEPTION_IF_NULL(abstract);
 
-  AbstractFunctionPtr abs = dyn_cast<AbstractFunction>(ival);
-  if (abs != nullptr) {
+  AbstractFunctionPtr abstract_func = dyn_cast<AbstractFunction>(abstract);
+  if (abstract_func != nullptr) {
     // Cannot build a deterministic ValueNode if there are multiple possible AbstractFunction.
-    if (abs->isa<AbstractFuncUnion>()) {
+    if (abstract_func->isa<AbstractFuncUnion>()) {
       return nullptr;
     }
-    return BuildValueNodeForAbstractFunction(origin_node, ival, attrs, cnode, abs);
+    return BuildValueNodeForAbstractFunction(origin_node, abstract, attrs, cnode, abstract_func);
   } else {
-    ValuePtr val = ival->BuildValue();
+    ValuePtr val = abstract->BuildValue();
     if (val->ContainsValueAny()) {
       return nullptr;
     }
@@ -2001,7 +2118,7 @@ AnfNodePtr FuncGraphSpecializer::BuildPossibleValueNode(const AnfNodePtr &origin
     if (IsPrimitiveCNode(origin_node, prim::kPrimPyExecute)) {
       return nullptr;
     }
-    return BuildValueNode(val, origin_node, ival);
+    return BuildValueNode(val, origin_node, abstract);
   }
 }
 

@@ -19,6 +19,7 @@
 #include "op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {
@@ -46,8 +47,8 @@ TypePtr L1LossExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList L1LossExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  auto input_type = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>()->Dtype();
-  auto target_type = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>()->Dtype();
+  auto input_type = input_values[kInputIndex0]->cast<tensor::TensorPtr>()->Dtype();
+  auto target_type = input_values[kInputIndex1]->cast<tensor::TensorPtr>()->Dtype();
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);
   return {PromoteType(input_type, target_type, primitive->name())};

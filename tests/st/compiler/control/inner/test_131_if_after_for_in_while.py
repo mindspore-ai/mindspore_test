@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_for_in_while():
     """
     Feature: Control flow
@@ -61,17 +60,14 @@ def test_if_after_for_in_while():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        if_after_for_in_while_net = IfAfterForInWhileNet()
-        net = GradNet(if_after_for_in_while_net)
+    if_after_for_in_while_net = IfAfterForInWhileNet()
+    net = GradNet(if_after_for_in_while_net)
 
-        forward_net = IfAfterForInWhileNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
+    forward_net = IfAfterForInWhileNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
 
-        expect_forward_res = Tensor([-463], mstype.int32)
-        expect_backward_res = (Tensor([1], mstype.int32),)
-        assert graph_forward_res == expect_forward_res
-        assert graph_backward_res == expect_backward_res
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    expect_forward_res = Tensor([-463], mstype.int32)
+    expect_backward_res = (Tensor([1], mstype.int32),)
+    assert graph_forward_res == expect_forward_res
+    assert graph_backward_res == expect_backward_res

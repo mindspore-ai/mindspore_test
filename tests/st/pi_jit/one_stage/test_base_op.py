@@ -13,32 +13,45 @@
 # limitations under the License.
 # ============================================================================
 """Test basic operation with one stage"""
-import sys
+import os
 import pytest
+import types
 import numpy as np
+import mindspore
 import mindspore.nn as nn
 from mindspore import ops
 from mindspore import Tensor, Parameter
 from mindspore import context
 from mindspore.common import dtype
+from mindspore.common import mutable
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
+from tests.st.pi_jit.share.utils import pi_jit_with_config, assert_equal
+from mindspore._c_expression import TensorPy as CppTensor
+from tests.st.pi_jit.share.utils import assert_graph_compile_status
 
 cfg = {
-    "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
-    "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
+def assert_executed_by_graph_mode(func):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
+    if 'phase_' in jcr['code']:
+        assert len(jcr['code']['phase_']) > 0
+    else:
+        checked = False
+        for item in jcr['code']['compiled_code_'].co_consts:
+            if isinstance(item, types.CodeType):
+                j = get_code_extra(item)
+                assert len(j['code']['phase_']) > 0
+                checked = True
+                break
+        assert checked
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_make_tuple():
@@ -54,7 +67,7 @@ def test_make_tuple():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
@@ -78,7 +91,7 @@ def test_make_list():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -103,7 +116,7 @@ def test_return_add_result_tuple():
     net = Net()
     a = (1, 2, 3)
     b = (4, 5, 6)
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a, b)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2, 3, 4, 5, 6)
@@ -124,7 +137,7 @@ def test_return_add_result_list():
     net = Net()
     a = [1, 2, 3]
     b = [4, 5, 6]
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a, b)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == [1, 2, 3, 4, 5, 6]
@@ -148,7 +161,7 @@ def test_empty_tuple_input():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, ())
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, ())
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -172,7 +185,7 @@ def test_empty_list_input():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, [])
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, [])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -196,7 +209,7 @@ def test_empty_dict_input():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, {})
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, {})
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -217,7 +230,7 @@ def test_tuple_slice():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
@@ -241,7 +254,7 @@ def test_list_slice():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -265,7 +278,7 @@ def test_list_slice_with_default_parameter():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -289,7 +302,7 @@ def test_list_slice_with_default_parameter_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -314,7 +327,7 @@ def test_list_slice_with_default_parameter_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -322,6 +335,48 @@ def test_list_slice_with_default_parameter_3():
     assert ret[0] == Tensor([1])
     assert ret[1] == Tensor([2])
     assert ret[2] == Tensor([3])
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_variable_number_in_container():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            return x.shape
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
+    assert ret == (-1, 12)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_variable_number_in_container_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            a = x.shape[0]
+            b = {"1": a}
+            return b["1"]
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
+    assert ret == -1
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -339,7 +394,7 @@ def test_make_dict():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
@@ -361,7 +416,7 @@ def test_make_dict_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
@@ -382,7 +437,7 @@ def test_make_dict_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([2])
@@ -403,7 +458,7 @@ def test_tuple_input():
     net = Net()
     a = (1.0, 2.0, 3.0)
     b = Tensor(np.ones([2, 3]).astype(np.float32))
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -425,7 +480,7 @@ def test_list_input():
     net = Net()
     a = [1.0, 2.0, 3.0]
     b = Tensor(np.ones([2, 3]).astype(np.float32))
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -447,7 +502,7 @@ def test_handle_constant():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     m = (1, 2)
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, m)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, m)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2)
@@ -468,7 +523,7 @@ def test_handle_constant_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     m = [1, 2]
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, m)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, m)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2)
@@ -487,7 +542,7 @@ def test_handle_mutable_kwargs_args():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, 1, 10, 100, s=1000)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, 1, 10, 100, s=1000)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == 1012
@@ -506,13 +561,12 @@ def test_handle_mutable_kwargs_args_2():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, 1, 10, 100, s=1000)
+    ret = pi_jit_with_config(Net.construct, jit_config=cfg)(net, 1, 10, 100, s=1000)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == 12
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable():
     """
@@ -521,7 +575,7 @@ def test_use_free_variable():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config={"loop_unrolling": True, "compile_by_trace": True})
+        @pi_jit_with_config(jit_config={"loop_unrolling": True})
         def construct(self, x):
             mod = 2
             return any(i % mod == 0 for i in x)
@@ -538,7 +592,6 @@ def test_use_free_variable():
     assert jcr["break_count_"] == 0
 
 
-@pytest.mark.skip(reason="When disable loop_unrolling, check guard failed.")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_use_free_variable_2():
     """
@@ -547,7 +600,7 @@ def test_use_free_variable_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config={"compile_by_trace": True})
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             mod = 2
             return any(i % mod == 0 for i in x)
@@ -572,7 +625,7 @@ def test_guard_for_getattr():
             super(Net, self).__init__()
             self.a = 1
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x):
             return self.a + x
 
@@ -601,7 +654,7 @@ def test_guard_for_getattr_2():
             super(Net, self).__init__()
             self.a = 1
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x):
             return self.a + x
 
@@ -619,6 +672,31 @@ def test_guard_for_getattr_2():
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_env_get():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    os.environ["abc"] = "1"
+
+    @pi_jit_with_config(jit_config=cfg)
+    def foo(x):
+        ret = os.environ.get("abc")
+        return ret, x + 1
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    ret = foo(Tensor([1, 2, 3]))
+    assert isinstance(ret, tuple)
+    assert ret[0] == "1"
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cycle_container_structure():
     """
     Feature: One stage basic operation.
@@ -626,7 +704,7 @@ def test_cycle_container_structure():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x):
             return x
 
@@ -646,7 +724,7 @@ def test_cycle_container_structure_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x):
             return x
 
@@ -666,7 +744,7 @@ def test_cycle_container_structure_3():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x):
             return x
 
@@ -694,7 +772,7 @@ def test_guard_parameter():
             super(Net, self).__init__()
             self.w = Parameter(Tensor(np.random.rand(2, 2), dtype.float32), name='w')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return self.w * x
 
@@ -720,7 +798,7 @@ def test_dict_items_call_in_control_flow():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y, z):
             m = {"1": x + z, "2": y - z}
             ret = 0
@@ -745,7 +823,7 @@ def test_tensor_method_by_ast():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return x.view((2, 2))
 
@@ -765,7 +843,7 @@ def test_tensor_method_by_ast_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return x.var()
 
@@ -785,7 +863,7 @@ def test_tensor_method_by_ast_3():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return x.get("1")
 
@@ -805,7 +883,7 @@ def test_tensor_method_by_ast_4():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return x.contiguous()
 
@@ -825,7 +903,7 @@ def test_function_parse_by_ast():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             return ops.split(x, [3, ])
 
@@ -833,6 +911,46 @@ def test_function_parse_by_ast():
     a = Tensor(np.ones((3, 128, 352, 224)))
     net = Net()
     net(a)
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_parse_by_ast_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return ops.full_like(x, 1, dtype=mindspore.float32)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([[1, 2], [3, 4]])
+    net = Net()
+    net(a)
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_parse_by_ast_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x, axis):
+            return x.permute(*axis)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]], mindspore.float32)
+    axis = (0, 2, 1)
+    net = Net()
+    net(a, axis)
     jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
 
@@ -845,7 +963,7 @@ def test_constant_flod_for_variable():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             if all(x > y):
                 out = x + y
@@ -859,3 +977,723 @@ def test_constant_flod_for_variable():
     net = Net()
     ret = net(a, b)
     assert np.all(ret.asnumpy() == np.array([4, 6, 8]))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.a = 1
+
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            self.a = self.a + 1
+            return self.a + x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    m = Tensor([1, 2, 3])
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([3, 4, 5]))
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.a = 1
+            self.b = Parameter(Tensor([1, 1, 1]), name='b')
+
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            b = self.b
+            self.a = self.a + 1
+            return b + self.a + x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    m = Tensor([1, 2, 3])
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.a = 1
+            self.b = Parameter(Tensor([1, 1, 1]), name='b')
+
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            b = self.b
+            self.a = self.a + 1
+            return b + self.a + x
+
+    m = Parameter(Tensor([1, 2, 3]), name='m')
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
+    assert_graph_compile_status(Net.construct.__wrapped__, 0)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_4():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.a + x
+
+    net = Net()
+    for i in range(10):
+        net.a = i
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + i == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_attr_as_inputs_5():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.x = 1
+
+        def construct(self, x: Tensor) -> Tensor:
+            self.x = self.x + 2
+            return self.x + x
+
+    pynative_model = Model()
+    pijit_model = Model()
+    pijit_model.construct = jit(pijit_model.construct, capture_mode='bytecode')
+
+    pynative_outputs = []
+    pijit_outputs = []
+    for i in range(10):
+        x = Tensor([i])
+        y = pynative_model(x)
+        pynative_outputs.append(y)
+    for i in range(10):
+        x = Tensor([i])
+        y = pijit_model(x)
+        pijit_outputs.append(y)
+
+    assert_equal(pynative_model.x, pijit_model.x)
+    assert_equal(pynative_outputs, pijit_outputs)
+    assert_graph_compile_status(pijit_model.construct, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_6():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = [Tensor([99]), Tensor([61]), Tensor([32])]
+    for i in range(10):
+        net.x = cond[i % 3]
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + net.x == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 9, 2)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_7():
+    """
+    Feature: Dynamic attribute support.
+    Description: Test dynamic type.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = [Tensor([-1]), 1, 2.2, np.float16(3.3)]
+    for i in cond:
+        net.x = i
+        x = Tensor(np.random.rand(1))
+        y = net(x)
+        assert (net.x + x) == y
+
+    assert_graph_compile_status(Net.construct, 0, 1, 4)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_8():
+    """
+    Feature: Dynamic attribute support.
+    Description: Test dynamic shape.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @pi_jit_with_config(jit_config={"_symbolic": 1})
+        def construct(self, x):
+            return self.x + x
+
+    net = Net()
+    cond = []
+    for i in range(1, 16):
+        cond.append(Tensor(np.resize(np.array([i], np.float32).repeat(i), (i, 1))))
+    for i in cond:
+        net.x = i
+        x = Tensor(np.random.rand(4))
+        y = net(x)
+        assert ((net.x + x) == y).all()
+
+    assert_graph_compile_status(Net.construct, 0, 8, 8)
+
+    # validate dynamic shape check
+    i = Tensor(np.random.rand(4,4), dtype=mindspore.float32)
+    net.x = i
+    y = net(x)
+    assert ((net.x + x) == y).all()
+    assert_graph_compile_status(Net.construct, 0, 1, 9)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_symbolic_input_1():
+    """
+    Feature: Dynamic scalar mutable.
+    Description: Test scalar input mutable.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x, y):
+            return x + y
+
+    net = Net()
+    for x in range(10):
+        y = Tensor(np.random.rand(1))
+        z = net(x, y)
+        assert x + y == z
+
+    assert_graph_compile_status(Net.construct, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_symbolic_input_2():
+    """
+    Feature: Dynamic shape input.
+    Description: Test dynamic shape tensor as input.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @pi_jit_with_config(jit_config={"_symbolic": 1})
+        def construct(self, x):
+            return x + x
+
+    net = Net()
+    cond = []
+    for i in range(1, 16):
+        cond.append(Tensor(np.resize(np.array([i], np.float32).repeat(i), (i, 1))))
+    for x in cond:
+        y = net(x)
+        assert ((x + x) == y).all()
+
+    assert_graph_compile_status(Net.construct, 0, 9, 7)
+
+    # validate dynamic shape check
+    x = Tensor(np.random.rand(4,4), dtype=mindspore.float32)
+    y = net(x)
+    assert ((x + x) == y).all()
+    assert_graph_compile_status(Net.construct, 0, 1, 8)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_config():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @pi_jit_with_config(jit_config={"_symbolic": 2})
+        def construct(self, x):
+            return self.a + x
+
+    net = Net()
+    for i in range(100, 110):
+        net.a = i
+        x = Tensor(np.random.rand(4,4))
+        y = net(x)
+        assert np.all((x + i == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 6, 5)
+
+
+@pytest.mark.skip
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_global_as_inputs_1():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    global magic
+
+    class Net(nn.Cell):
+        @jit(capture_mode="bytecode")
+        def construct(self, x):
+            return magic + x
+
+    net = Net()
+    x = Tensor(np.random.rand(4,4))
+    for _ in range(10):
+        magic = np.random.randint(0, 10e7)
+        y = net(x)
+        assert np.all((magic + x == y).asnumpy())
+
+    assert_graph_compile_status(Net.construct.__wrapped__, 0, 8, 3)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y, y
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b
+
+    input_x = Tensor([1, 2, 3])
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([4, 5, 6]))
+    assert ret[1] == 3
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y, y
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b
+
+    input_x = mutable(1)
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 4
+    assert ret[1] == 3
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return {"1": x + y, "2": y}
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b, x + 1
+
+    input_x = mutable(1)
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 3
+    assert ret[0] == "1"
+    assert ret[1] == "2"
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = [[], []]
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = [([], []), []]
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = {"1": [], "2": ()}
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_subgraph_with_primitive_output():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    add_func = ops.Add()
+    add_func.ref = add_func
+
+    def cal_func():
+        return add_func.ref
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x):
+        return cal_func()(x, x)
+
+    a = Tensor([1, 2, 3])
+    ret = foo(a)
+    assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_subgraph_with_primitive_output_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    add_func = ops.Add()
+
+    def cal_func():
+        return add_func
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x):
+        return cal_func()(x, x)
+
+    a = Tensor([1, 2, 3])
+    ret = foo(a)
+    assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(x, y):
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        return cal_func(x, y)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(*vargs):
+        x = vargs[0]
+        y = vargs[1]
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        return cal_func(x, y)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(**kwargs):
+        x = kwargs["x"]
+        y = kwargs["y"]
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return cal_func(y=n, x=m)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_4():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(m, n)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_5():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, *vargs):
+            x = vargs[0]
+            y = vargs[1]
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(m, n)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_6():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, **kwargs):
+            x = kwargs["x"]
+            y = kwargs["y"]
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(y=n, x=m)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    assert_executed_by_graph_mode(foo)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_sync_constant_stub_tensor():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            a = Tensor([1])
+            b = Tensor([2])
+            self.stub_tensor_attr = ops.add(a, b)
+
+        @pi_jit_with_config(jit_config={"compile_with_try": False})
+        def construct(self, x):
+            if self.stub_tensor_attr == 0:
+                return x + 1
+            return x - 1
+
+    net = Net()
+    input_x = Tensor([1, 2, 3])
+    ret = net(input_x)
+    assert np.all(ret.asnumpy() == np.array([0, 1, 2]))
+    assert_executed_by_graph_mode(net.construct)
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_for_variable_tensor():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y
+
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
+    def foo(x, y):
+        m, n = inner(x, y)
+        return m, n
+
+    a = Tensor([1, 1])
+    b = Tensor([2, 3])
+    ret = foo(a, b)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([3]))
+    assert np.all(ret[1].asnumpy() == np.array([4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0

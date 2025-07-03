@@ -20,12 +20,13 @@
 #include <type_traits>
 #include <functional>
 #include "mindspore/ops/infer/hamming_window.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/arithmetic_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hamming_window_cpu {
 namespace {
 const size_t kHammingWindowOutputNum = 1;
 const size_t kHammingWindowInputNum = 1;
@@ -135,5 +136,6 @@ std::vector<KernelAttr> HammingWindowCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HammingWindow, HammingWindowCpuKernelMod);
+}  // namespace hamming_window_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -132,7 +132,7 @@ Status RandomNode::GetDatasetSize(const std::shared_ptr<DatasetSizeGetter> &size
 // That is why we setup the sampler for a leaf node that does not use sampling.
 Status RandomNode::SetupSamplerForCache(std::shared_ptr<SamplerObj> *sampler) {
   // RandomOp doesn't support sampler, should not support sharding, select sampler should just be sequential.
-  *sampler = SelectSampler(total_rows_, false, 1, 0);
+  *sampler = SelectSampler(total_rows_, dataset::ShuffleMode::kFalse, 1, 0);
   return Status::OK();
 }
 

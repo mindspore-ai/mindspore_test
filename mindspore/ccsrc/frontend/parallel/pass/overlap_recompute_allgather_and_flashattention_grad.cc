@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,16 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -189,18 +199,19 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
   if (soc_version != "ascend910" && soc_version != "ascend910b" && soc_version != "ascend910_93") {
     return;
   }
+  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD);
+  if (!is_enable) {
+    return;
+  }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   if (!cell_reuse) {
     MS_LOG(WARNING)
       << "Currently, duplicated allgather overlap with flashattention grad only support in lazy_line mode.";
     return;
   }
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD);
-  if (!is_enable) {
-    return;
-  }
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   for (const auto &each_graph : manager->func_graphs()) {
     if (IsCellReuseForwardGraph(each_graph)) {
       auto forward_graph = each_graph;
@@ -215,6 +226,8 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
       AddDependForRecomputedAllGatherAndGradientReduceScatter(backward_graph);
     }
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapRecomputeAllGatherAndFlashAttentionGrad",
+                                             "recompute_allgather_overlap_fagrad");
 }
 }  // namespace parallel
 }  // namespace mindspore

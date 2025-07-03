@@ -19,6 +19,7 @@
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 nvinfer1::ITensor *StrideSliceTensorRT::GetDynamicAxisSliceStart(TensorRTContext *ctx, nvinfer1::ITensor *input,

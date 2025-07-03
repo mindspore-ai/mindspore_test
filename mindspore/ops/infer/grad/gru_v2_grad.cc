@@ -24,6 +24,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace ops {
@@ -89,8 +90,6 @@ class GruGradInfer : public abstract::OpInferBase {
   const int64_t kNumber2 = 2;
   const int64_t kNumber3 = 3;
   const size_t kShapeSize = 3;
-  const int kIndex0 = 0;
-  const int kIndex2 = 2;
   const int kHxIdx = 1;
   const int kYIdx = 4;
   const int kDyIdx = 6;

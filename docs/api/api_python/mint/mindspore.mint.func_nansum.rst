@@ -1,7 +1,7 @@
 mindspore.mint.nansum
 =====================
 
-.. py:function:: mindspore.mint.nansum(input, dim=None, keepdim=False, *, dtype=None)
+.. py:function:: mindspore.mint.nansum(input, dim=None, keepdim=False, *, dtype=None) -> Tensor
 
     计算 `input` 指定维度元素的和，将非数字(NaNs)处理为零。
 

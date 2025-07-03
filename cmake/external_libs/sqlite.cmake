@@ -37,6 +37,8 @@ else()
         LIBS sqlite3
         URL ${REQ_URL}
         SHA256 ${SHA256}
+        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2025-29088.patch
+        PATCHES ${CMAKE_SOURCE_DIR}/third_party/patch/sqlite/CVE-2025-3277.patch
         CONFIGURE_COMMAND ./configure --enable-shared=no --disable-tcl --disable-editline --enable-json1)
 endif()
 

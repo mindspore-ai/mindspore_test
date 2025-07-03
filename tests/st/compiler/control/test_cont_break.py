@@ -14,7 +14,7 @@
 # ============================================================================
 """ test_cont_break """
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 from mindspore import Tensor, Model, context
 from mindspore.nn import Cell
@@ -129,8 +129,7 @@ class PassBranch(Cell):
         return x
 
 
-@case_register.level0
-@case_register.target_cpu
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cont_break():
     """
     Feature: Control flow

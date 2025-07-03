@@ -42,7 +42,8 @@ constexpr int SENDMSG_DROPED = -1;
 constexpr size_t MAX_KMSG_FROM_LEN = 1024;
 constexpr size_t MAX_KMSG_TO_LEN = 1024;
 constexpr size_t MAX_KMSG_NAME_LEN = 1024;
-constexpr size_t MAX_KMSG_BODY_LEN = 1073741824;
+// MAX_KMSG_BODY_LEN=2GB-4k, Protobuf limits 2G size and reserves 4k for message headers.
+constexpr size_t MAX_KMSG_BODY_LEN = 2147479552;
 
 enum ParseType { kTcpMsg = 1, kHttpReq, kHttpRsp, kUnknown };
 enum State { kMsgHeader, kBody };

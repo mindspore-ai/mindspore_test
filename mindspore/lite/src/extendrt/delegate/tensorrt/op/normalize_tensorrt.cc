@@ -20,6 +20,7 @@
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/op/normalize_opt_plugin.h"
 #include "infer/cxx_api/layer_norm_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore::lite {
 int NormalizeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

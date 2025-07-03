@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace eye {
 
 class EyeAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class EyeAscend : public AclnnKernelMod {
   int64_t m_col = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace eye
 }  // namespace kernel
 }  // namespace mindspore
 

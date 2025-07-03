@@ -31,11 +31,11 @@ class CtrlFactory():
             ps_net.set_inputs(*self.dyn)
             pi_net.set_inputs(*self.dyn)
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=ps_net.construct, mode="PSJit")
+        jit(function=ps_net.construct, capture_mode="ast")
         grad_net = ForwardValueAndGrad(ps_net, get_all=True)
         ps_out, ps_grad = grad_net(*self.ms_input)
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=pi_net.construct, mode="PIJit")
+        jit(function=pi_net.construct, capture_mode="bytecode")
         grad_net = ForwardValueAndGrad(pi_net, get_all=True)
         pi_out, pi_grad = grad_net(*self.ms_input)
 

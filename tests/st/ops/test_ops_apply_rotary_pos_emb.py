@@ -17,7 +17,7 @@ import pytest
 import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import context
-from mindspore import jit, JitConfig
+from mindspore import jit
 from mindspore.ops.auto_generate import apply_rotary_pos_emb_
 from tests.st.utils import test_utils
 
@@ -72,11 +72,11 @@ def test_apply_rotary_pos_emb_case0(mode):
         query_ms, key_ms = apply_rotary_pos_emb_(query, key, cos, sin, batch_valid_length, cos_format=1)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        query_ms, key_ms = (jit(apply_rotary_pos_emb_, jit_config=JitConfig(jit_level="O0")))\
+        query_ms, key_ms = (jit(apply_rotary_pos_emb_, jit_level="O0"))\
             (query, key, cos, sin, batch_valid_length, cos_format=1)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        query_ms, key_ms = (jit(apply_rotary_pos_emb_, jit_config=JitConfig(jit_level="O2")))\
+        query_ms, key_ms = (jit(apply_rotary_pos_emb_, backend="GE"))\
             (query, key, cos, sin, batch_valid_length, cos_format=1)
 
     np.testing.assert_allclose(query_ms.asnumpy(), query_exec, rtol=1e-3)

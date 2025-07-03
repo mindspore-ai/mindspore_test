@@ -24,12 +24,13 @@
 #include <utility>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_exp_cpu {
 template <typename T>
 using MatrixXd = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
@@ -71,6 +72,7 @@ class MatrixExpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   std::vector<size_t> input_shape_{};
   TypeId data_type_;
 };
+}  // namespace matrix_exp_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_EXP_CPU_KERNEL_H_

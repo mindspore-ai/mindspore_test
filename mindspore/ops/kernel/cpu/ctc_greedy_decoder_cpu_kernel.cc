@@ -29,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace ctc_greedy_decoder_cpu {
 namespace {
 constexpr size_t kInputNum = 2;
 constexpr size_t kOutputNum = 4;
@@ -212,5 +213,6 @@ const std::vector<ctcGreedyDecoderPair> &CTCGreedyDecoderCpuKernelMod::GetFuncLi
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CTCGreedyDecoder, CTCGreedyDecoderCpuKernelMod);
+}  // namespace ctc_greedy_decoder_cpu
 }  // namespace kernel
 }  // namespace mindspore

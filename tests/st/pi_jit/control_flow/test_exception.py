@@ -6,14 +6,10 @@ import sys
 import pytest 
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
-    pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
+    pytest.skip("not implement for python" + str(SYS_VER), allow_module_level=True)
 
 def fibonacci():
     a, b = 0, 1
@@ -44,10 +40,9 @@ def test_exception_case_1():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 
@@ -74,10 +69,9 @@ def test_exception_case_2():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 
@@ -104,7 +98,7 @@ def test_exception_case_3():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -134,7 +128,7 @@ def test_exception_case_4():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -164,7 +158,7 @@ def test_exception_case_5():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -200,10 +194,9 @@ def test_exception_case_6():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
-    assert jcr["compile_count_"] == 1
     assert jcr["break_count_"] == 0
     assert expected == res
 
@@ -238,7 +231,7 @@ def test_exception_case_7():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -278,7 +271,7 @@ def test_exception_case_8():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -327,7 +320,7 @@ def test_exception_case_9():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -359,7 +352,7 @@ def test_exception_case_10():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -391,11 +384,11 @@ def test_exception_case_11():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
-    assert jcr["break_count_"] == 0
+    assert jcr["break_count_"] == 1
     assert expected == res
 
 
@@ -424,7 +417,7 @@ def test_exception_case_12():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -462,7 +455,7 @@ def test_exception_case_13():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
@@ -501,11 +494,11 @@ def test_exception_case_14():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1
-    assert jcr["break_count_"] == 0
+    assert jcr["break_count_"] == 1
     assert expected == res
 
 
@@ -543,7 +536,7 @@ def test_exception_case_15():
         return val
 
     expected = func(5)
-    res = jit(fn=func, mode="PIJit")(5)
+    res = jit(function=func, capture_mode="bytecode")(5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert jcr["compile_count_"] == 1

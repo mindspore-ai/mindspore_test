@@ -119,3 +119,24 @@ def test_ops_slice_scatter_neg_end(mode):
                        [37., 38., 39.],
                        [15., 16., 17.]]]]
     assert np.allclose(output.asnumpy(), expect_output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_ops_slice_scatter_neg_start(mode):
+    """
+    Feature: ops.slice_scatter
+    Description: Verify the result of slice_scatter with neg start.
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    x = ms.ops.zeros((4, 6), dtype=ms.int32)
+    y = ms.ops.ones((4, 3), dtype=ms.int32)
+    net = Net(1, -6, 5, 2)
+    output = net(x, y)
+    expect_output = [[1, 0, 1, 0, 1, 0],
+                     [1, 0, 1, 0, 1, 0],
+                     [1, 0, 1, 0, 1, 0],
+                     [1, 0, 1, 0, 1, 0]]
+
+    assert np.allclose(output.asnumpy(), expect_output)

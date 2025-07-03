@@ -36,7 +36,7 @@ struct CommunicationOpInfo {
   std::string group_name;
 };
 
-class BACKEND_EXPORT CommunicationOpFusion : public Pass {
+class BACKEND_COMMON_EXPORT CommunicationOpFusion : public Pass {
  public:
   explicit CommunicationOpFusion(const std::string &name, std::string op_name, size_t groups = 1)
       : Pass(name), op_name_(std::move(op_name)), groups_(groups) {}

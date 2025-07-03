@@ -222,7 +222,7 @@ class FuncGraphSpecializer : public std::enable_shared_from_this<FuncGraphSpecia
   // Try to build unique argvals from the broaded arg vals if it is unique.
   std::pair<AbstractBasePtrList, AbstractBasePtr> BuildFromBroadedArgs(const EvaluatorPtr &eval);
   void UpdateNewCNodeInputs(const AnfNodePtr &node, const AnfNodePtr &new_node);
-  bool GetIgnoreBuildValueFlag(const AnfNodePtr &node_input);
+  bool GetIgnoreBuildValueFlag(const AnfNodePtr &node_input, const AbstractBasePtr &abs);
 };
 using FuncGraphSpecializerPtr = std::shared_ptr<FuncGraphSpecializer>;
 }  // namespace abstract

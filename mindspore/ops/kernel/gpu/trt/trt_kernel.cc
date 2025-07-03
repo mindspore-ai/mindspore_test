@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "kernel/gpu/data/dataset_utils.h"
 #include "kernel/gpu/trt/trt_utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/device/gpu/hal/device/trt_loader.h"
 
 namespace mindspore {

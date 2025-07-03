@@ -30,7 +30,7 @@
  */
 ACL_FUNC_VISIBILITY aclError aclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count,
                                          aclrtMemcpyKind kind) {
-  return ACL_ERROR_NONE;
+  return ACL_SUCCESS;
 }
 
 /**
@@ -60,7 +60,7 @@ ACL_FUNC_VISIBILITY aclError aclrtMemcpy(void *dst, size_t destMax, const void *
  */
 ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,
                                               aclrtMemcpyKind kind, aclrtStream stream) {
-  return ACL_ERROR_NONE;
+  return ACL_SUCCESS;
 }
 
 /**
@@ -72,7 +72,7 @@ ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst, size_t destMax, const v
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclrtSetDevice(int32_t deviceId) { return ACL_ERROR_NONE; }
+ACL_FUNC_VISIBILITY aclError aclrtSetDevice(int32_t deviceId) { return ACL_SUCCESS; }
 
 /**
  * @ingroup AscendCL
@@ -83,7 +83,7 @@ ACL_FUNC_VISIBILITY aclError aclrtSetDevice(int32_t deviceId) { return ACL_ERROR
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclrtResetDevice(int32_t deviceId) { return ACL_ERROR_NONE; }
+ACL_FUNC_VISIBILITY aclError aclrtResetDevice(int32_t deviceId) { return ACL_SUCCESS; }
 
 /**
  * @ingroup AscendCL
@@ -106,7 +106,7 @@ ACL_FUNC_VISIBILITY aclError aclrtResetDevice(int32_t deviceId) { return ACL_ERR
  */
 ACL_FUNC_VISIBILITY aclError aclrtMemsetAsync(void *dst, size_t destMax, int32_t value, size_t count,
                                               aclrtStream stream) {
-  return ACL_ERROR_NONE;
+  return ACL_SUCCESS;
 }
 
 /**

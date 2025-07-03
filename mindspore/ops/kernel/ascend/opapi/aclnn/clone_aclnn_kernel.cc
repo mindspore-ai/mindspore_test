@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace clone {
 
 void CloneAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
@@ -31,5 +32,6 @@ bool CloneAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Clone, CloneAscend);
+}  // namespace clone
 }  // namespace kernel
 }  // namespace mindspore

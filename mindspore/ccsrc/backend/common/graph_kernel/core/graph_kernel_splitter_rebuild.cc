@@ -23,6 +23,9 @@
 #include "backend/common/graph_kernel/core/graph_kernel_splitter.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 void Rebuilder::Rebuild() {
@@ -148,7 +151,7 @@ void Rebuilder::CreateSubGraphs() {
     FuncGraphPtr fg;
     AnfNodePtrList inputs;
     AnfNodePtrList outputs;
-    std::tie(fg, inputs, outputs) = BuildGraphFromNodes(nodes, config);
+    std::tie(fg, inputs, outputs) = BuildGraphFromNodesInner(nodes, config);
 
     AnfNodePtrList call_inputs = {NewValueNode(fg)};
     (void)std::transform(inputs.begin(), inputs.end(), std::back_inserter(call_inputs),

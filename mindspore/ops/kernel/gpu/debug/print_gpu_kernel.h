@@ -25,7 +25,7 @@
 #include "ir/tensor.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 using mindspore::tensor::Tensor;
 

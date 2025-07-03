@@ -25,7 +25,7 @@ from mindspore import context
 from mindspore.parallel._ps_context import _is_role_sched, _is_ps_mode,\
                                            _get_ps_context
 from mindspore import log as logger
-from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext
+from mindspore._c_expression import CollectiveManager, set_cluster_exit_with_exception, MSContext, GroupOptions
 from mindspore.common._utils import load_lib
 
 HCCL_LIB = 'libhccl_plugin.so'
@@ -178,8 +178,17 @@ def check_parameter_available(func):
         Wrapper. If not available, raise Error.
     """
     def wrapper(*args, **kargs):
-        if not GlobalComm.INITED:
-            raise RuntimeError("Distributed Communication has not been inited")
+        # This function list indicates these functions will return 0 or 1 value in standalone mode or
+        # not calling 'init' method.
+        standalone_bypass_check_func_list = [
+            "_get_rank_helper",
+            "_get_local_rank_helper",
+            "_get_size_helper",
+            "_get_local_size_helper"
+        ]
+        if not GlobalComm.INITED and func.__name__ not in standalone_bypass_check_func_list:
+            raise RuntimeError(f"Distributed Communication has not been inited."
+                               f"You can't invoke this interface yet. Please call `init()` method first.")
         group = None
         if "group" in kargs.keys():
             group = kargs.get("group")
@@ -264,6 +273,11 @@ def _get_rank_helper(group):
     if _check_bypass_rank_id_and_size():
         rank_id = 0
         return rank_id
+    if not GlobalComm.INITED:
+        # If 'RANK_ID' is not set, return 0 as default value.
+        logger.info(f"You are invoking this interface without calling `init` method."
+                    "Return 'RANK_ID' env value instead. If 'RANK_ID' is not set, return 0 as default value.")
+        return int(os.getenv("RANK_ID", "0"))
     if _hccl_test():
         return hccl.get_rank_id(group)
     rank_id = CollectiveManager.get_instance().get_rank_id(group)
@@ -288,6 +302,11 @@ def _get_local_rank_helper(group):
     if _check_bypass_rank_id_and_size():
         local_rank_id = 0
         return local_rank_id
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.info(f"You are invoking this interface without calling `init` method."
+                    "Return 'LOCAL_RANK' env value instead. If 'LOCAL_RANK' is not set, return 0 as default value.")
+        return int(os.getenv("LOCAL_RANK", "0"))
     if _hccl_test():
         return hccl.get_local_rank_id(group)
     rank_id = CollectiveManager.get_instance().get_local_rank_id(group)
@@ -312,6 +331,11 @@ def _get_size_helper(group):
     if _check_bypass_rank_id_and_size():
         size = 1
         return size
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK' env is not set, return 0 as default value.
+        logger.info(f"You are invoking this interface without calling `init` method."
+                    "Return 'RANK_SIZE' env value instead. If 'RANK_SIZE' is not set, return 1 as default value.")
+        return int(os.getenv("RANK_SIZE", "1"))
     if _hccl_test():
         return hccl.get_rank_size(group)
     size = CollectiveManager.get_instance().get_group_size(group)
@@ -333,6 +357,15 @@ def _get_local_size_helper(group):
     Returns:
         Integer. The local rank size where the calling process is being within specified group.
     """
+    if _check_bypass_rank_id_and_size():
+        size = 1
+        return size
+    if not GlobalComm.INITED:
+        # If 'LOCAL_RANK_SIZE' env is not set, return 0 as default value.
+        logger.info(f"You are invoking this interface without calling `init` method."
+                    "Return 'LOCAL_RANK_SIZE' env value instead. If 'LOCAL_RANK_SIZE' is not set,"
+                    "return 1 as default value.")
+        return int(os.getenv("LOCAL_RANK_SIZE", "1"))
     size = CollectiveManager.get_instance().get_local_group_size(group)
     return size
 
@@ -437,14 +470,25 @@ def _get_group_ranks(group):
 
 
 @check_parameter_available
-def _create_group_helper(group, rank_ids):
+def _create_group_helper(group, rank_ids, options=None):
     """
     The Helper to do create_group.
 
     Args:
         group (str): The communication group.
         rank_ids (list): Rank ids in the group.
-        backend (str): The backend, like "hccl".
+        options (GroupOptions, optional): Additional communication group configuration parameters.
+            The backend will automatically select supported parameters and apply them during group
+            initialization. i.e. for the ``HCCL`` backend, ``hccl_config`` can be specified so that
+            group initialization configurations can be applied. Default is ``None``.
+
+            `GroupOptions` is defined as a class that can be instantiated as a python object.
+
+            .. code-block::
+
+                GroupOptions {
+                    hccl_config(dict)
+                }
 
     Raises:
         TypeError: If rank_ids is not a list.
@@ -466,10 +510,15 @@ def _create_group_helper(group, rank_ids):
                          "but got 'rank_ids' size : {}.".format(len(rank_ids)))
     if len(rank_ids) - len(list(set(rank_ids))) > 0:
         raise ValueError("List rank_ids in Group {} has duplicate data!".format(group))
+    if options is None:
+        options = GroupOptions()
+    if not isinstance(options, GroupOptions):
+        raise TypeError("For 'create_group', the argument 'options' must be type of GroupOptions, "
+                        "but got 'options' type : {}.".format(type(options)))
     if _hccl_test():
         hccl.create_group(group, rank_size, rank_ids)
     else:
-        result = CollectiveManager.get_instance().create_group(group, rank_ids)
+        result = CollectiveManager.get_instance().create_group(group, rank_ids, options)
         if not result:
             raise RuntimeError("Failed to create communication group for {} with rank ids {}. "
                                "If NCCL is used, 'export NCCL_DEBUG=INFO' "
@@ -501,6 +550,49 @@ def _destroy_group_helper(group):
         CollectiveManager.get_instance().destroy_group(group)
 
 
+@check_parameter_available
+def _get_comm_name_helper(group):
+    """
+    The Helper to get inner_comm_name.
+
+    Args:
+        group (str): The user communication group.
+
+    """
+    return CollectiveManager.get_instance().get_comm_name(group)
+
+
 def _get_group_map():
     """Get the group map"""
     return CollectiveManager.get_instance().get_group_map()
+
+
+def _wait_all_comm_init():
+    """Wait for all communicators to be initialized."""
+    return CollectiveManager.get_instance().wait_all_comm_init()
+
+
+def _remove_group_info(group_name):
+    """
+    Remove group info after destroy group by user when using arf.
+
+    Args:
+        group_name (str): The user communication group name.
+
+    """
+    CollectiveManager.get_instance().remove_group_info(group_name)
+
+
+def _comm_switch_nic_helper(global_ranks: list, use_backup: list) -> bool:
+    """Switch network interface card between the primary and the secondary NIC.
+
+    Args:
+        global_ranks (list[int], tuple[int]): list of integers. The global rank ids that need switch network interface .
+        use_backup (list[bool], tuple[int]): list of bool. For each rank id in global_ranks, determine whether to use
+            the backup network interface card. True means use, False means not use.
+
+    Returns:
+        bool, whether the network card switch is successful.
+            If one fails, return False. If all are successful, return True.
+    """
+    return CollectiveManager.get_instance().comm_switch_nic(global_ranks, use_backup)

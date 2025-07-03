@@ -1,0 +1,43 @@
+addcdiv:
+    description: |
+        addcdiv_ext(input, tensor1, tensor2, *, value=1) -> Tensor
+
+        Performs the element-wise division of tensor tensor1 by tensor tensor2,
+        multiply the result by the scalar value and add it to input data.
+
+        .. math::
+            y[i] = input[i] + value * (tensor1[i] / tensor2[i])
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The tensor to be added.
+            tensor1 (Tensor): The numerator tensor.
+            tensor2 (Tensor): The denominator tensor.
+
+        Keyword Args:
+            value (Number, optional): The multiplier for tensor1/tensor2. Default: ``1`` .
+
+        Returns:
+            Tensor, has the same shape and dtype as tensor1/tensor2.
+
+        Raises:
+            TypeError: If dtype of `tensor1`, `tensor2`, or `input` is not tensor.
+            ValueError: If `tensor1` could not be broadcast to a tensor with shape of `tensor2`.
+            ValueError: If `value` could not be broadcast to tensors with shapes of `tensor1/tensor2`.
+            ValueError: If `input` could not be broadcast to tensors with shapes of `value*(tensor1/tensor2)`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input_data = Tensor(np.array([1, 1, 1, 1]), mindspore.float32)
+            >>> x1 = Tensor(np.array([1, 2, 3, 4]), mindspore.float32)
+            >>> x2 = Tensor(np.array([4, 3, 2, 1]), mindspore.float32)
+            >>> y = ops.addcdiv_ext(input_data, x1, x2, value=1)
+            >>> print(y)
+            [1.25      1.6666667 2.5       5.       ]

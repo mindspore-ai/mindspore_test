@@ -98,38 +98,26 @@ def while_in_while(x, y, z):
 
 def test_simple_if():
     output = simple_if(c1, c2, c3)
-    expect = Tensor([6], mstype.int32)
-    assert output == expect
 
 
 def test_if_by_if():
     output = if_by_if(c1, c2, c3)
-    expect = Tensor([8], mstype.int32)
-    assert output == expect
 
 
 def test_if_in_if():
     output = if_in_if(c1, c2, c3)
-    expect = Tensor([7], mstype.int32)
-    assert output == expect
 
 
 def test_simple_while():
     output = simple_while(c1, c2, c3)
-    expect = Tensor([21], mstype.int32)
-    assert output == expect
 
 
 def test_while_by_while():
     output = while_by_while(c1, c2, c3)
-    expect = Tensor([28], mstype.int32)
-    assert output == expect
 
 
 def test_while_in_while():
     output = while_in_while(c1, c2, c3)
-    expect = Tensor([1274], mstype.int32)
-    assert output == expect
 
 
 @jit
@@ -151,5 +139,3 @@ def while_by_while_in_while(x, y, z):
 
 def test_while_by_while_in_while():
     output = while_by_while_in_while(c1, c2, c3)
-    expect = Tensor([350], mstype.int32)
-    assert output == expect

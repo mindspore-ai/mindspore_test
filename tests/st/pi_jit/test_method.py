@@ -1,4 +1,3 @@
-import sys  
 import pytest 
 import numpy as np
 from mindspore import Tensor, jit, context
@@ -6,17 +5,12 @@ import mindspore.ops as ops
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 class ExpandDimsTest():
     def __init__(self, axis):
         self.expandDims = ops.ExpandDims()
         self.axis = axis
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test1(self, input_x):
         return self.expandDims(input_x, self.axis)
 

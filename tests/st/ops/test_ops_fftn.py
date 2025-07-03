@@ -20,6 +20,8 @@ from mindspore.ops import fftn
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
+
 class FFTNNet(nn.Cell):
     def __init__(self):
         super(FFTNNet, self).__init__()
@@ -53,7 +55,7 @@ def generate_expect_backward_output(x, s, dim):
     return np.fft.ifftn(x, s, dim, norm="forward")
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_fftn_normal(mode):

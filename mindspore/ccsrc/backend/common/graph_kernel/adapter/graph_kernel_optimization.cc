@@ -37,7 +37,7 @@
 #include "backend/common/graph_kernel/raise_reduction_precision.h"
 #include "backend/common/graph_kernel/graph_kernel_cse.h"
 #include "backend/common/graph_kernel/core/shape_ops_splitter.h"
-#include "backend/common/graph_kernel/value_graph_binder.h"
+#include "backend/common/pass/value_graph_binder.h"
 #include "backend/common/graph_kernel/parallel_fusion.h"
 #include "backend/common/graph_kernel/optimize_assign.h"
 #include "backend/common/graph_kernel/core/split_umonad.h"
@@ -65,22 +65,23 @@
 #include "backend/common/graph_kernel/kernel_packet/symbol_engine_extender.h"
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 #include "backend/common/graph_kernel/core/graph_kernel_op_combiner.h"
-#include "backend/common/graph_kernel/set_infershape_functor.h"
-#include "backend/common/graph_kernel/recognize_softmax_grad_ext.h"
-#include "backend/common/graph_kernel/convert_custom_for_ge.h"
+#include "kernel/graph_kernel/set_infershape_functor.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "backend/common/graph_kernel/convert_bfloat16.h"
 #include "backend/common/graph_kernel/deal_with_side_effect.h"
 #include "backend/common/graph_kernel/fold_updatestate.h"
-#include "backend/common/graph_kernel/proactive_fallback_expander.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
 #include "backend/common/graph_kernel/shrink_only_shape_needed.h"
+#include "backend/common/graph_kernel/depend_edge_elimination.h"
+#include "backend/common/graph_kernel/add_attr.h"
 #ifdef ENABLE_AKG
 #include "backend/common/graph_kernel/graph_kernel_build.h"
 #endif
 #include "backend/common/graph_kernel/adapter/split_model_ascend.h"
 #include "backend/common/graph_kernel/adapter/split_model_cpu.h"
 #include "backend/common/graph_kernel/adapter/split_model_gpu.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "include/backend/optimizer/graph_optimizer.h"
 namespace mindspore::graphkernel {
 using opt::CommonSubexpressionElimination;
 using opt::GetitemTuple;
@@ -89,6 +90,7 @@ using opt::GraphOptimizer;
 namespace {
 auto constexpr PARALLEL_OPS_LIMIT = 7;
 inline unsigned int GetPassLevelByFlag(bool flag) { return flag ? OptLevel_1 : OptLevel_MAX; }
+constexpr char kDisableKernelBackoff[] = "MS_DISABLE_KERNEL_BACKOFF";
 }  // namespace
 
 void GraphKernelOptimizer::Init() const {
@@ -103,12 +105,6 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   auto pm = std::make_shared<GraphKernelPassManager>(0, "preprocess");
   // Remove redundant TupleGetItem to enable cluster ops before and after TupleGetItem
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1);
-
-  // Fallback some operations for further expanding or fusing
-  pm->Add(std::make_shared<ProactiveFallbackExpander>(), OptLevel_1, is_dvm);
-
-  // Transform Transpose + Mutmul to a single Matmul with attribute trans_a/trans_b
-  pm->Add(std::make_shared<TransposeMatmulFusion>(), OptLevel_2, is_ascend);
 
   // convert input to attr adapter for dyn-shape
   pm->Add(std::make_shared<ConvertFrontEndToGraphKernel>(), OptLevel_1);
@@ -130,14 +126,14 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
 
   // Eliminate the common nodes that generated in SpreadUpdateState
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_1);
-
-  // Recognize ops that will be fused by GE
-  pm->Add(std::make_shared<RecognizeSoftmaxGradExt>(), OptLevel_1, is_ge);
   return pm;
 }
 
 PassManagerPtr GraphKernelOptimizer::Cluster() const {
   auto pm = std::make_shared<GraphKernelPassManager>(1, "cluster");
+
+  // Transform Transpose + Mutmul to a single Matmul with attribute trans_a/trans_b
+  pm->Add(std::make_shared<TransposeMatmulFusion>(), OptLevel_2, is_ascend);
 
   // Convert IsFinite and its user to FloatStatus
   pm->Add(std::make_shared<FloatStatusFusion>(), OptLevel_2, is_ascend);
@@ -155,9 +151,6 @@ PassManagerPtr GraphKernelOptimizer::Cluster() const {
   // Cluster basic kernels and composite kernels
   pm->Add(std::make_shared<StaticShapeCluster>(), OptLevel_1);
 
-  // Add Cast for op's inputs if the input data type is not supported by op
-  pm->Add(std::make_shared<ConvertBFloat16>(), OptLevel_1, is_dvm);
-
   // Eliminate the outputs without external user
   pm->Add(std::make_shared<EliminateRedundantOutput>(), OptLevel_1);
   return pm;
@@ -170,19 +163,22 @@ PassManagerPtr GraphKernelOptimizer::HighLevelOpt1() const {
   pm->Add(std::make_shared<CastMatmulFusion>(), OptLevel_2, is_ascend);
 
   // Reorder Cast and Type-insensitive node
-  pm->Add(std::make_shared<ReorderOps>(), OptLevel_2, !is_ge);
+  pm->Add(std::make_shared<ReorderOps>(), OptLevel_2);
 
   // normalize the Reduce axis
   pm->Add(std::make_shared<AxisNormalizer>(), OptLevel_1);
-
-  // Cast the input of ReduceSum from float16 to float32 for higher precision
-  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2, !is_ge);
 
   // Insert PadAkg and UnPadAkg Ops for MatMul
   pm->Add(std::make_shared<InsertPadOps>(), OptLevel_1, is_gpu);
 
   // Universal arithmetic simplify
   pm->Add(std::make_shared<ArithmeticSimplify>(), OptLevel_2);
+
+  // Add Cast for op's inputs if the input data type is not supported by op
+  pm->Add(std::make_shared<ConvertBFloat16>(), OptLevel_1, is_dvm);
+
+  // Cast the input of ReduceSum from float16 to float32 for higher precision
+  pm->Add(std::make_shared<RaiseReductionPrecision>(), OptLevel_2);
 
   // Common subexpression elimination
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_2);
@@ -213,6 +209,7 @@ PassManagerPtr GraphKernelOptimizer::Split() const {
   // Eliminate the redundant node that is copied above but not handled by GraphKernelSplitter
   pm->Add(std::make_shared<MergeOutputForUpdateState>(), OptLevel_1);
   pm->Add(std::make_shared<GraphKernelCSE>(), OptLevel_1);
+  pm->Add(std::make_shared<DependEdgeElimination>(), OptLevel_1, is_dvm);
   pm->Add(std::make_shared<EliminateRedundantOutput>(), OptLevel_1);
   return pm;
 }
@@ -289,8 +286,7 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   pm->Add(std::make_shared<GraphKernelExpanderBeforeBuild>(), OptLevel_1, !is_dvm);
   pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_ge && !is_dvm);
 #endif
-  pm->Add(std::make_shared<ConvertCustomForGE>(), OptLevel_1, is_ge);
-  pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_ge && !is_dvm));
+  pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1, !is_dvm);
   pm->Add(std::make_shared<MergeOutputForUpdateState>(), OptLevel_1, !is_dvm);
   return pm;
@@ -313,7 +309,7 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
   pm->Add(std::make_shared<ConvertGraphKernelToFrontEnd>(), OptLevel_1);
 
   // Add the new tensors to the kernel_graph
-  pm->Add(std::make_shared<BindValueToGraph>(), OptLevel_1);
+  pm->Add(std::make_shared<opt::BindValueToGraph>(), OptLevel_1);
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
   pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1);
@@ -334,12 +330,7 @@ void GraphKernelOptimizer::Run(const KernelGraphPtr &kernel_graph) {
   is_gpu = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kGPUDevice);
   is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
   is_cpu = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice);
-  is_ge = (is_ascend && (context_ptr->backend_policy() == "ge") && kernel_graph->is_graph_run_mode());
   is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  auto cb = Callback::Instance();
-  if (is_ge) {
-    Callback::RegImpl(std::make_shared<CallbackImplWithInferShape>());
-  }
 
   auto parent_graph = kernel_graph->parent_graph().lock();
   FuncGraphManagerPtr parent_manager = nullptr;
@@ -365,11 +356,6 @@ void GraphKernelOptimizer::Run(const KernelGraphPtr &kernel_graph) {
 
   if (parent_graph != nullptr) {
     parent_graph->set_manager(parent_manager);
-  }
-
-  if (is_ge) {
-    // need recover the original call back instance for other sub graph processing
-    Callback::RegImpl(cb);
   }
 }
 

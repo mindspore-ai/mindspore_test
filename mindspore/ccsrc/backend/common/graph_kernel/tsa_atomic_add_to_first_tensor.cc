@@ -18,12 +18,11 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/common/utils/utils.h"
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
@@ -110,7 +109,7 @@ std::pair<AnfNodePtr, size_t> TsaAtomicAddToFirstTensor::GetOrCreateNewTsaFirstN
   std::string parameter_format;
   TypeId parameter_type;
   if (utils::isa<ValueNodePtr>(kernel_with_index.first)) {
-    auto tensor = GetValueNode<tensor::BaseTensorPtr>(kernel_with_index.first);
+    auto tensor = GetValueNode<tensor::TensorPtr>(kernel_with_index.first);
     MS_EXCEPTION_IF_NULL(tensor);
     parameter_format = kOpFormat_DEFAULT;
     parameter_type = tensor->data_type();

@@ -73,6 +73,7 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "load_mindir/infer_mindir.h"
 #include "tools/optimizer/fusion/matmul_allreduce_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace lite {
@@ -143,7 +144,7 @@ FuncGraphPtr ConverterFuncGraph::Load(const std::shared_ptr<ConverterPara> &para
     manager = MakeManager();
     manager->AddFuncGraph(func_graph, true);
   }
-  InferFuncGraphLoaded(func_graph);
+  InferFuncGraphLoaded(func_graph, true);
   bool is_original = IsOriginalFuncGraph(func_graph);
   if (is_original) {
     func_graph->set_attr("graph_name", MakeValue("main_graph"));
@@ -319,6 +320,7 @@ void SetInputParameterName(const FuncGraphPtr &func_graph) {
 void SetInputParameterAbstractName(const FuncGraphPtr &func_graph) {
   for (auto &input : func_graph->get_inputs()) {
     auto parameter = input->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter);
     if (!parameter->has_default()) {
       auto abstract = parameter->abstract();
       if (abstract != nullptr && abstract->name().empty()) {

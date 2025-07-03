@@ -21,8 +21,12 @@
 
 namespace mindspore {
 namespace ops {
-
+OPS_API TensorStorageInfoPtrList ExpandDimsBasicTypeCalc(const PrimitivePtr &prim,
+                                                         const mindspore::tensor::TensorPtr &input_tensor,
+                                                         const int64_t &axis);
 OPS_API TensorStorageInfoPtrList ExpandDimsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList ExpandDimsStrideCalc(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
+                                                      const int64_t &axis);
 
 }  // namespace ops
 }  // namespace mindspore

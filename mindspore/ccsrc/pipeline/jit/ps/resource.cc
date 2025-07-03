@@ -33,6 +33,13 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -265,6 +272,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"max", std::string("max")},                                        // P.reduce_max()
        {"min", std::string("min")},                                        // P.reduce_min()
        {"pow", std::string("pow")},                                        // P.Pow()
+       {"put_", std::string("put_")},                                      // P.InplacePut()
        {"log", std::string("log")},                                        // P.Log()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()
@@ -293,6 +301,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"fills", std::string("fills")},                                    // P.fills
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
+       {"uniform_", std::string("uniform_")},                              // inplace_uniform_op()
+       {"exponential_", std::string("exponential_")},                      // inplace_exponential_op()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clamp", std::string("clamp")},                                    // clamp()
        {"clamp_", std::string("clamp_")},                                  // clamp_()
@@ -435,6 +445,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"conj", std::string("conj")},                                      // conj()
        {"cross", std::string("cross")},                                    // cross()
        {"erfinv", std::string("erfinv")},                                  // erfinv()
+       {"erfinv_", std::string("erfinv_")},                                // inplace_erfinv_op()
        {"less_equal", std::string("less_equal")},                          // less_equal()
        {"fold", std::string("fold")},                                      // fold()
        {"unfold", std::string("unfold")},                                  // unfold()
@@ -610,6 +621,12 @@ BuiltInTypeMap &GetAttrMap() {
        {"permit_filter_value", prim::kPrimMapTensorGetPermitFilterValue},  // F.map_tensor_get_permit_filter_value
        {"evict_filter_value", prim::kPrimMapTensorGetEvictFilterValue},    // F.map_tensor_get_evict_filter_value
      }},
+    {kObjectTypeSlice,
+     {
+       {"start", std::string("slice_get_start")},
+       {"stop", std::string("slice_get_stop")},
+       {"step", std::string("slice_get_step")},
+     }},
   };
   return attr_map;
 }
@@ -730,10 +747,6 @@ void Resource::CacheFuncGraph() const {
 }
 
 void Resource::Clean() {
-  // Ensure that async backend creating task is finished before clean resource.
-  if (backend_ == nullptr && backend_future_.valid()) {
-    backend_ = backend_future_.get();
-  }
   // AbstractTensor->elements() will be saved in AbstractBasePtrList
   args_abs_.clear();
   arguments_.clear();
@@ -755,34 +768,6 @@ void Resource::Clean() {
   }
   trace::ClearTraceStack();
   is_cleaned_ = true;
-}
-
-compile::BackendPtr Resource::GetBackend() const {
-  if (backend_ == nullptr && backend_future_.valid()) {
-    backend_ = backend_future_.get();
-  }
-  return backend_;
-}
-
-void Resource::SetBackendAsync(std::function<compile::BackendPtr()> func) {
-  static const bool is_enable_async = (common::GetEnv("MS_DEV_ASYNC_BACKEND_INIT") == "1");
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  static const bool is_enable_ge = context_ptr->backend_policy() == "ge";
-  if (!is_enable_async || is_enable_ge) {
-    // Disable async backend init if required.
-    std::lock_guard<std::mutex> guard(GetBackendInitMutex());
-    backend_ = func();
-    return;
-  }
-  if (backend_ == nullptr && backend_future_.valid()) {
-    (void)backend_future_.get();
-  }
-  backend_ = nullptr;
-  backend_future_ = std::async(std::launch::async, [func]() {
-    std::lock_guard<std::mutex> guard(Resource::GetBackendInitMutex());
-    return func();
-  });
 }
 }  // namespace pipeline
 }  // namespace mindspore

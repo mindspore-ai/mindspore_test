@@ -43,6 +43,7 @@ set(INSTALL_CFG_DIR "config")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 set(INSTALL_ASCEND_DIR "${INSTALL_PLUGIN_DIR}/ascend")
+set(CUSTOM_ASCENDC_PREBUILD_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/prebuild")
 # set package files
 install(
     TARGETS _c_expression
@@ -51,7 +52,10 @@ install(
 )
 
 install(
-    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
+        mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_ops_kernel_common
+        mindspore_profiler mindspore_memory_pool mindspore_runtime_pipeline mindspore_dump mindspore_backend_common
+        mindspore_extension
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )
@@ -65,7 +69,17 @@ endif()
 
 if(ENABLE_D)
     install(
-        TARGETS mindspore_ascend LIBRARY
+        TARGETS mindspore_ge_backend
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ascend_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ascend mindspore_ops_ascend LIBRARY
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
         NAMELINK_SKIP
@@ -76,6 +90,12 @@ if(ENABLE_GPU)
     install(
             TARGETS mindspore_gpu LIBRARY
             DESTINATION ${INSTALL_PLUGIN_DIR}
+            COMPONENT mindspore
+            NAMELINK_SKIP
+    )
+    install(
+            TARGETS mindspore_gpu_res_manager LIBRARY
+            DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
             COMPONENT mindspore
             NAMELINK_SKIP
     )
@@ -124,15 +144,15 @@ if(ENABLE_MINDDATA)
       DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgcodecs.so.4.5 COMPONENT mindspore)
     install(FILES ${opencv_LIBPATH}/libopencv_imgproc.so.4.5.2
       DESTINATION ${INSTALL_LIB_DIR} RENAME libopencv_imgproc.so.4.5 COMPONENT mindspore)
-    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.so.8.0.0
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.so.8 COMPONENT mindspore)
+    install(FILES ${tinyxml2_LIBPATH}/libtinyxml2.so.10.0.0
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libtinyxml2.so.10 COMPONENT mindspore)
 
-    install(FILES ${icu4c_LIBPATH}/libicuuc.so.69.1
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.so.69 COMPONENT mindspore)
-    install(FILES ${icu4c_LIBPATH}/libicudata.so.69.1
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libicudata.so.69 COMPONENT mindspore)
-    install(FILES ${icu4c_LIBPATH}/libicui18n.so.69.1
-      DESTINATION ${INSTALL_LIB_DIR} RENAME libicui18n.so.69 COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicuuc.so.74.1
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libicuuc.so.74 COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicudata.so.74.1
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libicudata.so.74 COMPONENT mindspore)
+    install(FILES ${icu4c_LIBPATH}/libicui18n.so.74.1
+      DESTINATION ${INSTALL_LIB_DIR} RENAME libicui18n.so.74 COMPONENT mindspore)
     install(FILES ${jemalloc_LIBPATH}/libjemalloc.so.2 DESTINATION ${INSTALL_LIB_DIR} COMPONENT mindspore)
 endif()
 
@@ -152,6 +172,17 @@ if(ENABLE_CPU)
         TARGETS nnacl
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_cpu_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
 endif()
 
@@ -198,9 +229,28 @@ if(ENABLE_GPU)
 endif()
 
 if(ENABLE_D)
+    install(
+        TARGETS mindspore_graph_ir LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+    if(EXISTS ${ASCEND_NNAL_ATB_PATH})
+        install(
+                TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+                NAMELINK_SKIP
+        )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+        )
+    endif()
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective
+                TARGETS ascend_collective d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
@@ -396,6 +446,7 @@ install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include
     DESTINATION ${INSTALL_BASE_DIR}
     COMPONENT mindspore
+    PATTERN "OWNERS" EXCLUDE
 )
 
 ## Public header files for minddata
@@ -417,8 +468,54 @@ install(
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/format.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/type_id.h
         ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/types.h
+        ${CMAKE_SOURCE_DIR}/mindspore/core/include/mindapi/base/shape_vector.h
     DESTINATION ${INSTALL_BASE_DIR}/include/mindapi/base
     COMPONENT mindspore)
+
+## ms header files
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/core
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/ops
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h"
+)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/ccsrc
+    DESTINATION ${INSTALL_BASE_DIR}/include/mindspore
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h"
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/securec
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+    COMPONENT mindspore
+    FILES_MATCHING PATTERN "*.h")
+
+## msextension for custom ops
+install(FILES ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/ms_extension/all.h
+    DESTINATION ${INSTALL_BASE_DIR}/include
+    RENAME ms_extension.h
+    COMPONENT mindspore)
+
+## third-party header files
+install(DIRECTORY ${pybind11_INC}/pybind11
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+    COMPONENT mindspore)
+install(DIRECTORY ${robin_hood_hashing_INC}/include
+    DESTINATION ${INSTALL_BASE_DIR}/include/third_party/robin_hood_hashing
+    COMPONENT mindspore)
+if (NOT ENABLE_NATIVE_JSON)
+    install(DIRECTORY ${nlohmann_json3101_INC}/nlohmann
+        DESTINATION ${INSTALL_BASE_DIR}/include/third_party
+        COMPONENT mindspore)
+endif()
 
 ## config files
 install(
@@ -439,8 +536,7 @@ if(ENABLE_D)
     install(
         DIRECTORY
         ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/custom_compiler
-        ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
-        ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
+        ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910b
         DESTINATION ${INSTALL_ASCEND_DIR}
         COMPONENT mindspore
     )

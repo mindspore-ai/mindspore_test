@@ -30,13 +30,12 @@ from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
 from mindspore.common import dtype as mstype
 from mindspore import context
-from mindspore.parallel._utils import _get_parallel_mode, _get_global_rank
 from mindspore.common._utils import get_slice_num, get_slice_shape
 from mindspore.common.initializer import initializer
-from mindspore.common.tensor import Tensor
+from mindspore.common.tensor import Tensor, _TensorMeta
 from mindspore import _checkparam as Validator
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.parallel._tensor import _get_slice_index
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_role_sched, _clone_hash_table, \
@@ -44,22 +43,42 @@ from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _i
 from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info, _cache_enable
 from mindspore.common._decorator import deprecated
 from mindspore.communication._comm_helper import _is_initialized
-from mindspore.communication import get_group_size
+from mindspore.communication import get_group_size, get_rank
 import mindspore.common._monad as monad
 
 __all__ = ['Parameter', 'ParameterTuple']
 
 PARAMETER_NAME_DEFAULT = "Parameter"
+_GENERATED_PARAMETER_NAME_PREFIX = PARAMETER_NAME_DEFAULT + '#'
 PARAMETER_NAME_PREFIX_MAX_LEN = 1024
+
+_PARAMETER_NAME_ID = 0
+
+
+def _generate_parameter_name():
+    global _PARAMETER_NAME_ID
+    name = _GENERATED_PARAMETER_NAME_PREFIX + str(_PARAMETER_NAME_ID)
+    _PARAMETER_NAME_ID += 1
+    return name
+
+
+def _is_parameter_generated(param_name):
+    if not param_name or not isinstance(param_name, str):
+        return False
+    return param_name.startswith(_GENERATED_PARAMETER_NAME_PREFIX)
+
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
 
 # Global variable to mark the hook of parameter is updated
 _parameter_hook_updated = True
+
+
 def set_parameter_hook_updated(value):
     global _parameter_hook_updated
     _parameter_hook_updated = value
+
 
 def parameter_hook_updated():
     global _parameter_hook_updated
@@ -77,7 +96,7 @@ def _is_parallel_mode():
         return False
     if os.getenv("RUN_MODE") != "predict":
         return False
-    if get_group_size() > 1 and _get_parallel_mode() == "stand_alone":
+    if get_group_size() > 1:
         return True
     return False
 
@@ -120,7 +139,7 @@ def _gen_offload_file_path(offload_dir):
     offload_dir = os.path.relpath(offload_dir)
     if not os.path.exists(offload_dir):
         os.makedirs(offload_dir, mode=0o700, exist_ok=True)
-    offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
+    offload_file_path = offload_dir + "/" + str(get_rank()) + "_" + str(
         _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
     return offload_file_path
 
@@ -155,7 +174,7 @@ class Parameter(Tensor_):
     the list of its parameters, and will appear, e.g. in `cell.get_parameters()` iterator.
 
     Note:
-        - In auto_parallel mode of `SEMI_AUTO_PARALLEL` and `AUTO_PARALLEL`, if init `Parameter` by
+        - When using `AutoParallel(cell)` to enable parallel mode, if init `Parameter` by
           a `Tensor`, the type of Parameter will be `Tensor`. `Tensor` will save the shape and type info of a tensor
           with no memory usage.
 
@@ -215,9 +234,8 @@ class Parameter(Tensor_):
         requires_grad (bool): True if the parameter requires gradient. Default: ``True`` .
         layerwise_parallel (bool): When `layerwise_parallel` is true in data/hybrid parallel mode,
             broadcast and gradients communication would not be applied to the `Parameter`. Default: ``False`` .
-        parallel_optimizer (bool): It is used to filter the weight shard operation in `SEMI_AUTO_PARALLEL` or
-            `AUTO_PARALLEL` mode. It works only when enable parallel optimizer in
-            `mindspore.set_auto_parallel_context()`. Default: ``True`` .
+        parallel_optimizer (bool): It is used to filter the weight shard operation in parallel mode. It works only when
+            enable parallel optimizer in :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp`. Default: ``True`` .
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
@@ -225,7 +243,8 @@ class Parameter(Tensor_):
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
             after use. It takes effext only when `memory_offload` is ``"ON"``, `jit_level` is not ``"O2"`` and
-            `memory_optimize_level` is ``O0`` in `mindspore.set_context()`. Less device memory is needed when device is
+            `memory_optimize_level` is ``O0`` in :func:`mindspore.set_context`.
+            Less device memory is needed when device is
             specified as ``"CPU"``.
 
     Examples:
@@ -300,7 +319,6 @@ class Parameter(Tensor_):
         self._cast_type = None
         self._unique = False
         self.is_in_parallel = _is_in_auto_parallel_mode()
-        self.is_in_shard = False
         self._pipeline_stage_list = []
         self.slice_num = 1
         if -1 in self.shape:
@@ -316,14 +334,14 @@ class Parameter(Tensor_):
                 self.param_info.use_persistent_storage = True
                 self.param_info.origin_shape = default_input.shape
                 self.slice_num = slice_num_of_persistent_data
-                Tensor_.__init__(self, default_input.dtype, tuple(data_shape))
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=tuple(data_shape))
             else:
-                Tensor_.__init__(self, default_input.dtype, default_input.shape)
+                Tensor_.__init__(self, dtype=default_input.dtype, shape=default_input.shape)
 
         elif isinstance(default_input, int):
-            Tensor_.__init__(self, mstype.int64, ())
+            Tensor_.__init__(self, dtype=mstype.int64, shape=())
         elif isinstance(default_input, float):
-            Tensor_.__init__(self, mstype.float32, ())
+            Tensor_.__init__(self, dtype=mstype.float32, shape=())
         elif isinstance(default_input, (np.ndarray, list)):
             Tensor_.__init__(self, default_input)
         else:
@@ -340,7 +358,7 @@ class Parameter(Tensor_):
         self.load = other_ops.Load()
 
     def __deepcopy__(self, memodict):
-        new_obj = Parameter(self)
+        new_obj = Parameter(self, requires_grad=self.requires_grad)
         new_obj.name = self.name
         new_obj._inited_param = self._inited_param
         return new_obj
@@ -406,9 +424,6 @@ class Parameter(Tensor_):
             init_in_server (bool): Whether trainable parameter updated by parameter server is
                 initialized on server. Default: ``False``.
 
-        Tutorial Examples:
-            - `Parameter Server Mode
-              <https://www.mindspore.cn/docs/en/master/model_train/parallel/parameter_server_training.html>`_
         """
         if not _is_ps_mode() or not (_is_role_worker() or _is_role_pserver() or _is_role_sched()):
             raise RuntimeError("Must complete following two steps before calling set_param_ps: \n"
@@ -474,7 +489,7 @@ class Parameter(Tensor_):
         Tensor_.wait_pipeline(self)
         param_info_.obj = self
         self._param_info = param_info_
-        Tensor_.param_info.fset(self, param_info_)
+        Tensor_.set_param_info(self, param_info_)
 
     @property
     def name(self):
@@ -501,11 +516,11 @@ class Parameter(Tensor_):
                 the default value `PARAMETER_NAME_DEFAULT` is used.
         """
         if name_ is None:
-            name_ = PARAMETER_NAME_DEFAULT
+            name_ = _generate_parameter_name()
         elif isinstance(name_, str):
             name_ = name_.strip()
             if name_ == '':
-                name_ = PARAMETER_NAME_DEFAULT
+                name_ = _generate_parameter_name()
             if len(name_) > PARAMETER_NAME_PREFIX_MAX_LEN:
                 raise ValueError("The length of the '{}' name should be less than {}.".
                                  format(name_, PARAMETER_NAME_PREFIX_MAX_LEN))
@@ -541,8 +556,8 @@ class Parameter(Tensor_):
         """
         Get the fusion type (int) for communication operators corresponding to this parameter.
 
-        In `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode, some communication operators used for parameters or
-        gradients aggregation are inserted automatically.
+        When using `AutoParallel(cell)` to enable parallel mode, some communication operators used
+        for parameters or gradients aggregation are inserted automatically.
         The value of `comm_fusion` must be greater than or equal to 0.
         When the value of `comm_fusion` is ``0`` , operators will not be fused together.
 
@@ -558,9 +573,6 @@ class Parameter(Tensor_):
 
     @comm_fusion.setter
     def comm_fusion(self, comm_fusion_):
-        if context.get_context("mode") == context.PYNATIVE_MODE and "auto_parallel" in _get_parallel_mode():
-            raise RuntimeError(
-                "`comm_fusion` does not support PYNATIVE_MODE in AUTO_PARALLEL and SEMI_AUTO_PARALLEL mode.")
         Validator.check_non_negative_int(comm_fusion_)
         self.param_info.comm_fusion = comm_fusion_
 
@@ -569,7 +581,7 @@ class Parameter(Tensor_):
         """
         Get the communication recompute status(bool) of optimizer parallel for the parameter.
 
-        In `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode, when applying parallel optimizer,
+        When using `AutoParallel(cell)` to enable parallel mode, and applying parallel optimizer,
         some :class:`mindspore.ops.AllGather` operators
         used for parameters gathering are inserted automatically. It is used to control the recompute attr for those
         :class:`mindspore.ops.AllGather` operators.
@@ -657,7 +669,9 @@ class Parameter(Tensor_):
         if init != 'same':
             shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
             dtype = self.dtype
-            x.set_data(initializer(init, shape=shape, dtype=dtype))
+            tensor = initializer(init, shape=shape, dtype=dtype)
+            x.set_data(tensor)
+            x.init = tensor.init
         device = self._get_user_data("parameter_device")
         if device is not None:
             x._set_user_data("parameter_device", device)
@@ -692,8 +706,9 @@ class Parameter(Tensor_):
         """
         Get the optimizer parallel status(bool) of the parameter.
 
-        It is used to filter the weight shard operation in `AUTO_PARALLEL` and `SEMI_AUTO_PARALLEL` mode. It works only
-        when enable parallel optimizer in `mindspore.set_auto_parallel_context()`.
+        When using `AutoParallel(cell)` to enable parallel mode, it is used to filter the weight
+        shard operation. It works only when enable parallel optimizer in
+        :func:`mindspore.parallel.auto_parallel.AutoParallel.hsdp`.
 
         Examples:
             >>> from mindspore import Tensor, Parameter
@@ -909,13 +924,10 @@ class Parameter(Tensor_):
         incoming_tensor_is_init = isinstance(data, Tensor) and not data.has_init
         current_tensor_is_init = isinstance(self, Tensor) and not self.has_init
         if self.dtype != data.dtype:
-            if mstype.implicit_conversion_seq.get(self.dtype) < mstype.implicit_conversion_seq.get(data.dtype):
-                self._raise_type_error(data.dtype)
-            else:
-                from mindspore.ops import functional as F
-                if isinstance(data, Tensor) and data.init is not None:
-                    data.init_data()
-                data = F.cast(data, self.dtype)
+            from mindspore.ops import functional as F
+            if isinstance(data, Tensor) and data.init is not None:
+                data.init_data()
+            data = F.cast(data, self.dtype)
         if isinstance(data, Tensor) and data.has_init:
             # The parameter has been initialized, directly update by the data
             if current_tensor_is_init:
@@ -943,7 +955,6 @@ class Parameter(Tensor_):
             init_data_args += (slice_index, layout[2], layout[5])
         return init_data_args
 
-
     def init_data(self, layout=None, set_sliced=False):
         """
         Initialize the parameter's data.
@@ -952,7 +963,7 @@ class Parameter(Tensor_):
             layout (Union[None, tuple]): The parameter's layout info.
                 layout [dev_mat, tensor_map, slice_shape, filed_size, uniform_split, opt_shard_group].
                 Default: ``None``.
-                It's not None only in 'SEMI_AUTO_PARALLEL' or 'AUTO_PARALLEL' mode.
+                It's not None only when using `AutoParallel(cell)` to enable parallel mode.
 
                 - dev_mat (list(int)): The parameter's device matrix.
                 - tensor_map (list(int)): The parameter's tensor map.
@@ -979,8 +990,6 @@ class Parameter(Tensor_):
             >>> x = Parameter(Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32)), name="param")
             >>> x.init_data()
         """
-        if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
-            raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
         if self.init_mode is None or not self.has_init:
             return self
         if self.inited_param is not None:
@@ -998,8 +1007,10 @@ class Parameter(Tensor_):
                 data = self.init_mode.init_data(0, [1])
         else:
             data = self.init_mode.init_data(*init_data_args)
-
+        origin_dtype = self.dtype
         obj = self._update_tensor_data(data)
+        if self.dtype != origin_dtype:
+            self.set_dtype(origin_dtype)
         if id(obj) != id(self):
             self._inited_param = obj
         obj.init_mode = None
@@ -1009,7 +1020,7 @@ class Parameter(Tensor_):
 
     def register_hook(self, hook_fn):
         """
-        For details, please refer to :func: `mindspore.Tensor.register_hook`.
+        For details, please refer to :func:`mindspore.Tensor.register_hook`.
         """
         handle = Tensor.register_hook(self, hook_fn)
         set_parameter_hook_updated(True)
@@ -1017,6 +1028,82 @@ class Parameter(Tensor_):
 
     def _remove_hook(self):
         set_parameter_hook_updated(True)
+
+    def _offload(self):
+        r"""
+        Offload parameter to host with releasing device resource.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+        """
+        return Tensor_._offload(self, True)
+
+    def _load(self):
+        r"""
+        Load parameter to device.
+
+        Supported Platforms:
+            ``Ascend``
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Examples:
+            >>> from mindspore import Parameter, Tensor
+            >>> x = Parameter(Tensor(np.array([1, 2], dtype=np.float32)), name="param")
+            >>> x._offload()
+            >>> x._load()
+        """
+        return Tensor_._load(self)
+
+
+# Metaclass to combine _TensorMeta and the instance check override for Buffer.
+class _BufferMeta(_TensorMeta):
+    # Make `isinstance(t, Buffer)` return True for custom tensor instances that have the _is_buffer flag.
+    def __instancecheck__(cls, instance):
+        if cls is _Buffer:
+            if isinstance(instance, Tensor) and getattr(instance, "_is_buffer", False):
+                return True
+        return super().__instancecheck__(instance)
+
+
+class _Buffer(Tensor, metaclass=_BufferMeta):
+    r"""A kind of Tensor that should not be considered a model
+    parameter. For example, BatchNorm's `running_mean` is not a parameter, but is part of the Cell's state.
+
+    Buffers are :class:`~mindspore.Tensor` subclasses, that have a
+    very special property when used with :class:`~.nn.Cell` s: when they're
+    assigned as Cell attributes they are automatically added to the list of
+    its buffers, and will appear e.g. in :func:`mindspore.nn.Cell.buffers` iterator.
+    Assigning a tensor doesn't have such effect. One can still assign a tensor as a buffer explicitly by using
+    the :func:`mindspore.nn.Cell.register_buffer` function.
+
+    Args:
+        data (Tensor): buffer tensor.
+
+    Keyword Args:
+        persistent (bool, optional): whether the buffer is part of the Cell's
+            :attr:`state_dict`. Default ``True``.
+    """
+
+    def __new__(cls, data, *, persistent=True):
+        if data is None:
+            raise ValueError('For create Buffer, input data should not be None')
+        if not isinstance(data, Tensor):
+            raise TypeError('For create Buffer, type of input data should be Tensor')
+        from mindspore.ops import stop_gradient
+        t = stop_gradient(data)
+        t._is_buffer = True  # pylint: disable=W0212
+        t.persistent = persistent
+        return t
 
 
 class ParameterTuple(tuple):
@@ -1065,18 +1152,13 @@ class ParameterTuple(tuple):
                 set  data according to `init`. Default: ``'same'``.
 
                 - If `init` is a `Tensor` , set the new Parameter data to the input Tensor.
-                - If `init` is `numbers.Number` , set the new Parameter data to the input number.
                 - If `init` is a `str`, data will be set according to the initialization method of the same name in
                   the `Initializer`. When it is ``'same'``, the new Parameter will have the same value
                   with the original Parameter.
+                - If `init` is `numbers.Number` , set the new Parameter data to the input number.
 
         Returns:
             Tuple, the new Parameter tuple.
-
-        Tutorial Examples:
-            - `Tensor and Parameter - Parameter Tuple
-              <https://mindspore.cn/docs/en/master/model_train/model_building/tensor_and_parameter.html
-              #parameter-tuple>`_
         """
         Validator.check_str_by_regular(prefix)
         new = []

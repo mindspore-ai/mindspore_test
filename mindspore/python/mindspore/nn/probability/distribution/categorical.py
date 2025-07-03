@@ -40,7 +40,7 @@ class Categorical(Distribution):
         probs (Tensor, list, numpy.ndarray): Event probabilities. Default: ``None`` .
         seed (int): The global seed is used in sampling. Global seed is used if it is None. Default: ``None`` .
         dtype (mindspore.dtype): The type of the event samples. Default: ``mstype.int32`` .
-        name (str): The name of the distribution. Default: ``Categorical`` .
+        name (str): The name of the distribution. Default: ``'Categorical'`` .
 
     Note:
         `probs` must have rank at least 1, values are proper probabilities and sum to 1.

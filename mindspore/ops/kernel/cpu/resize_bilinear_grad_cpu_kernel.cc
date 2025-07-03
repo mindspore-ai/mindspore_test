@@ -17,11 +17,12 @@
 #include "kernel/cpu/resize_bilinear_grad_cpu_kernel.h"
 #include <functional>
 #include <utility>
-#include "kernel/ops_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/kernel_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bilinear_grad_cpu {
 namespace {
 constexpr size_t kResizeBilinearGradInputsNum = 4;
 constexpr size_t kResizeBilinearGradOutputNum = 1;
@@ -381,5 +382,6 @@ FuncVec &ResizeBilinearGradCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBilinearGrad, ResizeBilinearGradCpuKernelMod);
+}  // namespace resize_bilinear_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -16,6 +16,7 @@
 
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #include <complex>
+#include <set>
 #include "utils/ms_context.h"
 #include "include/backend/distributed/constants.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -28,6 +29,7 @@ namespace {
 using complex64 = std::complex<float>;
 }  // namespace
 namespace cpu {
+using GroupOptions = mindspore::device::GroupOptions;
 using distributed::GetRetryNumBasedOnScale;
 using distributed::kClusterScaleBound;
 using distributed::SleepBasedOnScale;
@@ -65,6 +67,7 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
       MS_LOG(EXCEPTION) << "Failed to initialize the allreduce launcher.";
     }
     node_ = launcher_->collective_node();
+    MS_LOG(INFO) << "Node initialize success!";
   }
 
   cgn_ = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(
@@ -107,7 +110,7 @@ bool MsCollectiveCommLib::Finalize() {
 
 bool MsCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name,
                                                    const std::vector<uint32_t> &group_ranks, uint32_t local_group_rank,
-                                                   uint32_t local_group_size) {
+                                                   uint32_t local_group_size, const GroupOptions &config) {
   if (groups_.count(group_name) != 0) {
     MS_LOG(WARNING) << "The group " << group_name << " has already existed.";
     return true;
@@ -130,7 +133,7 @@ bool MsCollectiveCommLib::AllGatherHostHashName(size_t host_hash_name, std::vect
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     auto hostnames = cgn_->GetHostNames(role);
     if (hostnames.size() < host_hash_names->size()) {
@@ -187,6 +190,14 @@ bool MsCollectiveCommLib::BroadcastUniqueID(const std::string &group_name, size_
   return true;
 }
 
+void MsCollectiveCommLib::ClearUniqueID(const std::string &group_name) const {
+  CHECK_IF_NULL(cgn_);
+  // clear unique id after broadcast success.
+  std::string node_role_prefix = cgn_->role() + "_";
+  std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
+  (void)cgn_->DeleteMetadata(group_info_key);
+}
+
 bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t root_info_size,
                                        const void *root_info) const {
   CHECK_IF_NULL(root_info);
@@ -199,7 +210,7 @@ bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t roo
   bool success = false;
   // It this is not recovery scenario, retry for 3*200s, which is 10 minutes.
   const size_t interval = 3;
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     success = cgn_->PutMetadata(group_info_key, root_info, root_info_size);
     if (!success) {
@@ -225,7 +236,7 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = RecoveryContext::GetInstance()->enable_recovery() ? SIZE_MAX : retry_count_;
+  size_t retry = RecoveryContext::GetInstance()->enable_repeat_register() ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
     auto unique_id = cgn_->GetMetadata(group_info_key);
     if (unique_id.length() > 0) {
@@ -256,21 +267,55 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
 
 bool MsCollectiveCommLib::AllReduce(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                                     CollectiveOpReduceType reduce_op, const std::string &group_name, void *) {
-  CHECK_IF_NULL(send_buff);
-  CHECK_IF_NULL(recv_buff);
-  CHECK_IF_NULL(launcher_);
-  if (data_type != TypeId::kNumberTypeFloat32) {
-    MS_LOG(EXCEPTION) << "AllReduce only support float32.";
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
   }
-  if (reduce_op != CollectiveOpReduceType::Reduce_Sum) {
-    MS_LOG(EXCEPTION) << "AllReduce only support reduce sum.";
+  static const std::set<CollectiveOpReduceType> valid_ops = {
+    CollectiveOpReduceType::Reduce_Sum, CollectiveOpReduceType::Reduce_Max, CollectiveOpReduceType::Reduce_Min,
+    CollectiveOpReduceType::Reduce_Prod};
+  if (valid_ops.count(reduce_op) == 0) {
+    MS_LOG(EXCEPTION) << "AllReduce only support reduce sum, max and min.";
   }
-  bool ret = launcher_->Execute(send_buff, recv_buff, send_count);
-  return ret;
+  CommunicationGroupInfo group_info = {};
+  if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
+    return false;
+  }
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return CollectiveOpsImpl::GetInstance().AllReduce<int8_t>(send_buff, recv_buff, send_count,
+                                                                static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeInt16:
+      return CollectiveOpsImpl::GetInstance().AllReduce<int16_t>(send_buff, recv_buff, send_count,
+                                                                 static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeInt32:
+    case TypeId::kNumberTypeInt:
+      return CollectiveOpsImpl::GetInstance().AllReduce<int32_t>(send_buff, recv_buff, send_count,
+                                                                 static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeInt64:
+      return CollectiveOpsImpl::GetInstance().AllReduce<int64_t>(send_buff, recv_buff, send_count,
+                                                                 static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeFloat32:
+    case TypeId::kNumberTypeFloat:
+      return CollectiveOpsImpl::GetInstance().AllReduce<float>(send_buff, recv_buff, send_count,
+                                                               static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeFloat16:
+      return CollectiveOpsImpl::GetInstance().AllReduce<float16>(send_buff, recv_buff, send_count,
+                                                                 static_cast<int>(reduce_op), node_, group_info);
+    case TypeId::kNumberTypeBFloat16:
+      return CollectiveOpsImpl::GetInstance().AllReduce<bfloat16>(send_buff, recv_buff, send_count,
+                                                                  static_cast<int>(reduce_op), node_, group_info);
+    default:
+      return false;
+  }
 }
 
 bool MsCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                                     const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
   CommunicationGroupInfo group_info = {};
   if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
     return false;
@@ -304,9 +349,93 @@ bool MsCollectiveCommLib::AllGather(const void *send_buff, void *recv_buff, size
       return false;
   }
 }
+bool MsCollectiveCommLib::Send(const void *send_buff, size_t send_count, TypeId data_type, uint32_t dst_rank,
+                               const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
+  CHECK_IF_NULL(send_buff);
+  CommunicationGroupInfo group_info = {};
+  if (!CheckIfVal(group_name, &group_info)) {
+    return false;
+  }
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return CollectiveOpsImpl::GetInstance().Send<int8_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeInt32:
+    case TypeId::kNumberTypeInt:
+      return CollectiveOpsImpl::GetInstance().Send<int32_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeInt64:
+      return CollectiveOpsImpl::GetInstance().Send<int64_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat32:
+    case TypeId::kNumberTypeFloat:
+      return CollectiveOpsImpl::GetInstance().Send<float>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat16:
+      return CollectiveOpsImpl::GetInstance().Send<float16>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeBFloat16:
+      return CollectiveOpsImpl::GetInstance().Send<bfloat16>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().Send<uint8_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().Send<uint16_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().Send<uint32_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().Send<uint64_t>(send_buff, send_count, dst_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().Send<double>(send_buff, send_count, dst_rank, node_, group_info);
+    default:
+      return false;
+  }
+}
+bool MsCollectiveCommLib::Recv(void *recv_buff, size_t recv_count, TypeId data_type, uint32_t src_rank,
+                               const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
+  CHECK_IF_NULL(recv_buff);
+  CommunicationGroupInfo group_info = {};
+  if (!CheckIfVal(group_name, &group_info)) {
+    return false;
+  }
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return CollectiveOpsImpl::GetInstance().Recv<int8_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeInt32:
+    case TypeId::kNumberTypeInt:
+      return CollectiveOpsImpl::GetInstance().Recv<int32_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeInt64:
+      return CollectiveOpsImpl::GetInstance().Recv<int64_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat32:
+    case TypeId::kNumberTypeFloat:
+      return CollectiveOpsImpl::GetInstance().Recv<float>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat16:
+      return CollectiveOpsImpl::GetInstance().Recv<float16>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeBFloat16:
+      return CollectiveOpsImpl::GetInstance().Recv<bfloat16>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt8:
+      return CollectiveOpsImpl::GetInstance().Recv<uint8_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt16:
+      return CollectiveOpsImpl::GetInstance().Recv<uint16_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt32:
+      return CollectiveOpsImpl::GetInstance().Recv<uint32_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeUInt64:
+      return CollectiveOpsImpl::GetInstance().Recv<uint64_t>(recv_buff, recv_count, src_rank, node_, group_info);
+    case TypeId::kNumberTypeFloat64:
+      return CollectiveOpsImpl::GetInstance().Recv<double>(recv_buff, recv_count, src_rank, node_, group_info);
+    default:
+      return false;
+  }
+}
 
 bool MsCollectiveCommLib::Gather(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                                  uint32_t root_rank, const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
   CommunicationGroupInfo group_info = {};
   if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
     return false;
@@ -354,6 +483,10 @@ bool MsCollectiveCommLib::Gather(const void *send_buff, void *recv_buff, size_t 
 
 bool MsCollectiveCommLib::Scatter(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                                   uint32_t root_rank, const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
   CommunicationGroupInfo group_info = {};
   if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
     return false;
@@ -398,10 +531,19 @@ bool MsCollectiveCommLib::Scatter(const void *send_buff, void *recv_buff, size_t
       return false;
   }
 }
-bool MsCollectiveCommLib::CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
-                                     CommunicationGroupInfo *group_info) {
-  CHECK_IF_NULL(send_buff);
-  CHECK_IF_NULL(recv_buff);
+
+uint32_t MsCollectiveCommLib::GetGroupRanks(const std::string &group_name) {
+  if (groups_.count(group_name) == 0) {
+    MS_LOG(ERROR) << "The group " << group_name << " does not exist.";
+    return false;
+  }
+
+  auto group = groups_[group_name];
+  CHECK_IF_NULL(group);
+  return group->group_size();
+}
+
+bool MsCollectiveCommLib::CheckIfVal(const std::string &group_name, CommunicationGroupInfo *group_info) {
   CHECK_IF_NULL(node_);
   CHECK_IF_NULL(group_info);
 
@@ -420,8 +562,19 @@ bool MsCollectiveCommLib::CheckIfVal(const void *send_buff, void *recv_buff, con
   return true;
 }
 
+bool MsCollectiveCommLib::CheckIfVal(const void *send_buff, void *recv_buff, const std::string &group_name,
+                                     CommunicationGroupInfo *group_info) {
+  CHECK_IF_NULL(send_buff);
+  CHECK_IF_NULL(recv_buff);
+  return CheckIfVal(group_name, group_info);
+}
+
 bool MsCollectiveCommLib::Broadcast(const void *send_buff, void *recv_buff, size_t send_count, TypeId data_type,
                                     uint32_t root_rank, const std::string &group_name, void *) {
+  static bool dry_run = common::IsCompileSimulation();
+  if (MS_UNLIKELY(dry_run)) {
+    return true;
+  }
   CommunicationGroupInfo group_info = {};
   if (!CheckIfVal(send_buff, recv_buff, group_name, &group_info)) {
     return false;

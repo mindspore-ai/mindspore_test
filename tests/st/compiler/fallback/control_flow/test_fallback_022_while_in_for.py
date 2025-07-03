@@ -16,14 +16,13 @@
 import mindspore as ms
 from mindspore import Tensor, jit, context, nn, Parameter
 import numpy as np
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_for_1():
     """
     Feature: JIT Fallback
@@ -31,7 +30,7 @@ def test_while_in_for_1():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor([7]).astype("int32")
         y = Tensor([0]).astype("int32")
@@ -47,9 +46,8 @@ def test_while_in_for_1():
     assert res == 27
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_for_zip():
     """
     Feature: JIT Fallback
@@ -57,7 +55,7 @@ def test_while_in_for_zip():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         tuple_x = (Tensor(1).astype("int32"), Tensor(3).astype("int32"), Tensor(5).astype("int32"))
         sum_x = Tensor([0]).astype("int32")
@@ -74,9 +72,8 @@ def test_while_in_for_zip():
     assert res == 18
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_for_numpy():
     """
     Feature: JIT Fallback
@@ -84,7 +81,7 @@ def test_while_in_for_numpy():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = np.array([1, 3, 5])
         y = np.array([0, 2, 4])
@@ -100,9 +97,8 @@ def test_while_in_for_numpy():
     assert res2 == 10
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_in_for_builtin_function():
     """
     Feature: JIT Fallback

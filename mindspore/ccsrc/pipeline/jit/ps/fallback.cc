@@ -38,6 +38,10 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "abstract/abstract_value.h"
 #include "ir/func_graph.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace fallback {
@@ -663,11 +667,12 @@ void AttachPyObjToAbs(const AbstractBasePtr &abs, const py::object &obj, bool cr
     }
     return;
   }
-  auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
   if (!py::isinstance<py::tuple>(obj)) {
     MS_INTERNAL_EXCEPTION(TypeError) << "Object should be tuple but got: " << py::str(obj);
   }
   auto tuple_obj = py::tuple(obj);
+  auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(abs_tuple);
   for (size_t i = 0; i < abs_tuple->size(); ++i) {
     auto element_abs = abs_tuple->elements()[i];
     auto element_obj = tuple_obj[i];
@@ -965,6 +970,32 @@ std::string GetVariable(const AnfNodePtr &input, const std::shared_ptr<KeyValueI
   return script_buffer.str();
 }
 
+std::string GetTupleOrListStringWithVariable(const abstract::AbstractSequencePtr &arg_tuple, const AnfNodePtr &input,
+                                             const std::shared_ptr<KeyValueInfo> &key_value, bool need_symbol,
+                                             bool need_comma) {
+  std::stringstream exception_str;
+  const auto &arg_tuple_elements = arg_tuple->elements();
+  auto cnode = input->cast_ptr<CNode>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  bool not_variable =
+    (!arg_tuple->BuildValue()->ContainsValueAny()) || IsValueNode<prim::DoSignaturePrimitive>(cnode->input(0));
+  for (size_t index = 0; index < arg_tuple_elements.size(); ++index) {
+    auto &element = arg_tuple_elements[index];
+    const auto &inputs = cnode->inputs();
+    if (arg_tuple_elements.size() >= cnode->size()) {
+      MS_LOG(EXCEPTION) << "Size of cnode should be greater than arg_tuple_elements, "
+                        << "but got cnode size: " << cnode->size()
+                        << " arg_tuple_elements size: " << arg_tuple_elements.size();
+    }
+    auto inputs_in_tuple = inputs[index + 1];
+    exception_str << GetExceptionString(element, inputs_in_tuple, key_value, need_symbol, need_comma);
+    if (index != arg_tuple_elements.size() - 1 && need_comma && not_variable) {
+      exception_str << ", ";
+    }
+  }
+  return exception_str.str();
+}
+
 std::string GetTupleOrListString(const AbstractBasePtr &arg, const AnfNodePtr &input,
                                  const std::shared_ptr<KeyValueInfo> &key_value, bool need_symbol, bool need_comma) {
   MS_EXCEPTION_IF_NULL(arg);
@@ -972,7 +1003,7 @@ std::string GetTupleOrListString(const AbstractBasePtr &arg, const AnfNodePtr &i
   std::stringstream exception_str;
   bool is_tuple = arg->isa<abstract::AbstractTuple>();
   // Process raise ValueError("str")
-  auto arg_tuple = arg->cast_ptr<abstract::AbstractSequence>();
+  abstract::AbstractSequencePtr arg_tuple = arg->cast<abstract::AbstractSequencePtr>();
   MS_EXCEPTION_IF_NULL(arg_tuple);
   const auto &arg_tuple_elements = arg_tuple->elements();
   if (!input->isa<CNode>() && has_variable) {
@@ -986,24 +1017,7 @@ std::string GetTupleOrListString(const AbstractBasePtr &arg, const AnfNodePtr &i
     }
   }
   if (has_variable) {
-    auto cnode = input->cast_ptr<CNode>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    bool not_variable =
-      (!arg->BuildValue()->ContainsValueAny()) || IsValueNode<prim::DoSignaturePrimitive>(cnode->input(0));
-    for (size_t index = 0; index < arg_tuple_elements.size(); ++index) {
-      auto &element = arg_tuple_elements[index];
-      const auto &inputs = cnode->inputs();
-      if (arg_tuple_elements.size() >= cnode->size()) {
-        MS_LOG(EXCEPTION) << "Size of cnode should be greater than arg_tuple_elements, "
-                          << "but got cnode size: " << cnode->size()
-                          << " arg_tuple_elements size: " << arg_tuple_elements.size();
-      }
-      auto inputs_in_tuple = inputs[index + 1];
-      exception_str << GetExceptionString(element, inputs_in_tuple, key_value, need_symbol, need_comma);
-      if (index != arg_tuple_elements.size() - 1 && need_comma && not_variable) {
-        exception_str << ", ";
-      }
-    }
+    exception_str << GetTupleOrListStringWithVariable(arg_tuple, input, key_value, need_symbol, need_comma);
   } else {
     for (size_t index = 0; index < arg_tuple_elements.size(); ++index) {
       auto &element = arg_tuple_elements[index];

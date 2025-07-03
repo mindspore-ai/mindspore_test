@@ -21,12 +21,13 @@
 #include <map>
 #include <functional>
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/kl_div_loss.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_loss_cpu {
 const size_t kMyAddInputsNum = 2;
 const size_t kMyAddOutputsNum = 1;
 
@@ -156,5 +157,6 @@ std::vector<std::pair<KernelAttr, KLDivLossCpuKernelMod::KLDivLossFunc>> KLDivLo
    &KLDivLossCpuKernelMod::LaunchKernel<double>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, KLDivLoss, KLDivLossCpuKernelMod);
+}  // namespace kl_div_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,16 +17,10 @@ import numpy as np
 import mindspore.nn as nn
 from mindspore import jit, Tensor, context
 from mindspore.ops import Primitive
-import sys  
 import pytest 
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fallback_tuple_with_mindspore_function():
     """
@@ -41,7 +35,7 @@ def test_fallback_tuple_with_mindspore_function():
                 return True
         return False
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo():
         return isinstance_fn(np.array(1), (np.ndarray, nn.Cell, Primitive))
 
@@ -56,7 +50,7 @@ def test_prune_if_in_while():
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def convert_list(list_of_tensor):
         if isinstance(list_of_tensor, list):
             tuple_of_tensor = ()

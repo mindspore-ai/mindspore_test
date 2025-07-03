@@ -1,0 +1,63 @@
+gelu:
+    description: |
+        gelu(input, *, approximate='none') -> Tensor
+
+        Gaussian Error Linear Units activation function.
+
+        GeLU is described in the paper `Gaussian Error Linear Units (GELUs) <https://arxiv.org/abs/1606.08415>`_.
+        And also please refer to `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
+        <https://arxiv.org/abs/1810.04805>`_.
+
+        When `approximate` argument is `none`, GELU is defined as follows:
+
+        .. math::
+            GELU(x_i) = x_i*P(X < x_i),
+
+        where :math:`P` is the cumulative distribution function of the standard Gaussian distribution,
+        :math:`x_i` is the input element.
+
+        When `approximate` argument is `tanh`, GELU is estimated with:
+
+        .. math::
+            GELU(x_i) = 0.5 * x_i * (1 + \tanh(\sqrt(2 / \pi) * (x_i + 0.044715 * x_i^3)))
+
+        GELU Activation Function Graph:
+
+        .. image:: ../images/GELU.png
+            :align: center
+
+        .. note::
+            On the Ascend platform, when `input` is -inf, its gradient is 0,
+            and when `input` is inf, its gradient is `dout`.
+
+        Args:
+            input (Tensor): The input of the activation function GeLU, the data type is float16, float32 or float64.
+
+        Keyword Args:
+            approximate (str, optional): the gelu approximation algorithm to use. Acceptable vaslues are ``'none'`` and ``'tanh'`` .
+                Default: ``'none'`` .
+
+        Returns:
+            Tensor, with the same type and shape as `input`.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If dtype of `input` is not bfloat16, float16, float32 or float64.
+            ValueError: If `approximate` value is neither `none` nor `tanh`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, mint
+            >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+            >>> result = mint.nn.functional.gelu(input)
+            >>> print(result)
+            [[-1.58655241e-01  3.99987316e+00 -0.00000000e+00]
+             [ 1.95449972e+00 -1.41860323e-06  9.0000000e+00]]
+            >>> result = mint.nn.functional.gelu(input, approximate="tanh")
+            >>> print(result)
+            [[-1.58808023e-01  3.99992990e+00 -3.10779147e-21]
+             [ 1.95459759e+00 -2.29180174e-07  9.0000000e+00]]

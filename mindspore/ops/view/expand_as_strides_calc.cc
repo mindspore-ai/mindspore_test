@@ -25,9 +25,9 @@ namespace mindspore::ops {
 constexpr size_t kExpandAsInputsNum = 2;
 
 TensorStorageInfoPtrList ExpandAsCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto self_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
-  auto other_tensor = inputs[1]->cast<tensor::BaseTensorPtr>();
-
+  auto self_tensor = inputs[0]->cast<tensor::TensorPtr>();
+  auto other_tensor = inputs[1]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(other_tensor);
   return BroadCastToProcess(prim, self_tensor, other_tensor->shape());
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,11 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {
@@ -48,7 +53,7 @@ void SetGradAccumulationStep(const std::vector<AnfNodePtr> &all_nodes) {
     }
     auto slice_cnode = node->cast<CNodePtr>();
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim->HasAttr(GRAD_ACCU_NUM)) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
       continue;
     }
     auto accu_step = GetValue<int64_t>(slice_prim->GetAttr(GRAD_ACCU_NUM));
@@ -63,8 +68,9 @@ void TagMicroBatchStart(const FuncGraphManagerPtr &manager, const std::vector<An
       continue;
     }
     auto slice_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(slice_cnode);
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim->HasAttr(GRAD_ACCU_NUM)) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr(GRAD_ACCU_NUM)) {
       continue;
     }
     auto accu_step = GetValue<int64_t>(slice_prim->GetAttr(GRAD_ACCU_NUM));
@@ -88,8 +94,9 @@ void TagMicroBatchEnd(const FuncGraphManagerPtr &manager, const std::vector<AnfN
       continue;
     }
     auto end_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(end_cnode);
     auto end_prim = GetCNodePrimitive(end_cnode);
-    if (!end_prim->HasAttr(FORWARD_END)) {
+    if (end_prim == nullptr || !end_prim->HasAttr(FORWARD_END)) {
       continue;
     }
     if (ParallelContext::GetInstance()->grad_accumulation_step() > 1 && !end_cnode->HasPrimalAttr(MICRO)) {
@@ -118,6 +125,9 @@ ValuePtr SearchPreNodeMicro(const CNodePtr &cnode) {
     if (!cnode->input(i)->isa<CNode>()) {
       continue;
     }
+    if (!SearchPreNodeMicro(cnode->input(i)->cast<CNodePtr>())) {
+      continue;
+    }
     return SearchPreNodeMicro(cnode->input(i)->cast<CNodePtr>());
   }
   return nullptr;
@@ -133,16 +143,22 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsPrimitiveCNode(cnode->input(0), prim::kPrimTupleGetItem)) {
       continue;
     }
 
     auto tuple_getitem_cnode = cnode->input(0)->cast<CNodePtr>();
-    auto tuple_getitem_cnode_input = tuple_getitem_cnode->input(1)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(tuple_getitem_cnode);
+    auto tuple_getitem_cnode_input_pre = tuple_getitem_cnode->input(1);
+    MS_EXCEPTION_IF_NULL(tuple_getitem_cnode_input_pre);
+    auto tuple_getitem_cnode_input = tuple_getitem_cnode_input_pre->cast<CNodePtr>();
     if (!tuple_getitem_cnode_input || !IsValueNode<FuncGraph>(tuple_getitem_cnode_input->input(0))) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(tuple_getitem_cnode_input);
     auto reuse_graph = GetValueNode<FuncGraphPtr>(tuple_getitem_cnode_input->input(0));
+    MS_EXCEPTION_IF_NULL(reuse_graph);
     if (!reuse_graph->has_flag("no_inline")) {
       continue;
     }
@@ -169,7 +185,9 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
 void TagMicroBatchBpEndPrim(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   FuncGraphPtr parallel_care_graph = nullptr;
-  for (auto &fg : root->manager()->func_graphs()) {
+  auto root_manager = root->manager();
+  MS_EXCEPTION_IF_NULL(root_manager);
+  for (auto &fg : root_manager->func_graphs()) {
     for (auto &node : fg->nodes()) {
       if (IsPrimitiveCNode(node, prim::kPrimVirtualDataset)) {
         parallel_care_graph = fg;
@@ -214,7 +232,9 @@ void TagMicroBatchBpEnd(const FuncGraphPtr &root) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     if (!prim->HasAttr(FIRST_PARAMETER_CNODE)) {
       continue;
     }
@@ -238,6 +258,7 @@ void ExtractMicroBatchBorderNodes(const FuncGraphPtr &root,
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     bool is_bp_node = cnode->HasPrimalAttr(kPrimalAttrForwardNodeName);
     if (!is_bp_node && cnode->HasPrimalAttr(GRAD_ACCU_FORWARD_BEGIN)) {
       auto accu_forward_begin_micro = GetValue<int64_t>(cnode->GetPrimalAttr(GRAD_ACCU_FORWARD_BEGIN));
@@ -261,7 +282,7 @@ void ReorderGradAccumulation(const FuncGraphPtr &root,
   auto manager = root->manager();
   for (int64_t micro = 0; micro < ParallelContext::GetInstance()->grad_accumulation_step() - 1; ++micro) {
     if (forward_start.find(micro + 1) == forward_start.end()) {
-      MS_LOG(EXCEPTION) << "Micro " << micro + 1 << " cannot find forward_start nodes.";
+      MS_LOG(EXCEPTION) << "Micro " << (micro + 1) << " cannot find forward_start nodes.";
     }
     if (backward_end.find(micro) == backward_end.end()) {
       MS_LOG(EXCEPTION) << "Micro " << micro << " cannot find backward_end nodes.";

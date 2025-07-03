@@ -1,7 +1,7 @@
 mindspore.mint.fmod
 =====================
 
-.. py:function:: mindspore.mint.fmod(input, other)
+.. py:function:: mindspore.mint.fmod(input, other) -> Tensor
 
     计算除法运算 input/other 的浮点余数。
 

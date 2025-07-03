@@ -59,6 +59,8 @@ class InsertVariableNodePass : public Pass {
   template <typename T>
   ParameterPtr BuildFloat16ZeroVecNDParameterNode(const FuncGraphPtr &anf_graph, ShapeVector weight_shape,
                                                   const std::string &node_name, T value, TypeId dtype);
+  void InitWeightParam(const std::shared_ptr<ConverterPara> &param, std::string *variable_weights_file,
+                       int32_t *max_weight_batch);
 
   std::shared_ptr<ConverterPara> param_;
 };

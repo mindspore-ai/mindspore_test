@@ -39,6 +39,8 @@
 #include "infer/make_tuple.h"
 #include "infer/return.h"
 #include "infer/tuple_get_item.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::converter::kFmkTypeTflite;
 namespace mindspore::lite {
@@ -152,12 +154,12 @@ STATUS TfliteModelParser::TfliteModelVerify() {
     }
     auto ret = TfliteOpVerify(subgraph, tflite_model_operator_codes_size, all_subgraph_tensor_size);
     if (ret != RET_OK) {
-      MS_LOG(ERROR) << "Tflite op verification dose not pass.";
+      MS_LOG(ERROR) << "Tflite op verification does not pass.";
       return RET_ERROR;
     }
     ret = TfliteTensorVerify(subgraph, tflite_model_buffers_size);
     if (ret != RET_OK) {
-      MS_LOG(ERROR) << "Tflite Tensor verification dose not pass.";
+      MS_LOG(ERROR) << "Tflite Tensor verification does not pass.";
       return RET_ERROR;
     }
   }

@@ -30,17 +30,45 @@ set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory f
 set(INSTALL_BASE_DIR ".")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
+set(CUSTOM_ASCENDC_PREBUILD_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/prebuild")
+
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+    install(
+        TARGETS mindspore_cpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
 
 if(ENABLE_D)
     install(
-            TARGETS mindspore_ascend LIBRARY
+            TARGETS mindspore_ascend mindspore_ops_ascend LIBRARY
             DESTINATION ${INSTALL_PLUGIN_DIR}
             COMPONENT mindspore
             NAMELINK_SKIP
     )
+    install(
+        TARGETS mindspore_ascend_res_manager mindspore_graph_ir LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+    install(
+        TARGETS mindspore_ge_backend LIBRARY
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
     if(ENABLE_MPI)
         install(
-                TARGETS ascend_collective
+                TARGETS ascend_collective d_collective
                 DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                 COMPONENT mindspore
         )
@@ -57,6 +85,19 @@ if(ENABLE_D)
                     COMPONENT mindspore
             )
         endif()
+    endif()
+    if(EXISTS ${ASCEND_NNAL_ATB_PATH})
+        install(
+                TARGETS mindspore_atb_kernels mindspore_pyboost_atb_kernels LIBRARY
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+                NAMELINK_SKIP
+        )
+        install(
+                TARGETS mindspore_extension_ascend_atb ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+        )
     endif()
     install(
         TARGETS ms_atb_boost
@@ -76,8 +117,7 @@ if(ENABLE_D)
     install(
             DIRECTORY
             ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/custom_compiler
-            ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910
-            ${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/ascend/ascendc/custom_ascendc_910b
+            ${CUSTOM_ASCENDC_PREBUILD_DIR}/${CMAKE_SYSTEM_PROCESSOR}/custom_ascendc_ops/custom_ascendc_910b
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
             COMPONENT mindspore
     )
@@ -97,6 +137,12 @@ if(ENABLE_GPU)
             DESTINATION ${INSTALL_PLUGIN_DIR}
             COMPONENT mindspore
             NAMELINK_SKIP
+    )
+    install(
+        TARGETS mindspore_gpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
     if(ENABLE_MPI)
         install(

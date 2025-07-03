@@ -23,6 +23,7 @@
 #include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -69,7 +70,7 @@ BaseShapePtr SortExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 ShapeArray SortExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
   if (x_shape_vector.empty() || (x_shape_vector.size() == 1 && x_shape_vector[0] == 0)) {
@@ -88,7 +89,7 @@ ShapeArray SortExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList SortExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype(), kInt64};
 }

@@ -17,9 +17,9 @@
 #include "runtime/pynative/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/pynative/lazy_fusion_kernel.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/distributed/init.h"
 
 namespace mindspore::runtime {
 OpExecutor &OpExecutor::GetInstance() {
@@ -37,25 +37,17 @@ void OpExecutor::Reset() {
 }
 
 void OpExecutor::PushOpRunTask(const std::shared_ptr<DeviceOpRunTask> &op_run_task) {
-  FlushLazyFusion();
   MS_EXCEPTION_IF_NULL(op_run_task);
   MS_EXCEPTION_IF_NULL(op_run_task->context());
   runtime::Pipeline::Get().backend_stage()->Push(op_run_task);
 }
 
 void OpExecutor::PushOpRunTask(const std::shared_ptr<PyBoostDeviceTask> &op_run_task) {
-  FlushLazyFusion();
-  MS_EXCEPTION_IF_NULL(op_run_task);
-  runtime::Pipeline::Get().backend_stage()->Push(op_run_task);
-}
-
-void OpExecutor::PushOpRunTask(const std::shared_ptr<DvmDeviceTask> &op_run_task) {
   MS_EXCEPTION_IF_NULL(op_run_task);
   runtime::Pipeline::Get().backend_stage()->Push(op_run_task);
 }
 
 void OpExecutor::PushSimpleOpRunTask(const std::shared_ptr<AsyncTask> &op_run_task) {
-  FlushLazyFusion();
   runtime::Pipeline::Get().backend_stage()->Push(op_run_task);
 }
 
@@ -88,10 +80,7 @@ bool OpExecutor::NeedSync() {
 }
 
 void OpExecutor::RegisterCallbackForMemoryPool() {
-  device::DynamicMemPoolBestFit::set_wait_callback([]() {
-    MS_LOG(DEBUG) << "Wait all in memory pool";
-    runtime::Pipeline::Get().WaitAll();
-  });
+  // Not worked currently.
 }
 
 void OpExecutor::ChildAfterFork() {
@@ -101,4 +90,7 @@ void OpExecutor::ChildAfterFork() {
   RegisterCallbackForMemoryPool();
   MS_LOG(DEBUG) << "OpExecutor reinitialize after fork done.";
 }
+
+void OpExecutorWorkerJoin() { runtime::OpExecutor::GetInstance().WorkerJoin(); }
+REGISTER_DISTRIBUTED_CALLBACK(OpExecutorWorkerJoin);
 }  // namespace mindspore::runtime

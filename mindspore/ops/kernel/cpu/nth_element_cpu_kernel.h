@@ -21,11 +21,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nth_element_cpu {
 class NthElementCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<NthElementCpuKernelMod> {
  public:
   NthElementCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class NthElementCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   bool reverse_{false};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace nth_element_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

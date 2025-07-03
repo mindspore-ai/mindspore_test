@@ -17,7 +17,6 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/irfft2.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/op_name.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"

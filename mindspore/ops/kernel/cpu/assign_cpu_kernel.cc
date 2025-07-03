@@ -18,11 +18,12 @@
 
 #include <complex>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace assign_cpu {
 namespace {
 constexpr size_t kAssignInputsNum = 2;
 constexpr size_t kAssignOutputsNum = 1;
@@ -216,5 +217,6 @@ std::vector<KernelAttr> AssignCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Assign, AssignCpuKernelMod);
+}  // namespace assign_cpu
 }  // namespace kernel
 }  // namespace mindspore

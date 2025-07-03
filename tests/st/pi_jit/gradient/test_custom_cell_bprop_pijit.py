@@ -14,9 +14,7 @@
 # ============================================================================
 """test cell with bprop in PIJit and pynative mode"""
 import numpy as np
-import sys  
 import pytest 
-
 import mindspore as ms
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
@@ -30,10 +28,6 @@ from mindspore import ops
 from mindspore._extends import cell_attr_register
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
 grad_all = C.GradOperation(get_all=True)
 
@@ -87,7 +81,7 @@ def test_grad_inline_mul_add():
 
 
 class WithNoBprop(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         return 2 * x + y
 
@@ -106,7 +100,7 @@ def test_with_no_bprop():
     assert grad_all(with_no_bprop)(x, y) == (2, 1)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_1():
     """
     Feature: grad multiple add
@@ -118,7 +112,7 @@ def test_grad_in_bprop_1():
             super(GradInBprop_1, self).__init__()
             self.relu = P.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.relu(x)
 
@@ -127,31 +121,30 @@ def test_grad_in_bprop_1():
             super(GradInBprop_2, self).__init__()
             self.f = GradInBprop_1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.f(x, y), grad_all(self.f)(x, y)
 
         def bprop(self, x, y, out, dout):
             grads = grad_all(self.f)(x, y)
-            return out[1][0], grads[1]
+            return out[1][0] + 10, grads[1] + 10
 
     class GradInBprop_3(nn.Cell):
         def __init__(self):
             super(GradInBprop_3, self).__init__()
             self.f = GradInBprop_2()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.f(x, y)
 
     grad_in_bprop = GradInBprop_3()
     grads = grad_all(grad_in_bprop)(Tensor(np.ones([2, 2]).astype(np.float32)),
                                     Tensor(np.ones([2, 2]).astype(np.float32)))
-    assert (grads[0].asnumpy() == np.ones([2, 2]).astype(np.float32)).all()
-    assert (grads[1].asnumpy() == np.zeros([2, 2]).astype(np.float32)).all()
+    assert (grads[0].asnumpy() == (np.ones([2, 2]) + 10).astype(np.float32)).all()
+    assert (grads[1].asnumpy() == (np.zeros([2, 2]) + 10).astype(np.float32)).all()
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_2():
     """
@@ -170,6 +163,7 @@ def test_grad_in_bprop_2():
         def bprop(self, x, y, out, dout):
             return x * y, y + x
 
+    @jit(capture_mode="bytecode")
     class GradInBprop_2(nn.Cell):
         def __init__(self):
             super(GradInBprop_2, self).__init__()
@@ -209,7 +203,7 @@ def test_grad_in_bprop_3():
             super(GradInBprop_1, self).__init__()
             self.relu = P.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.relu(x)
 
@@ -218,7 +212,7 @@ def test_grad_in_bprop_3():
             super(GradInBprop_2, self).__init__()
             self.f = GradInBprop_1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.f(x, y), grad_all(self.f)(x, y)
 
@@ -231,7 +225,7 @@ def test_grad_in_bprop_3():
             super(GradInBprop_3, self).__init__()
             self.f = GradInBprop_2()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.f(x, y)
 
@@ -251,7 +245,7 @@ class OneInputBprop(nn.Cell):
         super().__init__()
         self.op = P.ReLU()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.op(x)
 
@@ -274,7 +268,7 @@ def test_grad_one_input_bprop():
 
 
 class TwoInput(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         return x * y
 
@@ -284,7 +278,7 @@ class InlineBpropTwoInput(nn.Cell):
         super().__init__()
         self.f = TwoInput()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         return self.f(x, y), grad_all(self.f)(x, y)
 
@@ -315,7 +309,7 @@ class TwoInputBprop(nn.Cell):
         super().__init__()
         self.op = P.Mul()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         return self.op(x, y)
 
@@ -329,7 +323,7 @@ class TwoInputWithParameter(nn.Cell):
         self.op = P.Mul()
         self.inputdata = Parameter(initializer(1, (2, 2), mstype.float32), name="global_step")
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         x = self.inputdata + x
         return self.op(x, y)
@@ -341,7 +335,7 @@ class TwoInputWithOnlyInitParameterBprop(nn.Cell):
         self.op = P.Mul()
         self.inputdata = Parameter(initializer(1, (2, 2), mstype.float32), name="global_step")
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         return self.op(x, y)
 
@@ -387,7 +381,7 @@ class MulAddWithParam(nn.Cell):
         self.mul_add = MulAdd()
         self.param = Parameter(Tensor(np.array([[3, 2]], np.float32)), 'param')
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.mul_add(self.param, x)
 
@@ -408,7 +402,7 @@ def test_refkey_bprop():
             self.network = network
             self.weights = ParameterTuple(filter(lambda x: x.requires_grad, network.get_parameters()))
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             weights = self.weights
             grads = grad_by_list(self.network, weights)(x)
@@ -435,7 +429,7 @@ def test_forward_with_parameter():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -451,7 +445,7 @@ def test_forward_with_parameter():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -482,7 +476,7 @@ def test_forward_with_parameter_in_sub_cell():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -492,7 +486,7 @@ def test_forward_with_parameter_in_sub_cell():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -508,7 +502,7 @@ def test_forward_with_parameter_in_sub_cell():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -539,7 +533,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -549,7 +543,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -567,7 +561,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = self.grad_op(self.net, self.params)
             return grad_f(x, y)
@@ -602,7 +596,7 @@ def test_pynative_forward_with_parameter():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -618,7 +612,7 @@ def test_pynative_forward_with_parameter():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -649,7 +643,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -659,7 +653,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -675,7 +669,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -706,7 +700,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -716,7 +710,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -734,7 +728,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grad_f = self.grad_op(self.net, self.params)
             return grad_f(x, y)
@@ -753,7 +747,6 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
     assert np.allclose(out[1][0].asnumpy(), expect_dz)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dde_self_define_cell_output_not_use():
     """
@@ -810,7 +803,7 @@ def test_bprop_defined_in_cell_attr_register():
             super().__init__()
             self.z = Parameter(Tensor(2, mstype.float32), name='z')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             x = x * self.z
             return x * y

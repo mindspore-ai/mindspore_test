@@ -18,10 +18,12 @@
 namespace mindspore {
 namespace symshape {
 namespace ops {
-REG_SYMBOL_OP_BUILDER("Sort").SetShapeDepend({DependOn::kShape}).SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
+SymbolPtr SortOpShapeBuilder(OperationBuilder *b) {
   auto x_shape = b->GetInputShape(0);
   return ListSymbol::Make({x_shape, x_shape});
-});
+}
+REG_SYMBOL_OP_BUILDER("Sort").SetShapeDepend({DependOn::kShape}).SetShapeFunc(SortOpShapeBuilder);
+REG_SYMBOL_OP_BUILDER("SortExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(SortOpShapeBuilder);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

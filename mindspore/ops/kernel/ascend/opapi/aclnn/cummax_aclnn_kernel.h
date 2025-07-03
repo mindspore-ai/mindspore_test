@@ -19,10 +19,11 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cummax {
 
 class CummaxAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class CummaxAscend : public AclnnKernelMod {
   int64_t axis_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cummax
 }  // namespace kernel
 }  // namespace mindspore
 

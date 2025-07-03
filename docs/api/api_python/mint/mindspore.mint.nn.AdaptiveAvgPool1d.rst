@@ -3,9 +3,9 @@ mindspore.mint.nn.AdaptiveAvgPool1d
 
 .. py:class:: mindspore.mint.nn.AdaptiveAvgPool1d(output_size)
 
-    对由多个输入平面组成的输入信号应用1D自适应平均池化。
+    对由多个输入平面组成的输入信号，运用1D自适应平均池化。
 
-    对于任何输入大小，输出大小为 :math:`L_{out}` 。
+    对于任何输入大小，输出大小均为 :math:`L_{out}` 。
     输出特征的数量等于输入平面的数量。
 
     .. warning::

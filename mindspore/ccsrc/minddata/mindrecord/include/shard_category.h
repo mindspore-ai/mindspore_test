@@ -36,6 +36,8 @@ class MINDRECORD_API ShardCategory : public ShardOperator {
 
   ~ShardCategory() override{};
 
+  std::string Name() override { return "ShardCategory"; }
+
   const std::vector<std::pair<std::string, std::string>> &GetCategories() const { return categories_; }
 
   const std::string GetCategoryField() const { return category_field_; }

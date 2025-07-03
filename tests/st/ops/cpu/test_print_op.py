@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import mindspore.context as context
-import mindspore.nn as nn
 import numpy as np
 import pytest
+import mindspore.context as context
+import mindspore.nn as nn
 
 import mindspore as ms
 from mindspore import Tensor, ops, Parameter
@@ -42,7 +42,7 @@ class PrintFunc(nn.Cell):
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64,
-                                   np.bool, np.float64, np.float32, np.float16, np.complex64, np.complex128])
+                                   np.bool_, np.float64, np.float32, np.float16, np.complex64, np.complex128])
 def test_print_op_dtype(mode, dtype):
     """
     Feature: cpu Print ops.
@@ -124,7 +124,7 @@ def test_print_op_string_twice():
         def __init__(self):
             super().__init__()
             self.w = Parameter(Tensor(np.random.randn(5, 3), ms.float32), name='w')
-            self.b = Parameter(Tensor(np.random.randn(3, ), ms.float32), name='b')
+            self.b = Parameter(Tensor(np.random.randn(3), ms.float32), name='b')
 
         def construct(self, x):
             out = ops.matmul(x, self.w)

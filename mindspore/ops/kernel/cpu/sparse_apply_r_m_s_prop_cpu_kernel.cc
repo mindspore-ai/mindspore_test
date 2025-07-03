@@ -18,12 +18,14 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/sparse_apply_r_m_s_prop.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_r_m_s_prop_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kSparseApplyRMSPropOutputsNum = 3;
 constexpr size_t kSparseApplyRMSPropInputsNum = 6;
@@ -279,5 +281,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SparseApplyRMSPropCpuKe
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyRMSProp, SparseApplyRMSPropCpuKernelMod);
+}  // namespace sparse_apply_r_m_s_prop_cpu
 }  // namespace kernel
 }  // namespace mindspore

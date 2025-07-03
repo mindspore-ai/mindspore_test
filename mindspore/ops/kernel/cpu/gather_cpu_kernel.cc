@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/errorcode.h"
 #include "nnacl/gather_parameter.h"
 #include "nnacl/base/gather_base.h"
@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace gather_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -158,5 +159,6 @@ std::vector<KernelAttr> GatherCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Gather, GatherCpuKernelMod);
+}  // namespace gather_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 #include <string>
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/pyboost/customize/matmul_allreduce_add_rmsnorm.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
-                                              const BaseTensorPtr &x2_tensor, const BaseTensorPtr &bias_tensor,
-                                              const BaseTensorPtr &residual_tensor, const BaseTensorPtr &gamma_tensor,
+void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
+                                              const TensorPtr &x2_tensor, const TensorPtr &bias_tensor,
+                                              const TensorPtr &residual_tensor, const TensorPtr &gamma_tensor,
                                               const FP32ImmPtr &epsilon, const StringImmPtr &group,
                                               const Int64ImmPtr &reduction, const Int64ImmPtr &comm_turn,
                                               const Int64ImmPtr &stream_mode) {
@@ -37,12 +38,12 @@ void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &o
   // Convert ValuePtr to c++ scalar
   auto epsilon_imm = static_cast<double>(GetValue<float>(epsilon));
   auto group_str = GetValue<std::string>(group);
-  std::string group_imm = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group_str);
+  std::string group_imm = device::ascend::OpApiUtil::GetCommName(group_str);
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto stream_mode_imm = GetValue<int64_t>(stream_mode);
 
   // transform reduction enum value to corresponding value
-  auto reduction_value = transform::GEReduction::ConvertEnumToString(GetValue<int64_t>(reduction));
+  auto reduction_value = device::ascend::GEReduction::ConvertEnumToString(GetValue<int64_t>(reduction));
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x1_tensor, x2_tensor, bias_tensor,
                                 residual_tensor, gamma_tensor);

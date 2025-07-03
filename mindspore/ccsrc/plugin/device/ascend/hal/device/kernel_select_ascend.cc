@@ -21,38 +21,47 @@
 #include <memory>
 #include <set>
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
+#include "kernel/ascend/acl/acl_kernel_build.h"
+#include "plugin/device/ascend/kernel/atb/atb_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "kernel/kernel_build_info.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_util.h"
-#include "transform/acl_ir/op_api_exec.h"
-#include "transform/acl_ir/ge_adapter_info.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "common/kernel_build_info.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
+#include "kernel/ascend/acl_ir/ge_adapter_info.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "include/backend/debug/data_dump/overflow_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
-constexpr size_t kOpTypeNumber = 6;
-constexpr const char *kOpSelectedType[] = {"GE kernel",    "internal kernel", "aclnn kernel",
-                                           "aclop kernel", "hccl kernel",     "host kernel"};
+constexpr size_t kOpTypeNumber = static_cast<size_t>(SelectedKernelType::NUM_KERNLE_TYPE);
+constexpr const char *kOpSelectedType[] = {"internal kernel", "aclnn kernel", "aclop kernel",
+                                           "atb kernel",      "hccl kernel",  "host kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -86,8 +95,7 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
   // In PyNative mode, the weight data will be copied to the device in the first step,
   // and there will be no HostToDeviceCopy in the follow-up. If host format conversion is disabled,
   // the TransData operator will be executed in each subsequent step, resulting in poor performance.
-  if (disable_convert && (context_ptr->get_param<bool>(MS_CTX_ENABLE_LOOP_SINK) ||
-                          context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode)) {
+  if (disable_convert) {
     disable_convert = trans::kFormatWithTransFunc.find(output_format[0]) == trans::kFormatWithTransFunc.end();
   }
   // if not find in host convert format map means the host has not registered the convert function of this format
@@ -129,9 +137,6 @@ void SetWeightFormat(const AnfNodePtr &real_input_node, std::vector<string> outp
 
 bool RefreshCastAndParamWeightFormat(const AnfNodePtr &input_node, const string &format) {
   MS_EXCEPTION_IF_NULL(input_node);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return false;
-  }
   if (!input_node->isa<CNode>()) {
     return false;
   }
@@ -235,30 +240,30 @@ std::string TryBackoffCpu(const KernelGraphPtr &graph, const CNodePtr &node,
 
 std::pair<std::string, ExceptionType> CollectNotMatchMessage(
   const CNodePtr &node, const std::vector<kernel::KernelBuildInfoPtr> &kernel_info_list,
-  const transform::ErrorAclType acl_err_type) {
+  const device::ascend::ErrorAclType acl_err_type) {
   std::stringstream ss;
   ExceptionType etype;
   MS_EXCEPTION_IF_NULL(node);
 
   switch (acl_err_type) {
-    case transform::kUnknownOp: {
+    case device::ascend::kUnknownOp: {
       ss << "The current operator needs to be supplemented with an adapter, please check in `transform` directory."
          << " node is " << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       etype = NotSupportError;
       break;
     }
-    case transform::kInValidType: {
+    case device::ascend::kInValidType: {
       ss << "The supported input and output data types for the current operator are: node is "
          << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       std::string name = GetCNodeFuncName(node);
-      const auto &info = transform::GeAdapterManager::GetInstance().GetInfo(name, true);
+      const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
       const auto &input_supported_dtypes = info->input_supported_dtypes();
       for (auto [index, dtypes] : input_supported_dtypes) {
         ss << "InputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;
@@ -267,9 +272,9 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       for (auto [index, dtypes] : output_supported_dtypes) {
         ss << "OutputDesc [" << index << "] support {";
         for (auto dtype : dtypes) {
-          std::string dtype_str = transform::ge_dtype_str_map.find(dtype) == transform::ge_dtype_str_map.end()
+          std::string dtype_str = device::ascend::ge_dtype_str_map.find(dtype) == device::ascend::ge_dtype_str_map.end()
                                     ? ""
-                                    : transform::ge_dtype_str_map[dtype];
+                                    : device::ascend::ge_dtype_str_map[dtype];
           ss << dtype_str << ",";
         }
         ss << "}" << std::endl;
@@ -289,13 +294,13 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
       etype = TypeError;
       break;
     }
-    case transform::kSpecialOp: {
+    case device::ascend::kSpecialOp: {
       ss << "The current operator is specified not to select ACL. Please contact the relevant engineer for help."
          << "node is " << node->fullname_with_scope() << trace::DumpSourceLines(node) << std::endl;
       etype = NotSupportError;
       break;
     }
-    case transform::kInvalidBuildInfo: {
+    case device::ascend::kInvalidBuildInfo: {
       auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
       MS_EXCEPTION_IF_NULL(kernel_info);
       auto build_info = kernel_info->select_kernel_build_info();
@@ -317,7 +322,7 @@ std::pair<std::string, ExceptionType> CollectNotMatchMessage(
 }
 
 bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::KernelBuildInfoPtr> &kernel_info_list,
-                        const KernelType &kernel_type, transform::ErrorAclType *err_type) {
+                        const KernelType &kernel_type, device::ascend::ErrorAclType *err_type) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   if (kernel_info_list.empty()) {
     return false;
@@ -333,7 +338,7 @@ bool SetMatchKernelInfo(const CNodePtr &kernel_node, const std::vector<kernel::K
                                   return item->IsSimilarityKernelBuildInfo(*build_info);
                                 });
   if (!find_valid) {
-    *err_type = transform::ErrorAclType::kInvalidBuildInfo;
+    *err_type = device::ascend::ErrorAclType::kInvalidBuildInfo;
   }
   return find_valid;
 }
@@ -373,7 +378,7 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
                                                      "AlltoAllAllGatherBatchMatMul",
                                                      "BatchMatMulReduceScatterAlltoAll"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   if (!enable_lccl) {
     kAscendcKernelList = {"AllFinite",
                           "AllGatherMatmul",
@@ -443,6 +448,33 @@ TypeId GetInputDeviceType(const AnfNodePtr &kernel_node, size_t input_idx) {
   return type;
 }
 
+inline bool NeedTransDataWhenInferBoost(const CNodePtr &kernel, const KernelType &kernel_type) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  const auto soc_version = context_ptr->ascend_soc_version();
+  if (soc_version == kAscendVersion310p) {
+    return kernel_type == KernelType::INTERNAL_KERNEL ||
+           IsOneOfPrimitiveCNode(kernel, {prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimGroupedMatmul});
+  } else if (soc_version == kAscendVersion910b || soc_version == kAscendVersion910_93) {
+    if (IsOneOfPrimitiveCNode(kernel, {prim::kPrimGroupedMatmulV4})) {
+      auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 0);
+      auto weight_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(kernel, 1);
+      if (x_dtype == kNumberTypeInt8 && (weight_dtype == kNumberTypeInt8 || weight_dtype == kNumberTypeInt4)) {
+        auto x_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 0);
+        auto weight_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, 1);
+        constexpr auto kRankTwo = 2;
+        constexpr auto kRankThree = 3;
+        if (x_shape.size() == kRankTwo && weight_shape.size() == kRankThree) {
+          // only trans weight to NZ when trans_a and tras_b is false
+          return x_shape[1] == weight_shape[1] && weight_shape[1] != weight_shape[2];
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type) {
   MS_EXCEPTION_IF_NULL(kernel);
   std::vector<std::string> input_formats;
@@ -471,20 +503,34 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
       output_object_type = cnode_output_object_type;
     }
   };
-  if (kernel_type == ACL_KERNEL) {
-    transform::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                  &output_reshape_types);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+
+  if (kernel_type == KernelType::ACL_KERNEL) {
+    device::ascend::AclHelper::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
+                                                       &output_reshape_types);
     // NOTE: acl default output objecttype is tensor, here are 2 special case:
     // case 1: when cnode output is tuple, and ge ops prototype output num is 1, the real output objecttype is tuple;
     // case 2: when cnode output is scalar, the real output objecttype is scalar
     // others: output objecttype is tensor
     std::string name = GetCNodeFuncName(kernel);
-    const auto &info = transform::GeAdapterManager::GetInstance().GetInfo(name, true);
+    const auto &info = device::ascend::GeAdapterManager::GetInstance().GetInfo(name, true);
     auto adapter_output_num = info->GetNumStaticOutputsOfMsOpProto();
     process_tuple_output(kernel, true, adapter_output_num);
+  } else if (context_ptr->IsEnableInferBoost() && NeedTransDataWhenInferBoost(kernel, kernel_type)) {
+    input_formats.clear();
+    output_formats.clear();
+    input_reshape_types.clear();
+    output_reshape_types.clear();
+    input_formats.assign(input_num, kOpFormat_DEFAULT);
+    output_formats.assign(output_num, kOpFormat_DEFAULT);
+    input_reshape_types.assign(input_num, "");
+    output_reshape_types.assign(output_num, "");
+
+    kernel::GetValidKernelBuildInfoWithInternalFormat(kernel, &input_formats, &output_formats);
   } else {
-    transform::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
-                                                  &output_reshape_types, kernel_type);
+    device::ascend::OpApiUtil::GetValidKernelBuildInfo(kernel, &input_formats, &output_formats, &input_reshape_types,
+                                                       &output_reshape_types, kernel_type);
     process_tuple_output(kernel, false, 1);
   }
 
@@ -589,18 +635,6 @@ void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node
   }
 }
 
-std::vector<std::string> SplitString(const std::string &str, char delim) {
-  std::stringstream ss(str);
-  std::string item;
-  std::vector<std::string> elems;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      elems.emplace_back(item);
-    }
-  }
-  return elems;
-}
-
 void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std::vector<size_t> *op_selected_num,
                            std::vector<std::set<std::string>> *op_selected_type) {
   MS_EXCEPTION_IF_NULL(op_selected_type);
@@ -616,22 +650,17 @@ void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std:
   }
 }
 
-std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node,
-                                                                     std::vector<size_t> *op_selected_num) {
+std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const KernelGraphPtr &graph,
+                                                                           const CNodePtr &node,
+                                                                           std::vector<size_t> *op_selected_num) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
   static std::vector<std::set<std::string>> op_selected_type(kOpTypeNumber);
-  transform::ErrorAclType acl_err_type = transform::ErrorAclType::kNormalOp;
-  std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
+  device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
+  std::tuple<bool, std::string, ExceptionType, bool> result = std::make_tuple(true, "", NoExceptionType, false);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
-  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
-    GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
-    CollectOpSelectedType(op_name, SelectedKernelType::GE_KERNEL, op_selected_num, &op_selected_type);
-    return result;
-  }
-
-  if (IsEnableInternalNode(node)) {
+  if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);
     CollectOpSelectedType(op_name, SelectedKernelType::INTERNAL_KERNEL, op_selected_num, &op_selected_type);
     return result;
@@ -641,7 +670,13 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   static const std::set<std::string> select_host_priorly = {kShapeOpName, kTensorShapeOpName};
   if ((select_host_priorly.count(op_name) != 0) && AnfAlgo::IsNodeSupportKernelSelectBackoff(node, graph)) {
     MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select host kernel priorly.";
-    return {false, op_name + " select host kernel priorly.", NotSupportError};
+    return {false, op_name + " select host kernel priorly.", NotSupportError, false};
+  }
+
+  if (kernel::IsEnableAtb(graph, node)) {
+    GenerateKernelBuildInfo(node, KernelType::ATB_KERNEL);
+    CollectOpSelectedType(op_name, SelectedKernelType::ATB_KERNEL, op_selected_num, &op_selected_type);
+    return result;
   }
 
   if (IsEnableAclnn(graph, node)) {
@@ -654,7 +689,8 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   if (IsOneOfPrimitiveCNode(
         node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
                prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimReshape, prim::kPrimMoveTo,
-               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+               prim::kPrimMoveAssign, prim::kPrimStreamSend, prim::kPrimStreamRecv, prim::kPrimExpandDims,
+               prim::kPrimSqueeze, prim::kPrimFlatten, prim::kPrimFlattenGrad, prim::kPrimReformat})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }
@@ -664,10 +700,11 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
     return result;
   }
 
-  auto kernel_type = transform::AclHelper::GetKernelInfoFromGe(node, &acl_err_type);
+  auto kernel_type = device::ascend::AclHelper::GetKernelInfoFromGe(node, &acl_err_type);
   if (kernel_type == KernelType::ACL_KERNEL) {
     GenerateKernelBuildInfo(node, kernel_type);
     CollectOpSelectedType(op_name, SelectedKernelType::ACLOP_KERNEL, op_selected_num, &op_selected_type);
+    std::get<kIndex3>(result) = true;
     return result;
   }
 
@@ -688,7 +725,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   }
 
   auto [msg, etype] = CollectNotMatchMessage(node, host_kernel_info_list, acl_err_type);
-  return {false, msg, etype};
+  return {false, msg, etype, false};
 }
 
 bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
@@ -699,11 +736,12 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
     auto primitive = GetCNodePrimitive(node);
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
     op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);
-    auto op_api_func = transform::GetOpApiFunc(op_type.c_str());
+    auto op_api_func = device::ascend::GetOpApiFunc(op_type.c_str());
     if (op_api_func != nullptr) {
       MS_LOG(INFO) << "Kernel of custom op " << node->fullname_with_scope() << "is selected AclNN.";
       return true;
     }
+    MS_LOG(WARNING) << "Can not find custom [" << op_type << "] aclnn api, aclop will be selected.";
   }
 
   if (kernel_graph->is_from_single_op()) {
@@ -744,37 +782,6 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   return ret;
 }
 
-bool IsEnableInternalNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto enable_internal = false;
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->IsEnableInferBoost()) {
-    enable_internal = true;
-  }
-
-  std::string op_name = common::AnfAlgo::GetCNodeName(node);
-  if (op_name == "ReshapeExt") {
-    enable_internal = true;
-  }
-
-  if (op_name == "QuantBatchMatmul") {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (!IsValueNode<None>(cnode->input(kIndex6))) {
-      enable_internal = false;
-    }
-  }
-  std::string disable_name_list = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
-  std::vector<std::string> op_name_vec = SplitString(disable_name_list, ',');
-  if (std::any_of(op_name_vec.begin(), op_name_vec.end(),
-                  [&op_name](const std::string &name) { return name == op_name; })) {
-    enable_internal = false;
-  }
-
-  return enable_internal && kernel::IsRegisteredInternalKernel(node);
-}
-
 void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {
   for (const auto &node : nodes) {
     MS_EXCEPTION_IF_NULL(node);
@@ -785,9 +792,10 @@ void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {
 
     const auto &kernel_graph = AnfAlgo::FetchKernelGraph(node.get());
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    auto [select_res, msg, etype] = SelectKernelInfoWithMsg(kernel_graph, node);
+    auto [select_res, msg, etype, is_aclop] = SelectKernelInfoWithMsg(kernel_graph, node);
     if (!select_res) {
-      MS_LOG(INFO) << "node is " << node->fullname_with_scope() << " should backoff";
+      MS_LOG(INFO) << "node is " << node->fullname_with_scope() << " should backoff "
+                   << "is_aclop: " << is_aclop;
       MS_VLOG(VL_ASCEND_KERNEL_SELECT) << "node is " << node->fullname_with_scope() << " should backoff";
       std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
       HandleKernelSelectFailure(kernel_graph, node, failure_info);
@@ -803,11 +811,12 @@ class AscendGraphKernelInfo : public GraphKernelInfo {
     MS_EXCEPTION_IF_NULL(kernel_node);
     const auto &kernel_graph = AnfAlgo::FetchKernelGraph(kernel_node.get());
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    auto [select_res, msg, etype] = SelectKernelInfoWithMsg(kernel_graph, kernel_node);
+    auto [select_res, msg, etype, is_aclop] = SelectKernelInfoWithMsg(kernel_graph, kernel_node);
     if (select_res) {
       return;
     }
-    MS_LOG(INFO) << "node is " << kernel_node->fullname_with_scope() << " should backoff";
+    MS_LOG(INFO) << "node is " << kernel_node->fullname_with_scope() << " should backoff"
+                 << ", is_aclop: " << is_aclop;
     std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
     HandleKernelSelectFailure(kernel_graph, kernel_node, failure_info);
   }

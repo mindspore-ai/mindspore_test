@@ -21,15 +21,17 @@
 namespace mindspore {
 namespace dataset {
 // Construct BarrierOp here, local variables initialized in operator due to tree construction restrictions
-BarrierOp::BarrierOp(int32_t op_connector_size, const std::string &condition_name, py::function condition_func)
-    : PipelineOp(op_connector_size),
-      clean_up_(false),
-      eof_(false),
-      condition_name_(condition_name),
-      condition_function_(std::move(condition_func)) {}
+BarrierOp::BarrierOp(int32_t op_connector_size, const std::string &condition_name, const py::function &condition_func)
+    : PipelineOp(op_connector_size), clean_up_(false), eof_(false), condition_name_(condition_name) {
+  py::gil_scoped_acquire gil_acquire;
+  condition_function_ = condition_func;
+}
 
 // destructor
-BarrierOp::~BarrierOp() {}
+BarrierOp::~BarrierOp() {
+  py::gil_scoped_acquire gil_acquire;
+  condition_function_ = py::object();
+}
 
 // Entry point for Barrier, called by launch()
 Status BarrierOp::operator()() {

@@ -105,7 +105,7 @@ def all_to_all_common():
     epoch_size = 2
 
     context.reset_auto_parallel_context()
-    context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL, search_mode="dynamic_programming", 
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.AUTO_PARALLEL, search_mode="sharding_propagation",
                                       device_num=1, global_rank=0)
     predict = Tensor(np.ones([32, 128]), dtype=ms.float32)
     label = Tensor(np.ones([32]), dtype=ms.int32)

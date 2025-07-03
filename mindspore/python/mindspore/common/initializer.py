@@ -36,9 +36,7 @@ class Initializer:
     Note:
         Initializers are intended to be used for delayed initialization in parallel mode rather than Tensor
         initialization. If you have to use Initializers to create a Tensor, :func:`mindspore.Tensor.init_data` should be
-        followed in most of the cases. For more information, please refer to `mindspore.Tensor.init_data
-        <https://www.mindspore.cn/docs/en/master/api_python/mindspore/Tensor/mindspore.Tensor.init_data.html#
-        mindspore-tensor-init-data>`_ .
+        followed in most of the cases. For more information, please refer to :func:`mindspore.Tensor.init_data` .
 
     Args:
         kwargs (dict): Keyword arguments for Initializer.
@@ -371,9 +369,9 @@ class HeUniform(Initializer):
     .. math::
         boundary = \text{gain} \times \sqrt{\frac{3}{fan\_mode}}
 
-    where :math:`gain` is an optional scaling factor. If :math:`fan\_mode` is ``'fan_in'``,
-    it is the number of input units of the weight tensor. If :math:`fan\_mode` is ``'fan_out'``,
-    it is the number of output units of the weight tensor.
+    where :math:`gain` is an optional scaling factor. If `mode` is ``'fan_in'``,
+    :math:`fan\_mode` in the formula is the number of input units of the weight tensor. If `mode` is ``'fan_out'``,
+    :math:`fan\_mode` is the number of output units of the weight tensor.
 
     For details of HeUniform algorithm, please check
     `<https://arxiv.org/abs/1502.01852>`_.
@@ -653,12 +651,16 @@ class Orthogonal(Initializer):
 class VarianceScaling(Initializer):
     r"""
     Generates an random array with scaling in order to initialize a tensor.
+
     When `distribution` is 'truncated_normal' or 'untruncated_normal', the value will be sampled from truncated or
     untruncated normal distribution with a mean of 0 and a scaled standard deviation
-    :math:`stddev = \sqrt{\frac{scale}{n}}`. :math:`n` will be the number of input units if `mode` is ``'fan_in'``,
+    :math:`stddev = \sqrt{\frac{scale}{n}}`.
+
+    :math:`n` will be the number of input units if `mode` is ``'fan_in'``,
     while :math:`n` will be
     the number of output units if `mode` is ``'fan_out'``. :math:`n` will be the average of ``'fan_in'``
     and ``'fan_out'`` if `mode` is ``'fan_avg'``.
+
     When `distribution` is ``'uniform'``, the value will be sampled from a uniform distribution within the limit of
     :math:`[-\sqrt{\frac{3*scale}{n}}, \sqrt{\frac{3*scale}{n}}]`.
 
@@ -827,6 +829,8 @@ def initializer(init, shape=None, dtype=mstype.float32):
     Args:
         init (Union[Tensor, str, Initializer, numbers.Number]): Initialize value.
 
+            - `Tensor`: The tensor will be called to initialize tensor.
+
             - `str`: The `init` should be the alias of the class inheriting from `Initializer` and the corresponding
               class will be called in practice. The value of `init` can be ``"normal"``, ``"ones"`` or
               ``"zeros"``, etc.
@@ -834,8 +838,6 @@ def initializer(init, shape=None, dtype=mstype.float32):
             - `Initializer`: The `init` should be the class inheriting from `Initializer` to initialize tensor.
 
             - `numbers.Number`: The `Constant` will be called to initialize tensor.
-
-            - `Tensor`: The tensor will be called to initialize tensor.
 
         shape (Union[tuple, list, int]): The shape of the initialized tensor. Default: ``None`` .
         dtype (:class:`mindspore.dtype`): The type of data in initialized tensor. Default: ``mstype.float32`` .

@@ -26,7 +26,7 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model, FlopsUtilizationCollector
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, GradAccumulationCell
+from mindspore.nn import PipelineCell, GradAccumulationCell
 import mindspore.common.lazy_inline as lazy_inline
 
 
@@ -103,6 +103,51 @@ class Net(nn.Cell):
         return out
 
 
+class LargeMatMulCell(nn.Cell):
+    def __init__(self, strategy1, strategy2):
+        super().__init__()
+        self.param = Parameter(initializer("zeros", [64, 10240000]), name="param")
+        self.param1 = Parameter(initializer("zeros", [10240000, 64]), name="param1")
+        self.tile = P.Tile().shard(((strategy1[0][0], 1),))
+        self.matmul = P.MatMul().shard(strategy1)
+        self.matmul1 = P.MatMul().shard(strategy2)
+
+    def construct(self, x):
+        x = self.tile(x, (64, 1))
+        for _ in range(32):
+            x = self.matmul(x, self.param)
+            x = self.matmul1(x, self.param1)
+        return x, self.param
+
+
+class LargeMatMulCell2(nn.Cell):
+    def __init__(self, strategy1, strategy2):
+        super().__init__()
+        self.param1 = Parameter(initializer("zeros", [10240000, 64]), name="param1")
+        self.matmul = P.MatMul().shard(strategy1)
+        self.matmul1 = P.MatMul().shard(strategy2)
+
+    def construct(self, x, param):
+        out = self.matmul(x, param)
+        out = self.matmul1(out, self.param1)
+        return out
+
+
+class LargeLazyInlineNet(nn.Cell):
+    @lazy_inline
+    def __init__(self, stra1, stra2, param=None):
+        super().__init__()
+        self.cell1 = LargeMatMulCell(stra1, stra2)
+        self.cell1.pipeline_stage = 0
+        self.cell2 = LargeMatMulCell2(stra1, stra2)
+        self.cell2.pipeline_stage = 1
+
+    def construct(self, x, label):
+        out, param = self.cell1(x)
+        out = self.cell2(out, param)
+        return out
+
+
 class LazyInlineNet(nn.Cell):
     @lazy_inline
     def __init__(self, stra1, stra2, param=None):
@@ -151,6 +196,111 @@ class LazyInlineRecomputeNet(nn.Cell):
         return out
 
 
+class MatMulCell3(nn.Cell):
+    def __init__(self, strategy1, strategy2):
+        super().__init__()
+        self.param = Parameter(initializer("zeros", [64, 64]), name="param")
+        self.param1 = Parameter(initializer("zeros", [64, 64]), name="param1")
+        self.matmul = P.MatMul().shard(strategy1)
+        self.matmul1 = P.MatMul().shard(strategy2)
+
+    def construct(self, x):
+        out = self.matmul(x, self.param)
+        out = self.matmul1(out, self.param1)
+        return out
+
+
+class LazyInlineVppNet(nn.Cell):
+    @lazy_inline
+    def __init__(self, stra1, stra2):
+        super().__init__()
+        self.cell1 = MatMulCell3(stra1, stra2)
+        self.cell1.pipeline_stage = 0
+        self.cell2 = MatMulCell3(stra1, stra2)
+        self.cell2.pipeline_stage = 1
+        self.cell3 = MatMulCell3(stra1, stra2)
+        self.cell3.pipeline_stage = 0
+        self.cell4 = MatMulCell2(stra1, stra2)
+        self.cell4.pipeline_stage = 1
+
+    def construct(self, x, label):
+        out = self.cell1(x)
+        out = self.cell2(out)
+        out = self.cell3(out)
+        out = self.cell4(out, self.cell1.param)
+        return out
+
+
+def test_vpp_with_shared_parameter_stage0():
+    """
+    Feature: parallel subgraph inline
+    Description: parallel subgraph inline in pipeline parallel mode
+    Expectation: success
+    """
+    context.set_auto_parallel_context(
+        device_num=32, global_rank=0, pipeline_stages=2)
+    context.set_auto_parallel_context(pipeline_config={'pipeline_scheduler': '1f1b', 'pipeline_interleave': True})
+    context.set_context(save_graphs=True, save_graphs_path="./vpp_with_shared_parameter")
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    stra1 = ((16, 1), (1, 1))
+    stra2 = ((8, 1), (1, 1))
+    net = PipelineCell(LazyInlineVppNet(stra1, stra2), 4)
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
+        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    model.train(2, dataset, dataset_sink_mode=False)
+    file = "./vpp_with_shared_parameter/rank_0/*validate*.ir"
+    para = "pipeline_param"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "2"
+    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
+        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    context.set_context(save_graphs=False)
+
+
+def test_vpp_with_shared_parameter_stage1():
+    """
+    Feature: parallel subgraph inline
+    Description: parallel subgraph inline in pipeline parallel mode
+    Expectation: success
+    """
+    context.set_auto_parallel_context(
+        device_num=32, global_rank=16, pipeline_stages=2)
+    context.set_auto_parallel_context(pipeline_config={'pipeline_scheduler': '1f1b', 'pipeline_interleave': True})
+    context.set_context(save_graphs=True, save_graphs_path="./vpp_with_shared_parameter")
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    stra1 = ((16, 1), (1, 1))
+    stra2 = ((8, 1), (1, 1))
+    net = PipelineCell(LazyInlineVppNet(stra1, stra2), 4)
+    params = net.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optim = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optim)
+    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
+        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    model.train(2, dataset, dataset_sink_mode=False)
+    file = "./vpp_with_shared_parameter/rank_0/*validate*.ir"
+    para = "pipeline_param"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "3"
+    if os.path.exists("./vpp_with_shared_parameter/rank_0"):
+        shutil.rmtree("./vpp_with_shared_parameter/rank_0")
+    context.set_context(save_graphs=False)
+
+
 def test_pipeline_split_stage0():
     context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -159,7 +309,7 @@ def test_pipeline_split_stage0():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(Net(strategy1, strategy2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -174,7 +324,7 @@ def test_pipeline_split_stage1():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(Net(strategy1, strategy2), 4)
-    params = net.network.cell2.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -194,7 +344,7 @@ def test_pipeline_lazy_inline_stage0():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -209,13 +359,13 @@ def test_pipeline_lazy_inline_overlap_grad_comm_nodes_stage0():
     """
     context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(recompute_comm_overlap=True)
+    context.set_context(recompute_comm_overlap="AllGather,ReduceScatter")
     data = Tensor(np.ones([32, 64]), dtype=ms.float32)
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
     stra1 = ((4, 1), (1, 4))
     stra2 = ((4, 1), (1, 4))
     net = PipelineCell(LazyInlineRecomputeNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -235,7 +385,7 @@ def test_pipeline_lazy_inline_stage1():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell2.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -255,7 +405,7 @@ def test_pipeline_auto_parallel_lazy_inline_stage0():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -275,7 +425,7 @@ def test_pipeline_auto_parallel_lazy_inline_stage1():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell2.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -298,7 +448,7 @@ def test_dump_parallel_info():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -339,7 +489,7 @@ def test_pipeline_with_begin_end_inline():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = PipelineCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -383,7 +533,7 @@ def test_grad_accumulation_with_begin_end_inline():
     stra1 = ((16, 1), (1, 1))
     stra2 = ((8, 1), (1, 1))
     net = GradAccumulationCell(LazyInlineNet(stra1, stra2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optim = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optim)
@@ -418,12 +568,13 @@ def test_pipeline_split_stage0_flops():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(Net(strategy1, strategy2), 4)
-    params = net.network.cell1.trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False, callbacks=[
                 FlopsUtilizationCollector(dataset.get_dataset_size())])
+
 
 def test_pipeline_split_stage0_flops_ma():
     """
@@ -431,22 +582,23 @@ def test_pipeline_split_stage0_flops_ma():
     Description: parallel subgraph inline in grad parallel
     Expectation: success
     """
-    context.set_auto_parallel_context(
-        device_num=32, global_rank=0, pipeline_stages=2)
+    context.set_auto_parallel_context(device_num=2**16, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     data = Tensor(np.ones([32, 64]), dtype=ms.float32)
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
-    strategy1 = ((16, 1), (1, 1))
-    strategy2 = ((8, 1), (1, 1))
-    net = PipelineCell(Net(strategy1, strategy2), 4)
-    params = net.network.cell1.trainable_params()
+    stra1 = ((1, 1), (1, 1))
+    stra2 = ((1, 1), (1, 1))
+    net = PipelineCell(LargeLazyInlineNet(stra1, stra2), 4)
+    params = net.network.trainable_params()
+    net.network.cell1.recompute()
     dataset = DatasetLenet(data, label, 3)
-    optimizer = nn.Lamb(params, learning_rate=0.01)
+    optim = nn.Lamb(params, learning_rate=0.01)
     os.environ["MA_LOG_DIR"] = os.getcwd()
-    model = Model(net, optimizer=optimizer)
-    model.train(2, dataset, FlopsUtilizationCollector(enable_ma_collector=True), dataset_sink_mode=False)
+    model = Model(net, optimizer=optim)
+    model.train(2, dataset, dataset_sink_mode=False, callbacks=[
+                FlopsUtilizationCollector(dataset.get_dataset_size(), enable_ma_collector=True)])
     file = "flops_rank_0.txt"
-    para = "flops{type=\"model_flops\", rank_id=\"0\"} 2097152"
+    para = "flops{type=\"model_flops\", rank_id=\"0\"} 1.680053"
     output = subprocess.check_output(
         ["grep '%s' %s | wc -l" % (para, file)],
         shell=True)

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,16 @@
 #include "utils/hash_set.h"
 #include "utils/compact_set.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::pipeline {
 namespace {
@@ -91,25 +101,12 @@ class OrderEnforcer {
       // Skip UpdateStates for IO.
       return;
     }
-    const size_t attach_index = 2;
-    auto &attach = update_state->input(attach_index);
-    if (IsPrimitiveCNode(attach, prim::kPrimLoad) && IsPrimitiveCNode(attach, prim::kPrimMakeTuple)) {
-      // Skip UpdateState for Loads.
-      return;
-    }
-    // Check previous update_state.
-    auto &prev_u = update_state->input(1);
-    if (!IsPrimitiveCNode(prev_u, prim::kPrimUpdateState)) {
-      // Skip if previous is not UpdateState (maybe a U).
-      return;
-    }
     // Search side effect cnodes that use previous update_state as input.
-    auto side_effect_nodes = FindNodeUsers(prev_u, [&update_state](const AnfNodePtr &user_node) {
-      return (user_node != update_state) && !IsPrimitiveCNode(user_node, prim::kPrimLoad);
-    });
+    auto side_effect_nodes = FindNodeUsers(
+      update_state, [](const AnfNodePtr &user_node) { return !IsPrimitiveCNode(user_node, prim::kPrimLoad); });
     // For such side effect cnodes, try enforce order for them.
     for (auto &side_effect_node : side_effect_nodes) {
-      HandleSideEffectNode(side_effect_node->cast<CNodePtr>(), prev_u->cast<CNodePtr>());
+      HandleSideEffectNode(side_effect_node->cast<CNodePtr>(), update_state->cast<CNodePtr>());
     }
   }
 
@@ -236,7 +233,7 @@ class OrderEnforcer {
     for (size_t i = 1; i < cnode->size(); ++i) {
       auto &input = cnode->input(i);
       // Skip non-ref input and update_state.
-      if (!IsRef(input) || input == update_state) {
+      if (!IsRef(input)) {
         continue;
       }
       // The input is a ref (of parameter), find load nodes for it.
@@ -471,6 +468,23 @@ class OrderEnforcer {
     });
   }
 
+  bool IsSpecialLoad(const AnfNodePtr &load, const AnfNodePtr &user_cnode, const NodeUsersMap &node_users) const {
+    // Do not insert TensorMove for the load which user is MakeTuple, and the MakeTuple only used by UpdateState.
+    if (!IsPrimitiveCNode(user_cnode, prim::kPrimMakeTuple)) {
+      return false;
+    }
+    auto node_users_iter = node_users.find(user_cnode);
+    if (node_users_iter != node_users.end()) {
+      bool only_used_by_updatestate =
+        std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                    [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+      if (only_used_by_updatestate) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // If two loads at different times are used as inputs to the same node, need to insert TensorMove
   // load1 = Load(param, u1)
   // load2 = Load(param, u2)
@@ -501,6 +515,9 @@ class OrderEnforcer {
       auto &user_node = user.first;
       auto user_cnode = user_node->cast<CNodePtr>();
       if (IsPrimitiveCNode(user_cnode, prim::kPrimUpdateState)) {
+        continue;
+      }
+      if (IsSpecialLoad(load, user_cnode, node_users)) {
         continue;
       }
       const auto &weak_inputs = user_cnode->weak_inputs();
@@ -614,6 +631,25 @@ class OrderEnforcer {
     }
   }
 
+  bool CheckLoadIsSpecial(const AnfNodePtr &load, const NodeUsersMap &node_users) const {
+    auto iter = node_users.find(load);
+    if (iter != node_users.end()) {
+      const auto &users = iter->second;
+      if (users.size() != 1) {
+        // load not only used by maketuple
+        return false;
+      }
+      for (auto &user : users) {
+        const auto &user_node = user.first;
+        auto user_cnode = user_node->cast<CNodePtr>();
+        if (IsSpecialLoad(load, user_cnode, node_users)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   mindspore::HashSet<CNodePtr> GetNeedInsertLoads() {
     auto check_nodes = TopoSort(func_graph_->get_return());
     static const bool enable_all_load = common::GetEnv("MS_DEV_SIDE_EFFECT_LOAD_ELIM") == "0";
@@ -626,6 +662,7 @@ class OrderEnforcer {
     RefLoads refkey_loads_input_is_call_or_partial;
     RefLoads refkey_loads_return_is_load;
     std::set<CNodePtr> ref_call_nodes;
+    const auto &node_users = manager_->node_users();
     for (auto &node : check_nodes) {
       // Record load refkey
       if (IsPrimitiveCNode(node, prim::kPrimLoad)) {
@@ -639,7 +676,10 @@ class OrderEnforcer {
           MS_LOG(INFO) << "Load without ref key:" << load->DebugString();
           continue;
         }
-        (void)refkey_loads[refkey].emplace_back(load);
+        if (!CheckLoadIsSpecial(load, node_users)) {
+          (void)refkey_loads[refkey].emplace_back(load);
+        }
+
         while (IsPrimitiveCNode(input, prim::kPrimDepend)) {
           input = input->cast<CNodePtr>()->input(1);
         }

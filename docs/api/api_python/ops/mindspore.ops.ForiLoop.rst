@@ -3,7 +3,7 @@ mindspore.ops.ForiLoop
 
 .. py:class:: mindspore.ops.ForiLoop
 
-    一段范围内的循环操作。
+    在指定范围内执行循环操作。
     ForiLoop算子的执行逻辑可以近似表示为如下代码:
 
     .. code-block:: python
@@ -15,7 +15,7 @@ mindspore.ops.ForiLoop
 
     当前ForiLoop算子存在以下语法限制:
 
-    - 暂不支持 `loop_func` 为副作用函数，如：对Parameter、全局变量的修改等操作。
+    - 暂不支持 `loop_func` 为副作用函数，例如对Parameter、全局变量的修改等操作。
     - 暂不支持 `loop_func` 的返回值与初始值 `init_val` 的类型或形状不同。
     - 暂不支持负数或自定义增量。
 
@@ -36,4 +36,4 @@ mindspore.ops.ForiLoop
         - **TypeError** - `lower` 不是一个整数或者Tensor。
         - **TypeError** - `upper` 不是一个整数或者Tensor。
         - **TypeError** - `loop_func` 不是一个函数。
-        - **ValueError** - `loop_func` 不能接受索引值和 `init_val` 作为参数，或者返回值和 `init_val` 的类型或形状不同。
+        - **ValueError** - `loop_func` 不能接受索引值和 `init_val` 作为参数，或者输出值和 `init_val` 的类型或形状不同。

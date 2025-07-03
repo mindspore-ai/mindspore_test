@@ -16,14 +16,15 @@
 
 #include "kernel/ascend/pyboost/customize/conv_transpose2d.h"
 #include <memory>
+#include <string>
 #include "ir/scalar.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/auto_generate/convolution.h"
-#include "kernel/common/pyboost/auto_generate/expand_dims.h"
-#include "kernel/common/pyboost/auto_generate/squeeze.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/expand_dims.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/squeeze.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -41,10 +42,12 @@ bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_di
 }
 }  // namespace
 
-tensor::BaseTensorPtr ConvTranspose2DAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
-  const std::optional<BaseTensorPtr> &bias_tensor, const ValueTuplePtr &stride, const ValueTuplePtr &padding,
-  const ValueTuplePtr &output_padding, const Int64ImmPtr &groups, const ValueTuplePtr &dilation) {
+tensor::TensorPtr ConvTranspose2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const TensorPtr &weight_tensor,
+                                                 const std::optional<TensorPtr> &bias_tensor,
+                                                 const ValueTuplePtr &stride, const ValueTuplePtr &padding,
+                                                 const ValueTuplePtr &output_padding, const Int64ImmPtr &groups,
+                                                 const ValueTuplePtr &dilation) {
   const auto &input_shape = input_tensor->shape();
   auto is_batchify = ConvNDBatchify(input_shape, 2, op->primitive()->name());
 
@@ -57,14 +60,14 @@ tensor::BaseTensorPtr ConvTranspose2DAscendCustomize(
     return output_convolution;
   } else {
     // unsqueeze dim 0
-    static auto dim = std::make_shared<Int64Imm>(0);
+    static auto dim = 0;
     auto expand_dims_op = CREATE_PYBOOST_OP(ExpandDims, op->device_context()->device_context_key_.device_name_);
     auto expand_input = expand_dims_op->Call(input_tensor, dim);
     // call convolution
     auto output_convolution = convolution_op->Call(expand_input, weight_tensor, bias_tensor, stride, padding, dilation,
                                                    transposed, output_padding, groups);
     // squeeze dim 0
-    static auto squeeze_dims = std::make_shared<ValueTuple>(std::vector<ValuePtr>{dim});
+    static std::vector<int64_t> squeeze_dims{dim};
     auto squeeze_op = CREATE_PYBOOST_OP(Squeeze, op->device_context()->device_context_key_.device_name_);
     auto squeeze_output_tensor = squeeze_op->Call(output_convolution, squeeze_dims);
     op->set_outputs(squeeze_op->outputs());

@@ -27,7 +27,10 @@ namespace abstract {
 namespace {
 constexpr auto kStateStop = "Stop";
 }  // namespace
-thread_local std::string AnalysisSchedule::thread_id_ = "m";
+thread_local std::string thread_id_ = "m";
+
+void AnalysisSchedule::set_thread_id(const std::string &thread_id) { thread_id_ = thread_id; }
+std::string &AnalysisSchedule::thread_id() { return thread_id_; }
 
 void AnalysisSchedule::Schedule() {
   const auto checkPeriod = std::chrono::seconds(3);
@@ -229,12 +232,12 @@ void AsyncAbstract::ClearPossibleResult() {
 
 bool AsyncAbstract::SetPossibleResult(bool first) {
   std::lock_guard<std::mutex> lock(lock_);
-  bool condition = not_copy_from_other_ && switchAbstract_ != nullptr && switchAbstract_->HasResult();
+  bool condition = not_copy_from_other_ && switch_abstract_ != nullptr && switch_abstract_->HasResult();
   if (first && condition) {
-    condition = switchAbstract_->ignore_value_;
+    condition = switch_abstract_->ignore_value_;
   }
   if (condition) {
-    result_ = switchAbstract_->TryGetResult();
+    result_ = switch_abstract_->TryGetResult();
     // Set the result with the other branches abstract
     // when there are not available branches to infer.
     // Just copy the type otherwise the two branches would be optimized to a const value.
@@ -324,6 +327,11 @@ std::string AsyncAbstractFuncAtom::ToString() const {
   buffer << ")";
 
   return buffer.str();
+}
+
+AnalysisResultCacheMgr &AnalysisResultCacheMgr::GetInstance() {
+  static AnalysisResultCacheMgr instance;
+  return instance;
 }
 
 void AnalysisResultCacheMgr::Clear() {

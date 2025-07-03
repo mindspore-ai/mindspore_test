@@ -20,12 +20,12 @@
 #include <string>
 #include <memory>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 #include "ir/func_graph.h"
-#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT AdjustDependForParallelOptimizerRecomputeAllGather : public Pass {
+class BACKEND_COMMON_EXPORT AdjustDependForParallelOptimizerRecomputeAllGather : public Pass {
  public:
   AdjustDependForParallelOptimizerRecomputeAllGather()
       : Pass("adjust_depend_for_parallel_optimizer_recompute_all_gather") {}

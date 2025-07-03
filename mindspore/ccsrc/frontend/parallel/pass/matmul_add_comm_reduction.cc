@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,11 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {
@@ -60,6 +65,7 @@ bool IsAddNodeValid(const AnfNodePtr &add_node, const AnfNodePtr &comm_node) {
   const auto node_add_rank_list = node_add_tensor_layout.InferRepeatedGroup();
 
   auto comm_prim = GetCNodePrimitive(comm_node);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   if (!comm_prim->HasAttr(GROUP)) {
     return false;
   }
@@ -140,6 +146,7 @@ void FindAllValidAddNode(const FuncGraphPtr &graph, HashMap<AnfNodePtr, std::vec
       auto comm_cnode = comm_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(comm_node);
       auto pre_prim = GetCNodePrimitive(comm_cnode->input(kIndex1));
+      MS_EXCEPTION_IF_NULL(pre_prim);
       if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
         MS_LOG(INFO) << "For matmul comm reduction,  cannot find matmul/batch matmul node, "
                      << "skip cur node: " << input_node->DebugString();
@@ -248,7 +255,9 @@ void HandleNodePullUp(const AnfNodePtr &add_node, const std::vector<AnfNodePtr> 
     // Node After AllReduce pull up
     auto each_node = comm_node_list[index];
     auto each_cnode = each_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(each_cnode);
     auto pre_node = each_cnode->input(kIndex1);
+    MS_EXCEPTION_IF_NULL(pre_node);
     auto pre_prim = GetCNodePrimitive(pre_node);
     if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
       MS_LOG(INFO) << "For comm reduction, its pre node does not marked or marked false, skip it.";
@@ -259,6 +268,7 @@ void HandleNodePullUp(const AnfNodePtr &add_node, const std::vector<AnfNodePtr> 
     auto manager = graph->manager();
     MS_EXCEPTION_IF_NULL(manager);
     auto add_cnode = add_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(add_cnode);
     HandleNodeBiasAdd(each_node, add_cnode->input(index + 1));
     (void)manager->Replace(each_node, pre_node);
     MS_LOG(INFO) << "For comm reduction, pull up node next to comm node, node is: " << pre_node->DebugString();
@@ -275,8 +285,10 @@ void HandleNodePullDown(const AnfNodePtr &add_node, const AnfNodePtr &comm_node)
   auto graph = add_node->func_graph();
   MS_EXCEPTION_IF_NULL(graph);
   auto new_comm_node = graph->NewCNode(new_comm_node_inputs);
+  MS_EXCEPTION_IF_NULL(new_comm_node);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->AddAttr(MATMUL_ADD_COMM_REDUCTION, MakeValue(true));
 
   auto manager = graph->manager();

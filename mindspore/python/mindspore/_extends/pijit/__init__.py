@@ -16,8 +16,7 @@
 Helper module for pijit analyze
 """
 
+__all__ = ['pijit_func_white_list_map', "get_tensor_method_name"]
 
 from .pijit_func_white_list import _func_map as pijit_func_white_list_map
-
-
-__all__ = ['pijit_func_white_list_map']
+from .tensor_func_list import get_tensor_method_name

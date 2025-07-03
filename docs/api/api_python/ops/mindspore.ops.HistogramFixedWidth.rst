@@ -3,7 +3,7 @@ mindspore.ops.HistogramFixedWidth
 
 .. py:class:: mindspore.ops.HistogramFixedWidth(nbins, dtype='int32')
 
-    返回一个rank为1的直方图，该直方图中的每个组的值表示数量。每个组的宽度应该相等，且宽度由输入 `range` 和参数 `nbins` 决定。
+    返回一个rank为1的直方图，该直方图中的每个组的值表示数量。每个组的宽度相等，由输入 `range` 和参数 `nbins` 决定。
 
     参数：
         - **nbins** (int) - 直方图的组数，类型为正整数。

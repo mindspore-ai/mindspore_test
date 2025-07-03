@@ -1,0 +1,22 @@
+#operator new_full
+new_full:
+    args:
+        input:
+            dtype: tensor
+        size:
+            dtype: tuple[int]
+            type_cast: list[int]
+        fill_value:
+            dtype: number
+        dtype:
+            dtype: TypeId
+            arg_handler: dtype_to_type_id
+            default: None
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: NewFullAscend

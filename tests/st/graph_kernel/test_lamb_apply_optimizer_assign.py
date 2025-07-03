@@ -38,6 +38,8 @@ class Net(nn.Cell):
 def get_output(grad, inputv, inputm, input_param, beta_1, one_minus_beta_1, beta_2, one_minus_beta_2, epsilon, steps,
                do_use_weight, weight_decay_rate, enable_graph_kernel=False):
     context.set_context(enable_graph_kernel=enable_graph_kernel)
+    if enable_graph_kernel:
+        context.set_context(graph_kernel_flags="--enable_expand_ops=LambApplyOptimizerAssign")
     opt = Net(Tensor(inputv), Tensor(inputm))
     output = opt(Tensor(grad), Tensor(input_param), Tensor(beta_1),
                  Tensor(one_minus_beta_1), Tensor(beta_2), Tensor(one_minus_beta_2), Tensor(epsilon), Tensor(steps),

@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -72,7 +71,7 @@ def test_adaptive_max_pool3d_grad_fp32():
             [21, 23],
             [29, 31]
         ]
-    ]]).astype(np.int))
+    ]]).astype(np.int_))
     expect_result = (np.array([[
         [
             [0., 0., 0., 0.],
@@ -139,7 +138,7 @@ def test_adaptive_max_pool3d_grad_fp64():
             [21, 23],
             [29, 31]
         ]
-    ]]).astype(np.int))
+    ]]).astype(np.int_))
     expect_result = (np.array([[
         [
             [0., 0., 0., 0.],

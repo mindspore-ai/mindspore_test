@@ -18,12 +18,13 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace instance_norm_v2_grad_cpu {
 namespace {
 // GRAIN_SIZE for Parallel
 constexpr size_t kGrainSize = 4 * 1024;
@@ -172,5 +173,6 @@ std::vector<KernelAttr> InstanceNormV2GradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InstanceNormV2Grad, InstanceNormV2GradCpuKernelMod);
+}  // namespace instance_norm_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

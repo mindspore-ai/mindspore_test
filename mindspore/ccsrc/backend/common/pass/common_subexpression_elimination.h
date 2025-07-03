@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT CommonSubexpressionElimination : public Pass {
+class BACKEND_COMMON_EXPORT CommonSubexpressionElimination : public Pass {
  public:
   explicit CommonSubexpressionElimination(const std::string &name = "cse") : Pass(name) {}
   ~CommonSubexpressionElimination() override = default;

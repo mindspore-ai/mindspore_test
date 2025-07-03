@@ -24,7 +24,7 @@
 
 #include "minddata/dataset/core/device_resource.h"
 #include "minddata/dataset/core/device_tensor.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #endif
 #include "minddata/dataset/core/tensor.h"
@@ -305,7 +305,7 @@ class TensorOp {
   // @return Status
   virtual Status Compute(const std::shared_ptr<DeviceTensor> &input, std::shared_ptr<DeviceTensor> *output);
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   virtual Status Compute(const std::vector<std::shared_ptr<DeviceTensorAscend910B>> &input,
                          std::vector<std::shared_ptr<DeviceTensorAscend910B>> *output);
 

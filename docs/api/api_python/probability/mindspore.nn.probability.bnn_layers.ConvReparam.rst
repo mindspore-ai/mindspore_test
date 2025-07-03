@@ -6,7 +6,7 @@ mindspore.nn.probability.bnn_layers.ConvReparam
     具有重构化参数的卷积变分层。
     更多相关信息可以查阅 `自动编码变分贝叶斯 <https://arxiv.org/abs/1312.6114>`_ 相关论文。
 
-    
+
     参数：
         - **in_channels** (int) - 输入的channels :math:`C_{in}`。
         - **out_channels** (int) - 输出的channels :math:`C_{out}`。
@@ -28,7 +28,7 @@ mindspore.nn.probability.bnn_layers.ConvReparam
         - **weight_posterior_fn** (function) - 采样权重的后验分布。它必须是一个函数句柄，它返回一个 MindSpore 分布实例。默认值： ``normal_post_fn`` 。当前版本仅支持正态分布。
         - **bias_prior_fn** (Cell) - 偏置向量的先验分布。它必须返回一个 MindSpore 分布实例。默认值： ``NormalPrior`` （创建标准正态分布的实例）。当前版本仅支持正态分布。
         - **bias_posterior_fn** (function) - 采样偏差向量的后验分布。它必须是一个函数句柄，它返回一个 MindSpore 分布实例。默认值： ``normal_post_fn`` 。当前版本仅支持正态分布。
-    
+
     
     输入：
         - **input** (Tensor) - 输入 Tensor 的 shape 为 :math:`(N, C_{in})`。

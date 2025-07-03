@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {
@@ -104,7 +105,7 @@ ShapeArray ArgMaxWithValueFuncImpl::InferShape(const PrimitivePtr &primitive, co
     MS_EXCEPTION(ValueError) << primitive->name() << " should have" << kInputElementSize
                              << "inputs. Please try other inputs";
   }
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto x_shape = x_tensor->shape();
   if (MS_UNLIKELY(IsDynamicRank(x_shape))) {
@@ -166,7 +167,7 @@ TypePtr ArgMaxWithValueFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList ArgMaxWithValueFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_x_type = x_tensor->Dtype();
   TypePtrList type_ptr_list{kInt64, input_x_type};

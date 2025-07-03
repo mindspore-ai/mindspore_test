@@ -25,7 +25,11 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "plugin/device/ascend/optimizer/get_value_helper.h"
+#include "backend/common/pass/common/get_value_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -214,12 +218,6 @@ const BaseRef ShapeReshapeFusion::DefinePattern() const {
 
 const AnfNodePtr ShapeReshapeFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                              const EquivPtr &equiv) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(equiv);
 

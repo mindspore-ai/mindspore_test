@@ -17,13 +17,14 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_REPLACE_NODE_BY_PROXY_H_
 #include <string>
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 
 namespace mindspore {
 namespace opt {
-class ReplaceNodeByProxy : public Pass {
+class BACKEND_COMMON_EXPORT ReplaceNodeByProxy : public Pass {
  public:
   explicit ReplaceNodeByProxy(const std::string &name) : Pass(name) {}
   ~ReplaceNodeByProxy() override = default;

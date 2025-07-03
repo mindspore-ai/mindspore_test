@@ -88,7 +88,7 @@ def test_bias_add():
     Expectation: compile success
     """
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8)
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8)
     input_np = np.ones([16, 3, 32, 32]).astype(np.float32)
     label_np = np.zeros([16, 2048]).astype(np.float32)
     dataset = DatasetLenet(Tensor(input_np), Tensor(label_np), 1)

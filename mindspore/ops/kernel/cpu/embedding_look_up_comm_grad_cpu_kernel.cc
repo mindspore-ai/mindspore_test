@@ -16,11 +16,12 @@
 
 #include "kernel/cpu/embedding_look_up_comm_grad_cpu_kernel.h"
 #include <thread>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/mpi/mpi_interface.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_comm_grad_cpu {
 template <typename T>
 void EmbeddingLookUpCommGradCpuKernelMod::InitSplitNum(const std::vector<kernel::KernelTensor *> &inputs) {
   T split_num = static_cast<T *>(inputs[kIndex1]->device_ptr())[0];
@@ -96,5 +97,6 @@ bool EmbeddingLookUpCommGradCpuKernelMod::Launch(const std::vector<kernel::Kerne
 #endif
   return true;
 }
+}  // namespace embedding_look_up_comm_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

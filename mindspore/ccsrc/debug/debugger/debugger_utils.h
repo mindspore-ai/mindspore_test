@@ -20,39 +20,43 @@
 #include <string>
 #include <vector>
 #include "include/backend/debug/debugger/debugger.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context.h"
+#include "include/backend/visible.h"
 
 using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelLaunchAddr;
 using mindspore::kernel::KernelTensor;
 
 namespace mindspore {
-std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &output_size);
 
-vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
-                                 const DeviceContext *device_context);
+std::vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
+                                      const DeviceContext *device_context,
+                                      const std::vector<KernelTensor *> &tensors = {});
 
 // when used in abnormal dump, the async_copy should set to false
-void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> device_tensors, uint32_t exec_order,
+void LoadInputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t exec_order,
                 uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
                 const uint32_t sample_mode, const uint32_t sample_num, const bool async_copy = true);
 
-void LoadOutputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> device_tensors, uint32_t exec_order,
+void LoadOutputs(const CNodePtr &cnode, std::vector<KernelTensor *> device_tensors, uint32_t exec_order,
                  uint32_t root_graph_id, const DeviceContext *device_context, const bool trans_flag,
                  const uint32_t sample_mode, const uint32_t sample_num);
 
-bool CheckReadData(const CNodePtr &cnode);
+BACKEND_COMMON_EXPORT bool CheckReadData(const CNodePtr &cnode);
 
-void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *> input_kernel_tensors,
-                     std::vector<device::DeviceAddress *> output_kernel_tensors, uint32_t exec_order,
-                     const DeviceContext *device_context, const bool abnormal_dump = false);
+BACKEND_COMMON_EXPORT void ReadDataAndDump(const CNodePtr &cnode,
+                                           std::vector<kernel::KernelTensor *> input_kernel_tensors,
+                                           std::vector<kernel::KernelTensor *> output_kernel_tensors,
+                                           uint32_t exec_order, const DeviceContext *device_context,
+                                           const bool abnormal_dump = false);
 
-void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::DeviceAddress *> &input_device_tensors,
-                         const std::vector<device::DeviceAddress *> &output_device_tensors,
-                         const DeviceContext *device_context);
+BACKEND_COMMON_EXPORT void DumpDataViaCallback(const CNodePtr &cnode,
+                                               const std::vector<KernelTensor *> &input_device_tensors,
+                                               const std::vector<KernelTensor *> &output_kernel_tensors,
+                                               const DeviceContext *device_context);
 
-std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
+BACKEND_COMMON_EXPORT std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
 
 // get the full name of a tensor, which is the name used in TensorLoader
 std::string GetTensorFullName(const debugger::TensorProto &tensor);

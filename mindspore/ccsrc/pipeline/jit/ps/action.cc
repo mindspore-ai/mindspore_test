@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@
 #include <algorithm>
 #include <functional>
 
+#include "include/common/debug/draw.h"
+#include "include/common/debug/anf_ir_dump.h"
+#include "ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
@@ -32,18 +35,22 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/param_info.h"
 #include "ir/cell.h"
+#include "include/common/pynative/grad_state.h"
+#include "include/backend/py_execute_utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/utils/tensor_py_wrapper.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/fallback.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/shard/shard.h"
-#include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
@@ -55,18 +62,17 @@
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
 #include "pipeline/jit/ps/silent_check.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "utils/phase.h"
 #include "utils/compile_config.h"
 #include "backend/graph_compiler/transform.h"
 #include "load_mindir/infer_mindir.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "pipeline/jit/ps/load_mindir.h"
 #include "pipeline/jit/ps/pass_config.h"
@@ -76,9 +82,17 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/ps/util.h"
 #endif
-#include "common/debug/profiler/profiling_framework_data.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiling_framework_data.h"
+#include "debug/profiler/profiler.h"
 #include "availability/silent_check/silent_check.h"
+#include "backend/backend_manager/backend_manager.h"
+#include "include/common/pynative/adapter.h"
+#include "backend/backend_manager/backend_jit_config.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -147,6 +161,30 @@ ValuePtr CreateInsertGradientOf(const py::function &hook_fn) {
   return converted_res;
 }
 
+bool IsGradFgCaller(const AnfNodePtr &node) {
+  auto cnode = dyn_cast<CNode>(node);
+  if (cnode == nullptr || cnode->empty()) {
+    return false;
+  }
+  auto call_fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  return call_fg != nullptr && call_fg->has_flag("grad_fg");
+}
+
+bool IsUsedAsGradFgArgs(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
+  if (!IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
+    return IsGradFgCaller(node);
+  }
+  auto node_users_iter = node_users_map.find(node);
+  if (node_users_iter == node_users_map.end()) {
+    return false;
+  }
+  auto node_users = node_users_iter->second;
+  if (node_users.size() != 1) {
+    return false;
+  }
+  return IsGradFgCaller(node_users.begin()->first);
+}
+
 void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr &param_node) {
   if (!(param_node->has_default() && param_node->default_param()->has_user_data("backward_hook"))) {
     return;
@@ -161,8 +199,15 @@ void AddHookNodeForParameter(const FuncGraphPtr &func_graph, const ParameterPtr 
     const auto insert_grad_of = CreateInsertGradientOf(hook_fn);
     auto value_node = NewValueNode(insert_grad_of);
     value_node->set_abstract(insert_grad_of->ToAbstract());
-    const auto node_users = func_graph->manager()->node_users()[param_node];
-    for (const auto &node_and_index : node_users) {
+    const auto node_users_map = func_graph->manager()->node_users();
+    auto node_users_iter = node_users_map.find(param_node);
+    if (node_users_iter == node_users_map.end()) {
+      return;
+    }
+    for (const auto &node_and_index : node_users_iter->second) {
+      if (IsUsedAsGradFgArgs(node_and_index.first, node_users_map)) {
+        continue;
+      }
       const auto &fg = node_and_index.first->func_graph();
       auto new_node = fg->NewCNode({value_node, param_node});
       new_node->set_abstract(param_node->abstract());
@@ -189,9 +234,9 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
 
     // Handle the Parameter from input arguments.
     if (i < arguments.size()) {
-      auto param_value = dyn_cast<tensor::MetaTensor>(arguments[i]);
+      auto param_value = tensor::GetMetaTensorFromValue(arguments[i]);
       if (param_value != nullptr && param_value->is_parameter()) {
-        param_node->set_default_param(param_value);
+        param_node->set_default_param(arguments[i]);
       }
     }
 
@@ -207,77 +252,69 @@ void UpdateFuncGraphParameter(const FuncGraphPtr &func_graph, const std::vector<
   func_graph->set_parameters(new_paras);
 }
 
+bool CheckDuplicatedParameterName(const ValuePtr &arg, std::map<std::string, ValuePtr> *param_names) {
+  if (arg->isa<ValueSequence>()) {
+    const auto &elements = arg->cast<ValueSequencePtr>()->value();
+    return std::all_of(elements.begin(), elements.end(),
+                       [param_names](const auto &elem) { return CheckDuplicatedParameterName(elem, param_names); });
+  }
+
+  if (arg->isa<ValueDictionary>()) {
+    const auto &key_values = arg->cast<ValueDictionaryPtr>()->value();
+    return std::all_of(key_values.begin(), key_values.end(), [param_names](const auto &pair) {
+      return CheckDuplicatedParameterName(pair.second, param_names);
+    });
+  }
+
+  if (!arg->isa<tensor::Tensor>()) {
+    return true;
+  }
+
+  auto arg_tensor = arg->cast<tensor::TensorPtr>();
+  if (!arg_tensor->is_parameter()) {
+    return true;
+  }
+
+  auto param_info = arg_tensor->param_info();
+  MS_EXCEPTION_IF_NULL(param_info);
+  auto param_name = param_info->name();
+  auto found = param_names->find(param_name);
+  if (found != param_names->end()) {
+    if (found->second == arg) {
+      return true;
+    }
+    MS_EXCEPTION(ValueError)
+      << "The parameter " << arg->ToString() << " , its name '" << param_name
+      << "' already exists. Please set a unique name for the parameter."
+      << "\nFor more details with the name of parameter, please refer to "
+      << "https://mindspore.cn/search?inputValue=Please%20set%20a%20unique%20name%20for%20the%20parameter";
+  }
+
+  param_names->emplace(param_name, arg);
+  return true;
+}
+
+// Check parameters in cell and out cell has same name
+void CheckDuplicatedParameterName(const AnfNodePtrList &parameters) {
+  std::map<std::string, ValuePtr> param_names;
+  for (auto &parameter : parameters) {
+    auto param_node = parameter->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_node);
+
+    if (!param_node->has_default()) {
+      continue;
+    }
+
+    (void)CheckDuplicatedParameterName(param_node->default_param(), &param_names);
+  }
+}
+
 // Exist ScalarAdd ScalarSub etc OPS which will backoff to CPU
 bool IsNeedBackoffGraph(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return(), SuccDeeperSimple);
   return std::any_of(node_list.begin(), node_list.end(),
                      [](const AnfNodePtr &node) { return common::AnfAlgo::IsNodeMutableScalar(node); });
-}
-
-// Disable mindRT in the heterogeneous scenario + dynamic_shape scenario.
-void DisableMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    return;
-  }
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->cache_enable()) {
-    return;
-  }
-#endif
-}
-
-void TaskEmitActionForMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  // Get the mindRT backend.
-  auto bc_ptr = resource->GetBackend();
-  // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
-  // is used to convert user data to device ptr in device address.
-  compile::set_pydata_converter([](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
-  auto mindrt_bc_ptr = std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr);
-  MS_EXCEPTION_IF_NULL(mindrt_bc_ptr);
-  MS_EXCEPTION_IF_NULL(resource->func_graph());
-  auto actor_info = mindrt_bc_ptr->CompileGraphs(resource->func_graph());
-  resource->SetResult(kOutput, actor_info);
-  resource->SetResult(kActorInfo, actor_info);
-}
-
-void ExecuteActionForMindRT(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
-  // Get the mindRT backend.
-  auto bc_ptr = resource->GetBackend();
-  auto mindrt_bc_ptr = (std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr)).get();
-  MS_EXCEPTION_IF_NULL(mindrt_bc_ptr);
-
-  // Construct the graph run function ptr.
-  compile::VmEvalFuncPtr run =
-    std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
-      MS_LOG(DEBUG) << "Execute args size " << args.size();
-      VectorRef outputs;
-      mindrt_bc_ptr->RunGraph(actor_info, args, &outputs);
-      MS_LOG(DEBUG) << "out size " << outputs.size();
-      if (outputs.empty()) {
-        return VectorRef();
-      } else {
-        return outputs[0];
-      }
-    });
-  resource->SetResult(kOutput, run);
-  if (MsContext::GetInstance()->backend_policy() == "ge") {
-    compile::VmEvalFuncPtr ckpt_run =
-      std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
-        MS_LOG(DEBUG) << "Execute args size " << args.size();
-        auto ckpt_actor_info = "save." + actor_info;
-        VectorRef outputs;
-        mindrt_bc_ptr->RunGraph(ckpt_actor_info, args, &outputs);
-        return VectorRef();
-      });
-    resource->SetResult(kCkptOutput, ckpt_run);
-  }
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
@@ -366,9 +403,17 @@ abstract::AnalysisResult AbstractAnalyze(const abstract::AnalysisEnginePtr &engi
 
 abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs,
                                          bool clear) {
+  MS_EXCEPTION_IF_NULL(func);
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
-  auto manager = Manage(infer_graph, true);
+
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  auto manager = top_graph == nullptr ? Manage(infer_graph, true) : top_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  manager->AddFuncGraph(infer_graph);
+
   auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
+  engine->set_check_side_effect(true);
   return AbstractAnalyze(engine, infer_graph, args_abs, false, clear);
 }
 
@@ -380,9 +425,10 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &func,
   resource->set_func_graph(infer_graph);
 
   auto engine = resource->engine();
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
   auto res = AbstractAnalyze(engine, infer_graph, args_abs, false, true);
 
-  GraphExecutorPy::GetInstance()->CleanCompileRes(resource);
+  JitExecutorPy::GetInstance()->CleanCompileRes(resource);
   return res;
 }
 
@@ -405,13 +451,11 @@ void SetMindIRLoadFlag(const ResourcePtr &resource) {
   auto manager = resource->manager();
   MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr loaded_graph = nullptr;
-  size_t loaded_graph_num = 0;
   const auto &all_graphs = manager->func_graphs();
   for (auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_attr("is_load")) {
       loaded_graph = graph;
-      loaded_graph_num += 1;
       resource->set_is_load(true);
       return;
     }
@@ -423,6 +467,7 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   MS_EXCEPTION_IF_NULL(resource);
   MS_LOG(DEBUG) << "Renormalize start";
   auto engine = resource->engine();
+  engine->set_top_func_graph(resource->func_graph());
 
   abstract::AnalysisResult result;
   {
@@ -437,29 +482,6 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   }
 
   MS_LOG(DEBUG) << "Renormalize end";
-  return res;
-}
-
-FuncGraphPtr Renormalize(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
-  auto func_abs = func->ToAbstract();
-  if (!func_abs->isa<abstract::AbstractFunction>()) {
-    MS_LOG(EXCEPTION) << "The value: " << func->ToString() << " is not a callable object.";
-  }
-  auto func_graph = ConstructGraphForEval(func, args_abs);
-  auto manager = Manage(func_graph, true);
-  auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
-
-  abstract::AnalysisResult result;
-  {
-    MsProfileStatGuard stat_guard("renormalize.infer");
-    result = AbstractAnalyze(engine, func_graph, args_abs, false);
-  }
-  FuncGraphPtr res;
-  {
-    MsProfileStatGuard stat_guard("renormalize.specialize");
-    res = ProgramSpecialize(engine, func_graph, result.context);
-  }
-
   return res;
 }
 
@@ -605,6 +627,7 @@ FuncArgSpec GetFuncArgSpec(const FuncGraphPtr &func_graph, const py::object &inp
 
 void BuildTopGraph(const FuncGraphPtr &func_graph, const py::object &input,
                    const abstract::AbstractBasePtrList &args_abs) {
+  ScopeGuard scope_guard(kDefaultScope);
   // Make Resolve for user top graph 'input'.
   auto function_name = GetFunctionName(input);
   parse::NameSpacePtr name_space =
@@ -738,8 +761,7 @@ bool ParseAction(const ResourcePtr &resource) {
 
   auto top_graph = converted_ret->cast<FuncGraphPtr>();
   if (top_graph == nullptr) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, top_graph->return_node())
-      << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
+    MS_LOG(INTERNAL_EXCEPTION) << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
   }
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD) || py::hasattr(input, "__jit_function__")) {
     (void)std::for_each(top_graph->parameters().begin(), top_graph->parameters().end(),
@@ -785,7 +807,9 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     }
     auto &cloned_nodes = cloner.cloned_nodes();
     for (auto &fv : fg->parameter_obj_nodes()) {
-      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(fg->output()->debug_info()));
+      auto output = fg->output();
+      MS_EXCEPTION_IF_NULL(output);
+      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(output->debug_info()));
       auto param = base_graph->add_parameter();
       MS_EXCEPTION_IF_NULL(resource->manager());
       auto &node_users = resource->manager()->node_users()[fv];
@@ -803,6 +827,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Fg0 parameter_obj_nodes size :" << fg->parameter_obj_nodes().size();
 
     for (auto &g : graphs) {
+      MS_EXCEPTION_IF_NULL(fg->output());
       TraceGuard guard(MakeTraceInfo<TraceCopy>(fg->output()->debug_info()));
       auto &fvs = g->parameter_obj_nodes();
       std::vector<AnfNodePtr> new_node_inputs;
@@ -889,6 +914,7 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
   for (auto &fv : fv_params) {
     auto param = reusing_graph->InsertFrontParameter();
     const auto &top_param = fv->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(top_param);
     std::string name = "CR_" + top_param->name();
     if (param->debug_info() != nullptr) {
       param->debug_info()->set_name(name);
@@ -1150,7 +1176,9 @@ AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param) {
   auto abs_tensor = value_abs->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(abs_tensor);
   auto ref_key = std::make_shared<RefKey>(param->name());
-  return std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  auto res = std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
+  res->cast<abstract::AbstractRefPtr>()->set_is_parameter(true);
+  return res;
 }
 
 namespace {
@@ -1225,6 +1253,149 @@ void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg)
     }
   }
 }
+
+bool IsInplaceOpNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast_ptr<CNode>();
+  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+  return prim != nullptr && prim->inplace_prim();
+}
+
+bool IsCreatedByViewOp(const AnfNodePtr &node) {
+  if (node->isa<CNode>()) {
+    auto cnode = node->cast_ptr<CNode>();
+    auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    if (prim != nullptr && prim->graph_view_prim()) {
+      return true;
+    }
+  }
+  auto abstract = node->abstract();
+  if (abstract != nullptr && abstract->isa<abstract::AbstractRefTensor>()) {
+    const auto ref = abstract->cast_ptr<abstract::AbstractRefTensor>();
+    return ref->is_view();
+  }
+  return false;
+}
+
+bool IsViewInplaceNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<CNode>() && IsInplaceOpNode(node)) {
+    auto inplace_node = node->cast_ptr<CNode>();
+    const AnfNodePtrList &input_nodes = inplace_node->inputs();
+    const auto &prim = GetCNodePrimitive(node);
+    const auto &rw_write_index = prim->rw_write_input_indexes();
+    auto iter = std::find_if(rw_write_index.begin(), rw_write_index.end(), [&input_nodes](const size_t &index) {
+      if (index + 1 >= input_nodes.size()) {
+        MS_LOG(ERROR) << "Invalid rw_write index: " << index;
+        return false;
+      }
+      return IsCreatedByViewOp(input_nodes[index + 1]);
+    });
+    if (iter != rw_write_index.end()) {
+      MS_LOG(INFO) << "Found a view+inplace node. Inplace node: " << inplace_node->DebugString()
+                   << ", and one of its input is created by view op: " << input_nodes[(*iter) + 1]->DebugString();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FindViewInplaceNode(const AnfNodePtrList &nodes) {
+  bool has_view_inplace = false;
+  std::vector<std::string> loc_str_list{};
+  for (auto &node : nodes) {
+    if (IsViewInplaceNode(node)) {
+      has_view_inplace = true;
+      auto location_str = trace::GetDebugInfoStr(node->debug_info());
+      if (std::find(loc_str_list.begin(), loc_str_list.end(), location_str) != loc_str_list.end()) {
+        continue;
+      }
+      MS_LOG(WARNING)
+        << "There is an in-place modification to a Tensor view that requires gradients. However, computing gradients "
+           "for in-place modified Tensor views is still an experimental feature, and the results may be inaccurate. It "
+           "is recommended to replace the Tensor view here with a non-view Tensor. The code location is as follows:\n"
+        << location_str;
+      (void)loc_str_list.emplace_back(location_str);
+    }
+  }
+  return has_view_inplace;
+}
+
+FuncGraphPtr GetFuncFromAbstract(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto func_graph_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(abs);
+  MS_EXCEPTION_IF_NULL(func_graph_abstract);
+  if (!func_graph_abstract->specialized()) {
+    MS_LOG(DEBUG) << "Unspecialized func graph, partial abs: " << abs->ToString()
+                  << ", partial fn abs: " << func_graph_abstract->ToString();
+    return nullptr;
+  } else {
+    return func_graph_abstract->func_graph();
+  }
+}
+
+FuncGraphPtr GetForwardGraphFromJNode(const AnfNodePtr &j_node) {
+  MS_EXCEPTION_IF_NULL(j_node);
+  if (j_node->cast<CNodePtr>() == nullptr) {
+    return nullptr;
+  }
+  AnfNodePtr j_param = j_node->cast<CNodePtr>()->input(1);
+  AbstractBasePtr abs = j_param->abstract();
+  FuncGraphPtr forward_graph = nullptr;
+  if (IsValueNode<FuncGraph>(j_param)) {
+    forward_graph = GetValueNode<FuncGraphPtr>(j_param);
+  } else if (abs != nullptr && abs->isa<abstract::FuncGraphAbstractClosure>()) {
+    forward_graph = GetFuncFromAbstract(j_param->abstract());
+  } else {
+    MS_LOG(DEBUG) << "Unknown node: " << j_param->DebugString()
+                  << ", abstract: " << (j_param != nullptr ? j_param->abstract()->ToString() : "NULL");
+  }
+  return forward_graph;
+}
+
+bool RequireJitGrad(const std::string &phase) {
+  return phase.find("export") != 0 && pynative::GradState::Get().RequiresGrad();
+}
+
+void SetViewInplaceGradFlag(const ResourcePtr &resource) {
+  // pynative+jit
+  if (RequireJitGrad(PhaseManager::GetInstance().phase())) {
+    const auto &all_nodes = resource->manager()->all_nodes();
+    if (FindViewInplaceNode({all_nodes.begin(), all_nodes.end()})) {
+      MS_LOG(DEBUG) << "Found a view+inplace node. Grad run new pass.";
+      resource->set_is_pynative_grad_view_inplace(true);
+    }
+    return;
+  }
+  // Graph mode
+  AnfNodePtrList j_nodes;
+  for (const auto &node : resource->manager()->all_nodes()) {
+    if (IsPrimitiveCNode(node, prim::kPrimJ)) {
+      j_nodes.push_back(node);
+    }
+  }
+  if (j_nodes.empty()) {
+    MS_LOG(DEBUG) << "No J node is found, so no need to scan for view+inplace op";
+    return;
+  }
+  for (const auto &j_node : j_nodes) {
+    FuncGraphPtr forward_graph = GetForwardGraphFromJNode(j_node);
+    if (forward_graph == nullptr) {
+      MS_LOG(DEBUG) << "Cannot find forward graph from j node: " << j_node->DebugString();
+      continue;
+    }
+    if (forward_graph->get_return() == nullptr) {
+      MS_LOG(DEBUG) << "The return node of FuncGraph is NULL! fg: " << forward_graph->ToString();
+      continue;
+    }
+    const AnfNodePtrList &all_nodes = mindspore::TopoSort(forward_graph->get_return(), SuccDeeperSimple);
+    if (FindViewInplaceNode(all_nodes)) {
+      j_node->set_user_data("has_view_inplace_grad", std::make_shared<bool>(true));
+    }
+  }
+}
 }  // namespace
 
 bool TypeInferenceAction(const ResourcePtr &resource) {
@@ -1245,7 +1416,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   AnalysisResult result;
   {
     MsProfileStatGuard stat_guard("type_inference.infer");
-    result = AbstractAnalyze(resource->engine(), resource->func_graph(), GetArgsAbs(resource), resource->is_load());
+    result = AbstractAnalyze(engine, resource->func_graph(), GetArgsAbs(resource), resource->is_load());
   }
   (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, start_time, profiler::GetClockSyscnt(),
                                   0);
@@ -1275,7 +1446,9 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   }
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
+  CheckDuplicatedParameterName(new_fg->parameters());
   SetMindIRLoadFlag(resource);
+  SetViewInplaceGradFlag(resource);
 
   AddHookNodeForArgs(resource, new_fg);
 
@@ -1336,6 +1509,10 @@ bool OptInlineAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool OptAddAttrWithInlineAction(const ResourcePtr &resource) {
+  return OptimizeAction(resource, kAddAttrWithInlinePass);
+}
+
 bool VmOptimizeAction(const ResourcePtr &resource) {
   EventMessage::PrintCompileStatusMessage("Start performing graph optimization.");
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -1359,24 +1536,6 @@ bool VmOptimizeAction(const ResourcePtr &resource) {
   return ret;
 }
 
-static bool IsCtrlSink() {
-  auto ms_ctx = MsContext::GetInstance();
-  if (ms_ctx->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode) {
-    return false;
-  }
-
-  std::string device_target = ms_ctx->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target != kAscendDevice) {
-    return false;
-  }
-
-  if (!ms_ctx->get_param<bool>(MS_CTX_ENABLE_TASK_SINK)) {
-    return false;
-  }
-
-  return ms_ctx->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
-}
-
 bool CheckGraphOutputConstOrParameter(const FuncGraphPtr &func_graph) {
   if (func_graph != nullptr) {
     AnfNodePtr output = func_graph->output();
@@ -1389,15 +1548,19 @@ bool CheckGraphOutputConstOrParameter(const FuncGraphPtr &func_graph) {
 
 bool GetJitBpropGraph(const ResourcePtr &resource) {
   // This function only works in Pynative mode. The func_graph is decorated with 'jit'.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+  if (!RequireJitGrad(PhaseManager::GetInstance().phase())) {
     return true;
   }
-  return pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->GetJitGradGraph(resource);
+  return pynative::PyNativeAdapter::GetJitBpropGraph(resource, PhaseManager::GetInstance().phase());
 }
 
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {
   // This function is only used to convert unsupported syntax into PyExecute nodes through Fallback,
   // when the forward graph is decorated with 'jit', and is derivative in pynative mode.
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return true;
+  }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->not_convert_jit()) {
@@ -1411,7 +1574,7 @@ bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {
   return true;
 }
 
-bool EliminateSpecialOpNode(const ResourcePtr &resource) {
+bool OptAfterJitGrad(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->manager() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "PynativeElimOpt error, manager is null.";
@@ -1419,7 +1582,7 @@ bool EliminateSpecialOpNode(const ResourcePtr &resource) {
   if (resource->func_graph() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "PynativeElimOpt error, graph is null.";
   }
-  return EliminateSpecialOpOptPass(resource);
+  return OptAfterJitGradPass(resource);
 }
 
 bool HasIncorporateCall(const std::vector<AnfNodePtr> &all_nodes) {
@@ -1514,17 +1677,15 @@ bool ExistSwitchRef(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr
   return false;
 }
 
-bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes, bool pynative_mode,
-                           compile::Backend *backend_ptr) {
+bool SetModeForControlFlow(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &all_nodes,
+                           bool pynative_mode) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(backend_ptr);
-  auto set_ctx = [&context_ptr, &backend_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
+  auto set_ctx = [&context_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
     context_ptr->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, enable_loop_sink);
-    backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   // GRAPH | Closure\ENV\While scenario : KernelByKernel path in MindRT.
   auto graphs = func_graph->func_graphs_used_total();
@@ -1581,6 +1742,41 @@ bool IsCellReuse(const AnfNodePtr &input) {
   return false;
 }
 
+bool CantInlineCellReuse(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+    return false;
+  }
+  MS_LOG(INFO) << "Cell reuse graph: " << fg->ToString();
+  // cell reuse func graph has switch
+  if (!fg->switch_nodes().empty()) {
+    MS_LOG(INFO) << "Set no inline because cell reuse graph has switch, " << fg->ToString();
+    return true;
+  }
+  // cell reuse sub graph has switch or cell reuse
+  for (auto &sub_graph : fg->func_graphs_used_total()) {
+    if (!sub_graph->switch_nodes().empty() || sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
+      MS_LOG(INFO) << "Set no inline because cell reuse sub graph has switch or nested cell reuse, "
+                   << sub_graph->ToString();
+      return true;
+    }
+  }
+  MS_EXCEPTION_IF_NULL(fg->get_return());
+  MS_LOG(INFO) << "Graph return node: " << fg->get_return()->DebugString();
+  for (auto input : fg->get_return()->inputs()) {
+    if (IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+      for (auto inner_input : input->cast<CNodePtr>()->inputs()) {
+        if (IsPrimitiveCNode(inner_input, prim::kPrimMakeTuple)) {
+          MS_LOG(INFO) << "Set no inline because cell reuse graph has nested make tuple.";
+          return true;
+        }
+      }
+    }
+  }
+  MS_LOG(INFO) << "Graph: " << fg->ToString() << " can be lazyinlined.";
+  return false;
+}
+
 void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<MsContext> &context_ptr) {
   auto graphs = func_graph->func_graphs_used_total();
   (void)graphs.insert(func_graph);
@@ -1590,28 +1786,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
     MS_LOG(INFO) << "Set no inline because graph has while.";
     context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
-
-  auto cant_inline_cell_reuse = [](const FuncGraphPtr &fg) -> bool {
-    if (!fg->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
-      return false;
-    }
-    MS_LOG(INFO) << "Cell reuse graph: " << fg->ToString();
-    // cell reuse func graph has switch
-    if (!fg->switch_nodes().empty()) {
-      MS_LOG(INFO) << "Set no inline because cell reuse graph has switch, " << fg->ToString();
-      return true;
-    }
-    // cell reuse sub graph has switch or cell reuse
-    for (auto &sub_graph : fg->func_graphs_used_total()) {
-      if (!sub_graph->switch_nodes().empty() || sub_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
-        MS_LOG(INFO) << "Set no inline because cell reuse sub graph has switch or nested cell reuse, "
-                     << sub_graph->ToString();
-        return true;
-      }
-    }
-    return false;
-  };
-  if (std::any_of(graphs.cbegin(), graphs.cend(), cant_inline_cell_reuse)) {
+  if (std::any_of(graphs.cbegin(), graphs.cend(), CantInlineCellReuse)) {
     MS_LOG(INFO) << "Set no inline because cell reuse graph has switch or nested cell reuse.";
     context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
   }
@@ -1623,6 +1798,7 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (IsCellReuse(cnode->input(0))) {
         micro_num++;
       }
@@ -1634,8 +1810,8 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
       return;
     }
     MS_LOG(INFO) << "Cell reuse micro num: " << micro_num;
-    auto jit_level = context_ptr->GetJitLevel();
-    if (micro_num > kLazyInlineThershold && jit_level != kAttrJitLevelO2) {
+    auto not_ge = !common::AnfAlgo::IsBackendGe();
+    if (micro_num > kLazyInlineThershold && not_ge) {
       MS_LOG(INFO) << "Set no inline because cell reuse micro num is greater than " << kLazyInlineThershold
                    << ", micro num: " << micro_num;
       context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);
@@ -1643,22 +1819,20 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
   }
 }
 
-void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, std::string *kbk_reason) {
+void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(backend_ptr);
-  auto set_ctx = [&context_ptr, &backend_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
+  auto set_ctx = [&context_ptr](bool task_sink, bool is_multi_graph_sink, bool enable_loop_sink) {
     context_ptr->set_param<bool>(MS_CTX_ENABLE_TASK_SINK, task_sink);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, is_multi_graph_sink);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, enable_loop_sink);
-    backend_ptr->set_is_multi_graph_sink(is_multi_graph_sink);
   };
   ProcessCanNotInline(func_graph, context_ptr);
-  auto jit_level = pipeline::GetJitLevel();
+  auto jit_level = context_ptr->GetJitLevel();
   func_graph->set_attr(kAttrJitLevel, MakeValue<std::string>(jit_level));
   auto jit_config = PhaseManager::GetInstance().jit_config();
-  jit_config[kAttrJitLevel] = context_ptr->GetJitLevel();
+  jit_config[kAttrJitLevel] = jit_level;
   graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
 
   const bool pynative_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
@@ -1703,7 +1877,7 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
     set_ctx(false, false, false);
     return;
   }
-  if (!SetModeForControlFlow(func_graph, all_nodes, pynative_mode, backend_ptr)) {
+  if (!SetModeForControlFlow(func_graph, all_nodes, pynative_mode)) {
     return;
   }
 
@@ -1724,13 +1898,11 @@ void SetRunMode(const FuncGraphPtr &func_graph, compile::Backend *backend_ptr, s
 void OriginSetRunMode(const ResourcePtr &resource) {
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  auto bc_ptr = resource->GetBackend();
   auto context_ptr = MsContext::GetInstance();
   std::string backend = MsContext::GetInstance()->backend_policy();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
   if (func_graph->exist_multi_target() || !task_sink) {
-    bc_ptr->set_is_multi_graph_sink(false);
     context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
     context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, false);
   } else if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
@@ -1744,11 +1916,9 @@ void OriginSetRunMode(const ResourcePtr &resource) {
       std::any_of(graphs.cbegin(), graphs.cend(), [](const FuncGraphPtr &fg) { return fg->recursive(); });
     if (device_target == kAscendDevice && backend != kMsVm && !exist_while) {
       MS_LOG(INFO) << "Run graph mode with multigraph sink.";
-      bc_ptr->set_is_multi_graph_sink(true);
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, true);
     } else {
       MS_LOG(INFO) << "Run graph mode with vm.";
-      bc_ptr->set_is_multi_graph_sink(false);
       context_ptr->set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
       context_ptr->set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, false);
     }
@@ -1762,7 +1932,7 @@ void SetRunMode(const ResourcePtr &resource) {
   // The root cause of KernelByKernel mode should be returned.
   std::string kbk_reason = "";
   if (context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    SetRunMode(resource->func_graph(), resource->GetBackend().get(), &kbk_reason);
+    SetRunMode(resource->func_graph(), &kbk_reason);
   } else {
     OriginSetRunMode(resource);
   }
@@ -1775,7 +1945,7 @@ void SetRunMode(const ResourcePtr &resource) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
-                                  "https://www.mindspore.cn/docs/en/master/model_train/parallel/startup_method.html "
+                                  "https://www.mindspore.cn/tutorials/zh-CN/master/parallel/startup_method.html "
                                   "and use 'Dynamic cluster'(suggested) or 'mpirun' to launch your job.";
   }
 }
@@ -1789,6 +1959,8 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  context_ptr->Refresh();
+  const auto &backend = context_ptr->backend_policy();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   if (mode == kGraphMode && CheckGraphOutputConstOrParameter(func_graph)) {
     return true;
@@ -1799,34 +1971,25 @@ bool TaskEmitAction(const ResourcePtr &resource) {
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
   if (mode == kGraphMode || (mode == kPynativeMode && (func_graph->has_flag(kFlagJitCallGraph) || is_control_flow))) {
     func_graph->SetMultiTarget();
-    if (func_graph->exist_multi_target() && DumpJsonParser::GetInstance().IsDumpEnabled()) {
-      MS_LOG(WARNING) << "Multi device target is detected, CPU data is dumped in rank_0 directory";
-    }
   }
-  DisableMindRT(resource);
 
+  if (backend != kMsConvert && backend != kGeVm) {
+    resource->SetResult(kNoBackend, true);
+    MS_LOG(INFO) << "No backend.";
+    return true;
+  }
   SetRunMode(resource);
-  auto bc_ptr = resource->GetBackend();
-  MS_EXCEPTION_IF_NULL(bc_ptr);
-  const auto &backend = context_ptr->backend_policy();
-  // The graph compiling of mindRT.
-  if ((backend == kMsConvert || backend == kGeVm) && context_ptr->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    TaskEmitActionForMindRT(resource);
-    return true;
-  }
-  // The graph compiling of control sink.
-  if (IsCtrlSink() && (backend == kMsConvert || backend == kGeVm)) {
-    auto graph_id = bc_ptr->CompileGraph(NOT_NULL(func_graph));
-    resource->SetResult(kOutput, graph_id);
-    return true;
-  }
-  std::vector<PrimitivePtr> cut_list = compile::GetNonlinearOps();
-  if (bc_ptr->name() == kMsConvert || bc_ptr->name() == kGeVm) {
-    cut_list = compile::GetMsNonlinearOps();
-  }
-  std::shared_ptr<CompileGraphs> compile = std::make_shared<CompileGraphs>(bc_ptr, cut_list);
-  auto vm = compile->CompileAndLink(func_graph);
-  resource->SetResult(kOutput, vm);
+
+  // In pyexecute kernel, the input data would be stored in user data which is a python object, this converter
+  // is used to convert user data to device ptr in device address.
+  pyexecute::set_pydata_converter(
+    [](const py::object &obj, ValuePtr *value) { return parse::ConvertData(obj, value); });
+  const auto &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+  MS_LOG(INFO) << "Use the new backend.";
+  auto backend_ret = backend::BackendManager::GetInstance().Build(resource->func_graph(), backend_jit_config,
+                                                                  backend_jit_config.backend);
+  resource->SetResult(kBuildBackendType, backend_ret.first);
+  resource->SetResult(kBuildBackendOutput, backend_ret.second);
   return true;
 }
 
@@ -1836,40 +1999,29 @@ bool ExecuteAction(const ResourcePtr &resource) {
       CheckGraphOutputConstOrParameter(resource->func_graph())) {
     return true;
   }
-  if (!resource->HasResult(kOutput)) {
+
+  if (resource->HasResult(kNoBackend)) {
+    MS_LOG(INFO) << "No backend.";
+    return true;
+  }
+  if (!resource->HasResult(kBuildBackendType) || !resource->HasResult(kBuildBackendOutput)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Execute args error";
   }
-  std::string backend = MsContext::GetInstance()->backend_policy();
-  // The graph running of mindRT.
-  if ((backend == kMsConvert || backend == kGeVm) && MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
-    ExecuteActionForMindRT(resource);
-    return true;
-  }
-
-  // The graph running of control sink.
-  if (IsCtrlSink() && (backend == kMsConvert || backend == kGeVm)) {
-    auto graph_id = resource->GetResult(kOutput).cast<GraphId>();
-    auto bc_ptr = resource->GetBackend();
-    compile::MsBackend *msbc_ptr = std::dynamic_pointer_cast<compile::MsBackend>(bc_ptr).get();
-    MS_EXCEPTION_IF_NULL(msbc_ptr);
-    compile::VmEvalFuncPtr run =
-      std::make_shared<compile::VmEvalFunc>([msbc_ptr, graph_id](const VectorRef &args) -> BaseRef {
-        MS_LOG(INFO) << "Execute args size " << args.size();
-        auto outs = msbc_ptr->RunGraph(graph_id, args);
-        MS_LOG(DEBUG) << "out size " << outs.size();
-        return outs[0];
-      });
-    resource->SetResult(kOutput, run);
-    return true;
-  }
-
-  compile::FinalVMPtr vm = resource->GetResult(kOutput).cast<compile::FinalVMPtr>();
-  if (vm == nullptr) {
-    MS_LOG(INFO) << "Call GE to Run the func_graph instead of VM";
-    return true;
-  }
+  auto backend_type = resource->GetResult(kBuildBackendType).cast<backend::BackendType>();
+  auto backend_graph_id = resource->GetResult(kBuildBackendOutput).cast<backend::BackendGraphId>();
+  // Construct the graph run function ptr.
   compile::VmEvalFuncPtr run =
-    std::make_shared<compile::VmEvalFunc>(std::bind(&compile::FinalVM::Eval, vm, std::placeholders::_1));
+    std::make_shared<compile::VmEvalFunc>([backend_type, backend_graph_id](const VectorRef &args) -> BaseRef {
+      MS_LOG(DEBUG) << "Execute args size " << args.size();
+      VectorRef outputs;
+      backend::BackendManager::GetInstance().Run(backend_type, backend_graph_id, args, &outputs);
+      MS_LOG(DEBUG) << "out size " << outputs.size();
+      if (outputs.empty()) {
+        return VectorRef();
+      } else {
+        return outputs[0];
+      }
+    });
   resource->SetResult(kOutput, run);
   return true;
 }
@@ -2089,6 +2241,8 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Do data structure simplifications and inline.
   (void)actions.emplace_back(std::make_pair(kInline, OptInlineAction));
 
+  (void)actions.emplace_back(std::make_pair(kAddAttr, OptAddAttrWithInlineAction));
+
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol", AutoParallelSymbolWithReNormalizeAction));
 
   // Do prepositive auto parallel.
@@ -2097,6 +2251,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   (void)actions.emplace_back(std::make_pair("insert-virtual-dataset", ParallelVirtualDatasetAction));
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol-second", AutoParallelSymbolWithReNormalizeAction));
   (void)actions.emplace_back(std::make_pair("dataset_repeat_opt", DatasetRepeatReaderOptAction));
+
   // Do PipelineSplit action.
   (void)actions.emplace_back(std::make_pair(kPipelineSplit, PipelineSplitAction));
 
@@ -2137,15 +2292,15 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     (void)actions.emplace_back(std::make_pair(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop));
 
     // Eliminate the virtual mirror node
-    (void)actions.emplace_back(std::make_pair(kEliminateSpecialOpNode, EliminateSpecialOpNode));
+    (void)actions.emplace_back(std::make_pair(kOptAfterJitGrad, OptAfterJitGrad));
 
 #if defined(__linux__) && defined(WITH_BACKEND)
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
     }
-    auto checker = silentcheck::SilentCheckerBase::GetInstance();
-    if (checker != nullptr && checker->IsNpuAsdEnable() &&
-        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+
+    if (IsEnableSilentCheck()) {
+      // silent check pass, mark nodes which are need for silent check
       (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
     }
 #endif
@@ -2168,6 +2323,8 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
   if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
     return actions;
   }
+
+  (void)actions.emplace_back(std::make_pair(kBackendPass, BackendPass));
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

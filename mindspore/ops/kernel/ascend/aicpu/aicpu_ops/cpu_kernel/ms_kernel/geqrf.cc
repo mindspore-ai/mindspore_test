@@ -143,8 +143,7 @@ void GeqrfCpuKernel::CLarfg(int n, int vm, int vn, complex<T> **A, complex<T> *t
   if (xnorm == 0 && alphi == 0) {
     *tau = zero;
   } else {
-    T beta;
-    beta = sqrt(alphr * alphr + alphi * alphi + xnorm * xnorm);
+    T beta = sqrt(alphr * alphr + alphi * alphi + xnorm * xnorm);
     if (A[vm][vn].real() > 0) {
       beta = -beta;
     }

@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted_cpu {
 class SearchSortedCpuKernelMod : public NativeCpuKernelMod {
  public:
   SearchSortedCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class SearchSortedCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> values_shape_;
   std::vector<int64_t> output_shape_;
 };
+}  // namespace searchsorted_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SEARCHSORTED_CPU_KERNEL_H_

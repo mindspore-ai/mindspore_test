@@ -65,7 +65,7 @@ def test_ops_unique_forward_dim_None(mode):
         out4, inverse4, counts4 = unique_forward_func(inputx, True, True, True, None)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(unique_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(unique_forward_func, backend="ms_backend", jit_level="O0")
         out1 = op(inputx)
         out2, inverse2 = op(inputx, True, True, False, None)
         out3, counts3 = op(inputx, True, False, True, None)
@@ -87,7 +87,7 @@ def test_ops_unique_forward_dim_None(mode):
     np.testing.assert_allclose(counts4.asnumpy(), expect_counts4, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_unique_forward_with_dim(mode):
     """
@@ -111,7 +111,7 @@ def test_ops_unique_forward_with_dim(mode):
         out2, inverse2, counts2 = unique_forward_func(inputx, True, True, True, 0)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(unique_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(unique_forward_func, backend="ms_backend", jit_level="O0")
         out1, inverse1, counts1 = op(inputx, True, True, True, 1)
         out2, inverse2, counts2 = op(inputx, True, True, True, 0)
     else:

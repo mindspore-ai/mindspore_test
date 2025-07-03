@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 
@@ -37,6 +37,9 @@ class HcomAlltoAllVKernel : public HcclKernel {
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  bool GetAllToAllVParam(const std::vector<int64_t> &send_numel_list, const std::vector<int64_t> &recv_numel_list);
+
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override { return {kIndex1, kIndex2}; }
 
  protected:
   HcclDataType data_type_ = {};

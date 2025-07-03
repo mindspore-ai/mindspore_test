@@ -26,7 +26,7 @@ from mindspore import log as logger
 from mindspore.nn import Cell
 from mindspore import context
 from mindspore._c_expression import security
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore import _checkparam as Validator
@@ -369,7 +369,19 @@ class SummaryRecord:
         global SUMMARY_TENSOR_CACHE
         for tag in tags:
             item_name = name + tag
+            time_out = 30
+            start_time = time.time()
+            last_size = len(SUMMARY_TENSOR_CACHE)
             while item_name not in SUMMARY_TENSOR_CACHE:
+                current_size = len(SUMMARY_TENSOR_CACHE)
+                if current_size != last_size:
+                    start_time = time.time()
+                    last_size = current_size
+                if time.time() - start_time > time_out:
+                    raise RuntimeError(
+                        f"For '{self.__class__.__name__}', {tag} summary op sync tag "
+                        f"was not received within {time_out} seconds, indicating potential mbuf issues."
+                    )
                 time.sleep(0.004)
 
         with _summary_lock:
@@ -393,8 +405,7 @@ class SummaryRecord:
             bool, whether the record process is successful or not.
 
         Raises:
-            TypeError: `step` is not int, or `train_network` is not `mindspore.nn.Cell
-                <https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html#mindspore-nn-cell>`_ .
+            TypeError: `step` is not int, or `train_network` is not :class:`mindspore.nn.Cell`.
 
         Examples:
             >>> import mindspore as ms
@@ -417,8 +428,7 @@ class SummaryRecord:
             if graph_proto is None and train_network is not None:
                 graph_proto = _cell_graph_executor.get_optimize_graph_proto(train_network)
             if graph_proto is None:
-                if not context.get_context("mode") == context.PYNATIVE_MODE:
-                    logger.error("Failed to get proto for graph.")
+                logger.warning("Failed to get proto for graph.")
             else:
                 self._event_writer.write({'graph': [{'step': step, 'value': graph_proto}]})
                 self._status['has_graph'] = True

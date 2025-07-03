@@ -49,7 +49,7 @@ class CharNGram(cde.CharNGram):
                 this value can limit the size of the loaded set. Default: ``None``, no upper limit.
 
         Returns:
-            CharNGram, CharNGram pre-training vectors.
+            CharNGram, pre-training vectors.
 
         Raises:
             TypeError: If `file_path` is not of type str.
@@ -92,7 +92,7 @@ class FastText(cde.FastText):
                 this value can limit the size of the loaded set. Default: ``None``, no upper limit.
 
         Returns:
-            FastText, FastText pre-training vectors.
+            FastText, pre-training vectors.
 
         Raises:
             TypeError: If `file_path` is not of type str.
@@ -133,7 +133,7 @@ class GloVe(cde.GloVe):
                 this value can limit the size of the loaded set. Default: ``None``, no upper limit.
 
         Returns:
-            GloVe, GloVe pre-training vectors.
+            GloVe, pre-training vectors.
 
         Raises:
             TypeError: If `file_path` is not of type str.

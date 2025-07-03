@@ -91,7 +91,7 @@ def test_split_basic_int64():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_split_basic_bool():
-    split_basic(np.bool)
+    split_basic(np.bool_)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

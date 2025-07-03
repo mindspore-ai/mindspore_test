@@ -25,6 +25,7 @@
 
 #include "ir/tensor.h"
 #include "include/common/utils/stub_tensor.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 class PyCommon : public testing::Test {
@@ -38,34 +39,22 @@ class PyCommon : public testing::Test {
       guard_ = std::make_unique<pybind11::scoped_interpreter>();
     }
     m_ = pybind11::module::import("mindspore");
-    stub_tensor_module_ = pybind11::module::import("mindspore.common._stub_tensor");
     tensor_module_ = pybind11::module::import("mindspore.common.tensor");
   }
 
   static void TearDownTestCase() {
     tensor_module_.release();
-    stub_tensor_module_.release();
     m_.release();
     guard_ = nullptr;
   }
 
-  pybind11::object NewPyTensor(const tensor::BaseTensorPtr &tensor) {
-    return tensor_module_.attr("Tensor")(tensor);
-  }
-
-  pybind11::object NewPyStubTensor(const stub::StubNodePtr &stub_tensor) {
-    return stub_tensor_module_.attr("_convert_stub")(stub_tensor);
-  }
-
-  pybind11::object NewPyStubTensor(const tensor::BaseTensorPtr &tensor) {
-    auto node = stub::MakeTopNode(kTensorType);
-    node.second->SetValue(tensor);
-    return stub_tensor_module_.attr("_convert_stub")(node.first);
+  pybind11::object NewPyTensor(const tensor::TensorPtr &tensor) {
+    py::object tensor_obj = tensor::PackTensorToPyObject(tensor);
+    return tensor_module_.attr("Tensor")(tensor_obj);
   }
 
  protected:
   inline static pybind11::module m_;
-  inline static pybind11::module stub_tensor_module_;
   inline static pybind11::module tensor_module_;
   inline static std::unique_ptr<pybind11::scoped_interpreter> guard_;
 };

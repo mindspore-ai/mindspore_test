@@ -19,11 +19,12 @@
 
 #include <map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_grad_cpu {
 class MaximumGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaximumGradCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class MaximumGradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector dy_shape_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace maximum_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

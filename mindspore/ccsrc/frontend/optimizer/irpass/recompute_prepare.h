@@ -66,6 +66,7 @@ class SetCellOutputNoRecompute : public AnfVisitor {
         if (parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kSemiAutoParallel ||
             parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kAutoParallel) {
           auto prim = GetCNodePrimitive(real_output);
+          MS_EXCEPTION_IF_NULL(prim);
           if (prim->HasAttr(kAttrSliceActivation) && GetValue<bool>(prim->GetAttr(kAttrSliceActivation))) {
             real_output->AddAttr(kAttrSliceActivation, MakeValue(true));
           }

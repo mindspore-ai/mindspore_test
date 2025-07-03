@@ -2,6 +2,703 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.6.0 Release Notes
+
+### Major Features and Improvements
+
+#### Dataset
+
+- [STABLE] The sharding sampling behavior of the [MindDataset](https://www.mindspore.cn/docs/en/master/api_python/dataset/mindspore.dataset.MindDataset.html) interface has been changed from block-based sampling (Data sharding strategy 2 in the link) to interval sampling (Data sharding strategy 1 in the link). Users can control whether to switch back to block-based sampling by setting the MS_DEV_MINDRECORD_SHARD_BLOCK environment variable.
+- [STABLE] GeneratorDataset supports spawn to start multiprocessing, and supports the use of Ascend back-end data augmentation methods in multiprocessing. Users can set [mindspore.dataset.config.set_multiprocessing_start_method("spawn")](https://www.mindspore.cn/docs/en/master/api_python/dataset/mindspore.dataset.config.set_multiprocessing_start_method.html) to enable multiprocessing in spawn mode.
+- [STABLE] The `shuffle` parameter in [MindDataset](https://www.mindspore.cn/docs/en/master/api_python/dataset/mindspore.dataset.MindDataset.html) supports the `Shuffle.ADAPTIVE`option, which adaptively adjusts the shuffle sample count strategy based on the number of samples to reduce training memory overhead and lower the risk of OOM. If global shuffle is desired, users can specify `Shuffle.GLOBAL`, but they must ensure sufficient machine memory.
+
+#### Ascend
+
+- [STABLE] In MindSpore's dynamic graph mode, the AscendC custom operators integrated by the [ops.Custom](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.Custom.html) primitive support multiple output types, and `ops.Custom` supports type inference on the C++ side.
+- [BETA] In MindSpore's dynamic graph mode, added `CustomOpBuilder` to support online building and loading of custom operators.
+- [STABLE] When using the O1 compilation option, users can control the scope of graph and computation fusion optimization. Users can enable or disable specific fusion patterns by setting the environment variable MS_DEV_GRAPH_KERNEL_FLAGS with options such as enable_fusion_pattern_only or disable_fusion_pattern. Additionally, it supports reading configuration from a file via the --path=example.json option.
+- [STABLE] Support users to set the aclop operator cache information aging configuration and error message reporting mode configuration through the [mindspore.device_context.ascend.op_debug.aclinit_config](https://www.mindspore.cn/docs/en/master/api_python/device_context/mindspore.device_context.ascend.op_debug.aclinit_config.html) interface.
+- [STABLE] GE backend only supports whole graph sinking and lazy inline subgraph sinking, while other scenarios are no longer supported.
+- [BETA] In MindSpore's static graph O0/O1 mode, `mindpore.nn.Cell` adds the new interface `offload` and the attribute `backward_prefetch`. Users can use this interface through [Cell.offload(backward_prefetch)](https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.offload) to offload activations within a specific `Cell` class from the device side to the host side during the forward training phase, and prefetch activations from the host side to the device side during the backward training phase.
+
+#### Parallel
+
+- [STABLE] Parallel pdb debugging, dynamic and static graph mode are supported. dynamic graph mode is recommended.
+- [STABLE] New API [mindspore.communication.get_comm_name](https://www.mindspore.cn/docs/en/master/api_python/communication/mindspore.communication.get_comm_name.html), which allows users to query the name of the underlying communicator of the HCCL collection communication library.
+- [STABLE] Added [AutoParallel](https://www.mindspore.cn/docs/en/master/api_python/parallel/mindspore.parallel.auto_parallel.AutoParallel.html) API to support parallel configuration of individual networks, solving the problem of excessive scope of parallel configuration.
+- [STABLE] SeqPipe now supports two new scheduling methods, seqvpp and seqsmartvpp, significantly reducing the memory cost in scenarios where SeqPipe is combined with VPP.
+- [STABLE] Static graph now supports zero2/zero3 level memory optimization, reducing the memory cost for models that require pure data parallel (DP) training.
+- [STABLE] Static graph now supports 1b1f compute and communication overlapping in pipeline parallelism conditions, enhancing the performance of pipeline parallelism.
+- [STABLE] Static graphs support grad model parallel communication overlap with dw computation under tensor model parallelism and expert model parallelism, improving model training performance.
+- [STABLE] Static graph auto-parallel strategy propagation mode is updated to prioritize the layout propagation to improve the accuracy.
+- [STABLE] Static graph auto-parallel support using [mindspore.parallel.shard](https://www.mindspore.cn/docs/en/master/api_python/parallel/mindspore.parallel.shard.html) interface to configure strategies for mint operators, optimized for multi-input operators.
+- [STABLE] For LLM reinforcement learning， now we support DP/MP/PP for training and inferenceing phase.
+- [STABLE] MindSpore supports users to query whether the distributed module is available and whether the communication module is initialized. Users can query whether the distributed module is available through the [mint.distributed.is_available](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.is_available.html) interface, and query whether the communication module is initialized through the [mint.distributed.is_initialized](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.is_initialized.html) interface.
+- [STABLE] MindSpore static graph mode supports the `AlltoAllV` forward and reverse operators. Users can use this operator through the [ops.AlltoAllV](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.AlltoAllV.html) interface.
+- [STABLE] Support CPU operators [mindspore.mint.distributed.allreduce](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.all_reduce.html#mindspore.mint.distributed.all_reduce), [mindspore.mint.distributed.barrier](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.barrier.html#mindspore.mint.distributed.barrier), [mindspore.mint.distributed.send](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.send.html#mindspore.mint.distributed.send), and [mindspore.mint.distributed.recv](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.distributed.recv.html#mindspore.mint.distributed.recv), and the users can use the corresponding aggregate communication operator functions through these interfaces.
+
+#### Inference
+
+- [STABLE] Support full-precision inference with BFloat16 and quantized inference with W8A8 for DeepSeek-V3/R1. Add or optimize 12 fusion operators including RmsNormQuant, MatMul+Sigmoid+Add, and Transpose+BatchMatMul+Transpose to enhance the inference performance of DeepSeek-V3/R1.
+- [BETA] Support deploying inference services of DeepSeek-V3/R1 using MindIE and MindSpore Transformers large model development suite.
+- [STABLE] Optimize the process of loading safetensors and realize on-demand initialization of GE, which reduces both memory usage and startup time when deploying inference services using MindIE and MindSpore Transformers large model suite.
+- [BETA] Support deploying inference services of DeepSeek-V3/R1 and Qwen2.5 using the [vLLM-MindSpore](https://gitee.com/mindspore/vllm-mindspore) plugin and vLLM v0.6.6.post1.
+
+#### Profiler
+
+- [STABLE] The MindSpore framework supports obtaining communication domain parallel strategy information, which can be visualized to improve performance troubleshooting efficiency in cluster scenarios.
+- [STABLE] MindSpore Profiler dynamic profiling supports lightweight instrumentation, allowing users to dynamically enable lightweight tracing and view performance data in real time.
+- [STABLE] MindSpore Profiler's lightweight instrumentation capability has been enhanced, supporting key phases such as dataloader and save checkpoint with lightweight tracing information.
+- [STABLE] Profiler supports viewing memory_access related aicore metric information.
+- [STABLE] MindSpore Profiler supports [mindspore.profiler.profile](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.profile.html) and [_ExperimentalConfig](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler._ExperimentalConfig.html), as well as the [tensorboard_trace_handler](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html) parameter, improving tool usability.
+- [STABLE] MindSpore Profiler dynamic profiling now supports memory data collection, allowing users to dynamically enable memory data gathering to enhance tool usability.
+
+#### Compiler
+
+- [BETA] The graph mode supports the inplace and view operator forward expression capabilities.
+- [BETA] Add new operator primitive [mindspore.ops.Morph](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.Morph.html) in GRAPH mode, enabling encapsulation of user-defined function as operator primitive [mindspore.ops.Morph](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.Morph.html), facilitating encapsulation of irregular collective communication operations (such as [mindspore.ops.AlltoAllV](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.AlltoAllV.html)) for distributed auto-parallel training scenarios.
+
+### API Change
+
+#### New APIs & Enhanced APIs
+
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API provides more functional, nn interfaces. The mint interface is currently an experimental interface and performs better than ops in `jit_level="O0"` and pynative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+
+  | mindspore.mint                  |
+  | :------------------------------ |
+  | mindspore.mint.reshape          |
+  | mindspore.mint.triangular_solve |
+  | mindspore.mint.index_add        |
+  | mindspore.mint.logaddexp2       |
+  | mindspore.mint.diag             |
+
+  | mindspore.mint.nn              |
+  | :----------------------------- |
+  | mindspore.mint.nn.Sigmoid      |
+  | mindspore.mint.nn.Conv2d       |
+  | mindspore.mint.nn.PixelShuffle |
+
+  | mindspore.mint.nn.functional                     |
+  | :----------------------------------------------- |
+  | mindspore.mint.nn.functional.adaptive_avg_pool3d |
+  | mindspore.mint.nn.functional.conv2d              |
+  | mindspore.mint.nn.functional.avg_pool3d          |
+  | mindspore.mint.nn.functional.elu_                |
+  | mindspore.mint.nn.functional.pixel_shuffle       |
+
+  | others                   |
+  | ------------------------ |
+  | mindspore.mint.optim.SGD |
+  | mindspore.mint.linalg.qr |
+
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/en/master/api_python/mindspore.mint.html) API also provides some new stable interfaces. Besides, some demo interfaces are changed into stable ones.
+
+  | mindspore.mint           |
+  | :----------------------- |
+  | mindspore.mint.full_like |
+  | mindspore.mint.log2      |
+  | mindspore.mint.isneginf  |
+
+  | mindspore.mint.nn           |
+  | :-------------------------- |
+  | mindspore.mint.nn.GLU       |
+  | mindspore.mint.nn.KLDivLoss |
+
+  | mindspore.mint.nn.functional        |
+  | :---------------------------------- |
+  | mindspore.mint.nn.functional.glu    |
+  | mindspore.mint.nn.functional.kl_div |
+
+  | mindspore.Tensor          |
+  | :------------------------ |
+  | mindspore.Tensor.isneginf |
+  | mindspore.Tensor.log2     |
+
+- [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API provides more Tensor methods. Currently, these Tensor methods are experimental interfaces and currently does not support the graph sink mode and CPU, GPU backend, and they will be gradually improved in the future. Details can be found in [API list](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) in official website.
+- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/en/master/api_python/mindspore.ops.html) provides two inference API [mindspore.ops.moe_token_permute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_permute.html#mindspore.ops.moe_token_permute) and [mindspore.ops.moe_token_unpermute](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.moe_token_unpermute.html#mindspore.ops.moe_token_unpermute). Currently, only Ascend backend is supported.
+- [STABLE] [mindspore.mint.nn.functional.gelu](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.functional.gelu.html) and [mindspore.mint.nn.GeLU](https://www.mindspore.cn/docs/en/master/api_python/mint/mindspore.mint.nn.GELU.html) now support input argument "approximate".
+- [STABLE] Added the offline parsing interface [mindspore.profiler.profiler.analyse](https://gitee.com/link?target=https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.profiler.analyse.html).
+
+#### Backwards Incompatible Change
+
+- For [mindspore.ops.Xlogy](https://www.mindspore.cn/docs/en/master/api_python/ops/mindspore.ops.Xlogy.html), the arguments `input` and `other` no longer support non-tensor input. [(!81625)
+  ](https://gitee.com/mindspore/mindspore/pulls/81625)
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  ops.Xlogy(input [Tensor, numbers.Number, bool],
+            other [Tensor, numbers.Number, bool])
+  </td>
+  <td><pre>
+  ops.Xlogy(input [Tensor], other [Tensor])
+  </td>
+  </tr>
+  </table>
+
+- `&` operator no longer supports the input Tensor with data type of uint32/uint64 on Ascend backend in PyNative mode.  `^` operator no longer supports the  input Tensor with data type of uint16/uint32/uint64 on Ascend backend in PyNative mode. `|` operator no longer supports the input Tensor with data type of uint16/uint32/uint64 on Ascend backend in PyNative mode at the scene of `tensor | scalar`. [(!82054)](https://gitee.com/mindspore/mindspore/pulls/82054)
+- `%` operator no longer supports the input Tensor with data type of uint16/uint32/uint64 on CPU and GPU backend. [(!83055)](https://gitee.com/mindspore/mindspore/pulls/83055)
+- [mindspore.jit](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html) interface parameter change。[(!80248)](https://gitee.com/mindspore/mindspore/pulls/80248)
+
+  The name of parameter `fn` is changed to `function` .
+
+  Remove parameter `mode` , `input_signature` , `hash_args` , `jit_config` and `compile_once` .
+
+  Add parameter `capture_mode` to set how to compile to MindSpore graph.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(mode="PIJit")
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(capture_mode="bytecode")
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+  Add parameter `jit_level` to set the level of compilation optimization.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit, JitConfig
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(jit_config=JitConfig(jit_level="O0"))
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(jit_level="O0")
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+  Add parameter `dynamic` to set whether dynamic shape compilation should be performed.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(dynamic=1)
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+  Add parameter `fullgraph` to set whether to capture the entire function into graph.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit, JitConfig
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(jit_config=JitConfig(jit_syntax_level="STRICT"))
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(fullgraph=True)
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+  Add parameter `backend` to set the compilation backend to be used.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(backend="ms_backend")
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+  Add parameter `options` to set the dictionary of options to pass to the compilation backend.
+
+  <table>
+    <tr>
+    <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+    </tr>
+    <tr>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit, JitConfig
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(jit_config=JitConfig(infer_boost="on"))
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    <td><pre>
+    >>> import numpy as np
+    >>> from mindspore import Tensor, jit
+    >>>
+    >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+    >>>
+    >>> @jit(infer_boost="on")
+    ... def tensor_add_with_dec(x, y):
+    ...     z = x + y
+    ...     return z
+    ...
+    >>> out = tensor_add_with_dec(x, y)
+    </pre>
+    </td>
+    </tr>
+  </table>
+
+- The `mindspore.profiler.tensor_board_trace_handler` interface change.
+
+  The `mindspore.profiler.tensor_board_trace_handler` interface is now renamed to [mindspore.profiler.tensorboard_trace_handler](https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html).
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> from mindspore.profiler import tensor_board_trace_handler
+  </pre>
+  </td>
+  <td><pre>
+  >>> from mindspore.profiler import tensorboard_trace_handler
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- The  `mindspore.set_context` interface change。
+
+  The `exception_dump` field in the `ascend_config` parameter was changed to the `"dump"` field in [device_context.ascend.op_debug.aclinit_config](https://www.mindspore.cn/docs/en/master/api_python/device_context/mindspore.device_context.ascend.op_debug.aclinit_config.html).
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> ms.set_context(ascend_config = {"exception_dump": "2"})
+  </pre>
+  </td>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> ms.device_context.ascend.op_debug.aclinit_config({"dump": {"dump_scene": "lite_exception"}})
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- The printing content of `mindspore.Tensor` change。
+
+  The original Tensor prints only the value, while the new Tensor prints key information such as shape and dtype.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> tensor = ms.Tensor([1,1,1], dtype=ms.float32)
+  >>> print(tensor)
+  [1. 1. 1.]
+  </pre>
+  </td>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> tensor = ms.Tensor([1,1,1], dtype=ms.float32)
+  >>> print(tensor)
+  Tensor(shape=[3], dtype=Float32, value= [ 1.00000000e+00,  1.00000000e+00,  1.00000000e+00])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- In graph mode, Ascend backend, when jit_level is O2, the Dump interface changes.
+
+  In the graph Ascend backend jit_level O2 scenario, the environment variables `MINDSPORE_DUMP_CONFIG` and `ENABLE_MS_GE_DUMP` have been deprecated, and the dump-related functions have been migrated to the msprobe tool. For more details, please refer to [msprobe Tool MindSpore Scene Accuracy Data Collection Guide](https://gitee.com/ascend/mstt/blob/master/debug/accuracy_tools/msprobe/docs/06.data_dump_MindSpore.md).
+
+### Contributors
+
+amyMaYun,Ava,baishanyang,br_fix_save_strategy_ckpt,caifubi,caoxubo,cccc1111,ccsszz,chaijinwei,chaiyouheng,changzherui,chengbin,chopupu,chujinjin,congcong,dairenjie,DavidFFFan,DeshiChen,dingjinshan,fary86,fengqiang,fengyixing,ffmh,fuhouyu,Gallium,gaoshuanglong,gaoyong10,geyuhong,guoyq16,guoyuzhe,GuoZhibin,guozhijian,gupengcheng0401,hangq,Hanshize,haozhang,hedongdong,hhz886,HighCloud,horcham,huangbingjian,huangxiang360729,huangzhichao2023,huangzhuo,huangziling,huda,Huilan Li,hujiahui8,huoxinyou,jiangchao_j,jiangchenglin3,jiangshanfeng,jiaorui,jiaxueyu,jizewei,jjfeing,JoeyLin,jshawjc,kairui_kou,kakyo82,kisnwang,leida,lianghongrui,LiangZhibo,LiaoTao_Wave,lichen,limingqi107,LiNuohang,linux,litingyu,liubuyu,liuchuting,liuluobin,liuyanwei,LLLRT,looop5,luochao60,luojianing,luoxuewei,luoyang,lyk,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,mylinchi,NaCN,panzhihui,pengqi,PingqiLi,pipecat,qiuyufeng,qiuzhongya,qiwenlun,r1chardf1d0,rachel0858,rainyhorse,Rudy_tan,shaoshengqi,shen_haochen,shenhaojing,shenwei41,shiro-zzz,shuqian0,stavewu,TAJh,tanghuikang,tangmengcheng,tongdabao,TuDouNi,VectorSL,wang_ziqi,wangjie,wangliaohui97,wangpingan,wangyibo,weiyang,wja,wudongkun,wujueying,wuweikang,wwwbby,xfan233,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,xiedejin1,XinDu,xuxinglei,xuzhen,xuzixiang,yang guodong,yangben,yanghaoran,yangruoqi713,yangzhenzhang,yanx,Yanzhi_YI,yao_yf,yide12,yihangchen,YijieChen,yonibaehr,Youmi,yuanqi,yuchaojie,yuezenglin,Yuheng Wang,YuJianfeng,YukioZzz,ZeyuHan,zhaiyukun,Zhang QR,zhangbuxue,zhangdanyang,zhangshucheng,zhangyinxia,ZhangZGC,zhangzhen,zhengzuohe,zhouyaqiang0,zichun_ye,zlq2020,zong_shuai,ZPaC,zyli2020,舛扬,范吉斌,冯一航,胡犇,胡彬,宦晓玲,简云超,李栋,李良灿,李林杰,李寅杰3,刘思铭,刘勇琪,刘子涵,梅飞要,任新,十一雷,孙昊辰,王泓皓,王禹程,王振邦,熊攀,俞涵,虞良斌,云骑士,张栩浩,赵文璇,周一航
+
+## MindSpore Lite 2.6.0 Release Notes
+
+### Major Features and Improvements
+
+- [STABLE] MindSpore Lite supports configuring operator parallel inference acceleration during model conversion. You only need to configure the stream_label_file option during model conversion to specify the operators that need parallel inference.
+- [STABLE] MindSpore Lite supports the conversion of onnx if operators in the Ascend backend.
+
+### API Change
+
+- [STABLE] In the acl model conversion configuration, a new stream_label_file option is added under the ascend_context option to enable multi-stream parallel inference.
+
+### Contributors
+
+熊攀,ZhangZGC,yanghaoran,李林杰,shenwei41,xiaotianci,panzhihui,guozhijian,胡彬,tangmengcheng,XianglongZeng,cccc1111,stavewu,刘思铭,r1chardf1d0,jiangshanfeng
+
+## MindSpore 2.5.0 Release Notes
+
+### Major Features and Improvements
+
+#### Distributed Startup Component msrun
+
+- [STABLE] msrun supports passing in the hostname of the node (e.g. localhost) as `-master_addr`, which improves the ease of use of msrun.
+- [STABLE] msrun supports printing training logs to standard output. Users can control which ranks to print with the `-tail_worker_log` parameter.
+- [STABLE] After setting `export VLOG_v=12500`, the `scheduler` log can output cluster information, which helps users to quickly count cluster data.
+- [STABLE] msrun supports formatting the log file name with the `--worker_log_name` parameter to help users quickly locate the problem node.
+
+For details, refer to [msrun Launching](https://www.mindspore.cn/docs/en/r2.5.0/model_train/parallel/msrun_launcher.html).
+
+#### Profiler
+
+- [STABLE] New interfaces [mindspore.profiler.schedule](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/mindspore.profiler.schedule.html) and [mindspore.profiler.tensor_board_trace_handler](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/mindspore.profiler.tensor_board_trace_handler.html) are added to support the acquisition and rendering of PyNative scenarios by step, which improves the ease of use of PyNative scenarios.
+- [STABLE] Dynamic Profiling supports customized for loops to enhance the ease of use of dynamic graphical scenarios.
+- [STABLE] Profiler initialization parameters and deliverables directory structure aligned to PTA to reduce user migration difficulty.
+- [STABLE] A new lightweight interface, [mindspore.profiler.mstx](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/mindspore.profiler.mstx.html), has been added to provide users with a low-overhead performance data collection method.
+- [STABLE] Timeline supports displaying hardware utilization data to help users locate downclocking issues.
+
+For details, refer to [Ascend Performance Tuning](https://www.mindspore.cn/docs/en/r2.5.0/model_train/optimize/profiler.html).
+
+#### PyNative
+
+- [Beta] PyNative mode supports the inplace operator process, introduces the inplace operators. Taking the [mindspore.mint.nn.functional.relu](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mint/mindspore.mint.nn.functional.relu.html) as an example, if you want to use the inplace updated version of the relu operator, you can call the [mindspore.mint.nn.functional.relu_](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mint/mindspore.mint.nn.functional.relu_.html).
+- [STABLE] Enable the environment variable MS_SIMULATION_LEVEL=1 to enable the PyNative dryrun, the multi-device process can be simulated without occupying the device, and the display memory usage can be viewed in logs. For details, refer to [Environment Variables](https://www.mindspore.cn/docs/en/r2.5.0/api_python/env_var_list.html?highlight=ms_simulation_level#%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B6%E8%A1%8C)。
+
+#### FrontEnd
+
+- [STABLE] Added [mindspore.nn.utils.no_init_parameters](https://www.mindspore.cn/docs/en/r2.5.0/api_python/nn/mindspore.nn.utils.no_init_parameters.html) API, which supports delayed initialization of network parameters and reduces model startup time in inference scenarios.
+
+### API Change
+
+#### New APIs
+
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore.mint.html) API provides more functional, nn interfaces. The mint interface is currently an experimental interface and performs better than ops in O0/O1 and pynative mode. Currently, the O2 compilation mode (graph sinking mode) and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+
+  | mindspore.mint              |                           |                                   |                            |
+  | :-------------------------- | :------------------------ | :-------------------------------- | :------------------------- |
+  | mindspore.mint.bernoulli    | mindspore.mint.bincount   | mindspore.mint.clone              | mindspore.mint.einsum      |
+  | mindspore.mint.empty        | mindspore.mint.empty_like | mindspore.mint.full_like          | mindspore.mint.randint     |
+  | mindspore.mint.randint_like | mindspore.mint.randn      | mindspore.mint.randn_like         | mindspore.mint.randperm    |
+  | mindspore.mint.chunk        | mindspore.mint.concat     | mindspore.mint.count_nonzero      | mindspore.mint.scatter     |
+  | mindspore.mint.select       | mindspore.mint.squeeze    | mindspore.mint.swapaxes           | mindspore.mint.transpose   |
+  | mindspore.mint.triu         | mindspore.mint.unbind     | mindspore.mint.unique_consecutive | mindspore.mint.multinomial |
+  | mindspore.mint.addmv        | mindspore.mint.diff       | mindspore.mint.exp2               | mindspore.mint.float_power |
+  | mindspore.mint.fix          | mindspore.mint.fmod       | mindspore.mint.frac               | mindspore.mint.lerp        |
+  | mindspore.mint.log2         | mindspore.mint.log10      | mindspore.mint.logaddexp          | mindspore.mint.mv          |
+  | mindspore.mint.nansum       | mindspore.mint.nan_to_num | mindspore.mint.polar              | mindspore.mint.ravel       |
+  | mindspore.mint.outer        | mindspore.mint.softmax    | mindspore.mint.t                  | mindspore.mint.cdist       |
+  | mindspore.mint.amax         | mindspore.mint.amin       | mindspore.mint.cumprod            | mindspore.mint.histc       |
+  | mindspore.mint.logsumexp    | mindspore.mint.norm       | mindspore.mint.std                | mindspore.mint.std_mean    |
+  | mindspore.mint.var          | mindspore.mint.var_mean   | mindspore.mint.allclose           | mindspore.mint.argsort     |
+  | mindspore.mint.equal        | mindspore.mint.isinf      | mindspore.mint.isneginf           | mindspore.mint.not_equal   |
+  | mindspore.mint.addbmm       | mindspore.mint.addmm      | mindspore.mint.baddbmm            | mindspore.mint.dot         |
+  | mindspore.mint.meshgrid     | mindspore.mint.mm         |             |                            |
+
+  | mindspore.mint.nn                   |                                    |
+  | :---------------------------------- | ---------------------------------- |
+  | mindspore.mint.nn.Conv3d            | mindspore.mint.nn.ConstantPad1d    |
+  | mindspore.mint.nn.ConvTranspose2d   | mindspore.mint.nn.ConstantPad2d    |
+  | mindspore.mint.nn.BatchNorm1d       | mindspore.mint.nn.ConstantPad3d    |
+  | mindspore.mint.nn.BatchNorm2d       | mindspore.mint.nn.ReflectionPad1d  |
+  | mindspore.mint.nn.BatchNorm3d       | mindspore.mint.nn.ReflectionPad2d  |
+  | mindspore.mint.nn.LayerNorm         | mindspore.mint.nn.ReflectionPad3d  |
+  | mindspore.mint.nn.SyncBatchNorm     | mindspore.mint.nn.ReplicationPad1d |
+  | mindspore.mint.nn.ELU               | mindspore.mint.nn.ZeroPad1d        |
+  | mindspore.mint.nn.GELU              | mindspore.mint.nn.ZeroPad2d        |
+  | mindspore.mint.nn.LogSigmoid        | mindspore.mint.nn.ZeroPad3d        |
+  | mindspore.mint.nn.ReLU6             | mindspore.mint.nn.BCELoss          |
+  | mindspore.mint.nn.SiLU              | mindspore.mint.nn.CrossEntropyLoss |
+  | mindspore.mint.nn.Tanh              | mindspore.mint.nn.NLLLoss          |
+  | mindspore.mint.nn.Embedding         | mindspore.mint.nn.SmoothL1Loss     |
+  | mindspore.mint.nn.Dropout2d         | mindspore.mint.nn.Upsample         |
+  | mindspore.mint.nn.AdaptiveAvgPool1d | mindspore.mint.nn.MaxUnpool2d      |
+  | mindspore.mint.nn.AdaptiveAvgPool2d |                                    |
+
+  | mindspore.mint.nn.functional                     |
+  | :----------------------------------------------- |
+  | mindspore.mint.nn.functional.adaptive_avg_pool1d |
+  | mindspore.mint.nn.functional.adaptive_avg_pool2d |
+  | mindspore.mint.nn.functional.avg_pool1d          |
+  | mindspore.mint.nn.functional.max_unpool2d        |
+  | mindspore.mint.nn.functional.logsigmoid          |
+  | mindspore.mint.nn.functional.relu6               |
+  | mindspore.mint.nn.functional.relu_               |
+  | mindspore.mint.nn.functional.normalize           |
+  | mindspore.mint.nn.functional.dropout2d           |
+  | mindspore.mint.nn.functional.nll_loss            |
+  | mindspore.mint.nn.functional.smooth_l1_loss      |
+  | mindspore.mint.nn.functional.interpolate         |
+  | mindspore.mint.nn.functional.conv3d              |
+
+  | mindspore.mint.distributed                        |                                                    |
+  | ------------------------------------------------- | -------------------------------------------------- |
+  | mindspore.mint.distributed.all_gather             | mindspore.mint.distributed.get_global_rank         |
+  | mindspore.mint.distributed.all_gather_into_tensor | mindspore.mint.distributed.get_group_rank          |
+  | mindspore.mint.distributed.all_gather_object      | mindspore.mint.distributed.get_process_group_ranks |
+  | mindspore.mint.distributed.all_reduce             | mindspore.mint.distributed.init_process_group      |
+  | mindspore.mint.distributed.all_to_all             | mindspore.mint.distributed.irecv                   |
+  | mindspore.mint.distributed.all_to_all_single      | mindspore.mint.distributed.isend                   |
+  | mindspore.mint.distributed.barrier                | mindspore.mint.distributed.new_group               |
+  | mindspore.mint.distributed.batch_isend_irecv      | mindspore.mint.distributed.P2POp                   |
+  | mindspore.mint.distributed.broadcast              | mindspore.mint.distributed.recv                    |
+  | mindspore.mint.distributed.broadcast_object_list  | mindspore.mint.distributed.reduce                  |
+  | mindspore.mint.distributed.gather                 | mindspore.mint.distributed.reduce_scatter          |
+  | mindspore.mint.distributed.gather_object          | mindspore.mint.distributed.reduce_scatter_tensor   |
+  | mindspore.mint.distributed.get_backend            | mindspore.mint.distributed.scatter                 |
+  | mindspore.mint.distributed.scatter_object_list    | mindspore.mint.distributed.send                    |
+
+  | others                            |
+  | --------------------------------- |
+  | mindspore.mint.optim.Adam         |
+  | mindspore.mint.linalg.matrix_norm |
+  | mindspore.mint.linalg.norm        |
+  | mindspore.mint.linalg.vector_norm |
+  | mindspore.mint.special.exp2       |
+
+- [STABLE] Two inference API [mindspore.ops.incre_flash_attention](https://www.mindspore.cn/docs/en/r2.5.0/api_python/ops/mindspore.ops.incre_flash_attention.html) and [mindspore.ops.prompt_flash_attention](https://www.mindspore.cn/docs/en/r2.5.0/api_python/ops/mindspore.ops.prompt_flash_attention.html) are added. Currently, only Ascend backend is supported.
+- [STABLE] [mindspore.runtime](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore.runtime.html) replaces the original mindspore.hal interfaces and provides interfaces related to runtime resources such as stream, memory, and event.
+- [STABLE] [mindspore.device_context](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore.device_context.html) replaces some parameters of the original set_context interface and provides setting interfaces related to hardware platform.
+- [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API provides more Tensor methods. Currently the Tensor interfaces are still the experimental interfaces, and do not support the graph sink mode and CPU, GPU back-end, will be gradually improved. In addition, a large number of existing Tensor methods, including operators like +=, -=, *= and /=, have been adapted with Aclnn kernels on the Ascend backend through overloading. Details can be found in [API list](https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) in official website.
+
+#### Backwards Incompatible Change
+
+- For API [mindspore.Tensor.new_ones](https://gitee.com/link?target=https://www.mindspore.cn/docs/en/r2.5.0/api_python/mindspore/Tensor/mindspore.Tensor.new_zeros.html), the input argument "size" no longer supports the data type of Tensor.
+- mindspore.Profiler removes timeline_limit, rank_id, analyze_only, env_enable parameters.
+
+- Interface name: mindspore.Profiler
+
+  Changes: profile_communication is deprecated and the communication matrix data is collected by setting profiler_level=ProfilerLevel.Level1 or profiler_level=ProfilerLevel.Level2.
+
+  Clarification: The default value of profiler_level is ProfilerLevel.Level0.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface  </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_communication=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(profiler_level=ProfilerLevel.Level1) or Profiler(profiler_level=ProfilerLevel.Level2)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: op_time is deprecated, set to collect NPU-side operator performance data by setting activaties=[mindspore.profiler.ProfilerActivity.NPU].
+
+  Clarification: The activaties parameter is of type list, and as long as it contains the mindspore.profiler.ProfilerActivity.NPU parameter, it means that the collection of NPU-side operator performance data is enabled, and the collection is turned on by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(op_time=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.NPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: The type of aicore_metrics changed from int to mindspore.profiler.AicoreMetrics enum value.
+
+  Clarification: The default value of aicore_metrics is mindspore.profiler.AicoreMetric.AiCoreNone.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(aicore_metrics=0)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(aicore_metrics=mindspore.profiler.AicoreMetric.AiCoreNone)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.Profiler
+
+  Changes: profile_framework is deprecated and the frame measurements are collected by setting activaties=[mindspore.profiler.ProfilerActivity.CPU].
+
+  Clarification: activaties parameter type is list, as long as it contains mindspore.profiler.ProfilerActivity.CPU parameter means enable to collect the framework performance data, the default on the collection.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> original interface </td> <td style="text-align:center"> v2.5.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_framework="all")
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.CPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+### Contributors
+
+baishanyang ,bantao ,Bellatan ,biangelin ,BigSkySea ,caifubi ,candanzg ,candyhong ,Carey ,cccc1111 ,chaijinwei ,changzherui ,chengbin ,chengfeng27 ,chengxb7532 ,chujinjin ,coder2237 ,czrz ,dairenjie ,DavidFFFan ,DeshiChen ,dingjinshan ,ehaleva ,Erpim ,fary86 ,fengyixing ,ffmh ,fuchao ,fuhouyu ,gaoyong10 ,geyuhong ,guoyuzhe ,GuoZhibin ,guozhijian ,halo ,hangq ,haozhang ,hedongdong ,hehongzhe ,hhz886 ,HighCloud ,huangbingjian ,HuangLe02 ,huangziling ,huda ,Huilan Li ,hujiahui8 ,jiahaochen666 ,jiangchao_j ,jiangchenglin3 ,jiangshanfeng ,jiaorui ,jiaxueyu ,jizewei ,jjfeing ,JoeyLin ,jshawjc ,kakyo82 ,kingxian ,kisnwang ,leida ,liangchenghui ,lianghongrui ,LiangZhibo ,lichen ,limingqi107 ,LINH ,linux ,lionelchang ,lishanni ,liubuyu ,liujunzhu ,liuluobin ,liuxu ,liuyanwei ,liyan2022 ,LLLRT ,looop5 ,luochao60 ,luoxuewei ,luoyang ,lyk ,machenggui ,maoyuanpeng1 ,Margaret_wangrui ,master,mengxian ,MengXiangyu ,mengyuanli ,Mrtutu ,mylinchi ,NaCN ,Nikanuo ,niujunhao ,panzhihui ,pengqi ,PingqiLi ,pipecat ,qiuleilei ,qiuyufeng ,qiuzhongya ,r1chardf1d0 ,shaoshengqi ,shen_haochen ,shenhaojing ,shenwei41 ,shilishan ,shiro-zzz ,shuqian0 ,St.Universe ,stavewu ,superxf ,suteng ,TAJh ,tanghuikang ,tangmengcheng ,tan-wei-cheng ,tianxiaodong ,TuDouNi ,TYWZ22259 ,user_0145 ,VectorSL ,vincen45 ,wang_ziqi ,wangshaocong ,wangwensheng4 ,weiyang ,wtcheng ,wtobill ,wujiangming ,wujueying ,wuweikang ,wwwbby ,XianglongZeng ,xiaopeng ,xiaotianci ,xiaoyao ,xiedejin1 ,XinDu ,xuxinglei ,yang guodong ,yangben ,yanghaoran ,yanglong ,yanx ,Yanzhi_YI ,yao_yf ,yefeng ,Yi_zhang95 ,yide12 ,yihangchen ,YijieChen ,YingtongHu ,ylw ,yonibaehr ,yuanqi ,yuchaojie ,yuezenglin ,YuJianfeng ,yyuse ,Zhang QR ,zhangbuxue ,zhangdanyang ,zhanghaibo ,zhangminli ,zhangyinxia ,ZhangZGC ,zhangzhen ,zhengzuohe ,zhouyaqiang0 ,zhuguodong ,zichun_ye ,zlq2020 ,zong_shuai ,ZPaC ,zyli2020 ,陈一 ,程超 ,冯一航 ,胡彬 ,宦晓玲 ,黄勇 ,简云超 ,康伟 ,李栋 ,李良灿 ,李林杰 ,李寅杰,刘崇鸣 ,刘力力 ,刘思铭 ,刘涛Liu ,刘勇琪 ,刘子涵 ,吕浩宇 ,吕凯盟 ,梅飞要 ,倪轩 ,任新 ,十一雷 ,孙昊辰 ,王禹程 ,王振邦 ,熊攀 ,俞涵 ,虞良斌 ,张栩浩 ,赵文璇 ,周莉莉 ,周一航 ,邹文祥
+
 ## MindSpore 2.4.1 Release Notes
 
 ### Major Features and Improvements
@@ -52,7 +749,6 @@ bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;ding
 - [STABLE] Support kernel packet fusion optimization in O1 mode to improve the performance of dynamic shape network execution, enabled by default.
 - [BETA] Epilogue fusion between the MatMul and Elementwise operator is supported in O1 mode. Enable via `mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`.
 - [BETA] O1 mode supports user-controlled graph fusion optimization scope, user can control to turn on or off the corresponding fusion operator via the enable_pass/disable_pass option of graph_kernel_flags.
-- [BETA] The GPTO execution order optimization module is supported in O0 mode and is enabled through mindspore.set_context(exec_order="gpto").
 
 #### PyNative
 
@@ -641,7 +1337,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
 - [STABLE] Provides a hierarchical Profiler function, controls different levels of performance data collection through the profiler_level parameter.
 - [STABLE] Profiler analyse adds a new mode parameter to configure asynchronous parsing mode to parallelize performance data parsing and training.
 - [STABLE] The Profiler adds a new data_simplification parameter, which allows users to control whether to delete redundant data after parsing the performance data to save hard disk space.
-- [STABLE] The Profiler enhances the memory analysis function. Users can collect the memory application and release information of the framework, CANN and hardware through the profile_memory parameter, and visualize and analyze the information through the [MindStudio tool](https://www.hiascend.com/forum/thread-0230130822583032044-1-1.html).
+- [STABLE] The Profiler enhances the memory analysis function. Users can collect the memory application and release information of the framework, CANN and hardware through the profile_memory parameter, and visualize and analyze the information through the [MindStudio tool](https://www.hiascend.com/developer/blog/details/0230130822583032044).
 - [BETA] In Pynative mode, Timeline integrates host profiling information, including task time and user side stack information.
 
 #### Dump

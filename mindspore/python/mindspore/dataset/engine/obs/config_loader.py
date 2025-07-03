@@ -57,12 +57,12 @@ class _Config:
 
     def _convert_type(self, key):
         if key not in self.config:
-            return  os.environ[key]
+            return os.environ[key]
         if isinstance(self.config[key], int):
             return int(os.environ[key])
         if isinstance(self.config[key], float):
             return float(os.environ[key])
-        return  os.environ[key]
+        return os.environ[key]
 
 
 config = _Config()

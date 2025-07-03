@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_grad_ext {
 
 class BatchNormGradExtAscend : public AclnnKernelMod {
  public:
@@ -35,9 +36,12 @@ class BatchNormGradExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
+  bool training_;
+  double eps_;
   int64_t axis_;
   std::vector<uint8_t> output_mask_{};
 };
+}  // namespace batch_norm_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

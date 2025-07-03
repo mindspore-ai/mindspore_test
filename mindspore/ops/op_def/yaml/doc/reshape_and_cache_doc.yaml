@@ -5,11 +5,11 @@ reshape_and_cache:
         Args:
             key (Tensor): The key tensor with data type of float16.
               :math:`(num\_tokens, num\_head, head\_dim)`.
-            value (Tensor): The value tensor with data type of float16.
+            value (Tensor, optional): The value tensor with data type of float16.
               :math:`(num\_tokens, num\_head, head\_dim)`.
             key_cache (Tensor): The cache tensor with data type of float16.
               :math:`(num\_blocks, block\_size, num\_head, head\_dim)`.
-            value_cache (Tensor): The cache tensor with data type of float16.
+            value_cache (Tensor, optional): The cache tensor with data type of float16.
               :math:`(num\_blocks, block\_size, num\_head, head\_dim)`.
             slot_mapping (Tensor): The slot mapping tensor with data type of int32.
               :math:`(num\_tokens,)`.

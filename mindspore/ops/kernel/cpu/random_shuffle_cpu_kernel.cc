@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace random_shuffle_cpu {
 namespace {
 constexpr size_t kRandomShuffleInputsNum = 1;
 constexpr size_t kRandomShuffleOutputsNum = 1;
@@ -231,5 +232,6 @@ std::vector<KernelAttr> RandomShuffleCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RandomShuffle, RandomShuffleCpuKernelMod);
+}  // namespace random_shuffle_cpu
 }  // namespace kernel
 }  // namespace mindspore

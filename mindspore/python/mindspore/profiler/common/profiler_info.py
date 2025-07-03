@@ -19,6 +19,7 @@ from configparser import ConfigParser, NoSectionError, NoOptionError
 
 from mindspore import log as logger
 from mindspore.version import __version__ as ms_version
+from mindspore.profiler.common.util import get_cann_version
 from mindspore.profiler.common.singleton import Singleton
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
@@ -42,6 +43,7 @@ class ProfilerInfo:
         "cann_profiler_info": {
         },
         "ms_version": "x.x.x",
+        "cann_version": x.x.x",
     }
     """
     HOST_START_LOG = "host_start.log"
@@ -61,7 +63,7 @@ class ProfilerInfo:
     CANN_PROFILER_INFO = "cann_profiler_info"
     ANALYSIS_COST_TIME = "analysis_cost_time"
     MS_VERSION = "ms_version"
-    CONTEXT_MODE = "context_mode"
+    CANN_VERSION = "cann_version"
     JIT_LEVEL = "jit_level"
 
     US_TO_NS = 1000
@@ -73,7 +75,7 @@ class ProfilerInfo:
             self.CANN_PROFILER_INFO: {},
             self.ANALYSIS_COST_TIME: {},
             self.MS_VERSION: ms_version,
-            self.CONTEXT_MODE: -1,
+            self.CANN_VERSION: get_cann_version(),
             self.JIT_LEVEL: "",
         }
         # time params
@@ -127,20 +129,6 @@ class ProfilerInfo:
         Set profiler parameters.
         """
         self._profiler_info[self.PROFILER_PARAMETERS] = value
-
-    @property
-    def context_mode(self) -> int:
-        """
-        Get context mode.
-        """
-        return self._profiler_info[self.CONTEXT_MODE]
-
-    @context_mode.setter
-    def context_mode(self, value: int):
-        """
-        Set context mode.
-        """
-        self._profiler_info[self.CONTEXT_MODE] = value
 
     @property
     def jit_level(self) -> str:

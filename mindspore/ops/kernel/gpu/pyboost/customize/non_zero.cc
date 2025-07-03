@@ -16,18 +16,18 @@
 
 #include "kernel/gpu/pyboost/customize/non_zero.h"
 #include "ir/scalar.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NonZeroGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr NonZeroGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Nonzero GPU start";
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor);

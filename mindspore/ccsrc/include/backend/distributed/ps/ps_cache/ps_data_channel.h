@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace ps {
-class BACKEND_EXPORT PsDataChannel {
+class BACKEND_COMMON_EXPORT PsDataChannel {
  public:
   PsDataChannel(const std::string &channel_name, size_t step_num)
       : channel_name_(channel_name),

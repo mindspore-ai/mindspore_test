@@ -24,7 +24,7 @@
 #include <string>
 #include <utility>
 #include "mindspore/ops/infer/random_poisson.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/random_op_impl.cuh"

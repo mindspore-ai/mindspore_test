@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, jit, context
@@ -31,7 +30,7 @@ def test_fallback_runtime_map():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = Tensor(np.array([1, 2, 3, 4])).asnumpy()
         y = Tensor(np.array([1, 1, 1, 1])).asnumpy()

@@ -18,11 +18,12 @@
 #include <map>
 #include <string>
 #include "kernel/cpu/mvlgamma_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/mvlgamma.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mvlgamma_cpu {
 namespace {
 constexpr double HALF = 0.5;
 constexpr double QUARTER = 0.25;
@@ -91,5 +92,6 @@ const std::vector<std::pair<KernelAttr, MvlgammaCpuKernelMod::KernelRunFunc>> &M
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Mvlgamma, MvlgammaCpuKernelMod);
+}  // namespace mvlgamma_cpu
 }  // namespace kernel
 }  // namespace mindspore

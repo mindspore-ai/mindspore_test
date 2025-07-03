@@ -18,9 +18,7 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_color_adjust_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
@@ -31,7 +29,6 @@ constexpr size_t dimension_zero = 0;
 constexpr size_t dimension_one = 1;
 constexpr size_t size_two = 2;
 
-#ifndef ENABLE_ANDROID
 // RandomColorAdjustOperation.
 RandomColorAdjustOperation::RandomColorAdjustOperation(const std::vector<float> &brightness,
                                                        const std::vector<float> &contrast,
@@ -117,7 +114,6 @@ Status RandomColorAdjustOperation::from_json(nlohmann::json op_params, std::shar
   *operation = std::make_shared<vision::RandomColorAdjustOperation>(brightness, contrast, saturation, hue);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

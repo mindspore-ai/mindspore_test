@@ -42,7 +42,7 @@ def test_grucell_para_customed_dtype(mode):
     Description: Verify the result of GRUCell specifying customed para dtype.
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = ms.Tensor(np.ones([5, 3, 10]).astype(np.float16))
     hx = ms.Tensor(np.ones([3, 16]).astype(np.float16))

@@ -19,11 +19,12 @@
 #include <functional>
 #include <unordered_map>
 #include "abstract/utils.h"
-#include "kernel/ops_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/kernel_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_copy_slices_cpu {
 namespace {
 constexpr size_t kTensorCopySlicesInputsNum = 2;
 constexpr size_t kTensorCopySlicesDynamicInputsNum = 5;
@@ -123,5 +124,6 @@ bool TensorCopySlicesCpuKernelMod::Launch(const std::vector<kernel::KernelTensor
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorCopySlices, TensorCopySlicesCpuKernelMod);
+}  // namespace tensor_copy_slices_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,13 +21,14 @@
 #include <memory>
 
 #include "runtime/graph_scheduler/actor/actor_common.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
 namespace runtime {
 class KernelActor;
+class KernelRunner;
 
 class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
  public:
@@ -36,7 +37,8 @@ class BACKEND_EXPORT KernelAsyncResizeActor : public ActorBase {
 
   void Initialize();
 
-  void ResizeKernelMod(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor);
+  void ResizeKernelMod(OpContext<KernelTensor> *const context, KernelActor *kernel_actor);
+  void ResizeKernelModV2(OpContext<KernelTensor> *const context, KernelRunner *kernel_runner, bool high_perf);
 
   void Wait();
 

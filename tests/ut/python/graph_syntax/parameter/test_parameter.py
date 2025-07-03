@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,10 +102,8 @@ def test_parameter_5_1():
         def construct(self):
             return self.res1[0] + self.res1[1]
 
-    with pytest.raises(ValueError, match="its name 'Parameter' already exists."):
-        net = ParamNet()
-        res = net()
-        assert res == 6
+    net = ParamNet()
+    net()
 
 
 def test_parameter_same_name_between_tuple_or_list():
@@ -124,7 +122,7 @@ def test_parameter_same_name_between_tuple_or_list():
                                Parameter(Tensor([4], ms.float32))]
 
         def construct(self, x):
-            res = self.param_tuple[0] + self.param_tuple[1] + self.param_list[0] + self.param_listp[1] + x
+            res = self.param_tuple[0] + self.param_tuple[1] + self.param_list[0] + self.param_list[1] + x
             return res
 
     with pytest.raises(ValueError, match="its name 'name_a' already exists."):
@@ -174,3 +172,74 @@ def test_parameter_assign_in_dict():
         return x
 
     func(ms.Tensor(5))
+
+
+def test_parameter_out_of_cell_1():
+    """
+    Feature: Test parameter.
+    Description: Test parameters as func inputs with default name.
+    Expectation: Get the expected exception report.
+    """
+    @ms.jit
+    def func(x, y):
+        return x + y
+
+    x = ms.Parameter(ms.Tensor(1))
+    y = ms.Parameter(ms.Tensor(2))
+
+    func(x, y)
+
+def test_parameter_out_of_cell_2():
+    """
+    Feature: Test parameter.
+    Description: Test parameters as func inputs with same name.
+    Expectation: Get the expected exception report.
+    """
+    @ms.jit
+    def func(x, y):
+        return x, y
+
+    x = ms.Parameter(ms.Tensor(1), name="x")
+    y = ms.Parameter(ms.Tensor(2), name="x")
+
+    with pytest.raises(ValueError, match="its name 'x' already exists."):
+        func(x, y)
+
+def test_parameter_in_and_out_cell_with_same_name():
+    """
+    Feature: Test parameter.
+    Description: Test parameters in cell and out cell has same name.
+    Expectation: Get the expected exception report.
+    """
+    class ParamNet(Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param = Parameter(Tensor([1], ms.float32), name="myname")
+
+        @ms.jit
+        def construct(self, param_x):
+            return param_x + self.param
+
+    net = ParamNet()
+    param_x = ms.Parameter(ms.Tensor(1), name="myname")
+    with pytest.raises(ValueError, match="its name 'myname' already exists."):
+        net(param_x)
+
+def test_parameter_in_cell_and_construct_input_with_same_name():
+    """
+    Feature: Test parameter.
+    Description: Test parameters in cell and construct input argument has same name.
+    Expectation: no exception reported.
+    """
+    class ParamNet(Cell):
+        def __init__(self):
+            super(ParamNet, self).__init__()
+            self.param = Parameter(Tensor([1], ms.float32))
+
+        @ms.jit
+        def construct(self, param):
+            return param + self.param
+
+    net = ParamNet()
+    param = ms.Parameter(ms.Tensor(1))
+    net(param)

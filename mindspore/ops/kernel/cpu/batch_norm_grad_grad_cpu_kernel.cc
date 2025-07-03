@@ -20,10 +20,11 @@
 #include <functional>
 #include <numeric>
 #include <vector>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batch_norm_grad_grad_cpu {
 namespace {
 constexpr float num_1 = 1.0;
 constexpr float num_3 = 3.0;
@@ -755,5 +756,6 @@ std::vector<KernelAttr> BatchNormGradGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BatchNormGradGrad, BatchNormGradGradCpuKernelMod);
+}  // namespace batch_norm_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

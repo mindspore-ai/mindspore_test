@@ -9,7 +9,7 @@
         \left\{\begin{matrix}out_{x} = {\textstyle \sum_{0}^{N}} (x_{i})^2
         \\out_{y} = {\textstyle \sum_{0}^{N}} (y_{i})^2
         \end{matrix}\right.
-    
+
     .. note::
         SquareSumAll只支持float16和float32类型的输入值。
 

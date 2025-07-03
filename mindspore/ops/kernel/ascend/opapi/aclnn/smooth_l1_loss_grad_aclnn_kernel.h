@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_ACLNN_KERNEL_H_
-#define MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_ACLNN_KERNEL_H_
+#ifndef MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_GRAD_ACLNN_KERNEL_H_
+#define MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_GRAD_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
 #include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_grad {
 
 class SmoothL1LossGradAscendKernelMod : public AclnnKernelMod {
  public:
@@ -38,7 +39,8 @@ class SmoothL1LossGradAscendKernelMod : public AclnnKernelMod {
   float beta_ = 1.0;
   int64_t reduction_value_{2};
 };
+}  // namespace smooth_l1_loss_grad
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_ACLNN_KERNEL_H_
+#endif  // MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_ACLNN_SMOOTH_L1_LOSS_GRAD_ACLNN_KERNEL_H_

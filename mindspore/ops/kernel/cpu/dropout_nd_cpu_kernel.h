@@ -22,11 +22,12 @@
 #include <utility>
 #include <map>
 #include <random>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_nd_cpu {
 class DropoutNdCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<DropoutNdCpuKernelMod> {
  public:
   DropoutNdCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class DropoutNdCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   std::default_random_engine generator_;
   std::bernoulli_distribution distribution_;
 };
+}  // namespace dropout_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DROPOUT_ND_CPU_KERNEL_H_

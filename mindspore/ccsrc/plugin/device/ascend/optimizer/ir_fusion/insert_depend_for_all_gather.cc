@@ -27,6 +27,10 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {
@@ -114,8 +118,7 @@ bool InsertDependForOptShardAllGather::Run(const FuncGraphPtr &graph) {
     return false;
   }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
-  auto jit_level = ms_context->GetJitLevel();
-  if (cell_reuse || jit_level == "O2") {
+  if (cell_reuse || AnfAlgo::GetBackend(graph) == kBackendGE) {
     return false;
   }
 

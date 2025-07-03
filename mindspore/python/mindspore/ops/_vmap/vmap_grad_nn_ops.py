@@ -25,8 +25,9 @@ from mindspore.ops.primitive import _primexpr
 from mindspore.ops.function import _VmapGeneralRule
 from mindspore.ops._vmap.vmap_base import vmap_rules_getters, vmap_general_preprocess, _raise_value_error, \
     _bdim_at_front, _vmap_clone_prim, _bdim_at_any, _handle_broadcasting
-from mindspore.ops.auto_generate.gen_arg_handler import Format, Reduction
 from mindspore.ops import auto_generate as gen
+from mindspore._c_expression import FormatEnum as Format
+from mindspore._c_expression import ReductionEnum as Reduction
 
 
 @vmap_rules_getters.register(G.NLLLossGrad)

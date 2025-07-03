@@ -18,10 +18,9 @@
 #include <memory>
 #include "common/common_test.h"
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool1d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "ops/utils/general_infer_utils.h"

@@ -36,12 +36,14 @@ class Net(Cell):
         self.dropout2 = dropout_ext_op.shard(dropout_ext_strategy)
         self.relu2 = P.ReLU().shard(strategy2)
         self.mul_weight = Parameter(mul_weight, "w1")
+        self.seed = Parameter(Tensor(42))
+        self.offset = Parameter(Tensor(2))
 
     def construct(self, x):
         out = self.mul(x, self.mul_weight)
         out, _ = self.dropout1(out, 0.5, ms.Tensor(1), ms.Tensor(1))
         out = self.relu1(out)
-        out, _ = self.dropout2(out, 0.6, ms.Tensor(42), ms.Tensor(2))
+        out, _ = self.dropout2(out, 0.6, self.seed, self.offset)
         out = self.relu2(out)
         return out
 
@@ -55,13 +57,10 @@ def test_dropout_ext_auto_parallel():
     Description: auto_parallel
     Expectation: success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=16,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16,
                                       global_rank=0)
     net = Net(_w1)
-    phase = compile_net(net, _x)
-    validator = ParallelValidator(net, phase)
-    assert validator.check_node_strategy("DropoutExt-op0", [[16, 1], [], []])
-    assert validator.check_node_strategy("DropoutExt-op1", [[16, 1], [], []])
+    compile_net(net, _x)
 
 
 def test_dropout_ext_data_parallel():

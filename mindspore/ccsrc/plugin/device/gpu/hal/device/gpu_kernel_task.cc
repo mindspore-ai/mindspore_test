@@ -29,7 +29,7 @@ void MallocMemoryForDeviceAddress(const device::DeviceAddressPtr &device_address
                                   const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                  device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
@@ -42,7 +42,7 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
                               const device::DeviceContext *device_context, std::vector<int64_t> vec) {
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kWorkSpace,
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,
                                                  device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
@@ -84,16 +84,16 @@ bool GpuContiguousKernelTask::RunWithRet() {
 
   if (!input_storage_info->is_contiguous) {
     // No need shape_addr and strides_addr, when tensor is contiguous
-    auto shape_kernel_tensor = std::make_shared<KernelTensor>(
+    auto shape_kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
 
-    auto strides_kernel_tensor = std::make_shared<KernelTensor>(
+    auto strides_kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
 
-    shape_dev_addr = device_context->device_res_manager_->CreateDeviceAddress(shape_kernel_tensor);
-    strides_dev_addr = device_context->device_res_manager_->CreateDeviceAddress(strides_kernel_tensor);
+    shape_dev_addr = shape_kernel_tensor->device_address();
+    strides_dev_addr = strides_kernel_tensor->device_address();
 
     MallocMemoryAndCopyValue(shape_dev_addr, device_context, input_storage_info->shape);
     MallocMemoryAndCopyValue(strides_dev_addr, device_context, input_storage_info->strides);

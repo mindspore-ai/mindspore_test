@@ -3,4 +3,4 @@ file(GLOB_RECURSE AVAILABILITY_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_D
 set_property(SOURCE ${AVAILABILITY_ASCEND_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_GE_ADPT)
 
-add_library(_mindspore_ascend_availability_obj OBJECT ${AVAILABILITY_ASCEND_SRC_LIST})
+add_library(_mindspore_ops_kernel_ascend_availability_obj OBJECT ${AVAILABILITY_ASCEND_SRC_LIST})

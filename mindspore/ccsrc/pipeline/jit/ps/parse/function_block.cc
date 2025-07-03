@@ -37,6 +37,11 @@
 #include "utils/hash_set.h"
 #include "utils/info.h"
 #include "utils/compile_config.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace py = pybind11;
@@ -56,11 +61,8 @@ static bool CanBeIsolatedNode(const std::string &var_name, const AnfNodePtr &nod
   auto prim = GetValueNode<PrimitivePtr>(cnode->inputs().at(0));
   if (prim == nullptr) {
     // Not a primitive cnode, it may have side effects or not,
-    // We add it as an isolate node if its name is not '_' or empty.
-    // this means that code like:
-    //    _ = func_call()
-    // will be ignored even if func_call() has side effects.
-    return !var_name.empty() && var_name != "_";
+    // We add it as an isolate node if its name is not empty.
+    return !var_name.empty();
   }
   // Primitive cnode with side effects can be isolate nodes.
   auto effect_info = GetPrimEffectInfo(prim);
@@ -93,6 +95,7 @@ void ReplaceNode(const FuncGraphManagerPtr &mng, const AnfNodePtr &hidden_node, 
 
   for (const auto &[node, idx] : mng->node_users()[hidden_node]) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(idx) == hidden_node && !IsDescendant(cnode, new_node)) {
       MS_LOG(DEBUG) << "Replace the " << idx << "'th input (" << hidden_node->DebugString() << ") of "
                     << cnode->DebugString() << " with " << new_node->DebugString();
@@ -152,6 +155,15 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
                  << "` with node " << node->DebugString();
     iter->second = std::make_pair(node, false);
     if (is_used && need_reorder) {
+      auto registered_iter = assigned_hook_.find(var_name);
+      if (registered_iter != assigned_hook_.end()) {
+        auto it = std::find_if(registered_iter->second.begin(), registered_iter->second.end(),
+                               [&hidden_node](const auto &kv) { return kv.second == hidden_node; });
+        if (it != registered_iter->second.end()) {
+          MS_LOG(EXCEPTION) << "It is not supported to register multiple hooks for a Tensor. You tensor is `"
+                            << var_name << "`.";
+        }
+      }
       MS_LOG(DEBUG) << "Replace " << hidden_node->ToString() << " with " << node->ToString();
       assigned_hook_[var_name][hidden_node] = node;
       iter->second = std::make_pair(node, true);
@@ -308,6 +320,19 @@ AnfNodePtr FunctionBlock::ReadVariable(const std::string &var_name) {
     return node;
   }
   return phi_param;
+}
+
+// Resolve Ast operator node: augassign +=, -=, *=, /=, //=
+py::tuple FunctionBlock::GetAugAssignAstOpNameSpace(const py::object &op) {
+  auto ast = parser_.ast();
+  MS_EXCEPTION_IF_NULL(ast);
+  TraceGuard trace_guard(parser_.GetLocation(op));
+  py::tuple namespace_var = ast->CallParseModFunction(PYTHON_PARSE_GET_AUGASSIGN_AST_NAMESPACE_SYMBOL, op);
+  constexpr size_t namespace_size = 3;
+  if (namespace_var.size() != namespace_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Resolve ast op failed, get namespace tuple size=" << namespace_var.size();
+  }
+  return namespace_var;
 }
 
 // Resolve Ast operator node
@@ -537,7 +562,8 @@ AnfNodePtr FunctionBlock::DoResolve(const AnfNodePtr &node, const std::shared_pt
     return node;
   }
   AnfNodePtr resolved_node = nullptr;
-  bool success = ResolveObjectToNode(node, obj, &resolved_node);
+  Resolver resolver(Parser::GetTopFuncGraph());
+  bool success = resolver.ResolveObjectToNode(node, obj, &resolved_node);
   if (!success || resolved_node == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve convert failed." << node->DebugString()
                                << ", ns: " << name_space->ToString() << ", sym: " << resolve_symbol->ToString();
@@ -848,74 +874,8 @@ void FunctionBlock::FindIsolatedNodes() {
 void FunctionBlock::AddIsolatedNode(const AnfNodePtr &target) { isolated_nodes_.add(target); }
 
 void FunctionBlock::AttachIsolatedNodesBeforeReturn() {
-  if (isolated_nodes_.empty()) {
-    return;
-  }
-  std::vector<AnfNodePtr> states;
-  (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
-  constexpr int recursive_level = 2;
-  for (const auto &node : isolated_nodes_) {
-    MS_EXCEPTION_IF_NULL(node);
-    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
-                  << func_graph_->ToString();
-    if (node->func_graph() == func_graph_) {
-      (void)states.emplace_back(node);
-    } else {
-      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
-                   << func_graph_->ToString();
-    }
-  }
+  AttachIsolatedNodes(func_graph_, isolated_nodes_);
   isolated_nodes_.clear();
-
-  AnfNodePtr state = nullptr;
-  constexpr size_t no_state_size = 1;
-  constexpr size_t only_one_state_size = 2;
-  if (states.size() == no_state_size) {
-    // Only MakeTuple, no state left.
-    return;
-  } else if (states.size() == only_one_state_size) {
-    // If there are only MakeTuple and another node in states(the states size is 2),
-    // do not need to MakeTuple, just use the node.
-    state = states[1];
-  } else {
-    state = func_graph_->NewCNode(std::move(states));
-    if (state != nullptr && state->debug_info() != nullptr) {
-      state->debug_info()->set_location(nullptr);
-    }
-  }
-
-  AnfNodePtr old_output = nullptr;
-  auto return_node = func_graph_->get_return();
-  if (return_node != nullptr) {
-    const size_t return_input_size = 2;
-    if (return_node->size() < return_input_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Length of inputs of output node is less than 2";
-    }
-    old_output = return_node->input(1);
-  } else {
-    old_output = NewValueNode(kNone);
-  }
-  AnfNodePtr stop_grad_node = func_graph_->NewCNode({NewValueNode(prim::kPrimStopGradient), state});
-  CNodePtr depend_node = func_graph_->NewCNode({NewValueNode(prim::kPrimDepend), old_output, stop_grad_node});
-  if (stop_grad_node->debug_info() != nullptr) {
-    stop_grad_node->debug_info()->set_location(nullptr);
-  }
-  if (old_output->debug_info() != nullptr && depend_node->debug_info() != nullptr) {
-    depend_node->debug_info()->set_location(old_output->debug_info()->location());
-  }
-  // We add this attribute for @constexpr use scene, since we must infer them before other nodes.
-  // That means isolated nodes will be evaluated first. It's not complete, but works in most scenes.
-  depend_node->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
-  MS_EXCEPTION_IF_NULL(state);
-  MS_LOG(INFO) << "Attached for side-effect nodes, depend_node: " << depend_node->DebugString()
-               << ", state: " << state->DebugString(recursive_level);
-  func_graph_->set_output(depend_node, true);
-  // Update new return node's debug_info with old one.
-  if (return_node != nullptr && return_node->debug_info() != nullptr) {
-    auto new_return = func_graph_->get_return();
-    MS_EXCEPTION_IF_NULL(new_return);
-    new_return->set_debug_info(return_node->debug_info());
-  }
 }
 
 void FunctionBlock::SetAsDeadBlock() { is_dead_block_ = true; }

@@ -22,11 +22,12 @@
 #include <string>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_mean_cpu {
 class SparseSegmentMeanCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSegmentMeanCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class SparseSegmentMeanCpuKernelMod : public NativeCpuKernelMod {
   size_t y_size_{1};
   size_t batch_size_{1};
 };
+}  // namespace sparse_segment_mean_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

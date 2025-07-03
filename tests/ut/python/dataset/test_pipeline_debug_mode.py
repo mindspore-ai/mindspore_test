@@ -26,10 +26,6 @@ from mindspore.dataset.vision import Inter
 from mindspore import log as logger
 from mindspore.train import Model
 
-# Need to run all these tests in separate processes since
-# the global configuration setting of debug_mode may impact other tests running in parallel.
-pytestmark = pytest.mark.forked
-
 DEBUG_MODE = False
 SEED_VAL = 0  # seed will be set internally in debug mode, save original seed value to restore.
 
@@ -656,7 +652,7 @@ def test_pipeline_debug_mode_im_per_batch_map_resize():
 
 
 def run_cifar100_per_batch_map_pipeline(python_multiprocessing=False, num_parallel_workers=1):
-    """ Create and execute Cifar100 dataset pipline with Batch op using per_batch_map """
+    """ Create and execute Cifar100 dataset pipeline with Batch op using per_batch_map """
     # Define dataset pipeline
     num_samples = 300
     cifar100_ds = ds.Cifar100Dataset("../data/dataset/testCifar100Data", num_samples=num_samples)

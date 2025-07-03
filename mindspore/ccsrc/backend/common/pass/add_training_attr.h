@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace opt {
-class AddTrainingAttr : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT AddTrainingAttr : public PatternProcessPass {
  public:
   explicit AddTrainingAttr(bool multigraph = true) : PatternProcessPass("add_training_attr", multigraph) {}
   ~AddTrainingAttr() override = default;

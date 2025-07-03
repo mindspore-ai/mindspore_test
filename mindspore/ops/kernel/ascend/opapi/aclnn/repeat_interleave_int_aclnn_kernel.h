@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace repeat_interleave_int {
 
 class RepeatInterleaveIntAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class RepeatInterleaveIntAscend : public AclnnKernelMod {
   int64_t repeats_ = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace repeat_interleave_int
 }  // namespace kernel
 }  // namespace mindspore
 

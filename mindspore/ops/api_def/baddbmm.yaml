@@ -1,0 +1,16 @@
+baddbmm:
+  - op_yaml: baddbmm_op.yaml
+    py_method: deprecated_baddbmm
+    kwonlyargs: beta, alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/baddbmm_method.yaml
+    py_method: deprecated_baddbmm
+    kwonlyargs: beta, alpha
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

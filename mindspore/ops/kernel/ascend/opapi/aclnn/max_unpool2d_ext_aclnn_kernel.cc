@@ -21,14 +21,15 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_ext {
 
 void MaxUnpool2DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
@@ -48,5 +49,6 @@ bool MaxUnpool2DExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MaxUnpool2DExt, MaxUnpool2DExtAscend);
+}  // namespace max_unpool2d_ext
 }  // namespace kernel
 }  // namespace mindspore

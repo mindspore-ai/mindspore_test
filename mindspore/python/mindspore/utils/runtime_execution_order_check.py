@@ -22,9 +22,86 @@ from multiprocessing import cpu_count
 from typing import List, Dict, Union, Optional
 import sys
 import mindspore.log as logger
+from mindspore._c_expression import CommExecOrderChecker
 
 # Set Recursion Depth Limit
 sys.setrecursionlimit(10000)
+# support hccl group 150000 card
+csv.field_size_limit(1024 * 1024 * 10)
+
+
+def comm_exec_order_check(action):
+    """
+    Call the CommExecOrderCheck class to start the collection of communication operator execution sequences
+    or stop the collection and validate the execution order.
+
+    Args:
+        action (str): Control command - 'start' to begin collection, 'end' to stop and validate.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore.utils import comm_exec_order_check
+        >>> comm_exec_order_check("start")
+        >>> model.train(1, train_dataset)
+        >>> comm_exec_order_check("end")
+    """
+    if not isinstance(action, str):
+        raise TypeError("The 'action' parameter must be a string.")
+    checker = CommExecOrderCheck()
+    checker(action)
+
+
+class CommExecOrderCheck:
+    """Controller for communication execution order verification.
+
+    Provides interface for starting/stopping the collection of communication
+    operator execution sequences. Integrates with C++ backend for actual
+    order tracking.
+    """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if not hasattr(self, 'initialized'):
+            self.action = None
+            self.order_checker = CommExecOrderChecker.get_instance()
+            self.is_collecting = False
+            self.initialized = True
+
+    def __call__(self, action):
+        """
+        Args:
+            action (str): Control command - 'start' to begin collection,
+                        'end' to stop and validate
+        """
+        self.action = action
+        if action == "start":
+            self.start_function()
+        elif action == "end":
+            self.end_function()
+        else:
+            raise ValueError("Invalid action. Please use 'start' or 'end'.")
+
+    def start_function(self):
+        if self.is_collecting:
+            logger.error("The 'start' action cannot be called twice.")
+            return
+        self.is_collecting = True
+        self.order_checker.start_collect_exec_order()
+
+    def end_function(self):
+        if not self.is_collecting:
+            logger.error("The 'end' action cannot be called before the 'start' action.")
+            return
+        self.is_collecting = False
+        self.order_checker.stop_collect_exec_order()
 
 
 class ExecuteOrder:
@@ -52,12 +129,12 @@ class ExecuteOrder:
             comm_str = ",".join(self.comm_rank)
             return f"{self.primitive}_{self.group}_({comm_str})"
 
-        if self.primitive == "Send":
+        if self.primitive in ["Send", "DistCommIsend", "InnerCommIsend"]:
             # Unique base key of the Send operation.
             return f"Send_Receive_{self.group}_({rank})->({self.dest_rank})_{self.input_shape}"
 
-        if self.primitive == "Receive":
-            # Unique base key of the reception operation
+        if self.primitive in ["Receive", "DistCommIrecv", "InnerCommIrecv"]:
+            # Unique base key of the Recv operation
             return f"Send_Receive_{self.group}_({self.src_rank})->({rank})_{self.output_shape}"
 
         # Other operations, such as broadCast
@@ -200,10 +277,14 @@ class RankFolderParser:
             rank_id = os.path.basename(path).split("_")[1]
             # Adding one more layer to access the "execute_order" folder
             execute_order_path = os.path.join(path, "execute_order")
-            if os.path.exists(execute_order_path):
-                rank_result = self.parse_rank_folder(execute_order_path, rank_id)
-                if rank_result:
-                    result[rank_id] = rank_result[1]  # Extract execute orders
+            if not os.path.exists(execute_order_path):
+                raise FileNotFoundError(
+                    f"Execute order folder does not exist: {execute_order_path} "
+                    f"for rank_{rank_id} folder."
+                )
+            rank_result = self.parse_rank_folder(execute_order_path, rank_id)
+            if rank_result:
+                result[rank_id] = rank_result[1]  # Extract execute orders
             return result
 
         # If the path is a directory containing rank_{x} folders, parse all
@@ -215,8 +296,12 @@ class RankFolderParser:
                     rank_folder_path = os.path.join(path, d)
                     execute_order_path = os.path.join(rank_folder_path, "execute_order")
 
-                    if os.path.exists(execute_order_path):
-                        futures.append(thread_executor.submit(self.parse_rank_folder, execute_order_path, rank_id))
+                    if not os.path.exists(execute_order_path):
+                        raise FileNotFoundError(
+                            f"Execute order folder does not exist: {execute_order_path} "
+                            f"for rank_{rank_id} folder."
+                        )
+                    futures.append(thread_executor.submit(self.parse_rank_folder, execute_order_path, rank_id))
 
             for future in as_completed(futures):
                 try:
@@ -283,23 +368,22 @@ class RankFolderParser:
 
 def modify_execute_orders(execute_orders_map: dict) -> dict:
     """
-     Modify and generate unique execution order keys for each rank.
+    Modify and generate unique execution order keys for each rank.
 
-     This function processes a mapping of execution orders grouped by ranks. For each order,
-     it generates a unique key by combining a base key and a counter, ensuring all orders
-     are uniquely identifiable. The result is a dictionary where the keys are rank identifiers
-     and the values are lists of unique execution order keys.
+    This function processes a mapping of execution orders grouped by ranks. For each order,
+    it generates a unique key by combining a base key and a counter, ensuring all orders
+    are uniquely identifiable. The result is a dictionary where the keys are rank identifiers
+    and the values are lists of unique execution order keys.
 
-     Args:
-         execute_orders_map (dict): A dictionary where keys are rank identifiers (e.g., "rank_0")
-                                    and values are lists of ExecuteOrder objects. If a rank has no
-                                    orders, its value may be `None`.
+    Args:
+        execute_orders_map (dict): A dictionary where keys are rank identifiers (e.g., "rank_0")
+                                and values are lists of ExecuteOrder objects. If a rank has no
+                                orders, its value may be `None`.
 
-     Returns:
-         dict: A dictionary where keys are rank identifiers and values are lists of unique string
-               keys representing the modified execution orders for each rank.
-
-     """
+    Returns:
+        dict: A dictionary where keys are rank identifiers and values are lists of unique string
+            keys representing the modified execution orders for each rank.
+    """
     result = {}
 
     for rank, execute_orders in execute_orders_map.items():
@@ -329,26 +413,25 @@ def modify_execute_orders(execute_orders_map: dict) -> dict:
 
 def parse_and_validate(data: dict, all_rank: bool = True):
     """
-     Parse and validate execution orders in a directed graph structure.
+    Parse and validate execution orders in a directed graph structure.
 
-     This function checks the integrity and consistency of a given dataset, ensuring all required
-     keys are present and correctly referenced. It also validates the structure of the input data
-     and parses string values to extract meaningful components.
+    This function checks the integrity and consistency of a given dataset, ensuring all required
+    keys are present and correctly referenced. It also validates the structure of the input data
+    and parses string values to extract meaningful components.
 
-     Args:
-         data (dict): A dictionary where keys are string identifiers and values are lists of strings.
-                      Each value represents a dependency or reference to other keys.
-         all_rank (bool): If True, checks that all elements referenced in the data are present as keys
-                          in the dictionary. If False, only checks intersections.
+    Args:
+        data (dict): A dictionary where keys are string identifiers and values are lists of strings.
+                    Each value represents a dependency or reference to other keys.
+        all_rank (bool): If True, checks that all elements referenced in the data are present as keys
+                        in the dictionary. If False, only checks intersections.
 
-     Returns:
-         None: Log error messages to the console if validation fails, otherwise completes silently.
+    Returns:
+        None: Log error messages to the console if validation fails, otherwise completes silently.
 
-     Raises:
-         ValueError: Raised indirectly if `parse_elements` encounters malformed input strings.
-         TypeError: Raised indirectly if data contains unexpected types.
-
-     """
+    Raises:
+        ValueError: Raised indirectly if `parse_elements` encounters malformed input strings.
+        TypeError: Raised indirectly if data contains unexpected types.
+    """
     def parse_elements(value: str, max_groups: int = 2) -> set:
         """Extract unique elements inside the first one or two parentheses from a string."""
         groups = re.findall(r'\((.*?)\)', value)
@@ -396,9 +479,8 @@ def detect_cycle_in_graph(ranks_map):
 
     Returns:
     - tuple: (cycle_path, cycle_ranks) where cycle_path is a list of nodes forming the cycle and cycle_ranks
-             is a list of rank transitions corresponding to the cycle path.
+                is a list of rank transitions corresponding to the cycle path.
     """
-    # Step 1: Build the directed graph and track edges with ranks
     graph = defaultdict(list)
     rank_edges = {}
 
@@ -408,46 +490,50 @@ def detect_cycle_in_graph(ranks_map):
             graph[u].append(v)
             rank_edges[(u, v)] = rank
 
-    # Step 2: Detect cycle using DFS with path and rank tracking
     visited = set()
-    recursion_stack = set()
     path = []
+    node_indices = {}
     cycle_path = []
     cycle_ranks = []
 
-    def dfs(node):
-        if node in recursion_stack:  # Cycle detected
-            # Identify the cycle path from the recursion stack
-            cycle_index = path.index(node)
-            cycle_path.extend(path[cycle_index:])
-            for i in range(cycle_index, len(path) - 1):
-                u, v = path[i], path[i + 1]
-                cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
-            # Add the closing edge for the cycle
-            cycle_ranks.append(f"{rank_edges[(path[-1], node)]} {path[-1]} -> {node}")
-            return True
-
-        if node in visited:
-            return False
-
-        visited.add(node)
-        recursion_stack.add(node)
-        path.append(node)
-
-        for neighbor in graph[node]:
-            if dfs(neighbor):
-                return True
-
-        # Backtrack
-        recursion_stack.remove(node)
-        path.pop()
-        return False
-
-    nodes = list(graph.keys())
-    for node in nodes:
+    # Use a stack to simulate recursion
+    stack = []
+    for node in list(graph.keys()):
         if node not in visited:
-            if dfs(node):
-                return cycle_path, cycle_ranks
+            stack.append((node, False))  # (node, is_processed)
+
+            while stack:
+                current_node, is_processed = stack.pop()
+
+                if is_processed:
+                    # Post-processing: remove node from path and indices
+                    path.pop()
+                    del node_indices[current_node]
+                    continue
+
+                if current_node in node_indices:
+                    # Found a cycle
+                    cycle_start = node_indices[current_node]
+                    cycle_path = path[cycle_start:] + [current_node]
+                    for i in range(cycle_start, len(path)):
+                        u = path[i]
+                        v = path[i + 1] if i + 1 < len(path) else current_node
+                        cycle_ranks.append(f"{rank_edges[(u, v)]} {u} -> {v}")
+                    return cycle_path, cycle_ranks
+
+                if current_node in visited:
+                    continue
+
+                visited.add(current_node)
+                node_indices[current_node] = len(path)
+                path.append(current_node)
+
+                # Mark current node as processed
+                stack.append((current_node, True))
+
+                # Add neighbors to stack
+                for neighbor in reversed(graph[current_node]):
+                    stack.append((neighbor, False))
 
     return None, None
 
@@ -485,13 +571,13 @@ def output_cycle_results(cycle_path, cycle_ranks):
         None: Outputs results to the console.
     """
     if cycle_path:
-        logger.warning("Cycle detected:")
-        logger.warning(" -> ".join(cycle_path) + f" -> {cycle_path[0]}")  # Close the cycle
-        logger.warning("Involving ranks:")
+        logger.error("Cycle detected:")
+        logger.error(" -> ".join(cycle_path) + f" -> {cycle_path[0]}")  # Close the cycle
+        logger.error("Involving ranks:")
         for rank in cycle_ranks:
-            logger.warning(rank)
+            logger.error(rank)
     else:
-        logger.warning("Check success.")
+        logger.warning("Cycle Check success. There is no cycle in the graph.")
 
 
 def runtime_execution_order_check(folders_, all_rank=None):
@@ -529,7 +615,7 @@ def runtime_execution_order_check(folders_, all_rank=None):
     if all_rank is None:
         all_rank = determine_all_rank(folders_)
 
-    if all_rank is None:  # Input validation failed
+    if folders_ is None:  # Input validation failed
         logger.error("Invalid input. `folders_` must be a non-empty string or a list with at least one string element.")
         return
 

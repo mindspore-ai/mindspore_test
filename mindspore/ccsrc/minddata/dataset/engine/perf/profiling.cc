@@ -32,13 +32,9 @@
 #include "utils/ms_context.h"
 #endif
 #include "utils/ms_utils.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
+
 namespace platform = mindspore;
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-namespace platform = mindspore::lite;
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -264,10 +260,8 @@ Status ProfilingManager::RegisterTree(ExecutionTree *tree) {
   std::shared_ptr<Sampling> connector_size_sampling = std::make_shared<ConnectorSize>(tree_);
   RETURN_IF_NOT_OK(RegisterSamplingNode(connector_size_sampling));
 
-#ifndef ENABLE_ANDROID
   std::shared_ptr<Sampling> cpu_sampler = std::make_shared<CpuSampler>(tree_);
   RETURN_IF_NOT_OK(RegisterSamplingNode(cpu_sampler));
-#endif
   // can insert a correct timestamp so that we can ignore the samples that were taken
   // during start up of the pipeline.
   (void)epoch_end_ts_.emplace_back(0);
@@ -365,7 +359,6 @@ Status ProfilingManager::ChangeFileMode(const std::string &dir_path, const std::
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status ProfilingManager::GetUserCpuUtilByEpoch(int32_t epoch_num, std::vector<uint8_t> *result) {
   uint64_t start_ts = 0, end_ts = 0;
   RETURN_IF_NOT_OK(EpochToTimeInterval(epoch_num, &start_ts, &end_ts));
@@ -489,7 +482,6 @@ Status ProfilingManager::GetSystemMemoryInfoByTime(SystemMemoryMetric metric, ui
   auto node = std::dynamic_pointer_cast<CpuSampler>(sampling_node);
   return node->GetSystemMemoryInfo(metric, start_ts, end_ts, result);
 }
-#endif
 
 Status ProfilingManager::EpochToTimeInterval(int32_t epoch_num, uint64_t *start_ts, uint64_t *end_ts) {
   RETURN_UNEXPECTED_IF_NULL(start_ts);

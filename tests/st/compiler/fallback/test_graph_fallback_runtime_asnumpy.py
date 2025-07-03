@@ -74,7 +74,7 @@ def test_fallback_np_grad():
     """
     a = ms.Tensor(np.array(4), ms.int32)
     b = ms.Tensor(np.array(5), ms.int32)
-    output = ops.grad(Net())(a, b)
+    output = ops.grad(Net())(a, b)  # pylint: disable=not-callable
     assert output == 0
 
 
@@ -113,7 +113,7 @@ def test_fallback_np_asnumpy_grad():
     """
     a = ms.Tensor(np.array(4), ms.int32)
     b = ms.Tensor(np.array(5), ms.int32)
-    output = ops.grad(Net1())(a, b)
+    output = ops.grad(Net1())(a, b)  # pylint: disable=not-callable
     assert output == 0
 
 
@@ -125,7 +125,7 @@ def test_jit_tensor_asnumpy():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def tensor_asnumpy():
         tensor = ms.Tensor(np.arange(0, 6).reshape(2, 3))
         res = tensor.asnumpy()

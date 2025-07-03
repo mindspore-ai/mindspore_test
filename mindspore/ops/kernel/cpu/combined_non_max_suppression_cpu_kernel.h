@@ -24,8 +24,8 @@
 #include <utility>
 #include <vector>
 #include <queue>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace non_max_suppression_local {
 struct score_index {
@@ -50,6 +50,7 @@ bool result_cmp(const result_para &a, const result_para &b) { return a.score > b
 
 namespace mindspore {
 namespace kernel {
+namespace combined_non_max_suppression_cpu {
 class CombinedNonMaxSuppressionCpuKernelMod : public NativeCpuKernelMod {
  public:
   CombinedNonMaxSuppressionCpuKernelMod() = default;
@@ -103,6 +104,7 @@ class CombinedNonMaxSuppressionCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output2_shape_;
   std::vector<int64_t> output3_shape_;
 };
+}  // namespace combined_non_max_suppression_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_COMBINED_NON_MAX_SUPPRESSION_CPU_KERNEL_H_

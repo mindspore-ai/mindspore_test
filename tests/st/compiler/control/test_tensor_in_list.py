@@ -13,10 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """ test_tensor_in_list """
-from tests.st.compiler.control.cases_register import case_register
-from mindspore import nn, Tensor
+from tests.mark_utils import arg_mark
+from mindspore import nn, Tensor, context
 from mindspore import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class Net(nn.Cell):
     def __init__(self):
@@ -31,8 +32,7 @@ class Net(nn.Cell):
         return out
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensor_in_list():
     """
     Feature: Control flow

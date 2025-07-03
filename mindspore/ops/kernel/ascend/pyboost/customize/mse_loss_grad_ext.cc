@@ -17,20 +17,19 @@
 #include "kernel/ascend/pyboost/customize/mse_loss_grad_ext.h"
 #include <memory>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &grad_output_tensor,
-                                                    const BaseTensorPtr &input_tensor,
-                                                    const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction) {
+tensor::TensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                const TensorPtr &grad_output_tensor, const TensorPtr &input_tensor,
+                                                const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "MSELossGradExt call start";
   OpRunner::InferOpOutput(op, grad_output_tensor, input_tensor, target_tensor, reduction);
 
@@ -40,23 +39,20 @@ tensor::BaseTensorPtr MSELossGradExtAscendCustomize(const std::shared_ptr<OpRunn
 
   const std::vector<int64_t> &expand_shape = op->output_value_simple_info()->shape_vector_[kIndex0];
 
-  const ValueTuplePtr &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
-  MS_EXCEPTION_IF_NULL(expand_shape_ptr);
-
-  BaseTensorPtr input_tensor_bd = input_tensor;
-  BaseTensorPtr target_tensor_bd = target_tensor;
+  TensorPtr input_tensor_bd = input_tensor;
+  TensorPtr target_tensor_bd = target_tensor;
 
   const std::vector<int64_t> &input_shape = input_tensor->shape();
   if (input_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape_ptr);
+    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape);
   }
   const std::vector<int64_t> &target_shape = target_tensor->shape();
   if (target_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape_ptr);
+    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape);
   }
 
   // No need to convert input

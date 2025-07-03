@@ -41,15 +41,12 @@
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
 constexpr size_t kSizeFour = 4;
-constexpr size_t kIndex0 = 0;
-constexpr size_t kIndex1 = 1;
-constexpr size_t kIndex2 = 2;
-constexpr size_t kIndex3 = 3;
 constexpr auto kAttrPrimitiveTarget = "primitive_target";
 
 void ConvertShapeNHWCToNCHW(std::vector<int64_t> *const nhwc_shape) {

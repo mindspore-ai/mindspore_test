@@ -50,7 +50,8 @@ def _scalar_bitwise_xor_tensor(x, y):
     return F.bitwise_xor(x, y)
 
 
-@bitwise_xor.register_default()
+# pylint: disable=protected-access
+@bitwise_xor._register_default()
 def default_bitwsie_xor(x, y):
     """Default function for bitwise_xor."""
     return x ^ y

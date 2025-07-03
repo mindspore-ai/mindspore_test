@@ -65,7 +65,7 @@ def test_inplace_add_auto_parallel(network):
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = network(indices_)
     compile_net(net, x_, input_v_)

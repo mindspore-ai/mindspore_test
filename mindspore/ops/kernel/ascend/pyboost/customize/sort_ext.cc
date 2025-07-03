@@ -17,19 +17,19 @@
 #include "kernel/ascend/pyboost/customize/sort_ext.h"
 #include <tuple>
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> SortExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                                                const BaseTensorPtr &input_tensor,
-                                                                                const Int64ImmPtr &dim,
-                                                                                const BoolImmPtr &descending,
-                                                                                const BoolImmPtr &stable) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> SortExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                        const TensorPtr &input_tensor,
+                                                                        const Int64ImmPtr &dim,
+                                                                        const BoolImmPtr &descending,
+                                                                        const BoolImmPtr &stable) {
   OpRunner::InferOpOutput(op, input_tensor, dim, descending, stable);
 
   auto dim_imm = GetValue<int64_t>(dim);

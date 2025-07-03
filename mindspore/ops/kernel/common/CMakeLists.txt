@@ -1,0 +1,7 @@
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/include)
+file(GLOB_RECURSE KERNEL_COMMON_SRC "*.cc")
+add_library(mindspore_ops_kernel_common SHARED ${KERNEL_COMMON_SRC})
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    target_compile_definitions(mindspore_ops_kernel_common PRIVATE OPS_KERNEL_COMMON_DLL)
+endif()
+target_link_libraries(mindspore_ops_kernel_common PRIVATE mindspore_core mindspore_common)

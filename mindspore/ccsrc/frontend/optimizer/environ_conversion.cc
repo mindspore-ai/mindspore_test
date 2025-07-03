@@ -26,6 +26,8 @@
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "utils/symbolic.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 /* namespace to support opt */
@@ -100,6 +102,7 @@ void TransformNodeAbstractIfEnvType(const AnfNodePtr &node, const abstract::Abst
 
 TypeId GetValueType(const CNodePtr &cnode) {
   // (EnvironSet/EnvironGet, environ, key, value/default)
+  MS_EXCEPTION_IF_NULL(cnode);
   constexpr size_t environ_input_size = 4;
   if (cnode->size() != environ_input_size) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
@@ -203,13 +206,16 @@ bool EnvironConversion(const pipeline::ResourcePtr &resource) {
     } else {
       prim->set_attr(attr_name, MakeValue(static_cast<int>(type_id)));
     }
+    const auto &key_node = cnode->input(kSymbolicKeyOffset);
+    if (IsValueNode<mindspore::tensor::Tensor>(key_node)) {
+      continue;
+    }
     // Abstract of Environ & Value will be set by later TransformNodeAbstract function.
     // Key
-    if (!IsValueNode<SymbolicKeyInstance>(cnode->input(kSymbolicKeyOffset))) {
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
-        << "should be SymbolicKey, but: " << cnode->input(kSymbolicKeyOffset)->ToString();
+    if (!IsValueNode<SymbolicKeyInstance>(key_node)) {
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "should be SymbolicKey or Tensor, but: " << key_node->ToString();
     }
-    const auto &transformed_key_node = GetTransformedKeyNode(cnode->input(kSymbolicKeyOffset), &symbolic_key_map);
+    const auto &transformed_key_node = GetTransformedKeyNode(key_node, &symbolic_key_map);
     txn.SetEdge(node, kSymbolicKeyOffset, transformed_key_node);
   }
   txn.Commit();

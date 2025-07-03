@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 
 namespace mindspore {
 
-class BACKEND_EXPORT DumpControl {
+class BACKEND_COMMON_EXPORT DumpControl {
  public:
   static DumpControl &GetInstance() {
     static DumpControl instance;
@@ -36,6 +36,8 @@ class BACKEND_EXPORT DumpControl {
   void SetDynamicDump() { dynamic_switch_ = true; }
   void DynamicDumpStart();
   void DynamicDumpStop();
+  void SetInitialIteration(std::uint32_t initial_iteration);
+  void UpdateUserDumpStep(const std::uint32_t step);
 
  private:
   DumpControl() = default;

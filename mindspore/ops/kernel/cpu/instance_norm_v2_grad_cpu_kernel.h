@@ -18,13 +18,14 @@
 
 #include <set>
 #include <vector>
-#include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "common/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace instance_norm_v2_grad_cpu {
 class InstanceNormV2GradCpuKernelMod : public NativeCpuKernelMod {
  public:
   InstanceNormV2GradCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class InstanceNormV2GradCpuKernelMod : public NativeCpuKernelMod {
   bool dy_is_4d_ = true;
   int64_t instance_num = 0;
 };
+}  // namespace instance_norm_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

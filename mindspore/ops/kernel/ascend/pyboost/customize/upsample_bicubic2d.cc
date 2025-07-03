@@ -15,22 +15,20 @@
  */
 
 #include "kernel/ascend/pyboost/customize/upsample_bicubic2d.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-constexpr pyfloat DEFAULT_SCALE_VALUE = -1.;
-tensor::BaseTensorPtr UpsampleBicubic2DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                  const device::DeviceContext *device_context,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::vector<int64_t> &output_size,
-                                                  const std::vector<pyfloat> &scales, const bool &align_corners,
-                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleBicubic2DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                              const device::DeviceContext *device_context,
+                                              const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                              const std::vector<pyfloat> &scales, const bool &align_corners,
+                                              const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_h = scales.at(0);
   double scales_w = scales.at(1);
@@ -41,11 +39,10 @@ tensor::BaseTensorPtr UpsampleBicubic2DAscendCall(const std::shared_ptr<OpRunner
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleBicubic2DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const std::optional<ValueTuplePtr> &output_size,
-                                                       const std::optional<ValueTuplePtr> &scale_factors,
-                                                       const BoolImmPtr &align_corners) {
+tensor::TensorPtr UpsampleBicubic2DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const std::optional<ValueTuplePtr> &output_size,
+                                                   const std::optional<ValueTuplePtr> &scale_factors,
+                                                   const BoolImmPtr &align_corners) {
   MS_LOG(INFO) << "UpsampleBicubic2DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);
@@ -54,6 +51,7 @@ tensor::BaseTensorPtr UpsampleBicubic2DAscendCustomize(const std::shared_ptr<OpR
   const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
+  constexpr pyfloat DEFAULT_SCALE_VALUE = -1.;
   std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
     MS_EXCEPTION(RuntimeError) << "For UpsampleBicubic2D, scale_factors is not supported now.";

@@ -16,17 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/inplace_hardtanh.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceHardtanhAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor, const ScalarPtr &min_val,
-                                                     const ScalarPtr &max_val) {
+tensor::TensorPtr InplaceHardtanhAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ScalarPtr &min_val, const ScalarPtr &max_val) {
   MS_LOG(DEBUG) << "Call InplaceHardtanh start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});

@@ -16,11 +16,22 @@
 """Implementation for internal polymorphism `div` operations."""
 from __future__ import division
 
+from mindspore.ops.auto_generate.gen_ops_prim import InplaceDiv, InplaceDivs
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._constexpr_utils import log_warning, check_equal
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
 from mindspore.common import COOTensor
+from mindspore.ops.auto_generate import div_op
+
+
+# x /= y
+augassign_div = base.MultitypeFuncGraph("augassign_div", True)
+"""
+augassign_div is a metafuncgraph object which will div two objects according to input type
+using ".register" decorator
+"""
+augassign_div.set_need_raise()
 
 
 div = base.MultitypeFuncGraph("div", True)
@@ -31,6 +42,7 @@ using ".register" decorator
 div.set_need_raise()
 
 
+@augassign_div.register("CSRTensor", "Tensor")
 @div.register("CSRTensor", "Tensor")
 def _csrtensor_div_tensor(x, y):
     """
@@ -43,6 +55,7 @@ def _csrtensor_div_tensor(x, y):
     return F.csr_div(x, y)
 
 
+@augassign_div.register("COOTensor", "Tensor")
 @div.register("COOTensor", "Tensor")
 def _cootensor_div_tensor(x, y):
     """
@@ -57,6 +70,7 @@ def _cootensor_div_tensor(x, y):
     return COOTensor(x.indices, x.values / other_values, x.shape)
 
 
+@augassign_div.register("Number", "Number")
 @div.register("Number", "Number")
 def _div_scalar(x, y):
     """
@@ -72,6 +86,21 @@ def _div_scalar(x, y):
     return F.scalar_div(x, y)
 
 
+@augassign_div.register("Tensor", "Tensor")
+def _div_tensor_augassign(x, y):
+    """
+    Two tensors divide by element.
+
+    Args:
+        x (Tensor): The first input tensor.
+        y (Tensor): The second input tensor.
+
+    Returns:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceDiv()(x, y)
+
+
 @div.register("Tensor", "Tensor")
 def _div_tensor(x, y):
     """
@@ -84,9 +113,10 @@ def _div_tensor(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
 
 
+@augassign_div.register("Number", "Tensor")
 @div.register("Number", "Tensor")
 def _scalar_div_tensor(x, y):
     """
@@ -99,7 +129,22 @@ def _scalar_div_tensor(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
+
+
+@augassign_div.register("Tensor", "Number")
+def _tensor_div_scalar_augassign(x, y):
+    """
+    Tensor divided by number.
+
+    Args:
+        x (Tensor): x
+        y (Number): The dtype is same as x.
+
+    Returns:
+        Tensor, has the same dtype as x.
+    """
+    return InplaceDivs()(x, y)
 
 
 @div.register("Tensor", "Number")
@@ -114,9 +159,10 @@ def _tensor_div_scalar(x, y):
     Returns:
         Tensor, has the same dtype as x.
     """
-    return F.tensor_div(x, y)
+    return div_op(x, y)
 
 
+@augassign_div.register("Tuple", "Tensor")
 @div.register("Tuple", "Tensor")
 def _tuple_div_tensor(x, y):
     """
@@ -133,6 +179,7 @@ def _tuple_div_tensor(x, y):
     return F.tensor_div(x, y)
 
 
+@augassign_div.register("Tensor", "Tuple")
 @div.register("Tensor", "Tuple")
 def _tensor_div_tuple(x, y):
     """
@@ -149,6 +196,7 @@ def _tensor_div_tuple(x, y):
     return F.tensor_div(x, y)
 
 
+@augassign_div.register("List", "Tensor")
 @div.register("List", "Tensor")
 def _list_div_tensor(x, y):
     """
@@ -165,6 +213,7 @@ def _list_div_tensor(x, y):
     return F.tensor_div(x, y)
 
 
+@augassign_div.register("Tensor", "List")
 @div.register("Tensor", "List")
 def _tensor_div_list(x, y):
     """
@@ -181,7 +230,9 @@ def _tensor_div_list(x, y):
     return F.tensor_div(x, y)
 
 
-@div.register_default()
+# pylint: disable=protected-access
+@augassign_div._register_default()
+@div._register_default()
 def default_div(x, y):
     """Default function for div."""
     if y != 0:

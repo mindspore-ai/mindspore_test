@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 #ifdef _MSC_VER
 #undef OPAQUE
@@ -72,7 +72,7 @@ struct KernelJsonInfo {
   KernelJsonInfo() = default;
 };
 
-class BACKEND_EXPORT KernelPack {
+class BACKEND_COMMON_EXPORT KernelPack {
  public:
   KernelPack() : json_(nullptr), kernel_(nullptr) {}
   KernelPack(const KernelPack &) = default;

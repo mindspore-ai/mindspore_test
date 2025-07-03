@@ -19,10 +19,11 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pad_cpu {
 namespace {
 constexpr size_t kPadInputsNum = 1;
 constexpr size_t kPadOutputsNum = 1;
@@ -158,5 +159,6 @@ const std::vector<std::pair<KernelAttr, PadCpuKernelMod::KernelRunFunc>> &PadCpu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Pad, PadCpuKernelMod);
+}  // namespace pad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,11 +17,12 @@
 #include "kernel/cpu/sparse_segment_mean_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_mean_cpu {
 bool SparseSegmentMeanCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   constexpr size_t inputs_num = 3;
@@ -187,5 +188,6 @@ std::vector<KernelAttr> SparseSegmentMeanCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentMean, SparseSegmentMeanCpuKernelMod);
+}  // namespace sparse_segment_mean_cpu
 }  // namespace kernel
 }  // namespace mindspore

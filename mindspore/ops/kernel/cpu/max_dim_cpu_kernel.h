@@ -23,14 +23,15 @@
 #include <algorithm>
 
 #include "kernel/cpu/argmax_with_value_cpu_kernel.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
-class MaxDimCpuKernelMod : public ArgMaxWithValueCpuKernelMod {
+namespace max_dim_cpu {
+class MaxDimCpuKernelMod : public argmax_with_value_cpu::ArgMaxWithValueCpuKernelMod {
  public:
-  MaxDimCpuKernelMod() : ArgMaxWithValueCpuKernelMod(1, 0) {}
+  MaxDimCpuKernelMod() : argmax_with_value_cpu::ArgMaxWithValueCpuKernelMod(1, 0) {}
   ~MaxDimCpuKernelMod() override = default;
 
  protected:
@@ -106,6 +107,7 @@ class MaxDimCpuKernelMod : public ArgMaxWithValueCpuKernelMod {
     return kernel_attr_list;
   }
 };
+}  // namespace max_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

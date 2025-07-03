@@ -3,6 +3,8 @@ include_directories(${CMAKE_BINARY_DIR})
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)
 add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
+add_subdirectory(dump)
+
 set(_DEBUG_SRC_LIST)
 
 if(ENABLE_DUMP_IR)
@@ -32,32 +34,21 @@ endif()
 
 list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/execute_order_tracker/execute_order_tracker.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_debugger.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/adapter.cc"
     )
 
 list(APPEND _DEBUG_SRC_LIST
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/cpu_e2e_dump.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/overflow_dumper.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_json_parser.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_utils.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/data_dumper.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/npy_header.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/common/csv_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/summary/summary.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/acl_dump_json_writer.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensordump_control.cc"
     )
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(APPEND _DEBUG_SRC_LIST
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
-        )
-    list(APPEND _DEBUG_SRC_LIST
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/acl_data_adapter.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_dynamic_loader.cc"
         )
     file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
 endif()
@@ -69,10 +60,9 @@ file(GLOB_RECURSE _TFT_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/tft_adapter/*.cc")
 list(APPEND _DEBUG_SRC_LIST ${_TFT_SRC_LIST})
 list(LENGTH _DEBUG_SRC_LIST debug_files_size)
 list(APPEND _DEBUG_SRC_LIST ${_DEVICE_STATISTIC_LIST})
+file(GLOB_RECURSE _CHECKSUM_LIST "${CMAKE_CURRENT_SOURCE_DIR}/checksum/*.cc")
+list(APPEND _DEBUG_SRC_LIST ${_CHECKSUM_LIST})
 if(${debug_files_size} GREATER 0)
   add_library(_mindspore_debug_obj OBJECT ${_DEBUG_SRC_LIST})
-  if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-      target_compile_definitions(_mindspore_debug_obj PRIVATE BACKEND_DLL)
-  endif()
   add_dependencies(_mindspore_debug_obj proto_input)
 endif()

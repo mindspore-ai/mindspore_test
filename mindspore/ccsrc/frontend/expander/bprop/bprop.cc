@@ -24,11 +24,15 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/expander/core/infer.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/anf_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "frontend/expander/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace expander {
@@ -186,7 +190,7 @@ class PynativeIRBuilder : public IrBuilder {
           size_t i = LongToSize(idx);
           if (i < inputs.size() && !inputs[i]->HasAbstractValue()) {
             auto v = inputs[i]->BuildValue();
-            auto tensor = v->cast<tensor::BaseTensorPtr>();
+            auto tensor = v->cast<tensor::TensorPtr>();
             if (tensor != nullptr) {
               tensor->data_sync();
             }
@@ -415,6 +419,7 @@ bool BpropExpander::IsCloneInplaceInput(const PynativeCallback &cb) {
 bool BpropExpander::RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values) {
   static const bool cache_env = (common::GetEnv("MS_DEV_DISABLE_BPROP_CACHE") != "on");
   const auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   const auto name = prim->name();
   std::shared_ptr<PynativeIRBuilder> ir_builder;
   if (cache_env) {
@@ -569,6 +574,7 @@ class GraphModeBuilder : public IrBuilder {
   NodePtrList Build(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,
                     const BpropHandle &handle, const std::string &instance_name) {
     auto outputs = Run(inputs, attrs, handle, instance_name);
+    InsertDepend(&outputs);
     auto mt = this->MakeTuple(outputs)->get();
     func_graph_->set_output(mt);
     if (has_ctrl_flow_) {
@@ -589,12 +595,22 @@ class GraphModeBuilder : public IrBuilder {
 
   NodePtr Conditional(const NodePtr &cond, const BlockFunc &true_case, const BlockFunc &false_case) override {
     has_ctrl_flow_ = true;
-    return IrBuilder::Conditional(cond, true_case, false_case);
+    CtrlFlowBlock cfb(this, this->func_graph(),
+                      [this](const FuncGraphPtr &fg, const ExpanderInferPtr &infer) -> EmitterPtr {
+                        return std::make_shared<GraphModeBuilder>(this->name_ + "Conditional", fg, infer);
+                      });
+    this->func_graph()->set_flag(kFlagIsControlFlow, true);
+    return cfb.IfThenElse(cond, true_case, false_case);
   }
 
   NodePtr While(const NodePtr &cond, const BlockFunc &body, const NodePtrList &init_list) override {
     has_ctrl_flow_ = true;
-    return IrBuilder::While(cond, body, init_list);
+    CtrlFlowBlock cfb(this, this->func_graph(),
+                      [this](const FuncGraphPtr &fg, const ExpanderInferPtr &infer) -> EmitterPtr {
+                        return std::make_shared<GraphModeBuilder>(this->name_ + "While", fg, infer);
+                      });
+    this->func_graph()->set_flag(kFlagIsControlFlow, true);
+    return cfb.While(cond, body, init_list);
   }
 
  protected:
@@ -614,10 +630,36 @@ class GraphModeBuilder : public IrBuilder {
     }
     auto node = NewIrNode(cnode->cast<AnfNodePtr>());
     infer_->Infer(node);
+    for (auto &inp : inputs) {
+      (void)isolated_side_effect_nodes_.erase(inp);
+    }
+    if ((prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_MEM) && GetValue<bool>(prim->GetAttr(GRAPH_FLAG_SIDE_EFFECT_MEM))) ||
+        (prim->HasAttr(GRAPH_FLAG_SIDE_EFFECT_IO) && GetValue<bool>(prim->GetAttr(GRAPH_FLAG_SIDE_EFFECT_IO)))) {
+      isolated_side_effect_nodes_.add(node);
+    }
     return node;
   }
 
+  void InsertDepend(NodePtrList *outputs) {
+    for (auto &out : *outputs) {
+      isolated_side_effect_nodes_.erase(out);
+    }
+    if (isolated_side_effect_nodes_.empty() || outputs->empty()) {
+      return;
+    }
+    if (isolated_side_effect_nodes_.size() == 1) {
+      (*outputs)[0] = this->Depend((*outputs)[0], isolated_side_effect_nodes_.back());
+    } else {
+      NodePtrList nodes(isolated_side_effect_nodes_.begin(), isolated_side_effect_nodes_.end());
+      auto mt = this->MakeTuple(nodes);
+      (*outputs)[0] = this->Depend((*outputs)[0], mt);
+    }
+  }
+
   bool has_ctrl_flow_{false};
+  // This variable is used to record isolated nodes in the graph. When the bprop graph construction is complete, all
+  // isolated nodes are connected to outputs[0] using a Depend node.
+  mindspore::OrderedSet<NodePtr> isolated_side_effect_nodes_;
 };
 
 bool ExpandBpropInGraphMode(const BpropHandle *handle, const PrimitivePtr &prim, const FuncGraphPtr &graph) {

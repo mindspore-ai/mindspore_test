@@ -18,15 +18,18 @@ import glob
 import json
 from typing import List, Optional
 
-from mindspore import context
 from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
 
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.registry import PROFILERS
-from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity, AnalysisMode
-
+from mindspore.profiler.common.constant import (
+    DeviceTarget,
+    ProfilerActivity,
+    AnalysisMode,
+    ExportType,
+)
 from mindspore._c_expression import _framework_profiler_enable_mi, _framework_profiler_disable_mi
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
@@ -51,8 +54,10 @@ from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPipelineRawViewer,
     MindDataPiplineSummaryViewer,
 )
+from mindspore.profiler.analysis.viewer.ms_operator_details_viewer import MsOperatorDetailsViewer
 from mindspore.profiler.common.util import print_msg_with_pid
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.mstx import Mstx
 
 
 @PROFILERS.register_module(DeviceTarget.NPU.value)
@@ -81,11 +86,6 @@ class NpuProfiler(BaseProfiler):
 
         # record original profiler params
         self._prof_info.profiler_parameters = self._prof_ctx.original_params
-        self._prof_info.ms_profiler_info = {
-            "context_mode": context.get_context("mode"),
-            "rank_id": self._prof_ctx.rank_id,
-            "device_id": self._prof_ctx.device_id,
-        }
 
         # initialize minddata profiler
         if self._prof_ctx.data_process:
@@ -98,6 +98,8 @@ class NpuProfiler(BaseProfiler):
     def start(self) -> None:
         """Start profiling."""
         self._logger.info("NpuProfiler start.")
+
+        Mstx.enable = self._prof_ctx.npu_profiler_params.get("mstx", False)
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             _framework_profiler_enable_mi()
@@ -114,6 +116,9 @@ class NpuProfiler(BaseProfiler):
     def stop(self) -> None:
         """Stop profiling."""
         self._logger.info("NpuProfiler stop.")
+
+        Mstx.enable = False
+
         if self._profiler:
             self._profiler.stop()
 
@@ -125,6 +130,20 @@ class NpuProfiler(BaseProfiler):
         if self._prof_ctx.data_process:
             self._md_profiler.stop()
             self._md_profiler.save(self._prof_ctx.framework_path)
+
+        if ProfilerActivity.NPU in self._prof_ctx.activities:
+            prof_dir = glob.glob(os.path.join(self._prof_ctx.ascend_ms_dir, "PROF_*"))
+            if not prof_dir:
+                logger.error(f"No PROF_* directory found in {self._prof_ctx.ascend_ms_dir}")
+                return
+
+            self._prof_ctx.msprof_profile_path = prof_dir[0]
+            self._prof_ctx.device_id = self._prof_ctx.msprof_profile_device_path.split("_")[-1]
+
+        self._prof_info.ms_profiler_info = {
+            "rank_id": self._prof_ctx.rank_id,
+            "device_id": self._prof_ctx.device_id,
+        }
 
         self._prof_info.save(self._prof_ctx.ascend_ms_dir, self._prof_ctx.rank_id)
 
@@ -147,15 +166,17 @@ class NPUProfilerAnalysis:
     """
 
     @classmethod
-    def online_analyse(cls):
+    def online_analyse(cls, async_mode: bool = False):
         """
         Online analysis for NPU
         """
         cls._pre_analyse_online()
-        if ProfilerContext().mode == AnalysisMode.SYNC_MODE.value:
-            cls._run_tasks(**ProfilerContext().to_dict())
-        elif ProfilerContext().mode == AnalysisMode.ASYNC_MODE.value:
+        if async_mode:
+            ProfilerContext().mode = AnalysisMode.ASYNC_MODE.value
             MultiProcessPool().add_async_job(cls._run_tasks, **ProfilerContext().to_dict())
+        else:
+            ProfilerContext().mode = AnalysisMode.SYNC_MODE.value
+            cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
     def offline_analyse(
@@ -177,12 +198,6 @@ class NPUProfilerAnalysis:
         """
         prof_ctx = ProfilerContext()
         if ProfilerActivity.NPU in prof_ctx.activities:
-            prof_dir = glob.glob(os.path.join(prof_ctx.ascend_ms_dir, "PROF_*"))
-            if not prof_dir:
-                logger.error(f"No PROF_* directory found in {prof_ctx.ascend_ms_dir}")
-                return
-
-            prof_ctx.msprof_profile_path = prof_dir[0]
             ProfilerPathManager().clean_analysis_cache()
             ProfilerPathManager().create_output_path()
             ProfilerInfo().load_time_parameters(
@@ -212,7 +227,6 @@ class NPUProfilerAnalysis:
         prof_ctx.set_params()
         prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
         prof_ctx.jit_level = prof_info.jit_level
-        prof_ctx.context_mode = prof_info.context_mode
 
         if ProfilerActivity.NPU in prof_ctx.activities:
             prof_dir = glob.glob(os.path.join(ascend_ms_dir, "PROF_*"))
@@ -248,7 +262,10 @@ class NPUProfilerAnalysis:
         task_mgr = cls._construct_task_mgr(**kwargs)
         task_mgr.run()
         ProfilerLogger.get_instance().info(json.dumps(task_mgr.cost_time, indent=4))
-        if kwargs.get("data_simplification"):
+        activities = kwargs.get("activities")
+        if activities and ProfilerActivity.NPU.value in activities:
+            ProfilerPathManager().move_db_file()
+        if kwargs.get("data_simplification") and ProfilerActivity.NPU.value in kwargs.get("activities"):
             ProfilerPathManager().simplify_data()
 
     @classmethod
@@ -258,10 +275,23 @@ class NPUProfilerAnalysis:
         """
         task_mgr = TaskManager()
         activities = kwargs.get("activities", [])
+        export_type = kwargs.get("export_type", [])
+        record_shapes = kwargs.get("record_shapes", False)
         enable_data_process = kwargs.get("data_process", False)
 
         # CANN flow parser
         cann_flow_parsers = []
+
+        if export_type == [ExportType.Db.value]:
+            if ProfilerActivity.NPU.value in activities:
+                cann_flow_parsers.append(
+                    AscendMsprofParser(**kwargs)
+                )
+                task_mgr.create_flow(
+                    *cann_flow_parsers, flow_name="cann_flow", show_process=True
+                )
+            return task_mgr
+
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(
                 AscendMsprofParser(**kwargs)
@@ -275,6 +305,12 @@ class NPUProfilerAnalysis:
                     MsDatasetViewer(**kwargs).save
                 )
             )
+            if record_shapes:
+                cann_flow_parsers.append(
+                    FrameworkCannRelationParser(**kwargs).register_post_hook(
+                        MsOperatorDetailsViewer(**kwargs).save
+                    )
+                )
 
         if ProfilerActivity.NPU.value in activities:
             cann_flow_parsers.append(

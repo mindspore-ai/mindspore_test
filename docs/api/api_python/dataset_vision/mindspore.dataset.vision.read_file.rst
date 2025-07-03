@@ -10,7 +10,7 @@ mindspore.dataset.vision.read_file
 
     返回：
         - numpy.ndarray, 一维uint8类型数据。
-        
+
     异常：
         - **TypeError** - 如果 `filename` 不是str类型。
         - **RuntimeError** - 如果 `filename` 不存在或不是普通文件。

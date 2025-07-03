@@ -20,23 +20,20 @@
 #include <memory>
 #include <map>
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "mindspore/ops/infer/svd.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace svd_cpu {
 namespace {
 using float_complex = std::complex<float>;
 using double_complex = std::complex<double>;
-const size_t kSvdInputsNum = 1;
+const size_t kSvdInputsNum = 3;
 const size_t kSvdOutputsNum = 3;
 }  // namespace
 
 bool SvdCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  full_matrices_ = GetValue<bool>(primitive_->GetAttr(ops::kAttrFullMatrices));
-  compute_uv_ = GetValue<bool>(primitive_->GetAttr(ops::kAttrComputeUV));
-
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSvdInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSvdOutputsNum, kernel_name_);
 
@@ -62,12 +59,19 @@ int SvdCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
   if (ret != 0) {
     return ret;
   }
+  auto in_shape = inputs[kIndex0]->GetShapeVector();
+  full_matrices_ = inputs[kIndex1]->GetValueWithCheck<bool>();
+  compute_uv_ = inputs[kIndex2]->GetValueWithCheck<bool>();
+  if (IsShapeNone(in_shape)) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input can not be a empty tensor, but got: " << in_shape;
+  }
 
   std::vector<size_t> input_shape = std::vector<size_t>(inputs.at(kIndex0)->GetDeviceShapeVector().begin(),
                                                         inputs.at(kIndex0)->GetDeviceShapeVector().end());
   size_t dim = input_shape.size();
   if (dim < kDim2) {
-    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", input dimension must be greater than or equal to 2.";
+    MS_LOG(EXCEPTION) << "For " << kernel_name_
+                      << ", input dimension must be greater than or equal to 2, but got: " << dim;
   }
 
   num_of_rows_ = input_shape[dim - kDim2];
@@ -209,29 +213,38 @@ std::vector<KernelAttr> SvdCpuKernelMod::GetOpSupport() {
 std::vector<std::pair<KernelAttr, SvdCpuKernelMod::SvdFunc>> SvdCpuKernelMod::func_list_ = {
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
    &SvdCpuKernelMod::LaunchKernelFloat<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64),
    &SvdCpuKernelMod::LaunchKernelFloat<double>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeComplex64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeComplex64)
      .AddOutputAttr(kNumberTypeComplex64)
      .AddOutputAttr(kNumberTypeComplex64),
    &SvdCpuKernelMod::LaunchKernelComplex<float_complex>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeComplex128)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeComplex128)
      .AddOutputAttr(kNumberTypeComplex128)
      .AddOutputAttr(kNumberTypeComplex128),
    &SvdCpuKernelMod::LaunchKernelComplex<double_complex>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Svd, SvdCpuKernelMod);
+}  // namespace svd_cpu
 }  // namespace kernel
 }  // namespace mindspore

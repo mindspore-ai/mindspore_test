@@ -28,8 +28,8 @@ ShapeVector ValueInferInfoAdapter::GetShape() {
   if (MS_UNLIKELY(IsNone())) {
     MS_LOG(EXCEPTION) << "Calling GetShape() on a None object, " << BaseDebugInfo();
   }
-  if (value_->isa<tensor::BaseTensor>()) {
-    auto tensor = value_->cast<tensor::BaseTensorPtr>();
+  if (value_->isa<tensor::Tensor>()) {
+    auto tensor = value_->cast<tensor::TensorPtr>();
     return tensor->shape();
   } else if (value_->isa<Scalar>()) {
     return {};
@@ -50,8 +50,8 @@ TypeId ValueInferInfoAdapter::GetType() {
   if (MS_UNLIKELY(IsNone())) {
     MS_LOG(EXCEPTION) << "Calling GetType() on a None object, " << BaseDebugInfo();
   }
-  if (value_->isa<tensor::BaseTensor>()) {
-    auto tensor = value_->cast<tensor::BaseTensorPtr>();
+  if (value_->isa<tensor::Tensor>()) {
+    auto tensor = value_->cast<tensor::TensorPtr>();
     return tensor->data_type();
   } else if (value_->isa<Scalar>()) {
     auto type_ptr = value_->type();

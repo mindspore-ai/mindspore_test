@@ -3,7 +3,7 @@ mindspore.dataset.vision.CutOut
 
 .. py:class:: mindspore.dataset.vision.CutOut(length, num_patches=1, is_hwc=True)
 
-    从输入图像数组中随机裁剪出给定数量的正方形区域。
+    从输入图像数组中，随机裁剪出给定数量的正方形区域。
 
     参数：
         - **length** (int) - 每个正方形区域的边长，必须大于 0。

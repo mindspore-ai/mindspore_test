@@ -21,11 +21,12 @@
 #include <memory>
 #include <map>
 #include "infer/tril.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tril_cpu {
 class TrilCpuKernelMod : public NativeCpuKernelMod {
  public:
   TrilCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class TrilCpuKernelMod : public NativeCpuKernelMod {
   size_t input_dims_{0};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace tril_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

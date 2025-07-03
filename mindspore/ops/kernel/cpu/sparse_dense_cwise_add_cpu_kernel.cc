@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_add_cpu {
 namespace {
 constexpr int64_t kSparseDenseCwiseInputsNum = 4;
 constexpr int64_t kSparseDenseCwiseOutputsNum = 1;
@@ -215,26 +216,32 @@ bool SparseDenseCwiseAddCpuKernelMod::Launch(const std::vector<KernelTensor *> &
   return true;
 }
 
-#define ADD_KERNEL(t1, t2, t3, t4, t5) \
-  KernelAttr()                         \
-    .AddInputAttr(kNumberType##t1)     \
-    .AddInputAttr(kNumberType##t2)     \
-    .AddInputAttr(kNumberType##t3)     \
-    .AddInputAttr(kNumberType##t4)     \
+#define SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(t1, t2, t3, t4, t5) \
+  KernelAttr()                                                \
+    .AddInputAttr(kNumberType##t1)                            \
+    .AddInputAttr(kNumberType##t2)                            \
+    .AddInputAttr(kNumberType##t3)                            \
+    .AddInputAttr(kNumberType##t4)                            \
     .AddOutputAttr(kNumberType##t5)
 
 std::vector<KernelAttr> SparseDenseCwiseAddCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> kernel_attr_list = {
-    ADD_KERNEL(Int64, Int8, Int64, Int8, Int8),          ADD_KERNEL(Int64, Int16, Int64, Int16, Int16),
-    ADD_KERNEL(Int64, Int32, Int64, Int32, Int32),       ADD_KERNEL(Int64, Int64, Int64, Int64, Int64),
-    ADD_KERNEL(Int64, UInt8, Int64, UInt8, UInt8),       ADD_KERNEL(Int64, UInt16, Int64, UInt16, UInt16),
-    ADD_KERNEL(Int64, UInt32, Int64, UInt32, UInt32),    ADD_KERNEL(Int64, UInt64, Int64, UInt64, UInt64),
-    ADD_KERNEL(Int64, Float16, Int64, Float16, Float16), ADD_KERNEL(Int64, Float32, Int64, Float32, Float32),
-    ADD_KERNEL(Int64, Float64, Int64, Float64, Float64)};
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Int8, Int64, Int8, Int8),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Int16, Int64, Int16, Int16),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Int32, Int64, Int32, Int32),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Int64, Int64, Int64, Int64),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, UInt8, Int64, UInt8, UInt8),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, UInt16, Int64, UInt16, UInt16),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, UInt32, Int64, UInt32, UInt32),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, UInt64, Int64, UInt64, UInt64),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Float16, Int64, Float16, Float16),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Float32, Int64, Float32, Float32),
+    SPARSE_DENSE_CWISE_ADD_ADD_KERNEL(Int64, Float64, Int64, Float64, Float64)};
 
   return kernel_attr_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseDenseCwiseAdd, SparseDenseCwiseAddCpuKernelMod);
+}  // namespace sparse_dense_cwise_add_cpu
 }  // namespace kernel
 }  // namespace mindspore

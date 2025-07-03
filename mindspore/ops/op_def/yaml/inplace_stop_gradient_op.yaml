@@ -1,0 +1,14 @@
+#operator inplace_stop_gradient
+inplace_stop_gradient:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  dispatch:
+    enable: True
+    Ascend: InplaceStopGradientAscend
+    GPU: None
+    CPU: None

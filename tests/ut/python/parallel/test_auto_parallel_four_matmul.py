@@ -59,6 +59,11 @@ def compile_net(net, x, y, z, w, b):
 
 
 def test_four_matmul_linear():
+    """
+    Feature: test auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -83,12 +88,7 @@ def test_four_matmul_linear():
     b = Tensor(np.ones([32, 256]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    """
-    Feature: test auto parallel
-    Description: auto parallel
-    Expectation: compile success
-    """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, z, w, b)
 
 
@@ -114,7 +114,7 @@ def test_four_matmul1():
     b = Tensor(np.ones([32, 256]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, z, w, b)
 
 
@@ -141,5 +141,5 @@ def test_four_matmul2():
     b = Tensor(np.ones([128, 32]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     compile_net(net, x, y, z, w, b)

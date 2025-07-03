@@ -19,11 +19,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace diagonal_cpu {
 class DiagonalCpuKernelMod : public NativeCpuKernelMod {
  public:
   DiagonalCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class DiagonalCpuKernelMod : public NativeCpuKernelMod {
   int64_t dsize;
   std::vector<int64_t> input_shape;
 };
+}  // namespace diagonal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DIAGONAL_CPU_KERNEL_H_

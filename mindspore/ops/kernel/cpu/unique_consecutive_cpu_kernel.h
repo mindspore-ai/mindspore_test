@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive_cpu {
 class UniqueConsecutiveCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<UniqueConsecutiveCpuKernelMod> {
  public:
@@ -67,6 +68,7 @@ class UniqueConsecutiveCpuKernelMod : public NativeCpuKernelMod,
   std::vector<int64_t> idx_shape_;
   std::vector<int64_t> count_shape_;
 };
+}  // namespace unique_consecutive_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_CONSECUTIVE_CPU_KERNEL_H_

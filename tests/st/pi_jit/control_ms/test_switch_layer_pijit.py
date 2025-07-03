@@ -33,7 +33,7 @@ class CaseNet(nn.Cell):
         self.layers1 = (self.relu, self.softmax)
         self.layers2 = (self.conv, self.relu1)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, index1, index2):
         x = self.layers1[index1](x)
         x = self.layers2[index2](x)
@@ -52,7 +52,7 @@ def test_switch_layer_pi():
     data = Tensor(np.ones((1, 1, 224, 224)), mstype.float32)
     idx = Tensor(0, mstype.int32)
     idx2 = Tensor(1, mstype.int32)
-    jit(CaseNet.construct, mode="PIJit")(net, data, idx, idx2)
+    jit(CaseNet.construct, capture_mode="bytecode")(net, data, idx, idx2)
     value = net(data, idx, idx2)
     relu = nn.ReLU()
     true_value = relu(data)
@@ -66,7 +66,7 @@ class TwoLayerRelU(nn.Cell):
         self.funcs1 = P.ReLU()
         self.funcs2 = P.Neg()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, inputs):
         x = self.funcs1(inputs)
         x = self.funcs2(x)
@@ -79,7 +79,7 @@ class TwoLayerSoftmax(nn.Cell):
         self.funcs1 = P.Softmax()
         self.funcs2 = P.Neg()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, inputs):
         x = self.funcs1(inputs)
         x = self.funcs2(x)
@@ -92,7 +92,7 @@ class AddFuncNet(nn.Cell):
         self.funcs = funcs
         self.new_func = new_func
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, i, inputs):
         final_funcs = self.funcs + (self.new_func,)
         x = final_funcs[i](inputs)
@@ -114,6 +114,6 @@ def test_switch_layer_add_func_in_construct():
     net = AddFuncNet(funcs, func3)
     inputs = Tensor(np.random.rand(2, 3, 4, 5).astype(np.float32))
     i = Tensor(2, mstype.int32)
-    jit(AddFuncNet.construct, mode="PIJit")(net, i, inputs)
+    jit(AddFuncNet.construct, capture_mode="bytecode")(net, i, inputs)
     ret = net(i, inputs)
     assert ret.shape == (2, 3, 4, 5)

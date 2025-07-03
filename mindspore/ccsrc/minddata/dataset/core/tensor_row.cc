@@ -152,13 +152,7 @@ const char RowTimer::kThroughputTime[] = " PipelineTime";
 const char RowTimer::kPushToDeviceTime[] = " PushToAscendTime";
 const char RowTimer::kRowCount[] = "kRowCount";
 
-bool RowTimer::Enabled() {
-#ifndef ENABLE_ANDROID
-  return IS_VLOG_ON(VL_MD);
-#else
-  return false;
-#endif
-}
+bool RowTimer::Enabled() { return IS_VLOG_ON(VL_MD); }
 
 void RowTimer::Record(const std::string &op_name, const std::string &info_name, const std::vector<double> &duration) {
   time_table_[op_name][info_name] = std::move(duration);

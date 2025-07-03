@@ -215,10 +215,10 @@ class FlashAttentionScoreNet(Cell):
         return output
 
 
-def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is_dyn, enable_alibi):
+def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode):
     if "ASCEND_HOME_PATH" not in os.environ:
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=mode, device_target="Ascend")
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
     batch = parma_dict["batch"]
@@ -236,8 +236,8 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
         dyn_shape = [None] * qkv_rank
         dyn_tensor = ms.Tensor(shape=dyn_shape, dtype=ms_dtype)
         dyn_seq = ms.Tensor(shape=(None), dtype=ms.int32)
-        dyn_mask = ms.Tensor(shape=(None, None, None, None), dtype=ms.float16) if in_layout == "BSH" else ms.Tensor(
-            shape=(None, None), dtype=ms.float16)  # if not enable_alibi else None
+        dyn_mask = ms.Tensor(shape=(None, None, None, None), dtype=ms_dtype) if in_layout == "BSH" else ms.Tensor(
+            shape=(None, None), dtype=ms_dtype)  # if not enable_alibi else None
         dyn_alibi = ms.Tensor(shape=(None, None, None, None), dtype=ms_dtype) if enable_alibi else None
         net.set_inputs(dyn_tensor, dyn_tensor, dyn_tensor, dyn_alibi, None, None, dyn_mask, None, dyn_seq, dyn_seq)
         batch_seq_list = [
@@ -256,7 +256,7 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
         expect = test_fa.calc_expect_func()
 
         alibi_tensor = ms.Tensor(alibi).astype(ms_dtype) if enable_alibi else None
-        amask_tensor = ms.Tensor(amask).astype(ms.float16)# if not enable_alibi else None
+        amask_tensor = ms.Tensor(amask).astype(ms_dtype)# if not enable_alibi else None
         output = net(ms.Tensor(q).astype(ms_dtype),
                      ms.Tensor(k).astype(ms_dtype),
                      ms.Tensor(v).astype(ms_dtype),
@@ -280,7 +280,8 @@ def _test_internal_asd_flash_attention_score(parma_dict, in_layout, ms_dtype, is
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('enable_alibi', [False, True])
-def test_internal_asd_flash_attention_score_bsh(ms_dtype, enable_alibi):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_internal_asd_flash_attention_score_bsh(ms_dtype, enable_alibi, mode):
     """
     Feature: test internal flash attention score
     Description: test internal flash attention score in BSH layout
@@ -295,12 +296,13 @@ def test_internal_asd_flash_attention_score_bsh(ms_dtype, enable_alibi):
     }
     in_layout = "BSH"
     is_dyn = False
-    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
+    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('enable_alibi', [False, True])
-def test_internal_asd_flash_attention_score_bsh_bf16_dyn(enable_alibi):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_internal_asd_flash_attention_score_bsh_bf16_dyn(enable_alibi, mode):
     """
     Feature: test internal flash attention score
     Description: test internal flash attention score in BSH layout with bfloat16 dynamic shape inputs
@@ -316,13 +318,14 @@ def test_internal_asd_flash_attention_score_bsh_bf16_dyn(enable_alibi):
     in_layout = "BSH"
     ms_dtype = ms.bfloat16
     is_dyn = True
-    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
+    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('enable_alibi', [False, True])
-def test_internal_asd_flash_attention_score_th(ms_dtype, enable_alibi):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_internal_asd_flash_attention_score_th(ms_dtype, enable_alibi, mode):
     """
     Feature: test internal flash attention score
     Description: test internal flash attention score in TH layout
@@ -337,12 +340,13 @@ def test_internal_asd_flash_attention_score_th(ms_dtype, enable_alibi):
     }
     in_layout = "TH"
     is_dyn = False
-    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
+    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('enable_alibi', [False, True])
-def test_internal_asd_flash_attention_score_th_fp16_dyn(enable_alibi):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_internal_asd_flash_attention_score_th_fp16_dyn(enable_alibi, mode):
     """
     Feature: test internal flash attention score
     Description: test internal flash attention score in TH layout with float16 dynamic shape inputs
@@ -358,13 +362,14 @@ def test_internal_asd_flash_attention_score_th_fp16_dyn(enable_alibi):
     in_layout = "TH"
     ms_dtype = ms.float16
     is_dyn = True
-    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
+    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('enable_alibi', [False, True])
-def test_internal_asd_flash_attention_score_tnd(ms_dtype, enable_alibi):
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_internal_asd_flash_attention_score_tnd(ms_dtype, enable_alibi, mode):
     """
     Feature: test internal flash attention score
     Description: test internal flash attention score in TND layout
@@ -379,4 +384,4 @@ def test_internal_asd_flash_attention_score_tnd(ms_dtype, enable_alibi):
     }
     in_layout = "TND"
     is_dyn = False
-    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi)
+    _test_internal_asd_flash_attention_score(param_dict, in_layout, ms_dtype, is_dyn, enable_alibi, mode)

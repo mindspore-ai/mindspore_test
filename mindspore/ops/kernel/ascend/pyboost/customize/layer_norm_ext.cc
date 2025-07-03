@@ -17,17 +17,17 @@
 #include "kernel/ascend/pyboost/customize/layer_norm_ext.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                  const ValueTuplePtr &normalized_shape,
-                                 const std::optional<BaseTensorPtr> &weight_opt_tensor,
-                                 const std::optional<BaseTensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
+                                 const std::optional<TensorPtr> &weight_opt_tensor,
+                                 const std::optional<TensorPtr> &bias_opt_tensor, const FP32ImmPtr &eps) {
   MS_LOG(DEBUG) << "Call start";
 
   // Convert ValuePtr to c++ scalr

@@ -27,10 +27,18 @@
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
 namespace {
+constexpr size_t kRmsNormOutUserSize1 = 1;
+
 bool UnSupportedType(const AnfNodePtr &node, const AnfNodePtr &rms_norm_node) {
   auto rms_x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 0);
   auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
@@ -60,14 +68,38 @@ const BaseRef AddRmsNormQuantFusion::DefinePattern() const {
   return add_rms_norm_quant;
 }
 
+inline bool CheckSupport(size_t rms_norm_out0_users_size, const AnfNodePtr &node, const AnfNodePtr &tensor_add,
+                         const AnfNodePtr &rms_norm_node, const BaseShapePtr &tensor_quant_shape) {
+  auto shape1 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 0);
+  auto shape2 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 1);
+  bool is_unsupported_type = UnSupportedType(node, rms_norm_node);
+  constexpr size_t kMaxRmsNormOutUserSize = 3;
+  if (shape1 != shape2 || rms_norm_out0_users_size > kMaxRmsNormOutUserSize || is_unsupported_type) {
+    MS_LOG(INFO) << "AddRmsNormQuant fused failed. shape1: " << shape1 << ", shape2: " << shape2
+                 << ", rms_norm_out0_users_size: " << rms_norm_out0_users_size
+                 << ", is_unsupported_type: " << is_unsupported_type;
+    return false;
+  }
+
+  if ((rms_norm_out0_users_size > kRmsNormOutUserSize1)) {
+    auto shape = tensor_quant_shape->GetShapeVector();
+    constexpr auto kMaxDimLimited = 8192;
+    constexpr auto kMinDimLimited = 4000;
+    if (shape.empty() || shape[shape.size() - 1] == abstract::Shape::kShapeDimAny ||
+        shape[shape.size() - 1] > kMaxDimLimited || shape[shape.size() - 1] < kMinDimLimited) {
+      MS_LOG(INFO) << "AddRmsNormQuant fused failed shen need_rms_norm_out is true and shape is: " << shape
+                   << ", because the kernel does not support.";
+      return false;
+    }
+  }
+
+  return true;
+}
+
 const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                 const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   const std::string fusion_op_name = "AddRmsNormQuantV2";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_add_rmsnorm =
@@ -78,12 +110,13 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto tuple_get_item_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(node), 0);
   auto rms_norm_node = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(tuple_get_item_node), 0);
   auto tensor_add = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_node), 0);
-  auto shape1 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 0);
-  auto shape2 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 1);
   FuncGraphManagerPtr mng = graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
-  bool is_unsupported_type = UnSupportedType(node, rms_norm_node);
-  if (shape1 != shape2 || mng->node_users()[tuple_get_item_node].size() != 1 || is_unsupported_type) {
+  auto rms_norm_out0_users_size = mng->node_users()[tuple_get_item_node].size();
+  auto tensor_quant_shape = AnfAlgo::GetOutputDetailShape(node, 0);
+
+  if (!CheckSupport(rms_norm_out0_users_size, node, tensor_add, rms_norm_node, tensor_quant_shape)) {
+    MS_LOG(INFO) << "AddRmsNormQuant fused failed.";
     return nullptr;
   }
 
@@ -98,14 +131,8 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   kernel_graph->AddValueNodeToGraph(scale_fp32);
   kernel_graph->AddValueNodeToGraph(offset_int32);
-  auto sqrt_mode = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[sqrt_mode_]));
-  auto rounding_mode = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[rounding_mode_]));
-  auto dst_type = GetValueNode(utils::cast<AnfNodePtr>((*equiv)[dst_type_]));
 
   auto prim = std::make_shared<Primitive>("AddRmsNormQuantV2");
-  prim->set_attr("sqrt_mode", sqrt_mode);
-  prim->set_attr("rounding_mode", rounding_mode);
-  prim->set_attr("dst_type", dst_type);
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset_int32, eps};
   auto add_rms_norm_quant = graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(add_rms_norm_quant);
@@ -122,7 +149,6 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
                                       << " != 1.";
   }
   auto tensor_quant_type = common::AnfAlgo::GetOutputInferDataType(node, 0);
-  auto tensor_quant_shape = AnfAlgo::GetOutputDetailShape(node, 0);
   auto tensor_add_type = common::AnfAlgo::GetOutputInferDataType(tensor_add, 0);
   auto tensor_add_shape = AnfAlgo::GetOutputDetailShape(tensor_add, 0);
 
@@ -136,6 +162,9 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   quant_result_shapes.push_back(tensor_quant_shape);
   add_result_types.push_back(tensor_add_type);
   add_result_shapes.push_back(tensor_add_shape);
+
+  bool need_rms_norm_out = (rms_norm_out0_users_size > kRmsNormOutUserSize1);
+  types[1] = need_rms_norm_out ? tensor_add_type : tensor_quant_type;
   common::AnfAlgo::SetOutputTypeAndDetailShape(types, shapes, add_rms_norm_quant.get());
   add_rms_norm_quant->set_scope(node->scope());
   auto build_info = GenerateKernelBuildInfo(add_rms_norm_quant);
@@ -159,6 +188,18 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   quant_result->set_scope(node->scope());
   build_info = GenerateKernelBuildInfo(quant_result);
   AnfAlgo::SetSelectKernelBuildInfo(build_info, quant_result.get());
+
+  if (need_rms_norm_out) {
+    prim->set_attr("need_rms_norm_out", std::make_shared<BoolImm>(true));
+    auto prim_getitem_rms_norm_out = std::make_shared<Primitive>("TupleGetItem");
+    auto rms_norm_out = graph->NewCNode(
+      {NewValueNode(prim_getitem_rms_norm_out), add_rms_norm_quant, NewValueNode(static_cast<int64_t>(1))});
+    common::AnfAlgo::SetOutputTypeAndDetailShape(add_result_types, quant_result_shapes, rms_norm_out.get());
+    rms_norm_out->set_scope(node->scope());
+    (void)mng->Replace(tuple_get_item_node, rms_norm_out);
+  }
+
+  MS_LOG(INFO) << "AddRmsNormQuant fused successfully with need_rms_norm_out: " << need_rms_norm_out;
 
   return quant_result;
 }
@@ -184,6 +225,12 @@ bool IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) {
   auto smooth_scale_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
   FuncGraphManagerPtr mng = graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
+
+  auto reshape_users_num = GetRealNodeUsedList(graph, reshape_node)->size();
+  if (reshape_users_num > 1) {
+    MS_LOG(INFO) << "The number of users of reshape_node is more than one: " << reshape_users_num;
+    return false;
+  }
 
   const size_t kUserNum = 2;
   if (mng->node_users()[rms_norm_out_getitem_0].size() != kUserNum) {
@@ -336,10 +383,6 @@ const AnfNodePtr AddRmsNormDynamicQuantFusion::Process(const FuncGraphPtr &graph
                                                        const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   auto soc = ms_context->ascend_soc_version();
   if (soc.find("ascend910_93") == std::string::npos && soc.find("ascend910b") == std::string::npos) {
     MS_LOG(INFO) << "AddRmsNormDynamicQuant does not support " << soc;

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/contiguous.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/contiguous.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr ContiguousCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr ContiguousCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   auto output_tensor = ContiguousTensorOpProcess(op, input_tensor);
   if (output_tensor != nullptr) {

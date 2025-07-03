@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 #include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

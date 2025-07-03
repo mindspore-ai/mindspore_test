@@ -190,7 +190,8 @@ def _mstype_not_in_tuple(x, y):
     return not const_utils.check_in_sequence(x, y)
 
 
-@not_in_.register_default()
+# pylint: disable=protected-access
+@not_in_._register_default()
 def default_not_in(x, y):
     """Default function for not in."""
     return x not in y

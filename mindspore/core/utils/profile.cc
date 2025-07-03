@@ -436,11 +436,12 @@ int64_t ProcessStatus::GetMemoryCost(const std::string &key) const {
     auto title = line.substr(0, title_end_pos);
     // Get mem size.
     if (title == key) {
-      auto mem_size_end_pos = line.find_last_of(" ");
-      auto mem_size_begin_pos = line.find_last_of(" ", mem_size_end_pos - 1);
+      constexpr std::string_view number_char = "0123456789";
+      auto mem_size_begin_pos = line.find_first_of(number_char);
+      auto mem_size_end_pos = line.find_first_not_of(number_char, mem_size_begin_pos);
       if ((mem_size_end_pos != std::string::npos) && (mem_size_begin_pos != std::string::npos)) {
         auto mem_size_string = line.substr(mem_size_begin_pos, mem_size_end_pos - mem_size_begin_pos);
-        mem_size = std::atol(mem_size_string.c_str());
+        mem_size = std::stoll(mem_size_string);
       }
       break;
     }

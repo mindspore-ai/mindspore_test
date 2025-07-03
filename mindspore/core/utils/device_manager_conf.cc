@@ -32,4 +32,16 @@ std::shared_ptr<DeviceManagerConf> DeviceManagerConf::GetInstance() {
   MS_EXCEPTION_IF_NULL(instance_);
   return instance_;
 }
+
+std::map<std::string, DeviceTargetType> DeviceManagerConf::device_name_to_type_map_ = {
+  {"Unknown", DeviceTargetType::kUnknown},
+  {"Ascend", DeviceTargetType::kAscend},
+  {"CPU", DeviceTargetType::kCPU},
+  {"GPU", DeviceTargetType::kGPU}};
+std::map<DeviceTargetType, std::string> DeviceManagerConf::device_type_to_name_map_ = {
+  {DeviceTargetType::kUnknown, "Unknown"},
+  {DeviceTargetType::kAscend, "Ascend"},
+  {DeviceTargetType::kCPU, "CPU"},
+  {DeviceTargetType::kGPU, "GPU"}};
+
 }  // namespace mindspore

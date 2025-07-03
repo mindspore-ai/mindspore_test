@@ -23,7 +23,7 @@
 #include <memory>
 #include <string>
 #include <fstream>
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 
 static std::mutex init_mutex;
 static bool Initialized = false;

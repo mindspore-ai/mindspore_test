@@ -18,22 +18,22 @@
 #include "kernel/ascend/pyboost/customize/inplace_index_put.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_inplace_index_put.h"
 #include "kernel/ascend/pyboost/auto_generate/inner_non_zero.h"
-#include "kernel/ascend/pyboost/auto_generate/select_ext.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "kernel/ascend/pyboost/auto_generate/select_ext_view.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                        const std::vector<BaseTensorPtr> &tensors) {
+std::vector<TensorPtr> InplaceIndexGetNewTensor(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const std::vector<TensorPtr> &tensors) {
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
-  std::vector<BaseTensorPtr> result{};
+  std::vector<TensorPtr> result{};
   auto input_shape = input_tensor->shape();
   if (input_shape.size() == 0) {
     MS_EXCEPTION(ValueError) << "For 'InplaceIndexPut', too many indices for tensor of dimension "
@@ -52,6 +52,8 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
       MS_EXCEPTION(TypeError)
         << "For 'InplaceIndexPut', tensors used as indices must be long, int, uint8, or bool tensors";
     }
+    // For aclnnIndexPutImpl op, the indices element dtype supports bool and uint8, so there is no need to convert to
+    // int64 by nonzero conversion.
     if (type_id == kNumberTypeBool || type_id == kNumberTypeUInt8) {
       auto shape = tensor->shape();
       auto rank = SizeToLong(shape.size());
@@ -63,14 +65,17 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
                                    << input_shape << " at index " << srcIdx;
         }
       }
-      auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
-      auto nonzero_tensor = nonzero_op->Call(tensor);
-      for (int64_t j = 0; j < rank; j++) {
-        const auto dim = std::make_shared<Int64Imm>(kIndex0);
-        const auto index = std::make_shared<Int64Imm>(j);
-        auto select_op = CREATE_PYBOOST_OP(SelectExt, device_name);
-        auto select_tensor = select_op->Call(nonzero_tensor, dim, index);
-        result.emplace_back(select_tensor);
+      // For aclnnIndexPutImpl op, the indices element dtype supports bool.
+      if (type_id == kNumberTypeUInt8) {
+        auto nonzero_op = CREATE_PYBOOST_OP(InnerNonZero, device_name);
+        auto nonzero_tensor = nonzero_op->Call(tensor);
+        for (int64_t j = 0; j < rank; j++) {
+          auto select_op = CREATE_PYBOOST_OP(SelectExtView, device_name);
+          auto select_tensor = select_op->Call(nonzero_tensor, kIndex0, j);
+          result.emplace_back(select_tensor);
+        }
+      } else {
+        result.emplace_back(tensor);
       }
     } else {
       result.emplace_back(tensor);
@@ -90,15 +95,14 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
 }
 }  // namespace
 
-tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor,
-                                                     const ValueTuplePtr &indices_tensor_list,
-                                                     const BaseTensorPtr &values_tensor, const BoolImmPtr &accumulate) {
+tensor::TensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const ValueTuplePtr &indices_tensor_list,
+                                                 const TensorPtr &values_tensor, const BoolImmPtr &accumulate) {
   MS_LOG(DEBUG) << "InplaceIndexPut Ascend start";
   op->set_outputs({input_tensor});
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
   auto input_numel =
     std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto values_numel =
@@ -106,7 +110,7 @@ tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRun
   if (input_numel == 0 || values_numel == 0 || indices_tensor_vector.size() == 0) {
     return op->output(0);
   }
-  auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
+  auto new_indices_tensor_vector = InplaceIndexGetNewTensor(op, input_tensor, indices_tensor_vector);
 
   ValueTuplePtr new_indices_tensor_list = PyBoostUtils::ConvertTensorVectorToTuple(new_indices_tensor_vector);
 

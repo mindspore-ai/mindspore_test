@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_band_part_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -388,5 +389,6 @@ std::vector<KernelAttr> MatrixBandPartCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixBandPart, MatrixBandPartCpuKernelMod);
+}  // namespace matrix_band_part_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -77,15 +77,11 @@ def test_nan_to_num_std(mode):
         np.allclose(output_nan_n_grad.asnumpy(), expect_nan_n_grad, rtol=1e-5, equal_nan=True)
 
     elif mode == 'KBK':
-        output = (jit(nan_to_num_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), nan_num, inf_num,
-                                                                                      neg_inf_num)
-        output_grad = (jit(nan_to_num_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), nan_num,
-                                                                                            inf_num, neg_inf_num)
+        output = (jit(nan_to_num_forward_func, jit_level="O0"))(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
+        output_grad = (jit(nan_to_num_backward_func, jit_level="O0"))(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
     else:
-        output = (jit(nan_to_num_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), nan_num, inf_num,
-                                                                                      neg_inf_num)
-        output_grad = (jit(nan_to_num_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), nan_num,
-                                                                                            inf_num, neg_inf_num)
+        output = (jit(nan_to_num_forward_func, backend="GE"))(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
+        output_grad = (jit(nan_to_num_backward_func, backend="GE"))(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
 
@@ -134,9 +130,9 @@ def test_nan_to_num_bfloat16(mode):
         output = nan_to_num_forward_func(ms.Tensor(x, dtype=ms.bfloat16), nan_num, inf_num, neg_inf_num)
         output_grad = nan_to_num_backward_func(ms.Tensor(x, dtype=ms.bfloat16), nan_num, inf_num, neg_inf_num)
     else:
-        output = (jit(nan_to_num_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16),
-                                                                                      nan_num, inf_num, neg_inf_num)
-        output_grad = (jit(nan_to_num_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(nan_to_num_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16),
+                                                                nan_num, inf_num, neg_inf_num)
+        output_grad = (jit(nan_to_num_backward_func, jit_level="O0"))(
             ms.Tensor(x, dtype=ms.bfloat16), nan_num, inf_num, neg_inf_num)
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)

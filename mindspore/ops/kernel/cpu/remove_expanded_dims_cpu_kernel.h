@@ -20,11 +20,12 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace remove_expanded_dims_cpu {
 class RemoveExpandedDimsCpuKernelMod : public NativeCpuKernelMod {
  public:
   RemoveExpandedDimsCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class RemoveExpandedDimsCpuKernelMod : public NativeCpuKernelMod {
   bool empty_indices_out = false;
   int64_t rem_ndim_ = 0;
 };
+}  // namespace remove_expanded_dims_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_REMOVE_EXPANDED_DIMS_CPU_KERNEL_H_

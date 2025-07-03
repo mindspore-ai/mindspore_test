@@ -14,7 +14,6 @@
 # ============================================================================
 """test function grad with PIJit in pynative mode"""
 import numpy as np
-import sys  
 import pytest 
 import mindspore.nn as nn
 import mindspore as ms
@@ -25,18 +24,13 @@ from mindspore.ops import composite as C
 from mindspore import jit
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 class GradOperationNet(nn.Cell):
     def __init__(self, net, get_all=False, get_by_list=False, sens_param=False):
         super(GradOperationNet, self).__init__()
         self.net = net
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list, sens_param=sens_param)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net)
         return gradient_function(*args)
@@ -49,7 +43,7 @@ class GradOperationNetWrtParameter(nn.Cell):
         self.params = net.trainable_params()
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net, self.params[0])
         return gradient_function(*args)
@@ -73,7 +67,7 @@ class GradOperationNetWrtParameterNone(nn.Cell):
         self.net = net
         self.grad_op = GradOperation(get_all=get_all, get_by_list=get_by_list)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, *args):
         gradient_function = self.grad_op(self.net, None)
         return gradient_function(*args)
@@ -268,7 +262,6 @@ def test_grad_operation_no_input(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip(reason="grad parameter shouldn't be list or tuple ref tensor, SymbolicKey error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_single_param(mode):
@@ -364,7 +357,6 @@ def test_grad_operation_no_param(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip(reason="grad parameter shouldn't be list or tuple ref tensor, SymbolicKey error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_single_input_and_single_param(mode):
@@ -441,7 +433,6 @@ def test_grad_operation_single_input_and_multiple_params(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip(reason="grad parameter shouldn't be list or tuple ref tensor, SymbolicKey error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_multiple_inputs_and_single_param(mode):
@@ -522,7 +513,6 @@ def test_grad_operation_multiple_inputs_and_multiple_params(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip(reason="grad parameter shouldn't be list or tuple ref tensor, SymbolicKey error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_no_input_and_single_param(mode):
@@ -710,7 +700,6 @@ def test_grad_operation_no_input_and_none_param(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_int_position(mode):
@@ -1073,7 +1062,6 @@ def test_grad_none_position_and_single_param_tuple(mode):
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_none_position_and_multiple_params(mode):
@@ -1222,7 +1210,6 @@ def test_grad_empty_position_and_no_param(mode):
         grad(net, grad_position=(), weights=net.trainable_params())(x, y)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_hypermap_control_flow(mode):
@@ -1233,6 +1220,9 @@ def test_grad_operation_hypermap_control_flow(mode):
     """
     ctrl = C.MultitypeFuncGraph("ctrl")
     @ctrl.register("Tensor", "Tuple")
+    def ctrl_func(x, y):
+        return x + y
+
     class Net(nn.Cell):
         def __init__(self, mtfg):
             super().__init__()
@@ -1245,12 +1235,11 @@ def test_grad_operation_hypermap_control_flow(mode):
     x = Tensor(2, mstype.int32)
     y = Tensor(-3, mstype.int32)
     z = Tensor(0, mstype.int32)
-    expect = (Tensor(0, mstype.int32), Tensor(0, mstype.int32), Tensor(2, mstype.int32))
+    expect = (Tensor(3, mstype.int32), Tensor(3, mstype.int32), Tensor(2, mstype.int32))
     out = GradOperationNet(Net(ctrl), get_all=True)(x, y, z)
     check_grad_result(out, expect)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_grad_operation_dynamic_shape(mode):

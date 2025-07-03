@@ -29,6 +29,11 @@
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -113,7 +118,7 @@ std::shared_ptr<ops::MatMulFusion> BuildMatMulPrim(const CNodePtr &stack_cnode) 
   auto fullconnect_cnode = fullconnect_node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(fullconnect_cnode != nullptr, nullptr);
   auto fc_prim = GetValueNode<PrimitiveCPtr>(fullconnect_cnode->input(0));
-  MS_ASSERT(fc_prim != nullptr);
+  MS_CHECK_TRUE_RET(fc_prim != nullptr, nullptr);
 
   // quant param in QuantParamHolder
   lite::QuantParamsVector rmatmul_quant_params;

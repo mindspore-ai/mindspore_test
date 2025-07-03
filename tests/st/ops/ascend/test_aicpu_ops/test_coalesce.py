@@ -22,6 +22,8 @@ from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class Net(nn.Cell):
     def __init__(self):

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "infer/sparse_count_sparse_output.h"
 
 #include <memory>
 #include <set>
@@ -34,9 +35,9 @@
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
-#include "infer/sparse_count_sparse_output.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

@@ -736,7 +736,6 @@ Status Concatenate(const TensorRow &input, TensorRow *output, int8_t axis, const
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status BatchTensorToCVTensorVector(const std::shared_ptr<Tensor> &input,
                                    std::vector<std::shared_ptr<CVTensor>> *output) {
   RETURN_UNEXPECTED_IF_NULL(output);
@@ -762,7 +761,6 @@ Status BatchTensorToCVTensorVector(const std::shared_ptr<Tensor> &input,
   }
   return Status::OK();
 }
-#endif
 
 Status BatchTensorToTensorVector(const std::shared_ptr<Tensor> &input, std::vector<std::shared_ptr<Tensor>> *output) {
   RETURN_UNEXPECTED_IF_NULL(output);
@@ -801,22 +799,10 @@ template <typename T>
 struct UniqueOpHashMap {
   using map_type = std::unordered_map<T, int32_t>;
 };
-#ifndef ENABLE_ANDROID
 template <>
 struct UniqueOpHashMap<float16> {
   using map_type = std::unordered_map<float16, int32_t>;
 };
-
-#else
-struct gn_hash {
-  size_t operator()(const float16 &f) const { return static_cast<std::size_t>(f); }
-};
-
-template <>
-struct UniqueOpHashMap<float16> {
-  using map_type = std::unordered_map<float16, int32_t, gn_hash>;
-};
-#endif
 
 template <>
 struct UniqueOpHashMap<float> {

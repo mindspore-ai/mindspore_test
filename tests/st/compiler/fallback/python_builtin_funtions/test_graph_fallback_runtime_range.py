@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
@@ -28,7 +27,7 @@ def test_fallback_runtime_range():
     Description: Test range() in fallback runtime
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         y = range(x.asnumpy())
         out = 0
@@ -49,7 +48,7 @@ def test_fallback_runtime_range_mutli():
     Description: Test range() in fallback runtime
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         y = range(2, x.asnumpy())
         out1 = 0

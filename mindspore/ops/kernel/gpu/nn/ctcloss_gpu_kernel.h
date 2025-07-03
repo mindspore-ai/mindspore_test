@@ -24,7 +24,7 @@
 #include <map>
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/ctcloss_impl.cuh"
 namespace mindspore {
 namespace kernel {

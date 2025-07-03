@@ -17,10 +17,11 @@
 #include "kernel/cpu/isnan_cpu_kernel.h"
 #include <cmath>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isnan_cpu {
 namespace {
 constexpr size_t kIsNanInputsNum = 1;
 constexpr size_t kIsNanOutputsNum = 1;
@@ -89,5 +90,6 @@ void IsNanCpuKernelMod::LaunchKernelOther(const std::vector<KernelTensor *> &inp
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsNan, IsNanCpuKernelMod);
+}  // namespace isnan_cpu
 }  // namespace kernel
 }  // namespace mindspore

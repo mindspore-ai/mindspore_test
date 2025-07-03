@@ -20,7 +20,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore.ops.operations.math_ops import Digamma
 from mindspore import Tensor
-from mindspore.common.api import ms_function
+from mindspore.common.api import jit
 
 
 class DigammaNet(nn.Cell):
@@ -28,7 +28,7 @@ class DigammaNet(nn.Cell):
         super(DigammaNet, self).__init__()
         self.digamma = Digamma()
 
-    @ms_function
+    @jit
     def construct(self, x):
         return self.digamma(x)
 

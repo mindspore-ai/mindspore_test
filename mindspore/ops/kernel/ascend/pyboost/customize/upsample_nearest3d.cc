@@ -15,22 +15,20 @@
  */
 
 #include "kernel/ascend/pyboost/customize/upsample_nearest3d.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
-tensor::BaseTensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                  const device::DeviceContext *device_context,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::vector<int64_t> &output_size,
-                                                  const std::vector<pyfloat> &scales,
-                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                              const device::DeviceContext *device_context,
+                                              const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                              const std::vector<pyfloat> &scales,
+                                              const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   double scales_d = scales[0];
   double scales_h = scales[1];
@@ -42,10 +40,9 @@ tensor::BaseTensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const std::optional<ValueTuplePtr> &output_size,
-                                                       const std::optional<ValueTuplePtr> &scale_factors) {
+tensor::TensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const std::optional<ValueTuplePtr> &output_size,
+                                                   const std::optional<ValueTuplePtr> &scale_factors) {
   MS_LOG(INFO) << "UpsampleNearest3DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);
@@ -53,6 +50,7 @@ tensor::BaseTensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpR
   const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
+  constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
   std::vector<pyfloat> scales(kDim3, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());

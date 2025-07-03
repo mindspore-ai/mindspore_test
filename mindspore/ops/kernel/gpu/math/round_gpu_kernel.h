@@ -23,7 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/gpu/gpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_type.cuh"
 

@@ -25,3 +25,4 @@ dist_comm_all_to_all_v:
         enable: True
         is_comm_op: True
         Ascend: DistCommAllToAllVAscend
+    non-differentiable: True

@@ -19,11 +19,12 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace inplace_floor {
+using TensorParams = device::ascend::TensorParams;
 
 class InplaceFloorAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class InplaceFloorAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_floor
 }  // namespace kernel
 }  // namespace mindspore
 

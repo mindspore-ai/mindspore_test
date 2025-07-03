@@ -17,18 +17,17 @@
 #include <memory>
 #include "kernel/ascend/pyboost/customize/inplace_scatter_src_reduce.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                             const BaseTensorPtr &index_tensor,
-                                                             const BaseTensorPtr &src_tensor,
-                                                             const Int64ImmPtr &reduce) {
+tensor::TensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                         const TensorPtr &input_tensor, const Int64ImmPtr &dim,
+                                                         const TensorPtr &index_tensor, const TensorPtr &src_tensor,
+                                                         const Int64ImmPtr &reduce) {
   MS_LOG(DEBUG) << "Call InplaceScatterSrcReduce start";
   // No need to call infer
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index_tensor, src_tensor);
@@ -39,7 +38,7 @@ tensor::BaseTensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_p
   // 0 means 'none' (replace) in aclnn, but should use scatter_ without reduce instead of using 'none'
   if ((reduce_imm != Reduce::ADD) && (reduce_imm != Reduce::MULTIPLY)) {
     MS_EXCEPTION(ValueError) << "For InplaceScatterSrcReduce, reduce must be either 'add' or 'multiply', but got: '"
-                             << mindspore::transform::ScatterReduceMode::ConvertEnumToString(reduce_imm) << "'.";
+                             << mindspore::device::ascend::ScatterReduceMode::ConvertEnumToString(reduce_imm) << "'.";
   }
 
   // Async

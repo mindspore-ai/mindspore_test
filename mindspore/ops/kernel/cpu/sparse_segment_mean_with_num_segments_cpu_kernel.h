@@ -21,11 +21,12 @@
 #include <vector>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_mean_with_num_segments_cpu {
 class SparseSegmentMeanWithNumSegmentsCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSegmentMeanWithNumSegmentsCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class SparseSegmentMeanWithNumSegmentsCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   TypeId indices_dtype_{kTypeUnknown};
 };
+}  // namespace sparse_segment_mean_with_num_segments_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_SEGMENT_MEAN_WITH_NUM_SGEMENTS_CPU_KERNEL_H_

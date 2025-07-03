@@ -29,7 +29,7 @@
 #include "ir/func_graph.h"
 #include "include/api/data_type.h"
 #include "include/api/status.h"
-#include "mindspore/ccsrc/kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

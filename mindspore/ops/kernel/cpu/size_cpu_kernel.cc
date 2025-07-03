@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace size_cpu {
 namespace {
 const size_t kSizeInputsNum = 1;
 const size_t kSizeOutputsNum = 1;
@@ -77,7 +78,7 @@ std::vector<KernelAttr> SizeCpuKernelMod::GetOpSupport() {
     KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-    KernelAttr().AddInputAttr(kNumberTypeComplex).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
+    KernelAttr().AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeInt4).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
@@ -86,5 +87,6 @@ std::vector<KernelAttr> SizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Size, SizeCpuKernelMod);
+}  // namespace size_cpu
 }  // namespace kernel
 }  // namespace mindspore

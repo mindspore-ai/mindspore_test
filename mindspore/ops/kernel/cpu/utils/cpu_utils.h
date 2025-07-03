@@ -22,23 +22,23 @@
 #include <algorithm>
 #include <complex>
 
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "base/float16.h"
+#include "kernel/cpu/utils/visible.h"
 
 namespace mindspore {
 namespace kernel {
+OPS_HOST_API void ForceLinkOpsHost();
 template <typename S, typename T>
 void Cast(const S *in, T *out, size_t size) {
   auto task = [&in, &out](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
-      if constexpr (std::is_same_v<S, T>) {
-        out[i] = static_cast<T>(in[i]);
-      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<float>>) {
-        out[i] = std::complex<float>(in[i] ? 1.0f : 0.0f, 0.0f);
-      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<double>>) {
-        out[i] = std::complex<double>(in[i] ? 1.0 : 0.0, 0.0);
-      } else if constexpr ((std::is_same_v<S, std::complex<float>>) || (std::is_same_v<S, std::complex<double>>)) {
-        out[i] = static_cast<T>(std::real(in[i]));
+      if constexpr ((std::is_same_v<S, std::complex<float>>) || (std::is_same_v<S, std::complex<double>>)) {
+        if constexpr ((std::is_same_v<T, std::complex<float>>) || (std::is_same_v<T, std::complex<double>>)) {
+          out[i] = static_cast<T>(in[i]);
+        } else {
+          out[i] = static_cast<T>(std::real(in[i]));
+        }
       } else if constexpr ((std::is_same_v<T, std::complex<float>>) || (std::is_same_v<T, std::complex<double>>)) {
         double realValue = static_cast<double>(in[i]);
         std::complex<double> complexValue(realValue, 0.0);

@@ -22,9 +22,6 @@ import mindspore.dataset.transforms as transforms
 import mindspore.dataset.vision as vision
 from util import visualize_list
 
-# Run these tests in separate processes since many tests update config parameters, like shared memory config
-pytestmark = pytest.mark.forked
-
 MNIST_DATA_DIR = "../data/dataset/testMnistData"
 TF_DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 TF_SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"

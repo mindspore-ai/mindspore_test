@@ -31,11 +31,7 @@
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
 #include "minddata/dataset/engine/datasetops/source/mappable_leaf_op.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/services.h"
@@ -68,7 +64,7 @@ class ImageFolderOp : public MappableLeafOp {
   ImageFolderOp(int32_t num_wkrs, std::string file_dir, int32_t queue_size, bool recursive, bool do_decode,
                 const std::set<std::string> &exts, const std::map<std::string, int32_t> &map,
                 std::unique_ptr<DataSchema> data_schema, std::shared_ptr<SamplerRT> sampler,
-                py::function decrypt = py::none());
+                const py::function &decrypt = py::object());
 #else
   // Constructor
   // @param int32_t num_wkrs - Num of workers reading images in parallel
@@ -85,7 +81,7 @@ class ImageFolderOp : public MappableLeafOp {
 #endif
 
   /// Destructor.
-  ~ImageFolderOp() = default;
+  ~ImageFolderOp() override;
 
   /// Initialize ImageFOlderOp related var, calls the function to walk all files
   /// @param - std::string dir file directory to  ImageNetFolder

@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace tracev2_cpu {
 namespace {
 constexpr size_t kInputNum = 5;
 constexpr size_t kOutputNum = 1;
@@ -365,5 +366,6 @@ std::vector<KernelAttr> TraceV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TraceV2, TraceV2CpuKernelMod);
+}  // namespace tracev2_cpu
 }  // namespace kernel
 }  // namespace mindspore

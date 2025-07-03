@@ -10,4 +10,4 @@ mindspore.dataset.compare
         - **pipeline2** (Dataset) - 数据处理管道。
 
     返回：
-        bool，两个数据处理管道是否相等。
+        bool，两个数据处理管道是否相同。

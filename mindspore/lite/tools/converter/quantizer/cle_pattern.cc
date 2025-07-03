@@ -25,6 +25,7 @@
 #include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite::quant {
 std::unordered_map<std::string, VectorRef> CLEPattern::DefinePatterns() const {

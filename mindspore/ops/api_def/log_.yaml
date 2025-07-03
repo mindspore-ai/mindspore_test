@@ -1,0 +1,8 @@
+log_:
+  op_yaml: inplace_log_op.yaml
+  py_method: tensor_log_
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
+  interface: tensor
+  

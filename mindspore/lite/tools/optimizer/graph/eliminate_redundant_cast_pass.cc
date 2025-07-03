@@ -17,11 +17,13 @@
 #include "tools/optimizer/graph/eliminate_redundant_cast_pass.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/graph/infershape_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::opt {
 int EliminateRedundantCastPass::RemoveCastOp(const AnfNodePtr &anf_node, const FuncGraphManagerPtr &manager) {
   const int expected_cast_input_count = 3;
   auto cast_cnode = anf_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(cast_cnode != nullptr, lite::RET_NO_CHANGE);
   MS_CHECK_TRUE_RET(cast_cnode->size() == expected_cast_input_count, lite::RET_NO_CHANGE);
   TypeId first_type;
   TypeId second_type;

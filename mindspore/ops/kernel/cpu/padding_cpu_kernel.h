@@ -20,11 +20,12 @@
 #include <complex>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace padding_cpu {
 class PaddingCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<PaddingCpuKernelMod> {
  public:
   PaddingCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class PaddingCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   size_t pad_dim_size_{8};
   bool is_null_input_{false};
 };
+}  // namespace padding_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_PADDING_CPU_KERNEL_H_

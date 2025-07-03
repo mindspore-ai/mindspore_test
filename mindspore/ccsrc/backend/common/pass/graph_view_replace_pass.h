@@ -19,11 +19,11 @@
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/pass.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT GraphViewReplacePass : public Pass {
+class BACKEND_COMMON_EXPORT GraphViewReplacePass : public Pass {
  public:
   explicit GraphViewReplacePass(const std::string &name = "graph_view_replace") : Pass(name) {}
   ~GraphViewReplacePass() override = default;

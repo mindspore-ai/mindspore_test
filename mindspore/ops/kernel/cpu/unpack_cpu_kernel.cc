@@ -18,10 +18,11 @@
 #include <map>
 #include <tuple>
 #include "infer/unstack.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unpack_cpu {
 namespace {
 constexpr size_t kUnpackInputsNum = 1;
 constexpr size_t kUnpackOutputsMinNum = 1;
@@ -179,5 +180,6 @@ std::vector<std::tuple<KernelAttr, UnpackCpuKernelMod::UnstackFunc, UnpackCpuKer
      &UnpackCpuKernelMod::LaunchKernel<double>, &UnpackCpuKernelMod::InitIOSize<double>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Unstack, UnpackCpuKernelMod);
+}  // namespace unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore

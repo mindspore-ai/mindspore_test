@@ -21,18 +21,19 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
-#include "common/debug/profiler/profiling_framework_data.h"
-#include "common/debug/profiler/profiling_python.h"
-#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "debug/profiler/profiling_framework_data.h"
+#include "debug/profiler/profiling_python.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_dispatcher.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "transform/symbol/acl_prof_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 using mindspore::device::ascend::ErrorManagerAdapter;
 
@@ -49,14 +50,18 @@ constexpr auto kAclProfStepEndTag = 60001;
 
 using mindspore::profiler::PythonTracer;
 
-std::map<std::string, aclprofAicoreMetrics> kAicMetrics{{"ArithmeticUtilization", ACL_AICORE_ARITHMETIC_UTILIZATION},
-                                                        {"PipeUtilization", ACL_AICORE_PIPE_UTILIZATION},
-                                                        {"Memory", ACL_AICORE_MEMORY_BANDWIDTH},
-                                                        {"MemoryL0", ACL_AICORE_L0B_AND_WIDTH},
-                                                        {"ResourceConflictRatio", ACL_AICORE_RESOURCE_CONFLICT_RATIO},
-                                                        {"MemoryUB", ACL_AICORE_MEMORY_UB},
-                                                        {"L2Cache", ACL_AICORE_L2_CACHE},
-                                                        {"None", ACL_AICORE_NONE}};
+static constexpr int ACL_AICORE_MEMORY_ACCESS = 8;
+
+std::map<std::string, aclprofAicoreMetrics> kAicMetrics = {
+  {"ArithmeticUtilization", ACL_AICORE_ARITHMETIC_UTILIZATION},
+  {"PipeUtilization", ACL_AICORE_PIPE_UTILIZATION},
+  {"Memory", ACL_AICORE_MEMORY_BANDWIDTH},
+  {"MemoryL0", ACL_AICORE_L0B_AND_WIDTH},
+  {"ResourceConflictRatio", ACL_AICORE_RESOURCE_CONFLICT_RATIO},
+  {"MemoryUB", ACL_AICORE_MEMORY_UB},
+  {"L2Cache", ACL_AICORE_L2_CACHE},
+  {"MemoryAccess", static_cast<aclprofAicoreMetrics>(ACL_AICORE_MEMORY_ACCESS)},
+  {"None", ACL_AICORE_NONE}};
 
 std::map<std::string, uint64_t> profLevelMap{
   {"LevelNone", LevelNone}, {"Level0", Level0}, {"Level1", Level1}, {"Level2", Level2}};
@@ -89,6 +94,9 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.l2Cache = options["l2_cache"];
   config_.hbmDdr = options["hbm_ddr"];
   config_.pcie = options["pcie"];
+  config_.sysIo = options["sys_io"];
+  config_.sysInterconnection = options["sys_interconnection"];
+  config_.hostSys = options["host_sys"];
   config_.withStack = options["with_stack"];
   config_.parallelStrategy = options["parallel_strategy"];
   config_.profilerLevel = options["profiler_level"];
@@ -96,6 +104,9 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.cpuTrace = options["cpu_trace"];
   config_.npuTrace = options["npu_trace"];
   config_.mstx = options["mstx"];
+  config_.recordShapes = options["record_shapes"];
+  config_.mstxDomainInclude = options["mstx_domain_include"].get<std::vector<std::string>>();
+  config_.mstxDomainExclude = options["mstx_domain_exclude"].get<std::vector<std::string>>();
   config_.outputPath = profiling_path;
 
   is_parallel_strategy = config_.parallelStrategy;
@@ -122,16 +133,26 @@ void AscendProfiler::InitAclConfig() {
     }
   }
 
-  if (config_.pcie) {
-    const char *pcieFreq = "50";
-    aclError pcieRet = aclprofSetConfig(ACL_PROF_SYS_INTERCONNECTION_FREQ, pcieFreq, strlen(pcieFreq));
-    if (pcieRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_INTERCONNECTION_FREQ. error_code : "
-                        << static_cast<int>(pcieRet);
+  if (config_.sysIo) {
+    const char *sysIoFreq = "100";
+    aclError sysIoRet = aclprofSetConfig(ACL_PROF_SYS_IO_FREQ, sysIoFreq, strlen(sysIoFreq));
+    if (sysIoRet != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_IO_FREQ. error_code : "
+                        << static_cast<int>(sysIoRet);
     }
   }
 
-  aclprofAicoreMetrics aicMetrics = GetAicMetrics();
+  if (config_.sysInterconnection || config_.pcie) {
+    const char *sysInterconnectionFreq = "50";
+    aclError sysInterconnectionRet =
+      aclprofSetConfig(ACL_PROF_SYS_INTERCONNECTION_FREQ, sysInterconnectionFreq, strlen(sysInterconnectionFreq));
+    if (sysInterconnectionRet != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_INTERCONNECTION_FREQ. error_code : "
+                        << static_cast<int>(sysInterconnectionRet);
+    }
+  }
+
+  aclprofAicoreMetrics aicMetrics = CheckAicMetricsFeature(GetAicMetrics(), config_.profilerLevel);
   uint64_t mask = GetAclProfMask(aicMetrics);
   uint32_t deviceList[1] = {config_.deviceId};
   uint32_t deviceNum = 1;
@@ -148,6 +169,19 @@ aclprofAicoreMetrics AscendProfiler::GetAicMetrics() const {
     MS_LOG(INFO) << "aicore_metrics is " << config_.aicoreMetrics << ", aicMetrics is " << aicMetrics;
   }
   return aicMetrics;
+}
+
+aclprofAicoreMetrics AscendProfiler::CheckAicMetricsFeature(aclprofAicoreMetrics aic_metrics,
+                                                            const std::string &profiler_level) {
+  if (aic_metrics == ACL_AICORE_MEMORY_ACCESS &&
+      !FeatureMgr::Instance().IsSupportFeature(FeatureType::FEATURE_MEMORY_ACCESS)) {
+    MS_LOG(WARNING) << "AicMetrics is not supported to set to MemoryAccess. "
+                    << "When profiler_level is set to " << profiler_level << ", AicMetrics will be set to "
+                    << (profiler_level == "Level1" || profiler_level == "Level2" ? "PipeUtilization" : "AicoreNone")
+                    << ".";
+    return (profiler_level == "Level1" || profiler_level == "Level2") ? ACL_AICORE_PIPE_UTILIZATION : ACL_AICORE_NONE;
+  }
+  return aic_metrics;
 }
 
 uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
@@ -178,13 +212,14 @@ uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
 
 void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id, const std::string &profiling_options) {
   MS_LOG(INFO) << "Init AscendProfiler";
-  mindspore::device::ascend::InitializeAcl();
+  device::ascend::AscendHalManager::GetInstance().InitializeAcl();
   (void)ErrorManagerAdapter::Init();
   InitAscendProfilerConfig(profiling_path, device_id, profiling_options);
+  FeatureMgr::Instance().Init();
 
   if (config_.cpuTrace) {
     ProfilingFrameworkData::Device_Id = config_.rankId;
-    ProfilingDataDumper::GetInstance().Init(config_.frameworkDataPath, config_.rankId);
+    ProfilingDataDumper::GetInstance().Init(config_.frameworkDataPath);
     profiler::ascend::ParallelStrategy::GetInstance()->SetOutputPath(config_.frameworkDataPath);
     InitFwkMemProfiling();
     MS_LOG(INFO) << "cpu_trace is enabled";
@@ -224,13 +259,22 @@ void AscendProfiler::StopFwkMemProfiling() {
 void AscendProfiler::Start() {
   MS_LOG(INFO) << "Start AscendProfiler begin";
 
+  if (!config_.hostSys.empty()) {
+    aclError hostSysRet = aclprofSetConfig(ACL_PROF_HOST_SYS, config_.hostSys.c_str(), strlen(config_.hostSys.c_str()));
+    if (hostSysRet != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_HOST_SYS. error_code : "
+                    << static_cast<int>(hostSysRet);
+    }
+  }
+
   if (config_.npuTrace) {
     aclError aclRet = CALL_ASCEND_API(aclprofStart, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
     }
     if (config_.mstx) {
-      MstxMgr::GetInstance().Enable();
+      MstxDispatcher::GetInstance().Enable();
+      MstxDispatcher::GetInstance().SetDomain(config_.mstxDomainInclude, config_.mstxDomainExclude);
     }
     MS_LOG(INFO) << "Start AscendProfiler npu trace";
   }
@@ -253,7 +297,7 @@ void AscendProfiler::Stop() {
 
   if (config_.npuTrace) {
     if (config_.mstx) {
-      MstxMgr::GetInstance().Disable();
+      MstxDispatcher::GetInstance().Disable();
     }
     aclError aclRet = CALL_ASCEND_API(aclprofStop, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
@@ -270,6 +314,7 @@ void AscendProfiler::Stop() {
     }
     profiler::ascend::ParallelStrategy::GetInstance()->SaveParallelStrategyToFile();
     ProfilingDataDumper::GetInstance().Stop();
+    ProfilingDataDumper::GetInstance().UnInit();
     MS_LOG(INFO) << "Stop AscendProfiler cpu trace";
   }
   StepProfilingEnable(false);
@@ -330,20 +375,22 @@ void AscendProfiler::StepStop() {
   aclStream_ = nullptr;
 }
 
-void AscendProfiler::MstxMark(const std::string &message, void *stream) {
+void AscendProfiler::MstxMark(const std::string &message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx mark, message: " << message;
-  MstxMgr::GetInstance().Mark(message.c_str(), stream);
+  MstxDispatcher::GetInstance().Mark(message.c_str(), stream, domain_name);
 }
 
-int AscendProfiler::MstxRangeStart(const std::string &message, void *stream) {
+int AscendProfiler::MstxRangeStart(const std::string &message, void *stream, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx range start, message: " << message;
-  return MstxMgr::GetInstance().RangeStart(message.c_str(), stream);
+  return MstxDispatcher::GetInstance().RangeStart(message.c_str(), stream, domain_name);
 }
 
-void AscendProfiler::MstxRangeEnd(int range_id) {
+void AscendProfiler::MstxRangeEnd(int range_id, const std::string &domain_name) {
   MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
-  MstxMgr::GetInstance().RangeEnd(range_id);
+  MstxDispatcher::GetInstance().RangeEnd(range_id, domain_name);
 }
+
+bool AscendProfiler::EnableRecordShapes() { return config_.recordShapes; }
 
 }  // namespace ascend
 }  // namespace profiler

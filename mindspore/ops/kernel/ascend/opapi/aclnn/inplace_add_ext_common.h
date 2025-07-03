@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_COMMON_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_COMMON_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_EXT_COMMON_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_EXT_COMMON_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-
+namespace inplace_add_ext {
 static void GetScalarFromInput(KernelTensor *inputPtr, ScalarPtr *dstScalar) {
   auto scalar_dtype_id = inputPtr->dtype_id();
   switch (scalar_dtype_id) {
@@ -84,7 +84,8 @@ class InplaceAddsExtAclnnKernelMod : public AclnnKernelMod {
   ScalarPtr alpha_scalar_ = nullptr;
   ScalarPtr other_scalar_ = nullptr;
 };
+}  // namespace inplace_add_ext
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_COMMON_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INPLACE_ADD_EXT_COMMON_ACLNN_KERNEL_MOD_H_

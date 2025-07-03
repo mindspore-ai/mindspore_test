@@ -14,14 +14,11 @@
 # ============================================================================
 
 """Inner operators."""
-from types import FunctionType, MethodType
 from collections.abc import Iterable
-import os
 import weakref
 import numpy as np
 
 from mindspore.common import Tensor
-from mindspore.common._stub_tensor import StubTensor
 from mindspore.ops import composite as C
 from mindspore.ops.operations.array_ops import Cast
 from mindspore.ops.operations._scalar_ops import bit_or, bit_and
@@ -29,19 +26,16 @@ from mindspore.ops import signature as sig
 from mindspore.ops.operations.math_ops import _infer_shape_reduce
 from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register, Primitive, \
     _run_op, _check_contains_variable
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import typing, HookType
 from mindspore._c_expression import pyboost_generator
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore.communication.management import GlobalComm, get_rank, _get_group, get_group_size
 from mindspore.common.api import _pynative_executor
-from mindspore.common._register_for_adapter import ms_adapter_registry
-from mindspore import ops
-from ..auto_generate import TensorCopySlices, SiLU, Cummin, TopKRouter, ExtractImagePatches, DecoderKVCache, \
-    PromptKVCache, ApplyCamePart1, ApplyCamePart2, ApplyCamePart3, ApplyCamePart4
+from ..auto_generate import TensorCopySlices, SiLU, Cummin, TopKRouter, TopPRouter, ExtractImagePatches, \
+    ApplyCamePart1, ApplyCamePart2, ApplyCamePart3, ApplyCamePart4
 
 # Bit operation
 bit_and = bit_and()
@@ -81,7 +75,7 @@ class Generator(Primitive):
     def __call__(self, cmd, inputs):
         if cmd == 0:  # step cmd
             return inputs[0], inputs[1]
-        return _convert_stub(pyboost_generator(self, [cmd, inputs]))
+        return pyboost_generator(self, [cmd, inputs])
 
 
 class Quant(PrimitiveWithInfer):
@@ -668,17 +662,17 @@ class ErrorOnDynamicShapeInput(PrimitiveWithInfer):
 
 class SequenceMask(PrimitiveWithCheck):
     """
-    Returns a mask tensor representing the first N positions of each cell.
+    Returns a mask tensor representing the first N positions of each cell. The internal element data type is bool.
 
     If lengths has shape [d_1, d_2, ..., d_n], then the resulting tensor mask has type and shape
     [d_1, d_2, ..., d_n, maxlen], with mask[i_1, i_2, ..., i_n, j] = (j < lengths[i_1, i_2, ..., i_n])
 
     Inputs:
-        - **lengths** (Tensor) - Tensor to calculate the mask for. All values in this tensor should be
+        - **lengths** (Tensor) - The input tensor. All values in this tensor should be
           less than or equal to `maxlen`. Values greater than `maxlen` will be treated as `maxlen`.
           Must be type int32 or int64.
 
-        - **maxlen** (int) - size of the last dimension of returned tensor. Must be positive and same
+        - **maxlen** (int) - Specify the length of the returned tensor. Must be positive and same
           type as elements in `lengths`.
 
     Outputs:
@@ -2256,74 +2250,6 @@ class IsInstance(PrimitiveWithInfer):
         return out
 
 
-class ConvertToAdapterTensor(Primitive):
-    """
-    Convert a tensor from MindSpore's Tensor type to MSAdapter's Tensor type,
-    where MSAdapter's Tensor is a subclass of MindSpore's Tensor.
-
-    Inputs:
-        - **x** (Tensor) - The input tensor.
-
-    Outputs:
-        A tensor, whose type is MSAdapter's Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> x = Tensor([1, 2 ,3])
-        >>> x = ops.ConvertToAdapterTensor()(x)
-        >>> print(x)
-        [1 2 3]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize"""
-
-    def __call__(self, x):
-        """Run in PyNative mode"""
-        return ms_adapter_registry.tensor(x, cast_tensor=True)
-
-
-convert_to_adapter_tensor = ConvertToAdapterTensor()
-
-
-class ConvertToMsTensor(Primitive):
-    """
-    Convert a tensor from MSAdapter's Tensor type to MindSpore's Tensor type,
-    where MSAdapter's Tensor is a subclass of MindSpore's Tensor.
-
-    Inputs:
-        - **x** (Tensor) - The input tensor.
-
-    Outputs:
-        A tensor, whose type is MindSpore's Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> x = Tensor([1, 2 ,3])
-        >>> x = ops.ConvertToMsTensor()(x)
-        >>> print(x)
-        [1 2 3]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize"""
-
-    def __call__(self, x):
-        """Run in PyNative mode"""
-        if isinstance(x, StubTensor):
-            return StubTensor(stub=x.stub, tensor=x.tensor)
-        return ops.auto_generate.deepcopy(x)
-
-
-convert_to_ms_tensor = ConvertToMsTensor()
-
-
 class GetGrad(Primitive):
     """
         Use the position id or Parameter object to get the gradient from the output
@@ -2475,7 +2401,7 @@ class FFN(Primitive):
     The FFN computation is similar to Feed-Forward Network, it contains matmul + gelu + matmul.
 
     Args:
-        activation (string): The activation type, set to 'fastgelu' or 'gelu'.
+        activation (str): The activation type, set to 'fastgelu' or 'gelu'.
             Only support 'fastgelu' for now. Default: "fastgelu".
         inner_precise (int): The precise mode, set to 0 for high precision or 1 for high performance.
             Only support 1 for now. Default: 0.

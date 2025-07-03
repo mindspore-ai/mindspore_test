@@ -19,15 +19,15 @@
 #include <memory>
 
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                       const BaseTensorPtr &value) {
+tensor::TensorPtr InplaceFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                   const TensorPtr &value) {
   // No need to convert input
   bool is_host_tensor = value->device_address() == nullptr && value->isa<Tensor>();
   if (!is_host_tensor) {
@@ -49,7 +49,7 @@ tensor::BaseTensorPtr InplaceFillTensorAscendCustomize(const std::shared_ptr<OpR
       return;
     }
     // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, input);
+    PyBoostUtils::MallocOpInputs(device_context, input, value);
 
     // Inplace output need be front
     MS_LOG(DEBUG) << "Call FillTensor start";

@@ -29,7 +29,7 @@
 #include <condition_variable>
 #include <utility>
 
-#include "include/backend/visible.h"
+#include "runtime/pipeline/visible.h"
 #include "runtime/pipeline/task/task.h"
 
 #include "runtime/pipeline/ring_queue.h"
@@ -49,22 +49,24 @@ enum kThreadWaitLevel : int {
 };
 
 // Create a new thread to execute the tasks in the queue sequentially.
-class BACKEND_EXPORT AsyncRQueue {
+class RUNTIME_PIPELINE_EXPORT AsyncRQueue {
  public:
   explicit AsyncRQueue(std::string name, kThreadWaitLevel wait_level)
-      : name_(std::move(name)), wait_level_(wait_level) {}
+      : name_(std::move(name)),
+        wait_level_(wait_level),
+        tasks_queue_(std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>()) {}
   virtual ~AsyncRQueue();
 
   // Add task to the end of the queue.
-  void Push(const AsyncTaskPtr &task);
+  virtual void Push(const AsyncTaskPtr &task);
 
   bool CanPush() const;
 
   // Wait for all async task finish executing.
-  void Wait();
+  virtual void Wait();
 
   // Check if the queue is empty.
-  bool Empty();
+  virtual bool Empty();
 
   // clear tasks of queue, and wait last task.
   void Clear();
@@ -73,7 +75,7 @@ class BACKEND_EXPORT AsyncRQueue {
   void Reset();
 
   // Thread join before the process exit.
-  void WorkerJoin();
+  virtual void WorkerJoin();
 
   // Reinit resources after fork occurs.
   void ChildAfterFork();
@@ -81,9 +83,13 @@ class BACKEND_EXPORT AsyncRQueue {
   // Call once before all ChildAfterFork
   static void ChildAfterForkPre();
 
-  bool Spin() { return tasks_queue_.spin(); }
+  void ParentBeforeFork();
+
+  bool Spin() { return tasks_queue_->spin(); }
 
   void SetSpin(bool spin);
+
+  void DisableMultiThread() { disable_multi_thread_ = true; }
 
  protected:
   void WorkerLoop();
@@ -100,7 +106,12 @@ class BACKEND_EXPORT AsyncRQueue {
 
   void BindCoreForThread();
 
-  RingQueue<AsyncTaskPtr, kQueueCapacity> tasks_queue_;
+  std::unique_ptr<RingQueue<AsyncTaskPtr, kQueueCapacity>> tasks_queue_;
+#if defined(__APPLE__)
+  bool disable_multi_thread_{true};
+#else
+  bool disable_multi_thread_{false};
+#endif
 
   std::map<std::string, int> thread_to_core_idx = {
     {"frontend_queue", 0}, {"backend_queue", 1}, {"launch_queue", 2}, {"bprop_queue", 3}};

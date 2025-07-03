@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit
 from mindspore.mint import transpose
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -36,12 +36,13 @@ def transpose_backward_func(x, dim0, dim1):
     return ms.grad(transpose_forward_func, (0))(x, dim0, dim1)
 
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def transpose_vmap_func(x, dim0, dim1):
     return ops.vmap(transpose_forward_func, in_axes=(0, None, None), out_axes=0)(x, dim0, dim1)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_transpose_normal(context_mode):
@@ -97,4 +98,4 @@ def test_ops_transpose_dynamic_shape():
     dim0_1 = 2
     dim1_1 = 3
     TEST_OP(transpose_forward_func, [[ms.Tensor(x1), dim0_0, dim1_0], [ms.Tensor(x2), dim0_1, dim1_1]]
-            , 'transpose_ext', disable_mode=['GRAPH_MODE'])
+            , 'transpose_ext_view', disable_mode=['GRAPH_MODE'])

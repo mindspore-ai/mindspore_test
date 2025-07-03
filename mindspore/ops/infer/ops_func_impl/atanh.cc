@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,49 +17,19 @@
 #include "infer/ops_func_impl/atanh.h"
 #include <vector>
 #include <memory>
-#include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
-BaseShapePtr AtanhFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = input_args[kIndex0]->GetShape();
-  return input_shape->Clone();
-}
-
-TypePtr AtanhFuncImpl::InferType(const PrimitivePtr &primitive,
-                                 const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kIndex0]->GetType();
-  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+std::vector<TypeId> AtanhFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &input_type_id = input_infos[kInputIndex0]->GetType();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
                                                   kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
-    return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return input_type;
+    return {kNumberTypeFloat32};
   }
+  return {input_type_id};
 }
-TypePtrList AtanhFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_type = x_tensor->Dtype();
-  const auto &input_type_id = x_tensor->Dtype()->type_id();
-  static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
-                                                  kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
-  bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
-                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
-  if (is_int_or_bool) {
-    return {kFloat32};
-  } else {
-    return {input_type};
-  }
-}
-ShapeArray AtanhFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  return {x_tensor->shape()};
-}
-REGISTER_SIMPLE_INFER(kNameAtanh, AtanhFuncImpl);
 }  // namespace mindspore::ops

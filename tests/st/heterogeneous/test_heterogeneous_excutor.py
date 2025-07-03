@@ -63,7 +63,7 @@ def test_heterogeneous_excutor():
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float64)
     label_data = np.random.randn(32, 10).astype(np.float32)
     # graph mode
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     net = Net(3, 10)
     opt = nn.Momentum(params=net.trainable_params(), learning_rate=0.001,
                       momentum=0.0009, weight_decay=0.001, loss_scale=0.0001)

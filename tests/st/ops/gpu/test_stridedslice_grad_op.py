@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -294,4 +293,4 @@ def test_strided_slice_grad_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_bool():
-    strided_slice_grad(np.bool)
+    strided_slice_grad(np.bool_)

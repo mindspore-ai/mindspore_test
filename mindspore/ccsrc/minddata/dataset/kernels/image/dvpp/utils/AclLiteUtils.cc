@@ -25,8 +25,8 @@
 #include <vector>
 
 #include "acl/ops/acl_dvpp.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace {
 const char COMMENT_CHAR = '#';
@@ -473,7 +473,7 @@ bool AnalyseLine(const std::string &line, std::string &key, std::string &value) 
   auto end_pos = line.size() - 1;
   std::string::size_type pos = line.find(COMMENT_CHAR);
   if (pos != std::string::npos) {
-    if (pos == 0) {  // the first charactor is #
+    if (pos == 0) {  // the first character is #
       return false;
     }
     end_pos = pos - 1;

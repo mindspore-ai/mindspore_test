@@ -19,11 +19,12 @@
 #include <functional>
 #include <map>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pdist_grad_cpu {
 namespace {
 constexpr size_t kPdistGradInputsNum = 3;
 constexpr size_t kPdistGradOutputsNum = 1;
@@ -188,5 +189,6 @@ std::vector<KernelAttr> PdistGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PdistGrad, PdistGradCpuKernelMod);
+}  // namespace pdist_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

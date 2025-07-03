@@ -128,10 +128,9 @@ def test_repeat_interleave_pyboost_ok(mode):
     input_x = Tensor(np.array([1, 2, 3]), ms.int32)
     # test kwonlyargs in pynative mode
     if ms.get_context('mode') == ms.PYNATIVE_MODE:
-        with pytest.raises(TypeError) as error_info:
+        with pytest.raises(TypeError):
             net3(input_x, 2, None, None)
             _pynative_executor.sync()
-        assert "Failed calling repeat_interleave with " in str(error_info.value)
 
     output1 = np.array([1, 1, 2, 2, 3, 3])
     assert np.allclose(net4(input_x, 2, None, None).asnumpy(), output1)

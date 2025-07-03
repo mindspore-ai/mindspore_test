@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,15 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/neg.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "ops/utils/general_infer_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(Neg, EltwiseOpParams);
-
-OP_FUNC_IMPL_TEST_CASES(Neg, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
-                                             EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                                             EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(Neg, GeneralInferTest, single_input_eltwise_op_default_cases);
 
 struct NegInferValueParams {
   ShapeVector x_shape;

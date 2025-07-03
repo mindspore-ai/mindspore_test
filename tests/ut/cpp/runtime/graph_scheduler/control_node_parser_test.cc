@@ -19,6 +19,11 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace runtime {
 using namespace test;
@@ -165,6 +170,7 @@ void BuildGraphs(std::vector<AnfNodePtr> *control_nodes, FuncGraphPtr *func_grap
 /// Description: Test the parse interface.
 /// Expectation: As expected.
 TEST_F(ControlNodeParserTest, Parse) {
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   std::vector<AnfNodePtr> control_nodes;
   FuncGraphPtr func_graph;
   std::vector<KernelGraphPtr> kernel_graphs;

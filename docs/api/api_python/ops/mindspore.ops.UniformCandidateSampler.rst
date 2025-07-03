@@ -5,7 +5,7 @@
 
     使用均匀分布对一组类别进行采样。
 
-    此函数使用均匀分布从[0, range_max-1]中采样一组类（sampled_candidates）。如果 `unique` 为 ``True`` ，则候选采样没有重复；如果 `unique` 为 ``False`` ，则有重复。
+    此函数使用均匀分布，从[0, range_max-1]中采样一组类（sampled_candidates）。如果 `unique` 为 ``True`` ，则候选采样没有重复；如果 `unique` 为 ``False`` ，则有重复。
 
     更多参考详见 :func:`mindspore.ops.uniform_candidate_sampler`。
 

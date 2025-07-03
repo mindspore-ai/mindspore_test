@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test_multigraph_sink """
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 from mindspore.common import dtype as mstype
 from mindspore.common import jit
@@ -27,7 +27,7 @@ c4 = Tensor([0], mstype.int32)
 c5 = Tensor([14], mstype.int32)
 
 
-@jit
+@jit(backend="ms_backend")
 def simple_if(x, y):
     if x < y:
         x = x + 1
@@ -37,7 +37,7 @@ def simple_if(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def if_by_if(x, y):
     if x < y:
         x = x + 1
@@ -47,7 +47,7 @@ def if_by_if(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def if_in_if(x, y, z):
     out = c4
     if x < y:
@@ -60,7 +60,7 @@ def if_in_if(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def simple_while(x, y):
     y = y + 4
     while x < y:
@@ -69,7 +69,7 @@ def simple_while(x, y):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def while_by_while(x, y, z):
     while x < y:
         x = x + 1
@@ -80,7 +80,7 @@ def while_by_while(x, y, z):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def while_in_while(x, y, z):
     out = c4
     while x < y:
@@ -93,7 +93,7 @@ def while_in_while(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def while_by_while_in_while(x, y, z):
     out = c4
     while x < c2:
@@ -110,7 +110,7 @@ def while_by_while_in_while(x, y, z):
     return out
 
 
-@jit
+@jit(backend="ms_backend")
 def while_in_while_in_while(x, y, z):
     out = c4
     while x < c2:
@@ -127,8 +127,7 @@ def while_in_while_in_while(x, y, z):
     return out
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_if():
     """
     Feature: Control flow
@@ -146,8 +145,7 @@ def test_if_by_if():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_in_if():
     """
     Feature: Control flow
@@ -159,8 +157,7 @@ def test_if_in_if():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_while():
     """
     Feature: Control flow
@@ -172,8 +169,7 @@ def test_simple_while():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_by_while():
     """
     Feature: Control flow
@@ -185,8 +181,7 @@ def test_while_by_while():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_in_while():
     """
     Feature: Control flow
@@ -198,8 +193,7 @@ def test_while_in_while():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_by_while_in_while():
     """
     Feature: Control flow
@@ -211,8 +205,7 @@ def test_while_by_while_in_while():
     assert output == expect
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_in_while_in_while():
     """
     Feature: Control flow

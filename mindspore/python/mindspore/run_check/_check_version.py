@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ from packaging import version
 import numpy as np
 from mindspore import log as logger
 from mindspore.log import vlog_print
-from mindspore._c_expression import MSContext, ms_ctx_param
 from ..version import __version__
 
 
@@ -125,9 +124,9 @@ class GPUEnvChecker(EnvChecker):
         for path in self.cuda_lib_path:
             real_path = glob.glob(path + "/lib*/libcudart.so.*.*.*")
             # /usr/lib/x86_64-linux-gnu is a default dir for cuda10.1 on ubuntu.
-            if real_path == []:
+            if not real_path:
                 real_path = glob.glob(path + "/x86_64-linux-gnu/libcudart.so.*.*.*")
-            if real_path == []:
+            if not real_path:
                 continue
             ls_cudart = subprocess.run(["ls", real_path[0]], timeout=10, text=True,
                                        capture_output=True, check=False)
@@ -259,7 +258,7 @@ class AscendEnvChecker(EnvChecker):
 
     def __init__(self, library_path):
         self.library_path = library_path
-        self.version = ["7.5", "7.6"]
+        self.version = ["7.7", "7.8", "8.2"]
 
         # env
         self.path = os.getenv("PATH")
@@ -276,6 +275,7 @@ class AscendEnvChecker(EnvChecker):
         self.python_path_check = "opp/built-in/op_impl/ai_core/tbe"
         self.ld_lib_path_check_fwk = "/lib64"
         self.ascend_opp_path_check = "/op"
+        self.ascend_opp_kernel_path_check = "/opp_kernel"
         self.v = ""
 
     @staticmethod
@@ -293,7 +293,7 @@ class AscendEnvChecker(EnvChecker):
 
         cur_version = self._read_version(self.compiler_version)
         custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           "../lib/plugin/ascend/custom_ascendc_910/version.info")
+                                           "../lib/plugin/ascend/custom_ascendc_910b/version.info")
         with open(custom_version_path, 'r') as f:
             all_info = f.readlines()
             for line in all_info:
@@ -342,42 +342,47 @@ class AscendEnvChecker(EnvChecker):
                 logger.warning(f"MindSpore version {mindspore_version} and \"te\" wheel package version {v} does not "
                                "match. For details, refer to the installation guidelines: "
                                "https://www.mindspore.cn/install")
-            from hccl import sys_version as hccl_version
-            v = '.'.join(hccl_version.__sys_version__.split('.')[0:2])
-            if v not in supported_version:
-                attention_warning = True
-                logger.warning(f"MindSpore version {mindspore_version} and \"hccl\" wheel package version {v} does not "
-                               "match. For details, refer to the installation guidelines: "
-                               "https://www.mindspore.cn/install")
         # DO NOT modify exception type to any other, you DO NOT know what kind of exceptions the te will throw.
         # pylint: disable=broad-except
         except Exception as e:
             logger.error(f"CheckFailed: {e}")
-            logger.error("MindSpore relies on whl packages of \"te\" and \"hccl\" in the \"latest\" "
-                         "folder of the Ascend AI software package (Ascend Data Center Solution). Please check whether"
-                         " they are installed correctly or not, refer to the match info on: "
-                         "https://www.mindspore.cn/install")
+            logger.critical("MindSpore relies on whl packages of \"te\" in the \"latest\" folder of the "
+                            "Ascend AI software package (Ascend Data Center Solution). Please check whether they are "
+                            "installed correctly or not, refer to the match info on: https://www.mindspore.cn/install")
         if attention_warning:
             warning_countdown = 3
             for i in range(warning_countdown, 0, -1):
                 logger.warning(f"Please pay attention to the above warning, countdown: {i}")
                 time.sleep(1)
 
+    def check_opp_kernel(self):
+        """
+            opp kernel install check
+        """
+        from mindspore._c_expression import MSContext
+        soc_version = MSContext.get_instance().get_ascend_soc_version()
+        if soc_version == "ascend310":
+            return
+
+        opp_kernel_path = self.ascend_opp_path.replace("opp", "opp_kernel")
+        if not os.path.exists(opp_kernel_path):
+            logger.critical("MindSpore relies on \"Ascend opp_kernel\" folder of the Ascend AI software package ("
+                            "Ascend Data Center Solution). Please check whether they are installed correctly or not, "
+                            "refer to the match info on: https://www.mindspore.cn/install")
+            raise Exception("Ascend opp_kernel is not installed")
+
     def set_env(self):
         curr_path = os.path.realpath(os.path.dirname(__file__))
         cust_aicpu_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
         cust_aicore_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicore_ops"))
-        cust_ascendc_ascend910_path = os.path.realpath(
-            os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_910"))
         cust_ascendc_ascend910b_path = os.path.realpath(
             os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_910b"))
         if os.getenv('ASCEND_CUSTOM_OPP_PATH'):
             os.environ['ASCEND_CUSTOM_OPP_PATH'] = os.environ['ASCEND_CUSTOM_OPP_PATH'] + ":" + \
-                                                   cust_ascendc_ascend910_path + ":" + cust_ascendc_ascend910b_path + \
-                                                   ":" + cust_aicore_path + ":" + cust_aicpu_path
-        else:
-            os.environ['ASCEND_CUSTOM_OPP_PATH'] = cust_ascendc_ascend910_path + ":" + \
                                                    cust_ascendc_ascend910b_path + ":" + cust_aicore_path + ":" + \
+                                                   cust_aicpu_path
+        else:
+            os.environ['ASCEND_CUSTOM_OPP_PATH'] = cust_ascendc_ascend910b_path + ":" + cust_aicore_path + ":" + \
                                                    cust_aicpu_path
         # Ignore ge infer missing error. To be removed after infers are completed.
         os.environ['FAST_IGNORE_INFER_ERROR'] = "1"
@@ -390,6 +395,8 @@ class AscendEnvChecker(EnvChecker):
 
         # check te version after set te env
         self.check_deps_version()
+
+        self.check_opp_kernel()
 
     def _check_env(self):
         """ascend dependence path check"""
@@ -467,6 +474,7 @@ def check_version_and_env_config():
             logger.warning("Pre-Load Library libgomp.so.1 failed, which might cause TLS memory allocation failure. If "
                            "the failure occurs, please refer to the FAQ for a solution: "
                            "https://www.mindspore.cn/docs/en/master/faq/installation.html.")
+        from mindspore._c_expression import MSContext, ms_ctx_param
         MSContext.get_instance().register_check_env_callback(check_env)
         MSContext.get_instance().register_set_env_callback(set_env)
         MSContext.get_instance().set_device_target_inner(MSContext.get_instance().get_param(ms_ctx_param.device_target))

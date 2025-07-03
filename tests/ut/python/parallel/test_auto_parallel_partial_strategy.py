@@ -85,6 +85,6 @@ def test_four_matmul_linear():
     b = Tensor(np.ones([32, 256]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net(strategy1)))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net.set_train()
     _cell_graph_executor.compile(net, x, y, z, w, b)

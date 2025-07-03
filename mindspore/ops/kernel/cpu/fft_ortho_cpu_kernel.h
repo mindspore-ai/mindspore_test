@@ -24,11 +24,12 @@
 #include <functional>
 #include <algorithm>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fft_ortho_cpu {
 class FFTOrthoCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTOrthoCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class FFTOrthoCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> dim_;
   bool forward_;
 };
+}  // namespace fft_ortho_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFT_ORTHO_CPU_KERNEL_H_

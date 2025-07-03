@@ -28,7 +28,7 @@ min:
     Args:
         dim (int): The dimension to reduce.
         keepdim (bool, optional): Whether to reduce dimension, if ``True`` the output will keep the same dimension as
-            the `self` , the output will reduce dimension if ``false``. Default: ``False``.
+            the `self` , the output will reduce dimension if ``False``. Default: ``False``.
 
     Returns:
         tuple (Tensor), tuple of 2 tensors, containing the minimum value of the self tensor along the given

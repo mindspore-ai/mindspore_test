@@ -14,27 +14,32 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/meshgrid.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/meshgrid.h"
 
 #include "ir/scalar.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "kernel/common/pyboost/customize/op_common.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
-#include "kernel/common/pyboost/customize/meshgrid.h"
+#include "mindspore/ccsrc/pyboost/customize/meshgrid.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const ValueTuplePtr &tensors_list,
-                                                        const Int64ImmPtr &indexing) {
+std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
   MS_LOG(DEBUG) << "Nonzero CPU start";
-  std::vector<tensor::BaseTensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kCPUDevice);
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kCPUDevice);
+  MS_LOG(DEBUG) << "NonZero CPU end";
+  return output;
+}
+std::vector<tensor::TensorPtr> MeshgridCPUCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const ValueTuplePtr &tensors_list, const int64_t &indexing) {
+  MS_LOG(DEBUG) << "Nonzero CPU start";
+  std::vector<tensor::TensorPtr> output = MeshgridCustomizeCall(op, tensors_list, indexing, kCPUDevice);
   MS_LOG(DEBUG) << "NonZero CPU end";
   return output;
 }

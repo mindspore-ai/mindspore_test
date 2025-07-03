@@ -23,6 +23,7 @@
 #include "src/extendrt/delegate/tensorrt/op/roialign_tensorrt.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/roi_align_impl.cuh"
 #include "infer/roi_align.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::lite {
 int ROIAlignTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

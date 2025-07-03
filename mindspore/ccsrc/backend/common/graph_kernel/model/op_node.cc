@@ -34,12 +34,14 @@
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/operator/ops_backend_infer_function.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel::inner {
 std::vector<int64_t> GetListInt(const ValuePtr &attr_value) {
   std::vector<int64_t> list_int;
-  const auto &vals = attr_value->cast<ValueSequencePtr>()->value();
+  const auto &val_seq = attr_value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(val_seq);
+  const auto &vals = val_seq->value();
   (void)std::transform(vals.begin(), vals.end(), std::back_inserter(list_int),
                        [](const ValuePtr &v) { return AnfUtils::GetIntValue(v); });
   return list_int;
@@ -79,17 +81,17 @@ TypePtr InferTypeWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrLis
   return nullptr;
 }
 
-tensor::BaseTensorPtr InferValueWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrList &abs_list) {
+tensor::TensorPtr InferValueWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrList &abs_list) {
   auto value_optional = abstract::InferValueByFuncImpl(prim, abs_list);
   if (value_optional.has_value()) {
-    return std::static_pointer_cast<tensor::BaseTensor>(value_optional.value());
+    return std::static_pointer_cast<tensor::Tensor>(value_optional.value());
   }
 
   auto found = abstract::GetBackendPrimitiveInferImpl(prim);
   if (found.has_value()) {
     auto infer = found.value();
     if (infer.IsImplInferValue()) {
-      return std::static_pointer_cast<tensor::BaseTensor>(infer.InferValue(prim, abs_list));
+      return std::static_pointer_cast<tensor::Tensor>(infer.InferValue(prim, abs_list));
     }
   }
   return nullptr;
@@ -285,7 +287,7 @@ NodePtr PrimOp::InferValue(const NodePtrList &inputs, const DAttrs &attrs) {
     }
   }
   TypeId output_type = this->type;
-  tensor::BaseTensorPtr res = nullptr;
+  tensor::TensorPtr res = nullptr;
   switch (static_cast<int>(output_type)) {
     case TypeId::kNumberTypeUInt8: {
       res = CalcByOperator<uint8_t>(inputs, attrs);
@@ -534,8 +536,8 @@ std::vector<DShape> ConstantOfShapeOp::InferShape(const NodePtrList &inputs, con
   if (value->isa<ValueSequence>()) {
     res = GetValue<std::vector<int64_t>>(value);
     return {res};
-  } else if (value->isa<tensor::BaseTensor>()) {
-    auto tvalue = value->cast<tensor::BaseTensorPtr>();
+  } else if (value->isa<tensor::Tensor>()) {
+    auto tvalue = value->cast<tensor::TensorPtr>();
     if (tvalue->data_type_c() == static_cast<int>(TypeId::kNumberTypeInt32)) {
       int *data = static_cast<int *>(tvalue->data_c());
       for (size_t elem = 0; elem < tvalue->DataSize(); elem++) {
@@ -737,6 +739,7 @@ void PagedAttentionOp::RectifyAbstract(const PrimitivePtr &prim, AbstractBasePtr
   constexpr size_t PA_INPUT_NUM = 5;
   constexpr size_t PA_MASK_INPUT_NUM = 6;
   if (abs_list->size() == PA_INPUT_NUM || abs_list->size() == PA_MASK_INPUT_NUM) {
+    MS_EXCEPTION_IF_NULL(prim);
     CHECK_ATTR(prim->attrs(), "head_num");
     (void)abs_list->emplace_back(prim->GetAttr("head_num")->ToAbstract());
     CHECK_ATTR(prim->attrs(), "scale_value");
@@ -1239,41 +1242,33 @@ void MatMulOp::RectifyAbstract(const PrimitivePtr &prim, AbstractBasePtrList *ab
 std::vector<DShape> MatMulOp::InferShape(const NodePtrList &inputs, const DAttrs &attrs) {
   // the prim's infer shape does not supports batch dims
   constexpr size_t kMatMulRank = 2;
-  if (inputs[0]->shape.size() > kMatMulRank || inputs[1]->shape.size() > kMatMulRank) {
-    NodePtrList new_inputs = inputs;
-    std::vector<DShape> batches(inputs.size());
-    auto cut_batches = [&new_inputs, &batches, kMatMulRank](size_t i) -> void {
-      const auto &shape_i = new_inputs[i]->shape;
-      if (shape_i.size() > kMatMulRank) {
-        DShape real_shape(shape_i.cend() - kMatMulRank, shape_i.cend());
-        new_inputs[i] = std::make_shared<inner::Node>(NodeBase{real_shape, new_inputs[i]->type, new_inputs[i]->format});
-        batches[i].assign(shape_i.cbegin(), shape_i.cend() - kMatMulRank);
-      }
-    };
-
-    cut_batches(0);
-    cut_batches(1);
-    if (batches[0].size() != batches[1].size()) {
-      MS_LOG(EXCEPTION) << "The Matmul's batch rank should be equal, but got " << batches[0].size() << " vs "
-                        << batches[1].size();
-    }
-    DShape batch;
-    for (size_t i = 0; i < batches[0].size(); i++) {
-      if (batches[0][i] != batches[1][i]) {
-        if (batches[0][i] != 1 && batches[1][i] != 1) {
-          MS_LOG(EXCEPTION) << "The Matmul's batch dim is unmatched. got " << inputs[0]->shape << " and "
-                            << inputs[1]->shape;
-        }
-      }
-      batch.push_back(std::max(batches[0][i], batches[1][i]));
-    }
-
-    auto out_shape = PrimOp::InferShape(new_inputs, attrs)[0];
-    // just reuse the `batch` vector
-    (void)batch.insert(batch.end(), out_shape.begin(), out_shape.end());
-    return {batch};
+  DShape rev_shape[kDim2] = {inputs[0]->shape, inputs[1]->shape};
+  auto size = std::max(rev_shape[0].size(), rev_shape[1].size());
+  DShape output_shape(size);
+  for (size_t i = 0; i < kDim2; i++) {
+    std::reverse(rev_shape[i].begin(), rev_shape[i].end());
+    rev_shape[i].resize(size, 1);
   }
-  return PrimOp::InferShape(inputs, attrs);
+  for (size_t i = kMatMulRank; i < size; i++) {
+    if (rev_shape[0][i] != 1 && rev_shape[1][i] != 1) {
+      MS_LOG(EXCEPTION) << "The Matmul's batch dim is unmatched. got " << inputs[0]->shape << " and "
+                        << inputs[1]->shape;
+    }
+    output_shape[i] = std::max(rev_shape[0][i], rev_shape[1][i]);
+  }
+  auto tranA = GetValue<bool>(attrs.at(kTransposeA));
+  auto tranB = GetValue<bool>(attrs.at(kTransposeB));
+  output_shape[1] = tranA ? rev_shape[0][0] : rev_shape[0][1];
+  output_shape[0] = tranB ? rev_shape[1][1] : rev_shape[1][0];
+
+  std::reverse(output_shape.begin(), output_shape.end());
+
+  if (inputs.size() > kSizeTwo &&
+      (inputs[kSizeTwo]->shape.size() != 1 || inputs[kSizeTwo]->shape[0] != output_shape.back())) {
+    MS_LOG(EXCEPTION) << "The MatmulBiasAdd's shape is unmatched. got " << output_shape << " and "
+                      << inputs[kSizeTwo]->shape;
+  }
+  return {output_shape};
 }
 
 std::vector<TypeId> MatMulOp::InferType(const NodePtrList &inputs, const DAttrs &attrs) {

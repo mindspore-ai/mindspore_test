@@ -21,8 +21,8 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/chunk.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace ops {
@@ -62,6 +62,11 @@ INSTANTIATE_TEST_CASE_P(
       {3, 3}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(0), {{2, 3}, {1, 3}}, {kFloat32, kFloat32}},
     ChunkParams{
       {-1, 2}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(1), {{-1, 1}, {-1, 1}}, {kFloat32, kFloat32}},
-    ChunkParams{{2, -1}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(0), {{2, -1}}, {kFloat32}}));
+    ChunkParams{
+      {2, -1}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(0), {{2, -1}}, {kFloat32}},
+    ChunkParams{
+      {4, 0}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(0), {{2, 0}, {2, 0}}, {kFloat32, kFloat32}},
+    ChunkParams{
+      {4, 0}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(1), {{4, 0}, {4, 0}}, {kFloat32, kFloat32}}));
 }  // namespace ops
 }  // namespace mindspore

@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import context, Tensor, jit, JitConfig
+from mindspore import context, Tensor, jit
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -44,7 +44,7 @@ def tanh_grad_forward_func(y, dy):
 
 @test_utils.run_with_cell
 def tanh_grad_backward_func(y, dy):
-    return ms.ops.grad(tanh_grad_forward_func, (0, 1))(y, dy)
+    return ms.ops.grad(tanh_grad_forward_func, (0, 1))(y, dy)  # pylint: disable=not-callable
 
 
 @test_utils.run_with_cell
@@ -265,10 +265,10 @@ def test_tanh_grad_forward_static_shape(mode):
         output = tanh_grad_forward_func(y_tensor, dy_tensor)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(tanh_grad_forward_func, jit_config=JitConfig(jit_level="O0")))(y_tensor, dy_tensor)
+        output = (jit(tanh_grad_forward_func, jit_level="O0"))(y_tensor, dy_tensor)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(tanh_grad_forward_func, jit_config=JitConfig(jit_level="O2")))(y_tensor, dy_tensor)
+        output = (jit(tanh_grad_forward_func, backend="GE"))(y_tensor, dy_tensor)
 
     expect = generate_expect_forward_output(y_np, dy_np, np.float32)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
@@ -292,10 +292,10 @@ def test_tanh_grad_backward_static_shape(mode):
         output = tanh_grad_backward_func(y_tensor, dy_tensor)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(tanh_grad_backward_func, jit_config=JitConfig(jit_level="O0")))(y_tensor, dy_tensor)
+        output = (jit(tanh_grad_backward_func, jit_level="O0"))(y_tensor, dy_tensor)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(tanh_grad_backward_func, jit_config=JitConfig(jit_level="O2")))(y_tensor, dy_tensor)
+        output = (jit(tanh_grad_backward_func, backend="GE"))(y_tensor, dy_tensor)
 
     expect = generate_expect_backward_output(y_np, dy_np, np.float32)
     assert np.allclose(output[0].asnumpy(), expect[0], rtol=1e-4, atol=1e-4)

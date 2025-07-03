@@ -23,16 +23,16 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> SilentCheckV2AscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &val, const BaseTensorPtr &input_grad,
-  const BaseTensorPtr &sfda, const BaseTensorPtr &step, const Int64ImmPtr &c_min_steps_ptr,
-  const FloatImmPtr &c_thresh_l1_ptr, const FloatImmPtr &c_coeff_l1_ptr, const FloatImmPtr &c_thresh_l2_ptr,
-  const FloatImmPtr &c_coeff_l2_ptr, const Int64ImmPtr &npu_asd_detect_ptr);
+std::vector<tensor::TensorPtr> SilentCheckV2AscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &val, const TensorPtr &input_grad, const TensorPtr &sfda,
+  const TensorPtr &step, const Int64ImmPtr &c_min_steps_ptr, const FloatImmPtr &c_thresh_l1_ptr,
+  const FloatImmPtr &c_coeff_l1_ptr, const FloatImmPtr &c_thresh_l2_ptr, const FloatImmPtr &c_coeff_l2_ptr,
+  const Int64ImmPtr &npu_asd_detect_ptr);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

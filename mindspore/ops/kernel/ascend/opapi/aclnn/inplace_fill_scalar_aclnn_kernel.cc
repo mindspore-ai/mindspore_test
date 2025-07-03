@@ -20,15 +20,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_fill_scalar {
 
 void InplaceFillScalarAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  auto value = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  auto value = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
 
   GetWorkspaceForResize(inputs[kIndex0], value);
 }
@@ -37,12 +38,13 @@ bool InplaceFillScalarAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &workspace,
                                      const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto value = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  auto value = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], value);
   return true;
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceFillScalar, InplaceFillScalarAscend);
+}  // namespace inplace_fill_scalar
 }  // namespace kernel
 }  // namespace mindspore

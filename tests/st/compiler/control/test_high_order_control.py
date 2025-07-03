@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test high order control flow """
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype
@@ -25,8 +25,7 @@ import numpy as np
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_high_control_while():
     """
     Feature: High-order differential function.
@@ -48,8 +47,7 @@ def test_high_control_while():
     assert order_grad == 0.0
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_high_control_for_while():
     """
     Feature: High-order differential function.
@@ -84,8 +82,7 @@ def test_high_control_for_while():
     assert result == 0.0
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_high_control_for_complex():
     """
     Feature: High-order differential function.
@@ -151,8 +148,7 @@ def test_high_control_for_complex():
     assert sgrad == 0.0
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_partial_graph_not_use():
     """
     Feature: High-order grad.

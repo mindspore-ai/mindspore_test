@@ -29,9 +29,6 @@ bool SvdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std:
     return false;
   }
   launch_kernel_func_ = func_list_[index].second;
-  compute_uv_ = GetValue<bool>(primitive_->GetAttr("compute_uv"));
-  full_matrices_ = GetValue<bool>(primitive_->GetAttr("full_matrices"));
-  job_ = compute_uv_ ? (full_matrices_ ? 'A' : 'S') : 'N';
   handle_ = device::gpu::GPUDeviceManager::GetInstance().GetCusolverDnHandle();
   return true;
 }
@@ -41,6 +38,10 @@ int SvdGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
     return ret;
   }
   auto input_shape = inputs[kIndex0]->GetShapeVector();
+  full_matrices_ = inputs[kIndex1]->GetValueWithCheck<bool>();
+  compute_uv_ = inputs[kIndex2]->GetValueWithCheck<bool>();
+  job_ = compute_uv_ ? (full_matrices_ ? 'A' : 'S') : 'N';
+
   input_shape_ = Convert2SizeTClipNeg(input_shape);
   total_size_ = std::accumulate(input_shape_.begin(), input_shape_.end(), size_t(1), std::multiplies<size_t>());
   dims_ = input_shape_.size();
@@ -51,9 +52,7 @@ int SvdGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
   m_ = input_shape_[dims_ - kDim2];
   n_ = input_shape_[dims_ - kDim1];
   p_ = std::min(m_, n_);
-  if (m_ >= n_) {
-    m_ge_n_ = true;
-  }
+  m_ge_n_ = m_ >= n_ ? true : false;
   batch_size_ = 1;
   for (size_t i = 0; i < dims_ - kDim2; i++) {
     batch_size_ = batch_size_ * input_shape_[i];
@@ -61,6 +60,8 @@ int SvdGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std
   constexpr auto kBatchedMaxRowCol = 32;
   if (m_ <= kBatchedMaxRowCol && n_ <= kBatchedMaxRowCol && batch_size_ > 1 && (full_matrices_ || m_ == n_)) {
     batched_ = true;
+  } else {
+    batched_ = false;
   }
   unit_size_ = abstract::TypeIdSize(inputs.at(kIndex0)->dtype_id());
   ResetResource();
@@ -303,12 +304,16 @@ bool SvdGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 std::vector<std::pair<KernelAttr, SvdGpuKernelMod::LaunchKernelFunc>> SvdGpuKernelMod::func_list_ = {
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
    &SvdGpuKernelMod::LaunchKernel<float>},
   {KernelAttr()
      .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64),

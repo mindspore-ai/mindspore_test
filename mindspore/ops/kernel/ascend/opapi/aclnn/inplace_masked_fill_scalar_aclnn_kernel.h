@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_masked_fill_scalar {
 
 class InplaceMaskedFillScalarAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class InplaceMaskedFillScalarAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_masked_fill_scalar
 }  // namespace kernel
 }  // namespace mindspore
 

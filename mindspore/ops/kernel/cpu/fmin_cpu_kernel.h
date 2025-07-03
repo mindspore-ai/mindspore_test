@@ -22,11 +22,12 @@
 #include <utility>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fmin_cpu {
 class FminCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<FminCpuKernelMod> {
  public:
   FminCpuKernelMod() = default;
@@ -85,6 +86,7 @@ class FminCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Fmi
   std::vector<int64_t> broadcast_output_shape_;
   const size_t max_dims_{7};
 };
+}  // namespace fmin_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

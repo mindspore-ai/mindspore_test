@@ -21,6 +21,8 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     AicoreMetrics,
     ProfilerActivity,
+    ExportType,
+    HostSystem
 )
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
 
@@ -104,10 +106,14 @@ class EnvProfiler:
         for param, (_, default_value) in ProfilerParameters.PARAMS.items():
             if param in options and param not in cls.NOT_SUPPORTED_PARAMS:
                 if param == "activities" and isinstance(options[param], list):
-                    params[param] = cls._convert_activities_to_list(
-                        options[param], default_value
+                    params[param] = cls._convert_enums_to_list(
+                        options[param], default_value, ProfilerActivity
                     )
-                elif param == "aicore_metrics":
+                elif param == "host_sys" and isinstance(options[param], list):
+                    params[param] = cls._convert_enums_to_list(
+                        options[param], default_value, HostSystem
+                    )
+                elif param == "aic_metrics":
                     params[param] = cls._convert_option_to_enum_value(
                         AicoreMetrics, options[param], default_value
                     )
@@ -115,24 +121,48 @@ class EnvProfiler:
                     params[param] = cls._convert_option_to_enum_value(
                         ProfilerLevel, options[param], default_value
                     )
+                elif param == "export_type":
+                    params[param] = cls._convert_export_type_to_list(
+                        options[param], default_value
+                    )
                 else:
                     params[param] = options[param]
         return params
 
     @classmethod
-    def _convert_activities_to_list(cls, activities, default_value):
+    def _convert_enums_to_list(cls, values, default_value, enum_class):
         """
-        Convert the activities to the list.
+        Convert the enums to the list.
         """
         res = []
-        for activity in activities:
+        for value in values:
             res.append(
                 cls._convert_option_to_enum_value(
-                    ProfilerActivity, activity, default_value
+                    enum_class, value, default_value
                 )
             )
         # remove duplicate
         return list(set(default_value if default_value in res else res))
 
+    @classmethod
+    def _convert_export_type_to_list(cls, export_types, default_value) -> list:
+        """
+        Check the export type to the list.
+        """
+        res = []
+        for export_type in export_types:
+            if export_type not in ("text", "db"):
+                logger.warning(
+                    f"The value '{export_type}' of parameter '{ExportType.__name__}' is invalid, "
+                    f"use default value '{default_value}' instead."
+                )
+                return default_value
+            res.append(
+                cls._convert_option_to_enum_value(
+                    ExportType, export_type, default_value
+                )
+            )
+        # remove duplicate
+        return list(set(res))
 
 EnvProfiler.init_profiler()

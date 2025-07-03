@@ -20,11 +20,12 @@
 #include <utility>
 #include <memory>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nextafter_cpu {
 class NextAfterCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<NextAfterCpuKernelMod> {
  public:
   NextAfterCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class NextAfterCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelpe
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace nextafter_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

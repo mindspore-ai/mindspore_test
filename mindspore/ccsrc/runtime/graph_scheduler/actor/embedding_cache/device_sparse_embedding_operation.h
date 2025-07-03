@@ -21,7 +21,7 @@
 #include <vector>
 #include <utility>
 #include "runtime/graph_scheduler/actor/embedding_cache/device_embedding_operation.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace runtime {

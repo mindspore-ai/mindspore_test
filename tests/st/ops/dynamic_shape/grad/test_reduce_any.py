@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 from mindspore import nn
 from mindspore.ops import operations as P
 from mindspore import context
@@ -43,7 +42,7 @@ def test_dynamic_reduceany_shape():
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     test_dynamic = TestDynamicGrad(NetReduceAny())
-    x = Tensor(np.random.randn(3, 4, 5).astype(np.bool))
+    x = Tensor(np.random.randn(3, 4, 5).astype(np.bool_))
     test_dynamic.test_dynamic_grad_net(x)
 
 
@@ -57,5 +56,5 @@ def test_dynamic_reduceany_rank():
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     test_dynamic = TestDynamicGrad(NetReduceAny())
-    x = Tensor(np.random.randn(3, 4, 5).astype(np.bool))
+    x = Tensor(np.random.randn(3, 4, 5).astype(np.bool_))
     test_dynamic.test_dynamic_grad_net(x, True)

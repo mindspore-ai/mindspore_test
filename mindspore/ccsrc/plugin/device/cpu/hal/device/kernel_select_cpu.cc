@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -33,13 +33,16 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/op_def/random_op_name.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/cpu/custom/custom_aot_cpu_kernel.h"
-#include "kernel/cpu/custom/custom_julia_cpu_kernel.h"
-#include "kernel/cpu/pyfunc/py_func_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/custom/custom_julia_cpu_kernel.h"
+#include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
+#include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace device {
@@ -325,7 +328,7 @@ void SetKernelBuildInfoWithSelectedAttr(const CNodePtr &kernel_node, const kerne
     MS_EXCEPTION_IF_NULL(kernel_build_info);
     kernel_build_info->SetOpType(kernel::OpType::SKIP);
   }
-  kernel::SetKernelObjectTypeWithSelectedAttr(kernel_node, selected_kernel_attr);
+  AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, selected_kernel_attr);
   kernel::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
     kernel::SetDynamicInputSizeAttr(kernel_node);
@@ -448,7 +451,7 @@ void UpdateDynamicKernelBuildInfo(const CNodePtr &kernel_node) {
 
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
-  kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
+  AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
   kernel::UnfoldKernelBuildInfo(kernel_node);
   if (!common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, kernel_node)) {
     kernel::SetDynamicInputSizeAttr(kernel_node);
@@ -537,7 +540,7 @@ void UpdateCustomKernelBuildInfo(const CNodePtr &kernel_node, bool is_akg_op) {
   auto input_object_types = kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllInputObjectType(kernel_node));
   auto output_object_types =
     kernel::TypeIdToKernelObjectTypeForTupleUnfold(AnfAlgo::GetAllOutputObjectType(kernel_node));
-  kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
+  AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types);
 
   // check reg info if kernel_attr is not null
   if (kernel_attr != nullptr) {
@@ -677,6 +680,9 @@ void SetCustomOpKernelInfo(const std::string &custom_op_type, const std::string 
   } else if (custom_op_type == kCustomTypeJULIA) {
     kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<kernel::CustomJULIACpuKernelMod>(); });
+  } else if (custom_op_type == kCustomTypeOPPlugin) {
+    kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
+      op_name, []() { return std::make_shared<kernel::CustomOpPluginCpuKernelMod>(); });
   } else {
     MS_LOG(EXCEPTION) << "Unsupported func type for Custom operator on CPU, it should be "
                       << "'hybrid', 'akg', 'pyfunc' or 'aot' or 'julia', "
@@ -732,10 +738,16 @@ std::pair<std::string, ExceptionType> SetKernelInfoWithMsg(const CNodePtr &kerne
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
   const auto &kernel_attrs = kernel::NativeCpuKernelMod::GetCpuSupportedList(op_name);
   if (kernel_attrs.empty()) {
+    if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+      // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
+      SetCustomOpKernelInfo(kCustomTypeOPPlugin, op_name);
+      UpdateCustomKernelBuildInfo(kernel_node, false);
+      return {};
+    }
     return KernelNotSupportWarning(kernel_node, false);
   } else if (kernel_attrs[0].GetSkipCheck()) {
     object_selected_kernel_attrs = kernel_attrs;
-  } else if (!kernel::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
+  } else if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
     return kernel::KernelObjectTypeNotSupportWarning(kernel_node);
   }
 

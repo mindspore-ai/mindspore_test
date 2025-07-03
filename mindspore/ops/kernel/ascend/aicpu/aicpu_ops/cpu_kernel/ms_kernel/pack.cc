@@ -28,7 +28,6 @@ namespace {
 const uint32_t kOutputNum{1u};
 const uint32_t kInputNum{aicpu::kDynamicInput};
 const char *kPack = "Pack";
-// constexpr int64_t kParallelDataNums = 512 * 1024;
 
 #define PACK_COMPUTE_CASE(DTYPE, TYPE, CTX)                      \
   case (DTYPE): {                                                \

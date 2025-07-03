@@ -33,6 +33,11 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #endif
 
 namespace mindspore {
@@ -161,8 +166,14 @@ AnfNodePtr CreateReplacedOutputNode(const FuncGraphPtr &func_graph, const AnfNod
       if (!tensor_abstract) {
         MS_LOG_WITH_NODE(EXCEPTION, tuple_input) << "Only support to replace tuple with all tensor elements.";
       }
-      auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
-                                                          tensor_abstract->shape()->shape());
+      auto tensor_abstract_element = tensor_abstract->element();
+      MS_EXCEPTION_IF_NULL(tensor_abstract_element);
+      auto tensor_abstract_element_build_type = tensor_abstract_element->BuildType();
+      MS_EXCEPTION_IF_NULL(tensor_abstract_element_build_type);
+      auto tensor_abstract_shape = tensor_abstract->shape();
+      MS_EXCEPTION_IF_NULL(tensor_abstract_shape);
+      auto fake_tensor =
+        std::make_shared<tensor::Tensor>(tensor_abstract_element_build_type->type_id(), tensor_abstract_shape->shape());
       MS_EXCEPTION_IF_NULL(fake_tensor);
       auto fake_value_node = NewValueNode(fake_tensor);
       MS_EXCEPTION_IF_NULL(fake_value_node);
@@ -917,6 +928,7 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
     new_node_inputs[i] = func_graph_->NewCNode(mock_node_inputs);
     MS_EXCEPTION_IF_NULL(new_node_inputs[i]);
     new_node_inputs[i]->set_abstract(real_input->abstract());
+    MS_EXCEPTION_IF_NULL(new_node_inputs[i]->cast<CNodePtr>());
     new_node_inputs[i]->cast<CNodePtr>()->set_fullname_with_scope(real_input->fullname_with_scope());
 
     // Set operator label for new node's inputs.
@@ -947,10 +959,13 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
     common::AnfAlgo::SetNodeAttr("n", MakeValue(static_cast<int64_t>(total_inputs_number)), new_node);
     new_node->set_abstract(real_input->abstract());
   } else if (many_to_one_node_name == kConcatOpName) {
+    MS_EXCEPTION_IF_NULL(real_input->abstract());
     auto origin_abs = real_input->abstract()->cast<abstract::AbstractTensorPtr>();
     MS_EXCEPTION_IF_NULL(origin_abs);
 
     auto new_abs = origin_abs->Clone()->cast<abstract::AbstractTensorPtr>();
+    MS_EXCEPTION_IF_NULL(new_abs);
+    MS_EXCEPTION_IF_NULL(new_abs->shape());
     ShapeVector new_shape = new_abs->shape()->shape();
     new_shape[0] = new_shape[0] * static_cast<int64_t>(total_inputs_number);
     new_abs->shape()->set_shape(new_shape);
@@ -1131,6 +1146,7 @@ CNodePtr ParameterServerMode::FuseRpcRecvNodes(const std::vector<CNodePtr> &rpc_
   ValuePtr monad_value = kUMonad;
   auto monad_input = NewValueNode(monad_value);
   MS_EXCEPTION_IF_NULL(monad_input);
+  MS_EXCEPTION_IF_NULL(monad_value);
   monad_input->set_abstract(monad_value->ToAbstract());
   recv_inputs.push_back(monad_input);
 
@@ -1427,6 +1443,7 @@ OperatorLabel GraphSplitter::RecursiveSetTupeGetItemLabel(const CNodePtr &tuple_
     if (NodeHasLabel(tuple_get_item_node)) {
       return node_labels_[tuple_get_item_node];
     } else {
+      MS_EXCEPTION_IF_NULL(tuple_get_item_node);
       MS_LOG_WITH_NODE(EXCEPTION, tuple_get_item_node)
         << "TupeGetItem node " << tuple_get_item_node->fullname_with_scope() << " has no lebel.";
     }
@@ -1655,6 +1672,7 @@ void GraphSplitter::AddControlEdgeForProcessWithoutIndegree() {
     node_labels_[tuple_of_control_dst_nodes] = default_label_;
 
     // Add dependency to the Return node so control-edge nodes won't be optimized out.
+    MS_EXCEPTION_IF_NULL(func_graph_->output());
     AnfNodePtrList depend_inputs = {NewValueNode(prim::kPrimDepend), func_graph_->output(), tuple_of_control_dst_nodes};
     auto final_output_node = func_graph_->NewCNode(depend_inputs);
     MS_EXCEPTION_IF_NULL(final_output_node);
@@ -2051,6 +2069,7 @@ void GraphSplitter::AddDependencyBetweenSegments(const InOutDegreeList &in_out_d
         // Connect fused send nodes to the output so they will not be optimized out.
         AnfNodePtr origin_output = func_graph_->output();
         if (node_labels_.count(origin_output) == 0) {
+          MS_EXCEPTION_IF_NULL(origin_output);
           MS_LOG_WITH_NODE(EXCEPTION, origin_output)
             << "The origin output node " << origin_output->fullname_with_scope()
             << " should have corresponding operator label.";
@@ -2068,12 +2087,14 @@ void GraphSplitter::AddDependencyBetweenSegments(const InOutDegreeList &in_out_d
         std::vector<AnfNodePtr> depend_inputs = {NewValueNode(prim::kPrimDepend), replaced_output, make_tuple_node};
         auto final_output_node = func_graph_->NewCNode(depend_inputs);
         MS_EXCEPTION_IF_NULL(final_output_node);
+        MS_EXCEPTION_IF_NULL(replaced_output);
         final_output_node->set_abstract(replaced_output->abstract());
         (void)func_graph_->manager()->SetEdge(func_graph_->get_return(), 1, final_output_node);
       }
     } else {
       auto make_tuple_node = func_graph_->NewCNode(send_node_tuple_inputs);
       for (auto &recv : concerned_out_degree_nodes) {
+        MS_EXCEPTION_IF_NULL(recv->cast<CNodePtr>());
         std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), recv->cast<CNodePtr>()->inputs()[1],
                                                 make_tuple_node};
         auto depend = func_graph_->NewCNode(depend_input);
@@ -2135,12 +2156,14 @@ void GraphSplitter::ReplaceOriginNodesWithRecv(const FusedInterProcessOpPairMap 
         const auto &recv_abs = fused_recv_node->abstract();
         MS_EXCEPTION_IF_NULL(recv_abs);
         // The outputs of a Recv node could be a tuple or a single tensor because it could be fused.
+        auto func_graph_manager = func_graph_->manager();
+        MS_EXCEPTION_IF_NULL(func_graph_manager);
         if (recv_abs->isa<abstract::AbstractTuple>()) {
           int output_index = std::get<2>(send_recv_pair);
           CNodePtr tuple_get_item_node = CreateTupleGetItemNode(func_graph_, fused_recv_node, IntToSize(output_index));
-          func_graph_->manager()->SetEdge(user_node, user_node_index, tuple_get_item_node);
+          func_graph_manager->SetEdge(user_node, user_node_index, tuple_get_item_node);
         } else {
-          func_graph_->manager()->SetEdge(user_node, user_node_index, fused_recv_node);
+          func_graph_manager->SetEdge(user_node, user_node_index, fused_recv_node);
         }
       }
     }
@@ -2155,6 +2178,9 @@ void GraphSplitter::AddSendRecvDependency(const InterProcessOpEdgesInfo &in_degr
   for (const auto &in_edge : in_degree_comm_edges) {
     const auto &rpc_recv_node = std::get<1>(in_edge.second);
     const auto &recv_dst_node = std::get<2>(in_edge.second);
+    MS_EXCEPTION_IF_NULL(rpc_recv_node);
+    MS_EXCEPTION_IF_NULL(recv_dst_node);
+
     MS_LOG(DEBUG) << "Add dependency for RpcRecv node " << rpc_recv_node->fullname_with_scope()
                   << " with recv dst node " << recv_dst_node->fullname_with_scope();
     AnfNodePtrSet depended_nodes;
@@ -2222,6 +2248,7 @@ void GraphSplitter::AddDependencyForSend(const FusedInterProcessOpPairMap &fused
 
   // Connect fused send nodes to the output so they will not be optimized out.
   AnfNodePtr origin_output = func_graph_->output();
+  MS_EXCEPTION_IF_NULL(origin_output);
   if (node_labels_.count(origin_output) == 0) {
     MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "The origin output node " << origin_output->fullname_with_scope()
                                                << " should have corresponding operator label.";

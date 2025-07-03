@@ -21,7 +21,7 @@ import mindspore
 import mindspore.numpy as mnp
 from mindspore import ops
 from mindspore.common import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr, _primexpr
@@ -141,6 +141,8 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
     the generated prefix is a Tensor([[[0], [0]],
                                       [[1], [1]]])
     """
+    cast_op = P.Cast()
+
     def _check(indices_shape):
         if not indices_shape:
             raise ValueError("indices_shape is empty in _get_prefix.")
@@ -148,8 +150,8 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
     _check(indices_shape)
     indices_len = len(indices_shape)
     if indices_len == 1:
-        prefix = P.Range()(Tensor(0, indices_dtype), Tensor(axis_size, indices_dtype), Tensor(1, indices_dtype))
-        return prefix
+        prefix = P.Range()(0, axis_size, 1)
+        return cast_op(prefix, indices_dtype)
 
     indices_end = indices_len - 1
     prefix_shape = ()
@@ -164,9 +166,8 @@ def _get_prefix(indices_shape, axis_size, indices_dtype):
         else:
             expand_shape = expand_shape + (1,)
 
-    prefix = P.BroadcastTo(prefix_shape)(P.Reshape()(P.Range()(Tensor(
-        0, indices_dtype), Tensor(axis_size, indices_dtype), Tensor(1, indices_dtype)), expand_shape))
-    return prefix
+    prefix = P.BroadcastTo(prefix_shape)(P.Reshape()(P.Range()(0, axis_size, 1), expand_shape))
+    return cast_op(prefix, indices_dtype)
 
 
 @vmap_rules_getters.register(P.Transpose)
@@ -209,6 +210,31 @@ def get_transpose_vmap_rule(prim, axis_size):
         batch_perm = _get_transpose_batch_perm(dim, perm, x_rank)
         out = prim(x, batch_perm)
         return out, 0
+
+    return vmap_rule
+
+
+@vmap_rules_getters.register("TransposeExtView")
+def get_transpose_ext_vmap_rule(prim, axis_size):
+    """VmapRule for `TransposeExtView` operation."""
+    if isinstance(prim, str):
+        prim = Primitive(prim)
+
+    def vmap_rule(x_bdim, dim1_bdim, dim2_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, x_bdim, dim1_bdim, dim2_bdim)
+        if is_all_none:
+            return result
+
+        x, dim = x_bdim
+        dim1, dim1_dim = dim1_bdim
+        dim2, dim2_dim = dim2_bdim
+        if dim1_dim is not None or dim2_dim is not None:
+            _raise_value_error("The source axis of dim1_dim and dim2_dim in `TransposeExtView` must be None, "
+                               "but got {} and {}.".format(dim1_dim, dim2_dim))
+        batch_dim1 = dim1 if dim1 < dim else dim1 + 1
+        batch_dim2 = dim2 if dim2 < dim else dim2 + 1
+        out = prim(x, batch_dim1, batch_dim2)
+        return out, dim
 
     return vmap_rule
 
@@ -1501,14 +1527,13 @@ def get_meshgrid_vmap_rule(prim, axis_size):
 
         if not isinstance(inputs_bdim, (tuple)):
             _raise_value_error("The inputs of P.Meshgrid is not tuple.")
-        args = inputs_bdim
-        if len(args) <= 1:
+        if len(inputs_bdim) <= 1:
             _raise_value_error(
                 "The input number of P.Meshgrid must be greater than 1.")
 
         output_shape = []
         ones_shape = []
-        for each_arg in args:
+        for each_arg in inputs_bdim:
             x, bdim = each_arg
             if bdim is None:
                 _raise_value_error(
@@ -1522,22 +1547,16 @@ def get_meshgrid_vmap_rule(prim, axis_size):
         output_shape.insert(0, axis_size)
         ones_shape.insert(0, axis_size)
 
-        indexing, _ = indexing_bdim
-
-        if indexing == Indexing.xy.value:
+        if indexing_bdim[0] == Indexing.xy.value:
             output_shape[1], output_shape[2] = output_shape[2], output_shape[1]
-        shape = tuple(output_shape)
-
-        input_0, _ = args[0]
-        dtype = F.dtype(input_0)
-        ones_tensor = F.fill(dtype, shape, 1)
+        ones_tensor = F.fill(F.dtype(inputs_bdim[0][0]), tuple(output_shape), 1)
 
         index = 0
         vals_out_tuple = ()
-        for each_arg in args:
+        for each_arg in inputs_bdim:
             x, bdim = each_arg
             x = _bdim_at_front(x, bdim, axis_size)
-            shape_index = (1 - index) if (index <= 1 and indexing == Indexing.xy.value) else index
+            shape_index = (1 - index) if (index <= 1 and indexing_bdim[0] == Indexing.xy.value) else index
             ones_shape[shape_index + 1] = output_shape[shape_index + 1]
             x = P.Reshape()(x, tuple(ones_shape))
             output = P.Mul()(x, ones_tensor)

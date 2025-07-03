@@ -7,32 +7,17 @@ cosh:
             out_i = \cosh(input_i)
     
         Args:
-            input (Tensor): The input tensor of hyperbolic cosine function.
-                Supported dtypes: 
+            input (Tensor): The input tensor.
 
-                - GPU/CPU: float16, float32, float64, complex64 or complex128.
-                - Ascend: bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128 or bfloat16.
-    
         Returns:
-            Tensor, has the same shape as `input`.
-    
-        :raise TypeError: If `input` is not a Tensor.
-        :raise TypeError:
-            * CPU/GPU: If dtype of `input` is not float16, float32 or float64, complex64, complex128.
-            * Ascend: If dtype of `input` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128 or bfloat16.
-    
+            Tensor
+
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> x = Tensor(np.array([0.24, 0.83, 0.31, 0.09]), mindspore.float32)
-            >>> output = ops.cosh(x)
+            >>> input = mindspore.tensor([0.74, 0.04, 0.30, 0.56])
+            >>> output = mindspore.ops.cosh(input)
             >>> print(output)
-            [1.0289385 1.364684 1.048436 1.0040528]
-            >>> x = Tensor(2.1, mindspore.float32)
-            >>> output = ops.cosh(x)
-            >>> print(output)
-            4.144313
+            [1.2865248 1.0008001 1.0453385 1.1609408]

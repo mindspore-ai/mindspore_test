@@ -17,10 +17,11 @@
 #include "kernel/cpu/maximum_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -275,5 +276,6 @@ const std::vector<std::pair<KernelAttr, MaximumCpuKernelMod::KernelRunFunc>> &Ma
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Maximum, MaximumCpuKernelMod);
+}  // namespace maximum_cpu
 }  // namespace kernel
 }  // namespace mindspore

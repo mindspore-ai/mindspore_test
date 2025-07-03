@@ -18,15 +18,12 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_posterize_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomPosterizeOperation
 RandomPosterizeOperation::RandomPosterizeOperation(const std::vector<uint8_t> &bit_range)
     : TensorOperation(true), bit_range_(bit_range) {}
@@ -84,7 +81,6 @@ Status RandomPosterizeOperation::from_json(nlohmann::json op_params, std::shared
   *operation = std::make_shared<vision::RandomPosterizeOperation>(bit_range);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

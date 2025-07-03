@@ -376,7 +376,7 @@ class TestAmpNet(ms.nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('amp_level', ["O1", "O2", "O3"])
 def test_amp_bfloat16(amp_level):
     """
@@ -403,7 +403,7 @@ def test_amp_bfloat16(amp_level):
     allclose_nparray(out_graph.asnumpy(), out_pynative.asnumpy(), 0.001, 0.001)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_custom_mixed_precision_bfloat16():
     """
     Feature: to_float

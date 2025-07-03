@@ -3,24 +3,19 @@ mindspore.ops.add
 
 .. py:function:: mindspore.ops.add(input, other)
 
-    把other的数值与input进行逐元素相加。
+    逐元素计算两个输入tensor的和。
 
     .. math::
 
         out_{i} = input_{i} + other_{i}
 
     .. note::
-        - 两个输入中至少有一个Tensor，当两个输入具有不同的shape时，它们的shape必须要能广播为一个共同的shape。
         - 两个输入不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
-        - 两个输入遵循隐式类型转换规则，使数据类型保持一致。
-        - 当输入为Tensor的时候，维度应大于等于1。
+        - 支持广播，支持隐式类型转换、类型提升。
+        - 当输入为tensor时，维度应大于等于1。
 
     参数：
-        - **input** (Union[Tensor, number.Number, bool]) - 第一个输入，是一个number.Number、bool值或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
-        - **other** (Union[Tensor, number.Number, bool]) - 第二个输入，是一个number.Number、bool值或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
-
+        - **input** (Union[Tensor, number.Number, bool]) - 第一个输入tensor。
+        - **other** (Union[Tensor, number.Number, bool]) - 第二个输入tensor。
     返回：
-        Tensor，shape与输入 `input`，`other` 广播后的shape相同，数据类型为两个输入中精度较高的类型。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 不是Tensor、number.Number或bool。
+        Tensor

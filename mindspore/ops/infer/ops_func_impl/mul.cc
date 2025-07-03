@@ -21,6 +21,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::ops {
 BaseShapePtr MulFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -37,10 +38,21 @@ TypePtr MulFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
 }
 
 TypePtrList MulFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &input_type = x_tensor->Dtype();
-  return {input_type};
+  MS_EXCEPTION_IF_NULL(y_tensor);
+  const auto &x_dtype = x_tensor->Dtype();
+  const auto &y_dtype = y_tensor->Dtype();
+
+  if (MS_UNLIKELY(x_dtype->type_id() != y_dtype->type_id())) {
+    auto output_dtype = PromoteType(x_dtype, y_dtype, primitive->name());
+    MS_LOG(DEBUG) << "For Mul, 'x' and 'y' have different dtypes with " << TypeIdToString(x_dtype->type_id()) << " and "
+                  << TypeIdToString(y_dtype->type_id()) << ", output dtype will be promoteType "
+                  << TypeIdToString(output_dtype->type_id()) << ". This happens when data_group is invalid.";
+    return {output_dtype};
+  }
+  return {x_tensor->Dtype()};
 }
 ShapeArray MulFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   return {BroadCastInferShape(primitive->name(), input_values)};

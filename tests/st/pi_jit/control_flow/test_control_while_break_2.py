@@ -5,13 +5,6 @@ import mindspore.ops.operations as P
 from mindspore import context, jit
 from ..share.utils import allclose_nparray
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlWhile2ElifBreakInIf(Cell):
@@ -43,7 +36,7 @@ def test_control_flow_while_2elif_break_in_if():
     '''
     x = [1, 2, 3]
     context.set_context(mode=context.GRAPH_MODE)
-    jit(fn=CtrlWhile2ElifBreakInIf.construct, mode="PSJit")
+    jit(function=CtrlWhile2ElifBreakInIf.construct, capture_mode="ast")
     ps_net = CtrlWhile2ElifBreakInIf()
     ps_out = ps_net(Tensor(x, dtype.float32))
     pi_net = CtrlWhile2ElifBreakInIf()

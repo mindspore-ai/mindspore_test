@@ -17,7 +17,7 @@
 import os
 import pytest
 import mindspore as ms
-from mindspore import nn
+from mindspore import nn, context
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
@@ -36,6 +36,7 @@ def test_dict_in_cell():
     Description: Test jit_syntax_level for nn.cell.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def construct(self):
             return {"a": 1}
@@ -64,11 +65,11 @@ def test_dict_in_function():
         return {"a": 1}
 
     os.unsetenv("MS_DEV_JIT_SYNTAX_LEVEL")
-    func1 = ms.jit(fn=func, jit_config=jit_config_strict)
+    func1 = ms.jit(function=func, backend="ms_backend", fullgraph=True)
     out1 = func1()
     assert isinstance(out1, tuple)
 
-    func2 = ms.jit(fn=func, jit_config=jit_config_compatible)
+    func2 = ms.jit(function=func, backend="ms_backend")
     out2 = func2()
     assert isinstance(out2, dict)
 
@@ -136,21 +137,20 @@ def test_custom_class_in_function():
     def func(x):
         return cls.func(x)
 
-    os.unsetenv("MS_DEV_JIT_SYNTAX_LEVEL")
-    # The jit_syntax_level is LAX here due to ms.context.
-    ms.set_context(jit_syntax_level=ms.LAX)
-    func1 = ms.jit(fn=func)
+    reserved_env = os.getenv('MS_DEV_JIT_SYNTAX_LEVEL')
+    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+    # The jit_syntax_level is LAX here due to env.
+    func1 = ms.jit(function=func, fullgraph=True)
     x = ms.Tensor(2)
     assert func1(x) == 4
-
-    # JitConfig will override the jit_syntax_level of ms.context.
-    with pytest.raises(AttributeError):
-        func2 = ms.jit(fn=func, jit_config=jit_config_compatible)
-        func2(x)
 
     # Environment variable 'MS_DEV_JIT_SYNTAX_LEVEL' has the highest priority.
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
     with pytest.raises(AttributeError):
-        func3 = ms.jit(fn=func, jit_config=jit_config_lax)
+        func3 = ms.jit(function=func)
         func3(x)
-    os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_JIT_SYNTAX_LEVEL')
+    else:
+        os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = reserved_env

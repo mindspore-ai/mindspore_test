@@ -76,7 +76,7 @@ static std::vector<std::pair<int64_t, int64_t>> GetShapeRangesWithUnKnowConcatDi
   return output_shape_ranges;
 }
 
-bool JoinShapes(vector<int64_t> &dst_shape, const vector<int64_t> &src_shape, int64_t axis) {
+bool JoinShapes(std::vector<int64_t> &dst_shape, const std::vector<int64_t> &src_shape, int64_t axis) {
   if (dst_shape == src_shape) {
     return true;
   }
@@ -210,7 +210,7 @@ static graphStatus ConcatInferShapeCommon(Operator &op, const int64_t dy_input_s
     DataType input_dtype = input_x_desc[0].GetDataType();
     auto output_desc = op.GetOutputDesc(0);
     output_desc.SetDataType(input_dtype);
-    vector<int64_t> dimVector(dim_num, -1);
+    std::vector<int64_t> dimVector(dim_num, -1);
     output_desc.SetShape(ge::Shape(dimVector));
     auto output_shape_ranges = GetShapeRangesWithUnKnowConcatDim(op, num_concat);
     if (!output_shape_ranges.empty()) {
@@ -233,11 +233,11 @@ static graphStatus ConcatInferShapeCommon(Operator &op, const int64_t dy_input_s
     non_negative_axis += static_cast<int64_t>(dim_num);
   }
 
-  vector<int64_t> output_shape_dims;
+  std::vector<int64_t> output_shape_dims;
   for (const auto &desc : input_x_desc) {
     auto input_shape_dims = desc.GetShape().GetDims();
     if (!JoinShapes(output_shape_dims, input_shape_dims, non_negative_axis)) {
-      vector<vector<int64_t>> shapes = {output_shape_dims, input_shape_dims};
+      std::vector<std::vector<int64_t>> shapes = {output_shape_dims, input_shape_dims};
       std::string err_msg =
         OtherErrMsg(ConcatString("the input shape dims should be equal except merge axis,"
                                  "shapes:",
@@ -341,7 +341,7 @@ static graphStatus ConcatInputsVerify(const Operator &op) {
 IMPLEMT_VERIFIER(Concat, ConcatVerify) { return ConcatInputsVerify(op); }
 
 IMPLEMT_COMMON_INFERFUNC(ConcatInferShape) {
-  const vector<string> depend_names = {"concat_dim"};
+  const std::vector<string> depend_names = {"concat_dim"};
   PREPARE_DYNAMIC_SHAPE(depend_names);
 
   int64_t N;

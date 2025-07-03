@@ -39,7 +39,7 @@ class RandomShuffleNet(nn.Cell):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16,
-                                   np.uint32, np.uint64, np.bool, np.complex64, np.complex128,
+                                   np.uint32, np.uint64, np.bool_, np.complex64, np.complex128,
                                    np.float64, np.float32, np.float16])
 def test_random_shuffle_op_dtype(mode, dtype):
     """

@@ -26,12 +26,13 @@
 #include <map>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ger_cpu {
 class GerCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<GerCpuKernelMod> {
  public:
   GerCpuKernelMod() = default;
@@ -98,6 +99,7 @@ class GerCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<GerC
   size_t outdim_{1};
   const size_t max_dims_{7};
 };
+}  // namespace ger_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

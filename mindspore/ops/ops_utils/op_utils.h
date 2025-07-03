@@ -41,9 +41,6 @@
 #include "mindspore/core/include/ops/infer_info/infer_info.h"
 #include "mindspore/core/include/abstract/dshape.h"
 #include "ops/infer_info/infer_info.h"
-#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
-#include "mindspore/ccsrc/include/backend/distributed/collective/collective_manager.h"
-#endif
 
 namespace mindspore::ops {
 constexpr auto kBitSize = 64;
@@ -88,6 +85,11 @@ const std::set<TypeId> common_mint_valid_type_ids = {kNumberTypeInt8,    kNumber
 const std::set<TypeId> common_mint_valid_type_ids_with_bool = {
   kNumberTypeInt8, kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64,   kNumberTypeUInt8,
   kNumberTypeBool, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
+
+const std::vector<TypeId> common_mint_valid_type_ids_with_complex_and_bool_vec = {
+  kNumberTypeInt8,    kNumberTypeInt16,    kNumberTypeInt32,     kNumberTypeInt64,
+  kNumberTypeUInt8,   kNumberTypeBool,     kNumberTypeFloat16,   kNumberTypeFloat32,
+  kNumberTypeFloat64, kNumberTypeBFloat16, kNumberTypeComplex64, kNumberTypeComplex128};
 
 const std::set<TypeId> common_valid_type_ids_with_complex_and_bool = {
   kNumberTypeInt8,    kNumberTypeInt16,     kNumberTypeInt32,      kNumberTypeInt64,   kNumberTypeUInt8,
@@ -140,6 +142,9 @@ void BlockInvalid(const PrimitivePtr &primitive, const std::vector<AbstractBaseP
 BaseShapePtr SetPadShape(const ShapeVector &x_shape, const ArrayValue<int64_t> &paddings);
 BaseShapePtr PadInferShapeBase(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                const size_t pad_dim);
+size_t GetHashId(int a, int b);
+TypeId ConvertTypeBetweenTensorAndScalar(const TypeId &tensor_type_id, const TypeId &scalar_type_id,
+                                         const size_t hash_id);
 
 bool ObscureShapeEqual(const ShapeVector &lhs, const ShapeVector &rhs);
 
@@ -220,7 +225,7 @@ inline int64_t PadModeStringToInt(const std::string &pad) {
   }
 }
 
-static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_name) {
+static inline TypeId PromoteType(TypeId a, TypeId b, const std::string &op_name) {
   const auto f32 = kNumberTypeFloat32;
   const auto f16 = kNumberTypeFloat16;
   const auto f64 = kNumberTypeFloat64;
@@ -241,6 +246,59 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
   static std::unordered_map<TypeId, size_t> typeid_idx = {{f32, 0},  {f16, 1},  {f64, 2}, {bf16, 3}, {s8, 4},
                                                           {u8, 5},   {s16, 6},  {u16, 7}, {s32, 8},  {u32, 9},
                                                           {s64, 10}, {u64, 11}, {b1, 12}, {c64, 13}, {c128, 14}};
+  if (typeid_idx.find(a) == typeid_idx.end()) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << TypeIdToString(a) << "is invalid";
+  }
+  if (typeid_idx.find(b) == typeid_idx.end()) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << TypeIdToString(b) << "is invalid";
+  }
+  if (a == b) {
+    return a;
+  }
+
+  static const std::vector<std::vector<TypeId>> promote_types_lookup = {
+    /*         f32  f16  f64  bf16  s8  u8  s16  u16  s32  u32  s64  u64  b1 c64  c128 */
+    /* f32 */ {f32, f32, f64, f32, f32, f32, f32, ud, f32, ud, f32, ud, f32, c64, c128},
+    /* f16 */ {f32, f16, f64, f32, f16, f16, f16, ud, f16, ud, f16, ud, f16, c64, c128},
+    /* f64 */ {f64, f64, f64, f64, f64, f64, f64, ud, f64, ud, f64, ud, f64, c128, c128},
+    /* bf16*/ {f32, f32, f64, bf16, bf16, bf16, bf16, ud, bf16, ud, bf16, ud, bf16, c64, c128},
+    /* s8  */ {f32, f16, f64, bf16, s8, s16, s16, ud, s32, ud, s64, ud, s8, c64, c128},
+    /* u8  */ {f32, f16, f64, bf16, s16, u8, s16, ud, s32, ud, s64, ud, u8, c64, c128},
+    /* s16 */ {f32, f16, f64, bf16, s16, s16, s16, ud, s32, ud, s64, ud, s16, c64, c128},
+    /* u16 */ {ud, ud, ud, ud, ud, ud, ud, u16, ud, ud, ud, ud, ud, ud, ud},
+    /* s32 */ {f32, f16, f64, bf16, s32, s32, s32, ud, s32, ud, s64, ud, s32, c64, c128},
+    /* u32 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, u32, ud, ud, ud, ud, ud},
+    /* s64 */ {f32, f16, f64, bf16, s64, s64, s64, ud, s64, ud, s64, ud, s64, c64, c128},
+    /* u64 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, u64, ud, ud, ud},
+    /* b1  */ {f32, f16, f64, bf16, s8, u8, s16, ud, s32, ud, s64, ud, b1, c64, c128},
+    /* c64 */ {c64, c64, c128, c64, c64, c64, c64, ud, c64, ud, c64, ud, c64, c64, c128},
+    /* c128*/ {c128, c128, c128, c128, c128, c128, c128, ud, c128, ud, c128, ud, c128, c128, c128},
+  };
+
+  auto return_type_id = promote_types_lookup[typeid_idx[a]][typeid_idx[b]];
+  if (return_type_id == ud) {
+    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the promote output type is invalid";
+  }
+  return return_type_id;
+}
+
+static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_name) {
+  const auto f32 = kNumberTypeFloat32;
+  const auto f16 = kNumberTypeFloat16;
+  const auto f64 = kNumberTypeFloat64;
+  const auto bf16 = kNumberTypeBFloat16;
+  const auto s8 = kNumberTypeInt8;
+  const auto u8 = kNumberTypeUInt8;
+  const auto s16 = kNumberTypeInt16;
+  const auto u16 = kNumberTypeUInt16;
+  const auto s32 = kNumberTypeInt32;
+  const auto u32 = kNumberTypeUInt32;
+  const auto s64 = kNumberTypeInt64;
+  const auto u64 = kNumberTypeUInt64;
+  const auto b1 = kNumberTypeBool;
+  const auto c64 = kNumberTypeComplex64;
+  const auto c128 = kNumberTypeComplex128;
+
   static std::unordered_map<TypeId, TypePtr> typeid_typeptr = {
     {f32, kFloat32}, {f16, kFloat16}, {f64, kFloat64}, {bf16, kBFloat16}, {s8, kInt8},
     {u8, kUInt8},    {s16, kInt16},   {u16, kUInt16},  {s32, kInt32},     {u32, kUInt32},
@@ -268,56 +326,10 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
     b_type_id = b->type_id();
   }
 
-  if (typeid_idx.find(a_type_id) == typeid_idx.end()) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << a->ToString() << "is invalid";
-  }
-
-  if (typeid_idx.find(b_type_id) == typeid_idx.end()) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the type " << b->ToString() << "is invalid";
-  }
-
-  if (a_type_id == b_type_id) {
-    return typeid_typeptr[a_type_id];
-  }
-
-  static const std::vector<std::vector<TypeId>> promote_types_lookup = {
-    /*         f32  f16  f64  bf16  s8  u8  s16  u16  s32  u32  s64  u64  b1 c64  c128 */
-    /* f32 */ {f32, f32, f64, f32, f32, f32, f32, ud, f32, ud, f32, ud, f32, c64, c128},
-    /* f16 */ {f32, f16, f64, f32, f16, f16, f16, ud, f16, ud, f16, ud, f16, c64, c128},
-    /* f64 */ {f64, f64, f64, f64, f64, f64, f64, ud, f64, ud, f64, ud, f64, c128, c128},
-    /* bf16*/ {f32, f32, f64, bf16, bf16, bf16, bf16, ud, bf16, ud, bf16, ud, bf16, c64, c128},
-    /* s8  */ {f32, f16, f64, bf16, s8, s16, s16, ud, s32, ud, s64, ud, s8, c64, c128},
-    /* u8  */ {f32, f16, f64, bf16, s16, u8, s16, ud, s32, ud, s64, ud, u8, c64, c128},
-    /* s16 */ {f32, f16, f64, bf16, s16, s16, s16, ud, s32, ud, s64, ud, s16, c64, c128},
-    /* u16 */ {ud, ud, ud, ud, ud, ud, ud, u16, ud, ud, ud, ud, ud, ud, ud},
-    /* s32 */ {f32, f16, f64, bf16, s32, s32, s32, ud, s32, ud, s64, ud, s32, c64, c128},
-    /* u32 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, u32, ud, ud, ud, ud, ud},
-    /* s64 */ {f32, f16, f64, bf16, s64, s64, s64, ud, s64, ud, s64, ud, s64, c64, c128},
-    /* u64 */ {ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, ud, u64, ud, ud, ud},
-    /* b1  */ {f32, f16, f64, bf16, s8, u8, s16, ud, s32, ud, s64, ud, b1, c64, c128},
-    /* c64 */ {c64, c64, c128, c64, c64, c64, c64, ud, c64, ud, c64, ud, c64, c64, c128},
-    /* c128*/ {c128, c128, c128, c128, c128, c128, c128, ud, c128, ud, c128, ud, c128, c128, c128},
-  };
-
-  auto return_type_id = promote_types_lookup[typeid_idx[a_type_id]][typeid_idx[b_type_id]];
-
-  if (return_type_id == ud) {
-    MS_EXCEPTION(TypeError) << "For Op[" << op_name << "], the promote output type is invalid";
-  }
+  auto return_type_id = PromoteType(a_type_id, b_type_id, op_name);
 
   return typeid_typeptr[return_type_id];
 }
-
-// map used for pass to identify and replace the op by aclnnview
-static const std::map<std::string, std::string> op_enabled_aclnn = {{kTransposeExtOpName, kTransposeExtViewOpName},
-                                                                    {kTransposeOpName, kTransposeViewOpName},
-                                                                    {kSplitOpName, kSplitViewOpName},
-                                                                    {kConcatOpName, kConcatViewOpName}};
-// map used for aclnn kernel select, because aclnnview op is not register by yaml.
-static const std::map<std::string, std::string> aclnn_view_to_op = {{kTransposeViewOpName, kTransposeOpName},
-                                                                    {kSplitViewOpName, kSplitOpName},
-                                                                    {kConcatViewOpName, kConcatOpName},
-                                                                    {kTransposeExtViewOpName, kTransposeExtOpName}};
 
 void CheckTensorScalarRank(const PrimitivePtr &primitive, const AbstractBasePtr input_arg, const std::string &arg_name);
 bool IsFloatType(TypePtr type);
@@ -328,6 +340,8 @@ OPS_API int ConvertReductionForAclnn(Reduction reduction);
 OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
 OPS_API int64_t GetCacheCapaticy();
+OPS_API double GetDoubleValueFromScalar(const FP32ImmPtr &scalar);
+OPS_API ScalarPtr FetchRealScalar(const ScalarPtr &scalar);
 
 static inline void CheckRank(const InferInfoPtr &infer_info, size_t supported_rank, const std::string &op_name,
                              const std::string &input_name) {
@@ -342,16 +356,11 @@ static inline bool IsShapeKnown(const InferInfoPtr &infer_info, size_t index) {
   return !infer_info->IsDynamicRank() && infer_info->GetShape()[index] != mindspore::abstract::Shape::kShapeDimAny;
 }
 
-static inline void CheckWorldSize(const std::string &group, int64_t world_size, const std::string &op_name) {
-#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
-  const auto &collective_manager = mindspore::distributed::collective::CollectiveManager::instance();
-  if (collective_manager->initialized()) {
-    auto expected_world_size = collective_manager->GetLocalGroupSize(group);
-    if (world_size != expected_world_size) {
-      MS_LOG(EXCEPTION) << op_name << ": world_size must be " << expected_world_size << ", but got " << world_size;
-    }
+static inline void CheckType(const std::set<TypeId> &valid_types, const TypeId &arg_type, const std::string &op_name,
+                             const std::string &arg_name) {
+  if (valid_types.count(arg_type) == 0) {
+    MS_EXCEPTION(TypeError) << "For op [" << op_name << "], the dtype of input " << arg_name << " is invalid.";
   }
-#endif
 }
 
 #define RETURN_IF_OPTIONAL_HAS_VALUE(opt) \

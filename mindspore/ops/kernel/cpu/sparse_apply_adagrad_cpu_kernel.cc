@@ -19,13 +19,15 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/sparse_apply_adagrad.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_adagrad_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccumIndex = 1;
@@ -247,5 +249,6 @@ bool SparseApplyAdagradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kern
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyAdagrad, SparseApplyAdagradCpuKernelMod);
+}  // namespace sparse_apply_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

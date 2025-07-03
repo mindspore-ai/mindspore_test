@@ -19,11 +19,12 @@
 
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 class AllGatherCPUKernelMod : public NativeCpuKernelMod {
  public:
   AllGatherCPUKernelMod() = default;
@@ -39,6 +40,7 @@ class AllGatherCPUKernelMod : public NativeCpuKernelMod {
  private:
   mindspore::TypeId input_dtype_ = kNumberTypeFloat32;
 };
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

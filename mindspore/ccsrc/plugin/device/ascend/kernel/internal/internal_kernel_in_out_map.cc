@@ -92,6 +92,11 @@ std::vector<internal::DataType> InternalKernelModInOutMap::MapInternalInputDtype
 std::vector<internal::DataType> InternalKernelModInOutMap::MapInternalOutputDtypes(
   const std::string &op_name, const std::vector<TypeId> &ms_dtypes) {
   std::vector<internal::DataType> internal_dtypes;
+  if (mutable_output_list_.find(op_name) != mutable_output_list_.end()) {
+    internal_dtypes.emplace_back(TransInternalDataType(ms_dtypes[0]));
+    return internal_dtypes;
+  }
+
   auto map_iter = output_idx_.find(op_name);
   if (map_iter == output_idx_.end()) {
     return internal_dtypes;

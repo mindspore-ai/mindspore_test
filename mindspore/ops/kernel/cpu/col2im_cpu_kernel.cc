@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace col2im_cpu {
 namespace {
 constexpr size_t kCol2ImInputsNum = 2;
 constexpr size_t kCol2ImOutputsNum = 1;
@@ -147,5 +148,6 @@ std::vector<KernelAttr> Col2ImCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Col2Im, Col2ImCpuKernelMod);
+}  // namespace col2im_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,7 +18,10 @@ import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
+import mindspore.context as context
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 class Net(nn.Cell):

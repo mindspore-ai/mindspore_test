@@ -59,6 +59,8 @@ class GraphUtils {
 
   static std::string OpCodeToGraphName(int op_code);
 
+  static std::string BinaryOpToGraphName(int oparg);
+
   // Get MultiTypeFuncGraph name of bytecode CONTAINS_OP
   static std::string ContainsOpToGraphName(int oparg);
 
@@ -71,7 +73,9 @@ class GraphUtils {
  private:
   // object has the attr and the value of attr is true
   static bool IsAttrEnabled(const py::object &obj, const std::string &attr) {
-    return py::hasattr(obj, common::SafeCStr(attr)) && py::cast<bool>(py::getattr(obj, common::SafeCStr(attr)));
+    return py::hasattr(obj, common::SafeCStr(attr)) &&
+           py::isinstance<py::bool_>(py::getattr(obj, common::SafeCStr(attr))) &&
+           py::cast<bool>(py::getattr(obj, common::SafeCStr(attr)));
   }
 };
 }  // namespace pijit

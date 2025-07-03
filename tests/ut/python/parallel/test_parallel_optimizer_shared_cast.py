@@ -23,7 +23,8 @@ import mindspore.nn as nn
 from mindspore import Tensor, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import TrainOneStepCell
-from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell, MicroBatchInterleaved, PipelineCell
+from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
+from mindspore.nn import MicroBatchInterleaved, PipelineCell
 from mindspore.nn.optim import Momentum
 from mindspore.ops import operations as P
 from mindspore import context
@@ -82,7 +83,7 @@ def auto_parallel_compile_net(mode, dev_num, net, strategy1=None, strategy2=None
     if stages > 1:
         net = PipelineCell(net, micro_size=micro_size)
     net = _VirtualDatasetCell(net)
-    parameters = net.trainable_params() if stages == 1 else net.infer_param_pipeline_stage()
+    parameters = net.trainable_params()
     optimizer = Momentum(parameters, learning_rate=0.1, momentum=0.9)
     train_network = TrainOneStepCell(net, optimizer).set_comm_fusion(4)
     train_network.set_train()

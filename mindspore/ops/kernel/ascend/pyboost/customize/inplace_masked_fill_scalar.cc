@@ -19,16 +19,15 @@
 #include <memory>
 
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceMaskedFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &input, const BaseTensorPtr &mask,
-                                                             const ScalarPtr &value) {
+tensor::TensorPtr InplaceMaskedFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                         const TensorPtr &mask, const ScalarPtr &value) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input, mask);
   op->set_outputs({input});
   // Async

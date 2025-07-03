@@ -1,16 +1,11 @@
-import sys  
 import pytest 
 from mindspore import numpy as np
 from mindspore import ops, Tensor, jit, context
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def sub(a, b):
     return a - b
 
@@ -156,7 +151,6 @@ def test_subtraction_tensor_tuple(func, ms_func, a, b):
     ms_res = ms_func(a, b)
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
-@pytest.mark.skip(reason="GetDevicePtr() error")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [sub])
 @pytest.mark.parametrize('ms_func', [jit_sub])
@@ -179,7 +173,6 @@ def test_subtraction_list_tensor(func, ms_func, a, b):
 @pytest.mark.parametrize('ms_func', [jit_sub])
 @pytest.mark.parametrize('a', [Tensor(np.ones((2, 3)).astype(np.float32))])
 @pytest.mark.parametrize('b', [[1.0, 2.0, 3.0]])
-@pytest.mark.skip(reason="GetDevicePtr is NULL")
 def test_subtraction_tensor_list(func, ms_func, a, b):
     """
     Feature: ALL TO ALL

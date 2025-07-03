@@ -26,12 +26,13 @@
 #include "nlohmann/json.hpp"
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
 #include "include/backend/kernel_graph.h"
 #include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace pynative {
+using KernelTensorPtr = kernel::KernelTensorPtr;
 enum class EdgeType : uint8_t {
   kParameterEdge,
   kValueNodeEdge,
@@ -52,25 +53,25 @@ enum class EdgeType : uint8_t {
 //    SingleOps: list[SingleOp]
 //
 // This IR has the following three characteristics:
-// 1. The same Edge contains the same DeviceAddress,
+// 1. The same Edge contains the same KernelTensor,
 //    and there is no need to sense Ref information at runtime.
 // 2. The Edges of the IR graph inputs are the same as the Edges of SingleOp inputs.
 //    The Edges of Graph inputs are refreshed according to the input Tensors,
-//    and the correct DeviceAddress is naturally obtained when SingleOp is executed.
+//    and the correct KernelTensor is naturally obtained when SingleOp is executed.
 // 3. The output Edges of SimpleGraph are the same as the output Edges of SingleOp.
 //    After the operator is executed, the output Edges of Graph are automatically updated,
 //    and there is no need to additionally update the outputs of Graph.
 struct Edge {
-  Edge(EdgeType type, device::DeviceAddressPtr address, device::DeviceAddressPtr origin_address,
+  Edge(EdgeType type, KernelTensorPtr kernel_tensor, KernelTensorPtr origin_kernel_tensor,
        session::KernelWithIndex node_with_index);
   nlohmann::json DebugInfo() const;
   const EdgeType type_;
   const uint64_t id_;
   bool ignore_h2d_;
   bool is_grad_;
-  device::DeviceAddressPtr address_;
-  // For cloning device address faster.
-  const device::DeviceAddressPtr origin_address_;
+  KernelTensorPtr kernel_tensor_;
+  // For cloning kernel tensor faster.
+  const KernelTensorPtr origin_kernel_tensor_;
   const session::KernelWithIndex node_with_index_;
 };
 using EdgePtr = std::shared_ptr<Edge>;

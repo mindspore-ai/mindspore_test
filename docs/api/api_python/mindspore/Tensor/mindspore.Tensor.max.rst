@@ -1,7 +1,7 @@
 mindspore.Tensor.max
 ====================
 
-.. py:method:: mindspore.Tensor.max()
+.. py:method:: mindspore.Tensor.max() -> Tensor
 
     返回输入Tensor的最大值。
 
@@ -15,7 +15,7 @@ mindspore.Tensor.max
 
     参数：
         - **dim** (int) - 指定计算维度。
-        - **keepdim** (bool, 可选) - 表示是否减少维度，如果为 ``True`` ，输出将与输入保持相同的维度；如果为 ``False`` ，输出将减少维度。默认值： ``False`` 。
+        - **keepdim** (bool, 可选) - 表示是否保持维度，如果为 ``True`` ，输出将与输入保持相同的维度；如果为 ``False`` ，输出将减少维度。默认值： ``False`` 。
 
     返回：
         tuple(Tensor)，返回两个元素类型为Tensor的tuple，包含输入Tensor沿指定维度 `dim` 的最大值和相应的索引。
@@ -51,7 +51,7 @@ mindspore.Tensor.max
     异常：
         - **TypeError** - 参数具有前面未指定的类型。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.argmin` ：返回沿轴最小值的索引。
         - :func:`mindspore.Tensor.argmax` ：返回沿轴最大值的索引。
         - :func:`mindspore.Tensor.min` ：返回整个Tensor最小值或沿轴最小值。

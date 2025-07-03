@@ -16,19 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/kv_cache_scatter_update.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr KVCacheScatterUpdateAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &var_tensor,
-                                                          const BaseTensorPtr &indices_tensor,
-                                                          const BaseTensorPtr &updates_tensor, const Int64ImmPtr &axis,
-                                                          const Int64ImmPtr &reduce) {
+tensor::TensorPtr KVCacheScatterUpdateAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &var_tensor,
+                                                      const TensorPtr &indices_tensor, const TensorPtr &updates_tensor,
+                                                      const Int64ImmPtr &axis, const Int64ImmPtr &reduce) {
   OpRunner::InferOpOutput(op, var_tensor, indices_tensor, updates_tensor, axis, reduce);
   // Convert ValuePtr to c++ scalar
   auto axis_imm = GetValue<int64_t>(axis);

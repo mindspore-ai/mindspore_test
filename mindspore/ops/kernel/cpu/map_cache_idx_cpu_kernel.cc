@@ -19,11 +19,12 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/cache_embedding_hashmap_struct.h"
 
 namespace mindspore {
 namespace kernel {
+namespace map_cache_idx_cpu {
 namespace {
 constexpr size_t kMapCacheIdxInputsNum = 5;
 constexpr size_t kMapCacheIdxOutputsNum = 4;
@@ -260,5 +261,6 @@ std::vector<KernelAttr> MapCacheIdxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MapCacheIdx, MapCacheIdxCpuKernelMod);
+}  // namespace map_cache_idx_cpu
 }  // namespace kernel
 }  // namespace mindspore

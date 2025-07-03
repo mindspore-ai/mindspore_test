@@ -60,8 +60,12 @@ PYBIND_REGISTER(
     (void)py::class_<PythonPullBasedIteratorConsumer, TreeConsumer, std::shared_ptr<PythonPullBasedIteratorConsumer>>(
       *m, "PythonPullBasedIteratorConsumer")
       .def(py::init<int32_t>())
-      .def("Init", [](PythonPullBasedIteratorConsumer &self,
-                      const std::shared_ptr<DatasetNode> &root) { THROW_IF_ERROR(self.Init(root)); })
+      .def(
+        "Init",
+        [](PythonPullBasedIteratorConsumer &self, const std::shared_ptr<DatasetNode> &root) {
+          THROW_IF_ERROR(self.Init(root));
+        },
+        py::call_guard<py::gil_scoped_release>())
       .def("GetNextAsMap",
            [](PythonPullBasedIteratorConsumer &self) {
              py::dict output;

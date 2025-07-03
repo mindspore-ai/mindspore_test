@@ -19,12 +19,13 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/apply_adagrad_da_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adagrad_da_cpu {
 namespace {
 constexpr size_t kSizeFloat16 = 2;
 constexpr size_t kSizeFloat32 = 4;
@@ -201,5 +202,6 @@ std::vector<KernelAttr> ApplyAdagradDACpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdagradDA, ApplyAdagradDACpuKernelMod);
+}  // namespace apply_adagrad_da_cpu
 }  // namespace kernel
 }  // namespace mindspore

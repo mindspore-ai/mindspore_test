@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_addsign_cpu {
 namespace {
 const size_t kVar = 0;
 const size_t kM = 1;
@@ -177,5 +178,6 @@ std::vector<KernelAttr> ApplyAddsignCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAddSign, ApplyAddsignCpuKernelMod);
+}  // namespace apply_addsign_cpu
 }  // namespace kernel
 }  // namespace mindspore

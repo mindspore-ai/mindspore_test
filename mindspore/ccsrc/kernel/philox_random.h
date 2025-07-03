@@ -35,7 +35,7 @@ constexpr size_t kIndex3 = 3;
  *   ElementCount: the fixed size of the array;
  */
 template <typename T, int ElementCount>
-class BACKEND_EXPORT Array {
+class BACKEND_COMMON_EXPORT Array {
  public:
   static constexpr int kElementCount = ElementCount;
   Array() {
@@ -54,7 +54,7 @@ class BACKEND_EXPORT Array {
   T data_[ElementCount];
 };
 
-class BACKEND_EXPORT PhiloxRandom {
+class BACKEND_COMMON_EXPORT PhiloxRandom {
  public:
   using ResultElementType = uint32_t;
   // The number of elements that will be returned.
@@ -187,7 +187,7 @@ class BACKEND_EXPORT PhiloxRandom {
   Key key_;
 };
 
-BACKEND_EXPORT uint64_t GetSeed(const uint64_t &global_seed, const uint64_t &ops_seed);
+BACKEND_COMMON_EXPORT uint64_t GetSeed(const uint64_t &global_seed, const uint64_t &ops_seed);
 
 }  // namespace random
 }  // namespace kernel

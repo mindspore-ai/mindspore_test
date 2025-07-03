@@ -23,6 +23,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

@@ -22,11 +22,12 @@
 #include <string>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_add_with_axis_cpu {
 class ScatterAddWithAxisCpuKernelMod : public NativeCpuKernelMod {
  public:
   ScatterAddWithAxisCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class ScatterAddWithAxisCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_type_;
   TypeId indices_type_;
 };
+}  // namespace scatter_add_with_axis_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SCATTER_ADD_WITH_AXIS_CPU_KERNEL_H_

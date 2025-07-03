@@ -13,27 +13,16 @@
 # limitations under the License.
 # ============================================================================
 """Test subgraph call with one stage"""
-import sys  
-import pytest 
-import math
 import numpy as np
 import mindspore.nn as nn
-from math import cos
 from mindspore import Tensor, context
-from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-        
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
@@ -54,7 +43,7 @@ def test_basic_graph_call():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, y)
 
@@ -82,7 +71,7 @@ def test_basic_graph_call_2():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, y)
 
@@ -110,7 +99,7 @@ def test_graph_call_with_vargs():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, y)
 
@@ -141,7 +130,7 @@ def test_graph_call_with_vargs_2():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, y)
 
@@ -172,7 +161,7 @@ def test_graph_call_with_kwargs():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, y)
 
@@ -203,7 +192,7 @@ def test_graph_call_with_kwargs_2():
             super(Net, self).__init__()
             self.l1 = Inner()
 
-        @jit(mode="PIJit", jit_config=cfg)
+        @pi_jit_with_config(jit_config=cfg)
         def construct(self, x, y):
             return self.l1(x, key = y)
 

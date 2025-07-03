@@ -12,6 +12,7 @@ class Net1(Cell):
         self.n = 2
 
     def construct(self, x):
+        x = x * 1
         x[...] = 1
         out = x
         return out * self.n

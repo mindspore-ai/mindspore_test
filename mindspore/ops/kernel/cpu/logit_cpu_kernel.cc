@@ -19,11 +19,12 @@
 #include <limits>
 #include <algorithm>
 #include <map>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace logit_cpu {
 namespace {
 constexpr size_t kLogitInputsNum = 1;
 constexpr size_t kLogitOutputsNum = 1;
@@ -139,5 +140,6 @@ std::vector<KernelAttr> LogitCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Logit, LogitCpuKernelMod);
+}  // namespace logit_cpu
 }  // namespace kernel
 }  // namespace mindspore

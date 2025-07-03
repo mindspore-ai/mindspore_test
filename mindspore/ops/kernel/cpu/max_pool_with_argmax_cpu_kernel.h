@@ -21,12 +21,13 @@
 #include <vector>
 #include <utility>
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_argmax_cpu {
 class MaxPoolWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxPoolWithArgmaxCpuKernelMod() {}
@@ -72,6 +73,7 @@ class MaxPoolWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
   int output_height_ = 0;
   int output_width_ = 0;
 };
+}  // namespace max_pool_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MAX_POOL_WITH_ARGMAX_CPU_KERNEL_H_

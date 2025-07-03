@@ -19,11 +19,12 @@
 
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace debug_cpu {
 class DebugCpuKernelMod : public NativeCpuKernelMod {
  public:
   DebugCpuKernelMod() = default;
@@ -36,6 +37,7 @@ class DebugCpuKernelMod : public NativeCpuKernelMod {
 
   std::vector<KernelAttr> GetOpSupport() override;
 };
+}  // namespace debug_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

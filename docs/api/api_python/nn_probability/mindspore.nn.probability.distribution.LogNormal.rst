@@ -6,7 +6,7 @@ mindspore.nn.probability.distribution.LogNormal
     对数正态分布（LogNormal distribution）。
     连续随机分布，取值范围为 :math:`(0, \inf)` ，概率密度函数为
 
-    .. math:: 
+    .. math::
         f(x, \mu, \sigma) = 1 / x\sigma\sqrt{2\pi} \exp(-(\ln(x) - \mu)^2 / 2\sigma^2).
 
     其中 :math:`\mu, \sigma` 为分别为基础正态分布的平均值和标准差。
@@ -19,7 +19,7 @@ mindspore.nn.probability.distribution.LogNormal
         - **dtype** (mindspore.dtype) - 分布类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'LogNormal'`` 。
 
-    .. note:: 
+    .. note::
         - `scale` 必须大于零。
         - `dtype` 必须是float，因为对数正态分布是连续的。
 
@@ -45,7 +45,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: cdf(value, loc, scale)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulatuve Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -96,7 +96,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: log_cdf(value, loc, scale)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -154,7 +154,7 @@ mindspore.nn.probability.distribution.LogNormal
 
     .. py:method:: prob(value, loc, scale)
 
-        计算给定值下的概率。对于连续是计算概率密度函数（Probability Density Function）。
+        计算给定值下的概率。对于连续分布是计算概率密度函数（Probability Density Function）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -180,7 +180,7 @@ mindspore.nn.probability.distribution.LogNormal
 
         计算标准差。
 
-        参数：        
+        参数：
             - **loc** (Tensor) - 分布位置参数。默认值： ``None`` 。
             - **scale** (Tensor) - 分布比例参数。默认值： ``None`` 。
 

@@ -36,7 +36,9 @@ py::object ByteCodeGenerator::GenFunction(const ir::FunctionNodePtr &func) {
   ByteCodeGeneratorPtr generator = std::make_shared<ByteCodeGenerator>();
   auto use_global = func->GetUseGlobal();
   if (use_global != nullptr) {
-    generator->globals_ = use_global->cast<ir::ValuePtr>()->GetValue().cast<py::dict>();
+    auto value_ptr = use_global->cast<ir::ValuePtr>();
+    MS_EXCEPTION_IF_NULL(value_ptr);
+    generator->globals_ = value_ptr->GetValue().cast<py::dict>();
   }
   return generator->Generate(func);
 }
@@ -62,8 +64,6 @@ py::object ByteCodeGenerator::Generate(const ir::FunctionNodePtr &func) {
                     func->GetFlags(), byte_code.ptr(), consts.ptr(), names.ptr(), var_names.ptr(), free_vars.ptr(),
                     cell_vars.ptr(), py::str(func->GetFileName()).ptr(), py::str(func->GetName()).ptr(),
                     func->GetFirstLineNo(), lnotab.ptr());
-#else
-  MS_LOG(ERROR) << "not implement in python3.11";
 #endif
 
   globals_[py::str("__builtins__")] = builtins_.ptr();
@@ -88,7 +88,9 @@ void ByteCodeGenerator::Visit_(const ir::ParameterPtr &node) {
       kwdefaults_[co_var_names_[co_var_names_map_[name]]] = default_value;
     } else {
       MS_EXCEPTION_IF_CHECK_FAIL(node->GetCategory() == 0, "Error category of parameter.");
-      defaults_.append(default_value->cast<ir::ValuePtr>()->GetValue());
+      auto default_value_ptr = default_value->cast<ir::ValuePtr>();
+      MS_EXCEPTION_IF_NULL(default_value_ptr);
+      defaults_.append(default_value_ptr->GetValue());
     }
   }
 }
@@ -260,6 +262,7 @@ void ByteCodeGenerator::Visit_(const ir::NaryWithFlagNodePtr &node) {
 }
 
 int ByteCodeGenerator::GetValueIndex(const ir::ValuePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto scope = node->GetScope();
   MS_EXCEPTION_IF_CHECK_FAIL(scope_inquire_map_.find(scope) != scope_inquire_map_.end(),
                              "Invalid scope in " + node->ToString());

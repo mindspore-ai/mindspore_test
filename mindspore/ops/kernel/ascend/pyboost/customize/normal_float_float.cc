@@ -16,22 +16,22 @@
 
 #include "kernel/ascend/pyboost/customize/normal_float_float.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalFloatFloatAscendCustomize(const std::shared_ptr<OpRunner> &op, const FP32ImmPtr &mean_float,
-                                                      const FP32ImmPtr &std_float, const ValueTuplePtr &size,
-                                                      const BaseTensorPtr &seed, const BaseTensorPtr &offset) {
+tensor::TensorPtr NormalFloatFloatAscendCustomize(const std::shared_ptr<OpRunner> &op, const ScalarPtr &mean_float,
+                                                  const ScalarPtr &std_float, const ValueTuplePtr &size,
+                                                  const TensorPtr &seed, const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalFloatFloat call start";
   OpRunner::InferOpOutput(op, mean_float, std_float, size, seed, offset);
   // ValueTuple to std::vector
-  auto mean_imm = GetValue<float>(mean_float);
-  auto std_imm = GetValue<float>(std_float);
+  auto mean_imm = GetScalarCastValue<float>("NormalFloatFloat", mean_float);
+  auto std_imm = GetScalarCastValue<float>("NormalFloatFloat", std_float);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
 
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

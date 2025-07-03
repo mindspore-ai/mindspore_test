@@ -18,12 +18,13 @@
 #include <algorithm>
 #include <utility>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -105,9 +106,9 @@ bool ConcatCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
       auto copy_size = copy_num * sizeof(T);
       auto offset = copy_num * i;
       auto output_ptr = output_addr + i * output_dim_ + offset_[j];
-      auto ret = memcpy_s(output_ptr, copy_size, input_addr_list[j] + offset, copy_size);
+      auto ret = Memcpy(output_ptr, copy_size, input_addr_list[j] + offset, copy_size);
       if (ret != EOK) {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memcpy_s failed. Error no: " << ret;
+        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', Memcpy failed. Error no: " << ret;
       }
     }
   };
@@ -133,11 +134,13 @@ const std::vector<std::pair<KernelAttr, ConcatCpuKernelMod::KernelRunFunc>> &Con
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeInt64, int64_t),         CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt8, uint8_t),
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt16, uint16_t),       CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt32, uint32_t),
     CONCAT_CPU_KERNEL_ATTR(kNumberTypeUInt64, uint64_t),       CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex64, complex64),
-    CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex128, complex128), CONCAT_CPU_KERNEL_ATTR(kNumberTypeBool, bool)};
+    CONCAT_CPU_KERNEL_ATTR(kNumberTypeComplex128, complex128), CONCAT_CPU_KERNEL_ATTR(kNumberTypeBool, bool),
+    CONCAT_CPU_KERNEL_ATTR(kNumberTypeBFloat16, bfloat16)};
 
   return func_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Concat, ConcatCpuKernelMod);
+}  // namespace concat_cpu
 }  // namespace kernel
 }  // namespace mindspore

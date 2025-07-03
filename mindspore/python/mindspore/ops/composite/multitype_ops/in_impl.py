@@ -190,7 +190,8 @@ def _mstype_in_tuple(x, y):
     return const_utils.check_in_sequence(x, y)
 
 
-@in_.register_default()
+# pylint: disable=protected-access
+@in_._register_default()
 def default_in(x, y):
     """Default function for in."""
     return x in y

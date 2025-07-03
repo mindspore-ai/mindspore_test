@@ -25,8 +25,6 @@ namespace mindspore::graphkernel {
 /**
  * @brief this pass optimizes two cases of unnecessary Depend in the graph
  * Case 1: %1 = Depend(%0, %0), This depend statement is necessary in frontend, but not here.
- * Case 2: %2 = Depend(%0, %1). Here %1 is a node with memory side-effect. However, the inputs of node %0 do not
- * use any nodes that may be changed by %1.
  */
 class DependElimination : public opt::Pass {
  public:

@@ -17,12 +17,13 @@
 #include "kernel/cpu/group_norm_grad_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm_grad_cpu {
 namespace {
 constexpr size_t kGroupNormGradInputsNum = 9;
 constexpr size_t kGroupNormGradOutputsNum = 3;
@@ -201,5 +202,6 @@ std::vector<KernelAttr> GroupNormGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GroupNormGrad, GroupNormGradCpuKernelMod);
+}  // namespace group_norm_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

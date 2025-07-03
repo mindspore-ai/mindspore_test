@@ -15,7 +15,6 @@
  */
 
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
-#include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
@@ -82,12 +81,39 @@ DEF_PURE_SHAPE_CALC(g_flatten_ext_fallback_shapecalc)
     return {res};
   });
 
+REG_FALLBACK_BUILDER("InplaceScatterSrc").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto src = ib->GetInput(kIndex3);
+  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  auto dim_val = dim->BuildValue();
+  auto reduce_val = reduce->BuildValue();
+  if (!IsValueKnown(dim_val) || !IsValueKnown(reduce_val)) {
+    MS_EXCEPTION(ValueError) << "For `InplaceScatterSrc` op, the `dim` and `reduce` must be a constant!";
+  }
+  auto idx_shape = ib->GetShape(index);
+  if (IsShapeNone(idx_shape)) {
+    return {input};
+  }
+  auto out = ib->Emit("TensorScatterElements", {input, index, src, dim, reduce});
+  return {out};
+});
+
 REG_FALLBACK_BUILDER("FlattenExt").SetBody(BODYFUNC(ib) {
   NodePtr input = ib->GetInput(kIndex0);
   NodePtr start_dim = ib->GetInput(kIndex1);
   NodePtr end_dim = ib->GetInput(kIndex2);
   auto shape = ib->ShapeCalc(g_flatten_ext_fallback_shapecalc, {input, start_dim, end_dim}, {kIndex1, kIndex2})[0];
   auto out = ib->Reshape(input, shape);
+  return {out};
+});
+
+REG_FALLBACK_BUILDER("InplaceMaskedFillTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mask = ib->GetInput(kIndex1);
+  auto value = ib->GetInput(kIndex2);
+  auto out = ib->MaskedFill(input, mask, value);
   return {out};
 });
 
@@ -445,13 +471,19 @@ REG_FALLBACK_BUILDER("Chunk").SetBody(BODYFUNC(ib) {
 
 REG_FALLBACK_BUILDER("InsertGemV2InBackward").SetBody(BODYFUNC(ib) { return {ib->GetInput(kIndex0)}; });
 
-REG_FALLBACK_BUILDER("UnstackExt").SetBody(BODYFUNC(ib) {
+REG_FALLBACK_BUILDER("UnstackExtView").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto input_shape = input->shape();
   auto num = SizeToLong(input_shape.size());
   auto output_tuple = ib->Emit("Unstack", {input}, {{"num", MakeValue(num)}, {"axis", MakeValue(axis->BuildValue())}});
   return {output_tuple};
+});
+
+REG_FALLBACK_BUILDER("TransposeView").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto perm = ib->GetInput(kIndex1);
+  return {ib->Transpose(input, perm)};
 });
 }  // namespace expander
 }  // namespace mindspore

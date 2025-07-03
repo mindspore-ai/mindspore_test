@@ -388,8 +388,7 @@ Status TFRecordNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetN
 // That is why we setup the sampler for a leaf node that does not use sampling.
 Status TFRecordNode::SetupSamplerForCache(std::shared_ptr<SamplerObj> *sampler) {
   RETURN_UNEXPECTED_IF_NULL(sampler);
-  bool shuffle_files = (shuffle_ == ShuffleMode::kGlobal || shuffle_ == ShuffleMode::kFiles);
-  *sampler = SelectSampler(num_samples_, shuffle_files, num_shards_, shard_id_);
+  *sampler = SelectSampler(num_samples_, shuffle_, num_shards_, shard_id_);
   return Status::OK();
 }
 

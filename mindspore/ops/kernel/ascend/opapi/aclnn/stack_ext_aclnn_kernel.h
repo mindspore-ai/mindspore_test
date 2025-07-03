@@ -17,11 +17,12 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_STACK_EXT_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
+namespace stack_ext {
 class StackExtAscend : public AclnnKernelMod {
  public:
   StackExtAscend() : AclnnKernelMod(std::move("aclnnStack")) {}
@@ -37,6 +38,7 @@ class StackExtAscend : public AclnnKernelMod {
   std::vector<KernelTensorPtr> tuple_tensors_;
   int64_t axis_;
 };
+}  // namespace stack_ext
 }  // namespace kernel
 }  // namespace mindspore
 

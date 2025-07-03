@@ -1,4 +1,4 @@
-from mindspore import context, jit
+from mindspore import context, jit, ops
 from mindspore.common.tensor import Tensor
 from ..share.grad import GradOfFirstInput
 from ..share.grad import GradOfAllInputs
@@ -43,10 +43,10 @@ class ParserFactory():
     def forward_cmp(self):
         input_me_use_list = copy.deepcopy(self.input_me_list)
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.net_ps.construct, mode="PSJit")(*input_me_use_list)
+        jit(function=self.net_ps.construct, capture_mode="ast")(*input_me_use_list)
         out_ps = self.forward_mindspore_impl(self.net_ps).asnumpy()
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.net_pi.construct, mode="PIJit")(*input_me_use_list)
+        jit(function=self.net_pi.construct, capture_mode="bytecode")(*input_me_use_list)
         out_pi = self.forward_mindspore_impl(self.net_pi).asnumpy()
         allclose_nparray(out_pi, out_ps, self.loss, self.loss)
 
@@ -55,6 +55,24 @@ class ParserFactory():
         grad_ps = self.grad_mindspore_impl(self.net_ps)
         context.set_context(mode=context.PYNATIVE_MODE)
         grad_pi = self.grad_mindspore_impl(self.net_pi)
+        for i in range(self._input_num):
+            _grad_ps = grad_ps if self._input_num == 1 else grad_ps[i]
+            _grad_pi = grad_pi if self._input_num == 1 else grad_pi[i]
+            input_grad_ps = _grad_ps.asnumpy()
+            input_grad_pi = _grad_pi.asnumpy()
+            allclose_nparray(input_grad_pi, input_grad_ps, self.loss, self.loss)
+
+    def grad_mindspore_impl_without_sens(self, net_me):
+        input_me_use_list = copy.deepcopy(self.input_me_list)
+        grad_position = tuple(range(self._input_num))
+        grad_ms = ops.grad(net_me, grad_position=grad_position)(*input_me_use_list)
+        return grad_ms
+
+    def backward_cmp_without_sens(self):
+        context.set_context(mode=context.GRAPH_MODE)
+        grad_ps = self.grad_mindspore_impl_without_sens(self.net_ps)
+        context.set_context(mode=context.PYNATIVE_MODE)
+        grad_pi = self.grad_mindspore_impl_without_sens(self.net_pi)
         for i in range(self._input_num):
             _grad_ps = grad_ps if self._input_num == 1 else grad_ps[i]
             _grad_pi = grad_pi if self._input_num == 1 else grad_pi[i]

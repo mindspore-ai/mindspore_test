@@ -20,6 +20,13 @@
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace runtime {
@@ -556,8 +563,9 @@ TEST_F(RuntimeFaultModeTest, OutofMemory) {
     std::make_shared<TestDeviceAddress>(nullptr, 2048, "format", TypeId::kNumberTypeUInt16, "CPU", 0);
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
-  std::vector<DeviceTensor *> alloc_list{device_tensor.get()};
-  OpContext<DeviceTensor> op_context;
+  auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
+  std::vector<KernelTensorPtr> alloc_list{kernel_tensor};
+  OpContext<KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = RandInt::Instance().Get();
   op_context.results_ = &result;
@@ -599,19 +607,21 @@ TEST_F(RuntimeFaultModeTest, OutofMemoryByMemoryLeak) {
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
   auto device_tensor = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, 1024, shp, Format::DEFAULT_FORMAT, TypeId::kNumberTypeUInt16, "CPU", 0, 0);
-  AnfAlgo::SetOutputAddr(device_tensor, 0, add_node.get());
+  auto kernel_tensor = std::make_shared<KernelTensor>(device_tensor);
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, add_node.get());
 
   std::vector<tensor::TensorPtr> tensors;
   std::map<string, string> compile_options;
-  device_context->graph_executor_->RunGraph(kernel_graph, tensors, &tensors, compile_options);
+  auto graph_executor = std::make_shared<TestGraphExecutor>();
+  MS_EXCEPTION_IF_NULL(graph_executor);
+  graph_executor->RunGraph(kernel_graph, tensors, &tensors, compile_options);
 
   AID aid;
   auto &memory_manager_actor = MemoryManagerActor::GetInstance();
-  std::vector<DeviceTensor *> alloc_list{device_tensor.get()};
-  OpContext<DeviceTensor> op_context;
+  std::vector<KernelTensorPtr> alloc_list{kernel_tensor};
+  OpContext<KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = RandInt::Instance().Get();
   op_context.results_ = &result;

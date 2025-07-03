@@ -179,12 +179,12 @@ def test_np_empty_zeros_ones():
     """
     @jit
     def np_empty_zeros_ones():
-        x = np.empty([3, 2], dtype=np.int)
-        y = np.zeros(x.shape, dtype=np.int)
-        z = np.ones(x.shape, dtype=np.int)
+        x = np.empty([3, 2], dtype=np.int_)
+        y = np.zeros(x.shape, dtype=np.int_)
+        z = np.ones(x.shape, dtype=np.int_)
         return Tensor(y + z)
     res = np_empty_zeros_ones()
-    except_res = np.ones([3, 2], dtype=np.int)
+    except_res = np.ones([3, 2], dtype=np.int_)
     assert np.all(res.asnumpy() == except_res)
 
 

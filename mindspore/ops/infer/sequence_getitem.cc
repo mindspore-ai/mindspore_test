@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ops {
@@ -105,7 +108,11 @@ AbstractBasePtr SequenceGetItemInnerInfer(const PrimitivePtr &primitive,
   }
   MS_LOG(DEBUG) << "GetItem use flags, index: " << index_unsigned_value << ", for " << queue->ToString();
   SetSequenceElementsUseFlags(queue, index_unsigned_value, true);
-  return queue->elements()[index_unsigned_value];
+  auto ele = queue->elements()[index_unsigned_value];
+  if (queue->isa<abstract::AbstractList>() && ele->isa<abstract::AbstractTensor>()) {
+    return ele->Clone();
+  }
+  return ele;
 }
 
 class SequenceGetItemInfer : public abstract::OpInferBase {

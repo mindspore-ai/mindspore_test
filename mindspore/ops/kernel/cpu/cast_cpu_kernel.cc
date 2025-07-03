@@ -24,10 +24,11 @@
 #include <complex>
 
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cast_cpu {
 namespace {
 template <typename S, typename T>
 class CastCpuKernelFunc : public CpuKernelFunc {
@@ -2396,5 +2397,6 @@ void CastCpuKernelMod::ResetKernelFunc(const std::vector<KernelTensor *> &inputs
   kernel_func_ = kernel_attr_lists[index].second();
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Cast, CastCpuKernelMod);
+}  // namespace cast_cpu
 }  // namespace kernel
 }  // namespace mindspore

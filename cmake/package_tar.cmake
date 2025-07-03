@@ -22,12 +22,33 @@ set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
 # set package files
 install(
-        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
+        TARGETS mindspore_core mindspore_ops mindspore_common mindspore_ms_backend mindspore_pyboost mindspore_pynative
+            mindspore_backend_manager mindspore_res_manager mindspore_frontend mindspore_profiler mindspore_memory_pool
+            mindspore_runtime_pipeline mindspore_dump mindspore_backend_common mindspore_extension
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore
 )
 
+if(ENABLE_CPU)
+    install(
+        TARGETS mindspore_ops_host LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}
+        COMPONENT mindspore
+        NAMELINK_SKIP
+    )
+endif()
+
 if(ENABLE_D)
+    install(
+        TARGETS mindspore_ge_backend
+        DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_ascend_res_manager
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+    )
     install(
         TARGETS mindspore_ascend
         DESTINATION ${INSTALL_PLUGIN_DIR}
@@ -40,6 +61,12 @@ if(ENABLE_GPU)
         TARGETS mindspore_gpu
         DESTINATION ${INSTALL_PLUGIN_DIR}
         COMPONENT mindspore
+    )
+    install(
+        TARGETS mindspore_gpu_res_manager LIBRARY
+        DESTINATION ${INSTALL_PLUGIN_DIR}/gpu
+        COMPONENT mindspore
+        NAMELINK_SKIP
     )
 endif()
 
@@ -131,6 +158,11 @@ if(ENABLE_CPU AND NOT WIN32)
             DESTINATION ${INSTALL_LIB_DIR}
             COMPONENT mindspore
     )
+    install(
+            TARGETS mindspore_cpu_res_manager
+            DESTINATION ${INSTALL_PLUGIN_DIR}/cpu
+            COMPONENT mindspore
+)
 endif()
 
 if(ENABLE_CPU)

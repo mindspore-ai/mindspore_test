@@ -14,8 +14,8 @@ matmul:
         - On Ascend, float64 doesn't be supported.
 
     Args:
-        transpose_a (bool): If ``True`` , `a` is transposed before multiplication. Default: ``False`` .
-        transpose_b (bool): If ``True`` , `b` is transposed before multiplication. Default: ``False`` .
+        transpose_a (bool, optional): If ``True`` , `a` is transposed before multiplication. Default: ``False`` .
+        transpose_b (bool, optional): If ``True`` , `b` is transposed before multiplication. Default: ``False`` .
 
     Inputs:
         - **a** (Tensor) - The first tensor to be multiplied. The shape of the tensor is :math:`(N, C)`. If

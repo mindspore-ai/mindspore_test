@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
 
 
-@jit
+@jit(backend="ms_backend")
 def hof(x):
     def f(x):
         return x + 3
@@ -35,8 +35,7 @@ def hof(x):
     return ret
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fun_fun():
     """
     Feature: Control flow

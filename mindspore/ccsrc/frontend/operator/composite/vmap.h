@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "ir/meta_func_graph.h"
-#include "../ccsrc/pybind_api/ir/primitive_py.h"
+#include "../ccsrc/frontend/ir/primitive_py.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

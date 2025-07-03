@@ -30,11 +30,11 @@
 #include "base/base.h"
 #include "ir/primitive.h"
 #include "ir/kernel_info_dev.h"
-#include "kernel/kernel.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel.h"
+#include "common/kernel_build_info.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/contract.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/visible.h"
@@ -49,7 +49,7 @@ using kernel::KernelObjectType;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
 
-class BACKEND_EXPORT AnfRuntimeAlgorithm {
+class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
  public:
   static AnfNodePtr MakeMonadValueNode(const KernelGraphPtr &kg);
   static void KeepOrder(const KernelGraphPtr &kg, const AnfNodePtr &former, const AnfNodePtr &latter);
@@ -71,7 +71,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // get input format select of anf node
   static std::string GetInputFormat(const AnfNodePtr &node, size_t input_idx);
   // Judge whether the format is equivalent by converting between default format and real format.
-  static bool IsEquivalentFormat(const std::string &src_format, const std::string &dst_format);
+  static bool IsEquivalentFormat(const Format &src_format, const Format &dst_format);
   // get output format from prev node,input_index is the input index of current node related to prev node
   static std::string GetPrevNodeOutputFormat(const AnfNodePtr &anf_node, size_t input_idx);
   // get reshape_type of from the output of input node.
@@ -124,16 +124,17 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // Get shape, devie type and value information.
   static std::tuple<abstract::BaseShapePtr, TypePtr, ValuePtr> GetAbstractInfo(const AnfNodePtr &node,
                                                                                size_t output_idx);
-
   static bool ExistOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
 
   // Get output kernel tensor if exists, otherwise throw a exception.
-  static const KernelTensorPtr &GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
+  static const KernelTensorPtr &GetOutputKernelTensor(const AnfNodePtr &node, size_t output_idx,
+                                                      bool skip_nop_node = true);
   // Get output kernel tensor if exists, otherwise create a new one and set into node.
   static const KernelTensorPtr &GetOrCreateOutputKernelTensor(const AnfNodePtr &node, size_t output_idx);
 
   // Get input kernel tensor if exists, otherwise throw a exception.
-  static const KernelTensorPtr &GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx);
+  static const KernelTensorPtr &GetPrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx,
+                                                              bool skip_nop_node = true);
   // Get input kernel tensor if exists, otherwise create a new one and set into node.
   static const KernelTensorPtr &GetOrCreatePrevNodeOutputKernelTensor(const AnfNodePtr &node, size_t input_idx);
 
@@ -142,25 +143,41 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // Get all output kernel tensor if exists, otherwise create new KernelTensor and set into node.
   static std::vector<KernelTensor *> GetOrCreateAllOutputKernelTensors(const AnfNodePtr &node);
 
+  // Set kernel object type
+  static void SetKernelObjectTypeBuildInfo(const AnfNodePtr &kernel_node,
+                                           const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+                                           const std::vector<kernel::KernelObjectType> &output_kernel_object_types);
+  static void SetKernelObjectTypeBuildInfo(
+    const AnfNodePtr &kernel_node, const std::vector<kernel::KernelObjectType> &input_kernel_object_types,
+    const std::vector<kernel::KernelObjectType> &output_kernel_object_types,
+    const std::vector<kernel::KernelObjectType> &output_elements_kernel_object_types);
+  static void SetKernelObjectTypeWithSelectedAttr(const CNodePtr &kernel_node,
+                                                  const kernel::KernelAttr &selected_kernel_attr);
+  static bool SelectKernelByObjectType(const CNodePtr &kernel_node,
+                                       const std::vector<kernel::KernelAttr> &registered_kernel_attrs,
+                                       std::vector<kernel::KernelAttr> *selected_kernel_attrs);
   // Create output kernel tensor for node using node's shape, type and value,
   // and set device information to kernel tensor.
-  static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(const AnfWithOutIndex &node_with_index,
-                                                                void *const device_ptr, size_t size,
-                                                                const string &format, TypeId dtype_id,
-                                                                const ShapeVector &host_shape,
-                                                                const std::string &device_name, uint32_t device_id,
-                                                                const UserDataPtr &user_data = nullptr);
+  static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(
+    const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
+    const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id,
+    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0);
 
   // Get all input memory size list for node.
   static std::vector<size_t> GetNodeInputSizeList(const AnfNodePtr &node);
 
   static size_t GetOutputAddressNum(const AnfNodePtr &node);
   // set output device addr of anf_node
-  static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node);
+  static void SetOutputAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
+  // set output kernel tensor of anf node
+  static void SetOutputKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
   // set workspace device addr of anf_node
-  static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, AnfNode *node);
+  static void SetWorkspaceAddr(const DeviceAddressPtr &addr, size_t output_idx, const AnfNodePtr &node);
+  // set workspace kernel tensor of anf_node
+  static void SetWorkspaceKernelTensor(const KernelTensorPtr &kernel_tensor, size_t output_idx, AnfNode *node);
   // get workspace device addr of anf_node
   static DeviceAddress *GetWorkspaceAddr(const AnfNodePtr &node, size_t output_idx);
+  static KernelTensorPtr GetWorkspaceKernelTensor(const AnfNodePtr &node, size_t output_idx);
   // get workspace device mutable addr of anf_node
   static DeviceAddressPtr GetMutableWorkspaceAddr(const AnfNodePtr &node, size_t index);
   // get op pattern of the node
@@ -186,6 +203,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static void SetSelectKernelBuildInfo(const kernel::KernelBuildInfoPtr &select_kernel_build_info, AnfNode *node);
   // get select kernel_build_info
   static kernel::KernelBuildInfoPtr GetSelectKernelBuildInfo(const AnfNodePtr &node);
+  static kernel::KernelAttr GetKernelAttrFromNode(const AnfNodePtr &kernel_node);
   // get kernelMode
   static kernel::KernelMod *GetKernelMod(const AnfNodePtr &node);
   // set kernel mod
@@ -218,6 +236,15 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static AnfNodePtr FetchFrontNodeByBackendNode(const AnfNodePtr &backend_node, const KernelGraph &graph);
   static void InsertMakeTupleForOutput(const NotNull<KernelGraphPtr> &root_graph);
 
+  // get jit settings from kernel graph
+  static std::string GetJitLevel(const FuncGraphPtr &graph);
+  static std::string GetBackend(const FuncGraphPtr &graph);
+  static bool GetDisableFormatTransform(const KernelGraphPtr &graph);
+  static std::string GetExecOrderAlgo(const KernelGraphPtr &graph);
+  static std::map<std::string, std::map<std::string, std::string> > GetGeOptions(const KernelGraphPtr &graph);
+  // get ge options from jitconfig or context
+  static std::map<std::string, std::string> GetGeOptions(std::string option_level);
+
   static void UpdateGraphValidRefPair(const KernelGraphPtr &graph);
   static bool IsDynamicShapeSkipExecute(bool skip_mode, const ShapeVector &axes_shape);
   static bool IsDynamicShapeSkipExecute(const CNodePtr &cnode);
@@ -227,6 +254,9 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // 'Unique' will change after Launch, the output address size should update.
   static void UpdateOutputAddrSize(device::KernelInfo const *kernel_info, const CNodePtr &kernel);
   static bool IsShapesDynamic(const std::vector<ShapeVector> &shapes);
+
+  // Get shape after padding
+  static ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index);
 
   // Check whether the kernel has input node which is a computed depend kernel.
   static bool HasComputedDependInputNode(const CNodePtr &kernel);
@@ -240,6 +270,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   // Whether the kernel is not supported by other device and need be backed off on the CPU device.
   static bool IsNodeSupportKernelSelectBackoff(const AnfNodePtr &node, const KernelGraphPtr &graph);
   static bool IsKernelSelectBackoffOp(const AnfNodePtr &node);
+  static bool IsNeedContinuesMemoryOp(const AnfNodePtr &node);
   static void SetKernelSelectBackoffInfo(const CNodePtr &node,
                                          const std::pair<std::string, ExceptionType> &failure_info);
   static std::pair<std::string, ExceptionType> GetKernelSelectBackoffInfo(const AnfNodePtr &node);
@@ -279,7 +310,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static bool IsSequenceOutputOfScalar(const AnfNodePtr &node);
 
   // The tensor related interfaces.
-  static tensor::TensorPtr CreateMapTensor(const DeviceAddressPtr &output_device_address);
+  static tensor::TensorPtr CreateMapTensor(const KernelTensorPtr &output_kernel_tensor);
   static tensor::TensorPtr CreateMapTensor(const AnfNodePtr &output_node, size_t output_index);
   static tensor::TensorPtr SequenceToTensor(const ValuePtr &value);
   static void FlattenDynamicInputArg(const BaseRef &arg, const AnfNodePtr &node,
@@ -294,6 +325,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static bool NeedEraseCache(const PrimitivePtr &prim);
 
   static abstract::AbstractBasePtr GetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
+  static abstract::AbstractBasePtr GetNodeAbstractByIndex(AnfNode *node, size_t index);
 
   static inline ValueNodePtr ConvertValueToNode(const KernelGraphPtr &kernel_graph, const ValuePtr &value) {
     MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -307,9 +339,24 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static ValueNodePtr CreateTypeIdValueNodeToFuncGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static bool IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph);
 
+  // if graph output is valuenode or parameter, used to skip compile or run
+  static bool IsGraphOutputValueNodeOrParameterForCompile(const AnfNodePtr &graph_output);
+  static bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &graph_output, const VectorRef &args,
+                                                VectorRef *outputs);
+
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
   static std::string GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num);
+  static void PrintKernelTensor(const std::vector<KernelTensor *> &kernel_tensors, const std::string &info,
+                                size_t element_num);
+  static KernelTensorPtr CreateKernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type,
+                                            const ValuePtr &value, void *device_ptr, size_t size,
+                                            const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
+                                            const string &device_name, uint32_t device_id,
+                                            const UserDataPtr &user_data = nullptr);
+  static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
+                                            const ShapeVector &host_shape, const string &device_name,
+                                            uint32_t device_id, const UserDataPtr &user_data = nullptr);
 };
 }  // namespace session
 

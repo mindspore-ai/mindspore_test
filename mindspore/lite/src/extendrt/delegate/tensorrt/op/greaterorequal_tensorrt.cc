@@ -25,6 +25,7 @@
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "src/extendrt/delegate/tensorrt/cuda_impl/logical.cuh"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::lite {
 int GreaterorequalTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

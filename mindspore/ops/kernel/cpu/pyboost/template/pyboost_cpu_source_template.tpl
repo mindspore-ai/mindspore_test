@@ -15,7 +15,8 @@
  */
 
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
+#include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
+${ops_inc}
 ${merge_op_header}
 
 namespace mindspore {

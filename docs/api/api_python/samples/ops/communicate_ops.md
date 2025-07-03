@@ -4,7 +4,7 @@
 
 在分布式训练中涉及例如`AllReduce`、`ReduceScatter`、`AllGather`和`Broadcast`等通信操作进行数据传输，我们将在下述的章节分别阐述其含义和示例代码。
 
-下述每个章节中给出了使用4张GPU进行不同通信操作的示例。示例中的输出来自于0号卡`rank0`程序的结果。用户需要将下述每个章节代码另存为communication.py。因为涉及到多卡程序，用户需要通过`mpirun`命令去启动communication.py。其中`mpirun`命令需要安装OpenMPI以及NCCL，对应的安装请参考[mpirun启动](https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/mpirun.html)。准备好communication.py后，在命令行中输入如下启动命令，即可启动多卡程序：
+下述每个章节中给出了使用4张GPU进行不同通信操作的示例。示例中的输出来自于0号卡`rank0`程序的结果。用户需要将下述每个章节代码另存为communication.py。因为涉及到多卡程序，用户需要通过`mpirun`命令去启动communication.py。其中`mpirun`命令需要安装OpenMPI以及NCCL，对应的安装请参考[mpirun启动](https://www.mindspore.cn/tutorials/zh-CN/master/parallel/mpirun.html)。准备好communication.py后，在命令行中输入如下启动命令，即可启动多卡程序：
 
 ```bash
 mpirun -output-filename log -merge-stderr-to-stdout -np 4 python communication.py
@@ -90,6 +90,44 @@ print(output)
  [3.]]
 ```
 
+## AllGatherV
+
+`AllGatherV`操作相对`AllGather`来说，支持收集不均匀的Tensor，并将每张卡的输入Tensor进行拼接，最终每张卡输出是相同的数值，`output_split_sizes`中存储每张卡输入的数据量。
+
+示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`AllGatherV`算子输入的数值。例如卡0，我们申请了一个1x3大小，数值为[0,1,2]的输入；卡1，我们申请了一个1x4大小，数值为[0,1,2,3]的输入。`output_split_sizes`设置为[3, 4]。然后调用`AllGatherV`算子，在通信域为`0-1`的卡（所有卡的通信范围即hccl_world_group）中进行通信，并且打印输出结果。
+
+```python
+import mindspore as ms
+from mindspore.ops.operations.comm_ops import AllGatherV
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.allgatherv = AllGatherV()
+
+    def construct(self, x, output_split_sizes):
+        return self.allgatherv(x, output_split_sizes)
+
+rank = get_rank()
+data = [i for i in range(rank + 3)]
+input_x = Tensor(data)
+output_split_sizes = [3, 4]
+net = Net()
+output = net(input_x, output_split_sizes)
+print(output)
+```
+
+运行结果如下，输出日志路径为`log/1/rank.0`：
+
+```text
+[0 1 2 0 1 2 3]
+```
+
 ## ReduceScatter
 
 ![image](./images/reducescatter.png)
@@ -127,6 +165,50 @@ print(output)
 [[0.]]
 ```
 
+## ReduceScatterV
+
+`ReduceScatterV`操作相对`ReduceScatter`来说，支持对不均匀的张量进行规约并分发。`ReduceScatterV`将每张卡的输入先进行求和，并根据`input_split_sizes`中定义的每张卡分发的数据量，将数据分发到对应的卡上。
+
+示例代码如下：我们根据rank号（每张卡所属通信编号）初始化每个进程中`ReduceScatterV`算子输入的数值。例如卡0和卡1，我们申请了一个1*3大小，数值为[0, 1, 2.0]的输入，`input_split_sizes`设置为[2, 1]。然后调用`ReduceScatterV`算子，在通信域为`0-1`的卡（所有卡的通信范围即hccl_world_group）中进行通信，并且打印输出结果。
+
+```python
+import mindspore as ms
+from mindspore import Tensor
+from mindspore.communication import init, get_rank
+from mindspore.ops import ReduceOp
+import mindspore.nn as nn
+from mindspore.ops.operations.comm_ops import ReduceScatterV
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reducescatterv = ReduceScatterV(ReduceOp.SUM)
+
+    def construct(self, x, input_split_sizes):
+        return self.reducescatterv(x, input_split_sizes)
+
+rank = get_rank()
+input_x = Tensor([0, 1, 2.0])
+input_split_sizes = [2, 1]
+net = Net()
+output = net(input_x, input_split_sizes)
+print(output)
+```
+
+rank0的结果为：
+
+```text
+[0. 2]
+```
+
+rank1的结果为：
+
+```text
+[4.]
+```
+
 ## Reduce
 
 ![image](./images/reduce.png)
@@ -147,7 +229,7 @@ init()
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.reduce = ops.Reduce(ops.ReduceOp.SUM)
+        self.reduce = ops.Reduce(1, ops.ReduceOp.SUM)
 
     def construct(self, x):
         return self.reduce(x)
@@ -430,6 +512,72 @@ rank0~rank7的结果为：
 [[[[0. 1. 2. 3. 4. 5. 6. 7.]]]]
 ```
 
+## AlltoAllV
+
+![image](./images/alltoallv.png)
+
+`AlltoAllV`操作会将输入数据在特定的维度按照`send_numel_list`切分成指定的块数，并按顺序发送给其他rank，同时从其他rank按照`recv_numel_list`接收指定大小的输入，按顺序在特定的维度拼接数据。例如上图中，将Tensor在零维切分成3块，同时接收其他rank的数据，并在一维进行拼接，最后输出拼接后的数据。
+
+示例代码如下：我们使用`AlltoAllV`算子进行2卡的数据交换，把每张卡在第0维按照`send_numel_list`进行切分，并按顺序把切分的数据发送给其他卡，同时按照`recv_numel_list`接收其他卡的数据，再进行拼接；最终每张卡输出拼接后的数据。
+
+```python
+from mindspore import ops
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+init()
+rank = get_rank()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.all_to_all = ops.AlltoAllV()
+    def construct(self, x, send_numel_list, recv_numel_list):
+        return self.all_to_all(x, send_numel_list, recv_numel_list)
+send_numel_list = []
+recv_numel_list = []
+if rank == 0:
+   send_tensor = Tensor([0, 1, 2.])
+   send_numel_list = [1, 2]
+   recv_numel_list = [1, 2]
+elif rank == 1:
+   send_tensor = Tensor([3, 4, 5.])
+   send_numel_list = [2, 1]
+   recv_numel_list = [2, 1]
+net = Net()
+output = net(send_tensor, send_numel_list, recv_numel_list)
+print(output)
+```
+
+使用shell脚本启动2卡脚本，下述中的`rank_table_file`文件可以使用[models](https://gitee.com/mindspore/models)下面的hccl_tools.py生成，对应的目录文件为`models/utils/hccl_tools`。示例shell脚本如下：
+
+```shell
+export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
+export DEVICE_NUM=2
+BASE_PATH=$(cd "$(dirname $0)"; pwd)
+for((i=0; i<$DEVICE_NUM; i++)); do
+    rm -rf ${BASE_PATH}/rank${i}
+    mkdir ${BASE_PATH}/rank${i}
+    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
+    cd ${BASE_PATH}/rank${i}
+    export RANK_ID=${i}
+    export DEVICE_ID=${i}
+    echo "start training for device $i"
+    python alltoallv.py > log.txt 2>&1 &
+done
+```
+
+rank0的结果为：
+
+```text
+[0. 3. 4.]
+```
+
+rank1的结果为：
+
+```text
+[1. 2. 5]
+```
+
 ## CollectiveScatter
 
 ![image](./images/collectscatter.png)
@@ -570,26 +718,47 @@ net()
 `Send`发送张量到指定线程。
 
 ```python
+import os
 import numpy as np
 import mindspore.ops as ops
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore.communication import init
 from mindspore import Tensor
 
+ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
+
 class SendNet(nn.Cell):
     def __init__(self):
         super(SendNet, self).__init__()
         self.depend = ops.Depend()
-        self.send = ops.Send(st_tag=0, dest_rank=8, group="hccl_world_group")
+        self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
 
     def construct(self, x):
         out = self.depend(x, self.send(x))
         return out
 
-input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-net = Net()
-output = net(input_)
+class ReceiveNet(nn.Cell):
+    def __init__(self):
+        super(ReceiveNet, self).__init__()
+        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
+
+    def construct(self):
+        out = self.recv()
+        return out
+
+if __name__ == "__main__":
+    rank_id = os.environ["RANK_ID"]
+    rank_size = os.environ["RANK_SIZE"]
+    if rank_id == "0":
+        input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        send_net = SendNet()
+        output = send_net(input_)
+    else:
+        recv_net = ReceiveNet()
+        output = recv_net()
+        print(output.asnumpy())
 ```
 
 ## Receive
@@ -597,25 +766,47 @@ output = net(input_)
 `Receive`从src_rank接收张量。
 
 ```python
+import os
 import numpy as np
 import mindspore.ops as ops
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore.communication import init
 from mindspore import Tensor
 
+ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
+
+class SendNet(nn.Cell):
+    def __init__(self):
+        super(SendNet, self).__init__()
+        self.depend = ops.Depend()
+        self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
+
+    def construct(self, x):
+        out = self.depend(x, self.send(x))
+        return out
+
 class ReceiveNet(nn.Cell):
     def __init__(self):
         super(ReceiveNet, self).__init__()
-        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
-                              group="hccl_world_group")
+        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
 
     def construct(self):
         out = self.recv()
         return out
 
-net = Net()
-output = net()
+if __name__ == "__main__":
+    rank_id = os.environ["RANK_ID"]
+    rank_size = os.environ["RANK_SIZE"]
+    if rank_id == "0":
+        input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        send_net = SendNet()
+        output = send_net(input_)
+    else:
+        recv_net = ReceiveNet()
+        output = recv_net()
+        print(output.asnumpy())
 ```
 
 ## 注意事项

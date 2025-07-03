@@ -13,28 +13,20 @@
 # limitations under the License.
 # ============================================================================
 """Test network with one stage"""
-import sys  
 import pytest 
 import numpy as onp
 import mindspore.nn as nn
 from mindspore.common.initializer import Normal
 from mindspore import context, Tensor, jit
 from mindspore import numpy as np
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
-    "compile_by_trace": True
 }
 
 
@@ -52,7 +44,7 @@ class BaseLeNet5(nn.Cell):
             self.fc2 = nn.Dense(120, 84, weight_init=Normal(0.02))
             self.fc3 = nn.Dense(84, num_class, weight_init=Normal(0.02))
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu(x)

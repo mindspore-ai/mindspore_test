@@ -16,11 +16,12 @@
 
 #include "kernel/cpu/tracev2_grad_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tracev2_grad_cpu {
 namespace {
 constexpr size_t kInputNum = 5;
 constexpr size_t kOutputNum = 1;
@@ -169,5 +170,6 @@ void TraceV2GradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
   }
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TraceV2Grad, TraceV2GradCpuKernelMod);
+}  // namespace tracev2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,12 +23,13 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/grad/deformable_offsets_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace deformable_offsets_grad_cpu {
 using OpsDeformableOffsetsGradPtr = std::shared_ptr<ops::DeformableOffsetsGrad>;
 struct DeformableOffsetGradDims {
   size_t x_n = 0;
@@ -94,6 +95,7 @@ class DeformableOffsetsGradCpuKernelMod : public NativeCpuKernelMod,
   std::string data_format_ = kOpFormat_NCHW;
   DeformableOffsetGradDims dims_;
 };
+}  // namespace deformable_offsets_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_DEFORMABLE_OFFSETS_GRAD_CPU_KERNEL_H_

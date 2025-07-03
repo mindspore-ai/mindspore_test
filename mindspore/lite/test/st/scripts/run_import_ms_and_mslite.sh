@@ -31,7 +31,7 @@ basepath=$(pwd)
 
 if [[ -f "${ms_whl_path}" ]]; then
   pip uninstall mindspore -y || exit 1
-  pip install ${ms_whl_path} --user || exit 1
+  pip install ${ms_whl_path}  || exit 1
   echo "install mindspore python whl success."
 else
   echo "not find mindspore python whl.."
@@ -40,7 +40,7 @@ fi
 
 if [[ -f "${mslite_whl_path}" ]]; then
   pip uninstall mindspore-lite -y || exit 1
-  pip install ${mslite_whl_path} --user || exit 1
+  pip install ${mslite_whl_path}  || exit 1
   echo "install mindspore_lite python whl success."
 else
   echo "not find mindspore_lite python whl.."
@@ -83,19 +83,3 @@ if [ ${RET} -ne 0 ]; then
 fi
 rm -rf ${basepath}/mobilenetv2.mindir
 echo "test_only_import_mslite_and_ms success"
-
-pytest -s ${basepath}/python/import_ms_and_mslite/test_predict_backend_lite_lenet.py --disable-warnings
-RET=$?
-if [ ${RET} -ne 0 ]; then
-  echo "run test_predict_backend_lite_lenet failed."
-  exit ${RET}
-fi
-echo "test_predict_backend_lite_lenet success"
-
-pytest -s ${basepath}/python/import_ms_and_mslite/test_predict_backend_lite_resnet50.py --disable-warnings
-RET=$?
-if [ ${RET} -ne 0 ]; then
-  echo "run test_predict_backend_lite_resnet50 failed."
-  exit ${RET}
-fi
-echo "test_predict_backend_lite_resnet50 success"

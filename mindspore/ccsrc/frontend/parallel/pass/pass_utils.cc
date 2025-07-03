@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,14 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {
@@ -82,8 +90,8 @@ bool IsDwMatMul(const CNodePtr &matmul_node) {
   }
   MS_EXCEPTION_IF_NULL(matmul_node->func_graph());
   auto next_nodes = GetOutputNodesWithFilter(matmul_node, [&](const AnfNodePtr &anode) {
-    return IsPrimitiveCNode(anode, prim::kPrimLoad) || IsPrimitiveCNode(anode, prim::kPrimCast) ||
-           IsPrimitiveCNode(anode, prim::kPrimDepend);
+    return IsOneOfPrimitiveCNode(
+      anode, {prim::kPrimLoad, prim::kPrimCast, prim::kPrimDepend, prim::kPrimReshape, prim::kPrimTupleGetItem});
   });
   for (const auto &next_node : next_nodes) {
     if (IsPrimitiveCNode(next_node.first, prim::kPrimAssignAdd)) {
@@ -97,7 +105,9 @@ void ExtractBackwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological
                            std::unordered_map<CNodePtr, CNodePtr> *backward_matmul_dx_dw_map) {
   std::unordered_map<std::string, std::vector<CNodePtr>> backward_matmul_map;
   for (const auto &node : origin_nodes_topological) {
-    if (IsForwardNode(node) || !IsPrimitiveCNode(node, prim::kPrimMatMul)) {
+    if (IsForwardNode(node) ||
+        !IsOneOfPrimitiveCNode(node, {prim::kPrimMatMul, prim::kPrimBatchMatMul, prim::kPrimMatMulExt,
+                                      prim::kPrimBatchMatMulExt, prim::kPrimGroupedMatmul})) {
       continue;
     }
     auto matmul_cnode = node->cast<CNodePtr>();
@@ -155,5 +165,31 @@ std::string AnfNodeInfo(const AnfNodePtr &anf_node) {
   }
   return unique_id;
 }
+
+void ExtractForwardBackwardGraph(const FuncGraphPtr &graph, std::vector<FuncGraphPtr> *forward_graphs,
+                                 std::vector<FuncGraphPtr> *backward_graphs) {
+  auto context = MsContext::GetInstance();
+  const auto is_cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
+  auto manager = graph->manager();
+  if (!is_cell_reuse) {
+    forward_graphs->emplace_back(graph);
+    backward_graphs->emplace_back(graph);
+  } else {
+    for (const auto &each_graph : manager->func_graphs()) {
+      if (IsCellReuseForwardGraph(each_graph)) {
+        auto forward_graph = each_graph;
+        auto backward_graph = GetCellReuseBackwardGraph(forward_graph);
+        if (backward_graph == nullptr) {
+          MS_LOG(WARNING)
+            << "Failed to find backward cell reuse graph, skip pass 'overlap_gradmatmul_and_gradallreduce'.";
+          continue;
+        }
+        forward_graphs->emplace_back(forward_graph);
+        backward_graphs->emplace_back(backward_graph);
+      }
+    }
+  }
+}
+
 }  // namespace parallel
 }  // namespace mindspore

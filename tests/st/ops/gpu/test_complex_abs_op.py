@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 from mindspore import Tensor
 from mindspore.ops.operations import math_ops as P
 import mindspore.common.dtype as ms
@@ -28,7 +27,7 @@ def test_complex_abs_complex64_3x3():
     Expectation: The result matches numpy implementation.
     """
     m = 3
-    input_c = np.arange(m)[:, None] + np.complex('j') * np.arange(m)
+    input_c = np.arange(m)[:, None] + np.complex_('j') * np.arange(m)
     input_c = Tensor(input_c, ms.complex64)
     expected_out = np.array([[0, 1, 2], [1, 2. ** 0.5, 5. ** 0.5], [2, 5. ** 0.5, 8. ** 0.5]], np.float32)
     complex_abs_net = P.ComplexAbs()
@@ -44,7 +43,7 @@ def test_complex_abs_complex128_3x3():
     Expectation: The result matches numpy implementation.
     """
     m = 3
-    input_c = np.arange(m)[:, None] + np.complex('j') * np.arange(m)
+    input_c = np.arange(m)[:, None] + np.complex_('j') * np.arange(m)
     input_c = Tensor(input_c, ms.complex128)
     expected_out = np.array([[0, 1, 2], [1, 2. ** 0.5, 5. ** 0.5], [2, 5. ** 0.5, 8. ** 0.5]], np.float64)
     complex_abs_net = P.ComplexAbs()
@@ -59,7 +58,7 @@ def test_complex_abs_complex128_1x1():
     Description: Compatible with Tensorflow's ComplexAbs.
     Expectation: The result matches numpy implementation.
     """
-    input_c = np.array([3]) + np.complex('j') * np.array([4])
+    input_c = np.array([3]) + np.complex_('j') * np.array([4])
     input_c = Tensor(input_c, ms.complex64)
     expected_out = np.array([5], np.float32)
     complex_abs_net = P.ComplexAbs()

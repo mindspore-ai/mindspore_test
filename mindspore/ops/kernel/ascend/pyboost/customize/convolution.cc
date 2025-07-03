@@ -19,26 +19,22 @@
 #include <memory>
 #include <vector>
 #include "include/common/utils/utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
-  if (param->size() == kIndex1) {
-    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
-  }
-}
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim);
 }  // namespace
-tensor::BaseTensorPtr ConvolutionAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                 const BaseTensorPtr &weight_tensor,
-                                                 const std::optional<BaseTensorPtr> &bias_tensor,
-                                                 const ValueTuplePtr &stride, const ValueTuplePtr &pad,
-                                                 const ValueTuplePtr &dilation, const BoolImmPtr &transposed,
-                                                 const ValueTuplePtr &output_padding, const Int64ImmPtr &group) {
+tensor::TensorPtr ConvolutionAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                             const TensorPtr &weight_tensor,
+                                             const std::optional<TensorPtr> &bias_tensor, const ValueTuplePtr &stride,
+                                             const ValueTuplePtr &pad, const ValueTuplePtr &dilation,
+                                             const BoolImmPtr &transposed, const ValueTuplePtr &output_padding,
+                                             const Int64ImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, transposed,
                           output_padding, group);
   // Convert ValueTuple to std::vector

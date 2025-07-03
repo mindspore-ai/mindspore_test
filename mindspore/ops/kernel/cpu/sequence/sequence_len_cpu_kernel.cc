@@ -17,8 +17,7 @@
 #include "kernel/cpu/sequence/sequence_len_cpu_kernel.h"
 #include <algorithm>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/thread_pool.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
@@ -43,7 +42,6 @@ int SequenceLenCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   return KRET_OK;
 }
 
-template <typename T>
 bool SequenceLenCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
                                            const std::vector<KernelTensor *> &outputs) {
   int64_t *output_addr = GetDeviceAddress<int64_t>(outputs, 0);
@@ -57,13 +55,17 @@ const std::vector<std::pair<KernelAttr, SequenceLenCpuKernelMod::KernelRunFunc>>
   const {
   static const std::vector<std::pair<KernelAttr, SequenceLenCpuKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr().AddInputAttr(kObjectTypeTuple, kNumberTypeFloat32).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-     &SequenceLenCpuKernelMod::LaunchKernel<float>},
+     &SequenceLenCpuKernelMod::LaunchKernel},
     {KernelAttr().AddInputAttr(kObjectTypeTuple, kNumberTypeFloat64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-     &SequenceLenCpuKernelMod::LaunchKernel<double>},
+     &SequenceLenCpuKernelMod::LaunchKernel},
     {KernelAttr().AddInputAttr(kObjectTypeTuple, kNumberTypeInt32).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-     &SequenceLenCpuKernelMod::LaunchKernel<int>},
+     &SequenceLenCpuKernelMod::LaunchKernel},
     {KernelAttr().AddInputAttr(kObjectTypeTuple, kNumberTypeInt64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-     &SequenceLenCpuKernelMod::LaunchKernel<int64_t>}};
+     &SequenceLenCpuKernelMod::LaunchKernel},
+    {KernelAttr()
+       .AddInputAttr(kObjectTypeTuple, kObjectTypeTensorType)
+       .AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
+     &SequenceLenCpuKernelMod::LaunchKernel}};
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, sequence_len, SequenceLenCpuKernelMod);

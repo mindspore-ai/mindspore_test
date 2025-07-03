@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
+import shutil
+import subprocess
 import pytest
 import numpy as np
 from mindspore.common import Tensor, Parameter
@@ -410,3 +413,174 @@ def test_jit_grad_with_dynamic_shape_change_param():
     grad2 = grad_net(x2, y2)
     grad2_jit = grad_net_jit(x2, y2)
     compare_result(grad2, grad2_jit)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_out_cell_custom_bprop():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            z = x * y
+            z = z * y
+            return z
+
+        def bprop(self, x, y, out, dout):
+            x_dout = x + y
+            y_dout = x * y
+            return x_dout, y_dout, out, dout
+
+    context.set_context(mode=1)
+    grad_all = ops.GradOperation(get_all=True)
+    output = grad_all(Net())(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
+    result = (Tensor(3, mstype.float32), Tensor(2, mstype.float32))
+    assert output == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_custom_bprop():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class SubNet(nn.Cell):
+        def __init__(self):
+            super(SubNet, self).__init__()
+            self.matmul = ops.MatMul()
+
+        def construct(self, x, y):
+            out = self.matmul(x, y)
+            return out
+
+        def bprop(self, x, y, out, dout):
+            return 2 * x, 2 * y
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.sub_net = SubNet()
+            self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
+
+        @jit
+        def construct(self, x, y):
+            x = x * self.z
+            out = self.sub_net(x, y)
+            return out
+
+    class GradNetWrtX(nn.Cell):
+        def __init__(self, net):
+            super(GradNetWrtX, self).__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation(get_all=True)
+
+        def construct(self, x, y):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x, y)
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    y = Tensor([[0.01, 0.3, 1.1], [0.1, 0.2, 1.3], [2.1, 1.2, 3.3]], dtype=mstype.float32)
+    output = GradNetWrtX(Net())(x, y)
+    expect_dx = np.array([[1.0, 1.2, 0.8],
+                          [2.4, 2.6, 2.2]]).astype(np.float32)
+    expect_dy = np.array([[0.02, 0.6, 2.2],
+                          [0.2, 0.4, 2.6],
+                          [4.2, 2.4, 6.6]]).astype(np.float32)
+    assert np.allclose(output[0].asnumpy(), expect_dx)
+    assert np.allclose(output[1].asnumpy(), expect_dy)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_jit_grad_with_out_cell_custom_bprop_node_reuse():
+    """
+    Feature: Custom cell bprop.
+    Description: Test grad jit scene for custom cell bprop.
+    Expectation: Success.
+    """
+    class NetInner(nn.Cell):
+        def construct(self, x, y):
+            z = x * y
+            z = z * y
+            return z
+
+        def bprop(self, x, y, out, dout):
+            x_dout = x - out
+            y_dout = x - y
+            return x_dout, y_dout, out, dout
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.block = NetInner()
+
+        @jit
+        def construct(self, x, y):
+            return self.block(x, y)
+
+    save_graphs_path = "./test_jit_grad_cell_custom_bprop"
+    context.set_context(save_graphs=True, save_graphs_path=save_graphs_path)
+
+    grad_all = ops.GradOperation(get_all=True)
+    output = grad_all(Net())(Tensor(1, mstype.float32), Tensor(2, mstype.float32))
+
+    para = '= PrimFunc_Mul(%'
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, os.path.join(save_graphs_path, "opt_backward_[0-9]*.ir"))],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "0"
+
+    if os.path.exists(save_graphs_path):
+        shutil.rmtree(save_graphs_path)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_jit_output_list():
+    """
+    Feature: Gradjit with list output.
+    Description: Test grad jit scene with list output.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            x = x+2
+            y = y+3
+            a = x*y
+            return (a, [a + x, a], (x, y))
+
+    def func(x, y, net):
+        return ops.value_and_grad(net, grad_position=1)(x, y)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = Tensor([1])
+    y = Tensor([4])
+    net = Net()
+    value_grads = func(x, y, net)
+    assert isinstance(value_grads[0][1], list)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_jit_primal_graph():
+    """
+    Feature: Gradjit using unchanged primal graph generate bprop.
+    Description: Test grad jit compile.
+    Expectation: Success.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, data, indices):
+            return ops.gather(data, indices, 0)
+
+    context.set_context(mode=1, jit_level="O2")
+    input_params = Tensor(np.array([[8, 9], [10, 11], [12, 13], [14, 15]]).astype(np.float32))
+    input_indices = Tensor(np.array([[5, 2], [8, 5]]).astype(np.int32))
+    dyn_x = Tensor(shape=(None, 2), dtype=mstype.float32)
+    dyn_y = Tensor(shape=(None, 2), dtype=mstype.int32)
+    net = Net()
+    net.set_inputs(dyn_x, dyn_y)
+    ops.grad(net)(input_params, input_indices)

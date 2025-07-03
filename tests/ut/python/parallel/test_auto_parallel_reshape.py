@@ -83,14 +83,14 @@ class GradWrapTwoInput(nn.Cell):
         return grad_all(self.network)(x, y)
 
 
-def compile_graph(net, parallel_mode, device_num, x, search_mode="dynamic_programming"):
+def compile_graph(net, parallel_mode, device_num, x, search_mode="sharding_propagation"):
     context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode=parallel_mode,
                                       search_mode=search_mode)
     net.set_train()
     _cell_graph_executor.compile(net, x)
 
 
-def compile_graph_two_input(net, parallel_mode, device_num, x, y, search_mode="dynamic_programming"):
+def compile_graph_two_input(net, parallel_mode, device_num, x, y, search_mode="sharding_propagation"):
     context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode=parallel_mode,
                                       search_mode=search_mode)
     net.set_train()
@@ -289,7 +289,7 @@ def test_reshape_auto_5():
     size = 8
     context.set_auto_parallel_context(dataset_strategy="full_batch")
     x = Tensor(np.ones([4, 1024 * size, 1]), dtype=ms.float32)
-    y = Tensor(np.ones([4, 1024 * size, ]), dtype=ms.float32)
+    y = Tensor(np.ones([4, 1024 * size,]), dtype=ms.float32)
     net = GradWrapTwoInput(NetWithLossTwoInput(Net()))
     compile_graph_two_input(net, "auto_parallel", size, x, y)
 
@@ -322,7 +322,7 @@ def test_reshape_auto_6():
     size = 8
     context.set_auto_parallel_context(dataset_strategy="full_batch")
     x = Tensor(np.ones([4, 1024, 1]), dtype=ms.float32)
-    y = Tensor(np.ones([4, 1024, ]), dtype=ms.float32)
+    y = Tensor(np.ones([4, 1024,]), dtype=ms.float32)
     net = GradWrapTwoInput(NetWithLossTwoInput(Net()))
     compile_graph_two_input(net, "auto_parallel", size, x, y)
 

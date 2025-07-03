@@ -18,6 +18,7 @@
 #include <memory>
 #include <numeric>
 #include "infer/instance_norm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore::lite {
 namespace {

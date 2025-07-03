@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/utils.h"
@@ -33,55 +34,31 @@ constexpr const char *kModuleName = "mindspore._extends.pijit.pijit_func_white_l
 constexpr const char *kFuncMapName = "_func_map";
 constexpr const char *kGuardFuncMapName = "guard_func_map";
 
-template <>
-bool GraphJitConfig::SetBool<GraphJitConfig::Options::kPIJitContextMode>(PyObject *value) {
-  bool_conf[kPIJitContextMode - kBoolConf] = value == Py_True;
-  CaptureContext::GetInstance()->set_use_white_list(value == Py_True);
-  return true;
-}
-
 static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *)> key_map = {
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
   {"auto_jit_cell", &GraphJitConfig::SetBool<GraphJitConfig::kAutoJitCell>},
-  {"auto_grad", &GraphJitConfig::SetBool<GraphJitConfig::kAutoGrad>},
-  {"compile_by_trace", &GraphJitConfig::SetBool<GraphJitConfig::kTraceFlag>},
-  {"print_after_all", &GraphJitConfig::SetBool<GraphJitConfig::kPrintAfterAll>},
-  {"print_tb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintTraceback>},
   {"print_bb", &GraphJitConfig::SetBool<GraphJitConfig::kPrintBB>},
-  {"print_cfg", &GraphJitConfig::SetBool<GraphJitConfig::kPrintCFG>},
   {"interpret_captured_code", &GraphJitConfig::SetBool<GraphJitConfig::kInterpretCapturedCode>},
-  {"compile_without_capture", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithoutCapture>},
   {"compile_with_try", &GraphJitConfig::SetBool<GraphJitConfig::kCompileWithTry>},
   {"specialize_scalar", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeScalar>},
   {"specialize_container", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeContainer>},
   {"specialize_tensor", &GraphJitConfig::SetBool<GraphJitConfig::kGuardSpecializeTensor>},
-  {"guard_detach_object", &GraphJitConfig::SetBool<GraphJitConfig::kGuardDetachObject>},
-  {"print_guard", &GraphJitConfig::SetBool<GraphJitConfig::kPrintGuard>},
-  {"reuse_graph", &GraphJitConfig::SetBool<GraphJitConfig::kReuseGraph>},
-  {"print_reuse_graph", &GraphJitConfig::SetBool<GraphJitConfig::kPrintReuseGraph>},
-  {"auto_clean_cache", &GraphJitConfig::SetBool<GraphJitConfig::kAutoCleanCache>},
-  {"prune_case", &GraphJitConfig::SetBool<GraphJitConfig::kPruneCase>},
   {"loop_unrolling", &GraphJitConfig::SetBool<GraphJitConfig::kLoopUnrolling>},
   {"infer_only", &GraphJitConfig::SetBool<GraphJitConfig::kInferOnly>},
-  {"infer_primitive", &GraphJitConfig::SetBool<GraphJitConfig::kInferPrimitive>},
   {"strict_trace", &GraphJitConfig::SetBool<GraphJitConfig::kStrictTrace>},
   {"perf_statistics", &GraphJitConfig::SetBool<GraphJitConfig::kPerfStatistics>},
-  {"LOG_GRAPH_BREAK", &GraphJitConfig::SetBool<GraphJitConfig::kLogGraphBreak>},
   {"LOG_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogPerf>},
   {"LOG_GUARD_PERF", &GraphJitConfig::SetBool<GraphJitConfig::kLogGuardPerf>},
   {"enable_dynamic_shape", &GraphJitConfig::SetBool<GraphJitConfig::kEnableDynamicShape>},
-  {"test_graph_ir", &GraphJitConfig::SetBool<GraphJitConfig::kTestGraphIR>},
-  {"kFeatureBreakAtInlinedFunction", &GraphJitConfig::SetBool<GraphJitConfig::kFeatureBreakAtInlinedFunction>},
-  {"kEnableEliminateUnusedOperation", &GraphJitConfig::SetBool<GraphJitConfig::kEnableEliminateUnusedOperation>},
-  {"kEnableGeneratorExpressionToTuple", &GraphJitConfig::SetBool<GraphJitConfig::kEnableGeneratorExpressionToTuple>},
-  {"pijit_context_mode", &GraphJitConfig::SetBool<GraphJitConfig::kPIJitContextMode>},
+  {"expand_graph_input", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphInput>},
+  {"expand_graph_output", &GraphJitConfig::SetBool<GraphJitConfig::kExpandGraphOutput>},
+  {"eliminate_redundant_args", &GraphJitConfig::SetBool<GraphJitConfig::kEliminateRedundantArgs>},
+  {"subgraph_break_opt", &GraphJitConfig::SetBool<GraphJitConfig::kSubgraphBreakOpt>},
+  {"fullgraph", &GraphJitConfig::SetBool<GraphJitConfig::kFullGraph>},
+  {"enable_old_guard_strategy", &GraphJitConfig::SetBool<GraphJitConfig::kEnableOldGuardStrategy>},
   // kEnableOptimizeForAttrItem
-  {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
+  {"_symbolic", &GraphJitConfig::SetInt<GraphJitConfig::kSymbolic>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
-  {"MAX_PRUNE_CASE", &GraphJitConfig::SetInt<GraphJitConfig::kMaxPruneCase>},
-  {"MAX_LOOP_UNROLLING", &GraphJitConfig::SetInt<GraphJitConfig::kMaxLoopUnrolling>},
-  {"INFER_PRIMITIVE_MASK", &GraphJitConfig::SetInt<GraphJitConfig::kInferPrimitiveMask>},
-  {"INFER_PRIMITIVE_MAX", &GraphJitConfig::SetInt<GraphJitConfig::kInferPrimitiveMax>},
   {"STATIC_GRAPH_BYTECODE_MIN", &GraphJitConfig::SetInt<GraphJitConfig::kStaticGraphBytecodeMin>},
   {"PERF_STATISTICS_COUNT", &GraphJitConfig::SetInt<GraphJitConfig::kPerfStatisticsCount>},
   {"PERF_STATISTICS_SCALE_10000X", &GraphJitConfig::SetInt<GraphJitConfig::kPerfStatisticsScale10000x>},
@@ -93,67 +70,58 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"pijit_constexpr", &GraphJitConfig::AddJitConstexpr},
   {"relax_guard_func", &GraphJitConfig::AddJitRelaxGuard},
   {"jit_level", &GraphJitConfig::AddJitLevel},
+  {"recapture_loop_body", &GraphJitConfig::SetBool<GraphJitConfig::kReCaptureLoopBody>},
+};
+
+static const std::unordered_map<std::string, GraphJitConfig::LogConfig> key_to_log_map = {
+  {"print_after_all", GraphJitConfig::kAll},
+  {"print_bytecode", GraphJitConfig::kBytecode},
+  {"print_guard", GraphJitConfig::kGuard},
+  {"LOG_GRAPH_BREAK", GraphJitConfig::kGraphBreak},
+};
+
+static const std::unordered_map<std::string, GraphJitConfig::LogConfig> log_map = {
+  {"all", GraphJitConfig::kAll},
+  {"bytecode", GraphJitConfig::kBytecode},
+  {"guard", GraphJitConfig::kGuard},
+  {"graph_break", GraphJitConfig::kGraphBreak},
 };
 
 GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kAutoJitCell - kBoolConf] = false;
-  bool_conf[kAutoGrad - kBoolConf] = false;
-  bool_conf[kPrintAfterAll - kBoolConf] = false;
-  bool_conf[kTraceFlag - kBoolConf] = true;
-  bool_conf[kPrintTraceback - kBoolConf] = false;
   bool_conf[kPrintBB - kBoolConf] = false;
-  bool_conf[kPrintCFG - kBoolConf] = false;
   bool_conf[kInterpretCapturedCode - kBoolConf] = false;
-  bool_conf[kCompileWithoutCapture - kBoolConf] = false;
   bool_conf[kCompileWithTry - kBoolConf] = true;
   bool_conf[kGuardSpecializeScalar - kBoolConf] = true;
   bool_conf[kGuardSpecializeContainer - kBoolConf] = false;
   bool_conf[kGuardSpecializeTensor - kBoolConf] = false;
-  bool_conf[kGuardDetachObject - kBoolConf] = false;
-  bool_conf[kPrintGuard - kBoolConf] = false;
-  bool_conf[kReuseGraph - kBoolConf] = false;
-  bool_conf[kPrintReuseGraph - kBoolConf] = false;
-  bool_conf[kAutoCleanCache - kBoolConf] = false;
-  bool_conf[kPruneCase - kBoolConf] = true;
   bool_conf[kLoopUnrolling - kBoolConf] = true;
   bool_conf[kSkipException - kBoolConf] = false;
   bool_conf[kInferOnly - kBoolConf] = true;
-  bool_conf[kInferPrimitive - kBoolConf] = true;
   bool_conf[kStrictTrace - kBoolConf] = true;
   bool_conf[kPerfStatistics - kBoolConf] = false;
-  bool_conf[kLogGraphBreak - kBoolConf] = false;
   bool_conf[kLogPerf - kBoolConf] = false;
   bool_conf[kLogGuardPerf - kBoolConf] = false;
-  bool_conf[kTestGraphIR - kBoolConf] = false;
-  bool_conf[kEnableGeneratorExpressionToTuple - kBoolConf] = true;
   bool_conf[kEnableDynamicShape - kBoolConf] = false;
-  bool_conf[kEnableMsApiInfer - kBoolConf] = false;
+  bool_conf[kExpandGraphInput - kBoolConf] = true;
+  bool_conf[kExpandGraphOutput - kBoolConf] = true;
+  bool_conf[kEliminateRedundantArgs - kBoolConf] = false;
+  bool_conf[kSubgraphBreakOpt - kBoolConf] = true;
+  bool_conf[kReCaptureLoopBody - kBoolConf] = false;
+  bool_conf[kFullGraph - kBoolConf] = false;
 
-  /*'EnableOptimizeForAttrItem' options must be ensure that multiple calls of the
-   *__getattr__, __getitem__ function of the user-defined object do not affect the correctness.
-   */
-  bool_conf[kEnableOptimizeForAttrItem - kBoolConf] = true;
-  bool_conf[kEnableEliminateUnusedOperation - kBoolConf] = false;
-  bool_conf[kFeatureBreakAtInlinedFunction - kBoolConf] = true;
-
-  int_conf[kMaxInlineDepth - kIntConf] = 8;
   int_conf[kMaxTraceDepth - kIntConf] = kDefaultMaxTraceDepth;
-  int_conf[kMaxPruneCase - kIntConf] = -1;
-  int_conf[kMaxLoopUnrolling - kIntConf] = 100;
-  int_conf[kInferPrimitiveMask - kIntConf] = 7;
-  int_conf[kInferPrimitiveMax - kIntConf] = 0;
   int_conf[kStaticGraphBytecodeMin - kIntConf] = 0;
   int_conf[kPerfStatisticsCount - kIntConf] = 1;
   int_conf[kPerfStatisticsScale10000x - kIntConf] = 1000;
   int_conf[kLimitGraphSize - kIntConf] = 0;
   int_conf[kLimitGraphCount - kIntConf] = 0;
   int_conf[kGuardRelaxCount - kIntConf] = 0;
+  int_conf[kSymbolic - kIntConf] = 0;
 
   AddAllowedInlineModules("mindspore");
 
   jit_level = "O0";
-
-  SetBool<Options::kPIJitContextMode>(Py_True);
 }
 
 static py::object GetObjectsMap() {
@@ -265,7 +233,7 @@ bool GraphJitConfig::SetAutoJitFilter(PyObject *callable) {
   return true;
 }
 
-bool GraphJitConfig::ShouldAutoJit(EvalFrameObject *f) {
+bool GraphJitConfig::ShouldAutoJit(PyFrameWrapper f) {
   if (!GetBoolConfig(kAutoJit)) {
     return false;
   }
@@ -280,7 +248,7 @@ bool GraphJitConfig::ShouldAutoJit(EvalFrameObject *f) {
     (void)SetBool<kAutoJit>(Py_False);
     return false;
   }
-  PyObject *arg = reinterpret_cast<PyObject *>(f);
+  PyObject *arg = reinterpret_cast<PyObject *>(f.GetCode().ptr());
   PyObject *res = PyObject_Vectorcall(filter, &arg, 1, nullptr);
   if (PyErr_Occurred()) {
     MS_LOG(ERROR) << "***" << py::error_already_set().what() << "*** at " << std::string(py::str(filter)) << " ignored";
@@ -309,8 +277,38 @@ void GraphJitConfig::Update(const py::object &c) {
       if (iter != key_map.end() && (this->*(iter->second))(value)) {
         continue;
       }
+      auto log_iter = key_to_log_map.find(k);
+      if (log_iter != key_to_log_map.end()) {
+        MS_LOG(WARNING) << "For 'jit_config', the parameter '" << k
+                        << "' has been deprecated. Please use the "
+                           "environment variable 'MS_JIT_BYTECODE_LOGS' instead. For more details, please refer to "
+                           "https://www.mindspore.cn/docs/en/master/api_python/env_var_list.html.";
+        log_conf_[log_iter->second] = value;
+        continue;
+      }
     }
-    MS_LOG(WARNING) << "unknown PIJit options: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
+    MS_LOG(WARNING) << "Unknown PIJit option: " << std::string(py::str(key)) << ":" << std::string(py::str(value));
+  }
+
+  // Log config
+  std::stringstream jit_log(common::GetEnv("MS_JIT_BYTECODE_LOGS"));
+  std::vector<std::string> tokens;
+  std::string token;
+
+  while (std::getline(jit_log, token, ',')) {
+    token.erase(0, token.find_first_not_of(" "));
+    token.erase(token.find_last_not_of(" ") + 1);
+    if (!token.empty()) {
+      tokens.push_back(token);
+    }
+  }
+
+  for (const auto &t : tokens) {
+    auto it = log_map.find(t);
+    if (it != log_map.end()) {
+      log_conf_[it->second] = true;
+      MS_LOG(DEBUG) << it->first << "=true";
+    }
   }
 }
 

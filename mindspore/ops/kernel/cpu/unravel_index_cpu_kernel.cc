@@ -17,10 +17,11 @@
 #include "kernel/cpu/unravel_index_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unravel_index_cpu {
 namespace {
 constexpr int64_t kParallelDataNums = 1024;
 }  // namespace
@@ -106,5 +107,6 @@ std::vector<KernelAttr> UnravelIndexCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnravelIndex, UnravelIndexCpuKernelMod);
+}  // namespace unravel_index_cpu
 }  // namespace kernel
 }  // namespace mindspore

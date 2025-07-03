@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace non_deterministic_ints_cpu {
 class NonDeterministicIntsCPUKernelMod : public NativeCpuKernelMod {
  public:
   NonDeterministicIntsCPUKernelMod() = default;
@@ -48,6 +49,7 @@ class NonDeterministicIntsCPUKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, NonDeterministicIntsFunc>> func_list_;
   NonDeterministicIntsFunc kernel_func_;
 };
+}  // namespace non_deterministic_ints_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NONDETERMINISTICINTS_CPU_KERNEL_H_

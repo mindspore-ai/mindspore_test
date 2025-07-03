@@ -21,10 +21,8 @@
 namespace mindspore {
 namespace amp {
 static std::stack<AmpStrategyPtr> g_AmpStrategyStack;
-PrimArgList g_SetDtypeOptList = {PrimArg("ReduceProd", {}), PrimArg("Softmax", {}), PrimArg("LogSoftmax", {}),
-                                 PrimArg("CumProd", {}),    PrimArg("CumSum", {}),  PrimArg("CumsumExt", {}),
-                                 PrimArg("ProdExt", {}),    PrimArg("SumExt", {})};
-PrimArgList g_SetDtypeList = {PrimArg("Norm", {})};
+PrimArgList g_SetDtypeOptList = {};
+PrimArgList g_SetDtypeList = {};
 PrimArgList g_AutoPromoteList = {
   PrimArg("Addcdiv", {}),       PrimArg("Addcmul", {}),       PrimArg("Cross", {}),   PrimArg("_PyboostCrossPrim", {}),
   PrimArg("GridSampler2D", {}), PrimArg("GridSampler3D", {}), PrimArg("BiasAdd", {}), PrimArg("AddN", {}),
@@ -146,7 +144,7 @@ void PopAmpStrategy() {
 
 AmpStrategyPtr GetCurrentAmpStrategy() {
   if (g_AmpStrategyStack.empty()) {
-    MS_LOG(INFO) << "amp strategy stack is empty";
+    MS_LOG(DEBUG) << "amp strategy stack is empty";
     return nullptr;
   }
   return g_AmpStrategyStack.top();

@@ -3,14 +3,10 @@ from mindspore.ops import operations as P
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
 import dis
+import sys
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+SYS_VER = (sys.version_info.major, sys.version_info.minor)
 
 def fibonacci():
     a, b = 0, 1
@@ -85,7 +81,7 @@ def test_with_case_1():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -106,12 +102,14 @@ def test_with_case_2():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res
@@ -131,7 +129,7 @@ def test_with_case_3():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -152,7 +150,7 @@ def test_with_case_4():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -177,7 +175,7 @@ def test_with_case_5():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -205,7 +203,7 @@ def test_with_case_6():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -232,7 +230,7 @@ def test_with_case_7():
         return val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -259,7 +257,7 @@ def test_with_case_8():
         return val + test_val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     assert jcr["code"]["call_count_"] > 0
     assert expected == res
@@ -286,12 +284,14 @@ def test_with_case_9():
         return val + test_val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res
@@ -318,12 +318,14 @@ def test_with_case_10():
         return val + test_val + add
     test_value = 0
     expected = func(test_value, 5)
-    res = jit(fn=func, mode="PIJit")(test_value, 5)
+    res = jit(function=func, capture_mode="bytecode")(test_value, 5)
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
     flag = False
     for i in dis.get_instructions(new_code):
-        if i.opname == "SETUP_WITH":
+        if i.opname == "SETUP_WITH" and SYS_VER < (3, 11):
+            flag = True
+        elif i.opname == "BEFORE_WITH" and SYS_VER >= (3, 11):
             flag = True
     assert flag
     assert expected == res

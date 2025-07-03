@@ -28,7 +28,7 @@ mindspore.runtime.Stream
             Event，记录的事件。
 
         异常：
-            - **TypeError** - 参数 `event` 即不是一个 :class:`mindspore.runtime.Event` 也不是一个 ``None``。
+            - **TypeError** - 参数 `event` 既不是一个 :class:`mindspore.runtime.Event` 也不是一个 ``None``。
 
     .. py:method:: mindspore.runtime.Stream.synchronize()
 

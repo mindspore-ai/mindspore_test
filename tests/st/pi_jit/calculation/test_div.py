@@ -1,4 +1,3 @@
-import sys  
 import pytest 
 from mindspore import numpy as np
 from mindspore import ops
@@ -6,12 +5,7 @@ from mindspore import Tensor, jit, context
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def div(a, b):
     """Divide two numbers using GraphJit."""
     return a / b

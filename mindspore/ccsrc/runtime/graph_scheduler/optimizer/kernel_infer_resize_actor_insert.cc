@@ -135,23 +135,9 @@ void AddDataArrows(const ActorSet *actor_set, const KernelActor *kernel_actor, K
                                     data_arrow->to_input_index_, real_from_node);
       SchedulerHelper::AddDataArrow(from_actor, kernel_resize_actor, data_arrow->from_output_index_,
                                     data_arrow->to_input_index_, real_from_node);
-    } else if (from_actor->type() == KernelTransformType::kDeviceDataSourceActor) {
-      // Note: Remove this branch in future after change DevieDataSourceActor to a KernelActor.
-      auto device_data_source_actor = dynamic_cast<DeviceQueueDataSourceActor *>(from_actor);
-      MS_EXCEPTION_IF_NULL(device_data_source_actor);
-      SchedulerHelper::AddDataArrow(from_actor, kernel_infer_actor, data_arrow->from_output_index_,
-                                    data_arrow->to_input_index_, device_data_source_actor->data_kernel());
-      SchedulerHelper::AddDataArrow(from_actor, kernel_resize_actor, data_arrow->from_output_index_,
-                                    data_arrow->to_input_index_, device_data_source_actor->data_kernel());
     } else {
       SchedulerHelper::AddDataArrow(from_actor, kernel_infer_actor, data_arrow->from_output_index_,
                                     data_arrow->to_input_index_);
-      if (from_actor->type() == KernelTransformType::kCopyActor) {
-        auto *copy_actor = dynamic_cast<CopyActor *>(from_actor);
-        MS_EXCEPTION_IF_NULL(copy_actor);
-        UpdateRefCount(copy_actor->output().get(), false);
-        UpdateRefCount(copy_actor->output().get(), false);
-      }
       SchedulerHelper::AddDataArrow(from_actor, kernel_resize_actor, data_arrow->from_output_index_,
                                     data_arrow->to_input_index_);
     }

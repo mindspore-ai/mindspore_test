@@ -18,12 +18,13 @@
 #include <algorithm>
 #include <functional>
 #include <string>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "infer/ops_func_impl/meshgrid.h"
 #include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
+namespace meshgrid_cpu {
 bool MeshgridCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (inputs.size() - 1 != outputs.size()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be equal, but get " << inputs.size()
@@ -242,5 +243,6 @@ std::vector<KernelAttr> MeshgridCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Meshgrid, MeshgridCpuKernelMod);
+}  // namespace meshgrid_cpu
 }  // namespace kernel
 }  // namespace mindspore

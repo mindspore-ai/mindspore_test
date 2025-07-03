@@ -242,6 +242,7 @@ message LayoutProto {
   optional bool is_send = 9;
   optional int64 peer_rank = 10;
   optional int64 sr_tag = 11;
+  repeated int64 opt_shard_slice_shape_int = 12;
 }
 
 message PrimitiveProto {

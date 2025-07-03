@@ -28,8 +28,8 @@ from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.ops._utils import get_broadcast_shape
 from mindspore.ops.primitive import Primitive, PrimitiveWithInfer, PrimitiveWithCheck, prim_attr_register, _run_op
-from mindspore._c_expression import Tensor as Tensor_
-from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
+from mindspore._c_expression import TensorPy as Tensor_
+from ..auto_generate import (Add, Addcdiv, AddcdivExt, Addcmul, AddcmulExt, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
                              ReduceMax, ReduceMin, ReduceProd, Betainc, Neg, MatMul, BatchMatMul,
                              Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp, Cdist,
                              Logit, ReduceStd, Expm1, Log, Log1p, Erf, Erfc,
@@ -819,6 +819,7 @@ class InplaceIndexAdd(Primitive):
         """Initialize InplaceIndexAdd"""
         self.init_prim_io_names(inputs=['var', 'indices', 'updates'], outputs=['var'])
         self.axis = axis
+        self.add_prim_attr('side_effect_mem', True)
         validator.check_value_type('axis', axis, [int], self.name)
 
 
@@ -1128,7 +1129,7 @@ class Histogram(Primitive):
 class HistogramFixedWidth(PrimitiveWithInfer):
     """
     Returns a rank 1 histogram counting the number of entries in values that fall into every bin. The bins are equal
-    width and determined by the inputs `range` and the arguments `nbins`.
+    width and determined by the input `range` and the argument `nbins`.
 
     Args:
         nbins (int): The number of histogram bins, the type is a positive integer.
@@ -1349,7 +1350,7 @@ class MulNoNan(_MathBinaryOp):
           int32, int64, float16, float32, float64, complex64, complex128 currently or scalar.
 
     Outputs:
-        Tensor, the shape is the same as the shape after broadcasting,
+        Tensor, the shape is the same as the shape of input Tensor after broadcasting,
         and the data type is the one with higher precision among the two inputs.
 
     Raises:
@@ -1735,7 +1736,8 @@ class ApproximateEqual(_LogicBinaryOp):
     the relatively highest precision data type.
 
     Args:
-        tolerance (float): The maximum deviation that two elements can be considered equal. Default: ``1e-05`` .
+        tolerance (float, optional): The maximum deviation that two elements can be considered equal.
+            Default: ``1e-05`` .
 
     Inputs:
         - **x** (Tensor) - A tensor. Must be one of the following types: float32, float16.
@@ -1914,9 +1916,8 @@ class NPUAllocFloatStatus(Primitive):
 
 class NPUGetFloatStatus(Primitive):
     """
-    `mindspore.ops.NPUGetFloatStatus` updates the flag which is
+    :class:`mindspore.ops.NPUGetFloatStatus` updates the flag which is
     the output tensor of :class:`mindspore.ops.NPUAllocFloatStatus` with the latest overflow status.
-
 
     Note:
         The flag is a tensor whose shape is :math:`(8,)` and data type is `mindspore.dtype.float32`.
@@ -1924,7 +1925,8 @@ class NPUGetFloatStatus(Primitive):
         flag is bigger than 0, there is overflow happened.
         In addition, there are strict sequencing requirements for use, i.e., before
         using the NPUGetFloatStatus operator, need to ensure that the NPUClearFlotStatus
-        and your compute has been executed. We use :class:`mindspore.ops.Depend` to ensure the execution order.
+        and your compute has been executed. We use :class:`mindspore.ops.Depend`
+        to ensure the correct execution order.
 
     Inputs:
         - **x** (Tensor) - The output tensor of `NPUAllocFloatStatus`.
@@ -1932,7 +1934,7 @@ class NPUGetFloatStatus(Primitive):
           :math:`(N,*)` where :math:`*` means, any number of additional dimensions, its rank should be less than 8.
 
     Outputs:
-        Tensor, has the same shape as `x`. All the elements in the tensor will be zero.
+        Tensor, has the same shape as `x`.
 
     Raises:
         TypeError: If `x` is not a Tensor.
@@ -2441,6 +2443,9 @@ class BitwiseOr(_BitwiseBinaryOp):
 class BitwiseXor(_BitwiseBinaryOp):
     r"""
     Returns bitwise `xor` of two tensors element-wise.
+
+    .. warning::
+        This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
 
     Refer to :func:`mindspore.ops.bitwise_xor` for more details.
 
@@ -3349,9 +3354,8 @@ class ComplexAbs(Primitive):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.asarray(np.complex(3+4j)), mindspore.complex64)
+        >>> x = Tensor(3+4j, mindspore.complex64)
         >>> complex_abs = ops.ComplexAbs()
         >>> output = complex_abs(x)
         >>> print(output)
@@ -3383,9 +3387,8 @@ class Imag(Primitive):
 
     Examples:
         >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.asarray(np.complex(1.3+0.4j)), mindspore.complex64)
+        >>> from mindspore import ops
+        >>> x = mindspore.tensor(1.3+0.4j, mindspore.complex64)
         >>> imag = ops.Imag()
         >>> output = imag(x)
         >>> print(output)
@@ -3626,7 +3629,7 @@ class MatrixSolveLs(Primitive):
         TypeError: If `l2_regularizer` is not float64.
         TypeError: If `fast` is not bool.
         ValueError: If dimensions of `matrix` or `rhs` is less than 2.
-        ValueError: If shape of `matrix` dose not match the shape of `rhs`.
+        ValueError: If shape of `matrix` does not match the shape of `rhs`.
 
     Supported Platforms:
         ``CPU``
@@ -3886,8 +3889,8 @@ class Digamma(Primitive):
         Tensor, has the same dtype as `x`.
 
     Raises:
-        TypeError: If x is not a Tensor.
-        TypeError: If dtype of input x is not float16 or float32 or float64.
+        TypeError: If `x` is not a Tensor.
+        TypeError: If dtype of input `x` is not float16 or float32 or float64.
 
     Supported Platforms:
         ``GPU`` ``CPU``
@@ -4039,7 +4042,10 @@ class Median(Primitive):
         axis (int, optional): The specified dimension to compute median. Default: ``0`` .
         keep_dims (bool, optional): Whether the output tensor need to retain `axis` dimension or not.
             Default: ``False`` .
-        ignore_nan (bool, optional): Whether to ignore the NaN values in input Tensor. Default: ``False`` .
+        ignore_nan (bool, optional): Whether to ignore the ``NaN`` values in input Tensor. When ``False``, if the
+            input range (determined by `global_median`) contains a ``NaN`` value, the corresponding element of
+            `values` is ``NaN``. When ``True``, calculates the median of the remaining elements after excluding
+            ``NaN``. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - A Tensor to calculate median with.
@@ -4430,8 +4436,7 @@ class CholeskySolve(Primitive):
 
 class TrilIndices(Primitive):
     r"""
-    Calculates the indices of the lower triangular elements in a `row` * `col` matrix
-    and returns them as a 2-by-N Tensor.
+    Computes the indices of the lower triangular elements of a 2D matrix and returns them as a Tensor.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -4632,9 +4637,9 @@ class TriuIndices(Primitive):
             An optional data type of ``mstype.int32`` and ``mstype.int64`` . Default: ``mstype.int32`` .
 
     Outputs:
-        - **y** (Tensor) - indices of the elements in lower triangular part of matrix. The type specified by `dtype`.
+        - **y** (Tensor) - indices of the elements in upper triangular part of matrix. The type specified by `dtype`.
           The shape of output is :math:`(2, tril\_size)`, where :math:`tril\_size` is the number of elements in the
-          lower triangular matrix.
+          upper triangular matrix.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

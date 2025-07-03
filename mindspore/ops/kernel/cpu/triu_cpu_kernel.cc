@@ -17,10 +17,11 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include "kernel/cpu/triu_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace triu_cpu {
 namespace {
 constexpr size_t kTriuInputsNum = 2;
 constexpr size_t kTriuOutputsNum = 1;
@@ -183,5 +184,6 @@ std::vector<KernelAttr> TriuCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Triu, TriuCpuKernelMod);
+}  // namespace triu_cpu
 }  // namespace kernel
 }  // namespace mindspore

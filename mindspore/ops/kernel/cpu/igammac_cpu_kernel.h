@@ -22,11 +22,12 @@
 #include <iostream>
 #include <string>
 #include <tuple>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace igammac_cpu {
 class IgammacCpuKernelMod : public NativeCpuKernelMod {
  public:
   IgammacCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class IgammacCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void NoBcastCompute(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &);
 };
+}  // namespace igammac_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

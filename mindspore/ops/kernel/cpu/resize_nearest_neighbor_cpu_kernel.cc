@@ -15,11 +15,12 @@
  */
 
 #include "kernel/cpu/resize_nearest_neighbor_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_cpu {
 namespace {
 constexpr size_t kResizeNearestNeighborInputsNum = 4;
 constexpr size_t kResizeNearestNeighborOutputNum = 1;
@@ -138,5 +139,6 @@ const std::vector<std::pair<KernelAttr, ResizeNearestNeighborCpuKernelMod::Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeNearestNeighbor, ResizeNearestNeighborCpuKernelMod);
+}  // namespace resize_nearest_neighbor_cpu
 }  // namespace kernel
 }  // namespace mindspore

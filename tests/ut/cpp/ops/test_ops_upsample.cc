@@ -28,7 +28,6 @@
 #include "infer/ops_func_impl/upsample_bicubic2d.h"
 #include "infer/ops_func_impl/upsample_bilinear2d.h"
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -37,6 +36,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace ops {
@@ -90,7 +90,7 @@ TEST_P(TestUpsampleForward, dyn_shape) {
                             {std::make_shared<TensorType>(kFloat32)});
 
   // Simple Infer
-  ValuePtrList input_values{std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.image_shape)};
+  ValuePtrList input_values{std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.image_shape)};
   std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
                  [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
   DoFuncImplSimpleInferAndCompare(op_impl, upsample_mode, input_values, {param.out_shape}, {kFloat32});

@@ -22,11 +22,12 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tridiagonalsolve_cpu {
 class TridiagonalSolveCPUKernelMod : public NativeCpuKernelMod {
  public:
   TridiagonalSolveCPUKernelMod() = default;
@@ -75,6 +76,7 @@ class TridiagonalSolveCPUKernelMod : public NativeCpuKernelMod {
   bool DoComputeWithoutPartPivoting_(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs, size_t nth_batch, int i);
 };
+}  // namespace tridiagonalsolve_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

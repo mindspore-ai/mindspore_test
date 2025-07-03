@@ -30,7 +30,6 @@ DATASET_ROOT = "../data/dataset/testTFTestAllTypes/"
 SCHEMA_FILE = "../data/dataset/testTFTestAllTypes/datasetSchema.json"
 
 
-@pytest.mark.forked
 class TestMinddataProfilingManager:
     """
     Test MinddataProfilingManager

@@ -3,7 +3,7 @@ mindspore.ops.FloatStatus
 
 .. py:class:: mindspore.ops.FloatStatus
 
-    确定元素是否包含非数字（NaN）、正无穷还是负无穷。0表示正常，1表示溢出。
+    确定元素是否包含非数字（NaN）、正无穷或负无穷。0表示正常，1表示溢出。
 
     输入：
         - **x** (Tensor) - 输入Tensor。数据类型必须为float16、float32或float64。 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。

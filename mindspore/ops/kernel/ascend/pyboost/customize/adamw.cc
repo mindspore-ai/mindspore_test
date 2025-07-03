@@ -15,19 +15,19 @@
  */
 
 #include "kernel/ascend/pyboost/customize/adamw.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> AdamWAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &var, const BaseTensorPtr &m, const BaseTensorPtr &v,
-  const BaseTensorPtr &max_v, const BaseTensorPtr &grad, const BaseTensorPtr &step, const FP32ImmPtr &lr,
-  const FP32ImmPtr &beta1, const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &epsilon,
-  const BoolImmPtr &amsgrad, const BoolImmPtr &maximize) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> AdamWAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &var, const TensorPtr &m, const TensorPtr &v,
+  const TensorPtr &max_v, const TensorPtr &grad, const TensorPtr &step, const FP32ImmPtr &lr, const FP32ImmPtr &beta1,
+  const FP32ImmPtr &beta2, const FP32ImmPtr &decay, const FP32ImmPtr &epsilon, const BoolImmPtr &amsgrad,
+  const BoolImmPtr &maximize) {
   const auto lr_imm = GetValue<float>(lr);
   const auto beta1_imm = GetValue<float>(beta1);
   const auto beta2_imm = GetValue<float>(beta2);

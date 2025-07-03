@@ -49,6 +49,7 @@ mindspore
     :toctree: mindspore
 
     mindspore.set_device
+    mindspore.get_current_device
     mindspore.set_deterministic
     mindspore.set_context
     mindspore.get_context
@@ -94,7 +95,6 @@ mindspore
     :toctree: mindspore
 
     mindspore.async_ckpt_thread_status
-    mindspore.build_searched_strategy
     mindspore.check_checkpoint
     mindspore.ckpt_to_safetensors
     mindspore.convert_model
@@ -103,22 +103,12 @@ mindspore
     mindspore.load
     mindspore.load_checkpoint
     mindspore.load_checkpoint_async
-    mindspore.load_distributed_checkpoint
     mindspore.load_mindir
     mindspore.load_param_into_net
-    mindspore.load_segmented_checkpoints
-    mindspore.merge_pipeline_strategys
-    mindspore.merge_sliced_parameter
-    mindspore.obfuscate_model
     mindspore.parse_print
-    mindspore.rank_list_for_transform
-    mindspore.restore_group_info_list
     mindspore.safetensors_to_ckpt
     mindspore.save_checkpoint
     mindspore.save_mindir
-    mindspore.transform_checkpoint_by_rank
-    mindspore.transform_checkpoints
-    mindspore.unified_safetensors
 
 自动微分
 ----------------
@@ -145,19 +135,13 @@ mindspore
 
     mindspore.vmap
 
-并行
-^^^^^
+重计算
+^^^^^^^^^^^
 
 .. mscnautosummary::
     :toctree: mindspore
 
-    mindspore.Layout
-    mindspore.parameter_broadcast
     mindspore.recompute
-    mindspore.reshard
-    mindspore.shard
-    mindspore.sync_pipeline_shared_parameters
-    mindspore.parallel.set_op_strategy_config
 
 即时编译
 --------
@@ -168,8 +152,6 @@ mindspore
     mindspore.JitConfig
     mindspore.jit
     mindspore.jit_class
-    mindspore.ms_class
-    mindspore.ms_function
     mindspore.ms_memory_recycle
     mindspore.mutable
     mindspore.constexpr
@@ -197,15 +179,18 @@ mindspore
 .. mscnautosummary::
     :toctree: mindspore
 
-    mindspore.Profiler
+    mindspore.profiler.profile
+    mindspore.profiler._ExperimentalConfig
     mindspore.profiler.mstx
     mindspore.profiler.DynamicProfilerMonitor
     mindspore.profiler.schedule
-    mindspore.profiler.tensor_board_trace_handler
+    mindspore.profiler.tensorboard_trace_handler
+    mindspore.profiler.profiler.analyse
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord
     mindspore.set_dump
+    mindspore.Profiler
 
 日志
 ^^^^^

@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_all {
 
 class ReduceAllAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class ReduceAllAscend : public AclnnKernelMod {
   std::vector<int64_t> axis_;
   bool keep_dims_{false};
 };
+}  // namespace reduce_all
 }  // namespace kernel
 }  // namespace mindspore
 

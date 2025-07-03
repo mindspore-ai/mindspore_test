@@ -27,6 +27,10 @@
 #include "backend/common/graph_kernel/model/op_register.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -262,6 +266,7 @@ bool TensorInplace::Run(const FuncGraphPtr &func_graph) {
       }
       auto in_out_pairs = FindInputOutputPairs(sub_func_graph);
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       for (size_t i = 1; i < cnode->size(); i++) {
         if (in_out_pairs.count(i - 1) == 0) {
           continue;

@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -39,7 +39,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 const int kMsgQueuePermission = 0600;
 const int kMsgQueueClosed = 2;
 

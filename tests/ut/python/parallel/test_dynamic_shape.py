@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import numpy as np
 
 import mindspore as ms
@@ -86,7 +85,7 @@ def test_unique_column_split():
 
     size = 8
     context.set_auto_parallel_context(device_num=size, global_rank=0, parallel_mode="auto_parallel",
-                                      search_mode="dynamic_programming")
+                                      search_mode="sharding_propagation")
     x = Tensor(np.ones([32, 64]), dtype=ms.int32)
     net = Net()
     optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)

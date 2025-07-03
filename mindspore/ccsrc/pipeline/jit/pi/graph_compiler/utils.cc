@@ -38,6 +38,13 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
+#include "include/common/utils/tensor_py.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace pijit {
@@ -88,7 +95,7 @@ bool GraphUtils::IsTupleCanBroaden(const py::object &obj) {
   py::tuple tuple = py::cast<py::tuple>(obj);
   for (auto item : tuple) {
     auto elem = py::cast<py::object>(item);
-    if (!py::isinstance<mindspore::tensor::Tensor>(elem) && !IsTupleCanBroaden(elem)) {
+    if (!mindspore::tensor::IsTensorPy(elem) && !IsTupleCanBroaden(elem)) {
       return false;
     }
   }
@@ -102,7 +109,7 @@ bool GraphUtils::IsGradForScalar(const py::object &obj) {
 }
 
 bool GraphUtils::IsTensor(const py::object &obj) {
-  return py::isinstance<mindspore::tensor::Tensor>(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
+  return mindspore::tensor::IsTensorPy(obj) || py::isinstance<mindspore::tensor::CSRTensor>(obj) ||
          py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::RowTensor>(obj);
 }
 
@@ -110,7 +117,22 @@ bool GraphUtils::IsEmptyContainer(const py::object &obj) {
   if (!py::isinstance<py::tuple>(obj) && !py::isinstance<py::list>(obj) && !py::isinstance<py::dict>(obj)) {
     return false;
   }
-  return py::len(obj) == 0;
+  if (py::len(obj) == 0) {
+    return true;
+  }
+  // Need to check nested scene, such as ([], []), is also empty container, can not be broaden in graph.
+  if (py::isinstance<py::list>(obj)) {
+    auto list_obj = py::cast<py::list>(obj);
+    return std::all_of(list_obj.begin(), list_obj.end(),
+                       [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e)); });
+  } else if (py::isinstance<py::tuple>(obj)) {
+    auto tuple_obj = py::cast<py::tuple>(obj);
+    return std::all_of(tuple_obj.begin(), tuple_obj.end(),
+                       [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e)); });
+  }
+  auto dict_obj = py::cast<py::dict>(obj);
+  return std::all_of(dict_obj.begin(), dict_obj.end(),
+                     [](const auto &e) { return IsEmptyContainer(py::cast<py::object>(e.second)); });
 }
 
 AbstractBasePtr GraphUtils::ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden) {
@@ -150,6 +172,7 @@ PrimitivePtr GraphUtils::GetPrimitive(int op_code) {
 std::string GraphUtils::OpCodeToGraphName(int op_code) {
   static std::map<int, std::string> op_code_2_graph_name = {{UNARY_NEGATIVE, "negative"},
                                                             {UNARY_NOT, "logical_not"},
+                                                            {UNARY_INVERT, "invert"},
                                                             {BINARY_POWER, "pow_"},
                                                             {BINARY_MULTIPLY, "mul"},
                                                             {BINARY_MODULO, "mod"},
@@ -158,6 +181,7 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
                                                             {BINARY_SUBSCR, "getitem"},
                                                             {BINARY_FLOOR_DIVIDE, "floordiv"},
                                                             {BINARY_TRUE_DIVIDE, "div"},
+                                                            {BINARY_MATRIX_MULTIPLY, "matmul"},
                                                             {INPLACE_FLOOR_DIVIDE, "floordiv"},
                                                             {INPLACE_TRUE_DIVIDE, "div"},
                                                             {INPLACE_ADD, "add"},
@@ -205,6 +229,42 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
 }
 
 std::string GraphUtils::ContainsOpToGraphName(int oparg) { return oparg == 1 ? "not_in_" : "in_"; }
+
+std::string GraphUtils::BinaryOpToGraphName(int oparg) {
+#if IS_PYTHON_3_11_PLUS
+
+  static std::map<int, std::string> binary_op_arg_2_graph_name = {{NB_ADD, "add"},
+                                                                  {NB_POWER, "pow_"},
+                                                                  {NB_MULTIPLY, "mul"},
+                                                                  {NB_REMAINDER, "mod"},
+                                                                  {NB_SUBTRACT, "sub"},
+                                                                  {NB_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_TRUE_DIVIDE, "div"},
+                                                                  {NB_MATRIX_MULTIPLY, "matmul"},
+                                                                  {NB_INPLACE_FLOOR_DIVIDE, "floordiv"},
+                                                                  {NB_INPLACE_TRUE_DIVIDE, "div"},
+                                                                  {NB_INPLACE_ADD, "add"},
+                                                                  {NB_INPLACE_SUBTRACT, "sub"},
+                                                                  {NB_INPLACE_MULTIPLY, "mul"},
+                                                                  {NB_INPLACE_REMAINDER, "mod"},
+                                                                  {NB_LSHIFT, "left_shift"},
+                                                                  {NB_RSHIFT, "right_shift"},
+                                                                  {NB_AND, "bitwise_and"},
+                                                                  {NB_XOR, "bitwise_xor"},
+                                                                  {NB_OR, "bitwise_or"},
+                                                                  {NB_INPLACE_POWER, "pow"},
+                                                                  {NB_INPLACE_LSHIFT, "left_shift"},
+                                                                  {NB_INPLACE_RSHIFT, "right_shift"},
+                                                                  {NB_INPLACE_AND, "bitwise_and"},
+                                                                  {NB_INPLACE_XOR, "bitwise_xor"},
+                                                                  {NB_INPLACE_OR, "bitwise_or"}};
+  auto iter = binary_op_arg_2_graph_name.find(oparg);
+  if (iter != binary_op_arg_2_graph_name.end()) {
+    return iter->second;
+  }
+#endif
+  return "";
+}
 
 AnfNodePtr GraphUtils::GetMetaFuncGraph(int op_code) {
   // MS_EXCEPTION_IF_CHECK_FAIL(op_code_2_graph_name.find(op_code) != op_code_2_graph_name.end(),

@@ -26,7 +26,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 SharedMemoryQueue::SharedMemoryQueue(const key_t &key)
     : key_(key), shm_id_(-1), shm_addr_(nullptr), shm_size_(0), release_flag_(true) {}
 
@@ -256,7 +256,8 @@ Status SharedMemoryQueue::Serialize(const TensorRow &in_row) {
       } else {
         auto ret_memcpy = memcpy(reinterpret_cast<char *>(shm_addr_) + offset,
                                  reinterpret_cast<char *>(item->GetMutableBuffer()), data_len);
-        CHECK_FAIL_RETURN_UNEXPECTED(ret_memcpy == item->GetMutableBuffer(), "memcpy the data type of Tensor failed.");
+        CHECK_FAIL_RETURN_UNEXPECTED(ret_memcpy == reinterpret_cast<char *>(shm_addr_) + offset,
+                                     "memcpy the data type of Tensor failed.");
       }
       offset += static_cast<uint64_t>(data_len);
     }
@@ -339,7 +340,12 @@ Status SharedMemoryQueue::Deserialize(TensorRow *in_row) {
       std::string str(reinterpret_cast<char *>(shm_addr_) + offset, *data_len);
       {
         py::gil_scoped_acquire gil_acquire;
-        py::object shared_dict = py::module::import("pickle").attr("loads")(py::bytes(str));
+        py::object shared_dict;
+        try {
+          shared_dict = py::module::import("pickle").attr("loads")(py::bytes(str));
+        } catch (py::error_already_set &e) {
+          RETURN_STATUS_UNEXPECTED("Deserialize tensor failed: " + std::string(e.what()));
+        }
 
         // construct tensor
         std::vector<dsize_t> shape{};

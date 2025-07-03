@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 #include "utils/anf_utils.h"
 #include "utils/compile_config.h"
 #include "ops/op_def.h"
+#include "ir/tensor_py_wrapperbase.h"
 
 namespace mindspore {
 namespace {
@@ -88,8 +89,7 @@ void CheckCNodeInputsNum(const AnfNodeWeakPtrList &inputs) {
     size_t monad_num =
       static_cast<size_t>(std::count_if(inputs.cbegin() + 1, inputs.end(), [](const AnfNodeWeakPtr &weak_input) {
         const auto &input = weak_input.lock();
-        return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) ||
-                                           IsValueNode<UMonad>(input) || IsValueNode<IOMonad>(input));
+        return IsMonad(input);
       }));
     // If monad input is parameter_monad, monad num is 0, actual monad num should be 1. And monad num is 0 if monad
     // pass has not been executed.
@@ -668,7 +668,16 @@ void Parameter::set_default_param(const ValuePtr &param) {
   has_default_ = true;
 }
 
-const ValuePtr &Parameter::default_param() const { return default_param_; }
+const ValuePtr &Parameter::default_param_raw() const { return default_param_; }
+
+ValuePtr Parameter::default_param() const {
+  if (default_param_ != nullptr && default_param_->isa<tensor::TensorPyWrapperBase>()) {
+    auto tensorpy = default_param_->cast<tensor::TensorPyWrapperBasePtr>();
+    MS_EXCEPTION_IF_NULL(tensorpy);
+    return tensorpy->GetTensorWrapper();
+  }
+  return default_param_;
+}
 
 void Parameter::IncreaseUsedGraphCount() { used_graph_count_++; }
 
@@ -761,6 +770,7 @@ Value &Value::operator=(const Value &other) {
 bool Value::ContainsValueAny() const { return false; }
 
 ValueNode::ValueNode(const ValuePtr &value) : value_(value) {
+  MS_EXCEPTION_IF_NULL(value);
   if (value->ContainsValueAny()) {
     MS_LOG(EXCEPTION) << "Value of value node cannot be ValueAny. Value: " << value->ToString();
   }
@@ -1021,6 +1031,10 @@ bool HasAbstractUMonad(const AnfNodePtr &node) { return HasAbstract<abstract::Ab
 
 bool HasAbstractIOMonad(const AnfNodePtr &node) { return HasAbstract<abstract::AbstractIOMonad>(node); }
 
+bool IsMonad(const AnfNodePtr &input) {
+  return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<Monad>(input));
+}
+
 bool GetPrimitiveFlag(const PrimitivePtr &prim, const std::string &attr) {
   if (prim != nullptr) {
     auto flag = prim->GetAttr(attr);
@@ -1130,6 +1144,7 @@ PrimitivePtr GetPrimitiveFromValueNode(const AnfNodePtr &node) {
 }
 
 static std::string GetNodeTargetForVarInputNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto &inputs = cnode->inputs();
   AnfNodeWeakPtrList real_inputs;
   const size_t update_state_valid_input_index = 2;

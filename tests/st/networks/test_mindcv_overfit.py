@@ -53,7 +53,8 @@ def train(args, device_id=0, rank_id=0, device_num=1):
     os.environ["RANK_SIZE"] = str(device_num)
     ms.set_context(mode=args.mode, device_id=device_id)
     ms.set_context(deterministic="ON")
-    ms.set_context(jit_level="O2")
+    # O2 does not support the non-contiguous tensor.
+    ms.set_context(jit_level="O0")
 
     # change learning rate
     args.lr = args.lr / 8
@@ -198,11 +199,11 @@ def train(args, device_id=0, rank_id=0, device_num=1):
     train_steps = 200
 
     if args.image_resize == 224:
-        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image.npy")))[: args.batch_size, :, :, :]
-        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label.npy")))[: args.batch_size]
+        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image.npy")))[: args.batch_size, :, :, :] * 1
+        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label.npy")))[: args.batch_size] * 1
     elif args.image_resize == 299:
-        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image_299.npy")))[: args.batch_size, :, :, :]
-        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label_299.npy")))[: args.batch_size]
+        data1 = ms.Tensor(np.load(os.path.join(test_datapath, "image_299.npy")))[: args.batch_size, :, :, :] * 1
+        data2 = ms.Tensor(np.load(os.path.join(test_datapath, "label_299.npy")))[: args.batch_size] * 1
     data = (data1, data2)
 
     train_net = trainer.train_network
@@ -325,7 +326,7 @@ def test_inception_v3_1p():
     # assert average_step_time < 216.74, f"Average step time should shorter than 216.74ms"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @test_utils.run_test_with_On
 def test_vit_b32_1p():
     """

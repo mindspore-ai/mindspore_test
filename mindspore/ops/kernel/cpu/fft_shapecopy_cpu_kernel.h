@@ -24,13 +24,14 @@
 #include <functional>
 #include <algorithm>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "utils/fft_helper.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fft_shapecopy_cpu {
 class FFTShapeCopyCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTShapeCopyCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class FFTShapeCopyCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> dout_shape_;
   std::vector<int64_t> shape_;
 };
+}  // namespace fft_shapecopy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTSHAPECOPY_CPU_KERNEL_H_

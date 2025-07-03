@@ -36,7 +36,7 @@ class MemorySwapActor : public AbstractActor {
         device_tensors_to_swap_(std::move(device_tensors_to_swap)) {}
   MemorySwapActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
                   std::vector<DeviceTensor *> device_tensors_to_swap, const DeviceContext *device_context,
-                  std::vector<std::pair<device::SwapActionType, vector<size_t>>> actions)
+                  std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> actions)
       : AbstractActor(name, KernelTransformType::kMemorySwapActor, recorder_aid),
         stream_id_(stream_id),
         device_tensors_to_swap_(std::move(device_tensors_to_swap)),
@@ -47,68 +47,23 @@ class MemorySwapActor : public AbstractActor {
   ~MemorySwapActor() override = default;
 
  protected:
-  void Run(OpContext<DeviceTensor> *context) override;
-  void FetchRealParameters(OpContext<DeviceTensor> *context);
+  void Run(OpContext<KernelTensor> *context) override;
+  void FetchRealParameters(OpContext<KernelTensor> *context);
 
  private:
   void AllocDeviceContinuousMem(const std::vector<DeviceTensor *> &device_tensors);
-  static void Swap(OpContext<mindspore::runtime::DeviceTensor> *const context, device::StorageType to,
+  static void Swap(OpContext<KernelTensor> *const context, device::StorageType to,
                    const std::vector<DeviceTensor *> &device_tensors);
-  void UpdateDeviceTensors(OpContext<DeviceTensor> *context);
+  void UpdateDeviceTensors(OpContext<KernelTensor> *context);
   std::vector<DeviceTensor *> GetDeviceTensors(const std::vector<size_t> &indexes);
 
  protected:
   size_t stream_id_;
   std::vector<DeviceTensor *> device_tensors_to_swap_;
-  std::vector<std::pair<device::SwapActionType, vector<size_t>>> swap_actions_;
+  std::vector<std::pair<device::SwapActionType, std::vector<size_t>>> swap_actions_;
   std::vector<DeviceTensor *> real_parameters_;
   size_t fixed_device_tensor_num_{0};
 };
-
-class MemorySwapInActor : public MemorySwapActor {
- public:
-  MemorySwapInActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
-                    const DeviceContext *device_context, const std::vector<DeviceTensor *> &device_tensors_to_swap,
-                    std::vector<std::vector<DeviceTensor *>> continuous_device_tensors,
-                    std::vector<std::vector<size_t>> continuous_device_tensor_sizes, size_t real_parameter_size)
-      : MemorySwapActor(name, recorder_aid, stream_id, device_tensors_to_swap),
-        continuous_device_tensors_(std::move(continuous_device_tensors)),
-        continuous_device_tensor_sizes_(std::move(continuous_device_tensor_sizes)) {
-    (void)device_contexts_.emplace_back(device_context);
-    real_parameters_.resize(real_parameter_size);
-  }
-  ~MemorySwapInActor() override = default;
-
- protected:
-  void Run(OpContext<DeviceTensor> *context) override;
-
- private:
-  std::vector<std::vector<DeviceTensor *>> continuous_device_tensors_;
-  std::vector<std::vector<size_t>> continuous_device_tensor_sizes_;
-};
-
-class MemorySwapOutActor : public MemorySwapActor {
- public:
-  MemorySwapOutActor(const std::string &name, const AID *recorder_aid, size_t stream_id,
-                     const std::vector<DeviceTensor *> &device_tensors_to_swap,
-                     const std::vector<DeviceTensor *> &device_tensors_to_free,
-                     const std::vector<bool> &swap_out_real_parameter)
-      : MemorySwapActor(name, recorder_aid, stream_id, device_tensors_to_swap),
-        device_tensors_to_free_(device_tensors_to_free),
-        swap_out_real_parameter_(swap_out_real_parameter) {
-    real_parameters_.resize(swap_out_real_parameter.size());
-  }
-  ~MemorySwapOutActor() override = default;
-
- protected:
-  void Run(OpContext<DeviceTensor> *context) override;
-
- private:
-  std::vector<DeviceTensor *> device_tensors_to_free_;
-  // Whether offload real parameter when it does not have max original_ref_count_.
-  std::vector<bool> swap_out_real_parameter_;
-};
-
 using MemSwapActorPtr = std::shared_ptr<MemorySwapActor>;
 }  // namespace runtime
 }  // namespace mindspore

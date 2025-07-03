@@ -25,9 +25,15 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"  // collective communication operations
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "plugin/res_manager/ascend/collective/dvm_collective_comm_lib.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {
@@ -46,6 +52,11 @@ enum OpType {
   OP_REDUCE,
   OP_SLICE,
   OP_MATMUL,
+  OP_GMM,
+  OP_COMM,
+  OP_TG,
+  OP_COPY,
+  OPTypeEnd
 };
 
 ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
@@ -113,6 +124,9 @@ static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"StridedSlice", {OP_SLICE, 1}},
   {ops::kNameMatMul, {OP_MATMUL, 0}},
   {ops::kNameBatchMatMul, {OP_MATMUL, 0}},
+  {ops::kNameGroupedMatmul, {OP_GMM, 0}},
+  {"TupleGetItem", {OP_TG, 0}},
+  {"AllReduce", {OP_COMM, 0}},
 };
 
 TypeId GetValueNodeType(const AnfNodePtr &node) {
@@ -144,16 +158,26 @@ T GetScalarFromNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(valuenode);
   auto value_ptr = valuenode->value();
   if (value_ptr->isa<Scalar>()) {
-    if constexpr (std::is_same_v<T, float16>) {
-      MS_LOG(EXCEPTION) << "The float16 type is not support!";
+    auto input_scalar = value_ptr->cast<ScalarPtr>();
+    MS_EXCEPTION_IF_NULL(input_scalar);
+    if constexpr (std::is_same_v<T, dvm::Float16>) {
+      return T(GetValue<float16>(input_scalar).int_value());
+    } else if constexpr (std::is_same_v<T, dvm::BFloat16>) {
+      return T(GetValue<bfloat16>(input_scalar).int_value());
     } else {
-      auto input_scalar = value_ptr->cast<ScalarPtr>();
       return GetValue<T>(input_scalar);
     }
+  } else {
+    auto input_tensor = value_ptr->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    if constexpr (std::is_same_v<T, dvm::Float16>) {
+      return T(static_cast<float16 *>(input_tensor->data_c())->int_value());
+    } else if constexpr (std::is_same_v<T, dvm::BFloat16>) {
+      return T(static_cast<bfloat16 *>(input_tensor->data_c())->int_value());
+    } else {
+      return *(static_cast<T *>(input_tensor->data_c()));
+    }
   }
-  auto input_tensor = value_ptr->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  return TensorValueToVector<T>(input_tensor)[0];
 }
 
 class OpBuilder {
@@ -179,29 +203,30 @@ class OpBuilder {
     switch (op_type->second.first) {
       case OP_CAST: {
         auto dst_dtype = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto op = EmitCast(GetInput(node->input(1)), dst_dtype);
+        auto op = EmitCast(GetInput(node->input(kIndex1)), dst_dtype);
         EmitOp(anf_node, op);
         break;
       }
       case OP_SELECT: {
-        auto op = kernel_->Select(GetInput(node->input(1)), GetInput(node->input(2)), GetInput(node->input(3)));
+        auto op = kernel_->Select(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)),
+                                  GetInput(node->input(kIndex3)));
         EmitOp(anf_node, op);
         break;
       }
       case OP_UNARY: {
-        auto op = kernel_->Unary(op_type->second.second, GetInput(node->input(1)));
+        auto op = kernel_->Unary(op_type->second.second, GetInput(node->input(kIndex1)));
         EmitOp(anf_node, op);
         break;
       }
       case OP_RSQRT: {
-        auto sqrt_op = kernel_->Unary(dvm::UnaryOpType::kSqrt, GetInput(node->input(1)));
+        auto sqrt_op = kernel_->Unary(dvm::UnaryOpType::kSqrt, GetInput(node->input(kIndex1)));
         auto op = kernel_->Unary(dvm::UnaryOpType::kReciprocal, sqrt_op);
         EmitOp(anf_node, op);
         break;
       }
       case OP_RESHAPE: {
-        auto shape_ref = CacheShape(node, 2);
-        auto op = kernel_->Reshape(GetInput(node->input(1)), shape_ref);
+        auto shape_ref = CacheShape(node, kIndex2);
+        auto op = kernel_->Reshape(GetInput(node->input(kIndex1)), shape_ref);
         EmitOp(anf_node, op);
         break;
       }
@@ -211,41 +236,22 @@ class OpBuilder {
         break;
       }
       case OP_BROADCAST: {
-        auto input = node->input(1);
-        auto shape_ref = CacheShape(node, 2);
-        auto op = input->isa<ValueNode>() ? EmitScalarBroadcast(input, shape_ref)
-                                          : kernel_->Broadcast(GetInput(input), shape_ref);
-        EmitOp(anf_node, op);
+        HandlerBroadcastOp(node);
         break;
       }
       case OP_NEG: {
         auto obj = GetInput(node->input(1));
-        if (kernel_->GetDType(obj) == dvm::kInt32) {
-          auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1);
-          EmitOp(anf_node, op);
-        } else {
-          auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1.0f);
-          EmitOp(anf_node, op);
-        }
+        auto op = kernel_->Binary(dvm::BinaryOpType::kMul, obj, -1);
+        EmitOp(anf_node, op);
         break;
       }
       case OP_ASSIGN: {
-        auto out_type = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto input2 = EmitCast(GetInput(node->input(2)), out_type);
-        // store the second input of assign to the output of subgraph
-        // the output addr of subgraph equals to the corresponding parameter addr of subgraph
-        if (outputs_.find(node) != outputs_.end()) {
-          ops_map_[anf_node] = kernel_->Store(nullptr, input2);
-          outputs_[anf_node] = ops_map_[anf_node];
-        } else {
-          MS_LOG_WITH_NODE(EXCEPTION, node)
-            << "AssignOp " << node->fullname_with_scope() << " is not in graph kernel 's outputs.";
-        }
+        HandlerAssignOp(node);
         break;
       }
       case OP_ELEMENY: {
         auto dst_dtype = AnfAlgo::GetOutputDeviceDataType(node, 0);
-        auto op = kernel_->ElemAny(EmitCast(GetInput(node->input(1)), dst_dtype));
+        auto op = kernel_->ElemAny(EmitCast(GetInput(node->input(kIndex1)), dst_dtype));
         EmitOp(anf_node, op);
         break;
       }
@@ -261,14 +267,38 @@ class OpBuilder {
         HandlerMatMulOp(node, prim, prim_name);
         break;
       }
+      case OP_GMM: {
+        HandlerGroupedMatmulOp(node, prim);
+        break;
+      }
+      case OP_COMM: {
+        HandlerCollectiveCommOp(node);
+        break;
+      }
+      case OP_TG: {
+        EmitOp(node, GetInput(node->input(kIndex1)));
+        break;
+      }
+      case OP_COPY: {
+        EmitOp(anf_node, kernel_->Copy(GetInput(node->input(kIndex1))));
+        break;
+      }
       default:
         MS_LOG(EXCEPTION) << op_type->second << " is unsupported op type.";
         break;
     }
   }
 
+  template <typename T>
+  dvm::NDObject *EmitBinaryScalarOp(const AnfNodePtr &node, const AnfNodePtr &scalar_node, int binary_type,
+                                    const bool rhs_val) {
+    auto scalar = GetScalarFromNode<T>(scalar_node);
+    return rhs_val ? kernel_->Binary(binary_type, GetInput(node), scalar)
+                   : kernel_->Binary(binary_type, scalar, GetInput(node));
+  }
+
   dvm::NDObject *EmitBinaryOp(const CNodePtr &node, int binary_type) {
-    AnfNodePtr inputs[] = {node->input(1), node->input(2)};
+    AnfNodePtr inputs[] = {node->input(kIndex1), node->input(kIndex2)};
     int scalar_index = -1;
     for (int i = 0; i < 2; i++) {
       auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(inputs[i]->Shape())[kShape];
@@ -287,20 +317,18 @@ class OpBuilder {
       auto scalar_node = inputs[scalar_index];
       auto common_node = inputs[scalar_index ^ 1];
       auto type_id = GetValueNodeType(scalar_node);
-      if (type_id == kNumberTypeFloat32) {
-        auto scalar = GetScalarFromNode<float>(scalar_node);
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else if (type_id == kNumberTypeFloat16) {
-        auto scalar = static_cast<float>(GetScalarFromNode<float16>(scalar_node));
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else if (type_id == kNumberTypeInt32) {
-        auto scalar = GetScalarFromNode<int32_t>(scalar_node);
-        op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
-                          : kernel_->Binary(binary_type, scalar, GetInput(common_node));
-      } else {
-        MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype";
+      switch (type_id) {
+        case kNumberTypeFloat32:
+          return EmitBinaryScalarOp<float>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeFloat16:
+          return EmitBinaryScalarOp<dvm::Float16>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeInt32:
+          return EmitBinaryScalarOp<int32_t>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        case kNumberTypeBFloat16:
+          return EmitBinaryScalarOp<dvm::BFloat16>(common_node, scalar_node, binary_type, scalar_index == kIndex1);
+        default:
+          MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype "
+                            << TypeIdToString(type_id);
       }
     } else {
       op = kernel_->Binary(binary_type, GetInput(inputs[0]), GetInput(inputs[1]));
@@ -319,6 +347,21 @@ class OpBuilder {
   }
 
  private:
+  void HandlerAssignOp(const AnfNodePtr &anf_node) {
+    const CNodePtr &node = anf_node->cast<CNodePtr>();
+    auto out_type = AnfAlgo::GetOutputDeviceDataType(node, kIndex0);
+    auto input2 = EmitCast(GetInput(node->input(kIndex2)), out_type);
+    // store the second input of assign to the output of subgraph
+    // the output addr of subgraph equals to the corresponding parameter addr of subgraph
+    if (outputs_.find(node) != outputs_.end()) {
+      ops_map_[anf_node] = kernel_->Store(nullptr, input2);
+      outputs_[anf_node] = ops_map_[anf_node];
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "AssignOp " << node->fullname_with_scope()
+                                        << " is not in graph kernel 's outputs.";
+    }
+  }
+
   void HandlerReduceOp(const CNodePtr &node, const PrimitivePtr &prim, int op_type) {
     auto keep_dims_attr = prim->GetAttr(kAttrKeepDims);
     MS_EXCEPTION_IF_NULL(keep_dims_attr);
@@ -328,32 +371,65 @@ class OpBuilder {
     EmitOp(node, op);
   }
 
+  void HandlerBroadcastOp(const CNodePtr &node) {
+    auto input = node->input(kIndex1);
+    auto shape_ref = CacheShape(node, kIndex2);
+    auto op =
+      input->isa<ValueNode>() ? EmitScalarBroadcast(input, shape_ref) : kernel_->Broadcast(GetInput(input), shape_ref);
+    EmitOp(node, op);
+  }
+
   void HandlerSliceOp(const CNodePtr &node, int op_type) {
     auto input = node->input(1);
-    auto start_ref = CacheAxis(node, node->input(2));
+    auto start_ref = CacheAxis(node, node->input(kIndex2));
     if (op_type) {
-      auto end_ref = CacheAxis(node, node->input(3));
-      auto step_ref = CacheAxis(node, node->input(4));
+      auto end_ref = CacheAxis(node, node->input(kIndex3));
+      auto step_ref = CacheAxis(node, node->input(kIndex4));
       auto op = kernel_->Copy(GetInput(input, start_ref, end_ref, step_ref));
       EmitOp(node, op);
     } else {
-      auto size_ref = CacheAxis(node, node->input(3));
+      auto size_ref = CacheAxis(node, node->input(kIndex3));
       auto op = kernel_->Copy(GetInput(input, start_ref, size_ref));
       EmitOp(node, op);
     }
   }
 
+  void HandlerCollectiveCommOp(const CNodePtr &node) {
+    auto prim = GetCNodePrimitive(node);
+    auto group_name = GetValue<std::string>(prim->GetAttr(kAttrGroup));
+    auto comm_ptr = device::ascend::DvmCollectiveCommLib::GetInstance().GetCommunicator(group_name);
+    auto op = kernel_->AllReduce(GetInput(node->input(kIndex1)), comm_ptr.get());
+    EmitOp(node, op);
+  }
+
   void HandlerMatMulOp(const CNodePtr &node, const PrimitivePtr &prim, const std::string &prim_name) {
     // Input: (prim, a, b)
     constexpr auto kMatMulInputNum = 3;
-    if (node->size() != kMatMulInputNum) {
+    constexpr auto kMatMulBiasAddInputNum = 4;
+    if (node->size() == kMatMulInputNum || node->size() == kMatMulBiasAddInputNum) {
+      auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
+      auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
+      auto op =
+        kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b,
+                        node->size() == kMatMulBiasAddInputNum ? GetInput(node->input(kIndex3)) : nullptr);
+      EmitOp(node, op);
+    } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Input size of " << prim_name << " should be " << kMatMulInputNum
                                         << " but got " << node->size();
     }
+  }
+
+  void HandlerGroupedMatmulOp(const CNodePtr &node, const PrimitivePtr &prim) {
     auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
     auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b,
-                              nullptr);
+    auto group_type = GetValue<int64_t>(prim->GetAttr("group_type"));
+    auto bias_node = node->input(kIndex3);
+    dvm::NDObject *bias_op = nullptr;
+    if (AnfAlgo::GetInputDeviceShape(node, kIndex2) != ShapeVector{0}) {
+      bias_op = GetInput(bias_node);
+    }
+    auto op = kernel_->GroupedMatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a,
+                                     transpose_b, bias_op, GetInput(node->input(kIndex8)), dvm::GroupType(group_type));
     EmitOp(node, op);
   }
 
@@ -462,19 +538,26 @@ class OpBuilder {
     auto type_id = GetValueNodeType(node);
     auto v_type_id = ms_type_map[type_id];
     dvm::NDObject *op = nullptr;
-    if (type_id == kNumberTypeFloat32) {
-      auto scalar = GetScalarFromNode<float>(node);
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeFloat16) {
-      auto scalar = static_cast<float>(GetScalarFromNode<float16>(node));
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeInt32) {
-      auto scalar = GetScalarFromNode<int32_t>(node);
-      op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
-    } else if (type_id == kNumberTypeBFloat16) {
-      auto scalar = GetScalarFromNode<bfloat16>(node);
-      auto fp32_scalar = static_cast<float>(scalar);
-      op = kernel_->Broadcast(fp32_scalar, shape, dvm::DType::kFloat32, empty_input_);
+    switch (type_id) {
+      case kNumberTypeFloat32: {
+        op = kernel_->Broadcast(GetScalarFromNode<float>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeFloat16: {
+        op = kernel_->Broadcast(GetScalarFromNode<dvm::Float16>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeBFloat16: {
+        op = kernel_->Broadcast(GetScalarFromNode<dvm::BFloat16>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      case kNumberTypeInt32: {
+        op = kernel_->Broadcast(GetScalarFromNode<int32_t>(node), shape, v_type_id, empty_input_);
+        break;
+      }
+      default:
+        MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype "
+                          << TypeIdToString(type_id);
     }
     if (empty_input_) {
       empty_input_ = false;  // now we have a fake input
@@ -514,17 +597,15 @@ class OpBuilder {
   bool empty_input_{false};
 };
 
-std::unordered_map<dvm::DType, TypeId> OpBuilder::v_type_map = {{dvm::DType::kFloat32, TypeId::kNumberTypeFloat32},
-                                                                {dvm::DType::kFloat16, TypeId::kNumberTypeFloat16},
-                                                                {dvm::DType::kBool, TypeId::kNumberTypeBool},
-                                                                {dvm::DType::kInt32, TypeId::kNumberTypeInt32},
-                                                                {dvm::DType::kBFloat16, TypeId::kNumberTypeBFloat16}};
+std::unordered_map<dvm::DType, TypeId> OpBuilder::v_type_map = {
+  {dvm::DType::kFloat32, TypeId::kNumberTypeFloat32}, {dvm::DType::kFloat16, TypeId::kNumberTypeFloat16},
+  {dvm::DType::kBool, TypeId::kNumberTypeBool},       {dvm::DType::kInt32, TypeId::kNumberTypeInt32},
+  {dvm::DType::kInt64, TypeId::kNumberTypeInt64},     {dvm::DType::kBFloat16, TypeId::kNumberTypeBFloat16}};
 
-std::unordered_map<TypeId, dvm::DType> OpBuilder::ms_type_map = {{TypeId::kNumberTypeFloat32, dvm::DType::kFloat32},
-                                                                 {TypeId::kNumberTypeFloat16, dvm::DType::kFloat16},
-                                                                 {TypeId::kNumberTypeBool, dvm::DType::kBool},
-                                                                 {TypeId::kNumberTypeInt32, dvm::DType::kInt32},
-                                                                 {TypeId::kNumberTypeBFloat16, dvm::DType::kBFloat16}};
+std::unordered_map<TypeId, dvm::DType> OpBuilder::ms_type_map = {
+  {TypeId::kNumberTypeFloat32, dvm::DType::kFloat32}, {TypeId::kNumberTypeFloat16, dvm::DType::kFloat16},
+  {TypeId::kNumberTypeBool, dvm::DType::kBool},       {TypeId::kNumberTypeInt32, dvm::DType::kInt32},
+  {TypeId::kNumberTypeInt64, dvm::DType::kInt64},     {TypeId::kNumberTypeBFloat16, dvm::DType::kBFloat16}};
 
 size_t GetSubGraphNums(FuncGraphPtr graph_kernel) {
   auto output = graph_kernel->get_return()->cast<CNodePtr>()->input(1);
@@ -671,11 +752,12 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
  private:
   dvm::KernelType GetKernelType(std::vector<AnfNodePtr> *nodes) {
     auto iter = std::find_if(nodes->begin(), nodes->end(), [](const AnfNodePtr &node) {
-      return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
+      return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul) ||
+             IsPrimitiveCNode(node, prim::kPrimGroupedMatmul);
     });
     if (iter != nodes->end()) {
       std::rotate(nodes->begin(), iter, iter + 1);
-      return dvm::KernelType::kStaticMix;
+      return is_dynamic_ ? dvm::KernelType::kDynMix : dvm::KernelType::kStaticMix;
     } else {
       return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
     }
@@ -790,17 +872,17 @@ KernelModPtr DvmOpBuild(const AnfNodePtr &anf_node) {
   if (!init) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
+    bool enable_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
+    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0;
+    if (enable_tuning && enable_deterministic) {
+      enable_tuning = false;
+      MS_LOG(WARNING) << "Since the result is required to be deterministic, online tuning is disabled.";
+    }
+    dvm::SetOnlineTuning(enable_tuning);
     dvm::SetDeterministic(enable_deterministic);
     init = true;
-    MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "true" : "false");
-  }
-  static bool tuning_init = false;
-  if (!tuning_init) {
-    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0 ? true : false;
-    dvm::SetOnlineTuning(enable_tuning);
-    tuning_init = true;
-    MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "true" : "false");
+    MS_LOG(INFO) << "Set dvm deterministic " << enable_deterministic;
+    MS_LOG(INFO) << "Set dvm online tuning " << enable_tuning;
   }
   MS_EXCEPTION_IF_NULL(anf_node);
   auto scope = anf_node->fullname_with_scope();

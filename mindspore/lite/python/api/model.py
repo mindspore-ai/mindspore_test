@@ -460,7 +460,8 @@ class Model(BaseModel):
         2. Adjust the input size to the specify shape.
 
         3. When the input is a dynamic shape (a dimension of the shape of the model input contains -1), -1 must be
-           replaced by a fixed dimension through `resize` .
+           replaced by a fixed dimension through `resize` . (When `provider` is set to `ge`, model input shape is
+           fixed by input Tensor shape.)
 
         4. The shape operator contained in the model is dynamic shape (a dimension of the shape operator contains -1).
 
@@ -722,13 +723,13 @@ class ModelGroupFlag(Enum):
 
     The `ModelGroupFlag` is used to define the flags used to construct a `ModelGroup`. Currently, supports:
 
-    1. `ModelGroupFlag.SHARE_WEIGHT`, multiple models share weights share workspace memory, default construction flag
-    for `ModelGroup`.
+    1. `ModelGroupFlag.SHARE_WEIGHT`, multiple models share weights(including constatns and variables) memory.
+       Currently only supported in cloud side Ascend inference and the provider is GE.
 
-    2. `ModelGroupFlag.SHARE_WORKSPACE`, multiple models share weights(including constatns and variables) memory.
-    Currently only supported in cloud side Ascend inference and the provider is GE.
+    2. `ModelGroupFlag.SHARE_WORKSPACE`, multiple models share weights share workspace memory, default construction flag
+       for `ModelGroup`.
 
-    3. 'ModelGroupFlag.SHARE_WEIGHT_WORKSPACE', shared weight memory and workspace memory.
+    3. `ModelGroupFlag.SHARE_WEIGHT_WORKSPACE`, shared weight memory and workspace memory.
 
     Examples:
         >>> import mindspore_lite as mslite

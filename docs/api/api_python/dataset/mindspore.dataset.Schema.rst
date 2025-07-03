@@ -6,7 +6,7 @@ mindspore.dataset.Schema
     用于解析和存储数据列属性的类。
 
     参数：
-        - **schema_file** (str) - schema文件的路径。默认值： ``None`` 。
+        - **schema_file** (str，可选) - schema文件的路径。默认值： ``None`` 。
 
     异常：
         - **RuntimeError** - schema文件加载失败。
@@ -16,13 +16,13 @@ mindspore.dataset.Schema
         向schema中添加新列。
 
         参数：
-            - **name** (str) - 列的新名称。
+            - **name** (str) - 新列的名称。
             - **de_type** (str) - 列的数据类型。
             - **shape** (list[int], 可选) - 列shape。默认值： ``None`` ， ``-1`` 表示该维度的shape是未知的。
 
         异常：
             - **ValueError** - 列类型未知。
-        
+
     .. py:method:: from_json(json_obj)
 
         从JSON对象获取schema文件。
@@ -37,13 +37,13 @@ mindspore.dataset.Schema
 
     .. py:method:: parse_columns(columns)
 
-        解析传入的数据列的属性并将其添加到自身的schema中。
+        解析传入的数据列的属性，并将其添加到自身的schema中。
 
         参数：
             - **columns** (Union[dict, list[dict], tuple[dict]]) - 数据集属性信息，从schema文件解码。
 
-              - **list** [dict]：'name'和 'type'必须为key值， 'shape'可选。
-              - **dict** ：columns.keys()作为名称，columns.values()是dict，其中包含 'type'， 'shape'可选。
+              - **list** [dict]： `name` 和 `type` 必须为key值， `shape` 可选。
+              - **dict** ：columns.keys()作为名称，columns.values()是dict，其中包含可选的 `type`， `shape` 。
 
         异常：
             - **RuntimeError** - 解析列失败。
@@ -55,5 +55,5 @@ mindspore.dataset.Schema
         获取schema的JSON字符串。
 
         返回：
-            str，模式的JSON字符串。
+            str，schema模式的JSON字符串。
         

@@ -19,12 +19,13 @@
 
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/index_fill.h"
 
 namespace mindspore {
 namespace kernel {
+namespace index_fill_cpu {
 class IndexFillCpuKernelMod : public NativeCpuKernelMod {
  public:
   IndexFillCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class IndexFillCpuKernelMod : public NativeCpuKernelMod {
   TypeId dim_type_;
   TypeId indices_type_;
 };
+}  // namespace index_fill_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

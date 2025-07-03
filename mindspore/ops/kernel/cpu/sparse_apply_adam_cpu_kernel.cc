@@ -19,12 +19,14 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/fused_sparse_adam.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_adam_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 // "var","m","v","beta1_power","beta2_power","lr","beta1","beta2","epsilon","grad","indices"
 constexpr size_t kVarIndex = 0;
@@ -313,5 +315,6 @@ bool SparseApplyAdamCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseAdam, SparseApplyAdamCpuKernelMod);
+}  // namespace sparse_apply_adam_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -2,39 +2,7 @@ histc:
   description: |
     histc(bins=100, min=0, max=0) -> Tensor
 
-    Computes the histogram of `self`.
-
-    The elements are sorted into equal width bins between `min` and `max`.
-    If `min` and `max` are both zero, the minimum and maximum values of `self` are used.
-
-    Elements below the minimum value and above the maximum value are ignored.
-
-    .. warning::
-        If `self` is int64, valid values fit within int32; exceeding this may cause precision errors.
-
-    Args:
-        bins (int, optional): Number of histogram bins, optional. If specified, must be positive. Default: ``100`` .
-        min (int, float, optional): the lower end of the range (inclusive), optional. Default: ``0`` .
-        max (int, float, optional): the upper end of the range (inclusive), optional. Default: ``0`` .
-
-    Returns:
-        A 1-D Tensor, has the same type as `self` with the shape :math:`(bins, )`.
-
-    Raises:
-        TypeError: If `self` is not a Tensor.
-        TypeError: If attr `min` or `max` is not float or int.
-        TypeError: If attr `bins` is not int.
-        ValueError: If attr value `min` > `max`.
-        ValueError: If attr `bins` <= 0.
+    For details, please refer to :func:`mindspore.ops.histc`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([1., 2., 1.]), mindspore.float32)
-        >>> output = input.histc(bins=4, min=0, max=3)
-        >>> print(output)
-        [0. 2. 1. 0.]

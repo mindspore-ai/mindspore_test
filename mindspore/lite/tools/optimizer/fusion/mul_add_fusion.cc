@@ -27,6 +27,8 @@
 #include "ops_utils/op_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::opt {
 VectorRef MulAddFusion::DefineMulFirstPattern() const {
@@ -238,6 +240,7 @@ AnfNodePtr MulAddFusion::Process(const std::string &pattern_name, const mindspor
                                                                        : add_cnode->input(THIRD_INPUT);
   MS_CHECK_TRUE_RET(mul_node != nullptr, nullptr);
   auto mul_cnode = mul_node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(mul_cnode != nullptr, nullptr);
   if (!CheckMulNode(func_graph, mul_cnode)) {
     MS_LOG(DEBUG) << "Mul op is not suit for mul-add-fusion: " << mul_cnode->fullname_with_scope();
     return nullptr;

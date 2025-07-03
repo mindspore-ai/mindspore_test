@@ -25,7 +25,7 @@
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -33,7 +33,7 @@ namespace ps {
 constexpr size_t kNodeInputWeightNameOffset = 1;
 constexpr size_t kNodeInputWeightIndexOffset = 2;
 
-class BACKEND_EXPORT Util {
+class BACKEND_COMMON_EXPORT Util {
  public:
   static bool IsRoleOfPServer();
   static bool IsRoleOfScheduler();

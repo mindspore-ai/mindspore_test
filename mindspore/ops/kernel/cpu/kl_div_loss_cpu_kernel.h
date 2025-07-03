@@ -22,11 +22,12 @@
 #include <utility>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace kl_div_loss_cpu {
 class KLDivLossCpuKernelMod : public NativeCpuKernelMod {
  public:
   KLDivLossCpuKernelMod() {}
@@ -63,6 +64,7 @@ class KLDivLossCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_before_reduction_shape_;
   std::mutex mutex_;
 };
+}  // namespace kl_div_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

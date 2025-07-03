@@ -52,7 +52,7 @@ def test_assert_op():
     i = Tensor(np.array([8, 6, 7]).astype(np.uint32))
     j = Tensor(np.array([9, 6, 7, 5, 6, 7, 5, 6, 7]).astype(np.uint64))
     k = Tensor(np.array([10]).astype(np.uint8))
-    l = Tensor(np.array([True, False]).astype(np.bool))
+    l = Tensor(np.array([True, False]).astype(np.bool_))
     context.set_context(mode=context.GRAPH_MODE)
     assert1(True, [a, b, c, d, e, f, g, h, i, j, k, l])
     context.set_context(mode=context.PYNATIVE_MODE)

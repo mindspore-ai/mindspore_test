@@ -21,6 +21,8 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/lite_exporter/fetch_content.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

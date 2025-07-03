@@ -14,7 +14,7 @@ hswish:
 
         HardSwish Activation Function Graph:
 
-        .. image:: ../images/HardSwish.png
+        .. image:: ../images/Hardswish.png
             :align: center
 
         Args:

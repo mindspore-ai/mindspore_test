@@ -15,7 +15,9 @@
  */
 #include "pipeline/jit/pi/graph_guard/cache.h"
 #include <algorithm>
+#include <utility>
 #include "pipeline/jit/ps/pipeline.h"
+#include "include/common/utils/python_adapter.h"
 
 namespace mindspore {
 namespace pijit {
@@ -83,7 +85,10 @@ void OptCode::SetPythonCode(const py::object &code) {
 
 PyCodeObject *OptCode::GetPythonCode() const { return reinterpret_cast<PyCodeObject *>(compiled_code_.ptr()); }
 
-void OptCode::SetGuard(OptGuardPtr guard) { guard_ = guard; }
+void OptCode::SetGuard(OptGuardPtr guard) {
+  guard->set_code_hub(guard_->code_hub());
+  guard_ = guard;
+}
 
 OptGuardPtr OptCode::GetGuard() { return guard_; }
 
@@ -118,23 +123,21 @@ OptCodePtr OptCodeHub::AddOptTarget(OptOptionPtr option) {
   for (auto &item : codeMap_) {
     if (*(item.first.get()) == *(option.get())) {
       ret = std::make_shared<OptCode>();
+      ret->GetGuard()->set_code_hub(shared_from_this());
       item.second.push_back(ret);
       return ret;
     }
   }
   ret = std::make_shared<OptCode>();
+  ret->GetGuard()->set_code_hub(shared_from_this());
   codeMap_[option].push_back(ret);
   ret->SetOption(option);
   return ret;
 }
 
-OptCodeSet OptCodeHub::GetOptTarget(OptOptionPtr option) {
-  for (auto &item : codeMap_) {
-    if (*(item.first.get()) == *(option.get())) {
-      return item.second;
-    }
-  }
-  return {};
+const OptCodeSet &OptCodeHub::GetOptTarget(const OptOptionPtr &option, const OptCodeSet &defaults) {
+  auto iter = codeMap_.find(option);
+  return iter != codeMap_.end() ? iter->second : defaults;
 }
 
 void OptCodeHub::UpdateOptTarget(OptOptionPtr option, OptCodePtr code) {
@@ -207,5 +210,61 @@ OptCodePtr OptCodeHub::Filter(std::string key, OptCodeFilterFunc filter) {
   }
   return nullptr;
 }
+
+CodeCache::CodeCache(void *jcr)
+    : jcr_(OptOption::CreateOptionByPoint(jcr)), code_hub_(std::make_shared<OptCodeHub>()) {}
+
+void CodeCache::CollectFailGuard() {
+  const auto &c = GuardContext::Data::GetInstance()->guard_cache();
+  auto iter = std::find_if(c.begin(), c.end(), [](const auto &i) { return i->fail_count(); });
+  MS_EXCEPTION_IF_CHECK_FAIL(iter != c.end(), "can't find failed item");
+  auto &info = fail_guard_[GuardItemKey((*iter)->GetTrace())];
+  info.count_++;
+  info.item_ = (*iter)->shared_from_this();
+  MS_LOG(DEBUG) << "cache fail count " << info.count_ << " for trace: " << info.item_->GetTrace()->ToString();
+}
+
+CodeCache::FailInfo CodeCache::FindFailInfo(const TracePtr &p, GIType item_type) const {
+  if (p == nullptr) {
+    return {};
+  }
+  const FailInfo *result = nullptr;
+  auto iter = fail_guard().find(GuardItemKey(p));
+  if (iter != fail_guard().end()) {
+    const auto &i = iter->second;
+    if (i.item_->GetType() == item_type && GuardItemPyTypeMatch(i.item_, p->GetObject())) {
+      result = &i;
+    }
+  }
+  if (result == nullptr) {
+    return {};
+  }
+  return *result;
+}
+
+void CodeCache::Clear() {
+  code_ = nullptr;
+  code_hub_->codeMap_[jcr_].clear();
+  fail_guard_.clear();
+}
+
+GuardContext::Data *GuardContext::Data::GetInstance() {
+  static GuardContext::Data instance;
+  return &instance;
+}
+
+GuardContext::~GuardContext() {
+  auto &guard_cache = Data::GetInstance()->guard_cache();
+  auto &trace_cache = Data::GetInstance()->trace_cache();
+  for (const auto &item : guard_cache) {
+    item->ClearCache();
+  }
+  for (const auto &item : trace_cache) {
+    item->ClearCache();
+  }
+  guard_cache.clear();
+  trace_cache.clear();
+}
+
 }  // namespace pijit
 }  // namespace mindspore

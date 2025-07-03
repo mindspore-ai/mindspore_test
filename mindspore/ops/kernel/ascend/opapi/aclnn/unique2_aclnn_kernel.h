@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique2 {
 
 class Unique2Ascend : public AclnnKernelMod {
  public:
@@ -38,7 +39,11 @@ class Unique2Ascend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<ShapeVector> output_shapes_;
+  bool sorted_;
+  bool return_inverse_;
+  bool return_counts_;
 };
+}  // namespace unique2
 }  // namespace kernel
 }  // namespace mindspore
 

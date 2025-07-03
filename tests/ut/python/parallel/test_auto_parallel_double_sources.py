@@ -87,7 +87,7 @@ def test_double_source_graph():
     a = Tensor(np.ones([32, 32]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net.set_train()
     _cell_graph_executor.compile(net, x, y, z, w, a)
 
@@ -128,6 +128,6 @@ def test_double_source_complex_graph():
     a = Tensor(np.ones([32, 32]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(Net()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net.set_train()
     _cell_graph_executor.compile(net, x, y, z, w, a)

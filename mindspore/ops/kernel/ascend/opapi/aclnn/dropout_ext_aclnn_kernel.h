@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_ext {
 
 class DropoutExtAscend : public AclnnKernelMod {
  public:
@@ -45,6 +46,7 @@ class DropoutExtAscend : public AclnnKernelMod {
   int64_t offset_value_;
   TypeId dtype_value_;
 };
+}  // namespace dropout_ext
 }  // namespace kernel
 }  // namespace mindspore
 

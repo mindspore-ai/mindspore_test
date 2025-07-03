@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace diag_part_cpu {
 namespace {
 constexpr size_t kDiagPartInputsNum = 1;
 constexpr size_t kDiagPartOutputsNum = 1;
@@ -83,5 +84,6 @@ std::vector<KernelAttr> DiagPartCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DiagPart, DiagPartCpuKernelMod);
+}  // namespace diag_part_cpu
 }  // namespace kernel
 }  // namespace mindspore

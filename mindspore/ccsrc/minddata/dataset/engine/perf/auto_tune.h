@@ -65,7 +65,6 @@ class AutoTune {
   /// \return Status object
   Status SummarizeTreeConfiguration(std::vector<std::string> *out);
 
-#ifndef ENABLE_ANDROID
   /// \brief Serialize the dataset and save the AT config (workers and queue size) to a json file
   /// \param file_name Name of the file
   /// \return Status object
@@ -74,7 +73,6 @@ class AutoTune {
   /// Setter for autotune_config_json_
   /// \return Status code
   Status SetAutotuneConfigJson();
-#endif
 
   /// Function to collect info from the tree
   /// \return Status code

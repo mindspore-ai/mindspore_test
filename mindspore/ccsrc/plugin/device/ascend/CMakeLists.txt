@@ -23,13 +23,12 @@ endif()
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include/lcal)
 endif()
 
 
 ########### mindspore_ascend.so #####
 set(ASCEND_SUB_COMP
-        device_context_conf
         hal/device
         hal/hardware
         kernel
@@ -51,8 +50,6 @@ foreach(a_comp ${ASCEND_SUB_COMP})
 endforeach()
 
 set(ASCEND_COMMON_SUB
-        hal/common
-        hal/hccl_adapter
         hal/profiler
         hal/special
         )
@@ -66,10 +63,6 @@ foreach(a_comp ${ASCEND_COMMON_SUB})
     endif()
 endforeach()
 
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_acl_ir_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
-
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})
 add_library(mindspore_ascend SHARED ${ASCEND_910B_OBJ_SRC})
 set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
@@ -77,8 +70,11 @@ set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
-target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
-target_link_libraries(mindspore_ascend PRIVATE -Wl,--whole-archive mindspore_ops_ascend -Wl,--no-whole-archive)
+target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspore_core mindspore_ops mindspore_common
+                      mindspore_ops_kernel_common mindspore_ops_ascend mindspore_profiler mindspore_runtime_pipeline
+                      mindspore_ms_backend)
+target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
+target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)

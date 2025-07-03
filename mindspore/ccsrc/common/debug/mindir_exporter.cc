@@ -27,6 +27,12 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "abstract/abstract_function.h"
+#include "utils/file_utils.h"
 
 namespace {
 using mindspore::CNodePtr;
@@ -53,12 +59,15 @@ void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *al
       MS_ASSERT(node->cast<ValueNodePtr>() != nullptr);
       MS_ASSERT(node->cast<ValueNodePtr>()->value() != nullptr);
       MS_ASSERT((node->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>() != nullptr);
-      auto new_fg = (node->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>();
+      auto input_value_node = node->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_value_node);
+      auto new_fg = (input_value_node->value())->cast<FuncGraphPtr>();
       GetAllFuncGraphs(new_fg, all_func_graphs);
     }
     if (mindspore::utils::isa<CNodePtr>(node)) {
       auto cnode = node->cast<CNodePtr>();
       MS_ASSERT(cnode != nullptr);
+      MS_EXCEPTION_IF_NULL(cnode);
       for (auto &weak_input : cnode->weak_inputs()) {
         auto input = weak_input.lock();
         MS_EXCEPTION_IF_NULL(input);
@@ -67,7 +76,9 @@ void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *al
             MS_ASSERT(input->cast<ValueNodePtr>() != nullptr);
             MS_ASSERT(input->cast<ValueNodePtr>()->value() != nullptr);
             MS_ASSERT((input->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>() != nullptr);
-            auto new_fg = (input->cast<ValueNodePtr>()->value())->cast<FuncGraphPtr>();
+            auto value_cnode = input->cast<ValueNodePtr>();
+            MS_EXCEPTION_IF_NULL(value_cnode);
+            auto new_fg = (value_cnode->value())->cast<FuncGraphPtr>();
             GetAllFuncGraphs(new_fg, all_func_graphs);
           }
         }
@@ -127,7 +138,10 @@ bool IrExportBuilder::SetAbstractFuncToAttributeProto(const abstract::AbstractBa
   MS_EXCEPTION_IF_NULL(attr_proto);
   if (abstract->isa<abstract::FuncGraphAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_FUNCGRAPHCLOSURE);
-    auto func_name = abstract->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph()->ToString();
+    auto abs_func = abstract->cast<abstract::FuncGraphAbstractClosurePtr>();
+    auto func_graph = abs_func->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto func_name = func_graph->ToString();
     attr_proto->set_s(func_name);
   } else if (abstract->isa<abstract::PrimitiveAbstractClosure>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_PRIMITIVECLOSURE);
@@ -224,8 +238,8 @@ bool IrExportBuilder::BuildPrimitivesByMap(std::map<PrimitivePtr, std::string> *
         MS_LOG(ERROR) << "Set value to AttributeProto failed.";
         return false;
       }
-    }  // Loop of attrs
-  }    // Loop of primitives
+    }
+  }
   return true;
 }
 
@@ -244,7 +258,7 @@ bool IrExportBuilder::BuildPrimitives() {
 std::string IrExporter::GetDumpString(const FuncGraphPtr &func_graph) {
   auto dump_proto = GetDumpProto(func_graph);
   if (dump_proto == nullptr) {
-    MS_LOG(EXCEPTION) << "Get dump proto for graph " << func_graph->ToString() << " failed.";
+    MS_LOG(EXCEPTION) << "Failed to export MindIR! Get dump proto for graph failed: " << func_graph->ToString();
   }
   return builder_->GetProtoString();
 }
@@ -374,7 +388,7 @@ bool IrExportBuilder::BuildModel(const FuncGraphPtr &func_graph) {
   top_graph = true;
 
   if (!BuildFuncGraph(func_graph, graph_proto)) {
-    MS_LOG(ERROR) << "Build func_graph " << func_graph->ToString() << " failed.";
+    MS_LOG(ERROR) << "Failed to export MindIR! Build func graph failed: " << func_graph->ToString();
     return false;
   }
 
@@ -540,6 +554,8 @@ bool IrExportBuilder::BuildParameters(const FuncGraphPtr &func_graph, mind_ir::G
 
 bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<QuantizationParam> &quantization_param,
                                                       mind_ir::TensorProto_QuantParamProto *const quant_param_proto) {
+  MS_EXCEPTION_IF_NULL(quantization_param);
+  MS_EXCEPTION_IF_NULL(quant_param_proto);
   quant_param_proto->set_quant_algo_name(quantization_param->quant_algo_name());
   auto quant_param_attrs = quantization_param->attrs();
   for (auto &quant_param_attr : quant_param_attrs) {
@@ -560,6 +576,7 @@ bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<Quan
 }
 
 bool IrExportBuilder::SetFuncGraphToAttrProto(const FuncGraphPtr &g, mind_ir::AttributeProto *const attr_proto) {
+  MS_EXCEPTION_IF_NULL(g);
   auto *g_proto = attr_proto->mutable_g();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_GRAPH);
   g_proto->set_name(g->ToString());
@@ -587,6 +604,7 @@ bool IrExportBuilder::SetFunctorToAttrProto(const FunctorPtr &func, mind_ir::Att
 
 bool IrExportBuilder::SetScalarGraphHolderToAttrProto(const ops::ScalarGraphHolderPtr &scalar_graph_holder,
                                                       mind_ir::AttributeProto *const attr_proto) {
+  MS_EXCEPTION_IF_NULL(scalar_graph_holder);
   auto *graph_holder_proto = attr_proto->mutable_graph_holder();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_SCALAR_GRAPH_HOLDER);
   for (size_t i = 0; i < scalar_graph_holder->GetNodeSize(); i++) {
@@ -679,7 +697,7 @@ bool IrExportBuilder::SetValueInfoProto(const AnfNodePtr &node, mind_ir::ValueIn
   } else {
     mind_ir::AttributeProto *attribute = value_proto->mutable_attr_info();
     if (!SetAbstractToNodeProto(node->abstract(), attribute)) {
-      MS_LOG(ERROR) << "Set shape to Proto for " << node->DebugString() << " failed.";
+      MS_LOG(ERROR) << "Failed to export data: " << node->DebugString() << ". Unsupported type or shape";
       return false;
     }
     value_proto->set_denotation(type->type_name());
@@ -920,7 +938,7 @@ bool IrExportBuilder::BuildNodes(const FuncGraphPtr &func_graph, mind_ir::GraphP
     auto cnode = node->cast<CNodePtr>();
     if (cnode == func_graph->get_return()) {
       if (!BuildOutput(cnode, graph_proto)) {
-        MS_LOG(ERROR) << "Build output for graph " << func_graph->ToString() << " failed.";
+        MS_LOG_WITH_NODE(ERROR, cnode) << "Failed to export MindIR, this data type is not supported as a return value";
         return false;
       }
     } else {
@@ -1185,7 +1203,7 @@ bool IrExportBuilder::SetAbstractToNodeProto(const AbstractBasePtr &abs, mind_ir
   } else if (type->isa<MapTensorType>()) {
     return ConvertAbstractMapTensorToAttrProto(abs, attr_proto);
   } else {
-    MS_LOG(ERROR) << "Type of cnode need to be supported: " << type->type_name();
+    MS_LOG(ERROR) << "mindspore.export() cannot export data of this type: " << type->type_name();
     return false;
   }
 
@@ -1365,7 +1383,9 @@ bool IrExportBuilder::SetAttributeProto(const AnfNodePtr &node, mind_ir::NodePro
 
 bool IrExportBuilder::SetTensorTypeToAttributeProto(const ValuePtr &value, mind_ir::TensorProto *tensor_proto) {
   tensor_proto->set_name("tensor0");
-  auto elem_type = value->cast<TensorTypePtr>()->element();
+  auto tensor_type = value->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  auto elem_type = tensor_type->element();
   if (elem_type->isa<Int>()) {
     auto int_value = elem_type->cast<IntPtr>();
     auto data_type = GetMindirDataBitsIntType(int_value->nbits());
@@ -1376,6 +1396,13 @@ bool IrExportBuilder::SetTensorTypeToAttributeProto(const ValuePtr &value, mind_
   } else if (elem_type->isa<Float>()) {
     auto float_value = elem_type->cast<FloatPtr>();
     auto data_type = GetMindirDataBitsFloatType(float_value->nbits());
+    if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
+      return false;
+    }
+    tensor_proto->set_data_type(data_type);
+  } else if (elem_type->isa<BFloat>()) {
+    auto bfloat_value = elem_type->cast<BFloatPtr>();
+    auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }
@@ -1403,8 +1430,8 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
     tensor_proto->set_data_type(data_type);
   } else if (value->isa<UInt>()) {
     tensor_proto->set_name("value0");
-    auto float_value = value->cast<UIntPtr>();
-    auto data_type = GetMindirDataBitsUIntType(float_value->nbits());
+    auto uint_value = value->cast<UIntPtr>();
+    auto data_type = GetMindirDataBitsUIntType(uint_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }
@@ -1420,7 +1447,6 @@ bool IrExportBuilder::SetTypeToAttributeProto(const ValuePtr &value, mind_ir::At
   } else if (value->isa<BFloat>()) {
     tensor_proto->set_name("value0");
     auto bfloat_value = value->cast<BFloatPtr>();
-    MS_EXCEPTION_IF_NULL(bfloat_value);
     auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
@@ -1598,6 +1624,15 @@ bool IrExportBuilder::SetTypeToAttributeProto_irs(const ValuePtr &value, mind_ir
     mind_ir::TensorProto *tensor_proto = attr_proto->add_tensors();
     auto float_value = value->cast<FloatPtr>();
     auto data_type = GetMindirDataBitsFloatType(float_value->nbits());
+    if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
+      return false;
+    }
+    tensor_proto->set_data_type(data_type);
+  } else if (value->isa<BFloat>()) {
+    attr_proto->set_type(mind_ir::AttributeProto_AttributeType_TENSORS);
+    mind_ir::TensorProto *tensor_proto = attr_proto->add_tensors();
+    auto bfloat_value = value->cast<BFloatPtr>();
+    auto data_type = GetMindirDataBitsBFloatType(bfloat_value->nbits());
     if (data_type == mind_ir::TensorProto_DataType_UNDEFINED) {
       return false;
     }

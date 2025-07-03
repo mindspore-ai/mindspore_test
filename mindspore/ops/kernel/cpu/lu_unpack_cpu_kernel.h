@@ -21,13 +21,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
-constexpr size_t kInputNum = 2;
-constexpr size_t kOutputNum = 3;
 namespace kernel {
+namespace lu_unpack_cpu {
 class LuUnpackCpuKernelMod : public NativeCpuKernelMod {
  public:
   LuUnpackCpuKernelMod() = default;
@@ -64,6 +63,7 @@ class LuUnpackCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, LuUnpackFunc>> func_list_;
   LuUnpackFunc kernel_func_;
 };
+}  // namespace lu_unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_LUUNPACK_CPU_KERNEL_H_

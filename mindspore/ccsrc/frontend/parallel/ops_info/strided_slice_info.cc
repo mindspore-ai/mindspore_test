@@ -32,6 +32,7 @@
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "pipeline/jit/ps/resource.h"
 #include "symbolic_shape/symbol.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace parallel {
@@ -273,6 +274,7 @@ Status StridedSliceInfo::GetAttrs() {
   ComputeNewAxisMask();
   // no need to handle shrink axis mask
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }

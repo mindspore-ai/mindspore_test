@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.ops.auto_generate import SliceExt
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
@@ -43,7 +43,7 @@ def slice_ext_backward_func(x, dim, start, end, step):
     return ops.grad(slice_ext_forward_func, (0))(x, dim, start, end, step) # pylint: disable=not-callable
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_ops_slice_ext(context_mode):
     """
@@ -66,15 +66,15 @@ def test_ops_slice_ext(context_mode):
         output_grad = slice_ext_backward_func(ms.Tensor(x), dim, start, end, step)
     else:
         output_forward = \
-            (jit(slice_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
         output_grad = \
-            (jit(slice_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_ops_slice_ext_case01(context_mode):
     """
@@ -97,9 +97,9 @@ def test_ops_slice_ext_case01(context_mode):
         output_grad = slice_ext_backward_func(ms.Tensor(x), dim, start, end, step)
     else:
         output_forward = \
-            (jit(slice_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
         output_grad = \
-            (jit(slice_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)

@@ -31,6 +31,7 @@
 #include "include/common/fallback.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -86,7 +87,9 @@ FuncGraphPtr ZipOperation::GenerateFuncGraph(const AbstractBasePtrList &args_abs
   // generate tuple output of zipped arguments input
   std::vector<AnfNodePtr> make_tuple_nodes;
   make_tuple_nodes.push_back(NewValueNode(prim::kPrimMakeTuple));
-  for (size_t idx = 0; idx < (*min_abs)->cast<AbstractSequencePtr>()->size(); idx++) {
+  auto abs_seq = (*min_abs)->cast<AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(abs_seq);
+  for (size_t idx = 0; idx < abs_seq->size(); idx++) {
     std::vector<AnfNodePtr> make_tuple_zip_nodes;
     make_tuple_zip_nodes.push_back(NewValueNode(prim::kPrimMakeTuple));
     std::string module_name = "mindspore.ops.composite.multitype_ops.getitem_impl";

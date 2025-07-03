@@ -153,7 +153,6 @@ class IteratorConsumer : public TreeConsumer {
   std::map<int32_t, std::string> column_order_;  // key: column id, val: column name
 };
 
-#ifndef ENABLE_ANDROID
 /// Consumer that iterates over the dataset and writes it to disk
 class SaveToDisk : public TreeConsumer {
  public:
@@ -214,7 +213,6 @@ class SaveToDisk : public TreeConsumer {
   int32_t num_files_;
   std::string dataset_type_;
 };
-#endif
 
 /// Consumer that iterates over the dataset and send it to a device
 class ToDevice : public TreeConsumer {

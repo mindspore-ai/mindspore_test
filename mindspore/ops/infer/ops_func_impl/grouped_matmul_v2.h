@@ -18,13 +18,34 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V2_H_
 
 #include <set>
-#include "infer/ops_func_impl/grouped_matmul.h"
+#include "infer/ops_func_impl/grouped_matmul_base.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API GroupedMatmulV2FuncImpl final : public GroupedMatmulFuncImpl {
+class OPS_API GroupedMatmulV2FuncImpl final : public GroupedMatmulBaseFuncImpl {
+ public:
+  GroupedMatmulV2FuncImpl() {
+    idxes_.x = 0;
+    idxes_.weight = 1;
+    idxes_.split_item_offset = -2;
+    idxes_.group_type_offset = -1;
+  }
+  ~GroupedMatmulV2FuncImpl() = default;
+
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
  protected:
+  void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
+  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
+  int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                 int64_t group_type) const override;
+
+ private:
+  int64_t group_list_offset_{-3};
 };
 }  // namespace ops
 }  // namespace mindspore

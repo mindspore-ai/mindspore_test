@@ -116,6 +116,7 @@ size_t GetOpInputsNum(const std::string &op_name) {
 // For example, {PrimAvgPool, x, kernel_size, strides, pad_mode, data_format} =>
 //              {PrimAvgPool, x}
 CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
   MS_EXCEPTION_IF_NULL(prim);
   auto prim_name = prim->name();
@@ -125,7 +126,8 @@ CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
                   << "is not a primitive defined in yaml, cannot convert args to attr, cnode:" << cnode->DebugString();
     return nullptr;
   }
-  std::vector<AnfNodePtr> new_node_inputs = {cnode->input(0)};
+  prim = std::make_shared<Primitive>(prim_name);
+  std::vector<AnfNodePtr> new_node_inputs = {NewValueNode(prim)};
   for (size_t arg_index = 0; arg_index < op_def->args_.size(); ++arg_index) {
     auto arg = op_def->args_[arg_index];
     if (!arg.as_init_arg_) {
@@ -142,7 +144,9 @@ CNodePtr ConvertArgsToAttr(const CNodePtr &cnode) {
       continue;
     }
     auto arg_value_node = arg_input_node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(arg_value_node);
     auto arg_value = arg_value_node->value();
+    MS_EXCEPTION_IF_NULL(arg_value);
     prim->AddAttr(arg.arg_name_, arg_value);
   }
 

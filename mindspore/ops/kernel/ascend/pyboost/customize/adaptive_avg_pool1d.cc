@@ -16,12 +16,12 @@
 
 #include "kernel/ascend/pyboost/customize/adaptive_avg_pool1d.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
-#include "kernel/common/pyboost/auto_generate/adaptive_avg_pool2d_ext.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/adaptive_avg_pool2d_ext.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,9 +29,8 @@ namespace pyboost {
 namespace {
 constexpr int kShape2dDims = 2;
 }
-tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_x_tensor,
-                                                       const Int64ImmPtr &output_size) {
+tensor::TensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
+                                                   const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_x_tensor, output_size);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -40,35 +39,36 @@ tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpR
   auto origin_shape_dim = SizeToLong(input_shape.size());
 
   // unsqueeze shape
-  std::vector<ValuePtr> expand_input_shape;
+  std::vector<int64_t> expand_input_shape;
   for (auto i = 0; i < origin_shape_dim - 1; i++) {
-    expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[i]));
+    expand_input_shape.emplace_back(input_shape[i]);
   }
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(1));
-  expand_input_shape.emplace_back(std::make_shared<Int64Imm>(input_shape[origin_shape_dim - 1]));
+  expand_input_shape.emplace_back(1);
+  expand_input_shape.emplace_back(input_shape[origin_shape_dim - 1]);
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto input_x_imm = reshape_op->Call(input_x_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+  auto input_x_imm = reshape_op->Call(input_x_tensor, expand_input_shape);
 
+  auto output_size_val = ConvertValueTupleToVector<int64_t>(output_size);
+  auto output_size_2d = std::make_shared<ValueTuple>(
+    std::vector<ValuePtr>{std::make_shared<Int64Imm>(1), std::make_shared<Int64Imm>(output_size_val[0])});
   // call AdaptiveAvgPool2dExt
   auto adaptive_avg_pool2d_op =
     CREATE_PYBOOST_OP(AdaptiveAvgPool2DExt, op->device_context()->device_context_key_.device_name_);
-  auto output_adaptive_avg_pool2d_tensor = adaptive_avg_pool2d_op->Call(
-    input_x_imm, std::make_shared<ValueTuple>(std::vector<ValuePtr>({std::make_shared<Int64Imm>(1), output_size})));
+  auto output_adaptive_avg_pool2d_tensor = adaptive_avg_pool2d_op->Call(input_x_imm, output_size_2d);
 
   // squeeze shape
   auto shape_pool2d = output_adaptive_avg_pool2d_tensor->shape();
   auto shape_pool2d_dim = SizeToLong(shape_pool2d.size());
-  std::vector<ValuePtr> squeeze_input_shape;
+  std::vector<int64_t> squeeze_input_shape;
   if (shape_pool2d_dim <= kShape2dDims) {
     MS_LOG(EXCEPTION) << "For AdaptiveAvgPool1DAscendCustomize, the value of shape_pool2d.size is invalid.";
   }
   constexpr int offset = 2;
   for (auto i = 0; i < shape_pool2d_dim - offset; i++) {
-    squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[i]));
+    squeeze_input_shape.emplace_back(shape_pool2d[i]);
   }
-  squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[shape_pool2d_dim - 1]));
-  auto output_tensor =
-    reshape_op->Call(output_adaptive_avg_pool2d_tensor, std::make_shared<ValueTuple>(squeeze_input_shape));
+  squeeze_input_shape.emplace_back(shape_pool2d[shape_pool2d_dim - 1]);
+  auto output_tensor = reshape_op->Call(output_adaptive_avg_pool2d_tensor, squeeze_input_shape);
   op->set_outputs(reshape_op->outputs());
   return output_tensor;
 }

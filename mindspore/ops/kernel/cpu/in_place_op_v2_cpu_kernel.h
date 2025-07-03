@@ -22,11 +22,12 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace in_place_op_v2_cpu {
 constexpr size_t kInplaceOpV2InputNum = 3;
 constexpr size_t kInplaceOpV2OutputNum = 1;
 class InPlaceOpV2CpuKernelMod : public NativeCpuKernelMod {
@@ -52,6 +53,7 @@ class InPlaceOpV2CpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace in_place_op_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

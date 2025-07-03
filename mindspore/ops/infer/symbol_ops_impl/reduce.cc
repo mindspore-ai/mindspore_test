@@ -135,7 +135,7 @@ SymbolPtr ReduceShapeBuilder(OperationBuilder *b) {
   return b->Emit(std::make_shared<Reduce>(input, axis, keep_dims, skip_mode));
 }
 
-SymbolPtr SumExtShapeBuilder(OperationBuilder *b) {
+SymbolPtr ReduceExtShapeBuilder(OperationBuilder *b) {
   auto input = b->GetInputShape(kIndex0);
   auto axis = b->GetInputValue(kIndex1);
   auto keep_dims = b->GetInputValue(kIndex2);
@@ -194,7 +194,10 @@ REG_SYMBOL_OP_BUILDER("ArgMinWithValue")
 
 REG_SYMBOL_OP_BUILDER("SumExt")
   .SetShapeDepend({DependOn::kShape, DependOn::kValue, DependOn::kValue, DependOn::kNone})
-  .SetShapeFunc(SumExtShapeBuilder);
+  .SetShapeFunc(ReduceExtShapeBuilder);
+REG_SYMBOL_OP_BUILDER("MeanExt")
+  .SetShapeDepend({DependOn::kShape, DependOn::kValue, DependOn::kValue, DependOn::kNone})
+  .SetShapeFunc(ReduceExtShapeBuilder);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

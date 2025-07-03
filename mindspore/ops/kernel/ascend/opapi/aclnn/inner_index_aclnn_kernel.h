@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inner_index {
 class InnerIndexAscend : public AclnnKernelMod {
  public:
   InnerIndexAscend() : AclnnKernelMod(std::move("aclnnIndex")) {}
@@ -35,6 +36,7 @@ class InnerIndexAscend : public AclnnKernelMod {
 
   std::vector<KernelTensor *> GetInnerIndexRealInputs(const std::vector<KernelTensor *> &inputs);
 };
+}  // namespace inner_index
 }  // namespace kernel
 }  // namespace mindspore
 

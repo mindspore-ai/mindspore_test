@@ -18,13 +18,14 @@
 #include <memory>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/fill.h"
 #include "kernel/cpu/fill_cpu_kernel.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_cpu {
 namespace {
 constexpr size_t kFillInputsNum = 2;
 constexpr size_t kFillOutputsNum = 1;
@@ -196,5 +197,6 @@ const std::vector<std::pair<KernelAttr, FillCpuKernelMod::KernelRunFunc>> &FillC
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Fill, FillCpuKernelMod);
+}  // namespace fill_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,13 +17,14 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/tridiagonalsolve_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/tridiagonal_solve.h"
 #include "Eigen/Core"
 #include "Eigen/LU"
 
 namespace mindspore {
 namespace kernel {
+namespace tridiagonalsolve_cpu {
 namespace {
 constexpr size_t InputSize = 2;
 constexpr size_t OutputSize = 1;
@@ -347,5 +348,6 @@ std::vector<KernelAttr> TridiagonalSolveCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TridiagonalSolve, TridiagonalSolveCPUKernelMod);
+}  // namespace tridiagonalsolve_cpu
 }  // namespace kernel
 }  // namespace mindspore

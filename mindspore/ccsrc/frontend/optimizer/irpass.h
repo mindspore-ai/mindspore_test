@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_H_
 
-#include <memory>
-
-#include "frontend/optimizer/optimizer.h"
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "base/base.h"
+#include "frontend/ir/primitive_py.h"
 #include "frontend/optimizer/opt.h"
-#include "frontend/optimizer/anf_visitor.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 
 namespace mindspore {
@@ -72,8 +69,6 @@ class OptimizeIRPassLib {
   SubstitutionPtr all_reduce_const_elim_;
   SubstitutionPtr mini_step_allgather_replace_;
   SubstitutionPtr micro_step_allgather_replace_;
-  SubstitutionPtr convert_tensor_eliminate_;
-  SubstitutionPtr convert_tensor_all_eliminate_;
   SubstitutionPtr get_grad_eliminate_;
 
   // Env Item Eliminate
@@ -125,7 +120,7 @@ class OptimizeIRPassLib {
   SubstitutionPtr updatestate_useless_node_eliminater_;
   SubstitutionPtr updatestate_pure_node_eliminater_;
   SubstitutionPtr switch_call_monad_eliminater_;
-  SubstitutionPtr stopgrad_eliminater_;
+  SubstitutionPtr redundant_stopgrad_eliminater_;
   SubstitutionPtr load_eliminater_;
 
   // Incorporation
@@ -140,6 +135,9 @@ class OptimizeIRPassLib {
 
   // virtual shard identity
   SubstitutionPtr virtual_shard_identity_;
+
+  // DumpGradient
+  SubstitutionPtr dump_gradient_eliminate_;
 
   // PipelineSplit
   SubstitutionPtr parallel_virtual_node_;
@@ -193,6 +191,9 @@ class OptimizeIRPassLib {
   SubstitutionPtr opt_reshape_;
   SubstitutionPtr fold_const_symbol_;
   SubstitutionPtr fold_same_value_;
+
+  // Transform prim to funcgraph
+  SubstitutionPtr meta_morphosis_;
 };
 
 // the collection of irpass for resolve action
@@ -208,6 +209,13 @@ class GradPartialPassLib {
   GradPartialPassLib();
   ~GradPartialPassLib() = default;
   SubstitutionPtr grad_partial_transform_;
+};
+
+class AdjustGraphAfterValidatePassLib {
+ public:
+  AdjustGraphAfterValidatePassLib();
+  ~AdjustGraphAfterValidatePassLib() = default;
+  SubstitutionPtr make_tuple_from_fprop_eliminate_;
 };
 
 // Predicate functions
@@ -288,6 +296,11 @@ inline bool IsCNodePrimitivePy(const AnfNodePtr &node) {
   auto inp0 = node->cast<CNodePtr>()->input(0);
   const auto &prim = GetValueNode<PrimitivePyPtr>(inp0);
   return prim != nullptr && mindspore::ops::IsPrimitiveFunction(prim->name());
+}
+
+inline bool IsMetamorphosisCNode(const AnfNodePtr &node) {
+  const auto &prim = GetCNodePrimitive(node);
+  return (prim != nullptr && prim->HasAttr("__metamorphosis__"));
 }
 }  // namespace irpass
 }  // namespace opt

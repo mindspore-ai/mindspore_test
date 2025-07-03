@@ -25,13 +25,12 @@
 #include <utility>
 #include <vector>
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/debug/common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "include/common/utils/config_manager.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
@@ -110,7 +109,7 @@ void E2eDump::DumpMemFromTensorLoaderToFile(const Debugger *debugger, const std:
   MS_EXCEPTION_IF_NULL(debugger);
   auto ret = debugger->DumpTensorToFile(file_path, original_kernel_name, slot);
   if (!ret) {
-    MS_LOG(INFO) << "DumpTensorToFile Failed: path:" << file_path;
+    MS_VLOG(VL_DUMP) << "DumpTensorToFile Failed: path:" << file_path;
   }
 #endif
 }
@@ -121,7 +120,7 @@ void E2eDump::DumpOutput(const session::KernelGraph *graph, const std::string &d
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump output";
+  MS_VLOG(VL_DUMP) << "Start e2e dump output";
   bool trans_flag = dump_json_parser.trans_flag();
   const auto &apply_kernels = graph->execution_order();
   for (const auto &node : apply_kernels) {
@@ -201,36 +200,13 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
   }
 }
 
-void E2eDump::DumpOutputData(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                             std::string *kernel_name) {
-  if (IsMindRTKernelByKernel()) {
-    MS_LOG(INFO) << "DumpOutputData is only for graph mode on Ascend";
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(node);
-  GetFileKernelName(NOT_NULL(kernel_name));
-  auto output_size = AnfAlgo::GetOutputTensorNum(node);
-  for (size_t j = 0; j < output_size; ++j) {
-    if (!AnfAlgo::OutputAddrExist(node, j)) {
-      continue;
-    }
-    auto addr = AnfAlgo::GetOutputAddr(node, j);
-    MS_EXCEPTION_IF_NULL(addr);
-    ShapeVector int_shapes;
-    GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
-    auto type = common::AnfAlgo::GetOutputInferDataType(node, j);
-    std::string file_path = GenDataFilePath(node, *kernel_name, dump_path, j, false);
-    DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
-  }
-}
-
 void E2eDump::DumpInput(const session::KernelGraph *graph, const std::string &dump_path, const Debugger *debugger) {
   MS_EXCEPTION_IF_NULL(graph);
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (!dump_json_parser.InputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump input";
+  MS_VLOG(VL_DUMP) << "Start e2e dump input";
   bool trans_flag = dump_json_parser.trans_flag();
   const auto &apply_kernels = graph->execution_order();
   for (const auto &node : apply_kernels) {
@@ -264,7 +240,7 @@ tensor::TensorPtr GetConvertedTensorFromIgnoredInput(const AnfNodePtr node, size
   auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, idx);
   MS_EXCEPTION_IF_NULL(kernel_with_index.first);
   if (!kernel_with_index.first->isa<ValueNode>()) {
-    MS_LOG(INFO) << "Prim init args is not value node for idx: " << idx;
+    MS_VLOG(VL_DUMP) << "Prim init args is not value node for idx: " << idx;
     return nullptr;
   }
   std::shared_ptr<tensor::Tensor> converted_tensor = nullptr;
@@ -277,7 +253,7 @@ tensor::TensorPtr GetConvertedTensorFromIgnoredInput(const AnfNodePtr node, size
   } else if (input_value->isa<ValueSequence>()) {
     converted_tensor = SequenceToTensor(input_value->cast<ValueSequencePtr>());
   } else {
-    MS_LOG(INFO) << "Prim init args is not scalar or valuesequence for idx: " << idx;
+    MS_VLOG(VL_DUMP) << "Prim init args is not scalar or valuesequence for idx: " << idx;
   }
   return converted_tensor;
 }
@@ -312,8 +288,8 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
         auto t_data = debugger->GetTensor(input_tensor_name);
         std::shared_ptr<tensor::Tensor> converted_tensor = nullptr;
         if (t_data == nullptr) {
-          MS_LOG(INFO) << "Dump args single node input idx: " << idx
-                       << ", use host value for node: " << node->fullname_with_scope();
+          MS_VLOG(VL_DUMP) << "Dump args single node input idx: " << idx
+                           << ", use host value for node: " << node->fullname_with_scope();
           converted_tensor = GetConvertedTensorFromIgnoredInput(node, idx - 1);
           if (converted_tensor == nullptr) {
             continue;
@@ -410,32 +386,6 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
   }
 }
 
-void E2eDump::DumpInputData(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                            std::string *kernel_name) {
-  if (IsMindRTKernelByKernel()) {
-    MS_LOG(INFO) << "DumpInputData is only for graph mode on Ascend";
-    return;
-  }
-  MS_EXCEPTION_IF_NULL(node);
-  GetFileKernelName(NOT_NULL(kernel_name));
-  auto input_size = common::AnfAlgo::GetInputTensorNum(node);
-  for (size_t j = 0; j < input_size; ++j) {
-    auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, j);
-    auto input = kernel_with_index.first;
-    auto index = kernel_with_index.second;
-    if (!AnfAlgo::OutputAddrExist(input, index)) {
-      continue;
-    }
-    auto addr = AnfAlgo::GetOutputAddr(input, index);
-    MS_EXCEPTION_IF_NULL(addr);
-    ShapeVector int_shapes;
-    GetDumpIntShape(input, index, NOT_NULL(&int_shapes), trans_flag);
-    auto type = common::AnfAlgo::GetOutputInferDataType(input, index);
-    std::string file_path = GenDataFilePath(node, *kernel_name, dump_path, j, true);
-    DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
-  }
-}
-
 void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_index, const std::string &dump_path,
                                 bool trans_flag, const Debugger *debugger) {
   MS_EXCEPTION_IF_NULL(anf_node);
@@ -454,7 +404,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
   const std::string cst_prefix = "Default_";
   if (anf_node->isa<ValueNode>()) {
     if (dump_name.find(cst_prefix) == std::string::npos) {
-      MS_LOG(INFO) << "Incorrect constant format: " << dump_name;
+      MS_VLOG(VL_DUMP) << "Incorrect constant format: " << dump_name;
       return;
     }
     dump_name = node_name.substr(cst_prefix.length());
@@ -489,7 +439,7 @@ void E2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t output_
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = addr->LoadMemToHost(tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       } else {
@@ -548,7 +498,7 @@ void E2eDump::DumpSingleParameterNode(const AnfNodePtr &anf_node, const std::str
       auto format = kOpFormat_DEFAULT;
       std::string tensor_name = node_name + ":0";
       uint32_t root_graph_id = debugger->GetCurrentRootGraphId();
-      bool ret = addr->LoadMemToHost(tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
+      bool ret = LoadMemToHost(*addr, tensor_name, 0, format, int_shapes, type, 0, true, root_graph_id, false, true);
       if (!ret) {
         MS_LOG(ERROR) << "LoadMemToHost failed, tensor_name: " << tensor_name;
       }
@@ -568,7 +518,7 @@ void E2eDump::DumpParameters(const session::KernelGraph *graph, const std::strin
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump parameters";
+  MS_VLOG(VL_DUMP) << "Start e2e dump parameters";
   bool trans_flag = dump_json_parser.trans_flag();
 
   // dump parameters
@@ -596,8 +546,8 @@ void E2eDump::DumpConstantData(const session::KernelGraph *graph, const std::str
   // Dump constant to npy file
   MS_EXCEPTION_IF_NULL(graph);
   auto &dump_json_parser = DumpJsonParser::GetInstance();
-  MS_LOG(INFO) << "DumpConstants. Current iteration is " << dump_json_parser.cur_dump_iter();
-  MS_LOG(INFO) << "Current graph id is " << graph->graph_id();
+  MS_VLOG(VL_DUMP) << "DumpConstants. Current iteration is " << dump_json_parser.cur_dump_iter();
+  MS_VLOG(VL_DUMP) << "Current graph id is " << graph->graph_id();
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
@@ -629,7 +579,7 @@ void E2eDump::UpdateIterOldRTDump(const session::KernelGraph *graph) {
   }
   // If device target is Ascend
   if (graph->IsDatasetGraph()) {
-    MS_LOG(INFO) << "No need to update iteration for dataset graph.";
+    MS_VLOG(VL_DUMP) << "No need to update iteration for dataset graph.";
     return;
   }
 
@@ -650,14 +600,14 @@ void E2eDump::UpdateIterMindRTDump() {
   // Dataset graph is always the first graph in the list when dataset_sink_mode is true.
   auto graph_list = debugger->GetStepGraphPtrList();
   if (graph_list.empty()) {
-    MS_LOG(INFO) << "The graph list is empty.";
+    MS_VLOG(VL_DUMP) << "The graph list is empty.";
     return;
   }
   auto graph = graph_list[0];
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && graph->IsDatasetGraph()) {
-    MS_LOG(INFO) << "No need to update iteration for dataset graph.";
+    MS_VLOG(VL_DUMP) << "No need to update iteration for dataset graph.";
     return;
   }
   // update dump iter for GPU and kernel by kernel ascend dump.
@@ -681,14 +631,14 @@ void E2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
   MS_EXCEPTION_IF_NULL(context);
   std::string backend = context->backend_policy();
   if (backend == "ge") {
-    MS_LOG(INFO) << "On Ascend910B or Ascend910_93 platform, execution_order is not support to dump.";
+    MS_VLOG(VL_DUMP) << "On Ascend910B or Ascend910_93 platform, execution_order is not support to dump.";
     return;
   }
   bool sink_mode =
     (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE || graph->IsDatasetGraph());
   auto iter_num = SizeToInt(LongToSize(ConfigManager::GetInstance().iter_num()));
   if (graph->IsDatasetGraph()) {
-    MS_LOG(INFO) << "graph: " << graph->graph_id() << " is dataset graph, not creating graph history file.";
+    MS_VLOG(VL_DUMP) << "graph: " << graph->graph_id() << " is dataset graph, not creating graph history file.";
     return;
   }
   auto debugger = Debugger::GetInstance();
@@ -725,7 +675,7 @@ void E2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
       fout << (std::to_string(step) + "\n");
     }
   } else {
-    fout << std::to_string(json_parser.cur_dump_iter()) + "\n";
+    fout << std::to_string(json_parser.cur_dump_iter()) << "\n";
   }
   fout.close();
   ChangeFileMode(file_name, S_IRUSR);
@@ -748,8 +698,8 @@ void E2eDump::DumpData(const session::KernelGraph *graph, uint32_t rank_id, cons
   }
 
   if (dump_json_parser.GetIterDumpFlag()) {
-    MS_LOG(INFO) << "Start e2e dump. Current iteration is " << dump_json_parser.cur_dump_iter();
-    MS_LOG(INFO) << "Current graph id is " << graph_id;
+    MS_VLOG(VL_DUMP) << "Start e2e dump. Current iteration is " << dump_json_parser.cur_dump_iter();
+    MS_VLOG(VL_DUMP) << "Current graph id is " << graph_id;
     std::string dump_path = GenerateDumpPath(graph_id, rank_id);
     if (dump_json_parser.IsStatisticDump()) {
       (void)TensorStatDump::OpenStatisticsFile(dump_path);
@@ -813,8 +763,8 @@ void E2eDump::DumpParametersData(uint32_t rank_id, const Debugger *debugger) {
     return;
   }
   if (dump_json_parser.DumpEnabledForIter()) {
-    MS_LOG(INFO) << "DumpParameters. Current iteration is " << dump_json_parser.cur_dump_iter();
-    MS_LOG(INFO) << "Current root graph id is " << root_graph_id;
+    MS_VLOG(VL_DUMP) << "DumpParameters. Current iteration is " << dump_json_parser.cur_dump_iter();
+    MS_VLOG(VL_DUMP) << "Current root graph id is " << root_graph_id;
     std::string dump_path = GenerateDumpPath(root_graph_id, rank_id);
     bool trans_flag = dump_json_parser.trans_flag();
     for (auto &item : debugger->GetParametersMindRT()) {

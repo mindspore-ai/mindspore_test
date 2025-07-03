@@ -31,6 +31,9 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

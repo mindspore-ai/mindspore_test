@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -35,6 +35,7 @@ def inplace_tanh_forward_func(x):
     return Net()(x)
 
 
+@jit(backend="ms_backend")
 def inplace_tanh_backward_func(x):
     grad = ops.GradOperation(get_all=True)
     return grad(Net())(x)

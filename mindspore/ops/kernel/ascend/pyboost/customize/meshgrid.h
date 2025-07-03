@@ -22,14 +22,15 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const ValueTuplePtr &tensors_list,
-                                                           const Int64ImmPtr &indexing);
+std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing);
+std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const ValueTuplePtr &tensors_list, const int64_t &indexing);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,7 +18,7 @@
 
 #include "minddata/dataset/audio/ir/validators.h"
 #include "minddata/dataset/kernels/image/erase_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_erase_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +27,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // EraseOperation
 EraseOperation::EraseOperation(int32_t top, int32_t left, int32_t height, int32_t width,
                                const std::vector<float> &value, bool inplace, const std::string &device_target)
@@ -73,7 +72,7 @@ std::shared_ptr<TensorOp> EraseOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<EraseOp> tensor_op = std::make_shared<EraseOp>(top_, left_, height_, width_, value_, inplace_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::vector<float> value_cast(value_.begin(), value_.end());
     std::shared_ptr<DvppEraseOp> dvpp_tensor_op =
@@ -131,7 +130,6 @@ MapTargetDevice EraseOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

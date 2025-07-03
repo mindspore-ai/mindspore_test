@@ -47,6 +47,19 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/kernel/cpu/nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 using std::string;
 using std::vector;
@@ -1036,6 +1049,7 @@ STATUS SetInputNodeQuantParam(const CNodePtr &cnode, size_t index,
     cnode_primitive->AddAttr(quant::kGraphInputQuantParam, quantization_param);
   } else if (input_node->isa<mindspore::CNode>()) {
     auto input_cnode = input_node->cast<mindspore::CNodePtr>();
+    MS_CHECK_TRUE_MSG(input_cnode != nullptr, RET_NULL_PTR, "input_cnode is nullptr");
     auto input_cnode_primitive = GetValueNode<PrimitivePtr>(input_cnode->input(0));
     MS_CHECK_TRUE_MSG(input_cnode_primitive != nullptr, RET_NULL_PTR, "Primitive is nullptr.");
     auto quantization_param = ConvertQuantParamTToQuantizationParam(quant_param);
@@ -1163,6 +1177,7 @@ STATUS GetScaleZpFromAntiQuantModeNodes(const AnfNodePtr &node, ParameterPtr *sc
   if (!utils::isa<CNodePtr>(node) || !opt::CheckPrimitiveType(node, prim::kPrimMul)) {
     return RET_ERROR;
   }
+  MS_CHECK_TRUE_RET(node->cast<CNodePtr>()->size() >= kSizeThree, RET_ERROR);
   auto add_node = node->cast<CNodePtr>()->input(kIndexOne);
   auto scale_param = node->cast<CNodePtr>()->input(kIndexTwo);
   if (opt::CheckPrimitiveType(scale_param, prim::kPrimLoad)) {
@@ -1173,8 +1188,10 @@ STATUS GetScaleZpFromAntiQuantModeNodes(const AnfNodePtr &node, ParameterPtr *sc
   if (!utils::isa<CNodePtr>(add_node) || !opt::CheckPrimitiveType(add_node, prim::kPrimAdd)) {
     return RET_ERROR;
   }
+  MS_CHECK_TRUE_RET(add_node->cast<CNodePtr>()->size() >= kSizeThree, RET_ERROR);
   auto zp_param = add_node->cast<CNodePtr>()->input(kIndexTwo);
-  if (opt::CheckPrimitiveType(zp_param, prim::kPrimLoad)) {
+  if (!utils::isa<CNodePtr>(zp_param) || opt::CheckPrimitiveType(zp_param, prim::kPrimLoad)) {
+    MS_CHECK_TRUE_RET(zp_param->cast<CNodePtr>()->size() >= kSizeTwo, RET_ERROR);
     zp_param = zp_param->cast<CNodePtr>()->input(kIndexOne);
   }
   *zp_param_node = zp_param->cast<ParameterPtr>();
@@ -1239,6 +1256,7 @@ std::vector<std::vector<int64_t>> ExtractStrategy(const ValuePtr &stra) {
       std::vector<int64_t> dim;
       if (elements[index]->isa<ValueSequence>()) {
         auto value_tuple = elements[index]->cast<ValueTuplePtr>();
+        MS_EXCEPTION_IF_NULL(value_tuple);
         std::vector<ValuePtr> value_vector = value_tuple->value();
         (void)std::transform(value_vector.begin(), value_vector.end(), std::back_inserter(dim),
                              [](const ValuePtr &value) { return static_cast<int64_t>(GetValue<int64_t>(value)); });

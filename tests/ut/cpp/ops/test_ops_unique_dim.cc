@@ -71,7 +71,7 @@ class TestUniqueDimSimpleInfer : public TestOps, public testing::WithParamInterf
 
 TEST_P(TestUniqueDimSimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(param.sorted));

@@ -25,7 +25,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "proto/topology.pb.h"
 #include "kernel/framework_utils.h"
-#include "kernel/cpu/rpc/rpc_recv_kernel.h"
+#include "plugin/device/cpu/kernel/rpc/rpc_recv_kernel.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -125,6 +125,16 @@ int HcomReceiveKernel::ReceiveShapeForDynamic() {
 
   MS_LOG(DEBUG) << "handle msg done, the real shape is " << real_shape_;
   return KRET_OK;
+}
+
+bool HcomReceiveKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  bool ret = HcclKernel::Init(inputs, outputs);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Failed to init HcomReceiveKernel";
+  }
+  auto shape_v = GetValue<std::vector<int64_t>>(primitive_->GetAttr("shape"));
+  is_dynamic_shape_ = (std::count(shape_v.cbegin(), shape_v.cend(), -1) > 0);
+  return true;
 }
 
 int HcomReceiveKernel::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {

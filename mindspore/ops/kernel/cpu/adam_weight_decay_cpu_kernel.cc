@@ -18,10 +18,11 @@
 #include <cmath>
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adam_weight_decay_cpu {
 namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kScalarIndex = 0;
@@ -144,5 +145,6 @@ bool AdamWeightDecayCpuKernelMod::Launch(const std::vector<kernel::KernelTensor 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdamWeightDecay, AdamWeightDecayCpuKernelMod);
+}  // namespace adam_weight_decay_cpu
 }  // namespace kernel
 }  // namespace mindspore

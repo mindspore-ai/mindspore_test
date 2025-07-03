@@ -11,7 +11,7 @@ mindspore.nn.Optimizer
         .. include:: mindspore.nn.optim_note_weight_decay.rst
 
     参数：
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) -
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
@@ -23,7 +23,7 @@ mindspore.nn.Optimizer
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **weight_decay** (Union[float, int]) - 权重衰减的整数或浮点值。必须等于或大于0。如果 `weight_decay` 是整数，它将被转换为浮点数。默认值： ``0.0``。
+        - **weight_decay** (Union[float, int]，可选) - 权重衰减的整数或浮点值。必须等于或大于0。如果 `weight_decay` 是整数，它将被转换为浮点数。默认值： ``0.0``。
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
@@ -60,7 +60,7 @@ mindspore.nn.Optimizer
 
     .. py:method:: flatten_gradients(gradients)
 
-        如果网络参数已经使用了连续内存，则将梯度也按数据类型分组使用连续内存。
+        如果网络参数已经使用了连续内存，则梯度也将按数据类型分组使用连续内存。
 
         一种网络参数和梯度都使用连续内存的性能优化方法。继承 :class:`mindspore.nn.Optimizer` 自定义优化器时，需调用该接口使能连续内存优化。
 

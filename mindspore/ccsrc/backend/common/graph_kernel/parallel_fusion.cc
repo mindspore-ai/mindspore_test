@@ -24,13 +24,19 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "kernel/common_utils.h"
-#include "frontend/operator/ops.h"
+#include "common/common_utils.h"
 #include "ir/func_graph_cloner.h"
 #include "backend/common/graph_kernel/core/update_state_formatter.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -247,10 +253,15 @@ bool WhiteOpsFilter(const AnfNodePtr &node) {
   if (device_info != kAscendDevice) {
     return true;
   }
+  if (common::AnfAlgo::IsDynamicShape(node)) {
+    return false;
+  }
   auto sub_graph = GetCNodeFuncGraph(node);
+  MS_EXCEPTION_IF_NULL(sub_graph);
   auto nodes = TopoSort(sub_graph->get_return());
   auto iter = std::find_if(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul);
+    return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul) ||
+           IsPrimitiveCNode(node, prim::kPrimGroupedMatmul);
   });
   return iter == nodes.end();
 }

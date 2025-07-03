@@ -18,15 +18,12 @@
 
 #include <vector>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_color_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomColorOperation.
 RandomColorOperation::RandomColorOperation(float t_lb, float t_ub) : t_lb_(t_lb), t_ub_(t_ub) { random_op_ = true; }
 
@@ -71,7 +68,6 @@ Status RandomColorOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<vision::RandomColorOperation>(t_lb, t_ub);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

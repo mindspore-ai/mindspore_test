@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,13 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/node_info.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {
@@ -56,6 +63,7 @@ int64_t GetSegmentMax(const std::vector<AnfNodePtr> &forward_end) {
     MS_LOG(EXCEPTION) << "Can not find the end node of pipeline, you are advised to use 'PipelineCell' to fix it.";
   } else {
     auto forward_end_cnode = forward_end.back()->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(forward_end_cnode);
     auto seg_size = forward_end_cnode->GetPrimalAttr(SEGMENT);
     MS_EXCEPTION_IF_NULL(seg_size);
     seg_max = GetValue<int64_t>(seg_size);
@@ -129,10 +137,13 @@ void InsertVirtualFoldPipelineEndNode(const AnfNodePtr &temp_node, const FuncGra
   auto end_cnode = end_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(end_cnode);
   auto end_prim = GetCNodePrimitive(end_node);
+  MS_EXCEPTION_IF_NULL(end_prim);
   OperatorAttrs attrs_;
   auto op = CreateOpInstance(attrs_, "_VirtualPipelineEnd", "end_node");
   auto value_node = NewValueNode(op);
+  MS_EXCEPTION_IF_NULL(GetValueNode(value_node));
   auto new_prim = GetValueNode(value_node)->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(new_prim);
   (void)new_prim->SetAttrs(end_prim->attrs());
   manager->SetEdge(end_node, 0, value_node);
   end_cnode->AddPrimalAttr(PIPELINE_END, end_cnode->GetPrimalAttr(MICRO));
@@ -222,6 +233,7 @@ void ReorderForFoldPipelineForward(const std::vector<PipelinePair> &pair_vector,
       InsertDepend(post_node_end, send_node_begin, manager, root);
 
       auto send_cnode = send_node_begin->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(send_cnode);
       auto before_send_node = GetActualOp(send_cnode->input(1));
 
       InsertDepend(before_send_node, receive_node, manager, root);
@@ -233,6 +245,7 @@ void ReorderForFoldPipelineForward(const std::vector<PipelinePair> &pair_vector,
     InsertDepend(prior_node_end, post_node_begin, manager, root);
     *end_of_forward = pair_vector[kForwardEnd].second[i];
   }
+  MS_EXCEPTION_IF_NULL((*end_of_forward)->cast<CNodePtr>());
   (*end_of_forward)->cast<CNodePtr>()->AddPrimalAttr(FORWARD_END, MakeValue(true));
   (*end_of_forward)->cast<CNodePtr>()->AddPrimalAttr(SEGMENT_MAX, MakeValue(seg_max));
 }
@@ -324,6 +337,7 @@ void ReorderForBackwardLastSeg(const std::vector<PipelinePair> &pair_vector, con
   }
 
   for (size_t i = 0; i < pair_vector[0].first.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(pair_vector[0].first[i]->cast<CNodePtr>());
     pair_vector[0].first[i]->cast<CNodePtr>()->AddPrimalAttr(BACKWARD_MICRO_END, MakeValue(true));
     pair_vector[0].first[i]->cast<CNodePtr>()->AddPrimalAttr(SEGMENT_MAX, MakeValue(seg_max));
   }
@@ -351,7 +365,9 @@ void ReorderForBackwardOtherSeg(const PipelinePair &backward_start_pair, const P
       InsertDepend(post_node_end, send_node_begin, manager, root);
 
       auto send_cnode = send_node_begin->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(send_cnode);
       auto before_send_node = GetActualOp(send_cnode->input(1));
+      MS_EXCEPTION_IF_NULL(before_send_node->cast<CNodePtr>());
       before_send_node = GetActualOp((before_send_node->cast<CNodePtr>())->input(1));
 
       InsertDepend(before_send_node, receive_node, manager, root);
@@ -413,6 +429,7 @@ void ReorderForFoldPipelineBackward(const std::vector<PipelinePair> &pair_vector
 
   bool first = true;
   for (size_t i = 0; i < pair_vector[0].first.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(pair_vector[0].first[i]->cast<CNodePtr>());
     pair_vector[0].first[i]->cast<CNodePtr>()->AddPrimalAttr(BACKWARD_MICRO_END, MakeValue(true));
     pair_vector[0].first[i]->cast<CNodePtr>()->AddPrimalAttr(SEGMENT_MAX, MakeValue(seg_max));
   }
@@ -432,7 +449,9 @@ void ReorderForFoldPipelineBackward(const std::vector<PipelinePair> &pair_vector
       InsertDepend(post_node_end, send_node_begin, manager, root);
 
       auto send_cnode = send_node_begin->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(send_cnode);
       auto before_send_node = GetActualOp(send_cnode->input(1));
+      MS_EXCEPTION_IF_NULL(before_send_node->cast<CNodePtr>());
       before_send_node = GetActualOp((before_send_node->cast<CNodePtr>())->input(1));
 
       InsertDepend(before_send_node, receive_node, manager, root);

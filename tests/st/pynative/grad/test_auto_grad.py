@@ -14,14 +14,15 @@
 # ============================================================================
 """ test_auto_grad """
 
-import os
 import numpy as np
-os.environ['MS_PYNATIVE_CONFIG_STATIC_SHAPE'] = '1'
 import mindspore
 from mindspore.ops import composite as C
 from mindspore import Tensor, Parameter
 from mindspore import nn
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
+from mindspore.ops.composite import GradOperation
+from tests.mark_utils import arg_mark
 
 
 class MultiInputNet(nn.Cell):
@@ -140,6 +141,33 @@ class StopGradientNet(nn.Cell):
         return z
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_input_asnumpy():
+    """
+    Feature: Test auto grad multi input
+    Description: Test multi input with asnumpy.
+    Expectation: Success.
+    """
+    x = Tensor([0], mindspore.float32) + 1
+    y = Tensor([0], mindspore.float32) + 2
+    z = Tensor([0], mindspore.float32) + 3
+    # convert tensor and device to host.
+    x.asnumpy()
+    y.asnumpy()
+    z.asnumpy()
+    net = MultiInputNet()
+    grad_net = C.GradOperation(get_all=True)
+    grads = grad_net(net)(x, (y, z))
+    assert np.allclose(grads[0][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_input():
     """
     Feature: Test auto grad multi input
@@ -153,12 +181,12 @@ def test_auto_grad_multi_input():
     grad_net = C.GradOperation(get_all=True)
     grads = grad_net(net)(x, (y, z))
     assert np.allclose(grads[0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32),
-                   (Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32)))
-    grads = grad_net(net)(x, (y, z))
-    assert np.allclose(grads[0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_input_op():
     """
     Feature: Test auto grad multi input op
@@ -172,12 +200,12 @@ def test_auto_grad_multi_input_op():
     grads = grad_net(net)(x, y)
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x, y)
-    assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_stack_op():
     """
     Feature: Test auto grad multi input op
@@ -191,12 +219,12 @@ def test_auto_grad_stack_op():
     grads = grad_net(net)(x, y)
     assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32), Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x, y)
-    assert np.allclose(grads[0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_ir_grad_multi_output():
     """
     Feature: Test auto grad multi output
@@ -207,11 +235,12 @@ def test_ir_grad_multi_output():
     net = SplitNet()
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_multi_output_add_gradient():
     """
     Feature: Test auto grad multi output add.
@@ -222,11 +251,12 @@ def test_auto_grad_multi_output_add_gradient():
     net = SplitAddNet()
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([3, 3, 3, 2, 2, 2, 0, 0, 0], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_not_register_expander_op():
     """
     Feature: Test auto grad not expander
@@ -237,11 +267,12 @@ def test_auto_grad_not_register_expander_op():
     net = InsertGradientOfNet()
     grad = mindspore.grad(net)(input1)
     assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grad = mindspore.grad(net)(input1)
-    assert np.allclose(grad.asnumpy(), np.array([32], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_weights_grad():
     """
     Feature: Test auto grad weights grad.
@@ -253,11 +284,12 @@ def test_auto_grad_weights_grad():
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net, [net.p1])(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net, [net.p1])(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_single_weight():
     """
     Feature: Test auto grad single input.
@@ -269,11 +301,12 @@ def test_auto_grad_single_weight():
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net, [net.p1])(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net, [net.p1])(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_with_sens():
     """
     Feature: Test auto grad single input.
@@ -286,11 +319,12 @@ def test_auto_grad_with_sens():
     grad_net = C.GradOperation(get_all=True, get_by_list=True, sens_param=True)
     grads = grad_net(net, [net.p1])(x, sens)
     assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net, [net.p1])(x, sens)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_none_inputs_and_weights():
     """
     Feature: Test auto grad none inputs and weights.
@@ -303,13 +337,14 @@ def test_auto_grad_none_inputs_and_weights():
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)((x, y))
     assert len(grads) == 2
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)((x, y))
-    assert len(grads) == 2
     assert not grads[0]
     assert not grads[1]
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_by_position():
     """
     Feature: Test auto grad by position.
@@ -320,11 +355,12 @@ def test_auto_grad_by_position():
     net = NormalNet()
     _, grad = ops.value_and_grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    _, grad = ops.value_and_grad(net)(x)
-    assert np.allclose(grad.asnumpy(), np.array([2], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_return_param():
     """
     Feature: Test auto grad return param.
@@ -336,11 +372,12 @@ def test_auto_grad_return_param():
     grad_net = C.GradOperation(get_all=True, get_by_list=True)
     grads = grad_net(net)(x)
     assert np.allclose(grads[1][0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x)
-    assert np.allclose(grads[1][0].asnumpy(), np.array([1], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_stop_gradient():
     """
     Feature: Test auto grad stop gradient.
@@ -353,12 +390,12 @@ def test_auto_grad_stop_gradient():
     grads = grad_net(net)(x)
     assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
     assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
-    grads = grad_net(net)(x)
-    assert np.allclose(grads[0][0].asnumpy(), np.array([0], dtype=np.float32), 0.00001, 0.00001)
-    assert np.allclose(grads[1][0].asnumpy(), np.array([4], dtype=np.float32), 0.00001, 0.00001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 def test_auto_grad_bprop_net():
     """
     Feature: Test auto grad stop gradient.
@@ -369,6 +406,135 @@ def test_auto_grad_bprop_net():
     net = CustomBpropNet()
     grad = mindspore.grad(net)(x)
     assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
-    net.set_inputs(Tensor(shape=[None], dtype=mindspore.float32))
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+class NoneCustomNet(nn.Cell):
+    def construct(self, x, y):
+        y = x * x
+        return y
+
+    def bprop(self, *args):
+        return args[0] * 2, None
+
+
+class NoneAddNet(nn.Cell):
+    def __init__(self):
+        super(NoneAddNet, self).__init__()
+        self.net = NoneCustomNet()
+
+    def construct(self, x):
+        y = x * x
+        output = self.net(x, y)
+        h = y + output
+        return h
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_auto_grad_none_add_net():
+    """
+    Feature: Test auto grad none add
+    Description: Test auto grad none add.
+    Expectation: Success.
+    """
+    x = Tensor([2.0], mindspore.float32)
+    net = NoneAddNet()
     grad = mindspore.grad(net)(x)
-    assert np.allclose(grad.asnumpy(), np.array([8], dtype=np.float32), 0.00001, 0.00001)
+    assert np.allclose(grad.asnumpy(), np.array([8.], dtype=np.float32), 0.00001, 0.00001)
+
+
+def first_grad_net(x):
+    return x * x
+
+
+def nested_grad_net(x):
+    grad_param = GradOperation(True, False, False)
+    _pynative_executor.set_grad_flag(True)
+    _pynative_executor.check_run(grad_param, first_grad_net, None, None, True, x, create_graph=False)
+    _pynative_executor.new_graph(first_grad_net, x)
+    output = first_grad_net(x)
+    _pynative_executor.end_graph(first_grad_net, output, x)
+    grads = _pynative_executor.grad(first_grad_net, grad_param, None, None, x)
+    return grads + x
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_check_run_first_order_net():
+    """
+    Feature: Test auto grad check run.
+    Description: Test auto grad check run.
+    Expectation: Success.
+    """
+    x = Tensor([2], mindspore.float32)
+    grad = mindspore.grad(nested_grad_net)(x)
+    assert np.allclose(grad.asnumpy(), np.array([1.0], dtype=np.float32), 0.00001, 0.00001)
+
+
+class TestRequiresGradMatmulNet(nn.Cell):
+    def __init__(self):
+        super(TestRequiresGradMatmulNet, self).__init__()
+        self.p1 = Parameter(Tensor(np.ones((5000, 5000), dtype=np.float32)))
+        self.p1.register_hook(lambda: "enter hook")
+        self.p1.requires_grad = False
+
+    def construct(self, x):
+        y = ops.stop_gradient(x)
+        res = ops.mul(y, self.p1)
+        z = res * res * res
+        return z
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_requires_grad_memory_check():
+    """
+    Feature: Test auto grad requires grad memory.
+    Description: Test auto grad memory.
+    Expectation: Success.
+    """
+    x = Tensor(np.ones((5000, 5000), dtype=np.float32))
+    net = TestRequiresGradMatmulNet()
+    _ = mindspore.grad(net)(x)
+    print('memory', mindspore.hal.max_memory_allocated())
+    assert mindspore.hal.max_memory_allocated() < 500100000
+
+
+class TestRequiresGradFalseNet(nn.Cell):
+    def __init__(self):
+        super(TestRequiresGradFalseNet, self).__init__()
+        self.p1 = Parameter(Tensor(2.0, dtype=mindspore.float32))
+        self.p2 = Parameter(Tensor(3.0, dtype=mindspore.float32))
+
+    def construct(self, x):
+        y = ops.mul(x, self.p1)
+        z = y * self.p2
+        self.p2.requires_grad = False
+        return z
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_requires_grad_false():
+    """
+    Feature: Test auto grad requires grad false.
+    Description: Test auto grad requires grad.
+    Expectation: Success.
+    """
+    x = Tensor([4.], dtype=mindspore.float32)
+    net = TestRequiresGradFalseNet()
+    grads = mindspore.grad(net, weights=[net.p1, net.p2])(x)
+    assert np.allclose(grads[1][0].asnumpy(), np.array([12.0], dtype=np.float32))
+    assert np.allclose(grads[1][1].asnumpy(), np.array([0.0], dtype=np.float32))

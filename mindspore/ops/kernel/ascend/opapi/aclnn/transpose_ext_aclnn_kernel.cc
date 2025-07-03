@@ -20,12 +20,13 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_ext {
 void TransposeExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
@@ -54,5 +55,6 @@ bool TransposeExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TransposeExt, TransposeExtAscend);
+}  // namespace transpose_ext
 }  // namespace kernel
 }  // namespace mindspore

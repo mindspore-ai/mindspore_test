@@ -25,6 +25,7 @@
 #include "NvInferRuntimeCommon.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/spacetobatch_impl.cuh"
 #include "infer/space_to_batch_nd.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 int SpaceToBatchTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

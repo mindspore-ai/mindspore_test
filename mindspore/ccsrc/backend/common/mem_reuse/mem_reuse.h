@@ -22,9 +22,8 @@
 #include "utils/hash_map.h"
 #include "backend/common/mem_reuse/kernel_refcount.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "utils/ms_context.h"
+
 namespace mindspore {
 namespace memreuse {
 // todo: delete with kernel-runtime
@@ -38,7 +37,7 @@ using KernelRefs = std::map<KernelKey, KernelRefCountPtrList>;
 
 using KernelGraph = mindspore::session::KernelGraph;
 
-class BACKEND_EXPORT MemReuseUtil {
+class BACKEND_COMMON_EXPORT MemReuseUtil {
  public:
   KernelRefCountPtrList total_refs_list_;
   KernelRefCountPtrList total_wk_ref_list_;

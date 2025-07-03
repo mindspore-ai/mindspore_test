@@ -13,25 +13,18 @@
 # limitations under the License.
 # ============================================================================
 """Test the feature with one stage"""
-import sys  
-import pytest 
 import numpy
 import types
+import pytest
 from mindspore import Tensor, jit
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
-cfg = {
-    "print_after_all": False,
-    "compile_by_trace": True,
-}
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
+cfg = {"print_after_all": False}
+
+@pytest.mark.skip(reason='no one stage now')
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_code_generator_with_complete_graph():
     """
@@ -53,8 +46,8 @@ def test_code_generator_with_complete_graph():
 
     x = Tensor(numpy.zeros((4, 4)))
     y = Tensor(numpy.random.rand(4, 4))
-    result = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": False})(graph_test)(x, y)
-    excepted = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": True})(code_test)(x, y)
+    result = pi_jit_with_config(jit_config={**cfg, "interpret_captured_code": False})(graph_test)(x, y)
+    excepted = pi_jit_with_config(jit_config={**cfg, "interpret_captured_code": True})(code_test)(x, y)
 
     graph_phase = get_code_extra(graph_test)["code"].get("phase_", None)
     non_code = get_code_extra(graph_test)["code"].get("compiled_code_", None)
@@ -65,7 +58,7 @@ def test_code_generator_with_complete_graph():
     assert non_code is None and non_phase is None
     assert isinstance(graph_phase, str) and isinstance(new_code, types.CodeType)
 
-
+@pytest.mark.skip(reason='no one stage now')
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_code_generator_with_exception():
     """
@@ -87,7 +80,7 @@ def test_code_generator_with_exception():
     unknown_func = Tensor.shape.__set__ # a function with exception
 
     msg = None
-    wrapped = jit(code_test, mode="PIJit", jit_config = {**cfg, "interpret_captured_code":True})
+    wrapped = pi_jit_with_config(code_test, jit_config={**cfg, "interpret_captured_code": True})
     try:
         z = wrapped(x, y, unknown_func=unknown_func)
         print(z)

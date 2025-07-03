@@ -21,6 +21,10 @@
 #include "include/backend/kernel_info.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "include/common/utils/anfalgo.h"
+#include "ops/op_def.h"
 
 namespace mindspore::graphkernel {
 const BaseRef SplitAssign::DefinePattern() const {

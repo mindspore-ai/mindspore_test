@@ -18,6 +18,11 @@
 #include <set>
 #include <unordered_map>
 #include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace opt {
@@ -100,6 +105,7 @@ bool IsGradNode(const AnfNodePtr &node) {
 
 bool IsFpropReturn(const AnfNodePtr &make_tuple) {
   auto cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   constexpr size_t fprop_output_size = 2;
   if (cnode->size() != fprop_output_size + 1) {
     return false;
@@ -111,16 +117,16 @@ AnfNodePtr GetPrimalFromFprop(const FuncGraphPtr &k_fg) {
   if (!IsPrimitiveCNode(k_fg->output(), prim::kPrimMakeTuple)) {
     return nullptr;
   }
-  auto k_fg_outputs = k_fg->output()->cast<CNodePtr>()->inputs();
+  auto k_fg_cnode = k_fg->output()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(k_fg_cnode);
+  auto k_fg_outputs = k_fg_cnode->inputs();
   if (k_fg_outputs.size() != 3) {
     return nullptr;
   }
   return k_fg_outputs[kIndex1];
 }
 
-bool ShouldAddNewPrimalOutput(const AnfNodePtr &node, bool recompute_cell) {
-  return !IsGradNode(node) || recompute_cell;
-}
+bool ShouldAddNewPrimalOutput(const AnfNodePtr &node) { return !IsGradNode(node); }
 
 bool IsForwardDepend(const AnfNodePtr &node) {
   return IsPrimitiveCNode(node, prim::kPrimDepend) && !node->cast_ptr<CNode>()->HasAttr(kRecomputeInsert);
@@ -135,7 +141,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
     auto user = node_and_idx.first;
     MS_EXCEPTION_IF_NULL(user);
     // The forward part may have multiple outputs.
-    if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem) && ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsPrimitiveCNode(user, prim::kPrimTupleGetItem) && ShouldAddNewPrimalOutput(user)) {
       // Make new tuple_getitem to get corresponding output.
       auto new_primal_getitem = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), new_primal,
                                               user->cast_ptr<CNode>()->input(kInputNodeOutputIndexInTupleGetItem)});
@@ -143,7 +149,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
         AddNewPrimalNode(manager, fg, user, new_primal_getitem, recompute_cell, origin_to_new_primal) || changed;
       continue;
     }
-    if (IsForwardDepend(user) && ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsForwardDepend(user) && ShouldAddNewPrimalOutput(user)) {
       // Make new depend node in forward to get corresponding output.
       auto new_depend = fg->NewCNode(user->cast_ptr<CNode>()->inputs());
       new_depend->set_input(IntToSize(node_and_idx.second), new_primal);
@@ -151,8 +157,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
       continue;
     }
     // The op like concat will have a make_tuple input.
-    if (IsPrimitiveCNode(user, prim::kPrimMakeTuple) && !IsFpropReturn(user) &&
-        ShouldAddNewPrimalOutput(user, recompute_cell)) {
+    if (IsPrimitiveCNode(user, prim::kPrimMakeTuple) && !IsFpropReturn(user) && ShouldAddNewPrimalOutput(user)) {
       auto user_cnode = user->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(user_cnode);
       if (user_cnode->HasAttr(kAttrRecomputeMakeTuple)) {
@@ -190,6 +195,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
 }
 
 bool IsRecomputeCell(const FuncGraphPtr &k_fg) {
+  MS_EXCEPTION_IF_NULL(k_fg);
   auto primal_iter = k_fg->transforms().find("primal");
   if (primal_iter == k_fg->transforms().end()) {
     MS_LOG_WITH_NODE(EXCEPTION, k_fg->return_node()) << "The k_fg: " << k_fg << " should have primal part.";
@@ -468,7 +474,9 @@ void AddCseAttr(const FuncGraphPtr &root, bool changed) {
   auto all_node = TopoSort(root->get_return(), SuccDeeperSimple, AlwaysInclude);
   for (const auto &node : all_node) {
     if (WithRecomputedScope(node)) {
-      node->cast<CNodePtr>()->AddAttr(kAttrNeedCseAfterRecompute, MakeValue(true));
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      cnode->AddAttr(kAttrNeedCseAfterRecompute, MakeValue(true));
     }
   }
 }
@@ -570,9 +578,13 @@ CNodePtr Recomputation::MoveKCallerToBprop(const FuncGraphManagerPtr &manager, c
       auto bprop_caller = GetBpropCaller(manager, GetBpropGetter(manager, node));
       if (bprop_caller != nullptr) {
         std::vector<AnfNodePtr> new_depend_nodes_inputs;
-        (void)std::copy(depend_nodes->cast<CNodePtr>()->inputs().begin(),
-                        depend_nodes->cast<CNodePtr>()->inputs().end(), std::back_inserter(new_depend_nodes_inputs));
-        (void)new_depend_nodes_inputs.emplace_back(bprop_caller->cast<CNodePtr>()->input(1));
+        auto depend_cnode = depend_nodes->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(depend_cnode);
+        (void)std::copy(depend_cnode->inputs().begin(), depend_cnode->inputs().end(),
+                        std::back_inserter(new_depend_nodes_inputs));
+        auto bprop_caller_cnode = bprop_caller->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(bprop_caller_cnode);
+        (void)new_depend_nodes_inputs.emplace_back(bprop_caller_cnode->input(1));
         new_depend_nodes = bprop_fg->NewCNode(new_depend_nodes_inputs);
       }
       for (size_t i = 1; i < new_inputs.size(); ++i) {
@@ -764,6 +776,8 @@ bool Recomputation::operator()(const FuncGraphPtr &root, const OptimizerPtr &opt
     bool change = AddNewPrimalNode(manager, fg, node, new_primal, recompute_cell, &origin_to_new_primal);
     changed = change || changed;
     if (change && recompute_cell) {
+      static int64_t recomput_subgraph_id = 1;
+      k_fg->set_attr(kRecomputeSubgraphIdAttr, MakeValue(recomput_subgraph_id++));
       k_fg_caller_cnode->set_user_data(kPrimalFgCallerUserDataKey, new_primal);
     }
     k_fg_caller_cnode->AddAttr(kAttrReplacedWithPrimal, MakeValue(true));

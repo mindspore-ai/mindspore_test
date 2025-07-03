@@ -15,28 +15,27 @@
  */
 
 #include "kernel/ascend/pyboost/customize/upsample_linear1d.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-const double UpsampleLinear1dEps = 1e-7;
-const pyfloat DEFAULT_SCALE_VALUE = -1;
-tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                 const device::DeviceContext *device_context,
-                                                 const BaseTensorPtr &input_tensor,
-                                                 const std::vector<int64_t> &output_size,
-                                                 const std::vector<pyfloat> &scales, const bool &align_corners,
-                                                 const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
+                                             const device::DeviceContext *device_context, const TensorPtr &input_tensor,
+                                             const std::vector<int64_t> &output_size,
+                                             const std::vector<pyfloat> &scales, const bool &align_corners,
+                                             const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   // Python float obj would be parsed by float32 number, which should be parsed
   // to double number according to PyTorch. For example, python scale is 2.6,
   // but the last scale we got in c++ is 2.5999999046325684,
   // which caused aclnn verification to fail.
+  const pyfloat DEFAULT_SCALE_VALUE = -1;
+  const double UpsampleLinear1dEps = 1e-7;
   double scale_l = scales.at(0) != DEFAULT_SCALE_VALUE ? (static_cast<double>(scales.at(0)) + UpsampleLinear1dEps)
                                                        : DEFAULT_SCALE_VALUE;
   LAUNCH_ACLNN(aclnnUpsampleLinear1d, device_context, op->stream_id(), input_tensor, output_size, align_corners,
@@ -46,11 +45,10 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner>
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                      const BaseTensorPtr &input_tensor,
-                                                      const std::optional<ValueTuplePtr> &output_size,
-                                                      const std::optional<ValueTuplePtr> &scale_factors,
-                                                      const BoolImmPtr &align_corners) {
+tensor::TensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                  const std::optional<ValueTuplePtr> &output_size,
+                                                  const std::optional<ValueTuplePtr> &scale_factors,
+                                                  const BoolImmPtr &align_corners) {
   MS_LOG(INFO) << "UpsampleLinear1DAscendCustomize start";
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);
@@ -64,6 +62,7 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRu
     MS_LOG(EXCEPTION) << "For UpsampleLinear1D with align_corners false, scales was not supported.";
   }
 
+  const pyfloat DEFAULT_SCALE_VALUE = -1;
   std::vector<pyfloat> scales{DEFAULT_SCALE_VALUE};
   if (scale_factors.has_value()) {
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());

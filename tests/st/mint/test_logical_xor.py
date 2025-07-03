@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import ops, mint, Tensor, jit, JitConfig, context
+from mindspore import ops, mint, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.st.utils import test_utils
@@ -38,10 +38,9 @@ def logical_xor_backward_func(x, y):
     return ops.grad(logical_xor_forward_func, 0)(x, y)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize("mode", ['pynative', 'KBK', 'GE'])
 def test_logical_xor_forward(mode):
     """
@@ -61,8 +60,8 @@ def test_logical_xor_forward(mode):
         output2 = logical_xor_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(logical_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(logical_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(logical_xor_forward_func, jit_level="O0"))(x, y)
+        output2 = (jit(logical_xor_forward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = logical_xor_forward_func(x, y)

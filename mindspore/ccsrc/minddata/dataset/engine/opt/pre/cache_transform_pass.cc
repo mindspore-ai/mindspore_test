@@ -22,9 +22,7 @@
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/engine/ir/datasetops/source/generator_node.h"
 #endif
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/minddata_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/source/random_node.h"
 
 namespace mindspore {
@@ -67,7 +65,6 @@ Status CacheTransformPass::CachePass::VisitAfter(std::shared_ptr<DatasetNode> no
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // Perform leaf node cache transform identification
 Status CacheTransformPass::CachePass::Visit(std::shared_ptr<NonMappableSourceNode> node, bool *const modified) {
   if (node->IsCached()) {
@@ -92,7 +89,6 @@ Status CacheTransformPass::CachePass::Visit(std::shared_ptr<NonMappableSourceNod
   }
   return Status::OK();
 }
-#endif
 
 // Almost the same with NonMappableSourceNode's Visit, only this one is not guarded by the compiler
 // directive #ifndef ENABLE_ANDROID, also and there is no need to call MakeSimpleProducer() because
@@ -139,7 +135,6 @@ Status CacheTransformPass::CachePass::Visit(std::shared_ptr<MappableSourceNode> 
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // Almost the same with MappableSourceNode's Visit, only in this one we also marked this node's descendant_of_cache_
 // field to true. Later when building, MindDataNode will take different actions based on this information.
 Status CacheTransformPass::CachePass::Visit(std::shared_ptr<MindDataNode> node, bool *const modified) {
@@ -162,7 +157,6 @@ Status CacheTransformPass::CachePass::Visit(std::shared_ptr<MindDataNode> node, 
   }
   return Status::OK();
 }
-#endif
 
 #ifdef ENABLE_PYTHON
 // Perform leaf node cache transform identification

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ class SymbolicPrimEvaluator : public PrimEvaluator {
 // Evaluator will be stored in AnalysisEngine.evaluators_
 using EvaluatorPtrList = std::vector<EvaluatorPtr>;
 
-class DummyEvaluator : public Evaluator {
+class DummyEvaluator final : public Evaluator {
  public:
   DummyEvaluator() : Evaluator("dummy") {}
   ~DummyEvaluator() override = default;
@@ -153,7 +153,7 @@ class DummyEvaluator : public Evaluator {
 // A TrackedEvaluator has its own cache that maps possible calls to
 // their results, but is ultimately backed by a different evaluator.
 // Multiple TrackedEvaluators can be backed by the same Evaluator.
-class TrackedEvaluator : public Evaluator {
+class TrackedEvaluator final : public Evaluator {
  public:
   explicit TrackedEvaluator(const EvaluatorPtr &subinf) : Evaluator("TrackedEvaluator"), sub_evaluator_(subinf) {}
   ~TrackedEvaluator() override = default;
@@ -232,7 +232,7 @@ class BaseFuncGraphEvaluator : public Evaluator {
   std::vector<bool> always_eval_flags_;
 };
 
-class FuncGraphEvaluator : public BaseFuncGraphEvaluator {
+class FuncGraphEvaluator final : public BaseFuncGraphEvaluator {
  public:
   FuncGraphEvaluator(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context)
       : BaseFuncGraphEvaluator(context), func_graph_(func_graph) {}
@@ -262,7 +262,7 @@ class FuncGraphEvaluator : public BaseFuncGraphEvaluator {
 };
 using FuncGraphEvaluatorPtr = std::shared_ptr<FuncGraphEvaluator>;
 
-class MetaFuncGraphEvaluator : public BaseFuncGraphEvaluator {
+class MetaFuncGraphEvaluator final : public BaseFuncGraphEvaluator {
  public:
   // Note: context parameter is not used;
   MetaFuncGraphEvaluator(const MetaFuncGraphPtr &meta_func_graph, const ScopePtr &scope)
@@ -291,7 +291,7 @@ class MetaFuncGraphEvaluator : public BaseFuncGraphEvaluator {
   ScopePtr scope_;
 };
 
-class PartialAppEvaluator : public Evaluator {
+class PartialAppEvaluator final : public Evaluator {
  public:
   PartialAppEvaluator(const EvaluatorPtr &evaluator, const AbstractBasePtrList &args)
       : Evaluator("PartialAppEvaluator"), evaluator_(evaluator), args_abs_list_(args) {}
@@ -326,7 +326,7 @@ class PartialAppEvaluator : public Evaluator {
   AbstractBasePtrList args_abs_list_;
 };
 
-class VirtualEvaluator : public Evaluator {
+class VirtualEvaluator final : public Evaluator {
  public:
   VirtualEvaluator(const AbstractBasePtrList &args_abs_list, const AbstractBasePtr &output)
       : Evaluator("virtual"), args_abs_list_(args_abs_list), output_(output) {}
@@ -342,7 +342,7 @@ class VirtualEvaluator : public Evaluator {
   AbstractBasePtr output_;
 };
 
-class JEvaluator : public Evaluator {
+class JEvaluator final : public Evaluator {
  public:
   JEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func)
       : Evaluator("JEvaluator"), evaluator_(evaluator), primal_func_(orig_func) {}
@@ -373,7 +373,7 @@ class JEvaluator : public Evaluator {
   AbstractFunctionPtr primal_func_;
 };
 
-class TaylorEvaluator : public Evaluator {
+class TaylorEvaluator final : public Evaluator {
  public:
   TaylorEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func)
       : Evaluator("TaylorEvaluator"), evaluator_(evaluator), primal_func_(orig_func) {}
@@ -404,7 +404,7 @@ class TaylorEvaluator : public Evaluator {
   AbstractFunctionPtr primal_func_;
 };
 
-class ShardEvaluator : public Evaluator {
+class ShardEvaluator final : public Evaluator {
  public:
   ShardEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func)
       : Evaluator("ShardEvaluator"), evaluator_(evaluator), primal_func_(orig_func) {}
@@ -438,7 +438,41 @@ class ShardEvaluator : public Evaluator {
   AbstractFunctionPtr primal_func_;
 };
 
-class VmapEvaluator : public Evaluator {
+class AddAttrEvaluator final : public Evaluator {
+ public:
+  AddAttrEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func)
+      : Evaluator("AddAttrEvaluator"), evaluator_(evaluator), primal_func_(orig_func) {}
+  ~AddAttrEvaluator() override = default;
+  MS_DECLARE_PARENT(ShardEvaluator, Evaluator);
+
+  AnfNodePtr bound_node() const override {
+    if (evaluator_ != nullptr) {
+      return evaluator_->bound_node();
+    }
+    return bound_node_.lock();
+  }
+
+  void set_bound_node(const AnfNodePtr &node) override {
+    if (evaluator_ != nullptr) {
+      evaluator_->set_bound_node(node);
+    }
+    bound_node_ = AnfNodeWeakPtr(node);
+  }
+
+  EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
+    MS_LOG(INTERNAL_EXCEPTION) << "Should not be called, Run() method should be called";
+  }
+
+  EvalResultPtr Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list, const AnfNodeConfigPtr &) override;
+
+  std::string ToString() const override { return identifier_ + "_" + evaluator_->ToString(); }
+
+ private:
+  EvaluatorPtr evaluator_;
+  AbstractFunctionPtr primal_func_;
+};
+
+class VmapEvaluator final : public Evaluator {
  public:
   VmapEvaluator(const EvaluatorPtr &evaluator, const AbstractFunctionPtr &orig_func, const ValuePtr &in_axes,
                 const ValuePtr &out_axes, size_t cell_size)

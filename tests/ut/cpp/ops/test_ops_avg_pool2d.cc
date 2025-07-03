@@ -18,10 +18,9 @@
 #include <memory>
 #include "common/common_test.h"
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool2d.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -30,6 +29,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 struct AvgPool2DParams {
@@ -75,7 +75,7 @@ TEST_P(TestAvgPool2D, dyn_shape) {
 
   // if static, test simple infer
   if (param.is_static) {
-    auto input = std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.input_shape);
+    auto input = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.input_shape);
     std::vector<ValuePtr> input_valus{input,           param.kernel_size, param.stride,    param.padding,
                                       param.ceil_mode, count_include_pad, divisor_override};
     auto expect_shape = ShapeArray{param.out_shape};

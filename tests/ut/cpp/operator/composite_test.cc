@@ -26,6 +26,8 @@
 #include "ir/value.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 using Shape = abstract::Shape;

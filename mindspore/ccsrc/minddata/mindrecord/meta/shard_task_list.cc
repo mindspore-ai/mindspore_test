@@ -15,7 +15,9 @@
  */
 
 #include "minddata/mindrecord/include/shard_task_list.h"
+
 #include "minddata/mindrecord/include/common/shard_utils.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace mindrecord {
@@ -40,24 +42,51 @@ std::vector<int64_t> GeneratorIds::GetNextSampleIds(const bool &need_shuffle, co
   // CommonTask, 0, 16680, 17777
   // CommonTask, 0, 0, 15
   std::vector<int64_t> ids;
-  for (int32_t i = partition_index_; i < partitioned_shard_sample_count_.size(); i++) {
-    for (int64_t j = partitioned_shard_sample_count_[i].start + partition_sample_index_;
-         j < partitioned_shard_sample_count_[i].end; j++) {
-      ids.push_back(j);
-      partition_sample_index_++;
-      if (ids.size() >= ShuffleSize) {
-        if (need_shuffle) {
-          std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
+  std::string env_mindrecord_shard_by_block = common::GetEnv("MS_DEV_MINDRECORD_SHARD_BY_BLOCK");
+  (void)transform(env_mindrecord_shard_by_block.begin(), env_mindrecord_shard_by_block.end(),
+                  env_mindrecord_shard_by_block.begin(), ::tolower);
+  if (env_mindrecord_shard_by_block == "true") {
+    // Distributed by block
+    for (int32_t i = partition_index_; i < partitioned_shard_sample_count_.size(); i++) {
+      for (int64_t j = partitioned_shard_sample_count_[i].start + partition_sample_index_;
+           j < partitioned_shard_sample_count_[i].end; j++) {
+        ids.push_back(j);
+        partition_sample_index_++;
+        if (ids.size() >= ShuffleSize) {
+          if (need_shuffle) {
+            std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
+          }
+          return ids;
         }
-        return ids;
       }
+      partition_index_++;
+      partition_sample_index_ = 0;
     }
-    partition_index_++;
-    partition_sample_index_ = 0;
+    if (need_shuffle) {
+      std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
+    }
+  } else {
+    // Distributed by slice
+    for (int32_t i = partition_index_; i < partitioned_shard_sample_count_.size(); i++) {
+      for (int64_t j = partitioned_shard_sample_count_[i].start + partition_sample_index_;
+           j < partitioned_shard_sample_count_[i].end; j += partitioned_shard_sample_count_[i].step) {
+        ids.push_back(j);
+        partition_sample_index_ += partitioned_shard_sample_count_[i].step;
+        if (ids.size() >= ShuffleSize) {
+          if (need_shuffle) {
+            std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
+          }
+          return ids;
+        }
+      }
+      partition_index_++;
+      partition_sample_index_ = 0;
+    }
+    if (need_shuffle) {
+      std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
+    }
   }
-  if (need_shuffle) {
-    std::shuffle(ids.begin(), ids.end(), std::default_random_engine(seed));
-  }
+
   return ids;
 }
 
@@ -153,8 +182,25 @@ int64_t ShardTaskList::SizeAfterSampling() const {
 
   // slow load mode
   int64_t count = 0;
-  for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
-    count += partitioned_shard_sample_count_[i].end - partitioned_shard_sample_count_[i].start;
+  std::string env_mindrecord_shard_by_block = common::GetEnv("MS_DEV_MINDRECORD_SHARD_BY_BLOCK");
+  (void)transform(env_mindrecord_shard_by_block.begin(), env_mindrecord_shard_by_block.end(),
+                  env_mindrecord_shard_by_block.begin(), ::tolower);
+  if (env_mindrecord_shard_by_block == "true") {
+    // Distributed by block
+    for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
+      count += partitioned_shard_sample_count_[i].end - partitioned_shard_sample_count_[i].start;
+    }
+  } else {
+    // Distributed by slice
+    for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
+      // The values of start and end have changed and need to be recalculated
+      // The trinocular operator is used to avoid uneven distribution of scenes and prevent card numbers that need to be
+      // looped or padded from having a Sampler index greater than num_Samples
+      auto tmp_count = partitioned_shard_sample_count_[i].end - partitioned_shard_sample_count_[i].start;
+      count += (tmp_count % partitioned_shard_sample_count_[i].step == 0
+                  ? tmp_count / partitioned_shard_sample_count_[i].step
+                  : tmp_count / partitioned_shard_sample_count_[i].step + 1);
+    }
   }
   return count;
 }
@@ -368,19 +414,47 @@ void ShardTaskList::SetPartitionedShardSampleCount(
 void ShardTaskList::UpdatePartitionedShardSampleCountByNumSamples(const int64_t &num_samples) {
   auto count = num_samples;
   std::vector<PartitionedShardSampleCount> new_partitioned_shard_sample_count = {};
-  for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
-    auto start = partitioned_shard_sample_count_[i].start;
-    if (partitioned_shard_sample_count_[i].end - start <= count) {
-      new_partitioned_shard_sample_count.push_back(partitioned_shard_sample_count_[i]);
-      count = count - (partitioned_shard_sample_count_[i].end - start);
-    } else {
-      PartitionedShardSampleCount pssc;
-      pssc.task_type = partitioned_shard_sample_count_[i].task_type;
-      pssc.shard_id = partitioned_shard_sample_count_[i].shard_id;
-      pssc.start = start;
-      pssc.end = start + count;
-      new_partitioned_shard_sample_count.push_back(pssc);
-      break;
+  std::string env_mindrecord_shard_by_block = common::GetEnv("MS_DEV_MINDRECORD_SHARD_BY_BLOCK");
+  (void)transform(env_mindrecord_shard_by_block.begin(), env_mindrecord_shard_by_block.end(),
+                  env_mindrecord_shard_by_block.begin(), ::tolower);
+  if (env_mindrecord_shard_by_block == "true") {
+    for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
+      auto start = partitioned_shard_sample_count_[i].start;
+      if (partitioned_shard_sample_count_[i].end - start <= count) {
+        new_partitioned_shard_sample_count.push_back(partitioned_shard_sample_count_[i]);
+        count = count - (partitioned_shard_sample_count_[i].end - start);
+      } else {
+        PartitionedShardSampleCount pssc;
+        pssc.task_type = partitioned_shard_sample_count_[i].task_type;
+        pssc.shard_id = partitioned_shard_sample_count_[i].shard_id;
+        pssc.start = start;
+        pssc.end = start + count;
+        new_partitioned_shard_sample_count.push_back(pssc);
+        break;
+      }
+    }
+  } else {
+    for (int32_t i = 0; i < partitioned_shard_sample_count_.size(); i++) {
+      auto start = partitioned_shard_sample_count_[i].start;
+      // The trinocular operator is used to configure the num_ padded parameter to solve the problem of inconsistent
+      // dataset size and num_ samples after iteration for card numbers that need to be padded
+      auto sample_count =
+        (partitioned_shard_sample_count_[i].end - start) % partitioned_shard_sample_count_[i].step == 0
+          ? (partitioned_shard_sample_count_[i].end - start) / partitioned_shard_sample_count_[i].step
+          : (partitioned_shard_sample_count_[i].end - start) / partitioned_shard_sample_count_[i].step + 1;
+      if (sample_count <= count) {
+        new_partitioned_shard_sample_count.push_back(partitioned_shard_sample_count_[i]);
+        count -= sample_count;
+      } else {
+        PartitionedShardSampleCount pssc;
+        pssc.task_type = partitioned_shard_sample_count_[i].task_type;
+        pssc.shard_id = partitioned_shard_sample_count_[i].shard_id;
+        pssc.start = start;
+        pssc.end = start + count * partitioned_shard_sample_count_[i].step;
+        pssc.step = partitioned_shard_sample_count_[i].step;
+        new_partitioned_shard_sample_count.push_back(pssc);
+        break;
+      }
     }
   }
 

@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace complex_cpu {
 class ComplexCpuKernelMod : public NativeCpuKernelMod {
  public:
   ComplexCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class ComplexCpuKernelMod : public NativeCpuKernelMod {
 
   bool is_null_input_{false};
 };
+}  // namespace complex_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

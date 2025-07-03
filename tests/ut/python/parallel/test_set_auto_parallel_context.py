@@ -30,7 +30,7 @@ def test_set_auto_parallel_context():
     Expectation: compile success
     """
     context.set_auto_parallel_context(device_num=4, global_rank=3, gradients_mean=True, gradient_fp32_sync=False,
-                                      parallel_mode="auto_parallel", search_mode="dynamic_programming",
+                                      parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       parameter_broadcast=False,
                                       communi_parallel_mode="same_server_group_parallel")
     device_num = context.get_auto_parallel_context("device_num")

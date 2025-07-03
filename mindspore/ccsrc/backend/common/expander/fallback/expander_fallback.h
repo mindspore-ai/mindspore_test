@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace expander {
-BACKEND_EXPORT bool TryExpandCNode(const AnfNodePtr &node, const std::function<bool(const CNodePtr &)> &func);
+BACKEND_COMMON_EXPORT bool TryExpandCNode(const AnfNodePtr &node, const std::function<bool(const CNodePtr &)> &func);
 }  // namespace expander
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_EXPANDER_FALLBACK_EXPANDER_FALLBACK_H_

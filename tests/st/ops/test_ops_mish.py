@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit
 from mindspore.mint.nn import Mish
 from mindspore.mint.nn.functional import mish
 from tests.mark_utils import arg_mark
@@ -49,13 +49,14 @@ def mish_backward_func(x):
     return ms.grad(mish_forward_func, (0))(x)
 
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def mish_vmap_func(x):
     return ops.vmap(mish_forward_func)(x)
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_mish_normal(context_mode):

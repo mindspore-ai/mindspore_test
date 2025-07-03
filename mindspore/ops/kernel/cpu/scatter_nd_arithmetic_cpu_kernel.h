@@ -23,12 +23,13 @@
 #include <set>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_arithmetic_cpu {
 class ScatterNdArithmeticCpuKernelMod : public NativeCpuKernelMod,
                                         public MatchKernelHelper<ScatterNdArithmeticCpuKernelMod> {
  public:
@@ -70,6 +71,7 @@ class ScatterNdArithmeticCpuKernelMod : public NativeCpuKernelMod,
   float block_size_{128.0};
   bool has_null_input_{false};
 };
+}  // namespace scatter_nd_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

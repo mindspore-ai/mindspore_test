@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace shift_cpu {
 int ShiftCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
@@ -174,5 +175,6 @@ std::vector<KernelAttr> ShiftCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Shift, ShiftCpuKernelMod);
+}  // namespace shift_cpu
 }  // namespace kernel
 }  // namespace mindspore

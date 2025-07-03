@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace approximate_equal_cpu {
 namespace {
 constexpr size_t kApproximateEqualIutputsNum = 2;
 constexpr size_t kApproximateEqualOutputsNum = 1;
@@ -107,5 +108,6 @@ std::vector<std::pair<KernelAttr, ApproximateEqualCpuKernelMod::ApproximateEqual
      &ApproximateEqualCpuKernelMod::LaunchKernel<float>},
   };
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApproximateEqual, ApproximateEqualCpuKernelMod);
+}  // namespace approximate_equal_cpu
 }  // namespace kernel
 }  // namespace mindspore

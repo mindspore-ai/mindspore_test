@@ -22,10 +22,10 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/gpu/cuda_impl/rl/priority_replay_buffer.cuh"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 namespace mindspore {
 namespace kernel {

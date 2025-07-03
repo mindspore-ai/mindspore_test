@@ -15,16 +15,23 @@
  */
 #include "ir/tensor.h"
 #include "utils/ms_context.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "include/common/utils/tensor_py.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
 #include "mindapi/base/format.h"
 #include "include/common/pybind_api/api_register.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
+#include "pynative/pynative_utils.h"
+#include "include/common/utils/convert_utils_py.h"
 
 namespace mindspore {
+
+void Synchronize() { runtime::Pipeline::Get().WaitForward(); }
+
 // Reuse src tensor's device address by dst tensor. For internal usage only.
-void ReuseDataPtr(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, size_t offset) {
+void ReuseDataPtr(const py::object &dst_, const py::object &src_, size_t offset) {
   // get context meta
+  Synchronize();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   const auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -38,6 +45,8 @@ void ReuseDataPtr(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, si
   auto stream_id = device_ctx->device_res_manager_->DefaultStream();
 
   // create src device address if null
+  auto src = tensor::ConvertToTensor(src_);
+  MS_EXCEPTION_IF_NULL(src);
   if (src->device_address() == nullptr) {
     auto device_ptr = device_ctx->device_res_manager_->AllocateMemory(src->Size(), stream_id);
     auto src_device_address = device_ctx->device_res_manager_->CreateDeviceAddress(
@@ -54,6 +63,8 @@ void ReuseDataPtr(const tensor::TensorPtr &dst, const tensor::TensorPtr &src, si
 
   // create device address with src ptr
   uint8_t *ptr = reinterpret_cast<uint8_t *>(src->device_address()->GetMutablePtr());
+  auto dst = tensor::ConvertToTensor(dst_);
+  MS_EXCEPTION_IF_NULL(dst);
   auto offset_size = offset * UnitSizeInBytes(dst->data_type());
   if (offset_size >= src->Size()) {
     MS_EXCEPTION(ValueError) << "Offset overflow. Expect offset in bytes less than " << src->Size() << ", got "

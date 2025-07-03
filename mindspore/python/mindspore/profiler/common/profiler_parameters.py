@@ -21,6 +21,8 @@ from mindspore.profiler.common.constant import (
     ProfilerLevel,
     ProfilerActivity,
     AicoreMetrics,
+    ExportType,
+    HostSystem
 )
 from mindspore.profiler.schedule import Schedule
 
@@ -35,7 +37,7 @@ class ProfilerParameters:
         "output_path": (str, "./data"),
         "profiler_level": (ProfilerLevel, ProfilerLevel.Level0),
         "activities": (list, [ProfilerActivity.CPU, ProfilerActivity.NPU]),
-        "aicore_metrics": (AicoreMetrics, AicoreMetrics.AiCoreNone),
+        "aic_metrics": (AicoreMetrics, AicoreMetrics.AiCoreNone),
         "with_stack": (bool, False),
         "profile_memory": (bool, False),
         "data_process": (bool, False),
@@ -44,9 +46,16 @@ class ProfilerParameters:
         "l2_cache": (bool, False),
         "hbm_ddr": (bool, False),
         "pcie": (bool, False),
+        "sys_io": (bool, False),
+        "sys_interconnection": (bool, False),
+        "host_sys": (list, []),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
+        "record_shapes": (bool, False),
+        "export_type": (list, [ExportType.Text]),
         "mstx": (bool, False),
+        "mstx_domain_include": (list, []),
+        "mstx_domain_exclude": (list, []),
         "schedule": (Schedule, None),
         "on_trace_ready": (Optional[Callable[..., Any]], None)
     }
@@ -58,10 +67,7 @@ class ProfilerParameters:
         self.is_set_schedule: bool = False
         self._set_schedule(**kwargs)
         self._check_deprecated_params(**kwargs)
-        # Initialize parameters with kwargs
-        for param, (_, default_value) in self.PARAMS.items():
-            setattr(self, param, kwargs.get(param, default_value))
-
+        self._init_params(kwargs)
         self._check_params_type()
         self._handle_compatibility()
 
@@ -73,11 +79,9 @@ class ProfilerParameters:
         params = {}
         params["is_set_schedule"] = self.is_set_schedule
         for param, (_, _) in self.PARAMS.items():
-            if param == "profiler_level":
+            if param in ["profiler_level", "aic_metrics"]:
                 params[param] = getattr(self, param).value
-            elif param == "aicore_metrics":
-                params[param] = getattr(self, param).value
-            elif param == "activities":
+            elif param in ["activities", "export_type", "host_sys"]:
                 params[param] = [item.value for item in getattr(self, param)]
             elif param == "schedule":
                 params[param] = getattr(self, param).to_dict()
@@ -97,18 +101,32 @@ class ProfilerParameters:
         """
         return {
             "profile_memory": self.profile_memory,
-            "aic_metrics": self.aicore_metrics.value,
+            "aicore_metrics": self.aic_metrics.value,
             "l2_cache": self.l2_cache,
             "hbm_ddr": self.hbm_ddr,
             "pcie": self.pcie,
+            "sys_io": self.sys_io,
+            "sys_interconnection": self.sys_interconnection,
+            "host_sys": ",".join([item.value for item in self.host_sys]) if self.host_sys else "",
             "parallel_strategy": self.parallel_strategy,
             "profiler_level": self.profiler_level.value,
-            "aicore_metrics": self.aicore_metrics.value,
             "with_stack": self.with_stack,
+            "record_shapes": self.record_shapes,
             "mstx": self.mstx,
+            "mstx_domain_include": self.mstx_domain_include,
+            "mstx_domain_exclude": self.mstx_domain_exclude,
             "cpu_trace": ProfilerActivity.CPU in self.activities,
             "npu_trace": ProfilerActivity.NPU in self.activities,
         }
+
+    def _init_params(self, kwargs):
+        """
+        Initialize parameters with kwargs
+        """
+        for param, (_, default_value) in self.PARAMS.items():
+            if param == "schedule" and kwargs.get(param) is None:
+                kwargs["schedule"] = Schedule(wait=0, active=1)
+            setattr(self, param, kwargs.get(param) if kwargs.get(param) is not None else default_value)
 
     def _check_params_type(self) -> None:
         """
@@ -118,35 +136,62 @@ class ProfilerParameters:
             if key in ProfilerParameters.PARAMS:
                 expected_type = ProfilerParameters.PARAMS[key][ProfilerParameters.TYPE_INDEX]
                 default_value = ProfilerParameters.PARAMS[key][ProfilerParameters.VALUE_INDEX]
-
-                # Callable特殊处理
                 if key == "on_trace_ready":
-                    if not callable(value):
-                        setattr(self, key, default_value)
+                    setattr(self, key, self._check_and_get_on_trace_ready(value, default_value))
                 elif key == "schedule":
-                    if not isinstance(value, Schedule):
-                        setattr(self, key, Schedule(wait=0, active=1))
+                    setattr(self, key, self._check_and_get_schedule(value))
+                elif key == "export_type":
+                    setattr(self, key, self._check_and_get_export_type(value))
+                elif key in ("mstx_domain_include", "mstx_domain_exclude"):
+                    setattr(self, key, self._check_and_get_mstx_domain(key, value))
+                elif key == "host_sys":
+                    setattr(self, key, self._check_and_get_host_sys(value, expected_type, default_value))
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
-                    if not (isinstance(value, expected_type) and
-                            all(isinstance(item, type(default_value[0])) for item in value)):
-                        logger.warning(
-                            f"For Profiler, {key} value is Invalid, reset to {default_value}."
-                        )
-                        setattr(self, key, default_value)
+                    setattr(self, key, self._check_and_get_iterable_params(key, value, expected_type, default_value))
                 # 检查普通类型
-                elif not isinstance(value, expected_type):
-                    logger.warning(
-                        f"For Profiler, the type of {key} should be {expected_type}, "
-                        f"but got {type(value)}, reset to {default_value}."
-                    )
-                    setattr(self, key, default_value)
+                else:
+                    setattr(self, key, self._check_and_get_common_params(key, value, expected_type, default_value))
 
-    def _check_deprecated_params(self, **kwargs) -> None:
+    @staticmethod
+    def _check_and_get_on_trace_ready(value, default_value):
+        if value is not None and not callable(value):
+            logger.warning(f"For Profiler, on_trace_ready value is Invalid, reset to {default_value}.")
+            return default_value
+
+        return value
+
+    @staticmethod
+    def _check_and_get_schedule(value):
+        if not isinstance(value, Schedule):
+            logger.warning(f"For Profiler, schedule value is Invalid, reset to {Schedule(wait=0, active=1)}")
+            return Schedule(wait=0, active=1)
+
+        return value
+
+    @staticmethod
+    def _check_and_get_iterable_params(key, value, expected_type, default_value):
+        if not (isinstance(value, expected_type) and all(isinstance(item, type(default_value[0])) for item in value)):
+            logger.warning(f"For Profiler, {key} value is Invalid, reset to {default_value}.")
+            return default_value
+
+        return list(set(value))
+
+    @staticmethod
+    def _check_and_get_common_params(key, value, expected_type, default_value):
+        if not isinstance(value, expected_type):
+            logger.warning(f"For Profiler, the type of {key} should be {expected_type}, "
+                           f"but got {type(value)}, reset to {default_value}.")
+            return default_value
+
+        return value
+
+    @staticmethod
+    def _check_deprecated_params(**kwargs) -> None:
         """
         Check deprecated parameters.
         """
-        for key, _ in kwargs.items():
+        for key, value in kwargs.items():
             if key == "profile_communication":
                 warnings.warn(
                     "The parameter 'profile_communication' is deprecated,"
@@ -172,6 +217,16 @@ class ProfilerParameters:
                 warnings.warn(
                     "The parameter 'timeline_limit' is deprecated and will have no effect"
                 )
+            elif key == "pcie" and value is True:
+                warnings.warn(
+                    "The parameter 'pcie' will be deprecated in future versions. "
+                    "Please use 'sys_interconnection' in mindspore.profiler._ExperimentalConfig instead."
+                )
+            elif key == "hbm_ddr" and value is True:
+                warnings.warn(
+                    "The parameter 'hbm_ddr' will be deprecated in future versions. "
+                    "Please use 'profile_memory' in instead."
+                )
 
     def _set_schedule(self, **kwargs):
         if "schedule" in kwargs and isinstance(kwargs["schedule"], Schedule):
@@ -190,16 +245,95 @@ class ProfilerParameters:
             warnings.warn("when 'mstx' is disabled, 'profiler_level' cannot be set to 'ProfilerLevel.LevelNone', "
                           "reset to 'ProfilerLevel.Level0'.")
 
-        if self.__dict__.get('profiler_level') == ProfilerLevel.Level0 and \
-            self.__dict__.get('aicore_metrics') != AicoreMetrics.AiCoreNone:
-            self.aicore_metrics = AicoreMetrics.AiCoreNone
-            warnings.warn("when 'profiler_level' is set to 'ProfilerLevel.Level0', "
-                          "'aicore_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
-                          "reset to 'AicoreMetrics.AiCoreNone'.")
+        if self.__dict__.get('profiler_level') in (ProfilerLevel.LevelNone, ProfilerLevel.Level0) and \
+            self.__dict__.get('aic_metrics') != AicoreMetrics.AiCoreNone:
+            self.aic_metrics = AicoreMetrics.AiCoreNone
+            warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
+                          f"'aic_metrics' cannot be set to other value except 'AicoreMetrics.AiCoreNone', "
+                          f"reset to 'AicoreMetrics.AiCoreNone'.")
 
-        if self.__dict__.get('profiler_level') != ProfilerLevel.Level0 and \
-            self.__dict__.get('aicore_metrics') == AicoreMetrics.AiCoreNone:
-            self.aicore_metrics = AicoreMetrics.PipeUtilization
+        if self.__dict__.get('profiler_level') in (ProfilerLevel.Level1, ProfilerLevel.Level2) and \
+            self.__dict__.get('aic_metrics') == AicoreMetrics.AiCoreNone:
+            self.aic_metrics = AicoreMetrics.PipeUtilization
+            warnings.warn(f"when 'profiler_level' is set to '{self.__dict__.get('profiler_level')}', "
+                          f"'aic_metrics' cannot be set to 'AicoreMetrics.AiCoreNone', "
+                          f"reset to 'AicoreMetrics.PipeUtilization'.")
+
+        if self.__dict__.get('record_shapes', False) and ProfilerActivity.CPU not in self.__dict__.get('activities'):
+            self.record_shapes = False
+            warnings.warn("when 'ProfilerActivity.CPU' is not set in 'activities', 'Record_shapes' cannot be set to "
+                          "True, reset to 'False'.")
+
+        if not self.__dict__.get('mstx') and (self.__dict__.get('mstx_domain_include') or \
+            self.__dict__.get('mstx_domain_exclude')):
+            self.mstx_domain_include = []
+            self.mstx_domain_exclude = []
+            warnings.warn(
+                "when 'mstx' is set to 'False', 'mstx_domain_include' and 'mstx_domain_exclude' cannot be set, "
+                "reset them to '[]'."
+            )
+
+        if self.__dict__.get('mstx_domain_include') and self.__dict__.get('mstx_domain_exclude'):
+            self.mstx_domain_exclude = []
+            warnings.warn(
+                f"mstx_domain_include and mstx_domain_exclude can not be set together, "
+                f"mstx_domain_exclude has been reset to {self.mstx_domain_exclude}."
+            )
+
+    @staticmethod
+    def _check_and_get_export_type(export_type) -> list:
+        """
+        Check export type.
+        """
+        if not export_type:
+            return [ExportType.Text]
+
+        if isinstance(export_type, str):
+            if export_type in (ExportType.Text.value, ExportType.Db.value):
+                return [ExportType(export_type)]
+
+        if isinstance(export_type, list):
+            if all(isinstance(type, ExportType) for type in export_type):
+                return list(set(export_type))
+
+        if isinstance(export_type, ExportType):
+            return [export_type]
+
+        logger.warning("Invalid parameter export_type, reset it to text.")
+        return [ExportType.Text]
+
+    @staticmethod
+    def _check_and_get_mstx_domain(list_name, domain_list) -> list:
+        """
+        Check mstx domain.
+        """
+        if not domain_list:
+            return []
+        if not isinstance(domain_list, list):
+            logger.warning(f"For Profiler, {list_name} value is Invalid, reset to [].")
+            return []
+        for domain_name in domain_list:
+            if not isinstance(domain_name, str) or domain_name == "":
+                logger.warning(f"{list_name} has value {domain_name} is not str or is empty, reset to [].")
+                return []
+        return list(set(domain_list))
+
+    @staticmethod
+    def _check_and_get_host_sys(host_sys, expected_type, default_value):
+        """
+        Check host system.
+        """
+        if not host_sys:
+            return default_value
+
+        if not (isinstance(host_sys, expected_type) and
+                all(isinstance(item, HostSystem) for item in host_sys)):
+            logger.warning(
+                f"For Profiler, 'host_sys' value is Invalid, reset to {default_value}."
+            )
+            return default_value
+
+        return set(host_sys)
 
     def __getattr__(self, name):
         """

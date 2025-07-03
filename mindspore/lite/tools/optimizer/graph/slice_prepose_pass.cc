@@ -33,6 +33,12 @@
 #include "include/backend/optimizer/helper.h"
 #include "src/common/log_adapter.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -109,7 +115,7 @@ std::vector<int64_t> GetDefaultParamShape(const ParameterPtr &param) {
 }
 
 bool IsScalarNode(const AnfNodePtr &nodePtr) {
-  MS_ASSERT(nodePtr != nullptr);
+  MS_CHECK_TRUE_MSG(nodePtr != nullptr, false, "nodePtr is nullptr!");
   if (utils::isa<ParameterPtr>(nodePtr) && nodePtr->cast<ParameterPtr>()->has_default()) {
     auto tensor = utils::cast<tensor::TensorPtr>(utils::cast<ParameterPtr>(nodePtr)->default_param());
     MS_ASSERT(tensor != nullptr);
@@ -1523,6 +1529,7 @@ bool SlicePreposePass::Run(const FuncGraphPtr &graph) {
         continue;
       }
       auto output_node_list = Helper::GetRealNodeUsedList(graph, utils::cast<AnfNodePtr>(preceed_node));
+      MS_CHECK_TRUE_RET(output_node_list != nullptr, false);
       if (output_node_list->size() > 1) {  // referenced by multi nodes
         if (SiblingsAreSameSlice(output_node_list) && MergeParallelSlice(graph, output_node_list)) {
           this_time_changed = true;

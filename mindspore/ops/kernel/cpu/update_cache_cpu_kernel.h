@@ -20,11 +20,12 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace update_cache_cpu {
 class UpdateCacheCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpdateCacheCpuKernelMod() = default;
@@ -91,6 +92,7 @@ class UpdateCacheCpuKernelMod : public NativeCpuKernelMod {
   TypeId indices_dtype_{kTypeUnknown};
   size_t input_x_dtype_size_{4};
 };
+}  // namespace update_cache_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

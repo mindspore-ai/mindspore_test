@@ -16,11 +16,12 @@
 #include "kernel/ascend/opapi/aclnn/inplace_relu_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_relu {
 
 void InplaceReLUAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
@@ -35,5 +36,6 @@ bool InplaceReLUAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceReLU, InplaceReLUAclnnKernelMod);
+}  // namespace inplace_relu
 }  // namespace kernel
 }  // namespace mindspore

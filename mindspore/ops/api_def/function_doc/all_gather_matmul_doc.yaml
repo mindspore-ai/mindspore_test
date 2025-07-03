@@ -69,7 +69,7 @@ all_gather_matmul:
                 Before running the following examples, you need to configure the communication environment variables.
 
                 For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method without any third-party or
-                configuration file dependencies. Please see the `msrun start up <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+                configuration file dependencies. Please see the `msrun start up <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
                 for more details.
 
                 This example should be run with 2 devices.
@@ -78,8 +78,6 @@ all_gather_matmul:
             >>> import numpy as np
             >>> from mindspore import ops
             >>> ms.communication.init()
-            >>> ms.set_context(mode=ms.PYNATIVE_MODE)
-            >>> ms.set_device(device_target="Ascend")
             >>> rank = ms.communication.get_rank()
             >>> np.random.seed(rank)
             >>> input = ms.Tensor(np.random.randn(128, 256).astype(np.float32), dtype=ms.float16)

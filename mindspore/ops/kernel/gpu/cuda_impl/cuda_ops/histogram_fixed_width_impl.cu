@@ -18,8 +18,8 @@
 #include <cub/cub.cuh>
 #include "include/cuda_fp16.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/util.cuh"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 template <typename T>
 cudaError_t HistogramFixedWidthKernel(int num_samples, const T *d_samples, const double *d_levels, int32_t *d_histogram,

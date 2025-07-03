@@ -23,11 +23,12 @@
 #include <utility>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rgb_to_hsv_cpu {
 class RGBToHSVCpuKernelMod : public NativeCpuKernelMod {
  public:
   RGBToHSVCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class RGBToHSVCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, RGBToHSVFunc>> func_list_;
   RGBToHSVFunc kernel_func_;
 };
+}  // namespace rgb_to_hsv_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

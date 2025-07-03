@@ -18,15 +18,12 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_CONCAT_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-
-using mindspore::ops::kNameConcat;
 
 namespace mindspore {
 namespace lite {
 class ConcatMapper : public PrimitiveMapper {
  public:
-  ConcatMapper() : PrimitiveMapper(kNameConcat) {}
+  ConcatMapper();
 
   ~ConcatMapper() override = default;
 

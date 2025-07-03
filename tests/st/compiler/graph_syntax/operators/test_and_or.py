@@ -163,8 +163,10 @@ def test_and_constant_and_variable_tensor_2():
         print(x and y)
         return x and y
 
-    res = foo(Tensor([1]))
-    assert np.allclose(res.asnumpy(), np.array([2.0]))
+    with pytest.raises(TypeError) as error_info:
+        foo(Tensor([1]))
+    assert "Cannot join the return values of different branches" in str(error_info.value)
+    assert "return x and y" in str(error_info.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',

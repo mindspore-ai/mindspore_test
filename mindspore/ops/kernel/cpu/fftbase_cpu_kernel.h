@@ -24,12 +24,13 @@
 #include <functional>
 #include <algorithm>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace mindspore {
 namespace kernel {
+namespace fftbase_cpu {
 class FFTBaseCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTBaseCpuKernelMod() = default;
@@ -86,6 +87,7 @@ class FFTBaseCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tensor_shape_;
   std::vector<int64_t> calculate_shape_;
 };
+}  // namespace fftbase_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTBASE_CPU_KERNEL_H_

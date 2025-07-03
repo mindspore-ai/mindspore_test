@@ -15,8 +15,8 @@
  */
 #include <tuple>
 #include "kernel/ascend/pyboost/customize/nan_to_num.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
@@ -60,10 +60,9 @@ std::tuple<float, float> GetInfValues(TypeId input_type, const std::optional<FP3
   }
   return std::make_tuple(new_posinf, new_neginf);
 }
-tensor::BaseTensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                              const std::optional<FP32ImmPtr> &nan,
-                                              const std::optional<FP32ImmPtr> &posinf,
-                                              const std::optional<FP32ImmPtr> &neginf) {
+tensor::TensorPtr NanToNumAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                          const std::optional<FP32ImmPtr> &nan, const std::optional<FP32ImmPtr> &posinf,
+                                          const std::optional<FP32ImmPtr> &neginf) {
   const float DEFAULT_NAN = 0.0;
 
   auto new_nan = nan.has_value() ? nan.value()->value() : DEFAULT_NAN;

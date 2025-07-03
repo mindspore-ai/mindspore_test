@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
-from mindspore import mint, Tensor, jit, context, JitConfig, ops
+from mindspore import mint, Tensor, jit, context, ops
 from mindspore.common.api import _pynative_executor
 
 
@@ -34,9 +34,9 @@ def chunk_backward_func(x, chunks, dim):
     return ops.grad(chunk_forward_func, (0,))(x, chunks, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
-def test_chunk_foward_backward(mode):
+def test_chunk_forward_backward(mode):
     """
     Feature: Auto grad.
     Description: test auto grad of op Chunk.
@@ -55,7 +55,7 @@ def test_chunk_foward_backward(mode):
         out = chunk_forward_func(x, chunks, dims)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(chunk_forward_func, jit_config=JitConfig(jit_level="O0")))(x, chunks, dims)
+        out = (jit(chunk_forward_func, jit_level="O0"))(x, chunks, dims)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = chunk_forward_func(x, chunks, dims)
@@ -71,7 +71,7 @@ def test_chunk_foward_backward(mode):
         grad = chunk_backward_func(x, chunks, 0)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(chunk_backward_func, jit_config=JitConfig(jit_level="O0")))(x, chunks, 0)
+        grad = (jit(chunk_backward_func, jit_level="O0"))(x, chunks, 0)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = chunk_backward_func(x, chunks, 0)
@@ -88,6 +88,7 @@ def test_chunk_forward_dynamic_shape(context_mode):
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     input_dyn = Tensor(shape=[4, None, None], dtype=ms.int64)
     chunks = 3
     dims = 0
@@ -145,6 +146,7 @@ def test_chunk_backward_dynamic_shape(context_mode):
     Expectation: output the right result.
     """
     context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     input_dyn = Tensor(shape=[None, 4, None], dtype=ms.float32)
     chunks = 3
     dims = 1

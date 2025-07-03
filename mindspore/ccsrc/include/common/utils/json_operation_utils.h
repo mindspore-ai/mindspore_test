@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
-#include "ir/dtype.h"
 #include "include/common/visible.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 

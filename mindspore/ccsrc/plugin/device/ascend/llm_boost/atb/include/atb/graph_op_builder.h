@@ -1,13 +1,11 @@
 /*
  * Copyright (c) 2024 Huawei Technologies Co., Ltd.
- * AscendTransformerBoost is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- *          http://license.coscl.org.cn/MulanPSL2
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
- * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
- * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
+ * This file is a part of the CANN Open Software.
+ * Licensed under CANN Open Software License Agreement Version 1.0 (the "License").
+ * Please refer to the License for details. You may not use this file except in compliance with the License.
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+ * See LICENSE in the root of the software repository for the full text of the License.
  */
 #ifndef ATB_GRAPH_OP_H
 #define ATB_GRAPH_OP_H
@@ -37,7 +35,10 @@ namespace atb {
 //!
 class GraphOpBuilder {
 public:
+    //! \brief 构造函数.
     GraphOpBuilder();
+
+    //! \brief 析构函数.
     virtual ~GraphOpBuilder();
 
     //!
@@ -56,7 +57,7 @@ public:
     //! \return 状态值.如果设置成功，返回NO_ERROR.
     //!
     virtual Status Init(const std::string &opName, const InferShapeFunc &inferShapeFunc,
-        const SVector<std::string> &inTensorNames, const SVector<std::string> &outTensorNames) = 0;
+                        const SVector<std::string> &inTensorNames, const SVector<std::string> &outTensorNames) = 0;
 
     //!
     //! \brief 改变输入tensor的shape.
@@ -69,8 +70,8 @@ public:
     //!
     //! \return 状态值.如果设置成功，返回NO_ERROR.
     //!
-    virtual Status Reshape(
-        const std::string &srcTensorName, const ReshapeFunc &reshapeFunc, const std::string &viewTensorName) = 0;
+    virtual Status Reshape(const std::string &srcTensorName, const ReshapeFunc &reshapeFunc,
+                           const std::string &viewTensorName) = 0;
 
     //!
     //! \brief 向图中添加算子.
@@ -84,15 +85,15 @@ public:
     //! \return 状态值.如果设置成功，返回NO_ERROR.
     //!
     virtual Status AddOperation(Operation *operation, const SVector<std::string> &inTensorNames,
-        const SVector<std::string> &outTensorNames) = 0;
-    
+                                const SVector<std::string> &outTensorNames) = 0;
+
     //!
     //! \brief 创建图算子.
     //!
     //! \return 返回被创建的图算子，失败返回空指针.
     //!
     virtual Operation *Build() = 0;
-    
+
     //!
     //! \brief 创建并向图中添加算子.
     //!
@@ -106,15 +107,20 @@ public:
     //!
     template <class OpParam>
     Status AddOperation(const OpParam &opParam, const SVector<std::string> &inTensorNames,
-        const SVector<std::string> &outTensorNames)
+                        const SVector<std::string> &outTensorNames)
     {
         Operation *operation = nullptr;
         Status st = CreateOperation(opParam, &operation);
         if (st != NO_ERROR) {
             return st;
         }
-
-        return AddOperation(operation, inTensorNames, outTensorNames);
+        st =  AddOperation(operation, inTensorNames, outTensorNames);
+        if (st != NO_ERROR) {
+            if (operation != nullptr) {
+                DestroyOperation(operation);
+            }
+        }
+        return st;
     }
 };
 
@@ -135,5 +141,5 @@ Status CreateGraphOpBuilder(GraphOpBuilder **builder);
 //! \return 状态值.如果设置成功，返回NO_ERROR.
 //!
 Status DestroyGraphOpBuilder(GraphOpBuilder *builder);
-}  // namespace atb
+} // namespace atb
 #endif

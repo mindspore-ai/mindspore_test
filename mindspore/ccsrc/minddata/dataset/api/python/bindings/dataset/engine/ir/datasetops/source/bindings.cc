@@ -73,7 +73,6 @@
 #include "minddata/dataset/engine/ir/datasetops/source/yes_no_node.h"
 
 // IR leaf nodes disabled for android
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/kitti_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/lj_speech_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/lsun_node.h"
@@ -90,7 +89,6 @@
 #include "minddata/dataset/engine/ir/datasetops/source/usps_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/voc_node.h"
 #include "minddata/dataset/engine/ir/datasetops/source/wider_face_node.h"
-#endif
 
 namespace mindspore {
 namespace dataset {

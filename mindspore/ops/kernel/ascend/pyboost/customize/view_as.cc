@@ -17,24 +17,21 @@
 #include "kernel/ascend/pyboost/customize/view_as.h"
 #include <memory>
 #include <algorithm>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void ViewAsAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                           const BaseTensorPtr &other_tensor) {
+void ViewAsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                           const TensorPtr &other_tensor) {
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-  std::vector<ValuePtr> shape;
   const ShapeVector &other_shape = other_tensor->shape();
-  std::transform(other_shape.begin(), other_shape.end(), std::back_inserter(shape),
-                 [](int64_t x) { return MakeValue(x); });
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(shape));
+  reshape_op->Call(input_tensor, other_shape);
   op->set_outputs(reshape_op->outputs());
   MS_LOG(DEBUG) << op->primitive()->name() << " Call end";
 }

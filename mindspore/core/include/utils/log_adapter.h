@@ -179,7 +179,7 @@ enum SubModuleId : int {
   SM_OPTIMIZER,          // optimzer
   SM_PARALLEL,           // parallel
   SM_PARSER,             // parser
-  SM_PIPELINE,           // ME pipeline
+  SM_PIPELINE,           // MindSpore pipeline
   SM_PRE_ACT,            // pre-activate
   SM_PYNATIVE,           // PyNative
   SM_SESSION,            // session
@@ -199,6 +199,9 @@ enum SubModuleId : int {
   SM_SYMBOLIC_SHAPE,     // symbolic shape
   SM_GRAPH_KERNEL,       // graph kernel fusion
   SM_LLM_BOOST,          // llm boost
+  SM_TRACE,              // JIT trace
+  SM_INTERNAL_KERNEL,    // internal kernel
+  SM_EXTENSION,          // MindSpore Extension interfaces
   NUM_SUBMODUES,         // number of submodules
 };
 
@@ -226,10 +229,14 @@ enum VLogLevel : int {
   VL_PRINT_DUMP_V1,                                               // verbose level1 for print and tensordump, etc.
   VL_DUMP,                                                        // tag is 10302, for O0/O1 device statistic dump.
 
-  VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,          // 4. offline debug
-  VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                        // 5. device
-  VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,                      // 6. ge adapter
-  VL_IR = COMPONENT_START + (SM_IR - 1) * COMPONENT_RANGE,                                // 7. IR
+  VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,  // 4. offline debug
+  VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                // 5. device
+  VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,              // 6. ge adapter
+  VL_UCE = VL_GE_ADPT,                                                            // verbose log for uce function
+  VL_UCE_DEVICE_MEM,                                        // verbose log for uce of type device memory error
+  VL_UCE_HBM_MUTLI_BIT_ECC,                                 // verbose log for uce of type hbm mutit bit ecc error
+  VL_GE_EXECUTOR,                                           // ge graph executor
+  VL_IR = COMPONENT_START + (SM_IR - 1) * COMPONENT_RANGE,  // 7. IR
   VL_KERNEL = COMPONENT_START + (SM_KERNEL - 1) * COMPONENT_RANGE,                        // 8. kernel
   VL_MD = COMPONENT_START + (SM_MD - 1) * COMPONENT_RANGE,                                // 9. MindData
   VL_ME = COMPONENT_START + (SM_ME - 1) * COMPONENT_RANGE,                                // 10. MindExpression
@@ -254,7 +261,13 @@ enum VLogLevel : int {
   VL_ARMOUR = COMPONENT_START + (SM_ARMOUR - 1) * COMPONENT_RANGE,                        // 27. ARMOUR
   VL_HCCL_ADPT = COMPONENT_START + (SM_HCCL_ADPT - 1) * COMPONENT_RANGE,                  // 28. Hccl Adapter
   VL_RUNTIME_FRAMEWORK = COMPONENT_START + (SM_RUNTIME_FRAMEWORK - 1) * COMPONENT_RANGE,  // 29. Runtime framework
+  VL_RUNTIME_FRAMEWORK_ACTOR,
+  VL_RUNTIME_FRAMEWORK_KERNEL,
+  VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS,
+  VL_RUNTIME_FRAMEWORK_ACTOR_MSG,
   VL_RUNTIME_FRAMEWORK_MEMORY,
+  VL_RUNTIME_FRAMEWORK_PRINT_PROF,
+  VL_RUNTIME_FRAMEWORK_OTHER,
   VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK = VL_RUNTIME_FRAMEWORK + COMPONENT_RANGE - 1,
   VL_GE = COMPONENT_START + (SM_GE - 1) * COMPONENT_RANGE,  // 30. GraphEngine
   VL_ASCEND_KERNEL_SELECT = VL_GE,                          // print ascend kernel select

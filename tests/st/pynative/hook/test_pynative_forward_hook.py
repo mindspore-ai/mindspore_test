@@ -582,3 +582,102 @@ def test_pynative_forward_hook_cell_input():
     relu_id = id(net.relu)
     global test_cell_id
     assert test_cell_id == relu_id
+
+
+class KwargsNet(nn.Cell):
+    def construct(self, x, bias=None):
+        if bias is not None:
+            return x * x + bias
+        return x * x
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_forward_pre_hook_with_kwargs():
+    """
+    Feature: PyNative forward pre hook with kwargs.
+    Description: Verify the correctness of forward_pre_hook with keyword arguments.
+    Expectation: The calculation result is correct.
+    """
+
+    def forward_pre_hook_kwargs(cell, args, kwargs):
+        if kwargs is not None:
+            kwargs['bias'] = kwargs['bias'] * 2
+        return args, kwargs
+
+    def forward_pre_hook_args(cell, args):
+        return args[0] + 1.0
+
+    net = KwargsNet()
+    handle1 = net.register_forward_pre_hook(forward_pre_hook_kwargs, with_kwargs=True)
+    handle2 = net.register_forward_pre_hook(forward_pre_hook_args)
+    x = ms.Tensor(2.0, dtype=ms.float32)
+    bias = ms.Tensor(3.0, dtype=ms.float32)
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([15.0], dtype=np.float32), 0.000001, 0.000001)
+
+    handle1.remove()
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([12.0], dtype=np.float32), 0.000001, 0.000001)
+
+    handle2.remove()
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([7.0], dtype=np.float32), 0.000001, 0.000001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_forward_pre_hook_with_kwargs_return_error():
+    """
+    Feature: PyNative forward pre hook with kwargs.
+    Description: forward pre hook with keyword arguments returns an invalid type.
+    Expectation: Raise RuntimeError
+    """
+
+    def forward_pre_hook_kwargs(cell, args, kwargs):
+        args = (arg * 2 for arg in args)
+        return args
+
+    net = KwargsNet()
+    net.register_forward_pre_hook(forward_pre_hook_kwargs, with_kwargs=True)
+    x = ms.Tensor(2.0, dtype=ms.float32)
+    with pytest.raises(RuntimeError) as err:
+        net(x)
+        assert "forward pre hook with kwargs must return None or a tuple of (new_args, new_kwargs)" in str(err.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_forward_hook_with_kwargs():
+    """
+    Feature: PyNative forward hook with kwargs.
+    Description: Verify the correctness of forward_hook with keyword arguments.
+    Expectation: The calculation result is correct.
+    """
+    def forward_hook_kwargs(cell, args, kwargs, output):
+        return output + kwargs['bias']
+
+    def forward_hook_args(cell, args, output):
+        return output + args[0]
+
+    net = KwargsNet()
+    handle1 = net.register_forward_hook(forward_hook_kwargs, with_kwargs=True)
+
+    x = ms.Tensor(2.0, dtype=ms.float32)
+    bias = ms.Tensor(3.0, dtype=ms.float32)
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([10.0], dtype=np.float32), 0.000001, 0.000001)
+
+    net.register_forward_hook(forward_hook_args)
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([12.0], dtype=np.float32), 0.000001, 0.000001)
+
+    handle1.remove()
+    output = net(x, bias=bias)
+    assert np.allclose(output.asnumpy(), np.array([9.0], dtype=np.float32), 0.000001, 0.000001)

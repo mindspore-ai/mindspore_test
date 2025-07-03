@@ -16,12 +16,12 @@ function Run_Converter() {
 }
 
 # source ascend env
-export ASCEND_HOME=/usr/local/Ascend/latest
-export PATH=${ASCEND_HOME}/compiler/ccec_compiler/bin:${PATH}
-export LD_LIBRARY_PATH=${ASCEND_HOME}/lib64:${ASCEND_HOME}/../driver/lib64:${LD_LIBRARY_PATH}
-export ASCEND_OPP_PATH=${ASCEND_HOME}/opp
-export TBE_IMPL_PATH=${ASCEND_HOME}/opp/built-in/op_impl/ai_core/tbe
-export PYTHONPATH=${TBE_IMPL_PATH}:${PYTHONPATH}
+export ASCEND_PATH=/usr/local/Ascend
+if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+    source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+else
+    source ${ASCEND_PATH}/latest/bin/setenv.bash
+fi
 
 backend=$1
 device_id=$2

@@ -142,7 +142,7 @@ def test_multiple_compare_4():
     Description: test compare.
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def comp_func():
         x = np.array([1])
         y = np.array([2])

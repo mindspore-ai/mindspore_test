@@ -27,6 +27,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_deprecated_interface.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
+#include "plugin/res_manager/gpu/gpu_res_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -34,7 +35,13 @@ namespace gpu {
 class GPUKernelExecutor;
 class GPUDeviceResManager : public DeviceResManager {
  public:
-  GPUDeviceResManager() {}
+  GPUDeviceResManager() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    ResKey res_key = {DeviceType::kGPU, device_id};
+    gpu_res_manager_ = static_cast<GPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
+  }
   ~GPUDeviceResManager() override = default;
 
   // Set device id and initialize device resource, such as stream, cudnn and cublas handle.
@@ -52,10 +59,10 @@ class GPUDeviceResManager : public DeviceResManager {
 
   size_t GetAvailableMemSize() const override { return mem_manager_->GetAvailableMemSize(); }
 
-  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const override;
+  DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const override;
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
   tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
@@ -64,9 +71,6 @@ class GPUDeviceResManager : public DeviceResManager {
                                                     size_t end) override;
   tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
                                                  size_t end) override;
-
-  void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-              bool blocking, bool *return_self) override;
 
   bool CreateStream(size_t *stream_id) const override;
   bool CreateStreamWithPriority(size_t *stream_id, int32_t priority) const override;
@@ -86,9 +90,12 @@ class GPUDeviceResManager : public DeviceResManager {
   // Create device event for runtime.
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) override;
 
-  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
+  DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) override;
+  bool DestroyEvent(const DeviceEventPtr &event) override;
+  bool DestroyAllEvents() override;
 
   bool LoadCollectiveCommLib() override;
+  mindspore::device::CollectiveCommunicationLib *collective_comm_lib() const override;
 
   bool single_op_multi_stream_enable() const override;
   void set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) override;
@@ -121,6 +128,7 @@ class GPUDeviceResManager : public DeviceResManager {
  private:
   friend class GPUKernelExecutor;
   bool InitDevice();
+  GPUResManager *gpu_res_manager_{nullptr};
 };
 
 class GPUKernelExecutor : public KernelExecutor {
@@ -142,11 +150,21 @@ class GPUKernelExecutor : public KernelExecutor {
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                     KernelMod *kernel_mod, void *stream) const override;
+  bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                      const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
+                      KernelMod *kernel_mod, void *stream) const override {
+    return LaunchKernel(kernel, inputs, workspace, outputs, kernel_mod, stream);
+  }
 
   uint32_t GetRankID() const override;
 
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
+
+  bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                         const size_t &stream_id) const override;
 
  private:
   // Select the matching backend kernels according to the data type and format of input and output for all
@@ -191,8 +209,6 @@ class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUDeviceResM
 
   // Release device memory, stream, cudnn and cublas handle, etc.
   void Destroy() override;
-
-  RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return RunMode::kKernelMode; }
 
   DeprecatedInterface *GetDeprecatedInterface() override;
 

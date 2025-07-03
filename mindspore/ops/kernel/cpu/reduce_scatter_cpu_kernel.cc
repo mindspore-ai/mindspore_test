@@ -15,12 +15,13 @@
  */
 
 #include "kernel/cpu/reduce_scatter_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/mpi/mpi_interface.h"
 #include "mindspore/ops/infer/reduce_scatter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_scatter_cpu {
 namespace {
 constexpr auto kOP = "op";
 constexpr auto kRanksGroup = "group";
@@ -59,5 +60,6 @@ bool ReduceScatterCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, _HostReduceScatter, ReduceScatterCpuKernelMod);
+}  // namespace reduce_scatter_cpu
 }  // namespace kernel
 }  // namespace mindspore

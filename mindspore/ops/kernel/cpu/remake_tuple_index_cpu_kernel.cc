@@ -18,15 +18,17 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/remake_tuple_index.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace remake_tuple_index_cpu {
 bool RemakeTupleIndexCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -100,11 +102,7 @@ std::vector<std::pair<KernelAttr, RemakeTupleIndexCpuKernelMod::RemakeTupleIndex
 
 std::vector<KernelAttr> RemakeTupleIndexCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
-  std::vector<TypeId> data_type_ids = {kNumberTypeFloat16,   kNumberTypeFloat32,   kNumberTypeFloat64, kNumberTypeInt8,
-                                       kNumberTypeInt16,     kNumberTypeInt32,     kNumberTypeInt64,   kNumberTypeUInt8,
-                                       kNumberTypeUInt16,    kNumberTypeUInt32,    kNumberTypeUInt64,  kNumberTypeBool,
-                                       kNumberTypeComplex64, kNumberTypeComplex128};
-  std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                  [](TypeId data_type_id) -> std::pair<KernelAttr, RemakeTupleIndexFunc> {
                    return {KernelAttr()
                              .AddInputAttr(data_type_id)
@@ -125,5 +123,6 @@ std::vector<KernelAttr> RemakeTupleIndexCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RemakeTupleIndex, RemakeTupleIndexCpuKernelMod);
+}  // namespace remake_tuple_index_cpu
 }  // namespace kernel
 }  // namespace mindspore

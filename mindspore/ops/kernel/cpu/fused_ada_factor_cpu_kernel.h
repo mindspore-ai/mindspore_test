@@ -20,11 +20,12 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fused_ada_factor_cpu {
 constexpr auto kFusedAdaFactor = "FusedAdaFactor";
 constexpr auto kFusedAdaFactorWithGlobalNorm = "FusedAdaFactorWithGlobalNorm";
 constexpr auto kUnknown = "Unknown";
@@ -66,6 +67,7 @@ class FusedAdaFactorCpuKernelMod : public NativeCpuKernelMod {
   float global_norm_reciprocal_{1.0f};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace fused_ada_factor_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

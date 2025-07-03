@@ -21,7 +21,7 @@ if(NOT MSLITE_ENABLE_ACL)
     )
 endif()
 
-if(NOT BUILD_LITE AND ENABLE_D)
+if(ENABLE_D)
 set(DVPP_UTILS_SRC
     ${DVPP_UTILS_SRC}
     # Ascend910B
@@ -48,8 +48,8 @@ else()
     find_library(acl_dvpp_mpi libacl_dvpp_mpi.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
     target_link_libraries(dvpp_utils PRIVATE _c_dataengine ${acl} ${acl_dvpp} mindspore_core ${nnopbase} ${acl_dvpp_op} ${acl_dvpp_mpi})
 endif()
-add_dependencies(dvpp_utils _mindspore_transform_symbol_obj)
-target_link_libraries(dvpp_utils PRIVATE $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
+add_dependencies(dvpp_utils _mindspore_ascend_symbol_obj)
+target_link_libraries(dvpp_utils PRIVATE $<TARGET_OBJECTS:_mindspore_ascend_symbol_obj>)
 
 if(MSLITE_ENABLE_CLOUD_MIND_DATA)
     add_dependencies(dvpp_utils fbs_src)

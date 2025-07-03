@@ -18,12 +18,13 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_3d_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace grid_sampler_3d_grad_cpu {
 class GridSampler3DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   GridSampler3DGradCpuKernelMod() = default;
@@ -101,6 +102,7 @@ class GridSampler3DGradCpuKernelMod : public NativeCpuKernelMod {
 
   bool within_bounds_3d(int64_t d, int64_t h, int64_t w, int64_t D, int64_t H, int64_t W) const;
 };
+}  // namespace grid_sampler_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

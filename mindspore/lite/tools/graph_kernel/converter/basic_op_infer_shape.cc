@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
 #include "src/litert/infer_manager.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -271,7 +275,11 @@ bool DynOpInferShape::InferShapeRealKernel(const CNodePtr &cnode) const {
     }
     auto abs = input->abstract();
     if (abs == nullptr && input->isa<ValueNode>()) {
-      abs = input->cast<ValueNodePtr>()->value()->ToAbstract();
+      auto value_ptr = input->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(value_ptr);
+      auto v = value_ptr->value();
+      MS_EXCEPTION_IF_NULL(v);
+      abs = v->ToAbstract();
     }
     if (abs == nullptr) {
       MS_LOG(ERROR) << "inputs[" << i << "] has no abstract for cnode: " << cnode->fullname_with_scope();

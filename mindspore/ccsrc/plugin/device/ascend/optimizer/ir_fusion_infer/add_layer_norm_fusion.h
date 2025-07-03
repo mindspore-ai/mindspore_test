@@ -59,34 +59,20 @@ class AddLayernormFusion : public AddLayernormFusionBase {
  public:
   AddLayernormFusion() : AddLayernormFusionBase("add_layer_norm_fusion", 1) {}
   ~AddLayernormFusion() override = default;
-  const BaseRef DefinePattern() const override {
-    VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
-                                          begin_norm_axis_, begin_params_axis_, eps_});
-    return add_layer_norm;
-  }
+  const BaseRef DefinePattern() const override;
 
  private:
-  std::vector<std::string> MustExistPrimitiveName() const override {
-    std::vector<std::string> ret{prim::kPrimLayerNorm->name()};
-    return ret;
-  }
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 class AddLayernormV3Fusion : public AddLayernormFusionBase {
  public:
   AddLayernormV3Fusion() : AddLayernormFusionBase("add_layer_norm_v3_fusion", 1) {}
   ~AddLayernormV3Fusion() override = default;
-  const BaseRef DefinePattern() const override {
-    VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNormV3, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
-                                          begin_norm_axis_, begin_params_axis_, eps_});
-    return add_layer_norm;
-  }
+  const BaseRef DefinePattern() const override;
 
  private:
-  std::vector<std::string> MustExistPrimitiveName() const override {
-    std::vector<std::string> ret{prim::kPrimLayerNormV3->name()};
-    return ret;
-  }
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 constexpr const size_t kGammaIndex2 = 2;
@@ -94,17 +80,10 @@ class AddLayernormExtFusion : public AddLayernormFusionBase {
  public:
   AddLayernormExtFusion() : AddLayernormFusionBase("add_layer_norm_ext_fusion", kGammaIndex2) {}
   ~AddLayernormExtFusion() override = default;
-  const BaseRef DefinePattern() const override {
-    VectorRef add_layer_norm = VectorRef(
-      {prim::kPrimLayerNormExt, VectorRef({prim::kPrimAdd, x1_, x2_}), normalize_shape_, gamma_, beta_, eps_});
-    return add_layer_norm;
-  }
+  const BaseRef DefinePattern() const override;
 
  private:
-  std::vector<std::string> MustExistPrimitiveName() const override {
-    std::vector<std::string> ret{prim::kPrimLayerNormExt->name()};
-    return ret;
-  }
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
 }  // namespace opt

@@ -20,12 +20,13 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gelu_grad {
 void GeLUGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
@@ -39,5 +40,6 @@ bool GeLUGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GeLUGrad, GeLUGradAscend);
+}  // namespace gelu_grad
 }  // namespace kernel
 }  // namespace mindspore

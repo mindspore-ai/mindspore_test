@@ -16,6 +16,7 @@
 
 #include "ir/dtype/number.h"
 #include "utils/hashing.h"
+#include "ir/dtype/type.h"
 
 namespace mindspore {
 bool Number::operator==(const Type &other) const {
@@ -37,6 +38,8 @@ Int::Int(const int nbits) : Number(IntBitsToTypeId(nbits), nbits, false) {}
 UInt::UInt(const int nbits) : Number(UIntBitsToTypeId(nbits), nbits, false) {}
 
 Float::Float(const int nbits) : Number(FloatBitsToTypeId(nbits), nbits, false) {}
+
+Float::Float(const TypeId type_id, const int nbits) : Number(type_id, nbits, false) {}
 
 BFloat::BFloat(const int nbits) : Number(BFloatBitsToTypeId(nbits), nbits, false) {}
 

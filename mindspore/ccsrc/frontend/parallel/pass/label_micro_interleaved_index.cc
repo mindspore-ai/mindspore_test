@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {
@@ -64,6 +67,7 @@ void SpreadMicroInterleavedIndexForForwardCommNodes(const CNodePtr &input_node, 
         continue;
       }
       auto input_cnode = input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(input_cnode);
       if (input_cnode->HasAttr(MICRO_INTERLEAVED_TAG) || input_cnode->HasAttr(INTERLEAVED_NUM)) {
         continue;
       }
@@ -75,7 +79,7 @@ void SpreadMicroInterleavedIndexForForwardCommNodes(const CNodePtr &input_node, 
       node_queue.push(input_cnode);
       if (input_cnode->HasPrimalAttr(kPrimalAttrForwardCommNodeUniqueId)) {
         if (pipeline_micro >= 0 && !input_cnode->HasPrimalAttr(parallel::MICRO)) {
-          MS_LOG(INFO) << "node :" << input_cnode->DebugString() << " dose not contain micro tag.";
+          MS_LOG(INFO) << "node :" << input_cnode->DebugString() << " does not contain micro tag.";
           continue;
         }
         input_cnode->AddAttr(parallel::MICRO_INTERLEAVED_INDEX, MakeValue<size_t>(micro_interleaved_index));
@@ -149,6 +153,7 @@ void LabelMicroInterleavedIndexLastStage(const std::vector<CNodePtr> &all_nodes)
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
     if (GetCNodePrimitive(cnode)->HasAttr("micro_interleaved_add_flag")) {
       micro_interleaved_add_list.push_back(cnode);
     }
@@ -196,6 +201,8 @@ void LabelMicroInterleavedIndexPipelineStage(const std::vector<CNodePtr> &all_no
     if (pipeline_end_list.size() != interleaved_size) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(pipeline_end_list[0]));
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(pipeline_end_list[1]));
     if (GetCNodePrimitive(pipeline_end_list[0])->HasAttr(parallel::SR_TAG) &&
         GetCNodePrimitive(pipeline_end_list[1])->HasAttr(parallel::SR_TAG)) {
       std::sort(pipeline_end_list.begin(), pipeline_end_list.end(), [](auto cnode1, auto cnode2) {

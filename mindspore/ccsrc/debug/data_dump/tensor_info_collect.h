@@ -21,22 +21,36 @@
 #include <string>
 #include <map>
 
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
 
 namespace mindspore {
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 
 class TensorInfoForDump {
  public:
+  struct KernelTensorMeta {
+    explicit KernelTensorMeta(KernelTensorPtr tensor, const TypeId &dtype, const ShapeVector &shape)
+        : tensor(tensor), dtype(dtype), shape(shape) {
+      MS_EXCEPTION_IF_NULL(tensor);
+    }
+
+    KernelTensorPtr tensor;
+    TypeId dtype;
+    ShapeVector shape;
+  };
+
   TensorInfoForDump(std::string io, uint32_t io_index, std::string format, TypeId host_type,
-                    const ShapeVector &host_shape, size_t device_size, device::DeviceAddress *device_tensor)
+                    const ShapeVector &host_shape, size_t device_size, KernelTensor *kernel_tensor)
       : io(io),
         io_index(io_index),
         format(format),
         host_type(host_type),
         host_shape(host_shape),
         device_size(device_size),
-        device_tensor(device_tensor) {
-    this->device_ptr = device_tensor->GetPtr();
+        kernel_tensor(kernel_tensor) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    this->device_ptr = kernel_tensor->device_ptr();
   }
 
   std::string io;
@@ -46,9 +60,10 @@ class TensorInfoForDump {
   TypeId host_type;
   const ShapeVector host_shape;
   size_t device_size;
-  device::DeviceAddress *device_tensor;
+  KernelTensor *kernel_tensor;
   const void *device_ptr;
-  std::map<std::string, vector<device::DeviceAddressPtr>> stat_results;
+  std::map<std::string, std::vector<KernelTensorPtr>> workspace;
+  std::map<std::string, KernelTensorMeta> stat_results;
 };
 
 class TensorInfoCommForDump {

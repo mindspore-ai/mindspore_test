@@ -21,10 +21,11 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace arg_with_value {
 
 class ArgMaxWithValueAscend : public AclnnKernelMod {
  public:
@@ -52,6 +53,7 @@ class ArgMinWithValueAscend : public AclnnKernelMod {
   int64_t axis_;
   bool keep_dims_;
 };
+}  // namespace arg_with_value
 }  // namespace kernel
 }  // namespace mindspore
 

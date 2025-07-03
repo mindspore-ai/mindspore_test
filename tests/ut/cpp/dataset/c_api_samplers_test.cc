@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
+#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "minddata/dataset/include/dataset/datasets.h"
@@ -165,7 +166,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess1) {
   // Test basic setting of distributed_sampler
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=-1, even_dist=true
-  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 0, false, 0, 0, -1, true);
+  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 0, ShuffleMode::kFalse, 0, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   // Create an ImageFolder Dataset
@@ -198,7 +199,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess2) {
   // Test basic setting of distributed_sampler
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=-1, even_dist=true
-  auto sampler(new DistributedSampler(4, 0, false, 0, 0, -1, true));
+  auto sampler(new DistributedSampler(4, 0, ShuffleMode::kFalse, 0, 0, -1, true));
   // Note that with new, we have to explicitly delete the allocated object as shown below.
   // Note: No need to check for output after calling API class constructor
 
@@ -235,7 +236,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess3) {
   // Test basic setting of distributed_sampler
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=-1, even_dist=true
-  DistributedSampler sampler = DistributedSampler(4, 0, false, 0, 0, -1, true);
+  DistributedSampler sampler = DistributedSampler(4, 0, ShuffleMode::kFalse, 0, 0, -1, true);
 
   // Create an ImageFolder Dataset
   std::string folder_path = datasets_root_path_ + "/testPK/data/";
@@ -298,7 +299,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess5) {
   // Test basic setting of distributed_sampler
 
   // num_shards=11, shard_id=10, shuffle=false, num_samplers=0, seed=0, offset=-1, even_dist=true
-  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(11, 10, false, 0, 0, -1, true);
+  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(11, 10, ShuffleMode::kFalse, 0, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   // Create an ImageFolder Dataset
@@ -332,7 +333,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerSuccess6) {
   // Test basic setting of distributed_sampler
 
   // num_shards=4, shard_id=3, shuffle=false, num_samplers=12, seed=0, offset=-1, even_dist=true
-  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 3, false, 12, 0, -1, true);
+  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 3, ShuffleMode::kFalse, 12, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   // Create an ImageFolder Dataset
@@ -366,7 +367,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerFail1) {
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=5, even_dist=true
   // offset=5 which is greater than num_shards=4 --> will fail later
-  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 0, false, 0, 0, 5, false);
+  std::shared_ptr<Sampler> sampler = std::make_shared<DistributedSampler>(4, 0, ShuffleMode::kFalse, 0, 0, 5, false);
   EXPECT_NE(sampler, nullptr);
 
   // Create an ImageFolder Dataset
@@ -388,7 +389,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerFail2) {
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=5, even_dist=true
   // offset=5 which is greater than num_shards=4 --> will fail later
-  auto sampler(new DistributedSampler(4, 0, false, 0, 0, 5, false));
+  auto sampler(new DistributedSampler(4, 0, ShuffleMode::kFalse, 0, 0, 5, false));
   // Note that with new, we have to explicitly delete the allocated object as shown below.
   // Note: No need to check for output after calling API class constructor
 
@@ -414,7 +415,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerFail3) {
 
   // num_shards=4, shard_id=0, shuffle=false, num_samplers=0, seed=0, offset=5, even_dist=true
   // offset=5 which is greater than num_shards=4 --> will fail later
-  DistributedSampler sampler = DistributedSampler(4, 0, false, 0, 0, 5, false);
+  DistributedSampler sampler = DistributedSampler(4, 0, ShuffleMode::kFalse, 0, 0, 5, false);
 
   // Create an ImageFolder Dataset
   std::string folder_path = datasets_root_path_ + "/testPK/data/";
@@ -432,7 +433,7 @@ TEST_F(MindDataTestPipeline, TestDistributedSamplerFail3) {
 TEST_F(MindDataTestPipeline, TestSamplerAddChild) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestSamplerAddChild.";
 
-  auto sampler = std::make_shared<DistributedSampler>(1, 0, false, 5, 0, -1, true);
+  auto sampler = std::make_shared<DistributedSampler>(1, 0, ShuffleMode::kFalse, 5, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   auto child_sampler = std::make_shared<SequentialSampler>();
@@ -469,7 +470,7 @@ TEST_F(MindDataTestPipeline, TestSamplerAddChild2) {
 
   // num_samples of parent sampler > num_sampler of child sampler, namely 5 > 2, num_shards is 2 to output dataset with
   // 1 sampler
-  auto sampler = std::make_shared<DistributedSampler>(2, 0, false, 5, 0, -1, true);
+  auto sampler = std::make_shared<DistributedSampler>(2, 0, ShuffleMode::kFalse, 5, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   // num_samples of parent sampler > num_samples of child sampler, namely 4 > 2
@@ -548,7 +549,7 @@ TEST_F(MindDataTestPipeline, TestSamplerAddChild4) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestSamplerAddChild4.";
 
   // num_samples of parent sampler < num_samples of child sampler, namely 5 < 7
-  auto sampler = std::make_shared<DistributedSampler>(1, 0, false, 5, 0, -1, true);
+  auto sampler = std::make_shared<DistributedSampler>(1, 0, ShuffleMode::kFalse, 5, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   auto child_sampler = std::make_shared<PKSampler>(3, true, 7);
@@ -585,7 +586,7 @@ TEST_F(MindDataTestPipeline, TestSamplerAddChild5) {
   MS_LOG(INFO) << "Doing MindDataTestPipeline-TestSamplerAddChild5.";
 
   // Use all samples (num_sampler=0) for parent DistributedSampler
-  auto sampler = std::make_shared<DistributedSampler>(1, 0, false, 0, 0, -1, true);
+  auto sampler = std::make_shared<DistributedSampler>(1, 0, ShuffleMode::kFalse, 0, 0, -1, true);
   EXPECT_NE(sampler, nullptr);
 
   auto child_sampler1 = std::make_shared<SequentialSampler>(0, 10);

@@ -100,7 +100,7 @@ def test_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=16,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16,
                                       global_rank=0)
     net = Net(_w1, 3)
     compile_net(net)

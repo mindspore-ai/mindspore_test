@@ -20,11 +20,12 @@
 #include <complex>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace zeros_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -65,6 +66,7 @@ class ZerosCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, ZerosFunc>> func_list_;
   ZerosFunc kernel_func_;
 };
+}  // namespace zeros_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

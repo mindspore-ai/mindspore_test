@@ -15,17 +15,17 @@
  */
 
 #include "kernel/ascend/pyboost/customize/mean_ext.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MeanExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const std::optional<ValueTuplePtr> &axis, const BoolImmPtr &keep_dims,
-                                             const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr MeanExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const std::optional<ValueTuplePtr> &axis, const BoolImmPtr &keep_dims,
+                                         const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims, dtype);
 
   std::vector<int64_t> axis_vector{};

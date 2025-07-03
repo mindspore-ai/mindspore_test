@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,13 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -49,7 +56,7 @@ constexpr int64_t kFAHeadSizeNum3 = 3;
 constexpr int64_t kFAMax = 8;
 constexpr int64_t kFASum = 8;
 
-enum TagType {
+enum class TagType {
   query = 0,
   kv_a = 1,
   kv_b = 2,
@@ -122,18 +129,21 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *do
       dout_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MAX) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MAX));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_MAX, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_MAX);
       softmax_max_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_SUM) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_SUM));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_SUM, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_SUM);
       softmax_sum_map->insert({flash_index, node});
     }
 
-    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_ATTN) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_ATTN));
+    if (common::AnfAlgo::HasNodeAttr(RING_ATTENTION_UPDATE_ATTN, node) &&
+        !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = common::AnfAlgo::GetNodeAttr<int>(node, RING_ATTENTION_UPDATE_ATTN);
       attention_out_map->insert({flash_index, node});
     }
   }
@@ -177,6 +187,9 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
                     std::map<int64_t, AnfNodePtr> *dout_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
                     std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *attention_out_map) {
   for (auto &anf_node : *origin_nodes_topological) {
+    if (!anf_node->isa<CNode>()) {
+      continue;
+    }
     CNodePtr node = anf_node->cast<CNodePtr>();
     if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE)) {
       (*loss_node) = node;
@@ -523,7 +536,7 @@ void SplitKVNode(std::vector<AnfNodePtr> *kv_a_nodes, std::vector<AnfNodePtr> *k
 int64_t GetSendRecvTag(int64_t src, int64_t dest, TagType data_type) {
   auto src_string = std::to_string(src + 1);
   auto dest_string = std::to_string(dest + 1);
-  auto data_type_string = std::to_string(data_type);
+  auto data_type_string = std::to_string(static_cast<int64_t>(data_type));
 
   auto res_string = src_string + dest_string + data_type_string;
   return std::stoi(res_string);
@@ -576,14 +589,14 @@ CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_
         cur_recv_qkv_node =
           NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
                          spRankList[recv_qkv_src_rank], recv_shape, output_type_id, qkv_group, spRankList);
-        cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(TagType::query));
+        cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(static_cast<int64_t>(TagType::query)));
       }
     } else {  // recv kv
       auto kv_type = inner_step == kIndex0 ? TagType::kv_a : TagType::kv_b;
       cur_recv_qkv_node =
         NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, kv_type), spRankList[recv_qkv_src_rank],
                        kv_shape, output_type_id, qkv_group, spRankList);
-      cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(kv_type));
+      cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(static_cast<int64_t>(kv_type)));
     }
   }
   return cur_recv_qkv_node;
@@ -672,6 +685,7 @@ void GetFirstFAGradQKV(const std::map<std::string, AnfNodePtr, FaGradCompareMeth
   std::string first_number_str = first_flash_index.substr(0, underscore_pos);
   int first_number = std::stoi(first_number_str);
   MS_EXCEPTION_IF_NULL(dout_map.find(first_number)->second);
+  MS_EXCEPTION_IF_NULL(dout_map.find(first_number)->second->cast<CNodePtr>());
   auto dout_node = dout_map.find(first_number)->second->cast<CNodePtr>()->input(kIndex2);
   auto softmax_max_node = softmax_max_map.find(first_number)->second;
   auto softmax_sum_node = softmax_sum_map.find(first_number)->second;
@@ -731,7 +745,7 @@ void ReplaceGradQKV(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
   MS_EXCEPTION_IF_NULL(pre_grad_recv_qkv_node);
   MS_EXCEPTION_IF_NULL(*grad_fa_node);
   auto recv_type = GetValue<int64_t>(pre_grad_recv_qkv_node->GetPrimalAttr("recv_type"));
-  if (recv_type == TagType::query) {
+  if (recv_type == static_cast<int64_t>(TagType::query)) {
     Shape q_shape;
     Shape kv_shape;
     GetQKVShape(fa_info, &q_shape, &kv_shape);
@@ -900,6 +914,8 @@ bool OverlapGradFlashSP(const FuncGraphPtr &graph) {
   if (grad_fa_map.empty() || fa_map.empty()) {
     return false;
   }
+  MS_LOG(WARNING) << "Ring attention will be deprecated in subsequent versions. "
+                     "It is recommended to use other sequence parallel methods as a replacement.";
   auto fa_info = GetAttentionInfo(fa_map);
   MS_EXCEPTION_IF_NULL(fa_info);
 

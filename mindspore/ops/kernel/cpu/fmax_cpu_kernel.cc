@@ -20,12 +20,13 @@
 #include <utility>
 
 #include "mindspore/ops/infer/fmax.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fmax_cpu {
 namespace {
 constexpr auto kShapeIndexZero = 0;
 constexpr auto kShapeIndex1st = 1;
@@ -272,5 +273,6 @@ std::vector<KernelAttr> FmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Fmax, FmaxCpuKernelMod);
+}  // namespace fmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

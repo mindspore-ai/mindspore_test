@@ -21,8 +21,8 @@
 namespace mindspore::ops {
 
 TensorStorageInfoPtrList CopyWithSliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto self_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  auto src_tensor = inputs[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  auto self_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
+  auto src_tensor = inputs[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(self_tensor);
   MS_EXCEPTION_IF_NULL(src_tensor);
 

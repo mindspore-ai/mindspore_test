@@ -28,8 +28,9 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "ir/dtype/type.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 ::HcclDataType HcomUtil::ConvertHcclType(TypeId type_id) {
@@ -52,7 +53,7 @@ void HcomUtil::AdjustShapeByDataType(TypeId type_id, ShapeVector *shape) {
 }
 
 bool HcomUtil::GetHcomDataType(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
-                               const std::vector<KernelTensor *> &outputs, vector<HcclDataType> *data_type_list) {
+                               const std::vector<KernelTensor *> &outputs, std::vector<HcclDataType> *data_type_list) {
   MS_EXCEPTION_IF_NULL(data_type_list);
 
   data_type_list->clear();
@@ -101,8 +102,8 @@ bool HcomUtil::GetHcomTypeSize(const HcclDataType &data_type, uint32_t *size) {
   return true;
 }
 
-bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclDataType> &data_type_list,
-                            const vector<ShapeVector> &shape_list, const size_t input_tensor_num,
+bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const std::vector<HcclDataType> &data_type_list,
+                            const std::vector<ShapeVector> &shape_list, const size_t input_tensor_num,
                             const std::optional<int64_t> rank_size_opt, uint64_t *total_count) {
   MS_EXCEPTION_IF_NULL(primitive);
   MS_EXCEPTION_IF_NULL(total_count);
@@ -167,7 +168,7 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
 }
 
 std::pair<uint64_t, ::HcclDataType> HcomUtil::GetHcclCountAndTypeFromTensor(
-  const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor, const std::optional<int64_t> rank_size_opt) {
+  const PrimitivePtr &primitive, const tensor::TensorPtr &tensor, const std::optional<int64_t> rank_size_opt) {
   auto type_id = tensor->data_type();
   auto shape = tensor->shape();
 

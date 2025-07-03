@@ -24,6 +24,7 @@ import mindspore.dataset as ds
 from mindspore.common.initializer import One
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(jit_level="O0")
 set_seed(2)
 
 
@@ -239,13 +240,14 @@ def test_dynamic_layernorm():
     common_func(dynamic_range, input_shape, data_type, net)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dynamic_conv2d():
     """
     Feature: Test Conv2d and its backward. The input shape is dynamic.
     Description: Input dim of `H `or `W` is unknown. Conv2d's attr[pad] set to "valid".
     Expectation: Assert that results are consistent with fixed shape.
     """
+    ms.set_context(jit_config={"jit_level": "O0"})
     batch_size = 16
     dynamic_range = range(220, 224)
     data_type = np.float32
@@ -367,7 +369,7 @@ def test_dynamic_add2():
 
 
 @pytest.mark.skip(reason='Operator Shape is not support in backend yet.')
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tensor_shape_value_infer():
     """
     Feature: Test shape tensor infer mechanism.
@@ -402,7 +404,7 @@ def test_dynamic_softmax():
 
 
 @pytest.mark.skip(reason="his bug")
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dynamic_batchnorm():
     """
     Feature: Test Batchnorm2D and its backward. The input shape is dynamic.

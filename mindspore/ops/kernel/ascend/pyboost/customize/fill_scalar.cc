@@ -16,16 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/fill_scalar.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr FillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
-                                                const ScalarPtr &fill_value, const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr FillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &size,
+                                            const ScalarPtr &fill_value, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, size, fill_value, dtype);
   // No need to convert input
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

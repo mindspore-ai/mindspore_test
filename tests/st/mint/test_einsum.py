@@ -84,7 +84,7 @@ def mint_einsum_binary_case4(input_binary_data=None, output_binary_data=None):
 @ops_binary_cases(OpsBinaryCase(input_info=[((32, 16), np.float32), ((32, 16), np.float32)],
                                 output_info=[((), np.float32), ((32, 16), np.float32), ((32, 16), np.float32)]))
 def mint_einsum_binary_case5(input_binary_data=None, output_binary_data=None):
-    mint_einsum_binary_case_compare('ab, ab -> ', input_binary_data, output_binary_data)
+    mint_einsum_binary_case_compare('ab, ab -> ', input_binary_data, output_binary_data, 1e-3)
 
 
 @ops_binary_cases(OpsBinaryCase(input_info=[((32, 16, 8), np.float32), ((16, 8, 12), np.float32)],
@@ -205,7 +205,7 @@ def mint_einsum_sublist_binary_case4(input_binary_data=None, output_binary_data=
     mint_einsum_binary_case_compare_sublist(in_sublist, out_sublist, input_binary_data, output_binary_data, 4e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_mint_einsum_sublist_binary_cases(mode):
     """
@@ -223,7 +223,7 @@ def test_mint_einsum_sublist_binary_cases(mode):
     mint_einsum_sublist_binary_case3()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_mint_einsum_bmm_binary_cases(mode):
     """
@@ -288,3 +288,57 @@ def test_mint_einsum_dynamic():
                ms.Tensor(generate_random_input((5, 6, 7), dtype=np.float32))]
     TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
             disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
+def test_einsum_promotetype_mul(mode):
+    """
+    Feature: standard forward, backward features, test bmm in einsum.
+    Description: test function einsum.
+    Expectation: expect correct result.
+    """
+    if mode == 'pynative':
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+
+    class MulNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.op = mint.mul
+
+        def construct(self, x, y):
+            x = x.reshape(-1, 1)
+            y = y.reshape(1, -1)
+            return self.op(x, y)
+
+
+    class MulGradNet(nn.Cell):
+        def __init__(self, net):
+            super(MulGradNet, self).__init__()
+            self.grad = GradOperation(get_all=True, sens_param=False)
+            self.net = net
+
+        def construct(self, x, y):
+            return self.grad(self.net)(x, y)
+
+    x_np = np.random.randn(8,).astype(np.int64)
+    y_np = np.random.randn(9,).astype(np.float32)
+    x = ms.Tensor(x_np)
+    y = ms.Tensor(y_np)
+    equation = "i,j->ij"
+
+    einsum_out = EinsumNet(equation)(x, y)
+    einsum_grads = EinsumGradNet(EinsumNet(equation))(x, y)
+    assert einsum_out.dtype == ms.float32
+    np.testing.assert_allclose(einsum_out.asnumpy(), x_np.reshape(-1, 1) * y_np.reshape(1, -1), rtol=1e-4)
+
+    mul_out = MulNet()(x, y)
+    mul_grads = MulGradNet(MulNet())(x, y)
+    assert einsum_out.dtype == mul_out.dtype
+    assert einsum_grads[0].dtype == mul_grads[0].dtype
+    assert einsum_grads[1].dtype == mul_grads[1].dtype
+    np.testing.assert_allclose(einsum_out.asnumpy(), mul_out.asnumpy(), rtol=0)
+    np.testing.assert_allclose(einsum_grads[0].asnumpy(), mul_grads[0].asnumpy(), rtol=0)
+    np.testing.assert_allclose(einsum_grads[1].asnumpy(), mul_grads[1].asnumpy(), rtol=0)

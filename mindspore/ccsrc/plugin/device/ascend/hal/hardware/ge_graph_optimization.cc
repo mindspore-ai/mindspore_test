@@ -26,8 +26,9 @@
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 #include "include/common/debug/dump_proto.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace device {
@@ -71,43 +72,6 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
 }
 }  // namespace
 
-void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
-  MS_EXCEPTION_IF_NULL(graph);
-  MS_EXCEPTION_IF_NULL(memo);
-  PROF_START(OptimizeGEGraph);
-  if (memo->find(graph) != memo->end()) {
-    return;
-  }
-  memo->insert(graph);
-  MS_LOG(DEBUG) << "Status record: start optimize ge graph. graph id: " << graph->graph_id();
-  // empty graph dont entry to backend
-  if (graph->execution_order().empty()) {
-    MS_LOG(DEBUG) << graph->ToString() << " is empty graph.";
-    AnfAlgo::InsertMakeTupleForOutput(NOT_NULL(graph));
-    graph->set_executable(false);
-    MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
-  }
-  MarkRefGraph(graph);
-  opt::GEBackendOptimizeACL(graph);
-  opt::GEBackendOptimization(graph);
-  if (const auto &gk = graphkernel::GraphKernelFlags::GetInstance(); gk.IsEnableGraphKernel()) {
-    if (gk.kernel_generator != "DVM") {
-      graphkernel::GraphKernelOptimize(graph);
-      graph->SetExecOrderByDefault();
-    } else {
-      MS_LOG(WARNING) << "In ge graph, GraphKernel fusion is not supported for the DVM kernel_generator.";
-    }
-  }
-  for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
-    OptimizeGEGraph(child_graph.lock(), memo);
-  }
-  PROF_END(OptimizeGEGraph);
-  MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
-}
-
 void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
@@ -128,11 +92,7 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   opt::AscendUnfoldInputsForSpecialNodes(graph);
   opt::GEBackendOptimizeACL(graph);
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      OptimizeGEGraph(child_graph.lock(), memo);
-    } else {
-      OptimizeACLGraph(child_graph.lock(), memo);
-    }
+    OptimizeACLGraph(child_graph.lock(), memo);
   }
   PROF_END(OptimizeACLGraph);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
@@ -163,10 +123,9 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
       common::AnfAlgo::IsDynamicGraph(graph)) {
     graphkernel::KernelPacketOptimize(graph);
   }
+  // after kernel packet
+  opt::GEBackendOptimizeACLAfterKernelPacket(graph);
   for (auto &child_graph : graph->child_graph_order()) {
-    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
-    }
     OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
   PROF_END(OptimizeACLGraphAfterKernelSelect);
@@ -174,12 +133,9 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
 }
 
 void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
   PROF_START(OptimizeACLGraphAfterCreateKernel);
-  int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   // pynaitve process the pass in GEBackendOptimizeACLAfterKernelSelect
-  if (execution_mode == kPynativeMode) {
+  if (!IsJit()) {
     return;
   }
   MS_EXCEPTION_IF_NULL(graph);

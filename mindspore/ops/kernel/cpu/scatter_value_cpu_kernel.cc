@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <limits>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/tensor_scatter_elements.h"
 
 namespace mindspore::kernel {
+namespace scatter_value_cpu {
 namespace {
 template <class T>
 struct ReductionAdd {
@@ -207,4 +208,5 @@ const std::vector<std::pair<KernelAttr, ScatterValueCpuKernelMod::KernelRunFunc>
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScatterValue,
                                  []() { return std::make_shared<ScatterValueCpuKernelMod>(kScatterValue); });
+}  // namespace scatter_value_cpu
 }  // namespace mindspore::kernel

@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_ext {
 
 class BincountExtAscend : public AclnnKernelMod {
  public:
@@ -49,6 +50,7 @@ class BincountExtAscend : public AclnnKernelMod {
   int64_t min_length_ = 0;
   TypePtr origin_output_typeptr_;
 };
+}  // namespace bincount_ext
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -21,12 +21,13 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rmsprop_cpu {
 class RMSPropCpuKernelMod : public NativeCpuKernelMod {
  public:
   RMSPropCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class RMSPropCpuKernelMod : public NativeCpuKernelMod {
   TypeId dtype_{kTypeUnknown};
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace rmsprop_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_

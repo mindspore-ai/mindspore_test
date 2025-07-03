@@ -164,8 +164,7 @@ Status CoNLL2000Node::to_json(nlohmann::json *out_json) {
 // inherit this sampler from the leaf, providing sampling support from the caching layer.
 // That is why we setup the sampler for a leaf node that does not use sampling.
 Status CoNLL2000Node::SetupSamplerForCache(std::shared_ptr<SamplerObj> *sampler) {
-  bool shuffle_files = (shuffle_ == ShuffleMode::kGlobal || shuffle_ == ShuffleMode::kFiles);
-  *sampler = SelectSampler(num_samples_, shuffle_files, num_shards_, shard_id_);
+  *sampler = SelectSampler(num_samples_, shuffle_, num_shards_, shard_id_);
   return Status::OK();
 }
 

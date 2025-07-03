@@ -23,6 +23,7 @@
 #include "mindspore/ops/infer/ctc_loss_v2_grad.h"
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_v2_grad_cpu {
 namespace {
 #define CTC_GRAD_KERNEL std::vector<std::pair<KernelAttr, CTCLossV2GradCpuKernelMod::KernelRunFunc>>
 
@@ -262,5 +263,6 @@ const CTC_GRAD_KERNEL &CTCLossV2GradCpuKernelMod::GetFuncList() const {
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CTCLossV2Grad, CTCLossV2GradCpuKernelMod);
+}  // namespace ctcloss_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

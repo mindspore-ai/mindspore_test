@@ -46,6 +46,7 @@ void CommOpAttrs(const FuncGraphPtr &graph) {
       continue;
     }
     auto comm_prim = common::AnfAlgo::GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(comm_prim);
     std::string group_name = "";
     if (comm_prim->HasAttr(parallel::GROUP)) {
       group_name = GetValue<std::string>(comm_prim->GetAttr(parallel::GROUP));

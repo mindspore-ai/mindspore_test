@@ -1,0 +1,44 @@
+diag_ext:
+    description: |
+        If input is a vector (1-D tensor), then returns a 2-D square tensor with the elements of input as the diagonal.
+
+        If input is a matrix (2-D tensor), then returns a 1-D tensor with the diagonal elements of input.
+
+        The argument diagonal controls which diagonal to consider:
+
+        - If `diagonal` = 0, it is the main diagonal.
+
+        - If `diagonal` > 0, it is above the main diagonal.
+
+        - If `diagonal` < 0, it is below the main diagonal.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input tensor.
+            diagonal (int, optional): the diagonal to consider. Defaults: ``0``.
+
+        Returns:
+            Tensor, has the same dtype as the `input`, its shape is up to `diagonal`.
+
+            - If `input` shape is :math:`(x_0)` : then output shape is :math:`(x_0 + \left | diagonal \right | , x_0 + \left | diagonal \right | )` 2-D Tensor.
+
+            - If `input` shape is :math:`(x_0, x_1)` : then output shape is main diagonal to move :math:`(\left | diagonal \right |)` elements remains elements' length 1-D Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            ValueError: If shape of `input` is not 1-D and 2-D.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor([1, 2, 3, 4]).astype('int32')
+            >>> output = ops.auto_generate.diag_ext(input)
+            >>> print(output)
+            [[1 0 0 0]
+             [0 2 0 0]
+             [0 0 3 0]
+             [0 0 0 4]]

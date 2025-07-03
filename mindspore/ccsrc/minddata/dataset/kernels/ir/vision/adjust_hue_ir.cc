@@ -16,10 +16,8 @@
 
 #include "minddata/dataset/kernels/ir/vision/adjust_hue_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/adjust_hue_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_adjust_hue_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -28,7 +26,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AdjustHueOperation
 AdjustHueOperation::AdjustHueOperation(float hue_factor, const std::string &device_target)
     : hue_factor_(hue_factor), device_target_(device_target) {}
@@ -48,7 +45,7 @@ std::shared_ptr<TensorOp> AdjustHueOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<AdjustHueOp> tensor_op = std::make_shared<AdjustHueOp>(hue_factor_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppAdjustHueOp>(hue_factor_);
 #endif
@@ -87,7 +84,6 @@ MapTargetDevice AdjustHueOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

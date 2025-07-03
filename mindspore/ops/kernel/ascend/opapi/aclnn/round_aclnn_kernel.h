@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace round {
 
 class RoundAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class RoundAscend : public AclnnKernelMod {
   int64_t decimals_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace round
 }  // namespace kernel
 }  // namespace mindspore
 

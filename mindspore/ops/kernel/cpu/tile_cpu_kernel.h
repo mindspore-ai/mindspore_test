@@ -23,13 +23,14 @@
 #include <unordered_map>
 #include <vector>
 #include "mindapi/base/shape_vector.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/base/tile_base.h"
 #include "nnacl/kernel/tile.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tile_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -68,6 +69,7 @@ class TileCpuKernelMod : public NativeCpuKernelMod {
   bool one_dim_tile_{false};
   size_t input_size_{0};
 };
+}  // namespace tile_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TILE_CPU_KERNEL_H_

@@ -14,7 +14,6 @@
 # ============================================================================
 """test function grad with PIJit in pynative mode"""
 import numpy as np
-import sys  
 import pytest 
 import mindspore.nn as nn
 import mindspore.context as context
@@ -26,31 +25,26 @@ from mindspore.common import dtype as mstype
 from mindspore import Parameter, ParameterTuple
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 class SingleInputSingleOutputNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return x ** 3
 
 
 class SingleInputMultipleOutputsNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return x ** 3, 2 * x
 
 
 class MultipleInputsSingleOutputNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y, z):
         return x * y * z
 
 
 class MultipleInputsMultipleOutputsNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y, z):
         return x ** 2 + y ** 2 + z ** 2, x * y * z
 
@@ -61,7 +55,7 @@ class ParamNet(nn.Cell):
         self.w = Parameter(Tensor([2., 2.]), name="w")
         self.z = Parameter(Tensor([3., 3.]), name="z")
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         res = x * self.w * self.z
         return res
@@ -75,13 +69,13 @@ def iteration_grad_function(x, y, z):
     return x ** 2 * y * z
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def grad_wrap_with_msfunction(x, y, z):
     output = grad(function)(x, y, z)
     return output
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def grad_wrap_with_msfunction_get_grad(x, y, z):
     out_with_id = grad(function, return_ids=True)(x, y, z)
     output = get_grad(out_with_id, 0)
@@ -181,7 +175,6 @@ def test_grad_iteration_function_graph():
     assert np.allclose(real_grad[1].asnumpy(), expect_grad2.asnumpy())
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_wrap_with_msfunction_graph():
     """
@@ -251,7 +244,7 @@ def test_grad_with_weights_has_aux_graph():
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res = x * self.w * self.z
             return res, x, self.w
@@ -286,7 +279,7 @@ def test_jit_function_grad_with_weights_has_aux_graph():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -326,7 +319,7 @@ def test_construct_grad_with_weights_has_aux_graph():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -371,7 +364,7 @@ def test_grad_if_with_weights_has_aux_graph():
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             if x[0] == 1:
                 res = x * self.w * self.z
@@ -415,7 +408,7 @@ def test_grad_nest_with_weights_has_aux_graph():
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res1 = x * self.w * self.z
             res2 = self.net(res1)
@@ -483,7 +476,7 @@ def test_grad_if_ith_train_one_step():
             self.loss_net_g.set_grad()
             self.loss_net_d.set_grad()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             forward = self.network(x, y)
             weights = self.weights
@@ -499,7 +492,6 @@ def test_grad_if_ith_train_one_step():
     train_one_if_net(x, y)
 
 
-@pytest.mark.skip(reason="Core dump under pijit mode, mismatched number of graph args, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_net_d_net_g():
     """
@@ -580,7 +572,7 @@ def test_grad_net_d_net_g():
             self.loss_net_g.set_grad()
             self.loss_net_d.set_grad()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             grads_d = self.grad(self.loss_net_d, self.weights_d)(x, y)
             grads_g = self.grad(self.loss_net_g, self.weights_g)(x, y)
@@ -608,7 +600,7 @@ def test_value_and_grad_with_weights_has_aux_graph():
             self.w1 = Parameter(Tensor([2., 2.], mstype.float32), name="w1")
             self.w2 = Parameter(Tensor([3., 3.], mstype.float32), name="w2")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res = x * self.w1 * self.w2
             return res, x, self.w1
@@ -645,7 +637,7 @@ def test_construct_value_and_grad_with_weights_has_aux_graph():
             super(ParamNetMultipleInputsOutputs, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             res = x * y * self.w
             return res, x, self.w
@@ -698,7 +690,7 @@ def test_value_and_grad_nest_with_weights_graph():
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res1 = x * self.w * self.z
             res2 = self.net(res1)
@@ -741,7 +733,7 @@ def test_value_and_grad_nest_with_weights_has_aux_graph():
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res1 = x * self.w * self.z
             res2 = self.net(res1)
@@ -778,7 +770,7 @@ def test_construct_grad_single_position_with_return_ids():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -817,7 +809,7 @@ def test_construct_grad_multiplt_positions_with_return_ids():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -859,7 +851,7 @@ def test_construct_grad_with_weights_with_return_ids():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -901,7 +893,7 @@ def test_construct_get_grad_by_position():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -940,7 +932,7 @@ def test_construct_get_grad_by_weight():
             super(ParamMultipleInputNet, self).__init__()
             self.w = Parameter(Tensor([2., 2.], mstype.float32), name="w")
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             outputs = x * y * self.w
             return outputs, x, self.w
@@ -966,7 +958,6 @@ def test_construct_get_grad_by_weight():
     assert np.allclose(grad_out.asnumpy(), expect_grad_input)
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_get_grad_wrap_with_msfunction_graph():
     """
@@ -983,7 +974,6 @@ def test_get_grad_wrap_with_msfunction_graph():
     assert np.allclose(real_grad.asnumpy(), expect_grad.asnumpy())
 
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_primal_graph_call_others():
     """
@@ -997,7 +987,7 @@ def test_grad_primal_graph_call_others():
     def g(x, y):
         return f(x, y) * y
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def net(x, y):
         a = grad(f)(x, y)
         b = grad(g)(x, y)
@@ -1024,7 +1014,7 @@ def test_get_grad_outer_list_weight():
             self.w = Parameter([1, 2], name='w')
             self.b = Parameter([1, 2], name='b')
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x, y):
             out = self.w * x + self.b + y
             return out
@@ -1076,7 +1066,7 @@ def test_value_and_grad_nest_with_weights_graph_return_ids():
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res1 = x * self.w * self.z
             res2 = self.net(res1)
@@ -1132,7 +1122,7 @@ def test_value_and_grad_nest_with_weights_graph_get_grad():
             self.z = Parameter(Tensor([3., 3.], mstype.float32), name="z")
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             res1 = x * self.w * self.z
             res2 = self.net(res1)

@@ -1,0 +1,27 @@
+#operator multi_scale_deformable_attn_grad
+multi_scale_deformable_attn_grad:
+  args:
+    value:
+      dtype: tensor
+    shape:
+      dtype: tensor
+    offset:
+      dtype: tensor
+    locations_trans:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    grad_output:
+      dtype: tensor
+  returns:
+    grad_value:
+      dtype: tensor
+    grad_location:
+      dtype: tensor
+    grad_weight:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: MultiScaleDeformableAttnGradAscend

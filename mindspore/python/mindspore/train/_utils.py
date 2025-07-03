@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 import os
+import sys
 import json
 from collections.abc import Iterable
 
@@ -23,7 +24,7 @@ import time
 import numpy as np
 
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import MSContext, ms_ctx_param
 from mindspore.common.dtype import dtype_to_nptype, pytype_to_dtype
 from mindspore.common import dtype as mstype
@@ -31,7 +32,7 @@ from mindspore import context
 from mindspore import log as logger
 from mindspore import _checkparam as Validator
 from mindspore.common.api import _cell_graph_executor
-from mindspore.communication import get_group_size
+from mindspore.communication.management import get_rank, get_group_size
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.node_strategy_pb2 import ParallelStrategyMap as ckpt_strategy
@@ -63,6 +64,7 @@ def _get_types_and_shapes(dataset):
     dataset_types = _convert_type(dataset.output_types())
     dataset_shapes = dataset.output_shapes()
     return dataset_types, dataset_shapes
+
 
 def enable_data_broadcast():
     """Get status to indicate if enable dataset broadcast."""
@@ -321,9 +323,15 @@ def parse_strategy_ckpt(file_name):
 def _get_strategy_opt_shard(param_redundancy_dict, parameter_layout_opt_shard):
     """Strategy ckpt append opt shard."""
     for key, value in parameter_layout_opt_shard.items():
-        if value[1] not in (-1, 0):
-            opt_para_num = value[1]
+        if value[1] != 0:
             param_redundancy_ranks = param_redundancy_dict.get(key)
+            if value[1] != -1:
+                opt_para_num = value[1]
+            elif param_redundancy_ranks:
+                opt_para_num = len(param_redundancy_ranks) * len(param_redundancy_ranks[0]) // value[0]
+            else:
+                raise ValueError(f"For get_parameter_redundancy, the format of the parallel communication domain for "
+                                 f"the optimizer is incorrect.")
             res = []
             for param_ranks in param_redundancy_ranks:
                 if len(param_ranks) % opt_para_num == 0:
@@ -375,20 +383,40 @@ def _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundan
         param_redundancy_dict[key] = tuple(redundancy_list)
 
 
-def get_parameter_redundancy(layout_obj, initial_rank=0):
+def _get_initial_rank(parameter_layout):
+    """Get the initial rank of pp."""
+    for k, _ in parameter_layout.items():
+        dev_matrix = parameter_layout[k][0]
+        break
+    dev_num = 1
+    if dev_matrix:
+        for i in dev_matrix:
+            dev_num *= i
+    rank_id = get_rank()
+    initial_rank = (rank_id // dev_num) * dev_num
+    return initial_rank
+
+
+def _get_pp_size_from_redundancy_map(param_redundancy):
+    """Get pp size from redundancy map."""
+    for _, v in param_redundancy.items():
+        return len(v) * len(v[0])
+
+
+def get_parameter_redundancy(layout_obj, initial_rank=None):
     """
     Get parameter redundancy map.
 
     Args:
         layout_obj (Union[str, layout): File name of `strategy.ckpt` or net.parameter_layout_dict.
-        initial_rank (int): Start rank id for each pipeline. Default: 0.
+        initial_rank (int): Start rank id for each pipeline. Default: ``None``.
 
     Returns:
         Dict, dict of parameter redundancy info.
 
     Examples:
         >>> from mindspore.train.utils import get_parameter_redundancy
-        >>> param_redundancy_dict = get_parameter_redundancy("/path/to/strategy.ckpt")
+        >>> param_redundancy_dict = get_parameter_redundancy("/path/to/strategy.ckpt", initial_rank=0)
         {'param1': ((0, 1, 2, 3, 4, 5, 6, 7),),
          'param2': ((0, 4, 8, 12), (1, 5, 9, 13), (2, 6, 10, 14), (3, 7, 11, 15)),
          'param3': ((0, 4, 8, 12), (1, 5, 9, 13), (2, 6, 10, 14), (3, 7, 11, 15)),
@@ -405,13 +433,17 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
         from mindspore.communication.management import get_process_group_ranks
         groups_ranks = (tuple(get_process_group_ranks()),)
         param_redundancy_dict = {param.name: groups_ranks for _, param in layout_obj.parameters_and_names()}
-        return param_redundancy_dict
+        sorted_param_redundancy_dict = {key: param_redundancy_dict[key] for key in sorted(param_redundancy_dict.keys())}
+        return sorted_param_redundancy_dict
     else:
         parameter_layout = {}
         for k, v in layout_obj.items():
             parameter_layout[k] = v[:2]
 
     param_redundancy_dict = {}
+
+    if initial_rank is None:
+        initial_rank = _get_initial_rank(parameter_layout)
 
     _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundancy_dict, initial_rank)
 
@@ -420,7 +452,8 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
     else:
         _get_layout_opt_shard(layout_obj, param_redundancy_dict)
 
-    return param_redundancy_dict
+    sorted_param_redundancy_dict = {key: param_redundancy_dict[key] for key in sorted(param_redundancy_dict.keys())}
+    return sorted_param_redundancy_dict
 
 
 def _collect_settings_by_rank(redundancy_map):
@@ -539,6 +572,7 @@ def _progress_bar(iterable, total=None):
         elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
         remaining_time_str = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
 
+        sys.stdout.reconfigure(encoding="utf-8")
         print(f'\r{percent}%|{bar}|[{elapsed_time_str}<{remaining_time_str}]', end='')
         if iteration == total:
             print()
@@ -548,7 +582,8 @@ def _progress_bar(iterable, total=None):
         print_progress_bar(i)
 
 
-def _load_and_transform(path, name_map, load_func, transform_func):
+def _load_and_transform(path, name_map, load_func, transform_func=None):
+    """use load_func to load and use transform_func to convert"""
     if load_func is not None:
         param_dict = load_func(path)
     else:
@@ -556,5 +591,8 @@ def _load_and_transform(path, name_map, load_func, transform_func):
     transform_dict = {}
     for k, v in param_dict.items():
         new_name = name_map.get(k, k) if name_map is not None else k
-        transform_dict[new_name] = transform_func(v, new_name)
+        if transform_func is not None:
+            transform_dict[new_name] = transform_func(v, new_name)
+        else:
+            transform_dict[new_name] = v
     return transform_dict

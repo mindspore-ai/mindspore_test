@@ -19,11 +19,12 @@
 #include <algorithm>
 #include <string>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/stack.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pack_cpu {
 namespace {
 constexpr size_t kPackOutputsNum = 1;
 }  // namespace
@@ -137,5 +138,6 @@ std::vector<KernelAttr> PackFwdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Stack, PackFwdCpuKernelMod);
+}  // namespace pack_cpu
 }  // namespace kernel
 }  // namespace mindspore

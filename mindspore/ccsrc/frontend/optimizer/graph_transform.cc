@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,14 @@
  */
 
 #include "frontend/optimizer/graph_transform.h"
+
 #include <vector>
 #include <algorithm>
-#include "mindspore/ops/op_def/sequence_ops.h"
+
+#include "include/common/utils/anfalgo.h"
 #include "ir/graph_utils.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 /* namespace to support opt */
@@ -79,6 +83,7 @@ bool FuncGraphHasConstantSequenceInput(const FuncGraphPtr &fg) {
 
 std::vector<AnfNodePtr> TransformSequenceArgument(const FuncGraphPtr &fg, const AnfNodePtr &node,
                                                   const abstract::AbstractSequencePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   auto &elements = abs->elements();
   std::vector<AnfNodePtr> sequence_node_expanded;
   for (size_t i = 0; i < elements.size(); i++) {

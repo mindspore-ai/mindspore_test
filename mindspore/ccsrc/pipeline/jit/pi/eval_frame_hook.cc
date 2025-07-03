@@ -22,12 +22,12 @@
 namespace mindspore {
 namespace pijit {
 
-bool ApplyAutoJit(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
+bool ApplyAutoJit(PyThreadState *ts, PyFrameWrapper f, PyObject **result) {
   if (!kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kAutoJit)) {
     return false;
   }
 
-  PyObject *code = reinterpret_cast<PyObject *>(PyFrameWrapper(f).GetCode().ptr());
+  PyObject *code = reinterpret_cast<PyObject *>(f.GetCode().ptr());
   auto c = GetJitCompileResults(code);
   if (c == nullptr) {
     if (!kPIJitConfigDefault.ShouldAutoJit(f)) {
@@ -40,16 +40,7 @@ bool ApplyAutoJit(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
   return true;
 }
 
-bool ApplyAutoGrad(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
-  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kInferOnly)) {
-    return false;
-  }
-  *result = _PyEval_EvalFrameDefault(ts, f, 0);
-  AutoGrad(f, *result);
-  return true;
-}
-
-bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **result) {
+bool ApplyCaptureContext(PyThreadState *tstate, PyFrameWrapper ef, PyObject **result) {
   PyFrameWrapper f(ef);
   auto ctx = CaptureContext::GetInstance();
   if (!ctx->IsEnable()) {
@@ -73,12 +64,11 @@ bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **
     return true;
   }
   c->set_conf(ctx->config());
-  *result = CallCodeHook(tstate, f.frame(), c);
+  *result = CallCodeHook(tstate, f, c);
   return true;
 }
 
 PyFrameEvalHookManager::PyFrameEvalHookManager() : func_() {
-  this->Register(ApplyAutoGrad);
   this->Register(ApplyAutoJit);
   this->Register(ApplyCaptureContext);
 }
@@ -88,12 +78,12 @@ PyFrameEvalHookManager *PyFrameEvalHookManager::GetInstance() {
   return &instance;
 }
 
-PyObject *PyFrameEvalHookManager::RunHook(PyThreadState *ts, EvalFrameObject *f) {
+PyObject *PyFrameEvalHookManager::RunHook(PyThreadState *ts, PyFrameWrapper f) {
   PyObject *res = nullptr;
   if (std::any_of(func_.rbegin(), func_.rend(), [&](Hook func) { return func(ts, f, &res); })) {
     return res;
   }
-  return _PyEval_EvalFrameDefault(ts, f, 0);
+  return _PyEval_EvalFrameDefault(ts, f.frame(), 0);
 }
 
 }  // namespace pijit

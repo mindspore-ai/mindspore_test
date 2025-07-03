@@ -19,8 +19,8 @@
 
 #include "common/common_test.h"
 #include "distributed/embedding_cache/embedding_storage/sparse_embedding_storage.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/device/cpu/hal/device/cpu_hash_table.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table.h"
 
 namespace mindspore {
 namespace distributed {

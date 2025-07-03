@@ -23,7 +23,7 @@ class Reshard(Primitive):
     parallel procedure.
 
     Note:
-        - The in and out layout should be the type mindspore.Layout.
+        - The in and out layout should be the type mindspore.parallel.Layout.
         - The in and out layout should be the same value of layout when invoke
           ops.Reshard(layout, layout, in_strategy).
         - The in_strategy should be the strategy derived from the layout.

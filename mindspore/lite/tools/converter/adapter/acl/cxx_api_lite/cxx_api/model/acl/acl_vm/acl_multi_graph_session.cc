@@ -21,6 +21,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/session_factory.h"
 #include "include/backend/optimizer/optimizer.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #ifdef ENABLE_D
 #include "runtime/hardware/device_context_manager.h"
 #endif
@@ -28,6 +29,9 @@
 #include "cxx_api/model/acl/acl_model_options.h"
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 #include "cxx_api/graph/graph_data.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::session {
 void MultiGraphAclSession::Init(uint32_t device_id) { InitExecutor(kDavinciMultiGraphInferenceDevice, device_id); }
@@ -51,18 +55,10 @@ GraphId MultiGraphAclSession::CompileGraphImpl(const AnfNodePtrList &lst, const 
   };
   MS_LOG(INFO) << "Start MultiGraph Compile.";
   // construct kernel graph
-  auto kernel_graph = SessionBasic::ConstructKernelGraph(lst, outputs, device::DeviceType::kUnknown, false);
+  auto kernel_graph =
+    SessionBasic::ConstructKernelGraph(lst, outputs, device::DeviceType::kUnknown, backend::BackendJitConfig(), false);
   MS_EXCEPTION_IF_NULL(kernel_graph);
-#ifdef ENABLE_D
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto deprecated_ptr = device_context->GetDeprecatedInterface();
-  MS_EXCEPTION_IF_NULL(deprecated_ptr);
-  deprecated_ptr->AclOptimizer(kernel_graph);
-#else
+#ifndef ENABLE_D
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto pm = std::make_shared<opt::PassManager>("310_multi_graph_pm");
   optimizer->AddPassManager(pm);

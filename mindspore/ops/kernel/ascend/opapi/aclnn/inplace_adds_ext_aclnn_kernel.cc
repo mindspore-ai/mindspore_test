@@ -20,7 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
-
+namespace inplace_add_ext {
 void InplaceAddsExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
   GetScalarFromInput(inputs[kIndex1], &this->other_scalar_);
@@ -37,5 +37,6 @@ bool InplaceAddsExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceAddsExt, InplaceAddsExtAclnnKernelMod);
+}  // namespace inplace_add_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,7 @@
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/kernels/tensor_op.h"
+#include "minddata/utils.h"
 
 namespace mindspore::dataset {
 namespace protobuf = ::google::protobuf;
@@ -1105,6 +1106,7 @@ Status ParseExampleOp::ParallelParseExample(const TensorRow &raw_bytes, TensorRo
   std::vector<std::vector<VarLenTensorBuffer>> varlen_dense_buffers(num_minibatches);
   std::vector<Status> status_of_minibatch(num_minibatches);
   auto ProcessMiniBatch = [&](const size_t minibatch) {
+    mindspore::dataset::BindThreadCoreForMindDataOp("dataset::ParseExampleOp::ParallelParseExample::ProcessMiniBatch");
     varlen_dense_buffers[minibatch].resize(data_schema_.NumColumns());
     const auto start = first_example_of_minibatch(minibatch);
     const auto end = first_example_of_minibatch(minibatch + 1);

@@ -634,7 +634,7 @@ class ReplicationPad1d(ReplicationPadNd_):
         - **input** (Tensor) - 2D or 3D input Tensor with shape: :math:`(C, W_{in})` or :math:`(N, C, W_{in})`.
 
     Outputs:
-        Tensor, the tensor after padding.
+        The tensor after padding.
 
     Raises:
         TypeError: If `padding` is not an integer of a list or tuple of 2 integers.

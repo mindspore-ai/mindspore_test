@@ -16,11 +16,11 @@
 #include <vector>
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
-#include "infer/ops_func_impl/select_ext.h"
+#include "infer/ops_func_impl/select_ext_view.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -47,7 +47,7 @@ TEST_P(TestSelectExt, dyn_shape) {
 
   auto expect_shape = std::make_shared<abstract::Shape>(param.output_shape);
   auto expect_type = std::make_shared<TensorType>(param.output_dtype);
-  DoFuncImplInferAndCompare<SelectExtFuncImpl>(kNameSelectExt, {x, dim, index}, expect_shape, expect_type);
+  DoFuncImplInferAndCompare<SelectExtViewFuncImpl>(kNameSelectExtView, {x, dim, index}, expect_shape, expect_type);
 }
 
 static std::vector<SelectExtParams> GetCases() {
@@ -66,14 +66,14 @@ class TestSelectExtSimple : public TestOps, public testing::WithParamInterface<S
 
 TEST_P(TestSelectExtSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.input_dtype->type_id(), param.input_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.input_dtype->type_id(), param.input_shape);
   auto dim = param.dim->ToAbstract();
   auto index = param.index->ToAbstract();
 
   auto expect_shape = std::make_shared<abstract::Shape>(param.output_shape);
   auto expect_type = std::make_shared<TensorType>(param.output_dtype);
 
-  DoFuncImplInferAndCompare<SelectExtFuncImpl>(kNameSelectExt, {x->ToAbstract(), dim, index}, expect_shape, expect_type);
+  DoFuncImplInferAndCompare<SelectExtViewFuncImpl>(kNameSelectExtView, {x->ToAbstract(), dim, index}, expect_shape, expect_type);
 }
 
 INSTANTIATE_TEST_CASE_P(TestSelectExt, TestSelectExt, testing::ValuesIn(GetCases()));

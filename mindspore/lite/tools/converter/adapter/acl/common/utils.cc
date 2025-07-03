@@ -26,6 +26,7 @@
 #include "src/common/log_util.h"
 #include "ir/func_graph.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace lite {

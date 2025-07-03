@@ -74,6 +74,8 @@ def test_target_update(mode):
     Expectation: No exception.
     """
     context.set_context(mode=mode)
+    if mode == context.GRAPH_MODE:
+        context.set_context(jit_config={"jit_level": "O0"})
     policy_net = FullyConnectedNet(4, 100, 2)
     target_net = FullyConnectedNet(4, 100, 2)
     tau = 0.2

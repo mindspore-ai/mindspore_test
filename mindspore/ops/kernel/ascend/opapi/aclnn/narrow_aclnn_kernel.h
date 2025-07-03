@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace narrow {
 
 class NarrowAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class NarrowAscend : public AclnnKernelMod {
   int64_t end_;
   int64_t step_{1};
 };
+}  // namespace narrow
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -21,7 +21,7 @@
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl/matmul_parameter.h"
 #include "kernel/cpu/nnacl/fp32/matmul_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "kernel/cpu/matmul_cpu_kernel_func.h"
 #include "nnacl/tensor_c.h"
@@ -30,6 +30,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 namespace {
 constexpr size_t kMatMulInputsNum = 4;
 constexpr size_t kMatMulInputsCheckNum = 4;
@@ -208,6 +209,7 @@ int MatMulCpuKernelFunc::Resize(const std::vector<KernelTensorPtr> &inputs,
   }
   return 0;
 }
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

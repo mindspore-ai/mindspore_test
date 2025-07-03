@@ -26,7 +26,7 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import COOTensor as COOTensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import RowTensor as RowTensor_
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import is_stub_tensor
 
@@ -98,7 +98,6 @@ class RowTensor(RowTensorInner):
 
     .. warning::
         - This is an experimental API that is subjected to change or deletion.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
 
     Args:
         indices (Tensor): A 1-D integer Tensor of shape :math:`(d_0)` . Default: ``None``.
@@ -211,7 +210,8 @@ class SparseTensor(COOTensor_):
 
 class COOTensor(COOTensor_):
     """
-    A sparse representation of a set of nonzero elements from a tensor at given indices.
+    A sparse representation of a set of nonzero elements from a tensor at given indices,
+    where the indices indicate the position of each non-zero element.
 
     For a tensor dense, its COOTensor(indices, values, shape) has
     `dense[indices[i]] = values[i]`.
@@ -227,18 +227,17 @@ class COOTensor(COOTensor_):
 
     Common arithmetic operations include: addition (+), subtraction (-), multiplication (*),
     and division (/). For details about operations supported by `COOTensor`, see
-    `operators <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#operators>`_.
+    `operators <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#operators>`_.
 
     .. warning::
         - This is an experimental API that is subject to change or deletion.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
         - Currently, duplicate coordinates in the indices will not be coalesced.
           If the indices contain out-of-bound values, the result will be undefined.
 
     Args:
         indices (Tensor): A 2-D integer Tensor of shape :math:`(N, ndims)`,
-            where N and ndims are the number of `values` and number of dimensions in
-            the COOTensor, respectively. Currently, `ndims` must be 2. Default: ``None`` .
+            where :math:`N` and :math:`ndims` are the number of `values` and number of dimensions in
+            the COOTensor, respectively. Currently, :math:`ndims` must be 2. Default: ``None`` .
             Please make sure that the indices are in range of the given shape.
         values (Tensor): A 1-D tensor of any type and shape :math:`(N)`, which
             supplies the values for each element in `indices`. Default: ``None`` .
@@ -658,24 +657,28 @@ class CSRTensor(CSRTensor_):
     of `indices` and `values` should be equal to the number of non-zero values in the tensor. To be concrete, get
     the query indices of none-zero elements in every line according to `indptr`. Then get the column positions of
     none-zero elements in every line by looking up query indices in `indices`. Finally, get the actual values of
-    none-zero elements in every line by looking up query indices in `values`. In the former example, 'indptr' of
+    none-zero elements in every line by looking up query indices in `values`.
+
+    In the former example, 'indptr' of
     [0, 2, 5, 6] represents that the indices of 0th row of the tensor origins from [0, 2), the indices of
-    the 1st row of the tensor origins from [2, 5) and the 2nd row of the tensor origins from [5, 6). For example,
-    the column positions of the non-zero elements of the 0th row in the tensor are provided by the [0, 2) elements in
-    `indices` (i.e. [0, 3]) and the corresponding values are provided by the [0, 2) elements in `values`
-    (i.e. [1., 2.]). The column positions of the non-zero elements of the 1st row in the tensor are provided by the
-    [2, 5) elements in `indices` (i.e. [1, 2, 4]) and the corresponding values are provided by the [2, 5) elements in
-    `values` (i.e. [3., 4., 5.]). The column positions of the non-zero elements of the 2nd row in the tensor are
-    provided by the [5, 6) elements in `indices` (i.e. [2]) and the corresponding values are provided by the [5, 6)
-    elements in `values` (i.e. [6.]).
+    the 1st row of the tensor origins from [2, 5) and the 2nd row of the tensor origins from [5, 6). For example:
+
+    - The column positions of the non-zero elements of the 0th row in the tensor are provided by the [0, 2) elements in
+      `indices` (i.e. [0, 3]) and the corresponding values are provided by the [0, 2) elements in `values`
+      (i.e. [1., 2.]).
+    - The column positions of the non-zero elements of the 1st row in the tensor are provided by the
+      [2, 5) elements in `indices` (i.e. [1, 2, 4]) and the corresponding values are provided by the [2, 5) elements in
+      `values` (i.e. [3., 4., 5.]).
+    - The column positions of the non-zero elements of the 2nd row in the tensor are
+      provided by the [5, 6) elements in `indices` (i.e. [2]) and the corresponding values are provided by the [5, 6)
+      elements in `values` (i.e. [6.]).
 
     Common arithmetic operations include: addition (+), subtraction (-), multiplication (*),
     and division (/). For details about operations supported by `CSRTensor`, see
-    `operators <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#operators>`_.
+    `operators <https://www.mindspore.cn/tutorials/en/master/compile/static_graph.html#operators>`_.
 
     .. warning::
         - This is an experimental API that is subjected to change.
-        - If use PyNative mode, set "export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1".
         - If the values given by `indptr` or `indices` are invalid, the results may be undefined. Invalid values include
           when the length of `values` or `indices` exceeds the range indicated by `indptr`, and when the columns
           indicated by `indices` are repeated on the same row.
@@ -688,10 +691,10 @@ class CSRTensor(CSRTensor_):
             indicates the which column `values` should be placed. Default: ``None``. If provided,
             must be int16, int32 or int64.
         values (Tensor): Tensor, which has the same length as `indices` (values.shape[0] == indices.shape[0]).
-            `values`  stores the data for CSRTensor. Default: ``None``.
+            `values` stores the data for CSRTensor. Default: ``None``.
         shape (tuple(int)): An integer tuple of shape :math:`(ndims)`, and `shape[0]` must equal to `M - 1`,
             which all equal to number of rows of the CSRTensor. Default: ``None``.
-        csr_tensor (CSRTensor): A CSRTensor object.  Values' feature dimension should match with
+        csr_tensor (CSRTensor): A CSRTensor object. Values' feature dimension should match with
             CSRTensor's feature dimension :math:`(values.shape[1:] == csr\_tensor.shape[2:])` . Default: ``None``.
 
     Outputs:

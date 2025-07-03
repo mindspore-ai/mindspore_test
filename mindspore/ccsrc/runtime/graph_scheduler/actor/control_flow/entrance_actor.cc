@@ -21,7 +21,7 @@ namespace mindspore {
 namespace runtime {
 constexpr size_t kEntranceInputStartPos = 1;
 
-void EntranceActor::RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) {
+void EntranceActor::RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   auto &sequential_num = context->sequential_num_;
   if (is_loop_body_execution_) {
@@ -40,7 +40,7 @@ void EntranceActor::RunOpControl(AID *const input_control, OpContext<DeviceTenso
 }
 
 void EntranceActor::RunOpRealParameterWithBranchID(const OpRealParameterWithBranchID &real_parameter_with_branch_id,
-                                                   OpContext<DeviceTensor> *const context) {
+                                                   OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   auto &sequential_num = context->sequential_num_;
   (void)real_parameters_with_branch_id_[sequential_num].emplace(real_parameter_with_branch_id);
@@ -54,11 +54,15 @@ void EntranceActor::RunOpRealParameterWithBranchID(const OpRealParameterWithBran
   }
 }
 
-void EntranceActor::ClearDataOnStepEnd(AID *const input_control, OpContext<DeviceTensor> *const context) {
+void EntranceActor::HandleWaitMessage(OpContext<KernelTensor> *const context, const AID &from_aid) {
+  ClearDataOnStepEnd(from_aid, context);
+  AbstractActor::HandleWaitMessage(context, from_aid);
+}
+
+void EntranceActor::ClearDataOnStepEnd(const AID &input_control, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  MS_EXCEPTION_IF_NULL(input_control);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the message of clearing data from:" << input_control->Name() << ".";
+  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the message of clearing data from:" << input_control
+                << ".";
 
   is_loop_body_execution_ = false;
 
@@ -67,23 +71,25 @@ void EntranceActor::ClearDataOnStepEnd(AID *const input_control, OpContext<Devic
   }
 }
 
-void EntranceActor::Run(OpContext<DeviceTensor> *const context) {
+void EntranceActor::Run(OpContext<KernelTensor> *const context) {
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Entrance actor:" << GetAID() << " start run.";
   // The begin execution of step is false and the others execution of step is true.
   is_loop_body_execution_ = true;
 
   FetchInput(context);
 
-  // Note that IncreaseDynamicRefCount must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
+  // Note that IncreaseNewRefCounts must be in front of SendMemoryFreeReq. SendMemoryFreeReq will decreasing the
   // dynamic ref count. Avoid the illegal timing problem that the dynamic reference count is decremented and then
   // incremented.
-  IncreaseDynamicRefCounts(context);
+  IncreaseNewRefCounts(context);
   SendMemoryFreeReq(context);
 
   EraseInput(context);
   SendOutput(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Entrance actor:" << GetAID() << " end run.";
 }
 
-void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
+void EntranceActor::FetchInput(OpContext<KernelTensor> *const context) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   MS_EXCEPTION_IF_NULL(context);
   auto &sequential_num = context->sequential_num_;
@@ -107,41 +113,40 @@ void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
 
       for (auto &input_data : data_iter->second) {
         MS_EXCEPTION_IF_NULL(input_data);
-        if (IntToSize(input_data->index_) >= input_device_tensors_.size()) {
+        if (IntToSize(input_data->index_) >= input_kernel_tensors_.size()) {
           std::string error_info = "The input index is out of range, need:" + std::to_string(input_data->index_) +
-                                   " current:" + std::to_string(input_device_tensors_.size()) +
+                                   " current:" + std::to_string(input_kernel_tensors_.size()) +
                                    " for actor:" + GetAID().Name();
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
         }
         MS_EXCEPTION_IF_NULL(input_data->data_);
-        input_device_tensors_[IntToSize(input_data->index_)] = input_data->data_;
+        input_kernel_tensors_[IntToSize(input_data->index_)] = input_data->data_;
       }
     }
   } else {
     // 2.Data comes from the gather actor, it is in the form of data with branch id.
     output_branch_id_ = real_parameters_with_branch_id_[sequential_num].front().branch_id_;
-    const auto &device_tensors = real_parameters_with_branch_id_[sequential_num].front().device_tensors_;
+    const auto &kernel_tensors = real_parameters_with_branch_id_[sequential_num].front().kernel_tensors_;
     const auto &partials = real_parameters_with_branch_id_[sequential_num].front().partials_;
 
     // Collect the device tensors.
-    if (device_tensors.size() + partials.size() != formal_parameters_.size()) {
+    if (kernel_tensors.size() + partials.size() != formal_parameters_.size()) {
       std::string error_info = "Invalid input num, need:" + std::to_string(formal_parameters_.size()) +
-                               " device tensor num:" + std::to_string(device_tensors.size()) +
+                               " device tensor num:" + std::to_string(kernel_tensors.size()) +
                                " partial num:" + std::to_string(partials.size()) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    for (const auto &device_tensor : device_tensors) {
-      if (device_tensor.first >= input_device_tensors_.size()) {
-        std::string error_info = "Invalid device tensor index:" + std::to_string(device_tensor.first) +
-                                 " vector size:" + std::to_string(input_device_tensors_.size()) +
+    for (const auto &kernel_tensor : kernel_tensors) {
+      if (kernel_tensor.first >= input_kernel_tensors_.size()) {
+        std::string error_info = "Invalid device tensor index:" + std::to_string(kernel_tensor.first) +
+                                 " vector size:" + std::to_string(input_kernel_tensors_.size()) +
                                  " for actor:" + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
-      input_device_tensors_[device_tensor.first] = device_tensor.second;
-      if (device_tensor.second != nullptr) {
-        MS_LOG(DEBUG) << "Entrance actor:" << GetAID() << " receive device tensor:" << device_tensor.second
-                      << " ptr:" << device_tensor.second->GetPtr() << " type:" << device_tensor.second->GetDeviceType()
-                      << " index:" << device_tensor.first;
+      input_kernel_tensors_[kernel_tensor.first] = kernel_tensor.second;
+      if (kernel_tensor.second != nullptr) {
+        MS_LOG(DEBUG) << "Entrance actor:" << GetAID() << " receive kernel tensor:" << kernel_tensor.second->ToString()
+                      << " index:" << kernel_tensor.first;
       }
     }
 
@@ -161,7 +166,7 @@ void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
     if (output_data_by_output_index_[i].empty()) {
       continue;
     }
-    const auto &data = input_device_tensors_[i];
+    const auto &data = input_kernel_tensors_[i];
     if (data == nullptr) {
       std::string error_info = "Input data index:" + std::to_string(i) + " for actor:" + GetAID().Name() + " is empty!";
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -173,7 +178,7 @@ void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
   }
 }
 
-bool EntranceActor::CheckRunningCondition(const OpContext<DeviceTensor> *context) const {
+bool EntranceActor::CheckRunningCondition(const OpContext<KernelTensor> *context) const {
   MS_EXCEPTION_IF_NULL(context);
 
   // Check the running condition in the begin execution of step.
@@ -212,7 +217,7 @@ bool EntranceActor::CheckRunningCondition(const OpContext<DeviceTensor> *context
   return true;
 }
 
-void EntranceActor::EraseInput(const OpContext<DeviceTensor> *const context) {
+void EntranceActor::EraseInput(const OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   auto &sequential_num = context->sequential_num_;
 
@@ -240,12 +245,12 @@ void EntranceActor::EraseInput(const OpContext<DeviceTensor> *const context) {
   }
 }
 
-void EntranceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void EntranceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   const auto &sequential_num = context->sequential_num_;
 
   // Collect the input device tensors.
-  std::vector<DeviceTensor *> memory_free_list;
+  std::vector<KernelTensorPtr> memory_free_list;
   if (input_op_datas_.count(sequential_num) > 0) {
     for (auto &input_data : input_op_datas_[sequential_num]) {
       MS_EXCEPTION_IF_NULL(input_data);
@@ -260,7 +265,7 @@ void EntranceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The real parameter with branch id is empty.");
     }
     auto &real_parameters_with_branch_id = iter->second.front();
-    GetAllDeviceTensors(real_parameters_with_branch_id, &memory_free_list);
+    GetAllKernelTensors(real_parameters_with_branch_id, &memory_free_list);
   }
 
   if (memory_free_list.size() > 0) {

@@ -71,7 +71,6 @@ def test_gpto_net():
         jit_config={"jit_level": "O0"},
         device_target="Ascend",
         mode=ms.GRAPH_MODE,
-        exec_order="gpto",
     )
     rt.set_memory(optimize_level="O1")
     comm.init()

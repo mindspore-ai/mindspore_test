@@ -70,7 +70,6 @@ Status RepeatPass::Visit(std::shared_ptr<EpochCtrlNode> node, bool *const modifi
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // Identifies the subtree below this node as being in a cache merge path
 Status RepeatPass::Visit(std::shared_ptr<CacheMergeNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
@@ -88,7 +87,6 @@ Status RepeatPass::Visit(std::shared_ptr<CacheNode> node, bool *const modified) 
   is_cached_ = true;
   return Status::OK();
 }
-#endif
 
 // Hooks up any identified eoe nodes under this repeat.
 Status RepeatPass::VisitAfter(std::shared_ptr<RepeatNode> node, bool *const modified) {
@@ -145,7 +143,6 @@ Status RepeatPass::VisitAfter(std::shared_ptr<DatasetNode> node, bool *const mod
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // CacheOp removes previous leaf ops and replaces them with itself
 Status RepeatPass::VisitAfter(std::shared_ptr<CacheNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
@@ -204,7 +201,6 @@ Status RepeatPass::VisitAfter(std::shared_ptr<CacheLookupNode> node, bool *const
 
   return Status::OK();
 }
-#endif
 
 Status RepeatPass::VisitAfter(std::shared_ptr<DataQueueNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);

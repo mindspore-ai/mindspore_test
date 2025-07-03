@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace generator {
 // This kernel is provided to prevent auto-generation failure.
 class GeneratorAscend : public AclnnKernelMod {
  public:
@@ -41,6 +42,7 @@ class GeneratorAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 MS_ACLNN_KERNEL_FACTORY_REG(Generator, GeneratorAscend);
+}  // namespace generator
 }  // namespace kernel
 }  // namespace mindspore
 

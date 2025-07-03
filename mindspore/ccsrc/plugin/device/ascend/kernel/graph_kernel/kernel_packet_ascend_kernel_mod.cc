@@ -15,14 +15,14 @@
  */
 
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
 bool KernelPacketAscendKernelMod::CopyHostToDevice(void *dst, const void *src, size_t size, void *stream) {
   aclError status = CALL_ASCEND_API(aclrtMemcpyAsync, dst, size, src, size, ACL_MEMCPY_HOST_TO_DEVICE, stream);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(ERROR) << "MemCpyAsync op aclrtMemcpyAsync failed, ret:" << status;
     return false;
   }

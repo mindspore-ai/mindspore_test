@@ -5,7 +5,7 @@ non_zero:
         Inputs:
             - **input** (Tensor) - The input Tensor.
 
-              - Ascend: its rank can be equal to 0.
+              - Ascend: its rank can be equal to 0 except O2 mode.
               - CPU/GPU: its rank should be greater than or eaqual to 1.
 
         Outputs:
@@ -14,17 +14,15 @@ non_zero:
 
         Raises:
             TypeError: If `input` is not Tensor.
-            RuntimeError: On GPU and CPU, if dim of `input` equals to 0.
+            RuntimeError: On GPU or CPU or Ascend O2 mode, if dim of `input` is equal to 0.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
-            >>> output = ops.NonZero()(input)
+            >>> input = mindspore.tensor([1, 0, 2, 0, 3], mindspore.int32)
+            >>> output = mindspore.ops.NonZero()(input)
             >>> print(output)
             [[0]
              [2]

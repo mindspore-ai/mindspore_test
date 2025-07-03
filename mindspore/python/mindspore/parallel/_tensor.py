@@ -21,9 +21,11 @@ import numpy as np
 from mindspore.common.tensor import Tensor
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore._c_expression import TensorTransform
+from mindspore import log as logger
 
 _tensor_transform = TensorTransform.get_instance()
-
+COMM_TENSOR_CELL_CACHE = {}
+RESHARD_OP_MAP_CACHE = {}
 
 def _get_tensor_strategy(dev_mat, tensor_map):
     """
@@ -38,10 +40,17 @@ def _get_tensor_strategy(dev_mat, tensor_map):
     """
     tensor_strategy = []
     for dim in tensor_map:
-        if dim == -1:
-            tensor_strategy.append(1)
+        if isinstance(dim, (tuple, list)):
+            acc_stra = 1
+            for i in dim:
+                if i != -1:
+                    acc_stra *= dev_mat[len(dev_mat) - i - 1]
+            tensor_strategy.append(acc_stra)
         else:
-            tensor_strategy.append(dev_mat[-dim - 1])
+            if dim == -1:
+                tensor_strategy.append(1)
+            else:
+                tensor_strategy.append(dev_mat[-dim - 1])
     return tensor_strategy
 
 
@@ -182,7 +191,7 @@ def _get_slice_index(dev_mat, tensor_map, opt_shard_group):
     Args:
         dev_mat (list): The device matrix of devices.
         tensor_map (list): The split strategy of tensor.
-        opt_shard_group(string): The group of optimizer shard
+        opt_shard_group(str): The group of optimizer shard
 
     Returns:
         Integer, the slice index for slice on this device.
@@ -341,7 +350,7 @@ def _extract_layout_item(layout_item):
     return dev_matrix, tensor_map, opt_shard_step, opt_shard_size
 
 
-def _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id):
+def _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id, enable_redist_opt=False):
     """
     Transform tensor from source layout to the destination layout.
 
@@ -355,7 +364,7 @@ def _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id):
     """
     if not isinstance(from_layout, tuple) or not isinstance(to_layout, tuple):
         raise TypeError("The layout should be tuple! layout is {} and {}".format(from_layout, to_layout))
-    return _tensor_transform.transform_tensor_sharding(from_layout, to_layout, device_list, rank_id)
+    return _tensor_transform.transform_tensor_sharding(from_layout, to_layout, device_list, enable_redist_opt, rank_id)
 
 
 def _construct_from_to_tensor_layout(from_full_tensor_shape, from_dev_matrix,
@@ -388,6 +397,124 @@ def _construct_from_to_tensor_layout(from_full_tensor_shape, from_dev_matrix,
     return from_tensor_layout, to_tensor_layout
 
 
+def _expand_layout(dev_matrix, tensor_map, tensor_shape):
+    """
+    expand nested tensor_map and reshape tensor shape according to tensor_map
+    dev_matrix = [4, 2, 2]
+    tensor_map = [[2, 1], 0]
+    tensor_shape = [8, 8]
+    =>
+    expanded_tensor_map = [2, 1, 0]
+    expanded_tensor_map = [4, 8/4, 8]
+    """
+    new_tensor_map = []
+    new_tensor_shape = []
+    for index, dim in enumerate(tensor_map):
+        if isinstance(dim, (tuple, list)):
+            accu_shape = 1
+            for i in range(len(dim) - 1):
+                new_tensor_map.append(dim[i])
+                new_tensor_shape.append(dev_matrix[len(dev_matrix) - 1 - dim[i]])
+                accu_shape *= dev_matrix[len(dev_matrix) - 1 - dim[i]]
+            new_tensor_map.append(dim[-1])
+            new_tensor_shape.append(tensor_shape[index] // accu_shape)
+        else:
+            new_tensor_map.append(dim)
+            new_tensor_shape.append(tensor_shape[index])
+    return dev_matrix, new_tensor_map, new_tensor_shape
+
+
+def _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step, opt_shard_size,
+                                                     origin_full_tensor_shape):
+    """
+    Construct tensor layout for optimizer parallel when using layout.
+    For example, For Tensor with shape (4,2)
+    dev_matrix = [2, 2, 2, 2]
+    tensor_map = [[1, 0], -1]
+    opt_shard_size = 2
+    ==>
+    dev_matrix = [2, 2, 2, 2]
+    tensor_map = [[1, 0], 2, -1]
+    the new strategy is [4, 2, 1]
+    the tensor_shape should reshape to (model_parallel_size, -1, xx, xx)
+    first 4 means the model parallel sharding of data_dim
+    second 2 means the opt sharding of data_dim.
+    """
+    if opt_shard_step == 0 or opt_shard_size == 0:
+        return dev_matrix, tensor_map, list(origin_full_tensor_shape)
+    tensor_strategy = _get_tensor_strategy(dev_matrix, tensor_map)
+    repeated_dim = []
+    dev_sharded_index = []
+    dev_matrix, expanded_tensor_map, _ = _expand_layout(dev_matrix, tensor_map, origin_full_tensor_shape)
+    for dim in expanded_tensor_map:
+        if dim != -1:
+            dev_sharded_index.append(len(dev_matrix) - dim - 1)
+    for index, value in enumerate(dev_matrix):
+        if index not in dev_sharded_index and value > 1:
+            repeated_dim.append(index)
+    if not repeated_dim:
+        raise ValueError("The device_matrix {} and tensor_map {} cannot sharding opt_shard".
+                         format(dev_matrix, tensor_map))
+    return _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                           tensor_strategy, repeated_dim)
+
+
+def _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                    tensor_strategy, repeated_dim):
+    """
+    helper function to assign repeated device_matrix dim for opt shard.
+    """
+    new_dev_matrix = list(copy.deepcopy(dev_matrix))
+    new_dev_matrix_map = list(range(len(dev_matrix)))
+    opt_shard_dim = []
+    remained_opt_shard_size = opt_shard_size if opt_shard_size != -1 else \
+        int(np.prod([dev_matrix[i] for i in repeated_dim]))
+    for dim in repeated_dim[::-1]:
+        opt_sharding_size = dev_matrix[dim]
+        if remained_opt_shard_size // opt_sharding_size == 0:
+            if opt_sharding_size % remained_opt_shard_size != 0:
+                raise ValueError("dev_matrix value {} at dim {} cannot be divided by needed opt sharding "
+                                 "size {}".format(dev_matrix[dim], len(dev_matrix) - dim - 1,
+                                                  remained_opt_shard_size))
+            opt_sharding_size = remained_opt_shard_size
+            # update dev_matrix
+            new_dev_matrix[dim] = dev_matrix[dim] // opt_sharding_size
+            new_dev_matrix.insert(dim + 1, opt_sharding_size)
+            for i in range(len(dev_matrix) - dim - 1, len(dev_matrix)):
+                new_dev_matrix_map[i] += 1
+        if remained_opt_shard_size % opt_sharding_size != 0:
+            raise ValueError("Remained opt_shard_size {} cannot be divided by current sharding size {}, "
+                             "the repeat dim is {} with dev_matrix value {}".
+                             format(remained_opt_shard_size, opt_sharding_size,
+                                    len(dev_matrix) - dim - 1, dev_matrix[dim]))
+        remained_opt_shard_size //= opt_sharding_size
+        opt_shard_dim.insert(0, dim)
+        if remained_opt_shard_size == 1:
+            break
+    tensor_map_new = list(copy.deepcopy(tensor_map))
+    if len(new_dev_matrix) != len(dev_matrix):
+        opt_shard_dim = list(map(lambda x: x + 1, opt_shard_dim))
+        for index, item in enumerate(tensor_map_new):
+            if isinstance(item, (tuple, list)):
+                item = list(map(lambda x: new_dev_matrix_map[x] if x >= 0 else x, item))
+                tensor_map_new[index] = item
+            else:
+                if item >= 0:
+                    tensor_map_new[index] = new_dev_matrix_map[item]
+    tensor_shape_new = list(copy.deepcopy(origin_full_tensor_shape))
+    tensor_shape_new[0] = tensor_strategy[0]
+    first_dim_no_sharding_size = origin_full_tensor_shape[0] // tensor_strategy[0]
+    accu_shape = 1
+    for i in range(len(opt_shard_dim) - 1):
+        opt_sharding_size = new_dev_matrix[opt_shard_dim[i]]
+        tensor_shape_new.insert(i + 1, opt_sharding_size)
+        accu_shape = accu_shape * opt_sharding_size
+    tensor_shape_new.insert(len(opt_shard_dim), first_dim_no_sharding_size // accu_shape)
+    for index, r_dim in enumerate(opt_shard_dim):
+        tensor_map_new.insert(index + 1, len(new_dev_matrix) - r_dim - 1)
+    return list(new_dev_matrix), tensor_map_new, tensor_shape_new
+
+
 def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_step, opt_shard_size,
                                            origin_full_tensor_shape):
     """
@@ -404,6 +531,11 @@ def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_ste
     And the model parallel sharding dim is the right of opt sharding dim, so it would be 0-1-2-3 model parallel sharding
     then 0-4 optimizer sharding.
     """
+    has_layout = any(isinstance(i, (list, tuple)) for i in tensor_map)
+    if has_layout:
+        output = _construct_tensor_layout_for_opt_shard_by_layout(dev_matrix, tensor_map, opt_shard_step,
+                                                                  opt_shard_size, origin_full_tensor_shape)
+        return _expand_layout(*output)
 
     if opt_shard_step == 0 or opt_shard_size == 0:
         return dev_matrix, tensor_map, list(origin_full_tensor_shape)
@@ -424,18 +556,8 @@ def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_ste
                          format(opt_shard_step, np.prod(dev_matrix[repeated_dim[0] + 1:])))
     first_dim_no_sharding_size = origin_full_tensor_shape[0] // tensor_strategy[0]
     if (len(repeated_dim) < len(dev_matrix) and len(repeated_dim) > 1) or repeated_dim[0] > 0:
-        tensor_shape_new = list(origin_full_tensor_shape)
-        tensor_shape_new[0] = tensor_strategy[0]
-        accu_shp = 1
-        for i in range(len(repeated_dim) - 1):
-            opt_sharding_size = dev_matrix[repeated_dim[i]]
-            tensor_shape_new.insert(i + 1, opt_sharding_size)
-            accu_shp = accu_shp * opt_sharding_size
-        tensor_shape_new.insert(len(repeated_dim), first_dim_no_sharding_size // accu_shp)
-        tensor_map_new = list(copy.deepcopy(tensor_map))
-        for index, r_dim in enumerate(repeated_dim):
-            tensor_map_new.insert(index + 1, len(dev_matrix) - r_dim - 1)
-        return list(dev_matrix), tensor_map_new, tensor_shape_new
+        return _construct_tensor_layout_helper(dev_matrix, tensor_map, opt_shard_size, origin_full_tensor_shape,
+                                               tensor_strategy, repeated_dim)
 
     full_tensor_shape = list(origin_full_tensor_shape)
     full_tensor_shape[0] = tensor_strategy[0]
@@ -467,13 +589,15 @@ def _get_needed_rank_list_by_layouts(from_tensor_layout, to_tensor_layout, devic
     return result_list
 
 
-def _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout, device_list, self_rank):
+def _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout, device_list, self_rank,
+                                                       enable_redist_opt=False):
     """
     AllGather op: {op_name, group_ranks + axis}
     """
     stack = []
     index = 0
-    transform_operators = _transform_tensor_by_layout(from_tensor_layout, to_tensor_layout, device_list, self_rank)
+    transform_operators = _transform_tensor_by_layout(from_tensor_layout, to_tensor_layout, device_list, self_rank,
+                                                      enable_redist_opt)
     result_map = {self_rank: transform_operators}
     for operators in transform_operators:
         op_name = operators[0]
@@ -486,7 +610,7 @@ def _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_te
         for rank in group_info[1]:
             if rank not in result_map:
                 new_transform_operators = _transform_tensor_by_layout(from_tensor_layout, to_tensor_layout,
-                                                                      device_list, rank)
+                                                                      device_list, rank, enable_redist_opt)
                 result_map[rank] = new_transform_operators
                 index = 0
                 for operators in new_transform_operators:
@@ -590,8 +714,6 @@ def _apply_operator(operator_name):
         Returns:
             The data of tensor after apply operator.
         """
-        if str(type(numpy_data)) == "<class 'builtins.PySafeSlice'>":
-            numpy_data = numpy_data[:]
         if not isinstance(numpy_data, np.ndarray):
             raise TypeError("The data should be a numpy.ndarray.")
         _check_operator(reshape_op)
@@ -610,9 +732,10 @@ def _apply_operator(operator_name):
         """
         if not isinstance(numpy_data_list, list):
             raise TypeError("The data_list should be a list.")
+        new_numpy_data_list = []
         for numpy_data in numpy_data_list:
-            if not isinstance(numpy_data, np.ndarray):
-                raise TypeError("The data should be a numpy.ndarray.")
+            new_numpy_data_list.append(numpy_data)
+        numpy_data_list = new_numpy_data_list
         _check_operator(allgather_op)
         concat_group = allgather_op[1][:-1]
         if len(concat_group) != len(numpy_data_list):
@@ -772,3 +895,159 @@ def _chunk_shape(np_tensor, strategy, depth):
         output.extend(
             _chunk_shape(ret_, strategy[len(strategy) - depth + 1:len(strategy)], depth - 1))
     return output
+
+
+def _infer_pp_op_map(from_layout, to_layout, self_rank):
+    """
+    get the ops map for merging pp stages
+    """
+    from_rank_list = from_layout[3]
+    to_rank_list = to_layout[3]
+    from_dev_num_in_stage = len(from_rank_list)
+    current_rank_stage_id = self_rank // from_dev_num_in_stage
+    diff_rank_id = [
+        rank_id for rank_id in to_rank_list if rank_id not in from_rank_list]
+    end_stage = from_dev_num_in_stage * (current_rank_stage_id + 1)
+    start_stage = from_dev_num_in_stage * current_rank_stage_id
+    rank_pos_in_stage = list(range(start_stage, end_stage)).index(self_rank)
+    root_idx = from_rank_list[rank_pos_in_stage]
+    broadcast_rank_list = [root_idx]
+    while rank_pos_in_stage < len(diff_rank_id):
+        broadcast_rank_list.append(diff_rank_id[rank_pos_in_stage])
+        rank_pos_in_stage += from_dev_num_in_stage
+    broadcast_rank_list.sort()
+    broadcast_map = {rank_id: [('Broadcast', root_idx, broadcast_rank_list)] for rank_id in broadcast_rank_list}
+    return broadcast_map
+
+
+def _get_pipeline_operator_map(from_layout, to_layout, self_rank):
+    """
+    If src_pp_stages is greater than dst_pp_stages, the weights of the corresponding cards need to
+    be communicated via broadcast to swap. Need to communicate src rank0's 01 to src rank2,
+    so that rank2 holds param0's data. Similarly, communicate rank1's 02 to rank3
+    rank0 01           01 11
+    rank1 02           02 12
+    pp2 ------->  pp1
+    rank2 11           03 13
+    rank3 12           04 14
+
+    Args:
+        from_layout (tuple): Use tuple to present layout
+          (device_matrix(list), tensor_map(list), global_shape(list), rank_list(list))
+        to_layout (tuple): Use tuple to present layout
+          (device_matrix(list), tensor_map(list), global_shape(list), rank_list(list))
+        self_rank (int): rank_id
+    """
+    if len(from_layout[3]) < len(to_layout[3]):
+        logger.debug(f"from {from_layout} to {to_layout} need to broadcast data across pp stages")
+        comm_tensor_cache_key = (
+            f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
+            f" -> "
+            f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
+        global COMM_TENSOR_CELL_CACHE
+        if comm_tensor_cache_key not in COMM_TENSOR_CELL_CACHE:
+            logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, not match cache")
+            broadcast_map = _infer_pp_op_map(from_layout, to_layout, self_rank)
+            broadcast_op_map_dict = {rank_id: broadcast_map for rank_id in broadcast_map.keys()}
+            COMM_TENSOR_CELL_CACHE[comm_tensor_cache_key] = broadcast_op_map_dict
+        else:
+            comm_tensor_cache_key_rank_list = COMM_TENSOR_CELL_CACHE[comm_tensor_cache_key]
+            if self_rank in comm_tensor_cache_key_rank_list:
+                logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, match cache")
+                broadcast_map = comm_tensor_cache_key_rank_list[self_rank]
+            else:
+                logger.debug(f"comm_tensor_cache_key is {comm_tensor_cache_key}, but rank {self_rank} not match cache")
+                broadcast_map = _infer_pp_op_map(from_layout, to_layout, self_rank)
+                for rank_id in broadcast_map.keys():
+                    COMM_TENSOR_CELL_CACHE[comm_tensor_cache_key][rank_id] = broadcast_map
+        return broadcast_map
+    logger.debug(f"from {from_layout} to {to_layout} no need to broadcast data across pp stages")
+    return {}
+
+
+def _is_multi_shard(in_tensor_map):
+    """
+    whether the input tensor map is in multi shard
+    """
+    for tensor_map in in_tensor_map:
+        if isinstance(tensor_map, (list, tuple)) and len(tensor_map) > 1:
+            return True
+    return False
+
+
+def _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                  insert_from_reshape, insert_to_reshape):
+    """ insert layout expand op reshape """
+    from_dev_matrix = from_info_tuple[0]
+    from_tensor_map = from_info_tuple[1]
+    from_full_tensor_shape = from_info_tuple[2]
+    to_dev_matrix_origin = to_info_tuple[0]
+    to_tensor_map_origin = to_info_tuple[1]
+    origin_tensor_shape = to_info_tuple[2]
+    for param_rank, _ in param_rank_map.items():
+        if insert_from_reshape:
+            from_slice_tensor_shape = ()
+            from_tensor_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+            for i, item in enumerate(from_full_tensor_shape):
+                from_slice_tensor_shape += (item // from_tensor_strategy[i],)
+            param_rank_map.get(param_rank).insert(0, ('Reshape', list(from_slice_tensor_shape)))
+        if insert_to_reshape:
+            to_tensor_strategy = _get_tensor_strategy(to_dev_matrix_origin, to_tensor_map_origin)
+            to_slice_tensor_shape = ()
+            for i, item in enumerate(origin_tensor_shape):
+                to_slice_tensor_shape += (item // to_tensor_strategy[i],)
+            param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
+
+
+def _infer_reshard_op_map(from_layout, to_layout, self_rank):
+    """infer reshard op map"""
+    from_layout_without_rank_list = from_layout[:-1]
+    to_layout_without_rank_list = to_layout[:-1]
+    if _is_multi_shard(from_layout[1]):
+        # ((2, 1), 1) --> (2, 1, 1) expand tensormap
+        new_layout = _expand_layout(from_layout[0], from_layout[1], from_layout[2])
+        from_layout_without_rank_list = (new_layout[0], new_layout[1], new_layout[2])
+    if _is_multi_shard(to_layout[1]):
+        new_layout = _expand_layout(to_layout[0], to_layout[1], to_layout[2])
+        to_layout_without_rank_list = (new_layout[0], new_layout[1], new_layout[2])
+    operator_map = _get_needed_rank_transform_operator_map_by_layouts(from_layout_without_rank_list,
+                                                                      to_layout_without_rank_list,
+                                                                      from_layout[3], self_rank,
+                                                                      True)
+    new_to_layout_info = to_layout[:-1]
+    _insert_expand_layout_reshape(operator_map, from_layout_without_rank_list, new_to_layout_info,
+                                  _is_multi_shard(from_layout[1]), _is_multi_shard(to_layout[1]))
+    return operator_map
+
+
+def _get_resharding_operator_map(from_layout, to_layout, self_rank):
+    """
+        Args:
+        from_layout (tuple): Use tuple to present layout
+          (device_matrix(list), tensor_map(list), global_shape(list), rank_list(list))
+        to_layout (tuple): Use tuple to present layout
+          (device_matrix(list), tensor_map(list), global_shape(list), rank_list(list))
+        self_rank (int): rank_id
+    """
+    reshard_op_cache_key = (
+        f"{from_layout[0]}, {from_layout[1]}, {from_layout[2]}, {from_layout[3]}"
+        f" -> "
+        f"{to_layout[0]}, {to_layout[1]}, {from_layout[2]}, {to_layout[3]}")
+    global RESHARD_OP_MAP_CACHE
+    if reshard_op_cache_key not in RESHARD_OP_MAP_CACHE:
+        operator_map = _infer_reshard_op_map(from_layout, to_layout, self_rank)
+        op_map_dict = {rank_id: operator_map for rank_id in operator_map}
+        RESHARD_OP_MAP_CACHE[reshard_op_cache_key] = op_map_dict
+        logger.debug(f"reshard_op_cache_key is {reshard_op_cache_key}, not match cache")
+    else:
+        cache_rank_list_dict = RESHARD_OP_MAP_CACHE[reshard_op_cache_key]
+        if self_rank in cache_rank_list_dict:
+            operator_map = cache_rank_list_dict[self_rank]
+            logger.debug(f"reshard_op_cache_key is {reshard_op_cache_key}, match cache")
+        else:
+            logger.debug(f"reshard_op_cache_key is {reshard_op_cache_key}, "
+                         f"but rank {self_rank} is not match cache")
+            operator_map = _infer_reshard_op_map(from_layout, to_layout, self_rank)
+            for rank_id in operator_map:
+                RESHARD_OP_MAP_CACHE[reshard_op_cache_key][rank_id] = operator_map
+    return operator_map

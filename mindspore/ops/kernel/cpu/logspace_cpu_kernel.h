@@ -21,11 +21,12 @@
 #include <utility>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace logspace_cpu {
 class LogSpaceCpuKernelMod : public NativeCpuKernelMod {
  public:
   LogSpaceCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class LogSpaceCpuKernelMod : public NativeCpuKernelMod {
   int64_t steps_ = 10;
   int64_t base_ = 10;
 };
+}  // namespace logspace_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

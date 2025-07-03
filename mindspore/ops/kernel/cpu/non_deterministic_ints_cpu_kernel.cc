@@ -22,11 +22,12 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace non_deterministic_ints_cpu {
 namespace {
 const uint32_t kInputNum = 1;
 const uint32_t kInpuDims = 1;
@@ -112,5 +113,6 @@ std::vector<KernelAttr> NonDeterministicIntsCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonDeterministicInts, NonDeterministicIntsCPUKernelMod);
+}  // namespace non_deterministic_ints_cpu
 }  // namespace kernel
 }  // namespace mindspore

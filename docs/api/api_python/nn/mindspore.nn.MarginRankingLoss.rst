@@ -4,9 +4,9 @@ mindspore.nn.MarginRankingLoss
 .. py:class:: mindspore.nn.MarginRankingLoss(margin=0.0, reduction='mean')
 
     排序损失函数，用于创建一个衡量给定损失的标准。
-    
+
     给定两个Tensor :math:`input1` 和 :math:`input2` ，以及一个Tensor标签 :math:`target` ，值为1或-1，公式如下：
-    
+
     .. math::
         \text{loss}(input1, input2, target) = \max(0, -target * (input1 - input2) + \text{margin})
 

@@ -21,11 +21,12 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_cpu {
 using LaunchEmptyTensorFunc = std::function<void(const std::vector<KernelTensor *> &)>;
 constexpr auto kUnkown = "Unknown";
 class MatMulCpuKernelMod : public NativeCpuKernelMod {
@@ -52,10 +53,12 @@ class MatMulCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{kUnkown};
+  size_t kernel_func_idx_{0};
 
   bool is_empty_tensor_{false};
   LaunchEmptyTensorFunc launch_empty_tensor_func_;
 };
+}  // namespace matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

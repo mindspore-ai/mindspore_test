@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,25 +61,24 @@ constexpr auto kFlagIsPynativeBpropGraph = "is_pynative_bprop_graph";
 constexpr auto kFlagPyNativeRunInGraph = "pynative_run_in_graph";
 constexpr auto kFlagNeedRenormalize = "need_renormalize";
 constexpr auto kFlagEnableZeroCopyInGraph = "enable_zero_copy_in_graph";
-constexpr auto kFlagPyNativeBpropGraphWithBpropCut = "pynative_bprop_graph_with_bprop_cut";
-constexpr auto kFlagPyNativeBpropGraphIsDynamic = "pynative_bprop_graph_is_dynamic";
-constexpr auto kFlagEnableRunGraphBySingleOp = "enable_run_graph_by_single_op";
-constexpr auto kFlagIsPyNativeBpropKernelGraph = "is_pynative_bprop_kernel_graph";
-constexpr auto kFlagPyNativeWithJitCallGraph = "pynative_with_jit_call_graph";
 constexpr auto kFlagJitCallGraph = "jit_call_graph";
-constexpr auto kFlagJitGraph = "jit_graph";
 constexpr auto kFlagSwitchInline = "switch_inline_graph";
 constexpr auto kFlagIsControlFlow = "is_control_flow";
-constexpr auto kFlagGeKernel = "ge_kernel";
 
 // custom operator func type
 constexpr auto kCustomTypeAOT = "aot";
+constexpr auto kCustomTypeOPPlugin = "op_plugin";
 constexpr auto kCustomTypeJULIA = "julia";
 constexpr auto kCustomTypePyfunc = "pyfunc";
 constexpr auto kCustomTypeTbe = "tbe";
 constexpr auto kCustomTypeAICPU = "aicpu";
 constexpr auto kCustomTypeHybrid = "hybrid";
 constexpr auto kCustomTypeCustom = "Custom";
+
+// backend
+constexpr auto kBackendMSBackend = "ms_backend";
+constexpr auto kBackendGE = "GE";
+constexpr auto kBackendJitConfig = "backend_jit_config";
 
 // primal attr key name
 constexpr auto kPrimalAttrForwardNodeName = "forward_node_name";
@@ -90,7 +89,18 @@ constexpr auto kPrimalAttrUniqueId = "unique_id";
 constexpr auto kPrimalAttrForwardUniqueId = "forward_unique_id";
 constexpr auto kPrimalAttrForwardCommNodeUniqueId = "forward_comm_node_unique_id";
 constexpr auto kPrimalAttrMirrorUserId = "mirror_user_id";
-
+constexpr auto kPrimalAttr1b1fCallCall = "1b1f_call_call";
+constexpr auto kCNodeAttr1f1bIndexBp = "1f1b_index_bp";
+constexpr auto kCNodeAttr1f1bIndexFp = "1f1b_index_fp";
+constexpr auto kCNodeAttr1f1bIndexRecv = "1f1b_index_recv";
+constexpr auto kCNodeAttr1f1bIndexInterRecv = "1f1b_index_inter_recv";
+constexpr auto kCNodeAttr1f1bIndexBpBegin = "1f1b_index_bp_begin";
+constexpr auto kCNodeAttr1f1bLastCNode = "1f1b_last_cnode";
+constexpr auto kCNodeAttr1f1bMiddleCNode = "1f1b_middle_cnode";
+constexpr auto kCNodeAttrForwardAll2AllInput = "forward_all2all_input";
+constexpr auto kCNodeAttrForwardAll2AllOutput = "forward_all2all_output";
+constexpr auto kCNodeAttrBackwardAll2AllInput = "backward_all2all_input";
+constexpr auto kCNodeAttrBackwardAll2AllOutput = "backward_all2all_output";
 // attr value
 constexpr auto kValueTargetSwitch = "target_switch";
 constexpr auto kValueTargetOther = "target_other";
@@ -292,11 +302,16 @@ constexpr auto kGraphIdsSingleCache = "graph_ids_for_single_cache";
 // recompute and parallel
 constexpr auto kRecomputeInsert = "recompute_insert";
 constexpr auto kAddedRecomputeDependAttr = "added_recompute_depend";
+constexpr auto kRecomputeSubgraphIdAttr = "recompute_subgraph_id";
 constexpr auto kCondidateOverlapBlockId = "condidate_overlap_block_id";
 constexpr auto kNcclWorldGroup = "nccl_world_group";
 constexpr auto kHcclWorldGroup = "hccl_world_group";
 constexpr auto kSyncBnGroup = "sync_bn_group";
 constexpr auto kRankID = "RANK_ID";
+constexpr auto kIsBp = "is_bp";
+constexpr auto kSeqChunk = "seq_chunk";
+constexpr auto kChunk = "chunk";
+constexpr auto kMicro = "micro";
 
 // User data key.
 
@@ -321,7 +336,7 @@ constexpr auto kRealElementsSize = "real_elements_size";
 // };
 
 // MoveTo dst string
-constexpr auto kToNup = "NPU";
+constexpr auto kToNpu = "Ascend";
 constexpr auto kToCpu = "CPU";
 constexpr auto kToDisk = "Disk";
 
@@ -368,8 +383,14 @@ COMMON_EXPORT std::string GetPythonStackStr();
 COMMON_EXPORT bool IsJit();
 // Return whether it is compiling in jit compilation.
 COMMON_EXPORT bool JitCompiling();
+// Return whether it is compiling by jit pipeline.
+COMMON_EXPORT bool JitPipelineCompiling();
+// Return whether it is compiling by graph mode pipeline.
+COMMON_EXPORT bool GraphPipelineCompiling();
 // Return whether it is running in jit compilation.
 COMMON_EXPORT bool JitRunning();
+// Return format mode.
+COMMON_EXPORT std::string GetFormatMode();
 
 // The map between kernel's output and input ref relationship.
 // Key is the output index while the value is input index which will be used as the reference of output.
@@ -429,5 +450,13 @@ static inline double GetCurrentUSec() {
 
 #define _STRING_COMPILE_OPT(x) #x
 #define STRING_COMPILE_OPT(x) _STRING_COMPILE_OPT(x)
+
+static inline errno_t Memcpy(void *dest, size_t destMax, const void *src, size_t count) {
+  if (count > SECUREC_MEM_MAX_LEN || destMax > SECUREC_MEM_MAX_LEN) {
+    (void)memcpy(dest, src, count);
+    return EOK;
+  }
+  return memcpy_s(dest, destMax, src, count);
+}
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_UTILS_H_

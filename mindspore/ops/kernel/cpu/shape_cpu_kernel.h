@@ -21,11 +21,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace shape_cpu {
 class ShapeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ShapeCpuKernelMod> {
  public:
   ShapeCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class ShapeCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Sh
   ShapeVector input_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace shape_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

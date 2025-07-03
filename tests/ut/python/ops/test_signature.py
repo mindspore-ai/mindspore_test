@@ -96,6 +96,7 @@ def test_signature_error_info():
     with pytest.raises(TypeError) as ex:
         net(Tensor(np.random.randint(1, size=(5, 8, 2)).astype(np.int32)),
             Tensor(np.random.randint(1, 256, size=(5, 8, 2, 3)).astype(np.float32)))
-    assert "Data type conversion of \'Parameter\' is not supported, " \
+    assert "Data type conversion is not supported for a \'Parameter\', " \
+           "nor for the input tensor of an in-place operator, " \
            "the argument[x]'s data type of primitive[ScatterDiv] is Int8, " \
            "which cannot be converted to data type Float32 automatically." in str(ex.value)

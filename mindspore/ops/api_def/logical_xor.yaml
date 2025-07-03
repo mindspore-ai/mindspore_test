@@ -1,0 +1,7 @@
+logical_xor:
+  - op_yaml: logical_xor_op.yaml
+    py_method: tensor_logical_xor
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor

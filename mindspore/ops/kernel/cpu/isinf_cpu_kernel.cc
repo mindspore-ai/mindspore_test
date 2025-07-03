@@ -17,10 +17,11 @@
 #include "kernel/cpu/isinf_cpu_kernel.h"
 #include <cmath>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isinf_cpu {
 namespace {
 constexpr size_t kIsInfInputsNum = 1;
 constexpr size_t kIsInfOutputsNum = 1;
@@ -80,5 +81,6 @@ void IsInfCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inp
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsInf, IsInfCpuKernelMod);
+}  // namespace isinf_cpu
 }  // namespace kernel
 }  // namespace mindspore

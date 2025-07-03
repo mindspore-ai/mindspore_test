@@ -15,10 +15,10 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_gather.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "include/backend/distributed/init.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -94,6 +94,10 @@ bool HcomGatherKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
           return false;
         }
       } else {
+        if (NeedReGetHcom()) {
+          MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+          comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+        }
         auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(output_device_ptr + offset, hccl_count_,
                                                                      hccl_data_type_list_[0], r, stream_ptr, comm_);
         if (hccl_result != HCCL_SUCCESS) {
@@ -103,6 +107,10 @@ bool HcomGatherKernel::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       }
     }
   } else {
+    if (NeedReGetHcom()) {
+      MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+      comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+    }
     auto hccl_result = hccl::HcclAdapter::GetInstance().HcclSend(
       inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], dest_rank_, stream_ptr, comm_);
     if (hccl_result != HCCL_SUCCESS) {

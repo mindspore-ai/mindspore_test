@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isfinite_cpu {
 class IsFiniteCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IsFiniteCpuKernelMod> {
  public:
   IsFiniteCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class IsFiniteCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   static const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> func_list_;
 };
 
+}  // namespace isfinite_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

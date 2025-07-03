@@ -47,11 +47,11 @@ class DynamicRankMaxPoolMock():
 
     def forward_cmp(self):
         ps_net = DynamicRankMaxPoolNet(self.pad_mode, self.ksize, self.stride, self.data_format)
-        jit(ps_net.construct, mode="PSJit")(self.input_me_x, self.input_me_indices)
+        jit(ps_net.construct, capture_mode="ast")(self.input_me_x, self.input_me_indices)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = DynamicRankMaxPoolNet(self.pad_mode, self.ksize, self.stride, self.data_format)
-        jit(pi_net.construct, mode="PIJit")(self.input_me_x, self.input_me_indices)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_me_x, self.input_me_indices)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
@@ -71,11 +71,11 @@ class DynamicRankMaxPoolMock():
 
     def grad_cmp(self):
         ps_net = DynamicRankMaxPoolNet(self.pad_mode, self.ksize, self.stride, self.data_format)
-        jit(ps_net.construct, mode="PSJit")(self.input_me_x, self.input_me_indices)
+        jit(ps_net.construct, capture_mode="ast")(self.input_me_x, self.input_me_indices)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.grad_mindspore_impl(ps_net)
         pi_net = DynamicRankMaxPoolNet(self.pad_mode, self.ksize, self.stride, self.data_format)
-        jit(pi_net.construct, mode="PIJit")(self.input_me_x, self.input_me_indices)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_me_x, self.input_me_indices)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.grad_mindspore_impl(pi_net)
 

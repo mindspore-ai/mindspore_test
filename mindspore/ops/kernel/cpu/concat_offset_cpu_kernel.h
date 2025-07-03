@@ -21,11 +21,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat_offset_cpu {
 class ConcatOffsetCpuKernelMod : public NativeCpuKernelMod {
  public:
   ConcatOffsetCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class ConcatOffsetCpuKernelMod : public NativeCpuKernelMod {
   std::vector<ShapeVector> input_shapes_;
   ShapeVector output_shape_;
 };
+}  // namespace concat_offset_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

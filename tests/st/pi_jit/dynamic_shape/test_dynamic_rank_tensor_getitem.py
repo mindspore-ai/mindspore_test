@@ -6,14 +6,11 @@ from mindspore.common import mutable
 import numpy as np
 from ..share.compare_base import comparebase
 from ..share.grad import GradOfAllInputs
-import sys  
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+import sys
 import pytest 
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class IndexFactory:
     def __init__(self, ps_net, pi_net):
@@ -22,10 +19,10 @@ class IndexFactory:
 
     def compare_forward(self, *inputs):
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*inputs)
         ps_out = self.ps_net(*inputs)
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.pi_net.construct, mode="PIJit")(*inputs)
+        jit(function=self.pi_net.construct, capture_mode="bytecode")(*inputs)
         pi_out = self.pi_net(*inputs)
 
         # compare
@@ -36,16 +33,15 @@ class IndexFactory:
         grad_net(*inputs)
 
 
-    def compare_forward_grad(self, *inputs, one_stage=True):
+    def compare_forward_grad(self, *inputs):
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*inputs)
         ps_out = self.ps_net(*inputs)
         grad_net = GradOfAllInputs(self.ps_net, False)
         ps_grads = grad_net(*inputs)
 
         context.set_context(mode=context.PYNATIVE_MODE)
-        cfg = {"compile_by_trace": one_stage}
-        jit(fn=self.pi_net.construct, mode="PIJit", jit_config=cfg)(*inputs)
+        pi_jit_with_config(function=self.pi_net.construct)(*inputs)
         pi_out = self.pi_net(*inputs)
         grad_net = GradOfAllInputs(self.pi_net, False)
         pi_grads = grad_net(*inputs)
@@ -271,7 +267,6 @@ class Net10(Cell):
         return out
 
 
-@pytest.mark.skip(reason="AssertionError, result not match")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_slice_shape():
     '''
@@ -283,7 +278,7 @@ def test_dynamic_rank_getitem_slice_shape():
     '''
     ps_net = Net10()
     pi_net = Net10()
-    x = Tensor(np.random.rand(2, 3, 4), dtype=mstype.float32)
+    x = Tensor(np.random.rand(6, 3, 4), dtype=mstype.float32)
     y = Tensor(np.random.rand(2, 4), dtype=mstype.int32)
     d = Tensor(None, dtype=mstype.float32)
     dy = Tensor(shape=[None, None], dtype=mstype.int32)
@@ -361,7 +356,6 @@ class Net15(Cell):
         return out
 
 
-@pytest.mark.skip(reason="runtime error in mstorch-infer-r2.3")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_list_mutable():
     '''
@@ -407,7 +401,7 @@ def test_dynamic_rank_getitem_empty_tuple():
     ps_net.set_inputs(d)
     pi_net.set_inputs(d)
     fact = IndexFactory(ps_net, pi_net)
-    fact.compare_forward_grad(x, one_stage=False) # One-stage will fix it later
+    fact.compare_forward_grad(x)
 
 
 class Net17(Cell):
@@ -480,7 +474,6 @@ class Net20(Cell):
         return out * self.n
 
 
-@pytest.mark.skip(reason="result not match in mstorch-infer-r2.3")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dynamic_rank_getitem_tuple_tensor():
     '''

@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 from mindspore import ops as P
 from mindspore import Tensor, nn
@@ -40,6 +39,7 @@ def test_reshape_aicpu_dynamic_graph():
     Expectation: Assert the result is equal the numpy result.
     """
     context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(jit_level='O0')
     net = ReshapeNet()
     input_shape_dyn = Tensor(shape=(3, None, 5), dtype=mstype.float64)
     out_shape_dyn = Tensor(np.random.randint(0, 5, size=3))

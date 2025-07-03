@@ -20,11 +20,12 @@
 #include <complex>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace linear_sum_assignment_cpu {
 class LinearSumAssignmentCpuKernelMod : public NativeCpuKernelMod,
                                         public MatchKernelHelper<LinearSumAssignmentCpuKernelMod> {
  public:
@@ -74,6 +75,7 @@ class LinearSumAssignmentCpuKernelMod : public NativeCpuKernelMod,
   void AugmentPreviousSolution(int64_t j, int64_t cur_row, std::vector<int64_t> *path, std::vector<int64_t> *row4col,
                                std::vector<int64_t> *col4row) const;
 };
+}  // namespace linear_sum_assignment_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

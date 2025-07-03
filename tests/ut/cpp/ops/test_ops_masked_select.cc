@@ -55,8 +55,8 @@ TEST_P(TestMaskedSelect, dyn_shape) {
 
 TEST_P(TestMaskedSelectSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto input = std::make_shared<tensor::BaseTensor>(param.input_type->type_id(), param.input_shape);
-  auto mask = std::make_shared<tensor::BaseTensor>(param.mask_type->type_id(), param.mask_shape);
+  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
+  auto mask = std::make_shared<tensor::Tensor>(param.mask_type->type_id(), param.mask_shape);
   int64_t num = std::accumulate(param.input_shape.begin(), param.input_shape.end(), 1, std::multiplies<int64_t>());
   auto expect_shape = ShapeArray{{num}};
   auto expect_type = TypePtrList{param.input_type};

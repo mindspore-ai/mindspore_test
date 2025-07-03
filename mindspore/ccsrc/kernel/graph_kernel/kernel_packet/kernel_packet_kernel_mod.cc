@@ -23,14 +23,16 @@
 
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/anf.h"
-#include "kernel/common_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "utils/ms_context.h"
+#include "common/common_utils.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
 #include "symbolic_shape/utils.h"
 #include "symbolic_shape/symbol_engine.h"
 #include "abstract/abstract_value.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore::kernel {
 bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const KernelModPtr &real_kernel_mod,
@@ -116,7 +118,14 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
       auto shape = is_dynamic_shape_[i] ? host_value_cache_[i]->ToAbstract()->GetShape() : ori->GetShape();
       MS_LOG(DEBUG) << "Inner input " << i << " is host value: " << host_value_cache_[i]->ToString()
                     << ". Its shape is " << shape->ToString() << ", the type is " << ori->GetType();
-      inputs_cache_[i] = std::make_shared<KernelTensor>(shape, ori->GetType(), kValueAny);
+      std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+      uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+      device::ResKey res_key{device::GetDeviceTypeByName(device_type), device_id};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      auto device_address = res_manager->CreateDeviceAddress();
+      inputs_cache_[i] =
+        std::make_shared<KernelTensor>(device_address, shape, ori->GetType(), kValueAny, ShapeVector{});
       if (inputs_cache_[i]->user_data() == nullptr) {
         inputs_cache_[i]->set_user_data(std::make_shared<UserData>());
       }

@@ -19,10 +19,11 @@
 #include <string>
 #include <utility>
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gather_d_grad_v2 {
 
 class GatherDGradAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class GatherDGradAscend : public AclnnKernelMod {
 
   int64_t dim_;
 };
+}  // namespace gather_d_grad_v2
 }  // namespace kernel
 }  // namespace mindspore
 

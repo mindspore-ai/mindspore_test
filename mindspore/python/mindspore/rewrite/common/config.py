@@ -16,6 +16,7 @@
 MindSpore rewrite configurations.
 """
 
+
 def clear_caches():
     """clear rewrite caches"""
     from ..parsers import AssignParser

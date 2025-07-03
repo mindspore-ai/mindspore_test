@@ -1,15 +1,6 @@
 isinf:
     description: |
-        Determines which elements are inf or -inf for each position.
-
-        .. math::
-
-            out_i = \begin{cases}
-              & \ True,\ \text{ if } x_{i} = \text{Inf} \\
-              & \ False,\ \text{ if } x_{i} \ne  \text{Inf}
-            \end{cases}
-
-        where Inf means value is infinite.
+        Return a boolean tensor indicating which elements are +/- inifnity.
 
         .. warning::
             - This is an experimental API that is subject to change.
@@ -19,23 +10,13 @@ isinf:
             input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same shape of input, and the dtype is bool.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``CPU`` ``GPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-            >>> output = ops.isinf(x)
-            >>> print(output)
-            [False False True]
-            >>> x = Tensor(2.1, mindspore.float64)
-            >>> output = ops.isinf(x)
-            >>> print(output)
-            False
+            >>> input = mindspore.tensor([-1, 3, float("inf"), float("-inf"), float("nan")])
+            >>> mindspore.ops.isinf(input)
+            Tensor(shape=[5], dtype=Bool, value= [False, False,  True,  True, False])

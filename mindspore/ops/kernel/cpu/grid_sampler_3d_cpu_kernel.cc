@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 #include "kernel/cpu/grid_sampler_3d_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_enum.h"
 
+namespace mindspore {
+namespace kernel {
+namespace grid_sampler_3d_cpu {
 namespace {
 const size_t kDataSizeThreshold = 64 * 1024;
 const size_t kZero = 0;
@@ -28,9 +31,6 @@ const size_t kFive = 5;
 const size_t kInputsNum = 5;
 const size_t kOutputsNum = 1;
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 bool GridSampler3DCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = kInputsNum;
@@ -256,5 +256,6 @@ bool GridSampler3DCpuKernelMod::within_bounds_3d(int64_t d, int64_t h, int64_t w
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GridSampler3D, GridSampler3DCpuKernelMod);
+}  // namespace grid_sampler_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,6 +20,7 @@
 #include <optional>
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "include/common/visible.h"
 namespace mindspore {
 namespace abstract {
 const std::vector<std::string> kSparsePrimStr = {"PrimitiveAbstractClosure: S_Prim_MakeCSRTensor",
@@ -76,20 +77,17 @@ AbstractBasePtr InferImplShard(const AnalysisEnginePtr &, const PrimitivePtr &pr
                                const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplVmap(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                               const AbstractBasePtrList &args_abs_list);
-AbstractBasePtr InferImplConvertToAdapterTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                const AbstractBasePtrList &args_abs_list);
-AbstractBasePtr InferImplConvertToMsTensor(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                           const AbstractBasePtrList &args_abs_list);
 AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                      const AbstractBasePtrList &args_abs_list);
-
+AbstractBasePtr InferImplAddAttr(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
+                                 const AbstractBasePtr &arg_abs_list);
 // Delete this when the infer value can be mapped to the CPU backend operator.
 bool PrimNeedFrontendInferValue(const PrimitivePtr &primitive);
 
-const PrimitiveEvalImplMap &GetFrontendPrimitiveInferMap();
-PrimitiveEvalImplMap *GetFrontendPrimitiveInferMapPtr();
+FRONTEND_EXPORT const PrimitiveEvalImplMap &GetFrontendPrimitiveInferMap();
+FRONTEND_EXPORT PrimitiveEvalImplMap *GetFrontendPrimitiveInferMapPtr();
 // get prim infer from core/ops infer map or frontend infer map
-std::optional<StandardPrimitiveImplReg> GetFrontendPrimitiveInferImpl(const PrimitivePtr &primitive);
+FRONTEND_EXPORT std::optional<StandardPrimitiveImplReg> GetFrontendPrimitiveInferImpl(const PrimitivePtr &primitive);
 #define REGISTER_PRIMITIVE_FRONT_EVAL_IMPL(name, primitive, infer_impl, infer_value_impl)                         \
   auto helper_##name = abstract::RegisterStandardPrimitiveEvalHelper(abstract::GetFrontendPrimitiveInferMapPtr(), \
                                                                      primitive, infer_impl, infer_value_impl, false);

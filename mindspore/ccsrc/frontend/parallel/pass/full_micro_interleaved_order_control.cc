@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace parallel {
@@ -45,7 +48,9 @@ bool IsBpropNode(const AnfNodePtr &node) {
 
 bool CheckCommNodeEqual(const CNodePtr comm_node1, const CNodePtr comm_node2) {
   auto prim1 = GetCNodePrimitive(comm_node1);
+  MS_EXCEPTION_IF_NULL(prim1);
   auto prim2 = GetCNodePrimitive(comm_node2);
+  MS_EXCEPTION_IF_NULL(prim2);
   if (prim1->type_name() != prim2->type_name()) {
     MS_LOG(INFO) << "Type of two comm node is not euqal";
     return false;
@@ -91,7 +96,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
       continue;
     }
     if (pipeline_micro >= 0 && !cnode->HasPrimalAttr(parallel::MICRO)) {
-      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " dose not contains micro info.";
+      MS_LOG(INFO) << "communication cnode :" << cnode->DebugString() << " does not contains micro info.";
       continue;
     }
     size_t micro_interleaved_fp_bp_comm_order =
@@ -130,6 +135,7 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
 
 void CreateGroupForMicroInterleaved(const CNodePtr &comm_cnode, size_t micro_interleaved_index) {
   auto comm_prim = GetCNodePrimitive(comm_cnode);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   auto group_name = GetValue<std::string>(comm_prim->GetAttr(parallel::GROUP));
   if (group_name.find("micro_interleaved") != std::string::npos) {
     return;
@@ -301,6 +307,7 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(graph);
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
   std::vector<CNodePtr> origin_nodes_topological(orders.cbegin(), orders.cend());
   if (parallel::ParallelContext::GetInstance()->pipeline_stage_split_num() == 1) {
@@ -308,6 +315,8 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
     return;
   }
   MicroInterleavedOrderControlPipeline(manager, origin_nodes_topological);
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "FullMicroInterleavedOrderControl",
+                                             "interleaved_extra_group");
 }
 }  // namespace parallel
 }  // namespace mindspore

@@ -16,6 +16,7 @@
 
 #include "debug/data_dump/cpu_e2e_dump.h"
 #include <map>
+#include "debug/dump/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"
@@ -33,7 +34,8 @@ void CPUE2eDump::DumpCNodeData(const CNodePtr &node, uint32_t graph_id) {
 
   MS_LOG(DEBUG) << "E2e dump CNode data start: " << kernel_name << ", current iteration is "
                 << dump_json_parser.cur_dump_iter();
-  std::string dump_path = GenerateDumpPath(graph_id);
+  auto rank_id = datadump::GetRankID();
+  std::string dump_path = GenerateDumpPath(graph_id, rank_id);
   if (dump_json_parser.InputNeedDump()) {
     DumpCNodeInputs(node, dump_path);
   }
@@ -63,7 +65,7 @@ void CPUE2eDump::DumpRunIter(const KernelGraphPtr &graph, uint32_t rank_id) {
     MS_LOG(WARNING) << "Open file for saving graph global execution order failed.";
     return;
   }
-  fout << std::to_string(json_parser.cur_dump_iter()) + "\n";
+  fout << std::to_string(json_parser.cur_dump_iter()) << "\n";
   fout.close();
   ChangeFileMode(file_name, S_IRUSR);
   prev_run_iter_ = json_parser.cur_dump_iter();
@@ -98,7 +100,8 @@ void CPUE2eDump::DumpInputImpl(const CNodePtr &node, const std::string &dump_pat
   for (size_t j = 0; j < input_size; ++j) {
     // Ignore the input address that is not used in the kernel launch.
     if (std::find(ignored_address.begin(), ignored_address.end(), j) != ignored_address.end()) {
-      MS_LOG(INFO) << "Ignore dump input data for kernel:" << node->fullname_with_scope() << " with input index:" << j;
+      MS_VLOG(VL_DUMP) << "Ignore dump input data for kernel:" << node->fullname_with_scope()
+                       << " with input index:" << j;
       continue;
     }
 
@@ -166,7 +169,7 @@ void CPUE2eDump::DumpSingleAnfNode(const AnfNodePtr &anf_node, const size_t outp
   const std::string cst_prefix = "Default--";
   if (anf_node->isa<ValueNode>()) {
     if (dump_name.find(cst_prefix) == std::string::npos) {
-      MS_LOG(INFO) << "Incorrect constant format: " << dump_name;
+      MS_VLOG(VL_DUMP) << "Incorrect constant format: " << dump_name;
       return;
     }
     dump_name = node_name.substr(cst_prefix.length());
@@ -199,8 +202,9 @@ void CPUE2eDump::DumpParameters(const session::KernelGraph *graph, uint32_t grap
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump parameters.";
-  const std::string &dump_path = GenerateDumpPath(graph_id);
+  MS_VLOG(VL_DUMP) << "Start e2e dump parameters.";
+  auto rank_id = datadump::GetRankID();
+  const std::string &dump_path = GenerateDumpPath(graph_id, rank_id);
 
   // dump parameters
   const auto &parameters = graph->inputs();
@@ -222,12 +226,13 @@ void CPUE2eDump::DumpConstants(const session::KernelGraph *graph, uint32_t graph
   if (!dump_json_parser.OutputNeedDump()) {
     return;
   }
-  MS_LOG(INFO) << "Start e2e dump constant.";
+  MS_VLOG(VL_DUMP) << "Start e2e dump constant.";
   uint32_t cur_iteration = DumpJsonParser::GetInstance().cur_dump_iter();
   if (cur_iteration != 0) {
     return;
   }
-  const std::string &dump_path = GenerateDumpPath(graph_id, 0, true);
+  auto rank_id = datadump::GetRankID();
+  const std::string &dump_path = GenerateDumpPath(graph_id, rank_id, true);
 
   // dump constants
   const auto value_nodes = graph->graph_value_nodes();

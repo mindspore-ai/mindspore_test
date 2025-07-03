@@ -17,22 +17,23 @@
 #include <vector>
 #include <string>
 #include "ir/tensor.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/matmul_allreduce_add_rmsnorm_aclnn_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_allreduce_add_rmsnorm {
 void MatmulAllReduceAddRmsNormAscend::InitInputAttributes(const std::vector<KernelTensor *> &inputs,
                                                           const std::vector<KernelTensor *> &outputs) {
   auto eps_dtype_id = inputs[kIndex5]->dtype_id();
   eps_ = (eps_dtype_id == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex5]->GetValueWithCheck<float>())
                                               : inputs[kIndex5]->GetValueWithCheck<double>();
   auto group = inputs[kIndex6]->GetValueWithCheck<std::string>();
-  comm_name_ = device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  comm_name_ = OpApiUtil::GetCommName(group);
   auto reduction_enum = inputs[kIndex7]->GetValueWithCheck<int64_t>();
-  reduce_op_ = transform::GEReduction::ConvertEnumToString(reduction_enum);
+  reduce_op_ = device::ascend::GEReduction::ConvertEnumToString(reduction_enum);
   comm_turn_ = inputs[kIndex8]->GetValueWithCheck<int64_t>();
   stream_mode_ = inputs[kIndex9]->GetValueWithCheck<int64_t>();
 
@@ -70,5 +71,6 @@ bool MatmulAllReduceAddRmsNormAscend::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MatmulAllReduceAddRmsNorm, MatmulAllReduceAddRmsNormAscend);
+}  // namespace matmul_allreduce_add_rmsnorm
 }  // namespace kernel
 }  // namespace mindspore

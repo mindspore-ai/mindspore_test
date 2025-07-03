@@ -24,12 +24,12 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "runtime/device/kernel_runtime.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #ifdef ENABLE_AKG
-#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
+#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "include/backend/optimizer/optimizer.h"
@@ -55,6 +55,9 @@
 #endif
 
 namespace mindspore {
+namespace device::cpu {
+void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs);
+}
 namespace session {
 void CPUSession::Init(uint32_t device_id) {
   // Dump json config file if dump is enabled
@@ -94,7 +97,7 @@ void CPUSession::Optimize(const std::shared_ptr<KernelGraph> &kernel_graph) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode && ps::PSContext::instance()->is_ps_mode()) {
+  if (ps::PSContext::instance()->is_ps_mode()) {
     if (ps::PSContext::instance()->is_worker()) {
       std::string pass_name = "replace_node_by_proxy";
       pass_name.append(std::to_string(graph_sum_));
@@ -119,36 +122,6 @@ void CPUSession::GraphKernelOptimize(const std::shared_ptr<KernelGraph> &kernel_
   MS_EXCEPTION_IF_NULL(kernel_graph);
   graphkernel::GraphKernelOptimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
-}
-
-GraphId CPUSession::CompileGraphImpl(const AnfNodePtrList &lst, const AnfNodePtrList &outputs) {
-  auto graph_id = graph_sum_;
-  auto graph = ConstructKernelGraph(lst, outputs, DeviceType::kCPU);
-  MS_EXCEPTION_IF_NULL(graph);
-  opt::AddDynamicShapeAttrPass(graph);
-  MS_LOG(INFO) << "Set kernel info";
-  SetKernelInfo(graph.get());
-  MS_LOG(INFO) << "Set kernel info end";
-  Optimize(graph);
-  FinalOptimize(graph);
-  GraphKernelOptimize(graph);
-  MS_LOG(INFO) << "Build kernel";
-  BuildKernel(graph.get());
-  // Remove reorder after PS feature finish adapting push/pull in auto_monad.
-  auto execution_order = graph->execution_order();
-  Reorder(&execution_order);
-  graph->set_execution_order(execution_order);
-  // runtime init
-  if (!runtime_.Init()) {
-    MS_LOG(EXCEPTION) << "Kernel runtime init error.";
-  }
-  MS_LOG(INFO) << "Assign kernel graph address";
-  runtime_.AssignKernelGraphAddress(graph.get());
-  // set summary node
-  SetSummaryNodes(graph.get());
-  runtime_.IncreaseSummaryRefCount(graph->summary_nodes());
-  DumpGraphs({graph});
-  return graph_id;
 }
 
 void CPUSession::CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors,
@@ -313,7 +286,7 @@ void CPUSession::BuildKernel(const KernelGraph *kernel_graph) const {
     }
 
     auto kernel_attrs = cpu_kernel_mod->GetOpSupport();
-    SetCpuRefMapToKernelInfo(kernel_node, kernel_attrs);
+    device::cpu::SetCpuRefMapToKernelInfo(kernel_node, kernel_attrs);
     auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel_node);
     auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel_node);
     auto ret = cpu_kernel_mod->Init(inputs, outputs);

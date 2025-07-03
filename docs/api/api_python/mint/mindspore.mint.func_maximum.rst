@@ -3,7 +3,7 @@ mindspore.mint.maximum
 
 .. py:function:: mindspore.mint.maximum(input, other)
 
-    逐元素计算两个输入Tensor中的最大值。
+    逐元素计算两个输入tensor中最大值。
 
     .. math::
         output_i = \max(input_i, other_i)
@@ -19,12 +19,8 @@ mindspore.mint.maximum
         如果所有输入都为标量int类型，在Graph模式下，输出为int32类型的Tensor，在PyNative模式下，输出为int64类型的Tensor。
 
     参数：
-        - **input** (Union[Tensor, Number, bool]) - 第一个输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。
-        - **other** (Union[Tensor, Number, bool]) - 第二个输入可以是Number或bool，也可以是数据类型为Number或bool的Tensor。
+        - **input** (Union[Tensor, Number, bool]) - 第一个输入。
+        - **other** (Union[Tensor, Number, bool]) - 第二个输入。
 
     返回：
-        Tensor的shape与广播后的shape相同，数据类型为两个输入中精度较高或数字较多的类型。
-
-    异常：
-        - **TypeError** - `input` 和 `other` 不是以下之一：Tensor、Number、bool。
-        - **ValueError** - `input` 和 `other` 的shape不相同。
+        Tensor

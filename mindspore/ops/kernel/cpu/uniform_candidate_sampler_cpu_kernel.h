@@ -25,11 +25,12 @@
 #include <string>
 #include <random>
 #include <limits>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_candidate_sampler_cpu {
 class UniformCandidateSamplerCpuKernelMod : public NativeCpuKernelMod,
                                             public MatchKernelHelper<UniformCandidateSamplerCpuKernelMod> {
  public:
@@ -87,6 +88,7 @@ class UniformCandidateSamplerCpuKernelMod : public NativeCpuKernelMod,
   std::default_random_engine rng_;
   std::unordered_set<int64_t> set_input_;
 };
+}  // namespace uniform_candidate_sampler_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_UNIFORM_CANDIDATE_SAMPLER_CPU_KERNEL_H_

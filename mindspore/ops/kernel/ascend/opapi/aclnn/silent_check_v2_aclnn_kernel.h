@@ -21,10 +21,11 @@
 #include "ops/base_operator.h"
 #include "mindapi/base/types.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v2 {
 
 class SilentCheckV2Ascend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class SilentCheckV2Ascend : public AclnnKernelMod {
   pyfloat c_coeff_l2_{5000.};
   int64_t npu_asd_detect_{1};
 };
+}  // namespace silent_check_v2
 }  // namespace kernel
 }  // namespace mindspore
 

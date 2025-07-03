@@ -43,7 +43,7 @@ TypePtr EmbeddingDenseBackwardFuncImpl::InferType(const PrimitivePtr &primitive,
 
 ShapeArray EmbeddingDenseBackwardFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  auto grad_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  auto grad_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   const auto &grad_shape = grad_tensor->shape();
 
@@ -59,7 +59,7 @@ ShapeArray EmbeddingDenseBackwardFuncImpl::InferShape(const PrimitivePtr &primit
 
 TypePtrList EmbeddingDenseBackwardFuncImpl::InferType(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  auto grad_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  auto grad_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(grad_tensor);
   return {grad_tensor->Dtype()};
 }

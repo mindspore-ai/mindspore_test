@@ -19,7 +19,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.api import _convert_python_data
 from mindspore.common.dtype import type_size_in_bytes
 from mindspore._c_expression import slice_by_tensor_index, slice_by_padding_shape, \
-    combine_tensor_list_contiguous as combine_tensor_list, Tensor as Tensor_
+    combine_tensor_list_contiguous as combine_tensor_list, TensorPy as Tensor_
 
 
 def combine_tensor_list_contiguous(tensor_list, enable_mem_align=True):
@@ -27,9 +27,9 @@ def combine_tensor_list_contiguous(tensor_list, enable_mem_align=True):
     Return a contiguous memory handle where contiguous memory has been requested and slicing functionality is provided.
 
     Args:
-        tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
+        tensor_list (list[Tensor], tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
-            False is not supported. Default: ``True`` .
+            False is not supported. Default ``True`` .
 
     Returns:
             ContiguousTensorsHandle, a manager with contiguous memory.
@@ -57,9 +57,9 @@ class ContiguousTensorsHandle:
     ContiguousTensorsHandle is a handle manage continuous memory.
 
     Args:
-        tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
+        tensor_list (list[Tensor], tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
-            False is not supported. Default: ``True`` .
+            False is not supported. Default ``True`` .
 
     Returns:
         ContiguousTensorsHandle, a manager with contiguous memory.
@@ -137,15 +137,11 @@ class ContiguousTensorsHandle:
         Return the tensor which is sliced by tensor index.
 
         Args:
-            start(int, None): Starting position. Default：``None``.
-            end(int, None): Deadline position. Default：``None``.
+            start(int, None): Starting position. Default ``None``.
+            end(int, None): Deadline position. Default ``None``.
 
         Returns:
-            Tensor，is sliced by tensor index.
-
-        Raises:
-            TypeError: If `start` or `end`, is neither an 'int' nor a 'none'.
-            ValueError: If values of `start` or `end` are negative, or out of the list range, or start >= end.
+            Tensor
 
         Examples:
             >>> import numpy as np

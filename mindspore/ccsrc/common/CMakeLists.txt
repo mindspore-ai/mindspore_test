@@ -5,7 +5,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
-        "pynative/abstract_converter.cc"
+        "python_utils.cc"
+        "pynative/*.cc"
     )
 else()
     file(GLOB_RECURSE _COMMON_ALL_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -14,7 +15,8 @@ else()
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
-        "pynative/abstract_converter.cc"
+        "python_utils.cc"
+        "pynative/*.cc"
     )
 endif()
 

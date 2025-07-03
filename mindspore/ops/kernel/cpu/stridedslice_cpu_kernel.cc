@@ -21,11 +21,12 @@
 #include <unordered_map>
 #include <complex>
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace stridedslice_cpu {
 namespace {
 constexpr size_t kStridedSliceInputsNum = 9;
 constexpr size_t kStridedSliceOutputsNum = 1;
@@ -304,5 +305,6 @@ std::vector<std::pair<KernelAttr, StridedSliceCpuKernelMod::StridedSliceFunc>> S
 };
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, StridedSlice, StridedSliceCpuKernelMod);
+}  // namespace stridedslice_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -112,6 +112,7 @@ def test_topkrouter_dynamic_shape_sdrop(mode):
     Expectation: expect correct forward result.
     """
     context.set_context(mode=mode, device_target="Ascend")
+    context.set_context(jit_level='O0')
     ms_net = TopKRouterNet()
     capacity_dyn = ms.mutable(3)
     dispatch_idx, combine_idx = ms_net(x, capacity_dyn, expert_num, 0)
@@ -143,6 +144,7 @@ def test_topkrouter_dynamic_shape_kdrop(mode):
     Expectation: expect correct forward result.
     """
     context.set_context(mode=mode, device_target="Ascend")
+    context.set_context(jit_level='O0')
     ms_net = TopKRouterNet()
     capacity_dyn = ms.mutable(3)
     dispatch_idx, combine_idx = ms_net(x, capacity_dyn, expert_num, 1)

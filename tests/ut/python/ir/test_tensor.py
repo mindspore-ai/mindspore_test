@@ -172,7 +172,7 @@ def test_tensor_type_float64_user_define():
 
 def test_tensor_type_bool():
     # init a tensor with bool type
-    ts_bool_array = ms.Tensor(np.zeros([2, 3], np.bool), ms.bool_)
+    ts_bool_array = ms.Tensor(np.zeros([2, 3], np.bool_), ms.bool_)
     assert isinstance(ts_bool_array, ms.Tensor)
     assert ts_bool_array.dtype == ms.bool_
 
@@ -427,8 +427,8 @@ def test_tensor_input_complex():
 
 def test_tensor_dtype_np_float():
     with pytest.raises(TypeError):
-        input_data = np.random.randn(32, 112, 112, 3).astype(np.float)
-        ms.Tensor(input_data, np.float)
+        input_data = np.random.randn(32, 112, 112, 3).astype(np.float_)
+        ms.Tensor(input_data, np.float_)
 
 
 def test_tensor_dtype_np_float16():
@@ -451,8 +451,8 @@ def test_tensor_dtype_np_float64():
 
 def test_tensor_dtype_np_int():
     with pytest.raises(TypeError):
-        input_data = np.random.randn(32, 112, 112, 3).astype(np.int)
-        ms.Tensor(input_data, np.int)
+        input_data = np.random.randn(32, 112, 112, 3).astype(np.int_)
+        ms.Tensor(input_data, np.int_)
 
 
 def test_tensor_dtype_np_int8():

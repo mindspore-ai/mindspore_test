@@ -16,18 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/normal_tensor_tensor.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NormalTensorTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &mean_tensor,
-                                                        const BaseTensorPtr &std_tensor, const BaseTensorPtr &seed,
-                                                        const BaseTensorPtr &offset) {
+tensor::TensorPtr NormalTensorTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &mean_tensor,
+                                                    const TensorPtr &std_tensor, const TensorPtr &seed,
+                                                    const TensorPtr &offset) {
   MS_LOG(DEBUG) << "NormalTensorTensor call start";
   OpRunner::InferOpOutput(op, mean_tensor, std_tensor, seed, offset);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);

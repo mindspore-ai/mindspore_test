@@ -17,9 +17,11 @@
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "runtime/device/kernel_runtime.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace all_finite {
 namespace {
 static constexpr size_t kAlignSize = 512;
 }  // namespace
@@ -31,7 +33,7 @@ bool AllFiniteAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
-  auto ret = aclrtMemsetAsync(outputs[kIndex0]->device_ptr(), kAlignSize, 0, kAlignSize, stream_ptr);
+  auto ret = CALL_ASCEND_API(aclrtMemsetAsync, outputs[kIndex0]->device_ptr(), kAlignSize, 0, kAlignSize, stream_ptr);
   if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call runtime aclrtMemsetAsync error, ret[" << ret << "]";
     return false;
@@ -45,5 +47,6 @@ bool AllFiniteAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AllFinite, AllFiniteAscend);
+}  // namespace all_finite
 }  // namespace kernel
 }  // namespace mindspore

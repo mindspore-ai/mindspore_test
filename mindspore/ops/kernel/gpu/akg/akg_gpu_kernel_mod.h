@@ -21,10 +21,10 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
 #include "kernel/kash/kernel_pack.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

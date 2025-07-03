@@ -19,11 +19,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_cpu {
 class MinimumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MinimumCpuKernelMod> {
  public:
   MinimumCpuKernelMod() = default;
@@ -84,6 +85,7 @@ class MinimumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<int64_t> broadcast_output_shape_;
   const size_t max_dims_{7};
 };
+}  // namespace minimum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

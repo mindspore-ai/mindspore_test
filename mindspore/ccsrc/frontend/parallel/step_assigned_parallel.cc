@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "frontend/parallel/auto_parallel/edge_costmodel.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/graph_util/graph_info.h"
@@ -45,6 +44,16 @@
 #include "ir/tensor.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {
@@ -253,7 +262,7 @@ bool InsertAllReduceOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
       if (matmul_stra == nullptr) {
         continue;
       }
-      auto matmul_var = GetValue<vector<Shape>>(matmul_stra);
+      auto matmul_var = GetValue<std::vector<Shape>>(matmul_stra);
       if (matmul_var.size() > 0) {
         Dimensions sub_a_strategy = matmul_var.at(0);
         Dimensions sub_b_strategy = matmul_var.at(1);
@@ -322,7 +331,7 @@ bool InsertAllReduceOpsForFFN(const std::vector<AnfNodePtr> &all_nodes, const Fu
       if (batchmatmul_stra == nullptr) {
         continue;
       }
-      auto batchmatmul_var = GetValue<vector<Shape>>(batchmatmul_stra);
+      auto batchmatmul_var = GetValue<std::vector<Shape>>(batchmatmul_stra);
       if (batchmatmul_var.size() > 0) {
         Dimensions sub_a_strategy = batchmatmul_var.at(0);
         Dimensions sub_b_strategy = batchmatmul_var.at(1);
@@ -418,7 +427,7 @@ bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphP
     if (transpose_stra == nullptr) {
       continue;
     }
-    auto transpose_var = GetValue<vector<Shape>>(transpose_stra);
+    auto transpose_var = GetValue<std::vector<Shape>>(transpose_stra);
     if (transpose_var.size() > 0) {
       Dimensions sub_strategy = transpose_var.at(0);
       bool all_ones = std::all_of(sub_strategy.begin(), sub_strategy.end(), [](int64_t i) { return i == 1; });

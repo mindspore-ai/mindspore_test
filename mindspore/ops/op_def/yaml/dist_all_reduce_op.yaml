@@ -21,3 +21,5 @@ dist_comm_all_reduce:
         enable: True
         is_comm_op: True
         Ascend: DistCommAllReduceAscend
+        CPU: DistCommAllReduceCPU
+    non-differentiable: True

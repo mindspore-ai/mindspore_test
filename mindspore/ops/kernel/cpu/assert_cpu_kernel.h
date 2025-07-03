@@ -22,10 +22,11 @@
 #include <functional>
 #include <map>
 #include "mindspore/ops/infer/assert.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 namespace mindspore {
 namespace kernel {
+namespace assert_cpu {
 class AssertCpuKernelMod : public NativeCpuKernelMod {
  public:
   AssertCpuKernelMod() {}
@@ -49,6 +50,7 @@ class AssertCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int> summarizes_;
   int summarize_ = 0;
 };
+}  // namespace assert_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

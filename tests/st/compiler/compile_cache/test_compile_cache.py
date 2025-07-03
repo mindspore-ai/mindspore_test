@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ import shutil
 import subprocess
 import pytest
 import numpy as np
+from mindspore import mutable, Tensor, nn, jit, ops
+from mindspore.common.api import ms_compile_cache
+from mindspore import dtype as mstype
 from tests.st.networks import utils
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -73,7 +76,7 @@ def exec_model_and_check_result(cur_model_path, dataset_path, config_path, cache
     return loss
 
 
-def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second):
+def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second, is_debug=False):
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
@@ -86,14 +89,22 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert not os.path.exists(log_file_name_second)
 
     # First run without compile cache
-    cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
-                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
-                                                                                 log_file_name_first)
+    if not is_debug:
+        cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_first)
+    else:
+        cmd_first = f"export GLOG_v=0; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
     with open(log_file_name_first, "r") as f_first:
         data_first = f_first.read()
+    if is_debug:
+        print("\nmatch_output:\n", match_output, flush=True)
+        print("\ndata_first:\n", data_first, flush=True)
     assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
 
     # Take out the result of the first run
@@ -105,13 +116,20 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     array_shape_first = np.array([int(x) for x in shape_first])
 
     # Second run with compile cache
-    cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
-                 + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
-                                                                                  log_file_name_second)
+    if not is_debug:
+        cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_second)
+    else:
+        cmd_second = f"export GLOG_v=0; export MS_COMPILER_CACHE_ENABLE=1; " \
+                    + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                     log_file_name_second)
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
     with open(log_file_name_second, "r") as f_second:
         data_second = f_second.read()
+    if is_debug:
+        print("\ndata_second:\n", data_second, flush=True)
 
     has_log = "Use the compilation cache and execute the backend actions only. Be aware of correctness risks." in \
               data_second
@@ -134,58 +152,6 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     os.remove(log_file_name_first)
     os.remove(log_file_name_second)
     shutil.rmtree(cache_path)
-
-
-def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_name_second):
-    # Clear compile cache folder and log files
-    if os.path.exists(cache_path):
-        shutil.rmtree(cache_path)
-    assert not os.path.exists(cache_path)
-
-    # First run without compile cache
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_first,
-                                                            utils.rank_table_path)
-    os.system(cmd)
-    check_cmd = "ps -ef | grep python | grep run_compile_cache_mp.py | grep -v grep"
-    # wait for net train finish
-    ret = utils.process_check(150, check_cmd)
-    print("check first train.", flush=True)
-    assert ret
-    print("check cache file.", flush=True)
-    assert os.path.exists(cache_path)
-    log_fullname = 'worker_0.log'
-    print("check first log.", flush=True)
-    assert os.path.exists(log_fullname)
-    with open(log_fullname, "r") as f_first:
-        data_first = f_first.read()
-    print("check first compile result.", flush=True)
-    assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
-    for i in range(8):
-        os.remove(f'worker_{i}.log')
-    cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_second,
-                                                            utils.rank_table_path)
-    os.system(cmd)
-    ret = utils.process_check(150, check_cmd)
-    print("check second train.", flush=True)
-    assert ret
-
-    log_fullname = 'worker_0.log'
-    print("check second log.", flush=True)
-    assert os.path.exists(log_fullname)
-    with open(log_fullname, "r") as f_second:
-        data_second = f_second.read()
-
-    has_log = "Use the compilation cache and execute the backend actions only. Be aware of correctness risks." in \
-              data_second
-    if not has_log:
-        print(f'{data_second}')
-    print("check second train result.", flush=True)
-    assert has_log
-
-    # Clean files
-    shutil.rmtree(cache_path)
-    for i in range(8):
-        os.remove(f'worker_{i}.log')
 
 
 def run_twice_with_different_networks(file_name_first, file_name_second, cache_path, log_file_name_first,
@@ -261,17 +227,38 @@ def start_ps_subprocess(script_path, cache_path, str_to_check, log_name):
     os.environ['MS_ROLE'] = 'MS_SCHED'
     cmd_first = f"cd " + cwd + "/sched && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
+    print(f'[INFO] start sched process: {cmd_first}')
     sched_process = subprocess.Popen(cmd_first, shell=True)
     # start server first time.
     os.environ['MS_ROLE'] = 'MS_PSERVER'
     cmd_first = f"cd " + cwd + "/server && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
+    print(f'[INFO] start server process: {cmd_first}')
     server_process = subprocess.Popen(cmd_first, shell=True)
     # start worker first time.
     os.environ['MS_ROLE'] = 'MS_WORKER'
     cmd_first = f"cd " + cwd + "/worker && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
                 cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
-    subprocess.run(cmd_first, shell=True, check=True)
+    print(f'[INFO] start worker process: {cmd_first}')
+    try:
+        subprocess.run(cmd_first, shell=True, check=True)
+    except Exception:
+        print("[ERROR] Worker process Exception!!!")
+
+        def print_log(dirname: str):
+            fpath = os.path.join(dirname, log_name)
+            if not os.path.exists(fpath):
+                print(f'[ERROR] log not exist: {fpath}')
+                return
+            with open(fpath, 'r', encoding='utf-8') as f:
+                print(f'{dirname} log:')
+                print(f.read())
+                print('', flush=True)
+
+        print_log('sched')
+        print_log('server')
+        print_log('worker')
+        raise
     os.chdir(cwd)
     check_log("server", log_name, str_to_check)
     check_log("worker", log_name, str_to_check)
@@ -306,8 +293,10 @@ def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name
     os.environ['MS_SERVER_NUM'] = '1'
     os.environ['MS_WORKER_NUM'] = '1'
     # First run
+    print(f'start run first time', flush=True)
     first_str_to_check = "Check the consistency of dependency files hash failed. Execute all the compilation actions."
     start_ps_subprocess(file_name, cache_path, first_str_to_check, log_file_name_first)
+    print('end run first time', flush=True)
     assert os.path.exists(cache_path)
     check_compile_cache_files(cache_path, "MS_WORKER")
     check_compile_cache_files(cache_path, "MS_PSERVER")
@@ -315,7 +304,9 @@ def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name
     os.environ['MS_SCHED_PORT'] = '8183'
     second_str_to_check = "Use the compilation cache and execute the backend actions only. Be aware of correctness" \
                           " risks."
+    print(f'start run second time', flush=True)
     start_ps_subprocess(file_name, cache_path, second_str_to_check, log_file_name_second)
+    print(f'end run second time', flush=True)
 
     # Clear
     del os.environ['MS_SCHED_HOST']
@@ -376,7 +367,7 @@ def test_compile_cache_lenet():
     Description: Test whether the regular compile cache function can run successfully.
     Expectation: success.
     """
-    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt")
+    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt", True)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -403,7 +394,7 @@ def test_compile_cache_net_with_control_flow():
                                 "control_net_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_auto_detect():
     """
     Feature: Compile cache.
@@ -465,27 +456,6 @@ def test_compile_cache_run_two_cells_once():
     run_two_cells_networks_once("run_lenet_two_cells.py", "./lenet_two_cells", "lenet_two_cells.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
-def test_compile_cache_pipeline_parallel_and_recompute():
-    """
-    Feature: Compile cache.
-    Description: Test whether pipeline parallel and recompute can successfullty with compile cache.
-    Expectation: success.
-    """
-    run_compile_cache_mp("run_compile_cache_mp.py", "./pp_recompute", "pp_recompute_first",
-                         "pp_recompute_second")
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_compile_cache_lenet_ge():
-    """
-    Feature: Compile cache.
-    Description: Test whether the ge compile cache function can run successfully.
-    Expectation: success.
-    """
-    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt")
-
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_resnet_infer_compile_cache():
     """
@@ -495,3 +465,59 @@ def test_resnet_infer_compile_cache():
     """
     run_twice_with_same_network("run_resnet_infer.py", "./resnet_infer", "resnet_infer_first.txt",
                                 "resnet_infer_second.txt")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_control_flow_partial_without_inputs():
+    """
+    Feature: Compile cache.
+    Description: Test whether the compile cache function can run successfully for the graph with a partial node
+                 without inputs.
+    Expectation: success.
+    """
+    run_twice_with_same_network("control_flow.py", "./control_flow_partial_without_inputs",
+                                "control_flow_partial_without_inputs_first.txt",
+                                "control_flow_partial_without_inputs_second.txt")
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_compile_cache_with_inplace_tensor():
+    """
+    Feature: Compile cache.
+    Description: Test whether the compile cache function can run successfully for inplace feature.
+    Expectation: success.
+    """
+    class TestNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = ops.AssignAdd()
+
+        @jit(backend="ms_backend")
+        def construct(self, kv_caches):
+            k, v = kv_caches
+            self.assignadd(k, ops.ones_like(k))
+            self.assignadd(v, ops.ones_like(v))
+
+
+    kv_cache_shape = (None, 1)
+    kv_cache_dtype = mstype.int32
+    dyn_key_cache = Tensor(shape=kv_cache_shape, dtype=kv_cache_dtype)
+    dyn_value_cache = Tensor(shape=kv_cache_shape, dtype=kv_cache_dtype)
+    dyn_kv_cache = mutable((dyn_key_cache, dyn_value_cache))
+
+    model = TestNet()
+    model.set_inputs(dyn_kv_cache)
+    kv_cache_shape = (1, 1)
+    key_cache = ops.ones(kv_cache_shape, dtype=kv_cache_dtype)
+    value_cache = ops.ones(kv_cache_shape, dtype=kv_cache_dtype)
+    kv_cache = mutable((key_cache, value_cache))
+
+    model(kv_cache)
+    assert len(ms_compile_cache) == 1
+    assert kv_cache[0][0][0] == 2
+    assert kv_cache[1][0][0] == 2
+
+    model(kv_cache)
+    assert len(ms_compile_cache) == 1
+    assert kv_cache[0][0][0] == 3
+    assert kv_cache[1][0][0] == 3

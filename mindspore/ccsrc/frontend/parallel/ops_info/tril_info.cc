@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,35 @@ Status TrilInfo::CheckStrategy(const StrategyPtr &strategy) {
   return SUCCESS;
 }
 
+Status TrilInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != kSizeOne) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
+    return FAILED;
+  }
+  constexpr size_t smallest_layout_len = 2;
+  constexpr size_t max_layout_len = 6;
+  auto input_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto layout_value = input_layout0.device_arrangement_origin().array();
+  if (layout_value.size() < smallest_layout_len || layout_value.size() > max_layout_len) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << ": The layout value size must be greater than 2 and less than 7"
+                   << ", but got " << layout_value.size();
+    } else {
+      MS_LOG(ERROR) << name_ << ": The layout value size must be greater than 2 and less than 7"
+                    << ", but got " << layout_value.size();
+    }
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
 std::vector<StrategyPtr> TrilInfo::GenerateOpStrategies(int64_t stage_id) {
   if ((inputs_shape_.size() != 1)) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Inputs shape size is wrong.";
@@ -66,10 +95,18 @@ int64_t TrilInfo::GetDiag() {
   auto row = *(input_shape.rbegin() + 1);
   auto col = *(input_shape.rbegin());
   auto stra = strategy();
-  Strategies strategies = stra->GetInputDim();
-  auto stra_value = strategies.at(0);
-  auto c = *(stra_value.rbegin() + 1);
-  auto d = *(stra_value.rbegin());
+  int64_t c = 0;
+  int64_t d = 0;
+  if (stra == nullptr) {
+    auto input_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
+    auto layout_value = input_layout0.device_arrangement_origin().array();
+    c = *(layout_value.rbegin() + 1);
+    d = *(layout_value.rbegin());
+  } else {
+    auto stra_value = stra->GetInputDim()[kIndex0];
+    c = *(stra_value.rbegin() + 1);
+    d = *(stra_value.rbegin());
+  }
   int64_t rank = g_device_manager->rank_index_in_stage();
   auto t = row / c;
   auto u = col / d;
@@ -103,8 +140,9 @@ int64_t TrilInfo::GetDiag() {
 
 void TrilInfo::ReplaceNodeInputOrAttrs() {
   for (auto &node : cnodes_) {
-    auto prim = GetValueNode<PrimitivePtr>(node->input(0));
     auto new_diag = GetDiag();
+    auto prim = GetValueNode<PrimitivePtr>(node->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr("diagonal", MakeValue(new_diag));
   }
 }

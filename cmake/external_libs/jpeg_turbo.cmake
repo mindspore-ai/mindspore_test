@@ -4,11 +4,11 @@ if(TARGET_AOS_ARM)
 endif()
 
 if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/libjpeg-turbo/repository/archive/2.0.4.tar.gz")
-    set(SHA256 "7777c3c19762940cff42b3ba4d7cd5c52d1671b39a79532050c85efb99079064")
+    set(REQ_URL "https://gitee.com/mirrors/libjpeg-turbo/repository/archive/3.0.1.tar.gz")
+    set(SHA256 "5b9bbca2b2a87c6632c821799438d358e27004ab528abf798533c15d50b39f82")
 else()
-    set(REQ_URL "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.4.tar.gz")
-    set(SHA256 "7777c3c19762940cff42b3ba4d7cd5c52d1671b39a79532050c85efb99079064")
+    set(REQ_URL "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/3.0.1.tar.gz")
+    set(SHA256 "5b9bbca2b2a87c6632c821799438d358e27004ab528abf798533c15d50b39f82")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -32,15 +32,9 @@ set(jpeg_turbo_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack,-s")
 
 
 set(jpeg_turbo_USE_STATIC_LIBS ON)
-set(JPEG_TURBO_PATCHE ${CMAKE_SOURCE_DIR}/third_party/patch/jpeg_turbo/jpeg_turbo.patch001)
 set(CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DCMAKE_SKIP_RPATH=TRUE -DWITH_SIMD=ON)
-set(CVE_2020_35538 ${CMAKE_SOURCE_DIR}/third_party/patch/jpeg_turbo/CVE-2020-35538.patch)
-set(CVE_2021_46822 ${CMAKE_SOURCE_DIR}/third_party/patch/jpeg_turbo/CVE-2021-46822.patch)
 if(BUILD_LITE)
     set(jpeg_turbo_USE_STATIC_LIBS OFF)
-    set(JPEG_TURBO_PATCHE ${TOP_DIR}/third_party/patch/jpeg_turbo/jpeg_turbo.patch001)
-    set(CVE_2020_35538 ${TOP_DIR}/third_party/patch/jpeg_turbo/CVE-2020-35538.patch)
-    set(CVE_2021_46822 ${TOP_DIR}/third_party/patch/jpeg_turbo/CVE-2021-46822.patch)
     if(ANDROID_NDK)  #  compile android on x86_64 env
         if(PLATFORM_ARM64)
             set(CMAKE_OPTION  -DCMAKE_TOOLCHAIN_FILE=$ENV{ANDROID_NDK}/build/cmake/android.toolchain.cmake
@@ -66,14 +60,11 @@ if(BUILD_LITE)
 endif()
 
 mindspore_add_pkg(jpeg_turbo
-        VER 2.0.4
+        VER 3.0.1
         LIBS jpeg turbojpeg
         URL ${REQ_URL}
         SHA256 ${SHA256}
         CMAKE_OPTION ${CMAKE_OPTION}
-        PATCHES ${JPEG_TURBO_PATCHE}
-        PATCHES ${CVE_2020_35538}
-        PATCHES ${CVE_2021_46822}
         )
 include_directories(${jpeg_turbo_INC})
 add_library(mindspore::jpeg_turbo ALIAS jpeg_turbo::jpeg)

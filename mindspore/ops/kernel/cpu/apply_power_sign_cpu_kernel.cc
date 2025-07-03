@@ -18,13 +18,14 @@
 #include <algorithm>
 #include <map>
 #include <functional>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_power_sign_cpu {
 namespace {
 constexpr size_t kPowerSignInputsNum = 7;
 constexpr size_t kPowerSignOutputsNum = 2;
@@ -192,5 +193,6 @@ std::vector<KernelAttr> ApplyPowerSignCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyPowerSign, ApplyPowerSignCpuKernelMod);
+}  // namespace apply_power_sign_cpu
 }  // namespace kernel
 }  // namespace mindspore

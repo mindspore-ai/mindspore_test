@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/device/device_address_utils.h"
+#include "runtime/graph_scheduler/scheduler_helper.h"
 #include "include/common/utils/convert_utils.h"
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
@@ -30,6 +31,16 @@
 #include "abstract/abstract_function.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace runtime {
@@ -156,6 +167,13 @@ void FetchRealParameterByNode(const KernelWithIndex &node, std::set<KernelWithIn
     const auto &func_graphs = iter->second;
     for (const auto &func_graph : func_graphs) {
       MS_EXCEPTION_IF_NULL(func_graph);
+      MS_EXCEPTION_IF_NULL(func_graph->output());
+      if (common::AnfAlgo::GetOutputNumByAbstract(func_graph->output()->abstract()) !=
+          common::AnfAlgo::GetOutputNumByAbstract(node_with_index.first->abstract())) {
+        MS_LOG(DEBUG) << "Invalid output size for graph output:" << func_graph->output()->DebugString()
+                      << " and formal node:" << node_with_index.first->DebugString() << " index:" << node.second;
+        continue;
+      }
       FetchRealParameterByNode({func_graph->output(), node_with_index.second}, real_parameters, invalid_call_nodes,
                                call_node_to_func_graphs);
     }
@@ -320,24 +338,26 @@ size_t FetchOutputSizeByNode(const AnfNodePtr &node, size_t index, TypeId type_i
   if (node->isa<ValueNode>() && node->abstract() != nullptr) {
     const auto &abs = common::AnfAlgo::FetchAbstractByIndex(node->abstract(), index);
     MS_EXCEPTION_IF_NULL(abs);
-    const auto &shape_ptr = abs->BuildShape();
-    MS_EXCEPTION_IF_NULL(shape_ptr);
-    if (shape_ptr->isa<abstract::Shape>()) {
-      const auto &shapes = shape_ptr->cast<abstract::ShapePtr>()->shape();
+    const auto &base_shape_ptr = abs->BuildShape();
+    MS_EXCEPTION_IF_NULL(base_shape_ptr);
+    if (base_shape_ptr->isa<abstract::Shape>()) {
+      const auto &shape_ptr = base_shape_ptr->cast<abstract::ShapePtr>();
+      MS_EXCEPTION_IF_NULL(shape_ptr);
+      const auto &shapes = shape_ptr->shape();
       size = std::accumulate(shapes.begin(), shapes.end(), size, std::multiplies<int64_t>());
-    } else if (shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+    } else if (base_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
       const auto &value_node = node->cast<ValueNodePtr>();
       MS_EXCEPTION_IF_NULL(value_node);
       const auto &value = value_node->value();
       MS_EXCEPTION_IF_NULL(value);
       size = FetchOutputSizeByValue(value);
       MS_LOG(INFO) << "Abstract;" << abs->ToString() << " for node:" << node->DebugString() << " index:" << index
-                   << " shape:" << shape_ptr->ToString() << " size:" << size;
+                   << " shape:" << base_shape_ptr->ToString() << " size:" << size;
     } else if (abs->isa<abstract::AbstractMonad>() || abs->isa<abstract::AbstractScalar>()) {
       MS_LOG(DEBUG) << "For scalar, the output shape is 1.";
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Invalid abstract;" << abs->ToString() << " for node:" << node->DebugString()
-                                        << " index:" << index << " shape:" << shape_ptr->ToString();
+                                        << " index:" << index << " shape:" << base_shape_ptr->ToString();
     }
   } else {
     size = AnfAlgo::GetOutputTensorMemSize(node, index);
@@ -354,8 +374,9 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
   MS_EXCEPTION_IF_NULL(device_context);
   const auto &front_node = front_node_with_index.first;
   MS_EXCEPTION_IF_NULL(front_node);
-
-  const auto &node_value = front_node->cast<ValueNodePtr>()->value();
+  const auto &front_value_node = front_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(front_value_node);
+  const auto &node_value = front_value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
   if (node_value->isa<FuncGraph>() || node_value->isa<Primitive>() ||
       (node_value->isa<ValueSequence>() && node_value->cast<ValueSequencePtr>()->size() == 0)) {
@@ -367,9 +388,12 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
   if (output_type_id == kTypeUnknown) {
     output_type_id = common::AnfAlgo::GetOutputInferDataType(backend_node, 0);
   }
-  if (front_node->abstract() != nullptr && front_node->abstract()->isa<abstract::AbstractSequence>() &&
-      front_node->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-    tensor_size = FetchOutputSizeByNode(front_node, front_node_with_index.second, output_type_id);
+  if (front_node->abstract() != nullptr && front_node->abstract()->isa<abstract::AbstractSequence>()) {
+    const auto &sequence_abstract = front_node->abstract()->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_abstract);
+    if (sequence_abstract->dynamic_len()) {
+      tensor_size = FetchOutputSizeByNode(front_node, front_node_with_index.second, output_type_id);
+    }
   }
   CreateBuildInfoForFrontNode(front_node_with_index, backend_node);
   device::DeviceAddressPtr address = nullptr;
@@ -385,15 +409,16 @@ void CreateDeviceTensorForValueNode(const KernelWithIndex &front_node_with_index
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, 0}, nullptr, tensor_size, output_format, output_type_id, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+    AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, front_node.get());
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
-    address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
   }
   MS_EXCEPTION_IF_NULL(address);
   MS_LOG(DEBUG) << "Create address for front node:" << front_node->DebugString()
                 << " backend node:" << backend_node->DebugString() << " index:" << front_node_with_index.second
                 << " addr:" << address << " size:" << tensor_size;
-  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node.get());
-  UpdateRefCount(address.get(), true);
+  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, front_node);
+  address->set_new_ref_count(SIZE_MAX);
 }
 
 // Create a device tensor for front node.
@@ -424,10 +449,16 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   MS_EXCEPTION_IF_NULL(builder);
 
   if (node->isa<ValueNode>()) {
-    const auto &node_value = node->cast<ValueNodePtr>()->value();
+    const auto value_node = node->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(value_node);
+    const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
-    if (node_value->isa<ValueSequence>() && node_value->cast<ValueSequencePtr>()->size() == 0) {
-      return;
+    if (node_value->isa<ValueSequence>()) {
+      const auto &sequence_node_value = node_value->cast<ValueSequencePtr>();
+      MS_EXCEPTION_IF_NULL(sequence_node_value);
+      if (sequence_node_value->size() == 0) {
+        return;
+      }
     }
   }
 
@@ -458,8 +489,6 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
   if (is_map_parameter) {
     DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(device_context, front_node_with_index.first,
                                                            front_node_with_index.second);
-    UpdateRefCount(AnfAlgo::GetMutableOutputAddr(front_node_with_index.first, front_node_with_index.second).get(),
-                   true);
     return;
   }
 
@@ -479,27 +508,30 @@ void CreateDeviceTensorForFrontNode(const KernelWithIndex &front_node_with_index
       // Create device tensor.
       const auto &sub_abstract = common::AnfAlgo::FetchAbstractByIndex(node->abstract(), front_node_with_index.second);
       MS_EXCEPTION_IF_NULL(sub_abstract);
-      const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(
+      const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), sub_abstract->BuildValue(), nullptr, size,
         kOpFormat_DEFAULT, type_id, ShapeVector(), device_context->device_context_key().device_name_,
         device_context->device_context_key().device_id_);
+      AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-      address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      address = kernel_tensor->device_address();
+      MS_LOG(INFO) << "Create kernel tensor:" << kernel_tensor->ToString()
+                   << " for node that has no corresponding backend node:" << node->DebugString();
     }
+    MS_EXCEPTION_IF_NULL(address);
+    address->set_new_ref_count(SIZE_MAX);
   } else {
     // Create device tensor.
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {node, front_node_with_index.second}, nullptr, size, kOpFormat_DEFAULT, type_id, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+    AnfAlgo::SetOutputKernelTensor(kernel_tensor, front_node_with_index.second, node.get());
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(node));
-    address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    address = kernel_tensor->device_address();
+    MS_LOG(INFO) << "Create kernel tensor:" << kernel_tensor->ToString()
+                 << " for node that has no corresponding backend node:" << node->DebugString();
   }
-  MS_EXCEPTION_IF_NULL(address);
-  MS_LOG(INFO) << "Create address for node that has no corresponding backend node:"
-               << common::AnfAlgo::GetNodeDebugString(node) << " addr:" << address << " size:" << size
-               << ", type id:" << type_id;
-  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node.get());
-  UpdateRefCount(address.get(), true);
+  AnfAlgo::SetOutputAddr(address, front_node_with_index.second, node);
 }
 
 // Fetch all funcgraph by a seed graph, if a calls b, b calls c, and c calls a, return a set of a, b, c.
@@ -573,7 +605,9 @@ std::vector<KernelWithIndex> FetchInputNodeByNode(const AnfNodePtr &node) {
 
   // 4 Other.
   if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimTupleGetItem)) {
-    if (real_node->cast<CNodePtr>()->HasAttr(kAttrReplaceRealKernelInBackend) && real_node->abstract() != nullptr) {
+    const auto &real_cnode = real_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(real_cnode);
+    if (real_cnode->HasAttr(kAttrReplaceRealKernelInBackend) && real_node->abstract() != nullptr) {
       size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(real_node->abstract());
       MS_LOG(INFO) << "Fetch an tuple get item with repalce flag:" << real_node->DebugString()
                    << " output num:" << output_num;
@@ -617,7 +651,8 @@ void AddFormalToRealParameter(const AnfNodePtr &formal_parameter, const AnfNodeP
     MS_LOG_WITH_NODE(EXCEPTION, formal_parameter) << "Empty abstract for parameter:" << formal_parameter->DebugString();
   }
   size_t output_num = common::AnfAlgo::GetOutputNumByAbstract(abstract);
-
+  MS_LOG(DEBUG) << "Add formal parameter:" << formal_parameter->DebugString()
+                << " by real parameter:" << real_parameter->DebugString() << " output num:" << output_num;
   for (size_t i = 0; i < output_num; ++i) {
     std::set<KernelWithIndex> real_parameters;
     std::set<KernelWithIndex> invalid_call_nodes;
@@ -1333,7 +1368,10 @@ void ControlNodeParser::ParserSinglePartialFuncgraph(const std::vector<AnfNodePt
     const auto &partial_cnode = partial_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(partial_cnode);
     size_t partial_arg_size = partial_cnode->size() - 2;
-    size_t call_arg_size = pair.second[0]->cast<CNodePtr>()->size() - 1;
+    MS_EXCEPTION_IF_NULL(pair.second[0]);
+    const auto &call_cnode = pair.second[0]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(call_cnode);
+    size_t call_arg_size = call_cnode->size() - 1;
     size_t para_size = func_graph->parameters().size();
     if (partial_arg_size + call_arg_size != para_size) {
       MS_LOG(WARNING) << "Invalid args size for partial:" << partial_cnode->DebugString()
@@ -2023,6 +2061,9 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
                   << " for front node:" << front_parameter_with_index.first->DebugString()
                   << " index:" << front_parameter_with_index.second << " output size is 0.";
   }
+  if (!iter->second.empty()) {
+    return *(iter->second.begin());
+  }
   return {};
 }
 
@@ -2415,16 +2456,6 @@ void ControlNodeParser::ParseFrontToBackendKernel(const std::vector<KernelGraphP
       MS_EXCEPTION_IF_NULL(output_pair.second.first);
       auto real_node = output_pair.second.first;
       // get realnode for callinline
-      if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimGEGraphOp)) {
-        auto kg = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(real_node, kAttrKernelGraph);
-        if (kg != nullptr) {
-          std::vector<KernelWithIndex> kg_output_list;
-          common::AnfAlgo::GetRealInputs(kg->get_return(), &kg_output_list);
-          if (output_pair.second.second < kg_output_list.size()) {
-            real_node = kg_output_list[output_pair.second.second].first;
-          }
-        }
-      }
       if (real_node->isa<CNode>()) {
         front_to_backend_kernels_[output_pair.first] = {output_pair.second, device_context};
       }
@@ -2693,22 +2724,6 @@ void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph, DeviceContext *c
       continue;
     }
 
-    // check front_to_backend.second.first->isa<Parameter>() when callinline
-    if (common::AnfAlgo::CheckPrimitiveType(front_to_backend.second.first, prim::kPrimGEGraphOp)) {
-      auto kg = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(front_to_backend.second.first, kAttrKernelGraph);
-      MS_EXCEPTION_IF_NULL(kg);
-      std::vector<KernelWithIndex> kg_output_list;
-      common::AnfAlgo::GetRealInputs(kg->get_return(), &kg_output_list);
-
-      if (front_to_backend.second.second >= kg_output_list.size()) {
-        MS_LOG(EXCEPTION) << "The index " << front_to_backend.second.second
-                          << " is larger than CallInline graph output size: " << kg_output_list.size();
-      }
-      if (kg_output_list[front_to_backend.second.second].first->isa<Parameter>()) {
-        continue;
-      }
-    }
-
     // Skip the function input.
     const auto &abstract = front_to_backend.first.first->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
@@ -2821,19 +2836,20 @@ AnfNodePtr GetRealOutputNode(const KernelWithIndex &front_pair, const KernelWith
   if (front_pair.first == nullptr || backend_pair.first == nullptr) {
     return nullptr;
   }
-  if (common::AnfAlgo::CheckPrimitiveType(backend_pair.first, prim::kPrimLoad) &&
-      common::AnfAlgo::CheckPrimitiveType(front_pair.first, prim::kPrimLoad)) {
-    const auto &backend_cnode = backend_pair.first->cast<CNodePtr>();
-    const auto &front_cnode = front_pair.first->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(backend_cnode);
-    MS_EXCEPTION_IF_NULL(front_cnode);
-    if (backend_cnode->inputs().size() > 1 && backend_cnode->input(1) != nullptr &&
-        backend_cnode->input(1)->isa<CNode>() && front_cnode->inputs().size() > 1 && front_cnode->input(1) != nullptr &&
-        front_cnode->input(1)->isa<CNode>()) {
-      return front_cnode->input(1);
-    }
+  if (!common::AnfAlgo::CheckPrimitiveType(backend_pair.first, prim::kPrimLoad) ||
+      !common::AnfAlgo::CheckPrimitiveType(front_pair.first, prim::kPrimLoad)) {
+    return nullptr;
   }
-  return nullptr;
+  MS_LOG(DEBUG) << "Check for backend node:" << backend_pair.first->DebugString()
+                << " and front node:" << front_pair.first->DebugString();
+  const auto &real_backend_node = common::AnfAlgo::VisitKernelWithReturnType(backend_pair.first, backend_pair.second);
+  const auto &real_front_node = common::AnfAlgo::VisitKernelWithReturnType(front_pair.first, front_pair.second);
+  MS_EXCEPTION_IF_NULL(real_backend_node.first);
+  MS_EXCEPTION_IF_NULL(real_front_node.first);
+  if (!real_backend_node.first->isa<CNode>() || !real_front_node.first->isa<CNode>()) {
+    return nullptr;
+  }
+  return real_front_node.first;
 }
 }  // namespace
 
@@ -2900,6 +2916,8 @@ void ControlNodeParser::ParseNodeLevel(const std::vector<AnfNodePtr> &control_no
     for (const auto &front_input_node : kernel_graph_group_info->front_input_nodes_) {
       const auto &input_node = front_input_node.first.first;
       MS_EXCEPTION_IF_NULL(input_node);
+      MS_LOG(DEBUG) << "Fetch node level for group:" << kernel_graph_group_info->group_name_
+                    << " input node:" << input_node->DebugString();
       auto iter = node_to_level_.find(input_node);
       if (iter == node_to_level_.end()) {
         PrintGraphGroupInfo(kernel_graph_group_infos_);
@@ -2937,8 +2955,30 @@ bool ControlNodeParser::IsInputInSameLevel(const AnfNodePtr &node) {
     }
     auto iter = node_to_level_.find(input_node);
     if (iter == node_to_level_.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to find input:" << input_node->DebugString()
-                                        << " for node:" << node->DebugString() << " in graph output map.";
+      MS_LOG(INFO) << "check for input node:" << input_node->DebugString();
+      for (const auto &pair : node_to_level_) {
+        MS_EXCEPTION_IF_NULL(pair.first);
+        MS_LOG(DEBUG) << "check node:" << pair.first->DebugString() << " level:" << pair.second;
+        const auto &real_node = common::AnfAlgo::VisitKernelWithReturnType(pair.first, 0).first;
+        if (real_node == input_node) {
+          MS_LOG(INFO) << "Match the real node for:" << pair.first->DebugString() << " level:" << pair.second
+                       << " input node:" << input_node->DebugString() << " for node:" << node->DebugString();
+          level = pair.second;
+        }
+        if (common::AnfAlgo::CheckPrimitiveType(real_node, prim::kPrimTupleGetItem)) {
+          const auto &cnode = real_node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cnode);
+          if (cnode->size() > 2 && cnode->input(1) == input_node) {
+            MS_LOG(INFO) << "Match the getitem node for:" << pair.first->DebugString() << " level:" << pair.second
+                         << " input node:" << input_node->DebugString() << " for node:" << node->DebugString();
+            level = pair.second;
+          }
+        }
+      }
+      if (level == SIZE_MAX) {
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to find input:" << input_node->DebugString()
+                                          << " for node:" << node->DebugString() << " in graph output map.";
+      }
     }
     if (level == SIZE_MAX) {
       level = iter->second;

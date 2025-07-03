@@ -17,11 +17,12 @@
 #include "kernel/cpu/sparse_segment_sum_cpu_kernel.h"
 #include "functional"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sum_cpu {
 bool SparseSegmentSumCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
@@ -111,5 +112,6 @@ const std::vector<std::pair<KernelAttr, SparseSegmentSumCpuKernelMod::KernelRunF
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSegmentSum, SparseSegmentSumCpuKernelMod);
+}  // namespace sparse_segment_sum_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -17,7 +17,7 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore._checkparam import is_stub_tensor
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, inplace_copy_op
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_view_op, inplace_copy_op
 from tests.mark_utils import arg_mark
 
 
@@ -55,7 +55,7 @@ def test_tensor_sync():
 
 
 @pytest.mark.skip(reason="has not supported")
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_view_inplace_pynative():
     """
     Feature: View Inplace in PyNative mode.
@@ -65,7 +65,7 @@ def test_view_inplace_pynative():
     class Net(nn.Cell):
         def __init__(self, x):
             super().__init__()
-            self.x_viewed = select_ext_op(x, 0, 0)
+            self.x_viewed = select_ext_view_op(x, 0, 0)
             inplace_copy_op(self.x_viewed, ms.Tensor(-1))
             self.w = x
         def construct(self):

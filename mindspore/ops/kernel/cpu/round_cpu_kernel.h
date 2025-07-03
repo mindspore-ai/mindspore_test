@@ -20,11 +20,12 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace round_cpu {
 class RoundCpuKernelMod : public NativeCpuKernelMod {
  public:
   RoundCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class RoundCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, RoundFunc>> func_list_;
   RoundFunc kernel_func_;
 };
+}  // namespace round_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

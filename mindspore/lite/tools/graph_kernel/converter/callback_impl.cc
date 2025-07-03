@@ -27,6 +27,7 @@
 #include "include/common/utils/utils.h"
 #include "tools/graph_kernel/common/utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 ShapeVector CallbackImpl::GetInputShape(const AnfNodePtr &node, size_t i) { return GetInputInferShape(node, i); }
@@ -34,6 +35,7 @@ ShapeVector CallbackImpl::GetInputShape(const AnfNodePtr &node, size_t i) { retu
 ShapeVector CallbackImpl::GetOutputShape(const AnfNodePtr &node, size_t i) { return GetOutputInferShape(node, i); }
 
 ShapeVector CallbackImpl::GetInputInferShape(const AnfNodePtr &node, size_t i) {
+  MS_EXCEPTION_IF_NULL(node);
   KernelWithIndex kernel_with_index = AnfUtils::VisitKernel(node->cast<CNodePtr>()->input(i + 1), 0);
   return GetOutputInferShape(kernel_with_index.first, kernel_with_index.second);
 }

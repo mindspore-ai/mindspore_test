@@ -30,8 +30,6 @@
 #include <utility>
 #include <unordered_map>
 
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "base/base.h"
 #include "utils/log_adapter.h"
 #include "base/base_ref.h"
@@ -48,7 +46,7 @@ const int kInvalidVarIndex = -2;
 using PatternConditionFunc = std::function<bool(const BaseRef &)>;
 
 // Base wildcard variable which could match any anf node.
-class BACKEND_EXPORT Var : public Base {
+class BACKEND_COMMON_EXPORT Var : public Base {
  public:
   explicit Var(std::string tag = "") : tag_(std::move(tag)), primitive_(nullptr) { EnsureTag(); }
   explicit Var(const PrimitivePtr &primitive, std::string tag = "") : tag_(std::move(tag)), primitive_(primitive) {
@@ -121,7 +119,7 @@ using Seq = VectorRef;
 using SeqPtr = std::shared_ptr<Seq>;
 
 // Sequence Var which could match multiple consecutive input nodes of a CNode.
-class BACKEND_EXPORT SeqVar : public Var {
+class BACKEND_COMMON_EXPORT SeqVar : public Var {
  public:
   SeqVar() { subvar_ = std::make_shared<Var>(); }
   ~SeqVar() override = default;

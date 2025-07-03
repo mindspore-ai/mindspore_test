@@ -22,7 +22,7 @@
 void *MallocDeviceMemory(size_t data_size) {
   void *device_data = nullptr;
   auto ret = aclrtMalloc(&device_data, data_size, ACL_MEM_MALLOC_NORMAL_ONLY);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     std::cerr << "Malloc device buffer failed , buffer size " << data_size;
     return nullptr;
   }
@@ -37,7 +37,7 @@ void FreeDeviceMemory(void *device_data) {
 
 int CopyMemoryHost2Device(void *device_data, size_t dst_size, void *host_data, size_t src_size) {
   auto ret = aclrtMemcpy(device_data, dst_size, host_data, src_size, ACL_MEMCPY_HOST_TO_DEVICE);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     std::cerr << "Acl memcpy host data to device failed, src size: " << src_size << ", dst size: " << dst_size
               << std::endl;
     return -1;
@@ -47,7 +47,7 @@ int CopyMemoryHost2Device(void *device_data, size_t dst_size, void *host_data, s
 
 int CopyMemoryDevice2Host(void *host_data, size_t dst_size, void *device_data, size_t src_size) {
   auto ret = aclrtMemcpy(host_data, dst_size, device_data, src_size, ACL_MEMCPY_DEVICE_TO_HOST);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     std::cerr << "Acl memcpy device data to host failed, src size: " << src_size << ", dst size: " << dst_size
               << std::endl;
     return -1;

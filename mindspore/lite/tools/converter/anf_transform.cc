@@ -140,6 +140,7 @@
 #include "tools/optimizer/fusion/tile_matmul_fusion.h"
 #include "tools/optimizer/fusion/flash_attention_fusion_for_custom.h"
 #include "tools/optimizer/fusion/gegluv2_fusion.h"
+#include "tools/optimizer/fusion/leaky_relu_fusion.h"
 #include "tools/optimizer/fusion/ffn_fusion.h"
 #include "tools/optimizer/fusion/ffn_custom_pass.h"
 #include "tools/optimizer/graph/make_list_pass.h"
@@ -149,10 +150,12 @@
 #include "tools/optimizer/fusion/adjust_resize_dims_pass.h"
 #include "tools/optimizer/fusion/gnsnz_pass.h"
 #include "tools/optimizer/fusion/gnbmm_pass.h"
-#include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
+#include "tools/optimizer/graph/adjust_ascend_quant_pass.h"
 #include "tools/converter/converter_funcgraph.h"
 #include "tools/optimizer/graph/add_variable_node_pass.h"
 #include "tools/optimizer/fusion/adjust_col2im_pass.h"
+#include "tools/optimizer/fusion/add_stream_label_pass.h"
+#include "tools/optimizer/fusion/adjust_controlflow_pass.h"
 
 using std::string;
 namespace mindspore::lite {
@@ -408,6 +411,7 @@ int AnfTransform::RunParallelPass(const FuncGraphPtr &old_graph, const std::shar
     for (const auto &graph_input : graph_inputs) {
       if (utils::isa<Parameter>(graph_input)) {
         auto input_parameter = dyn_cast<Parameter>(graph_input);
+        MS_CHECK_TRUE_MSG(input_parameter != nullptr, RET_ERROR, "input_parameter is nullptr!");
         MSLITE_CHECK_PTR(input_parameter->Shape());
         auto shape_ptr = input_parameter->Shape()->cast<abstract::ShapePtr>();
         MSLITE_CHECK_PTR(shape_ptr);
@@ -828,6 +832,7 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
                                                           param->aclModelOptionCfgParam.enable_custom_fusion_pattern,
                                                           param->aclModelOptionCfgParam.disable_custom_fusion_pattern),
      false},
+    {"LeakyReluFusion", std::make_shared<opt::LeakyReluFusion>(), false},
     {"InsertVariableNodePass", std::make_shared<opt::InsertVariableNodePass>(param), false},
     {"MakeListPass", std::make_shared<opt::MakeListPass>(), true},
     {"FlashAttentionFusion", std::make_shared<opt::FlashAttentionFusion>(param->aclModelOptionCfgParam.op_attrs_map),
@@ -842,8 +847,10 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
     {"GNBMMPass", std::make_shared<opt::GNBMMPass>(), false},
     {"FuseAddAndLayernorm", std::make_shared<opt::FuseAddAndLayernorm>(), false},
     {"AdjustMatmulPass", std::make_shared<opt::AdjustMatmulPass>(), false},
-    {"AdjustQuantMatmulPass", std::make_shared<opt::AdjustQuantMatmulPass>(), false},
-    {"AdjustCol2imPass", std::make_shared<opt::AdjustCol2imPass>(), false}};
+    {"AdjustCol2imPass", std::make_shared<opt::AdjustCol2imPass>(), false},
+    {"AdjustAscendQunatPass", std::make_shared<opt::AdjustAscendQunatPass>(), false},
+    {"AddStreamLabelPass", std::make_shared<opt::AddStreamLabelPass>(param), false},
+    {"AdjustControlflowPass", std::make_shared<opt::AdjustControlflowPass>(), false}};
   for (const auto &pass_info : pass_infos) {
     MS_CHECK_TRUE_RET(std::get<1>(pass_info) != nullptr, false);
     PassStorage::StorePass(std::get<0>(pass_info), std::get<1>(pass_info), std::get<opt::kInputIndexTwo>(pass_info));

@@ -24,10 +24,6 @@ from util_minddataset import add_and_remove_cv_file
 
 # pylint: disable=no-value-for-parameter
 
-# Need to run all these tests in separate processes since MD internally stores
-# "training" dataset in a global variable every time.
-pytestmark = pytest.mark.forked
-
 
 def create_np_dataset(size):
     dimensions = (size, 4, 3, 2)

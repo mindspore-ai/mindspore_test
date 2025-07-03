@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,11 @@ Status SelfDefineShardInfo::CheckInputLayout() {
                   << ". User needs to ensure the accuracy and correctness of input/output layout, and framework "
                      "will only do basic check.";
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << " check input layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check input layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -112,7 +116,11 @@ Status SelfDefineShardInfo::CheckInputLayout() {
 
 Status SelfDefineShardInfo::CheckOutputLayout() {
   if (CheckLayout(outputs_shape_new_, outputs_tensor_info_new_, "output") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << " check output layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check output layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -195,15 +203,6 @@ Status SelfDefineShardInfo::InferOperatorVectorListForShapeList(const TensorInfo
       mirror_ops.emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
       continue;
     }
-    if (is_auto_parallel_) {
-      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                     << " failed in auto parallel mode, "
-                        "this error can be ignored in parallel strategies searching step";
-        return FAILED;
-      }
-      return SUCCESS;
-    }
 
     Group mirror_group;
     if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
@@ -232,15 +231,6 @@ Status SelfDefineShardInfo::InferOperatorVectorValueForShapeValue(const TensorIn
     MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << input_idx;
     mirror_ops_new->emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
     mirror_ops->emplace_back(mirror_op);
-    return SUCCESS;
-  }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                   << " failed in auto parallel mode, "
-                      "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
     return SUCCESS;
   }
 
@@ -307,7 +297,11 @@ Status CustomInfo::CheckInputLayout() {
                  << inputs_tensor_info_new_.size() << ". They are not equal, which means that scalar in it";
   }
   if (CheckLayout(inputs_shape_new_, inputs_tensor_info_new_, "input") != SUCCESS) {
-    MS_LOG(ERROR) << name_ << " check input layout failed";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << " check input layout failed";
+    } else {
+      MS_LOG(ERROR) << name_ << " check input layout failed";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -319,8 +313,11 @@ Status CustomInfo::GetAttrs() {
     MS_LOG(ERROR) << name_ << ": Can not find func_type attribute";
     return FAILED;
   }
-  auto func_type = func_type_iter->second->cast<StringImmPtr>()->value();
-  if ((func_type != "pyfunc") && func_type != "aot") {
+  MS_EXCEPTION_IF_NULL(func_type_iter->second);
+  auto func_type = func_type_iter->second->cast<StringImmPtr>();
+  MS_EXCEPTION_IF_NULL(func_type);
+  auto func_type_value = func_type->value();
+  if ((func_type_value != "pyfunc") && func_type_value != "aot") {
     MS_LOG(ERROR) << name_ << ": The func_type attribute must be 'pyfunc' or 'aot', but got " << func_type;
   }
   return SUCCESS;

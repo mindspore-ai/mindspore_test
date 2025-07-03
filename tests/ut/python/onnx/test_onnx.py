@@ -220,3 +220,29 @@ def test_onnx_export_load_run(name, net, inp):
     assert os.path.exists(file_name)
     os.chmod(file_name, stat.S_IWRITE)
     os.remove(file_name)
+
+
+class StridedSliceNet(nn.Cell):
+    def construct(self, x):
+        return P.StridedSlice()(x, (0, 0), (1, 1), (1, 1))
+
+
+def test_export_stridedslice():
+    """
+    Feature: Export ops.StridedSlice to onnx
+    Description: Export ops.StridedSlice to onnx
+    Expectation: success
+    """
+    np_x = np.array([[0, 1], [2, 3]]).astype(np.float32)
+    x = Tensor(np_x)
+    net = StridedSliceNet()
+    export(net, x, file_name='./strided_slice_onnx', file_format='ONNX')
+    if os.path.isfile("./strided_slice_onnx.onnx"):
+        import onnxruntime as ort
+        session = ort.InferenceSession("./strided_slice_onnx.onnx")
+        output = session.run(None, {"x": np_x})[0]
+        expected = np_x[0:1, 0:1]
+        assert np.array_equal(output, expected)
+        os.remove("./strided_slice_onnx.onnx")
+    else:
+        raise RuntimeError(f"Export operator NotEqual to ONNX failed!")

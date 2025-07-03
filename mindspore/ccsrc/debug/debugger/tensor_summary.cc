@@ -22,40 +22,9 @@
 #include <bitset>
 #include <tuple>
 #include <type_traits>
-
-#ifdef OFFLINE_DBG_MODE
 #include "base/float16.h"
-#endif
 
 namespace mindspore {
-RangeCountCalculator::RangeCountCalculator()
-    : range_start_inclusive(-std::numeric_limits<double>::infinity()),
-      range_end_inclusive(std::numeric_limits<double>::infinity()),
-      count(0),
-      total(0) {}
-
-void RangeCountCalculator::ProcessElement(double element) {
-  if (element >= range_start_inclusive && element <= range_end_inclusive) {
-    count += 1;
-  }
-  total += 1;
-}
-
-double RangeCountCalculator::GetPercentInRange() const {
-  if (total == 0) {
-    return 0.0;
-  }
-  const double factor = 100.0;
-  return factor * count / total;
-}
-
-AllCloseCalculator::AllCloseCalculator() : atol(1.0e-8), rtol(1.0e-5), result(true) {}
-
-void AllCloseCalculator::ProcessElement(double current, double previous) {
-  result = result && (std::abs(current - previous) <= (atol + rtol * std::abs(previous)));
-}
-
-bool AllCloseCalculator::IsAllClose() const { return result; }
 
 MeanCalculator::MeanCalculator() : mean(0.0), count(0) {}
 
@@ -65,26 +34,6 @@ void MeanCalculator::ProcessElement(double value) {
 }
 
 double MeanCalculator::GetMean() const { return mean / count; }
-
-VarianceAndMeanCalculator::VarianceAndMeanCalculator() : mean(0.0), count(0), m2(0.0) {}
-
-void VarianceAndMeanCalculator::ProcessElement(double value) {
-  count += 1;
-  double delta = value - mean;
-  mean += delta / count;
-  m2 += delta * (value - mean);
-}
-
-double VarianceAndMeanCalculator::GetMean() const { return mean; }
-
-double VarianceAndMeanCalculator::GetVariance() const {
-  if (count > 1) {
-    return m2 / (count - 1);
-  }
-  return 0.0;
-}
-
-double VarianceAndMeanCalculator::GetStandardDeviation() const { return sqrt(GetVariance()); }
 
 void L2Calculator::ProcessElement(double value) { squre_sum += value * value; }
 
@@ -109,9 +58,7 @@ TensorSummary<T>::TensorSummary(const void *current_tensor_ptr, const void *cons
       neg_inf_count_(0),
       inf_count_(0),
       nan_count_(0),
-      zero_count_(0),
-      epsilon_(1.0e-9),
-      mean_sd_cal_enabled_(false) {}
+      zero_count_(0) {}
 
 /*
  * Feature group: Online debugger, Offline debugger.

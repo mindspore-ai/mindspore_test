@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_reduce.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace kernel {
@@ -35,6 +35,10 @@ bool HcomReduceKernel::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(send_buf);
   MS_EXCEPTION_IF_NULL(recv_buf);
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (NeedReGetHcom()) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduce(
     send_buf, recv_buf, hccl_count_, hccl_data_type_list_[kIndex0], op_type_, dest_rank_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

@@ -19,10 +19,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dilation2d_cpu {
 namespace {
-constexpr size_t kInputIndex = 0;
+constexpr size_t kInputIdx = 0;
 constexpr size_t kFilterIndex = 1;
-constexpr size_t kOutputIndex = 0;
+constexpr size_t kOutputIdx = 0;
 constexpr size_t kInputNum = 2;
 constexpr size_t kOutputNum = 1;
 constexpr size_t kDimSize3 = 3;
@@ -60,9 +61,9 @@ int Dilation2DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (ret != 0) {
     return ret;
   }
-  input_shape_ = inputs[kInputIndex]->GetShapeVector();
+  input_shape_ = inputs[kInputIdx]->GetShapeVector();
   filter_shape_ = inputs[kFilterIndex]->GetShapeVector();
-  output_shape_ = outputs[kOutputIndex]->GetShapeVector();
+  output_shape_ = outputs[kOutputIdx]->GetShapeVector();
   (void)CheckKernelParam();
   return KRET_OK;
 }
@@ -73,9 +74,9 @@ bool Dilation2DCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
-  T *input = static_cast<T *>(inputs[kInputIndex]->device_ptr());
+  T *input = static_cast<T *>(inputs[kInputIdx]->device_ptr());
   T *filter = static_cast<T *>(inputs[kFilterIndex]->device_ptr());
-  T *output = static_cast<T *>(outputs[kOutputIndex]->device_ptr());
+  T *output = static_cast<T *>(outputs[kOutputIdx]->device_ptr());
 
   int64_t num_batch = input_shape_[kFormatNCHWIndexN];
   int64_t input_height = input_shape_[kFormatNCHWIndexH];
@@ -219,5 +220,6 @@ bool Dilation2DCpuKernelMod::CheckKernelParam() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dilation2D, Dilation2DCpuKernelMod);
+}  // namespace dilation2d_cpu
 }  // namespace kernel
 }  // namespace mindspore

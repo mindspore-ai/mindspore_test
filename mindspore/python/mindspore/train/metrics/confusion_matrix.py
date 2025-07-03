@@ -23,15 +23,15 @@ from mindspore.train.metrics.metric import Metric, rearrange_inputs
 
 class ConfusionMatrix(Metric):
     """
-    Computes the confusion matrix, which is commonly used to evaluate the performance of classification models,
+    Computes the Confusion Matrix, which is commonly used to evaluate the performance of classification models,
     including binary classification and multiple classification.
 
-    If you only need confusion matrix, use this class. If you want to calculate other metrics, such as 'PPV',
+    If you only need Confusion Matrix, use this class. If you want to calculate other metrics, such as 'PPV',
     'TPR', 'TNR', etc., use class :class:`mindspore.train.ConfusionMatrixMetric` .
 
     Args:
         num_classes (int): Number of classes in the dataset.
-        normalize (str): Normalization mode for confusion matrix. Default: ``"no_norm"`` . Choose from:
+        normalize (str): Normalization mode for Confusion Matrix. Default: ``"no_norm"`` . Choose from:
 
             - ``"no_norm"`` : No Normalization is used. Default: ``None``.
             - ``"target"`` : Normalization based on target value.
@@ -78,7 +78,7 @@ class ConfusionMatrix(Metric):
     @rearrange_inputs
     def update(self, *inputs):
         """
-        Update state with y_pred and y.
+        Update state with `y_pred` and `y`.
 
         Args:
             inputs(tuple): Input `y_pred` and `y`. `y_pred` and `y` are a `Tensor`, list or numpy.ndarray.
@@ -88,7 +88,7 @@ class ConfusionMatrix(Metric):
 
         Raises:
             ValueError: If the number of inputs is not 2.
-            ValueError: If the dim of y_pred and y are not equal.
+            ValueError: If the dims of `y_pred` and `y` are not equal.
         """
         if len(inputs) != 2:
             raise ValueError("For 'ConfusionMatrix.update', it needs 2 inputs (predicted value, true value), "
@@ -151,8 +151,8 @@ class ConfusionMatrixMetric(Metric):
     batch, class channel and iteration are collected. All metrics supported by the interface are listed in comments
     of `metric_name`.
 
-    If you want to calculate metrics related to confusion matrix, such as 'PPV', 'TPR', 'TNR', use this class.
-    If you only want to calculate confusion matrix, please use :class:`mindspore.train.ConfusionMatrix` .
+    - If you want to calculate metrics related to confusion matrix, such as 'PPV', 'TPR', 'TNR', use this class.
+    - If you only want to calculate confusion matrix, please use :class:`mindspore.train.ConfusionMatrix` .
 
     Args:
         skip_channel (bool): Whether to skip the measurement calculation on the first channel of the predicted output.
@@ -163,9 +163,9 @@ class ConfusionMatrixMetric(Metric):
                            "threat score", "accuracy", "balanced accuracy", "f1 score",
                            "matthews correlation coefficient", "fowlkes mallows index", "informedness", "markedness"].
                            Default: ``"sensitivity"`` .
-        calculation_method (bool): If true, the measurement for each sample will be calculated first.
+        calculation_method (bool): If ``True``, the measurement for each sample will be calculated first.
                            If not, the confusion matrix of all samples will be accumulated first.
-                           As for classification task, 'calculation_method' should be False. Default: ``False`` .
+                           As for classification task, 'calculation_method' should be ``False``. Default: ``False`` .
         decrease (str): The reduction method on data batch. `decrease` takes effect only when calculation_method
                         is True. Default: ``"mean"`` . Choose from:
                         ["none", "mean", "sum", "mean_batch", "sum_batch", "mean_channel", "sum_channel"].

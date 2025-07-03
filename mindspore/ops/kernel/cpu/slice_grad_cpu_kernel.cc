@@ -22,12 +22,14 @@
 #include <complex>
 #include <utility>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ir/primitive.h"
 #include "ir/dtype/type.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
+namespace slice_grad_cpu {
 namespace {
 constexpr size_t kSliceGradInputsNum = 4;
 constexpr size_t kStridedSliceGradInputsNum = 5;
@@ -535,5 +537,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, SliceGrad,
                                  []() { return std::make_shared<SliceGradCpuKernelMod>(kSliceGrad); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, StridedSliceGrad,
                                  []() { return std::make_shared<SliceGradCpuKernelMod>(kStridedSliceGrad); });
+}  // namespace slice_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

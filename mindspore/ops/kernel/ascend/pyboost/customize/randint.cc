@@ -15,18 +15,16 @@
  */
 
 #include "kernel/ascend/pyboost/customize/randint.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr low,
-                                             const Int64ImmPtr high, const ValueTuplePtr &shape,
-                                             const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-                                             const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr low,
+                                         const Int64ImmPtr high, const ValueTuplePtr &shape, const TensorPtr &seed,
+                                         const TensorPtr &offset, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, low, high, shape, seed, offset, dtype);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto low_imm = GetValueWithCheck<int64_t>(low);

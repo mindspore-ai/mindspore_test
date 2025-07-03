@@ -151,12 +151,12 @@ class _GradChecker:
         return func_forward_graph
 
     def to_numpy(self, x):
-        if isinstance(x, (Tensor, _c_expression.Tensor)):
+        if isinstance(x, (Tensor, _c_expression.TensorPy)):
             return x.asnumpy()
         return x
 
     def to_numpy_and_scale(self, x):
-        if isinstance(x, (Tensor, _c_expression.Tensor)):
+        if isinstance(x, (Tensor, _c_expression.TensorPy)):
             return x.asnumpy() * self.delta
         return x * self.delta
 
@@ -180,7 +180,7 @@ class _GradChecker:
         print('GradChecker.compute_theoretical.args', args)
         gout = self.gfns[i](*args)
         gout = self.wrap(gout)
-        self.gout = [self.to_numpy_and_scale(g) if isinstance(g, _c_expression.Tensor) \
+        self.gout = [self.to_numpy_and_scale(g) if isinstance(g, _c_expression.TensorPy) \
                          else self.to_numpy_and_scale(np.array(g)) for g in gout]
         print('GradChecker.compute_theoretical.gout', self.gout)
 
@@ -277,7 +277,7 @@ class _GradChecker:
         args.append(Tensor(dy_mask))
         print('GradChecker.compute_theoretical.args', args)
         gout = self.wrap(self.gfns[out_index](*args))
-        gout = [self.to_numpy_and_scale(g) if isinstance(g, _c_expression.Tensor) \
+        gout = [self.to_numpy_and_scale(g) if isinstance(g, _c_expression.TensorPy) \
                     else self.to_numpy_and_scale(np.array(g)) for g in gout]
         print('GradChecker.compute_theoretical.gout', gout)
         dy_mask.ravel().view()[jacobian_col] = 0.0

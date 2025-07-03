@@ -15,6 +15,8 @@
  */
 #include "plugin/device/ascend/llm_boost/atb/workspace.h"
 
+#include "utils/ms_utils.h"
+
 namespace mindspore {
 namespace kernel {
 
@@ -38,7 +40,7 @@ void *Workspace::GetWorkspaceBuffer(uint64_t bufferSize) {
 }
 
 uint64_t Workspace::GetWorkspaceBufferRing() const {
-  const char *envStr = std::getenv("ATB_CONTEXT_WORKSPACE_RING");
+  const char *envStr = common::EnvHelper::GetInstance()->GetEnv("ATB_CONTEXT_WORKSPACE_RING");
   if (envStr == nullptr) {
     return 1;
   }
@@ -46,7 +48,7 @@ uint64_t Workspace::GetWorkspaceBufferRing() const {
 }
 
 uint64_t Workspace::GetWorkspaceBufferSize() const {
-  const char *envStr = std::getenv("ATB_CONTEXT_WORKSPACE_SIZE");
+  const char *envStr = common::EnvHelper::GetInstance()->GetEnv("ATB_CONTEXT_WORKSPACE_SIZE");
   if (envStr == nullptr) {
     return 0;
   }

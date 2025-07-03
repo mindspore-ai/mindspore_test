@@ -17,18 +17,16 @@
 #include "kernel/ascend/pyboost/customize/rotary_position_embedding_grad.h"
 #include <string>
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void RotaryPositionEmbeddingGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                                const BaseTensorPtr &cos_tensor, const BaseTensorPtr &sin_tensor,
-                                                const std::optional<BaseTensorPtr> &dx_tensor,
-                                                const Int64ImmPtr &mode) {
+void RotaryPositionEmbeddingGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dy_tensor,
+                                                const TensorPtr &cos_tensor, const TensorPtr &sin_tensor,
+                                                const std::optional<TensorPtr> &dx_tensor, const Int64ImmPtr &mode) {
   OpRunner::InferOpOutput(op, dy_tensor, cos_tensor, sin_tensor, dx_tensor, mode);
   // ValueTuple to std::vector
 

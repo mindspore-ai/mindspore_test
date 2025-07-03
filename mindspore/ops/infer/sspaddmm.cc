@@ -47,12 +47,11 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-const int64_t MAX_LEN = 1000000;
-
 int64_t GetIndicesUniqueNum(const std::vector<int64_t> &indices) {
   std::set<int64_t> indices_set;
   size_t half_size = indices.size() / 2;

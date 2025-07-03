@@ -20,11 +20,12 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_power_cpu {
 class MatrixPowerCpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixPowerCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class MatrixPowerCpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace matrix_power_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MATRIX_POWER_CPU_KERNEL_H_

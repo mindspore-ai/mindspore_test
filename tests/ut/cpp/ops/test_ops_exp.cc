@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-#include "common/common_test.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "ops/test_ops.h"
-#include "infer/ops_func_impl/exp.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(Exp, EltwiseOpParams);
-OP_FUNC_IMPL_TEST_CASES(Exp, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
-                                             EltwiseOpParams{{2, 3}, kBool, {2, 3}, kFloat32},
-                                             EltwiseOpParams{{2, 3}, kInt64, {2, 3}, kFloat32},
-                                             EltwiseOpParams{{-1, 3}, kFloat32, {-1, 3}, kFloat32},
-                                             EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                                             EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(Exp, GeneralInferTest, single_input_eltwise_op_default_cases);
 }  // namespace ops
 }  // namespace mindspore

@@ -23,6 +23,8 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 
+context.set_context(jit_level="O0")
+
 def setup_module():
     compile_config.GRAD_FOR_SCALAR = 1
 
@@ -56,7 +58,7 @@ def test_scalar_add(mode):
     assert np.allclose(output, expect_out)
     device_target = context.get_context("device_target")
     if mode == ms.PYNATIVE_MODE and device_target == "Ascend":
-        # When input is mutable, InferValue dose not work. Since there is no backend implementation on Ascend and
+        # When input is mutable, InferValue does not work. Since there is no backend implementation on Ascend and
         # heterogeneous computing is not supported in Graph Mode, this case will only run in Pynative Mode for Ascend.
         mutable_output = scalar_add_forward_func(ms.mutable(input_x), ms.mutable(input_y))
         assert np.allclose(mutable_output, expect_out)

@@ -24,6 +24,8 @@
 #include "tools/converter/quantizer/quant_strategy.h"
 #include "tools/converter/quantizer/fixed_bit_weight_quantization_with_holder.h"
 #include "tools/common/node_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::lite::quant {
 int QuantNodePass::DoWeightQuant(const CNodePtr &cnode) {

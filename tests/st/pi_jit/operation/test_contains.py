@@ -1,20 +1,14 @@
-import sys
 import pytest
 from mindspore import numpy as np
 from mindspore import Tensor, jit, context
-from ..share.utils import match_array, assert_executed_by_graph_mode
+from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 jit_cfg = {'compile_with_try': False}
 
 
-@jit(mode="PIJit", jit_config=jit_cfg)
+@pi_jit_with_config(jit_config=jit_cfg)
 def pijit_in(a, b):
     return a in b
 
@@ -23,7 +17,7 @@ def pynative_in(a, b):
     return a in b
 
 
-@jit(mode="PIJit", jit_config=jit_cfg)
+@pi_jit_with_config(jit_config=jit_cfg)
 def pijit_not_in(a, b):
     return a not in b
 
@@ -41,7 +35,6 @@ def common_test_case(func, ms_func, a, b, error=0, type_check='array'):
         ms_res = ms_func(a, b)
         res = func(a, b)
     match_array(res, ms_res, error=error, err_msg=str(ms_res))
-    assert_executed_by_graph_mode(func)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
+#include "frontend/parallel/graph_util/solve_flash_attention_score_for_seqpipe.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/value.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -39,6 +40,17 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/parallel_node_check.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
 namespace mindspore {
 namespace parallel {
@@ -51,8 +63,11 @@ std::string TagForSendRecDepend(const AnfNodePtr &prior_node, const AnfNodePtr &
   if (!IsSendRec(prior_node) || !IsSendRec(post_node)) {
     return "";
   }
-  if (prior_node->cast<CNodePtr>()->HasPrimalAttr(kPrimalAttrForwardNodeName) ==
-      post_node->cast<CNodePtr>()->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+  auto prior_cnode = prior_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(prior_cnode);
+  auto post_cnode = post_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(post_cnode);
+  if (prior_cnode->HasPrimalAttr(kPrimalAttrForwardNodeName) == post_cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
     return "";
   }
   return std::string(SEND_REC_DEPEND);
@@ -70,6 +85,13 @@ bool IsLastStage() {
   auto stage_num = g_device_manager->stage_num();
   auto stage_id = g_device_manager->stage_id();
   return ((stage_num - 1) == stage_id);
+}
+
+bool PrimHasAttr(const PrimitivePtr &prim, const std::string &attrName) {
+  if ((prim != nullptr) && prim->HasAttr(attrName)) {
+    return true;
+  }
+  return false;
 }
 
 static ValuePtr GetReceiveMicro(const CNodePtr &cnode) {
@@ -133,13 +155,6 @@ static bool EnableShareCell() {
     MS_LOG(EXCEPTION) << "The cell reuse cannot be used with communication reuse,"
                          " please unset environment variable 'MS_COMM_COMPILER_OPT'";
   }
-  MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
-  bool grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
-  if (grad_accumulation_shard && cell_reuse) {
-    MS_LOG(EXCEPTION)
-      << "The cell reuse cannot be used with sharding accumulate grad parameter with optimizer parallel,"
-         " please set_auto_parallel_context(parallel_optimizer_config={'gradient_accumulation_shard':False})";
-  }
   return cell_reuse;
 }
 
@@ -184,10 +199,12 @@ static bool CallGradNodes(const FuncGraphPtr &graph, const FuncGraphPtr &grad_gr
       continue;
     }
     const auto &abs_func = abs->cast<abstract::AbstractFunctionPtr>();
+    MS_EXCEPTION_IF_NULL(abs_func);
     if (!abs_func->isa<abstract::FuncGraphAbstractClosure>()) {
       continue;
     }
     const auto &abs_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+    MS_EXCEPTION_IF_NULL(abs_func_graph);
     auto fg = abs_func_graph->func_graph();
     if (fg && fg == grad_graph) {
       return true;
@@ -245,11 +262,13 @@ void SetParameterStartForCellShare(const FuncGraphPtr &root) {
       continue;
     }
     const auto &abs_func = abs->cast<abstract::AbstractFunctionPtr>();
+    MS_EXCEPTION_IF_NULL(abs_func);
     if (!abs_func->isa<abstract::FuncGraphAbstractClosure>()) {
       continue;
     }
     std::set<FuncGraphPtr> visit;
     const auto &abs_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+    MS_EXCEPTION_IF_NULL(abs_func_graph);
     auto fg = abs_func_graph->func_graph();
     if (!fg || (call_grad_nodes.find(fg) == call_grad_nodes.end() && !CallGradNodes(fg, grad_graph, &visit))) {
       continue;
@@ -303,6 +322,7 @@ AnfNodePtr FindAccuGrad(const CNodePtr &cnode) {
     } else {
       if (pre_node->isa<CNode>()) {
         auto pre_cnode = pre_node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(pre_cnode);
         pre_node = pre_cnode->input(1);
       } else {
         return nullptr;
@@ -310,6 +330,15 @@ AnfNodePtr FindAccuGrad(const CNodePtr &cnode) {
     }
   }
   return nullptr;
+}
+
+std::vector<std::vector<int64_t>> get_dataset_stra() {
+  if (!ParallelContext::GetInstance()->dataset_strategy_tensormap().empty() &&
+      !ParallelContext::GetInstance()->dataset_strategy_devmat().empty()) {
+    return ConvertDatasetLayoutToStrategy();
+  } else {
+    return ParallelContext::GetInstance()->dataset_strategy();
+  }
 }
 
 void SetStridedSliceStrategy(const AnfNodePtr &node) {
@@ -341,8 +370,8 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
     for (size_t j = 0; j < shape_list[0][i].size(); j++) {
       input_strategy.push_back(1);
     }
+    std::vector<std::vector<int64_t>> data_stra = get_dataset_stra();
     static const auto skip_redis = (common::GetEnv("PIPELINE_SLICE_SKIP_REDISTRIBUTION") == "1");
-    auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
     if (skip_redis && !full_batch && input_strategy.size() > 0) {
       auto dim = shape_list[1][0][0];
       if (!data_stra.empty()) {
@@ -358,6 +387,9 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
         }
       }
       auto prim = GetCNodePrimitive(node);
+      if (prim == nullptr) {
+        continue;
+      }
       if (prim->HasAttr("out_shard_size")) {
         auto out_shard_size = GetValue<int64_t>(prim->GetAttr("out_shard_size"));
         input_strategy[0] = out_shard_size;
@@ -402,7 +434,7 @@ bool IsSourceUsedByMirror(const CNodePtr &node, const NodeUsersMap &node_user_ma
     return false;
   }
   auto parameter_node = node->input(1);
-  if (parameter_node->cast<ParameterPtr>()) {
+  if (parameter_node->cast<ParameterPtr>() || IsPrimitiveCNode(parameter_node, prim::kPrimMicroStepAllGather)) {
     for (auto &item : node_user_map.at(parameter_node)) {
       if (IsPrimitiveCNode(item.first, prim::kPrimMirrorMicroStep)) {
         return true;
@@ -411,9 +443,11 @@ bool IsSourceUsedByMirror(const CNodePtr &node, const NodeUsersMap &node_user_ma
   }
   return false;
 }
+
 void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const FuncGraphManagerPtr &manager,
                             const AnfNodePtr &accu_parameter, const NodeUsersMap &node_user_map) {
   auto cnode = node_user.first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   if (IsPrimitiveCNode(cnode, prim::kPrimReceive) || !cnode->in_forward_flag()) {
     return;
   }
@@ -445,8 +479,15 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
       step = GetValue<int64_t>(micro);
     }
   }
-  args1 = MakeValue(param_ptr->user_data<TensorLayout>()->opt_shard_group());
-  args2 = MakeValue(LongToSize(param_ptr->param_info()->comm_fusion()) + LongToSize(step) * PIPELINE_FUSTION_OFFSET);
+  auto tensor_layout = param_ptr->user_data<TensorLayout>();
+  MS_EXCEPTION_IF_NULL(tensor_layout);
+  args1 = MakeValue(tensor_layout->opt_shard_group());
+  if (ParallelContext::GetInstance()->zero3()) {
+    args1 = MakeValue("");
+  }
+  auto param_info = param_ptr->param_info();
+  MS_EXCEPTION_IF_NULL(param_info);
+  args2 = MakeValue(LongToSize(param_info->comm_fusion()) + LongToSize(step) * PIPELINE_FUSTION_OFFSET);
   OperatorAttrs attrs = {};
   auto py_instance = CreateOpInstance(attrs, VIRTUAL_ASSIGN_ADD, VIRTUAL_ASSIGN_ADD);
   auto value_node = NewValueNode(py_instance);
@@ -454,6 +495,7 @@ void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const F
   auto new_prim = GetValueNode<PrimitivePtr>(value_node);
   MS_EXCEPTION_IF_NULL(new_prim);
   auto attrs_prim = new_prim->attrs();
+
   attrs_prim[GROUP] = args1;
   attrs_prim[kAttrFusion] = args2;
   if (cnode->HasPrimalAttr(PIPELINE_PARAM)) {
@@ -538,9 +580,12 @@ std::set<std::pair<AnfNodePtr, int>> FuncNodeUsersSet(const AnfNodePtr &paramete
   std::set<std::pair<AnfNodePtr, int>> all_node_users;
   for (auto &n_pair : node_users) {
     auto users_skip_virtual_nodes =
-      FindNextNode(n_pair, node_users_map,
-                   {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name(),
-                    prim::kPrimCast->name()});
+      !ParallelContext::GetInstance()->zero3()
+        ? FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(),
+                        prim::kPrimLoad->name(), prim::kPrimCast->name()})
+        : FindNextNode(n_pair, node_users_map,
+                       {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name(), prim::kPrimCast->name()});
     for (const auto &node_pair : users_skip_virtual_nodes) {
       auto func_node_users = FuncGraphNodeUsers(node_pair);
       if (func_node_users.empty()) {
@@ -578,8 +623,10 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
     MS_EXCEPTION_IF_NULL(node->func_graph()->manager());
     auto base_shape = accu_parameter->Shape();
     auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
+    MS_EXCEPTION_IF_NULL(shape_ptr);
     auto slice_shape = shape_ptr->shape();
     auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     std::vector<ValuePtr> element;
     (void)std::transform(slice_shape.begin(), slice_shape.end(), std::back_inserter(element),
                          [](int64_t elem) { return MakeValue(elem); });
@@ -629,13 +676,19 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
       if (IsPrimitiveCNode(temp_node.first, prim::kPrimCast)) {
         temp_node = *node_users_map[temp_node.first].begin();
       }
+      bool insert_before_ag_in_zero3 =
+        ParallelContext::GetInstance()->zero3() && IsPrimitiveCNode(temp_node.first, prim::kPrimMicroStepAllGather);
       if (!IsSomePrimitiveList(
             temp_node.first->cast<CNodePtr>(),
-            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()})) {
+            {prim::kPrimMirrorMicroStep->name(), prim::kPrimMicroStepAllGather->name(), prim::kPrimLoad->name()}) ||
+          insert_before_ag_in_zero3) {
         InsertVirtualAssignAdd(temp_node, root->manager(), accu_parameter, node_users_map);
         continue;
       }
-      auto node_set = FindNextNode(temp_node, node_users_map);
+      auto node_set =
+        !ParallelContext::GetInstance()->zero3()
+          ? FindNextNode(temp_node, node_users_map)
+          : FindNextNode(temp_node, node_users_map, {prim::kPrimMirrorMicroStep->name(), prim::kPrimLoad->name()});
       for (auto &node_user : node_set) {
         InsertVirtualAssignAdd(node_user, root->manager(), accu_parameter, node_users_map);
       }
@@ -909,6 +962,7 @@ void BroadCastMicroBatch(const CNodePtr &node, NodeUsersMap *node_users_map, con
   }
   for (auto &node_pair : node_users) {
     auto user_node = node_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_node);
     if (user_node->HasPrimalAttr(MICRO) || IsPrimitiveCNode(user_node, prim::kPrimUpdateState)) {
       continue;
     }
@@ -966,7 +1020,7 @@ void LastStageEndNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
       continue;
     }
     auto prim = GetCNodePrimitive(node);
-    if (prim && prim->HasAttr(PIPELINE_END)) {
+    if (PrimHasAttr(prim, PIPELINE_END)) {
       for (size_t i = 0; i < cnode->size(); ++i) {
         auto temp_node = GetRealKernelNode(cnode->input(i), -1, nullptr).first;
         if (!temp_node->isa<CNode>()) {
@@ -1009,11 +1063,11 @@ void ParameterStartNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(node);
-    if (prim && prim->HasAttr(PARAMETER_START_SHARE_CELL)) {
+    if (PrimHasAttr(prim, PARAMETER_START_SHARE_CELL)) {
       cnode->AddPrimalAttr(PARAMETER_START_SHARE_CELL, prim->GetAttr(PARAMETER_START_SHARE_CELL));
       continue;
     }
-    if (prim && prim->HasAttr(PARAMETER_START)) {
+    if (PrimHasAttr(prim, PARAMETER_START)) {
       auto micro = Micro(cnode, &node_users_map, 0);
       MS_EXCEPTION_IF_NULL(micro);
       auto new_prim = prim->Clone();
@@ -1034,6 +1088,7 @@ void HandleMicroBatch(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(MICRO)) {
       continue;
     }
@@ -1051,8 +1106,9 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
       continue;
     }
     auto slice_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(slice_cnode);
     auto slice_prim = GetCNodePrimitive(slice_cnode);
-    if (!slice_prim->HasAttr("seq_split_slice")) {
+    if (slice_prim == nullptr || !slice_prim->HasAttr("seq_split_slice")) {
       continue;
     }
     SetStridedSliceStrategy(slice_cnode);
@@ -1075,6 +1131,7 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
     index_map[v] = index;
     ++index;
   }
+  CNodePtrList call_cnode_list;
   for (const auto &slice_cnode : slice_vector) {
     auto shape_tuple = GetValue<std::vector<int64_t>>(GetValueNode(slice_cnode->input(kIndex2)));
     auto accu_value = std::accumulate(shape_tuple.begin(), shape_tuple.end(), 0);
@@ -1090,12 +1147,15 @@ void BroadCastSeqChunk(const FuncGraphPtr &root) {
         continue;
       }
       auto call_cnode = slice_user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(call_cnode);
       if (!IsValueNode<FuncGraph>(call_cnode->input(0))) {
         continue;
       }
       call_cnode->AddPrimalAttr(SEQ_CHUNK, MakeValue(seq_chunk));
+      call_cnode_list.push_back(call_cnode);
     }
   }
+  SolveFASparseForSeqPipe(call_cnode_list, accu_shape_set.size());
 }
 
 // Add virtual_assign_kv_cache cnode between key/value and updating for kv_cache.
@@ -1111,6 +1171,7 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
       continue;
     }
     auto add_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(add_cnode);
     auto add_input = GetInputNodeWithFilter(add_cnode->input(kIndex2), [&](const CNodePtr &cnode) {
       bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad) || IsPrimitiveCNode(cnode, prim::kPrimDepend);
       return std::make_pair(filter, 1);
@@ -1119,6 +1180,7 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
       continue;
     }
     auto param = add_input->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
     auto param_name = param->name();
     if (param_name.find("key_cache") == std::string::npos && param_name.find("value_cache") == std::string::npos) {
       continue;
@@ -1130,7 +1192,9 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
       if (!IsPrimitiveCNode(add_user_pair.first, prim::kPrimSelect)) {
         continue;
       }
-      kv_equal = add_user_pair.first->cast<CNodePtr>()->input(kIndex1);
+      auto select_node = add_user_pair.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(select_node);
+      kv_equal = select_node->input(kIndex1);
     }
     if (!kv_equal) {
       continue;
@@ -1141,6 +1205,7 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
       continue;
     }
     auto not_equal_cnode = kv_equal_cnode->input(kIndex2)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(not_equal_cnode);
     auto kv_cache_grad = FindGradAccuParameter(parameters, param_name, param_name + "_grad");
     if (!kv_cache_grad) {
       continue;
@@ -1153,6 +1218,9 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
     auto func_graph = kv_add_input->func_graph();
     auto virtual_assign_kv_cache = func_graph->NewCNode(virtual_assign_kv_cache_inputs);
     auto kv_prim = GetCNodePrimitive(virtual_assign_kv_cache);
+    if (kv_prim == nullptr) {
+      continue;
+    }
     kv_prim->AddAttr("param_name", MakeValue(param_name));
     (void)manager->Replace(kv_add_input, virtual_assign_kv_cache);
   }
@@ -1161,9 +1229,18 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
 AnfNodePtr GetActualOp(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimDepend)) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     return cnode->input(1);
   }
   return node;
+}
+
+static bool IsBorderNode(const AnfNodePtr &node) {
+  if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimDepend) ||
+      IsPrimitiveCNode(node, prim::kPrimZerosLike)) {
+    return false;
+  }
+  return true;
 }
 
 void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePtr> *forward_end,
@@ -1174,8 +1251,7 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
   int64_t slice_index = 0;
   auto all_nodes = DeepScopedGraphSearch(root->get_return());
   for (auto &node : all_nodes) {
-    if (!node->isa<CNode>() || IsPrimitiveCNode(node, prim::kPrimDepend) ||
-        IsPrimitiveCNode(node, prim::kPrimZerosLike)) {
+    if (!IsBorderNode(node)) {
       continue;
     }
     auto prim = GetCNodePrimitive(node);
@@ -1186,6 +1262,12 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
       backward_end->push_back(node);
     }
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      if (cnode->HasPrimalAttr(FREEZE)) {
+        auto freeze_v = cnode->GetPrimalAttr(FREEZE);
+        if (GetValue<bool>(freeze_v)) {
+          continue;
+        }
+      }
       auto forward_node_name = cnode->GetPrimalAttr(kPrimalAttrForwardNodeName);
       if (std::find(name_list.begin(), name_list.end(), forward_node_name) != name_list.end()) {
         continue;
@@ -1203,7 +1285,7 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
       if (cnode->HasPrimalAttr(PIPELINE_PARAM)) {
         backward_params->push_back(node);
       }
-      if (prim->HasAttr(PARAMETER_MICRO)) {
+      if (PrimHasAttr(prim, PARAMETER_MICRO)) {
         allreduce_params->push_back(node);
       }
       continue;

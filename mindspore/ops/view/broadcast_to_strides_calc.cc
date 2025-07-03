@@ -62,9 +62,8 @@ bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &
   return true;
 }
 
-TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::BaseTensorPtr input_tensor,
-                                            const std::vector<int64_t> &input_x) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor_info,
+                                               const std::vector<int64_t> &input_x) {
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
@@ -103,12 +102,24 @@ TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tens
   return {new_storage_info};
 }
 
+TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::TensorPtr input_tensor,
+                                            const std::vector<int64_t> &input_x) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return BroadCastToStrideCalc(old_tensor_info, input_x);
+}
+
+TensorStorageInfoPtrList BroadcastToBasicTypeCalc(const PrimitivePtr &prim,
+                                                  const mindspore::tensor::TensorPtr &input_tensor,
+                                                  const std::vector<int64_t> &shape) {
+  return BroadCastToProcess(prim, input_tensor, shape);
+}
+
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>()) {
     return {};
   }
 
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_x = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   return BroadCastToProcess(prim, input_tensor, input_x);

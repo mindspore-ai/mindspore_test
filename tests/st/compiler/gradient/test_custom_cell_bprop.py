@@ -19,6 +19,7 @@ import pytest
 import mindspore as ms
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
+from mindspore import jit
 from mindspore import Parameter, ParameterTuple
 from mindspore import context, mutable
 from mindspore.common.initializer import initializer
@@ -44,7 +45,7 @@ class MulAdd(nn.Cell):
         return 2 * dout, 2 * y
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add():
     mul_add = MulAdd()
     x = Tensor(1, dtype=ms.int32)
@@ -62,7 +63,7 @@ class InlineMulADD(nn.Cell):
         return self.mul_add(x, y) + x + self.param * y
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_inline_mul_add():
     inline_mul_add = InlineMulADD()
     x = Tensor(1, dtype=ms.int32)
@@ -84,7 +85,7 @@ class WithParameter(nn.Cell):
         return self.param1 * self.param2 * dout, 2 * y
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_with_param():
     with_param = WithParameter()
     with pytest.raises(RuntimeError):
@@ -97,7 +98,7 @@ class WithNoBprop(nn.Cell):
         return 2 * x + y
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_with_no_bprop():
     with_no_bprop = WithNoBprop()
     x = Tensor(1, dtype=ms.int32)
@@ -105,7 +106,7 @@ def test_with_no_bprop():
     assert grad_all(with_no_bprop)(x, y) == (2, 1)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_1():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
@@ -143,6 +144,49 @@ def test_grad_in_bprop_1():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_in_bprop_with_jit():
+    """
+    Feature: Test grad jit with custom bprop.
+    Description: When custom bprop has J, need to expand.
+    Expectation: No exception.
+    """
+    class GradInBprop_1(nn.Cell):
+        def __init__(self):
+            super(GradInBprop_1, self).__init__()
+            self.relu = P.ReLU()
+
+        def construct(self, x, y):
+            return self.relu(x)
+
+    class GradInBprop_2(nn.Cell):
+        def __init__(self):
+            super(GradInBprop_2, self).__init__()
+            self.f = GradInBprop_1()
+
+        def construct(self, x, y):
+            return self.f(x, y), grad_all(self.f)(x, y)
+
+        def bprop(self, x, y, out, dout):
+            grads = grad_all(self.f)(x, y)
+            return out[1][0] + 10, grads[1] + 10
+
+    class GradInBprop_3(nn.Cell):
+        def __init__(self):
+            super(GradInBprop_3, self).__init__()
+            self.f = GradInBprop_2()
+
+        @jit
+        def construct(self, x, y):
+            return self.f(x, y)
+
+    grad_in_bprop = GradInBprop_3()
+    grads = grad_all(grad_in_bprop)(Tensor(np.ones([2, 2]).astype(np.float32)),
+                                    Tensor(np.ones([2, 2]).astype(np.float32)))
+    assert (grads[0].asnumpy() == (np.ones([2, 2]) + 10).astype(np.float32)).all()
+    assert (grads[1].asnumpy() == (np.zeros([2, 2]) + 10).astype(np.float32)).all()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_2():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
@@ -182,7 +226,7 @@ def test_grad_in_bprop_2():
     assert (grads[1].asnumpy() == np.array([[2, 2], [2, 2]]).astype(np.float32)).all()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_in_bprop_3():
     class GradInBprop_1(nn.Cell):
         def __init__(self):
@@ -234,7 +278,7 @@ class OneInputBprop(nn.Cell):
         return (5 * x,)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_one_input_bprop():
     net = OneInputBprop()
     input1 = Tensor(np.ones([2, 2]).astype(np.float32))
@@ -260,7 +304,7 @@ class InlineBpropTwoInput(nn.Cell):
         return grads[0] * 2, grads[1] * 2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_inline_bprop_two_input():
     net = InlineBpropTwoInput()
     input1 = Tensor(np.ones([2, 2]).astype(np.float32))
@@ -320,7 +364,7 @@ class InlineMutilTwoInputParameterCell(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_inline_bprop_multi_input():
     net = InlineMutilTwoInputParameterCell()
     input1 = Tensor(np.ones([2, 2]).astype(np.float32))
@@ -342,7 +386,7 @@ class MulAddWithParam(nn.Cell):
         return self.mul_add(self.param, x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_refkey_bprop():
     grad_by_list = C.GradOperation(get_all=True, get_by_list=True)
 
@@ -372,7 +416,7 @@ class MulAddWithWrongOutputNum(nn.Cell):
         return (2 * dout,)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_num():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputNum()
@@ -390,7 +434,7 @@ class MulAddWithWrongOutputType(nn.Cell):
         return 2 * dout, 2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_type():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputType()
@@ -412,7 +456,7 @@ class MulAddWithWrongOutputShape(nn.Cell):
         return 2, self.ones
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_shape():
     compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputShape()

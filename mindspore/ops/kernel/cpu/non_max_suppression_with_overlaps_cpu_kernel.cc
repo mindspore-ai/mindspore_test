@@ -18,12 +18,13 @@
 #include <deque>
 #include <queue>
 #include "Eigen/Core"
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace mindspore {
 namespace kernel {
+namespace non_max_suppression_with_overlaps_cpu {
 namespace {
 constexpr size_t kNonMaxSuppressionWithOverlapsInputsNum = 5;
 constexpr size_t kNonMaxSuppressionWithOverlapsOutputsNum = 1;
@@ -136,5 +137,6 @@ std::vector<KernelAttr> NonMaxSuppressionWithOverlapsCpuKernelMod::GetOpSupport(
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonMaxSuppressionWithOverlaps, NonMaxSuppressionWithOverlapsCpuKernelMod);
+}  // namespace non_max_suppression_with_overlaps_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -24,7 +24,6 @@ from mindspore.ops.primitive import constexpr
 from mindspore.ops.primitive import _primexpr
 from mindspore.common import dtype as mstype
 from mindspore.common import Tensor
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore._c_expression import typing
 from mindspore import _checkparam as validator
 from mindspore import ops
@@ -282,7 +281,7 @@ def _raise_unimplemented_error(info, param=None):
 @_primexpr
 def _empty(dtype, shape):
     """Returns an uninitialized array with dtype and shape."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 @constexpr

@@ -26,6 +26,9 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {
@@ -39,6 +42,7 @@ bool IsPrimitiveProper(const CNodePtr &add_cnode, const CNodePtr &matmul_cnode, 
   }
 
   auto add_param_node = add_cnode->input(kInputSizeThree - index);
+  MS_CHECK_TRUE_MSG(add_param_node != nullptr, false, "add_param_node is nullptr!");
   if (!utils::isa<ValueNode>(add_param_node) &&
       (!utils::isa<Parameter>(add_param_node) || !add_param_node->cast<ParameterPtr>()->default_param())) {
     return false;
@@ -57,6 +61,7 @@ bool IsPrimitiveProper(const CNodePtr &add_cnode, const CNodePtr &matmul_cnode, 
 
   if (matmul_cnode->size() > kInputSizeThree) {
     auto matmul_bias_node = matmul_cnode->input(kInputIndexThree);
+    MS_CHECK_TRUE_MSG(matmul_bias_node != nullptr, false, "matmul_bias_node is nullptr!");
     if (!utils::isa<ValueNode>(matmul_bias_node) &&
         (!utils::isa<Parameter>(matmul_bias_node) || !matmul_bias_node->cast<ParameterPtr>()->default_param())) {
       MS_LOG(INFO) << matmul_cnode->fullname_with_scope() << "'s bias is not parameter";

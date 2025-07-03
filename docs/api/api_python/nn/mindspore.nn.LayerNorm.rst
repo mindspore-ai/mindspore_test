@@ -17,8 +17,8 @@ mindspore.nn.LayerNorm
         - **normalized_shape** (Union(tuple[int], list[int])) - 沿轴 `begin_norm_axis ... R - 1` 执行归一化。其中R为输入 `x` 的维度大小。
         - **begin_norm_axis** (int) - 归一化开始计算的轴，取值范围是[-1, R)。默认值： ``-1`` 。
         - **begin_params_axis** (int) - 指定输入参数 :math:`(\gamma, \beta)` 需进行层归一化的开始轴，取值范围是[-1, R)。默认值： ``-1`` 。
-        - **gamma_init** (Union[Tensor, str, Initializer, numbers.Number]) - :math:`\gamma` 参数的初始化方法。str的值引用自函数 `initializer` ，包括 ``'zeros'`` 、 ``'ones'`` 、 ``'xavier_uniform'`` 、 ``'he_uniform'`` 等。默认值： ``'ones'`` 。
-        - **beta_init** (Union[Tensor, str, Initializer, numbers.Number]) - :math:`\beta` 参数的初始化方法。str的值引用自函数 `initializer` ，包括 ``'zeros'`` 、 ``'ones'`` 、 ``'xavier_uniform'`` 、 ``'he_uniform'`` 等。默认值： ``'zeros'`` 。
+        - **gamma_init** (Union[Tensor, str, Initializer, numbers.Number]) - :math:`\gamma` 参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer.initializer` ，包括 ``'zeros'`` 、 ``'ones'`` 、 ``'xavier_uniform'`` 、 ``'he_uniform'`` 等。默认值： ``'ones'`` 。
+        - **beta_init** (Union[Tensor, str, Initializer, numbers.Number]) - :math:`\beta` 参数的初始化方法。str的值引用自函数 :func:`mindspore.common.initializer.initializer` ，包括 ``'zeros'`` 、 ``'ones'`` 、 ``'xavier_uniform'`` 、 ``'he_uniform'`` 等。默认值： ``'zeros'`` 。
         - **epsilon** (float) - 添加到分母中的值（:math:`\epsilon`），以确保数值稳定。默认值： ``1e-7`` 。
         - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``mstype.float32`` 。
 

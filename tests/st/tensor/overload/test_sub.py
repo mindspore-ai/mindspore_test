@@ -97,7 +97,7 @@ def test_method_sub_python(mode):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
@@ -115,9 +115,9 @@ def test_method_sub_pyboost(mode):
     net2 = SubPyboostNet2()
     x = ms.Tensor(np.array([4, 5, 6]), dtype=ms.float32)
     y = ms.Tensor(1, ms.int32)
-    alpha = 0.5
+    alpha = 2
     output = net(x, y, alpha=alpha)
-    expect_output = np.array([3.5, 4.5, 5.5], dtype=np.float32)
+    expect_output = np.array([2, 3, 4], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
     output1 = net1(x, y, alpha=alpha)
     assert np.allclose(output1.asnumpy(), expect_output)
@@ -126,7 +126,7 @@ def test_method_sub_pyboost(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_sub_dynamic():
@@ -139,6 +139,6 @@ def test_tensor_sub_dynamic():
     y1 = ms.Tensor(generate_random_input((4, 6), np.float32))
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub')
+    TEST_OP(sub_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub', disable_mode=["GRAPH_MODE"])
     TEST_OP(sub_ext_forward_func, [[ms_data1, y1], [ms_data2, y2]], 'sub_ext', disable_mode=['GRAPH_MODE'],
             disable_yaml_check=True)

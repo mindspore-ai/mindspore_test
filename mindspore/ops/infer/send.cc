@@ -30,6 +30,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -67,6 +68,11 @@ class SendInfer : public abstract::OpInferBase {
     auto x_type = input_args[0]->GetType();
     const std::set<TypePtr> valid_types = {kInt8, kInt32, kFloat16, kFloat32, kFloat64, kBFloat16};
     (void)CheckAndConvertUtils::CheckTensorTypeValid("input_x", x_type, valid_types, prim_name);
+    // Add dtype attr for kbk mode.
+    if (prim->GetAttr("dtype") == nullptr) {
+      MS_EXCEPTION_IF_NULL(x_type);
+      prim->set_attr("dtype", x_type);
+    }
     return x_type->Clone();
   }
   AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,

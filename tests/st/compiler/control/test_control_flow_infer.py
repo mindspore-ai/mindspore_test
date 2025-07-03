@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype, Parameter
 import mindspore.ops.functional as F
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 class Net(Cell):
@@ -55,28 +54,24 @@ class Net(Cell):
         return x + y
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_can_not_be_operator_err():
     """
     Feature: Control flow.
     Description: This test case failed before, add it to CI. Related issue: I5FLCG.
     Expectation: No exception raised.
     """
-    with pytest.raises(RuntimeError) as info:
-        x = np.array([5], np.float32)
-        y = np.array([3], np.float32)
-        net = Net()
-        out = net(Tensor(x), Tensor(y))
-        print('ms forward: ', out)
-        grad_net = F.grad(net, grad_position=(0, 1))
-        fgrad = grad_net(Tensor(x), Tensor(y))
-        print('ms backward: ', fgrad)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    x = np.array([5], np.float32)
+    y = np.array([3], np.float32)
+    net = Net()
+    out = net(Tensor(x), Tensor(y))
+    print('ms forward: ', out)
+    grad_net = F.grad(net, grad_position=(0, 1))
+    fgrad = grad_net(Tensor(x), Tensor(y))
+    print('ms backward: ', fgrad)
 
-@case_register.level0
-@case_register.target_gpu
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_analysis_fail_ir():
     """
     Feature: Control flow analysis fail ir.

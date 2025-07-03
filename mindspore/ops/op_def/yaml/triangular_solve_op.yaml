@@ -1,0 +1,23 @@
+#operator triangular_solve
+triangular_solve:
+  args:
+    b:
+      dtype: tensor
+    A:
+      dtype: tensor
+    upper:
+      dtype: bool
+      default: True
+    transpose:
+      dtype: bool
+      default: False
+    unitriangular:
+      dtype: bool
+      default: False
+  returns:
+    solution:
+      dtype: tensor
+    cloned_coefficient:
+      dtype: tensor
+  dispatch:
+    enable: True

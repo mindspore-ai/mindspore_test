@@ -3,10 +3,10 @@ mindspore.Tensor.topk
 
 .. py:method:: mindspore.Tensor.topk(k, dim=-1, largest=True, sorted=True)
 
-    沿给定维度查找 `k` 个最大或最小元素和对应的索引。
+    沿给定维度查找 `k` 个最大或最小的元素，并返回其值和对应的索引。
 
     .. warning::
-        - 如果 `sorted` 设置为False，由于不同平台上的内存布局和遍历方法不同：当 `sorted` 为False时，计算结果的显示顺序可能不一致。
+        由于不同平台上的内存布局和遍历方法不同：当 `sorted` 设置为False时，计算结果的显示顺序可能不一致。
 
     如果 `self` 是一维Tensor，则查找Tensor中 `k` 个最大或最小元素，并且将其值和索引输出为Tensor。 `values[k]` 是 `self` 中 `k` 个最大元素，同时其索引值为 `indices[k]` 。
 
@@ -22,7 +22,7 @@ mindspore.Tensor.topk
         - **k** (int) - 指定计算最大或最小元素的数量，必须为常量。
         - **dim** (int, 可选) - 需要排序的维度。 默认值: ``-1`` 。
         - **largest** (bool, 可选) - 如果设置为 ``False`` ，则会返回 `k` 个最小元素。默认值： ``True`` 。
-        - **sorted** (bool, 可选) - 如果设置为 ``True`` ，则获取的元素将按值降序排序，如果设置为 ``False``，则不对获取的元素进行排序，默认值：``True`` 。
+        - **sorted** (bool, 可选) - 如果设置为 ``True`` ，则获取的元素将按值降序排序；如果设置为 ``False``，则不对获取的元素进行排序，默认值：``True`` 。
 
     返回：
         由 `values` 和 `indices` 组成的tuple。

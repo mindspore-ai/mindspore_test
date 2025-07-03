@@ -13,4 +13,4 @@
 
     异常：
         - **RuntimeError** - `image` 参数的维度小于2。
-        - **TypeError** - `image` 参数的类型既不是 np.ndarray，也不是 PIL Image。
+        - **TypeError** - `image` 参数的类型既不是numpy.ndarray，也不是PIL Image。

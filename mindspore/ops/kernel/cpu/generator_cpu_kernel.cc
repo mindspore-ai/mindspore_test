@@ -23,10 +23,11 @@
 #include <string>
 #include <unordered_map>
 #include "mindspore/ops/infer/ops_func_impl/generator.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace generator_cpu {
 using namespace ops::generator;
 namespace {
 constexpr char kGenerator[] = "Generator";
@@ -220,5 +221,6 @@ std::vector<KernelAttr> GeneratorCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Generator, GeneratorCpuKernelMod);
+}  // namespace generator_cpu
 }  // namespace kernel
 }  // namespace mindspore

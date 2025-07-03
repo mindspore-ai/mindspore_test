@@ -55,6 +55,11 @@ void MultitypeFuncGraph::Register(const TypePtrList &types, const py::function &
   fn_cache_py_[types] = py_fn;
 }
 
+void MultitypeFuncGraph::PyRegisterDefault(const py::function &py_fn) {
+  MS_LOG(DEBUG) << "Register default function " << py::str(py_fn.cast<py::object>());
+  default_fn_ = py_fn;
+}
+
 void MultitypeFuncGraph::PyRegister(const py::tuple &tuple, const py::function &py_fn) {
   TypePtrList types;
   for (size_t it = 0; it < tuple.size(); ++it) {
@@ -305,10 +310,23 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     }
     return func_graph;
   }
+
   auto stub = GenerateStubFunc(types);
   if (stub != nullptr) {
     MS_LOG(DEBUG) << "GenerateStubFunc " << buffer.str() << ", function: " << stub->ToString() << ".";
     return stub;
+  }
+  if (name_ == "zeros_like" && types[0]->ToString() == "Class") {
+    auto fg = std::make_shared<FuncGraph>();
+    auto param = fg->add_parameter();
+    fg->set_output(param);
+    return fg;
+  }
+
+  if (default_fn_.ptr() != nullptr && !CheckContainsAny(types)) {
+    MS_LOG(DEBUG) << "Use default_fn, convert default_fn to FuncGraph";
+    FuncGraphPtr func_graph = parse::ParsePythonCode(default_fn_);
+    return func_graph;
   }
 
   bool has_dic = std::any_of(types.begin(), types.end(), [](const TypePtr &type) {
@@ -316,6 +334,7 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     return type->isa<Dictionary>();
   });
   if (!need_raise_ || !has_dic) {
+    MS_LOG(DEBUG) << "Use jit fallback to execute MultitypeFuncGraph";
     FuncGraphPtr func_graph = std::make_shared<FuncGraph>();
     AnfNodePtrList node_inputs{};
     for (auto type : types) {

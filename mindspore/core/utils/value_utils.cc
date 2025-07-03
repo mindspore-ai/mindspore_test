@@ -189,9 +189,9 @@ std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
         array_data.push_back(GetValue<T>(element));
       }
     }
-  } else if (value->isa<tensor::BaseTensor>()) {
+  } else if (value->isa<tensor::Tensor>()) {
     // Tensor structure: Data is stored continuously.
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     size_t element_size = tensor->DataSize();
     T *data = reinterpret_cast<T *>(tensor->data_c());
@@ -216,6 +216,7 @@ std::optional<ArrayValue<T>> GetArrayValue(const abstract::AbstractBasePtr &abs_
   std::set<size_t> unknown_value_indexes;
   if (abs_base->isa<abstract::AbstractSequence>()) {
     auto abs_sequence = abs_base->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(abs_sequence);
     if (abs_sequence->dynamic_len()) {
       return std::nullopt;
     }

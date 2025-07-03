@@ -22,11 +22,9 @@ from mindspore._extends import cell_attr_register
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-from mindspore.ops import functional as F
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.ops.operations import nn_ops as NN_OPS
 from mindspore.nn.cell import Cell
-from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 
 __all__ = ['Softmin',
@@ -82,7 +80,7 @@ class CELU(Cell):
         :align: center
 
     Args:
-        alpha (float): The :math:`\alpha` value for the Celu formulation. Default: ``1.0`` .
+        alpha (float, optional): The :math:`\alpha` value for the Celu formulation. Default: ``1.0`` .
 
     Inputs:
         - **x** (Tensor) - The input of CELU. The required dtype is float16 or float32.
@@ -114,7 +112,7 @@ class CELU(Cell):
     def __init__(self, alpha=1.0):
         """Initialize CELU."""
         super(CELU, self).__init__()
-        self.celu = P.CeLU(alpha=alpha)
+        self.celu = ops.CeLU(alpha=alpha)
 
     def construct(self, x):
         return self.celu(x)
@@ -136,20 +134,22 @@ class Softmin(Cell):
     where :math:`x_{i}` is the :math:`i`-th slice in the given dimension of the input Tensor.
 
     Args:
-        axis (Union[int, tuple[int]]): The axis to apply Softmin operation, if the dimension of input `x` is x.ndim,
-            the range of axis is `[-x.ndim, x.ndim)`. -1 means the last dimension. Default: ``-1`` .
+        axis (Union[int, tuple[int]], optional): The axis to apply Softmin operation,
+            if the dimension of input `x` is x.ndim,
+            the range of axis is :math:`[-x.ndim, x.ndim)`. -1 means the last dimension.
+            Default: ``-1`` . In CPU environment, `axis` only supports int type.
 
     Inputs:
         - **x** (Tensor) - Tensor for computing Softmin functions with data type of float16 or float32.
 
     Outputs:
-        Tensor, which has the same type and shape as `x` with values in the range [0,1].
+        Tensor, which has the same type and shape as `x` with values in the range :math:`[0, 1]`.
 
     Raises:
         TypeError: If `axis` is neither an int nor a tuple.
         TypeError: If dtype of `x` is neither float16 nor float32.
         ValueError: If `axis` is a tuple whose length is less than 1.
-        ValueError: If `axis` is a tuple whose elements are not all in the range [-x.ndim, x.ndim).
+        ValueError: If `axis` is a tuple whose elements are not all in the range :math:`[-x.ndim, x.ndim)`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -211,8 +211,8 @@ class Softmax2d(Cell):
     def __init__(self):
         """Initialize Softmax2d."""
         super(Softmax2d, self).__init__()
-        self.softmax = P.Softmax(axis=-3)
-        self.shape = P.Shape()
+        self.softmax = ops.Softmax(axis=-3)
+        self.shape = ops.Shape()
 
     @staticmethod
     @_primexpr
@@ -275,7 +275,7 @@ class Softmax(Cell):
     def __init__(self, axis=-1):
         """Initialize Softmax."""
         super(Softmax, self).__init__()
-        self.softmax = P.Softmax(axis)
+        self.softmax = ops.Softmax(axis)
 
     def construct(self, input):
         return self.softmax(input)
@@ -354,7 +354,7 @@ class LogSoftmax(Cell):
     def __init__(self, axis=-1):
         """Initialize LogSoftmax."""
         super(LogSoftmax, self).__init__()
-        self.log_softmax = P.LogSoftmax(axis)
+        self.log_softmax = ops.LogSoftmax(axis)
 
     def construct(self, x):
         return self.log_softmax(x)
@@ -398,7 +398,7 @@ class LogSoftmaxExt(Cell):
     def __init__(self, dim=None):
         """Initialize LogSoftmaxExt."""
         super(LogSoftmaxExt, self).__init__()
-        self.log_softmax = P.LogSoftmaxExt()
+        self.log_softmax = ops.LogSoftmaxExt()
         self.dim = dim
 
     def construct(self, x):
@@ -457,7 +457,7 @@ class ELU(Cell):
     def __init__(self, alpha=1.0):
         """Initialize ELU."""
         super(ELU, self).__init__()
-        self.elu = P.Elu(alpha)
+        self.elu = ops.Elu(alpha)
 
     def construct(self, x):
         return self.elu(x)
@@ -508,7 +508,7 @@ class ReLU(Cell):
     def __init__(self):
         """Initialize ReLU."""
         super(ReLU, self).__init__()
-        self.relu = P.ReLU()
+        self.relu = ops.ReLU()
 
     def construct(self, input):
         return self.relu(input)
@@ -558,7 +558,7 @@ class ReLU6(Cell):
     def __init__(self):
         """Initialize ReLU6."""
         super(ReLU6, self).__init__()
-        self.relu6 = P.ReLU6()
+        self.relu6 = ops.ReLU6()
 
     def construct(self, x):
         return self.relu6(x)
@@ -677,7 +677,7 @@ class RReLU(Cell):
                              f"but got upper: {upper}, lower: {lower}. ")
         self.lower = Tensor(lower, dtype=mstype.float32)
         self.upper = Tensor(upper, dtype=mstype.float32)
-        self.sign = P.Sign()
+        self.sign = ops.Sign()
 
     def construct(self, x):
         if not isinstance(x, Tensor):
@@ -723,7 +723,7 @@ class SeLU(Cell):
     def __init__(self):
         """Initialize SeLU"""
         super(SeLU, self).__init__()
-        self.selu = P.SeLU()
+        self.selu = ops.SeLU()
 
     def construct(self, input_x):
         return self.selu(input_x)
@@ -823,7 +823,7 @@ class Tanh(Cell):
     def __init__(self):
         """Initialize Tanh."""
         super(Tanh, self).__init__()
-        self.tanh = P.Tanh()
+        self.tanh = ops.Tanh()
 
     def construct(self, x):
         return self.tanh(x)
@@ -869,7 +869,7 @@ class Tanhshrink(Cell):
         super(Tanhshrink, self).__init__()
 
     def construct(self, x):
-        return F.tanhshrink(x)
+        return ops.tanhshrink(x)
 
 
 class Hardtanh(Cell):
@@ -935,7 +935,7 @@ class Hardtanh(Cell):
                              f"but got {self.min_val} and {self.max_val}")
 
     def construct(self, x):
-        return F.hardtanh(x, self.min_val, self.max_val)
+        return ops.hardtanh(x, self.min_val, self.max_val)
 
 
 class GELU(Cell):
@@ -957,7 +957,7 @@ class GELU(Cell):
         :align: center
 
     Args:
-        approximate (bool): Whether to enable approximation. Default: ``True`` .
+        approximate (bool, optional): Whether to enable approximation. Default: ``True`` .
 
             If `approximate` is ``True``, The gaussian error linear activation is:
 
@@ -965,7 +965,14 @@ class GELU(Cell):
 
             else, it is:
 
-            :math:`x * P(X <= x) = 0.5 * x * (1 + erf(x / \sqrt(2)))`, where P(X) ~ N(0, 1).
+            :math:`x * P(X <= x) = 0.5 * x * (1 + erf(x / \sqrt(2)))`, where :math:`P(X) ~ N(0, 1)`.
+
+    Note:
+        - when calculating the input gradient of GELU with an input value of infinity, there are differences
+          in the output of the backward between ``Ascend`` and ``GPU``.
+        - when x is -inf, the computation result of ``Ascend`` is 0, and the computation result of ``GPU`` is Nan.
+        - when x is inf, the computation result of ``Ascend`` is dy, and the computation result of ``GPU`` is Nan.
+        - In mathematical terms, the result of Ascend has higher precision.
 
     Inputs:
         - **x** (Tensor) - The input of GELU with data type of float16, float32, or float64.
@@ -973,13 +980,6 @@ class GELU(Cell):
 
     Outputs:
         Tensor, with the same type and shape as the `x`.
-
-    Note:
-        when calculating the input gradient of GELU with an input value of infinity, there are differences
-        in the output of the backward between ``Ascend`` and ``GPU``.
-        when x is -inf, the computation result of ``Ascend`` is 0, and the computation result of ``GPU`` is Nan.
-        when x is inf, the computation result of ``Ascend`` is dy, and the computation result of ``GPU`` is Nan.
-        In mathematical terms, the result of Ascend has higher precision.
 
     Raises:
         TypeError: If dtype of `x` is not one of float16, float32, or float64.
@@ -1062,7 +1062,7 @@ class FastGelu(Cell):
     def __init__(self):
         """Initialize FastGelu."""
         super(FastGelu, self).__init__()
-        self.fast_gelu = P.FastGeLU()
+        self.fast_gelu = ops.FastGeLU()
 
     def construct(self, x):
         return self.fast_gelu(x)
@@ -1113,7 +1113,7 @@ class Sigmoid(Cell):
     def __init__(self):
         """Initialize Sigmoid."""
         super(Sigmoid, self).__init__()
-        self.sigmoid = P.Sigmoid()
+        self.sigmoid = ops.Sigmoid()
 
     def construct(self, x):
         return self.sigmoid(x)
@@ -1147,7 +1147,7 @@ class Softsign(Cell):
     def __init__(self):
         """Initialize Softsign."""
         super(Softsign, self).__init__()
-        self.softsign = P.Softsign()
+        self.softsign = ops.Softsign()
 
     def construct(self, x):
         return self.softsign(x)
@@ -1165,7 +1165,7 @@ class PReLU(Cell):
 
     where :math:`x_i` is an element of an channel of the input.
 
-    Here :math:`w` is a learnable parameter with a default initial value 0.25.
+    Here :math:`w` is a learnable parameter with a default initial value ``0.25``.
     Parameter :math:`w` has dimensionality of the argument channel. If called without argument
     channel, a single parameter :math:`w` will be shared across all channels.
 
@@ -1175,9 +1175,9 @@ class PReLU(Cell):
         :align: center
 
     Args:
-        channel (int): The elements number of parameter :math:`w`.
-          It could be an int, and the value is 1 or the channels number of input tensor `x`. Default: ``1`` .
-        w (Union[float, list, Tensor]): The initial value of parameter. It could be a float, a float list or
+        channel (int, optional): The elements number of parameter :math:`w`.
+          It could be an int, and the value is ``1`` or the channels number of input tensor `x`. Default: ``1`` .
+        w (Union[float, list, Tensor], optional): The initial value of parameter. It could be a float, a float list or
           a tensor has the same dtype as the input tensor `x`. Default: ``0.25`` .
 
     Inputs:
@@ -1189,7 +1189,7 @@ class PReLU(Cell):
 
     Raises:
         TypeError: If `channel` is not an int.
-        TypeError: If `w` is not one of a float, a float list, a float Tensor.
+        TypeError: If `w` is not one of a float, a list[float], a Tensor[float].
         TypeError: If dtype of `x` is neither float16 nor float32.
         ValueError: If the `x` is a 0-D or 1-D Tensor on Ascend.
         ValueError: If `channel` is less than 1.
@@ -1241,10 +1241,10 @@ class PReLU(Cell):
             raise TypeError(f"For '{self.cls_name}', the 'w' only supported float, list and tensor, "
                             f"but got {type(w).__name__}.")
         self.w = Parameter(w, name='a')
-        self.prelu = P.PReLU()
+        self.prelu = ops.PReLU()
 
     def construct(self, x):
-        return self.prelu(x, F.cast(self.w, x.dtype))
+        return self.prelu(x, ops.cast(self.w, x.dtype))
 
 
 class PReLUExt(Cell):
@@ -1273,9 +1273,9 @@ class PReLUExt(Cell):
         no channel dim and the number of channels = 1.
 
     Args:
-        num_parameters (int): number of `w` to learn. Although it takes an int as input,
+        num_parameters (int, optional): number of `w` to learn. Although it takes an int as input,
             there is only two legitimate values: 1, or the number of channels at Tensor `input`. Default: ``1`` .
-        init (float): the initial value of `w`. Default: ``0.25`` .
+        init (float, optional): the initial value of `w`. Default: ``0.25`` .
         dtype (mindspore.dtype, optional): the type of `w`. Default: ``None`` . Supported data type
             is {float16, float32, bfloat16}.
 
@@ -1359,7 +1359,7 @@ class HSwish(Cell):
     def __init__(self):
         """Initialize HSwish."""
         super(HSwish, self).__init__()
-        self.hswish = P.HSwish()
+        self.hswish = ops.HSwish()
 
     def construct(self, input):
         return self.hswish(input)
@@ -1411,7 +1411,7 @@ class HSigmoid(Cell):
     def __init__(self):
         """Initialize HSigmoid."""
         super(HSigmoid, self).__init__()
-        self.hsigmoid = P.HSigmoid()
+        self.hsigmoid = ops.HSigmoid()
 
     def construct(self, input):
         return self.hsigmoid(input)
@@ -1460,11 +1460,11 @@ class LogSigmoid(Cell):
     def __init__(self):
         """Initialize LogSigmoid."""
         super(LogSigmoid, self).__init__()
-        self.mul = P.Mul()
-        self.exp = P.Exp()
-        self.add = P.Add()
-        self.rec = P.Reciprocal()
-        self.log = P.Log()
+        self.mul = ops.Mul()
+        self.exp = ops.Exp()
+        self.add = ops.Add()
+        self.rec = ops.Reciprocal()
+        self.log = ops.Log()
 
     def construct(self, input_x):
         neg_input = self.mul(input_x, -1)
@@ -1564,7 +1564,7 @@ class SoftShrink(Cell):
 
     def __init__(self, lambd=0.5):
         super(SoftShrink, self).__init__()
-        self.softshrink = P.SoftShrink(lambd)
+        self.softshrink = ops.SoftShrink(lambd)
 
     def construct(self, input):
         output = self.softshrink(input)
@@ -1624,7 +1624,7 @@ class HShrink(Cell):
 
     def __init__(self, lambd=0.5):
         super(HShrink, self).__init__()
-        self.hshrink = P.HShrink(lambd)
+        self.hshrink = ops.HShrink(lambd)
 
     def construct(self, input):
         return self.hshrink(input)
@@ -1677,7 +1677,7 @@ class Threshold(Cell):
         self.value = value
 
     def construct(self, input_x):
-        return F.threshold(input_x, self.threshold, self.value)
+        return ops.threshold(input_x, self.threshold, self.value)
 
 
 class Mish(Cell):
@@ -1728,7 +1728,7 @@ class GLU(Cell):
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
 
     Args:
-        axis (int): the axis to split the input. Default: ``-1`` , the last axis in `x`.
+        axis (int, optional): the axis to split the input. Default: ``-1`` , the last axis in `x`.
 
     Inputs:
         - **x** (Tensor) - :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions.
@@ -1753,8 +1753,8 @@ class GLU(Cell):
         """Initialize GLU."""
         super().__init__("GLU")
         self.dim = axis
-        self.spilt = P.Split(axis=axis, output_num=2)
-        self.sigmoid = P.Sigmoid()
+        self.spilt = ops.Split(axis=axis, output_num=2)
+        self.sigmoid = ops.Sigmoid()
 
     def construct(self, x):
         x1, x2 = self.spilt(x)
@@ -1811,7 +1811,7 @@ def get_activation(name, prim_name=None):
         >>> import mindspore.nn as nn
         >>> sigmoid = nn.get_activation('sigmoid')
         >>> print(sigmoid)
-        Sigmoid<>
+        Sigmoid()
     """
     msg_prefix = f"For '{prim_name}', the" if prim_name else "The"
     if name is None:

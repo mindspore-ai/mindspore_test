@@ -23,11 +23,12 @@
 #include <algorithm>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_broadcast_grad_args_cpu {
 class DynamicBroadcastGradientArgsCpuKernelMod : public NativeCpuKernelMod,
                                                  public MatchKernelHelper<DynamicBroadcastGradientArgsCpuKernelMod> {
  public:
@@ -72,6 +73,7 @@ class DynamicBroadcastGradientArgsCpuKernelMod : public NativeCpuKernelMod,
   bool is_null_input0_{false};
   bool is_null_input1_{false};
 };
+}  // namespace dynamic_broadcast_grad_args_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

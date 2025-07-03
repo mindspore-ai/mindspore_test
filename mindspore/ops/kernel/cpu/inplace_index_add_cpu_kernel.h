@@ -22,11 +22,12 @@
 #include <utility>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_index_add_cpu {
 class InplaceIndexAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<InplaceIndexAddCpuKernelMod> {
  public:
   InplaceIndexAddCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class InplaceIndexAddCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   size_t x_axis_size_{1};
   size_t y_axis_size_{1};
 };
+}  // namespace inplace_index_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

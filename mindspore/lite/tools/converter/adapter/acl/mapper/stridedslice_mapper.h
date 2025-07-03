@@ -18,15 +18,11 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_STRIDEDSLICE_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-
-using mindspore::ops::kNameStridedSlice;
-
 namespace mindspore {
 namespace lite {
 class StridedSliceMapper : public PrimitiveMapper {
  public:
-  StridedSliceMapper() : PrimitiveMapper(kNameStridedSlice) {}
+  StridedSliceMapper();
   ~StridedSliceMapper() override = default;
 
   STATUS Mapper(const CNodePtr &cnode) override;

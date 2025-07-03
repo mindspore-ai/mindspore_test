@@ -1,0 +1,45 @@
+svd:
+    description: |
+        Computes the singular value decompositions of one or more matrices.
+
+        Refer to :func:`mindspore.ops.svd` for more details.
+
+        Args:
+            full_matrices (bool, optional): If ``True`` , compute full-sized :math:`U` and :math:`V`. If ``False``,
+                                            compute only the leading P singular vectors, with P is the minimum of M and N.
+                                            Default: ``False`` .
+            compute_uv (bool, optional): If ``True`` , compute the left and right singular vectors.
+                                         If ``False`` , compute only the singular values. Default: ``True`` .
+
+        Inputs:
+            - **input** (Tensor) - Tensor of the matrices to be decomposed. The shape should be :math:`(*, M, N)`,
+              the supported dtype are float32 and float64.
+
+        Outputs:
+            - **s**  (Tensor) - Singular values. The shape is :math:`(*, P)`.
+            - **u**  (Tensor) - Left singular vectors. If `compute_uv` is ``False`` , u will be zero value.
+              The shape is :math:`(*, M, P)`. If `full_matrices` is ``True`` , the shape will be :math:`(*, M, M)`.
+            - **v**  (Tensor) - Right singular vectors. If `compute_uv` is ``False`` , v will be zero value.
+              The shape is :math:`(*, N, P)`. If `full_matrices` is ``True`` , the shape will be :math:`(*, N, N)`.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> from mindspore import ops
+            >>> ms.set_device(device_target="CPU")
+            >>> svd = ops.Svd(full_matrices=True, compute_uv=True)
+            >>> a = Tensor(np.array([[1, 2], [-4, -5], [2, 1]]).astype(np.float32))
+            >>> s, u, v = svd(a)
+            >>> print(s)
+            [7.0652843 1.040081 ]
+            >>> print(u)
+            [[ 0.30821905 -0.48819482 0.81649697]
+             [-0.90613353  0.11070572 0.40824813]
+             [ 0.2896955   0.8656849  0.4082479 ]]
+            >>> print(v)
+            [[ 0.63863593 0.769509  ]
+             [ 0.769509  -0.63863593]]

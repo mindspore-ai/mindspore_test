@@ -23,11 +23,12 @@
 #include <algorithm>
 #include <limits>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_cpu {
 class CTCLossCpuKernelMod : public NativeCpuKernelMod {
  public:
   CTCLossCpuKernelMod() = default;
@@ -72,6 +73,7 @@ class CTCLossCpuKernelMod : public NativeCpuKernelMod {
   bool ctc_merge_repeated_{false};
   bool ignore_longer_outputs_than_inputs_{false};
 };
+}  // namespace ctcloss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CTCLOSS_CPU_KERNEL_H_

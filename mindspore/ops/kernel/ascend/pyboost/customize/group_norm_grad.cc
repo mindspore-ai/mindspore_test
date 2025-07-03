@@ -17,21 +17,17 @@
 #include "kernel/ascend/pyboost/customize/group_norm_grad.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-constexpr size_t kNumberTwo = 2;
-}  // namespace
-
-void GroupNormGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
-                                  const BaseTensorPtr &input_tensor, const BaseTensorPtr &mean_tensor,
-                                  const BaseTensorPtr &rstd_tensor, const BaseTensorPtr &weight_opt_tensor,
+void GroupNormGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dout_tensor,
+                                  const TensorPtr &input_tensor, const TensorPtr &mean_tensor,
+                                  const TensorPtr &rstd_tensor, const TensorPtr &weight_opt_tensor,
                                   const Int64ImmPtr &num_groups, const BoolImmPtr &dx_is_require,
                                   const BoolImmPtr &dgamma_is_require, const BoolImmPtr &dbeta_is_require) {
   MS_LOG(DEBUG) << "Call start";
@@ -41,9 +37,8 @@ void GroupNormGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const Bas
   const auto &x_shape = input_tensor->shape();
   const int64_t N = x_shape[0];
   const int64_t C = x_shape[1];
-  const int64_t HxW = (x_shape.size() == kNumberTwo)
-                        ? 1
-                        : std::accumulate(x_shape.begin() + 2, x_shape.end(), 1, std::multiplies<int64_t>());
+  const int64_t HxW =
+    (x_shape.size() == kDim2) ? 1 : std::accumulate(x_shape.begin() + 2, x_shape.end(), 1, std::multiplies<int64_t>());
   auto num_groups_imm = GetValue<int64_t>(num_groups);
   auto dx_require = GetValue<bool>(dx_is_require);
   auto dgamma_require = GetValue<bool>(dgamma_is_require);

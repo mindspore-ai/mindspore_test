@@ -15,22 +15,20 @@
  */
 
 #include "kernel/ascend/pyboost/customize/outer.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                           const BaseTensorPtr &vec2) {
+tensor::TensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                       const TensorPtr &vec2) {
   OpRunner::InferOpOutput(op, input, vec2);
 
   auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-  auto real_input = reshape_op->Call(input, std::make_shared<ValueTuple>(std::vector<ValuePtr>(
-                                              {std::make_shared<Int64Imm>(-1), std::make_shared<Int64Imm>(1)})));
+  auto real_input = reshape_op->Call(input, {-1, 1});
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), real_input, vec2);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

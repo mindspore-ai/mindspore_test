@@ -15,14 +15,13 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_if_1():
     """
     Feature: JIT Fallback
@@ -30,7 +29,7 @@ def test_while_after_for_in_if_1():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2301():
         x = Tensor([1])
         y = Tensor([2])
@@ -50,9 +49,8 @@ def test_while_after_for_in_if_1():
     assert res == 11
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_if_2():
     """
     Feature: JIT Fallback
@@ -60,7 +58,7 @@ def test_while_after_for_in_if_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2302():
         x = Tensor([1])
         y = Tensor([2])
@@ -84,9 +82,8 @@ def test_while_after_for_in_if_2():
     assert res_z == 1
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_if_3():
     """
     Feature: JIT Fallback
@@ -94,7 +91,7 @@ def test_while_after_for_in_if_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2303():
         x = np.array([3, 2])
         y = Tensor(np.array([3, 2]))
@@ -112,9 +109,8 @@ def test_while_after_for_in_if_3():
     assert (res.asnumpy() == [-3, -4]).all()
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_if_4():
     """
     Feature: JIT Fallback
@@ -122,7 +118,7 @@ def test_while_after_for_in_if_4():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2304():
         x = [3, 2]
         y = [1, 2, 3, 4]

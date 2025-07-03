@@ -17,17 +17,11 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MAX_POOL_GRAD_WITH_INDICES_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MAX_POOL_GRAD_WITH_INDICES_H_
 
-#include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/infer/ops_func_impl/max_pool_grad_with_mask.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API MaxPoolGradWithIndicesFuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
+class OPS_API MaxPoolGradWithIndicesFuncImpl final : public MaxPoolGradWithMaskFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

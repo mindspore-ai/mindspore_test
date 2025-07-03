@@ -16,10 +16,11 @@
 #include "kernel/ascend/opapi/aclnn/concat_aclnn_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat {
 namespace {
 constexpr size_t kConcatMinNum = 2;
 }  // namespace
@@ -32,7 +33,7 @@ std::vector<KernelTensor *> ConcatAscend::GetConcatRealInputs(const std::vector<
   auto last_element = inputs.end() - 1;
   std::vector<KernelTensor *> tensors(inputs.begin(), last_element);
   if (inputs.size() == kConcatMinNum) {
-    tuple_tensors_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(inputs[kIndex0]);
+    tuple_tensors_ = device::ascend::ConvertKernelTensor<std::vector<KernelTensorPtr>>(inputs[kIndex0]);
     tensors.clear();
     std::transform(tuple_tensors_.begin(), tuple_tensors_.end(), std::back_inserter(tensors),
                    [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
@@ -56,5 +57,6 @@ bool ConcatAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Concat, ConcatAscend);
+}  // namespace concat
 }  // namespace kernel
 }  // namespace mindspore

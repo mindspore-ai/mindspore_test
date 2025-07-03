@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rmsprop_cpu {
 namespace {
 constexpr size_t kCenteredRMSPropInputsNum = 9;
 constexpr size_t kRMSPropInputsNum = 8;
@@ -505,5 +506,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ApplyRMSProp,
                                  []() { return std::make_shared<RMSPropCpuKernelMod>(kApplyRMSProp); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ApplyCenteredRMSProp,
                                  []() { return std::make_shared<RMSPropCpuKernelMod>(kApplyCenteredRMSProp); });
+}  // namespace rmsprop_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -3,11 +3,11 @@ roll:
   args:
     input:
       dtype: tensor
-    shift:
+    shifts:
       dtype: tuple[int]
       prim_init: True
       type_cast:  int, list[int]
-    axis:
+    dims:
       dtype: tuple[int]
       default: None
       prim_init: True
@@ -15,7 +15,5 @@ roll:
   returns:
     output:
       dtype: tensor
-  function:
-    disable: True
   dispatch:
     enable: True

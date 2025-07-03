@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_CXXAPI_MODEL_AOE_AUTO_TUNE_PROCESS_H
 
 #include <memory>
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "include/api/status.h"
 #include "cxx_api/model/acl/acl_model_options.h"
 
@@ -26,7 +26,7 @@ namespace mindspore {
 class AutoTuneProcess {
  public:
   static Status AoeOfflineTurningGraph(const std::weak_ptr<AclModelOptions> &options,
-                                       const transform::DfGraphPtr &graph);
+                                       const backend::ge_backend::DfGraphPtr &graph);
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_CXXAPI_MODEL_AOE_AUTO_TUNE_PROCESS_H

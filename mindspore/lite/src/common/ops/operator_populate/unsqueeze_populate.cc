@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/unsqueeze_parameter.h"
 #include "infer/unsqueeze.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kNameUnsqueeze;
 using mindspore::schema::PrimitiveType_Unsqueeze;

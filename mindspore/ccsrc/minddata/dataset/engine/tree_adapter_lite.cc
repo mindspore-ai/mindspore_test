@@ -17,10 +17,8 @@
 #include "minddata/dataset/engine/tree_adapter_lite.h"
 #include "minddata/dataset/engine/ir/datasetops/root_node.h"
 #include "minddata/dataset/engine/opt/pass.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/opt/pre/node_offload_pass.h"
 #include "minddata/dataset/engine/opt/post/repeat_pass.h"
-#endif
 #include "minddata/dataset/engine/opt/pre/debug_mode_pass.h"
 #include "minddata/dataset/engine/opt/pre/deep_copy_pass.h"
 #include "minddata/dataset/engine/opt/pre/epoch_ctrl_pass.h"
@@ -109,7 +107,6 @@ Status TreeAdapterLite::PrePass(std::shared_ptr<DatasetNode> ir) {
   if (GlobalContext::config_manager()->get_debug_mode()) {
     (void)actions.emplace_back(std::make_unique<DebugModePass>());
   }
-#ifndef ENABLE_ANDROID
   std::unique_ptr<NodeOffloadPass> offload = std::make_unique<NodeOffloadPass>();
   // Checks nodes for offload removal
   bool offload_mod = false;
@@ -117,7 +114,6 @@ Status TreeAdapterLite::PrePass(std::shared_ptr<DatasetNode> ir) {
   RETURN_IF_NOT_OK(offload->Run(ir, &offload_mod));
   // Creates JSON object of offload nodes.
   offload_json_ = offload->GetOffloadJson();
-#endif
 
   // Apply pre-pass actions
   for (size_t i = 0; i < actions.size(); i++) {
@@ -132,13 +128,11 @@ Status TreeAdapterLite::PostPass(std::shared_ptr<DatasetNode> ir) const {
   RETURN_UNEXPECTED_IF_NULL(ir);
   // Vector of actions in post-pass phase
   std::vector<std::unique_ptr<IRPass>> actions;
-#ifndef ENABLE_ANDROID
   MS_LOG(INFO) << "Running repeat pass.";
   (void)actions.emplace_back(std::make_unique<RepeatPass>());
   bool modified = false;
   RETURN_IF_NOT_OK(actions[0]->Run(ir, &modified));
   MS_LOG(INFO) << "Repeat pass completed.";
-#endif
   return Status::OK();
 }
 

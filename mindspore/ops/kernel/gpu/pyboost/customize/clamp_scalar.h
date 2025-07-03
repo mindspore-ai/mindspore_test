@@ -22,13 +22,13 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr ClampScalarGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
-                                              const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max);
+tensor::TensorPtr ClampScalarGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                          const std::optional<ScalarPtr> &min, const std::optional<ScalarPtr> &max);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
 #include "infer/cxx_api/prelu_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {
@@ -105,7 +106,10 @@ bool PReluFusion::CheckPattern(const EquivPtr &equiv, std::vector<float> *slope)
   if (!mul_const_cnode->isa<Parameter>()) {
     return false;
   }
-  auto mul_const_param = mul_const_cnode->cast<ParameterPtr>()->default_param();
+
+  auto mul_param = mul_const_cnode->cast<ParameterPtr>();
+  MS_CHECK_TRUE_RET(mul_param != nullptr, false);
+  auto mul_const_param = mul_param->default_param();
   MS_CHECK_TRUE_RET(mul_const_param != nullptr, false);
   auto mul_const_tensor = mul_const_param->cast<tensor::TensorPtr>();
   MS_CHECK_TRUE_RET(mul_const_tensor != nullptr, false);

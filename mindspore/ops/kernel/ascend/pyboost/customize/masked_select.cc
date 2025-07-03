@@ -16,17 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/masked_select.h"
 
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                  const BaseTensorPtr &input_tensor, const BaseTensorPtr &mask_tensor) {
+tensor::TensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const TensorPtr &mask_tensor) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   auto device_context = op->device_context();
   auto stream_id = op->stream_id();
@@ -39,10 +39,8 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
   PyBoostUtils::MallocOpInputs(device_context, input_tensor, mask_tensor);
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
-  auto return_value =
+  const auto &all_acl_tensor =
     LAUNCH_ACLNN_SYNC(aclnnMaskedSelect, device_context, op->stream_id(), input_tensor, mask_tensor, outputs[0]);
-  const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
 
   auto output_real_shape = all_acl_tensor[kIndex2];
   auto simple_infer_ptr = op->output_value_simple_info();
@@ -50,12 +48,6 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
 
   op->UpdateOutputShape(op->output(kIndex0), output_real_shape);
   MS_LOG(DEBUG) << "Run device task MaskedSelect end";
-
-  const auto &release_func = std::get<kIndex3>(return_value);
-  if (release_func) {
-    release_func();
-  }
-
   return op->output(0);
 }
 }  // namespace pyboost

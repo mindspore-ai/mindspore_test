@@ -15,7 +15,7 @@
  */
 
 #include "include/common/utils/comm_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "hccl/hcom.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/parallel_context.h"
@@ -32,7 +32,7 @@ class AscendCommManager : public CommManager {
 
   bool CreateGroupSync(const string &group, const std::vector<unsigned int> &rank_id_list) const override {
     // For this method, its will be used only by auto parallel modules.
-    distributed::collective::CreateGroupConfig config;
+    mindspore::device::GroupOptions config;
     config.async = false;
     config.submit_now = false;
     return distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(group, rank_id_list,

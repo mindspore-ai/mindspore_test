@@ -22,12 +22,12 @@
 #include "include/api/data_type.h"
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "infer/custom.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "src/common/log_util.h"
 #include "src/common/common.h"
 #include "common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 bool SaveOM(const void *model, size_t length, const std::string &file_path) { return true; }
 
@@ -119,7 +119,7 @@ AclModelOptionsPtr CustomAscendKernelMod::GenAclOptions() {
   }
   // set device id
   uint32_t device_count;
-  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_ERROR_NONE) {
+  if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_SUCCESS) {
     MS_LOG(WARNING) << "Get device count failed, set default device id 0.";
     return acl_options_ptr;
   }

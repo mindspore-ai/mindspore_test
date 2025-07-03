@@ -1,0 +1,22 @@
+#operator inplace_matmul_add
+inplace_matmul_add:
+    args:
+        x:
+            dtype: tensor
+        weight:
+            dtype: tensor
+        C:
+            dtype: tensor
+    args_signature:
+        rw_write: C
+    returns:
+        out:
+            dtype: tensor
+            inplace: C
+    function:
+        name: matmul_add_
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceMatmulAddAscend

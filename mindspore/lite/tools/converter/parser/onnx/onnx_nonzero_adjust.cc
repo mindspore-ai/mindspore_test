@@ -17,6 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_nonzero_adjust.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore::lite {
 bool OnnxNonZeroAdjust::Adjust(const FuncGraphPtr &func_graph) {

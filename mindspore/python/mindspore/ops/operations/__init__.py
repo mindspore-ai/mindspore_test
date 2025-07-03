@@ -21,7 +21,8 @@ A collection of operators to build neural networks or to compute functions.
 
 from ._embedding_cache_ops import (CacheSwapTable, UpdateCache, MapCacheIdx, SubAndFilter,
                                    MapUniform, DynamicAssign, PadAndShift)
-from ._inner_ops import (MatmulDDS, DSDMatmul, Cummin, ExtractImagePatches, SelectView, CopyWithSlice)
+from ._inner_ops import (MatmulDDS, DSDMatmul, Cummin,
+                         ExtractImagePatches, SelectView, CopyWithSlice)
 from ._ms_kernel import (ms_kernel, kernel)
 from ._quant_ops import *
 from ._thor_ops import (CusBatchMatMul, CusCholeskyTrsm, CusFusedAbsMax1, CusImg2Col, CusMatMulCubeDenseLeft,
@@ -41,25 +42,25 @@ from .array_ops import (ArgMaxWithValue, ArgMinWithValue, Argmax, Argmin, BatchT
                         ScatterUpdate, SearchSorted, Select, Shape, Size, Slice, Sort, SpaceToBatch, SpaceToBatchND,
                         SpaceToDepth, SparseGatherV2, Split, SplitV, Squeeze, Stack, StridedSlice, TensorScatterAdd,
                         TensorScatterDiv, TensorScatterMax, TensorScatterMin, TensorScatterMul, TensorScatterSub,
-                        TensorScatterUpdate, TensorShape, Tile, TopK, TransShape, Transpose, TupleToArray, Unique,
-                        UniqueWithPad, UnsortedSegmentMax, UnsortedSegmentMin, UnsortedSegmentProd,
-                        UnsortedSegmentSum, Unstack, UpperBound, Zeros, ZerosLike, AffineGrid, Bincount, CheckNumerics,
-                        HammingWindow, Identity, IdentityN, IndexFill, LeftShift, ListDiff, LogSpace, MatrixBandPart,
-                        MatrixDiagPartV3, MatrixDiagV3, MatrixSetDiagV3, NonZero, Expand, Col2Im, ConjugateTranspose,
-                        FillDiagonal, Fills, ResizeNearestNeighborV2, RightShift, ScatterAddWithAxis,
-                        ScatterNdMul, SegmentMean, SegmentProd, SegmentSum, SegmentMax, SegmentMin, Tril, Triu,
-                        UniqueConsecutive, UnravelIndex, FillV2, CountNonZero, TensorScatterElements, IndexPut,
-                        MaskedScatter, TypeAs)
+                        TensorScatterUpdate, TensorShape, Tile, TopK, TransShape, Transpose, TransposeView,
+                        TupleToArray, Unique, UniqueWithPad, UnsortedSegmentMax, UnsortedSegmentMin,
+                        UnsortedSegmentProd, UnsortedSegmentSum, Unstack, UpperBound, Zeros, ZerosLike, AffineGrid,
+                        Bincount, CheckNumerics, HammingWindow, Identity, IdentityN, IndexFill, LeftShift, ListDiff,
+                        LogSpace, MatrixBandPart, MatrixDiagPartV3, MatrixDiagV3, MatrixSetDiagV3, NonZero, Expand,
+                        Col2Im, ConjugateTranspose, FillDiagonal, Fills, ResizeNearestNeighborV2, RightShift,
+                        ScatterAddWithAxis, ScatterNdMul, SegmentMean, SegmentProd, SegmentSum, SegmentMax, SegmentMin,
+                        Tril, Triu, UniqueConsecutive, UnravelIndex, FillV2, CountNonZero, TensorScatterElements,
+                        IndexPut, MaskedScatter, TypeAs, TransposeExtView)
 from .comm_ops import (AllGather, AllReduce, Reduce, NeighborExchange, NeighborExchangeV2, AlltoAll, _AllSwap,
                        Broadcast, CollectiveGather, CollectiveScatter, Barrier, Send, Receive, BatchISendIRecv,
                        _MirrorOperator, _MirrorMiniStepOperator, _MiniStepAllGather, ReduceOp, _VirtualDataset,
                        _VirtualOutput, _VirtualDiv, _GetTensorSlice, _VirtualAdd, _VirtualAssignAdd, _VirtualAccuGrad,
                        _HostAllGather, _HostReduceScatter, _MirrorMicroStepOperator, _MicroStepAllGather,
-                       _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache)
+                       _VirtualPipelineEnd, AlltoAllV, ReduceScatter, _VirtualAssignKvCache, AllGatherV, ReduceScatterV)
 from .control_ops import GeSwitch, Merge
-from .custom_ops import (Custom)
-from .debug_ops import (ImageSummary, InsertGradientOf, HookBackward, ScalarSummary,
-                        TensorSummary, HistogramSummary, TensorDump, Print, Assert)
+from .custom_ops import (Custom, CustomOpBuilder)
+from .debug_ops import (ImageSummary, InsertGradientOf, Morph, HookBackward, ScalarSummary,
+                        TensorSummary, HistogramSummary, TensorDump, Print, Assert, DumpGradient)
 from .image_ops import (CropAndResize, NonMaxSuppressionV3, HSVToRGB, AdjustHue, AdjustSaturation,
                         NonMaxSuppressionWithOverlaps, ResizeArea, ResizeBilinearV2, ExtractGlimpse,
                         CombinedNonMaxSuppression, RGBToHSV, ScaleAndTranslate, ResizeLinear1D, ResizeBicubic)
@@ -118,10 +119,10 @@ from .nn_ops import (LSTM, SGD, Adam, AdamWeightDecay, FusedSparseAdam, FusedSpa
                      FractionalMaxPool, FractionalMaxPool3DWithFixedKsize, FractionalMaxPoolWithFixedKsize,
                      GridSampler2D, TripletMarginLoss, UpsampleNearest3D, UpsampleTrilinear3D, PadV3, ChannelShuffle,
                      GLU, MaxUnpool3D, Pdist, RmsNorm, PagedAttention, PagedAttentionMask, ReshapeAndCache,
-                     ApplyRotaryPosEmb)
+                     ApplyRotaryPosEmb, GroupTopk)
 from .other_ops import (Assign, IOU, BoundingBoxDecode, BoundingBoxEncode,
                         ConfusionMatrix, UpdateState, Load, StopGradient, Reusing,
-                        CheckValid, Partial, Depend, Push, Pull, PyExecute, PyFunc, _DynamicLossScale,
+                        CheckValid, Partial, Depend, MoveTo, Push, Pull, PyExecute, PyFunc, _DynamicLossScale,
                         SampleDistortedBoundingBoxV2)
 from .random_ops import (RandomChoiceWithMask, StandardNormal, Gamma, RandomGamma, Poisson, UniformInt, UniformReal,
                          RandomCategorical, StandardLaplace, Multinomial, UniformCandidateSampler,
@@ -221,6 +222,8 @@ __all__ = [
     'Reshape',
     'Squeeze',
     'Transpose',
+    'TransposeView',
+    'TransposeExtView',
     'OneHot',
     'GatherV2',
     'Gather',
@@ -302,6 +305,8 @@ __all__ = [
     "Print",
     "Assert",
     'InsertGradientOf',
+    'DumpGradient',
+    "Morph",
     'HookBackward',
     'InvertPermutation',
     'Shape',
@@ -376,6 +381,7 @@ __all__ = [
     'IOU',
     'Partial',
     'Depend',
+    'MoveTo',
     'UpdateState',
     'StopGradient',
     'identity',
@@ -398,6 +404,8 @@ __all__ = [
     'UnsortedSegmentProd',
     "AllGather",
     "AllReduce",
+    "AllGatherV",
+    "ReduceScatterV",
     "Reduce",
     "_AllSwap",
     "ReduceScatter",
@@ -544,6 +552,7 @@ __all__ = [
     "Send",
     "Receive",
     "Custom",
+    "CustomOpBuilder",
     "LuSolve",
     "CholeskyInverse",
     "Cummax",
@@ -709,6 +718,7 @@ __all__ = [
     "PagedAttentionMask",
     "ReshapeAndCache",
     "ApplyRotaryPosEmb",
+    "GroupTopk",
     "RmsNorm",
     "Reshard",
 ]

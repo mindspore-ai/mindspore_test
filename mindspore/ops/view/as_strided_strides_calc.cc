@@ -20,13 +20,17 @@
 
 namespace mindspore::ops {
 constexpr size_t kAsStridedInputsNum = 4;
-TensorStorageInfoPtrList AsStridedCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input,
-                                           const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
-                                           int64_t offset) {
-  MS_EXCEPTION_IF_NULL(input);
-  auto old_tensor_info = GetOldTensorInfo(input);
+TensorStorageInfoPtrList AsStridedBasicTypeCalc(const PrimitivePtr &prim,
+                                                const mindspore::tensor::TensorPtr &input_tensor,
+                                                const std::vector<int64_t> &size, const std::vector<int64_t> &stride,
+                                                const int64_t &storage_offset) {
+  if (std::any_of(size.begin(), size.end(), [](const int &shape_i) { return shape_i < -1; })) {
+    MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
+                             << "], the component of shape can't be less than -1, but got " << size;
+  }
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   // To do check
-  auto new_storage_info = std::make_shared<TensorStorageInfo>(size, stride, offset, old_tensor_info->ori_shape,
+  auto new_storage_info = std::make_shared<TensorStorageInfo>(size, stride, storage_offset, old_tensor_info->ori_shape,
                                                               old_tensor_info->ori_strides, IsContiguous(size, stride));
   return {new_storage_info};
 }
@@ -35,15 +39,10 @@ TensorStorageInfoPtrList AsStridedCalc(const PrimitivePtr &prim, const std::vect
   if (inputs.size() != kAsStridedInputsNum) {
     return {};
   }
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto input_tensor = inputs[0]->cast<tensor::TensorPtr>();
   auto shape = GetValue<std::vector<int64_t>>(inputs[1]);
-  if (std::any_of(shape.begin(), shape.end(), [](const int &shape_i) { return shape_i < -1; })) {
-    MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
-                             << "], the component of shape can't be less than -1, but got " << shape;
-  }
   auto stride = GetValue<std::vector<int64_t>>(inputs[2]);
   auto storage_offset = GetValue<int64_t>(inputs[3]);
-  return AsStridedCalcImpl(prim, input_tensor, shape, stride, storage_offset);
+  return AsStridedBasicTypeCalc(prim, input_tensor, shape, stride, storage_offset);
 }
 }  // namespace mindspore::ops

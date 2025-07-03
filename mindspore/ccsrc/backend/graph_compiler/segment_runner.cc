@@ -37,6 +37,8 @@
 #include "ir/manager.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/operator/ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace compile {

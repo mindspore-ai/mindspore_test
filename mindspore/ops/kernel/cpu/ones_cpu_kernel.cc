@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/ones_cpu_kernel.h"
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ones_cpu {
 namespace {
 constexpr size_t kOnesInputsNum = 2;
 constexpr size_t kOnesOutputsNum = 1;
@@ -79,6 +80,7 @@ std::vector<std::pair<KernelAttr, OnesCpuKernelMod::OnesFunc>> OnesCpuKernelMod:
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeBool, bool)},
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeComplex64, complex64)},
   {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeComplex128, complex128)},
+  {ONES_CPU_REG(kNumberTypeInt64, kNumberTypeBFloat16, bfloat16)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat16, float16)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat32, float)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeFloat64, double)},
@@ -92,7 +94,8 @@ std::vector<std::pair<KernelAttr, OnesCpuKernelMod::OnesFunc>> OnesCpuKernelMod:
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeUInt64, uint64_t)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeBool, bool)},
   {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex64, complex64)},
-  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex128, complex128)}};
+  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeComplex128, complex128)},
+  {ONES_CPU_REG(kNumberTypeInt32, kNumberTypeBFloat16, bfloat16)}};
 
 std::vector<KernelAttr> OnesCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -102,5 +105,6 @@ std::vector<KernelAttr> OnesCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Ones, OnesCpuKernelMod);
+}  // namespace ones_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,9 +19,10 @@
 #include <functional>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/infer/relu_v3.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace relu_v3_cpu {
 constexpr auto kReLUV3 = "ReLUV3";
 constexpr const size_t kReLUV3InputsNum = 1;
 constexpr const size_t kReLUV3OutputsNum = 1;
@@ -88,4 +89,5 @@ bool ReLUV3CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const s
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ReLUV3,
                                  []() { return std::make_shared<ReLUV3CpuKernelMod>(kReLUV3); });
+}  // namespace relu_v3_cpu
 }  // namespace mindspore::kernel

@@ -20,15 +20,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rotary_position_embedding_grad {
 
 void RotaryPositionEmbeddingGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                          const std::vector<KernelTensor *> &outputs) {
-  auto mode = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto mode = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], mode, outputs[kIndex0],
                         outputs[kIndex1], outputs[kIndex2]);
@@ -38,7 +39,7 @@ bool RotaryPositionEmbeddingGradAscend::Launch(const std::vector<KernelTensor *>
                                                const std::vector<KernelTensor *> &workspace,
                                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto mode = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto mode = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], mode,
         outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
@@ -46,5 +47,6 @@ bool RotaryPositionEmbeddingGradAscend::Launch(const std::vector<KernelTensor *>
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RotaryPositionEmbeddingGrad, RotaryPositionEmbeddingGradAscend);
+}  // namespace rotary_position_embedding_grad
 }  // namespace kernel
 }  // namespace mindspore

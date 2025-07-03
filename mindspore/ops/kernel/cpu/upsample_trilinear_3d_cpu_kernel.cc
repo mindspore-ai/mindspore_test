@@ -17,12 +17,13 @@
 #include "kernel/cpu/upsample_trilinear_3d_cpu_kernel.h"
 #include <string>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindapi/base/type_id.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear_3d_cpu {
 namespace {
 constexpr size_t kUpsampleTrilinear3DInputsNum = 2;
 constexpr size_t kUpsampleTrilinear3DOutputNum = 1;
@@ -233,5 +234,6 @@ std::vector<KernelAttr> UpsampleTrilinear3DCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleTrilinear3D, UpsampleTrilinear3DCpuKernelMod);
+}  // namespace upsample_trilinear_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

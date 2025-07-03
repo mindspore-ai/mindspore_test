@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/min.h"
-#include "kernel/cpu/pyboost/customize/max.h"
-#include "kernel/cpu/pyboost/auto_generate/min.h"
-#include "kernel/cpu/pyboost/auto_generate/max.h"
-#include "kernel/cpu/pyboost/auto_generate/cast.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/min.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/max.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/min.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/max.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                     const std::string &reduce_op) {
+void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const std::string &reduce_op) {
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor);
 
@@ -35,7 +34,7 @@ void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &i
     const auto &device_name = op->device_context()->device_context_key_.device_name_;
     // Increase the precision to float32 for calculation
     const auto &cast_input_tensor = PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device_name);
-    tensor::BaseTensorPtr cast_output_tensor;
+    tensor::TensorPtr cast_output_tensor;
     if (reduce_op == prim::kPrimReduceMin->name()) {
       const auto &min_op = CREATE_PYBOOST_OP(Min, device_name);
       cast_output_tensor = min_op->Call(cast_input_tensor);
@@ -77,11 +76,11 @@ void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &i
 }
 }  // namespace
 
-void MinCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void MinCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MinOrMaxCPUCall(op, input_tensor, prim::kPrimReduceMin->name());
 }
 
-void MaxCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+void MaxCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MinOrMaxCPUCall(op, input_tensor, prim::kPrimReduceMax->name());
 }
 }  // namespace pyboost

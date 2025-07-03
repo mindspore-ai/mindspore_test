@@ -24,10 +24,11 @@
 #include <vector>
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/device_matrix.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
-class Array {
+class FRONTEND_EXPORT Array {
  public:
   Array() = default;
   virtual ~Array() = default;

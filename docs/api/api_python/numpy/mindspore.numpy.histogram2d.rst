@@ -6,7 +6,7 @@ mindspore.numpy.histogram2d
     计算数据的二维直方图。
 
     .. note::
-        不支持已弃用的NumPy参数 `normed` 。 
+        不支持已弃用的NumPy参数 `normed` 。
 
     参数：
         - **x** (Union[list, tuple, Tensor]) - 一个shape为(N,)的数组，包含要进行直方图统计的点的x坐标。

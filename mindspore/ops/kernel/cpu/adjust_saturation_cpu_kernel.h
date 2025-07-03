@@ -17,11 +17,12 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DECIVE_CPU_ADJUST_SATURATION_CPU_KERNEL_H_
 #define MINDSPORE_CCSRC_PLUGIN_DECIVE_CPU_ADJUST_SATURATION_CPU_KERNEL_H_
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_saturation_cpu {
 class AdjustSaturationCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdjustSaturationCpuKernelMod() = default;
@@ -37,6 +38,7 @@ class AdjustSaturationCpuKernelMod : public NativeCpuKernelMod {
  private:
   TypeId input_type_{kTypeUnknown};
 };
+}  // namespace adjust_saturation_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

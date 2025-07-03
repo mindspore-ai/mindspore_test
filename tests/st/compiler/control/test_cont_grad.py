@@ -14,7 +14,7 @@
 # ============================================================================
 """ test control ops """
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 from mindspore import dtype as ms
 from mindspore import Tensor
@@ -25,13 +25,13 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_grad():
     """
     Feature: Control flow
@@ -77,9 +77,8 @@ def test_while_grad():
     assert np.allclose(graph_output[2].asnumpy(), expect_two, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_const_param_grad():
     """
     Feature: Control flow
@@ -118,9 +117,8 @@ def test_while_with_const_param_grad():
     assert np.allclose(graph_output[1].asnumpy(), expect_two, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_variable_grad():
     """
     Feature: Control flow
@@ -159,9 +157,8 @@ def test_while_with_variable_grad():
     assert np.allclose(graph_output[1].asnumpy(), expect_two, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_forward():
     """
     Feature: Control flow
@@ -196,9 +193,8 @@ def test_while_with_param_forward():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_endless_case():
     """
     Feature: Control flow
@@ -232,9 +228,8 @@ def test_while_endless_case():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_grad():
     """
     Feature: Control flow
@@ -278,9 +273,8 @@ def test_while_with_param_grad():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_forward_with_const_branch():
     """
     Feature: Control flow
@@ -319,9 +313,8 @@ def test_while_with_param_forward_with_const_branch():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_opt_endless():
     """
     Feature: Control flow
@@ -372,8 +365,7 @@ def test_while_opt_endless():
     assert np.allclose(graph_output[2].asnumpy(), expect3, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_no_while_call():
     """
     Feature: Control flow
@@ -410,9 +402,8 @@ def test_no_while_call():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_grad_with_const_branch():
     """
     Feature: Control flow
@@ -460,8 +451,7 @@ def test_while_with_param_grad_with_const_branch():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_for_while_with_param_grad_with_const_branch():
     """
     Feature: Control flow
@@ -512,9 +502,8 @@ def test_for_while_with_param_grad_with_const_branch():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_while_with_param_grad_basic():
     """
     Feature: Control flow
@@ -561,9 +550,8 @@ def test_for_while_with_param_grad_basic():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_while_with_param_grad_normal():
     """
     Feature: Control flow
@@ -610,9 +598,8 @@ def test_for_while_with_param_grad_normal():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_basic_grad():
     """
     Feature: Control flow
@@ -656,9 +643,8 @@ def test_while_with_param_basic_grad():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_basic_grad_mul():
     """
     Feature: Control flow
@@ -702,9 +688,8 @@ def test_while_with_param_basic_grad_mul():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_basic_grad_two():
     """
     Feature: Control flow
@@ -753,9 +738,8 @@ def test_while_with_param_basic_grad_two():
     assert np.allclose(graph_output[1].asnumpy(), expect2, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_with_param_basic_grad_three():
     """
     Feature: Control flow
@@ -807,9 +791,8 @@ def test_while_with_param_basic_grad_three():
     assert np.allclose(graph_output[2].asnumpy(), expect3, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_if_with_param_grad():
     """
     Feature: Control flow
@@ -855,8 +838,7 @@ def test_while_if_with_param_grad():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_with_param_grad_not_enter_while():
     """
     Feature: Control flow
@@ -898,9 +880,8 @@ def test_while_with_param_grad_not_enter_while():
     assert np.allclose(graph_output[0].asnumpy(), 1, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_with_param_if_by_if_forward():
     """
     Feature: Control flow
@@ -939,9 +920,8 @@ def test_with_param_if_by_if_forward():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_with_param_if_by_if_grad_inputs():
     """
     Feature: Control flow
@@ -988,9 +968,8 @@ def test_with_param_if_by_if_grad_inputs():
     assert np.allclose(graph_output[2].asnumpy(), expect3, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_with_param_if_by_if_grad_parameter():
     """
     Feature: Control flow
@@ -1035,9 +1014,8 @@ def test_with_param_if_by_if_grad_parameter():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_with_param_if_by_if_grad_param_excute_null():
     """
     Feature: Control flow
@@ -1080,9 +1058,8 @@ def test_with_param_if_by_if_grad_param_excute_null():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_by_if_return_inside_grad():
     """
     Feature: Control flow
@@ -1127,9 +1104,8 @@ def test_if_by_if_return_inside_grad():
     assert np.allclose(graph_output[0].asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_by_if_forward():
     """
     Feature: Control flow
@@ -1173,9 +1149,8 @@ def test_if_by_if_forward():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_by_if_forward_control_tuple_switch():
     """
     Feature: Control flow
@@ -1244,9 +1219,8 @@ def test_if_by_if_forward_control_tuple_switch():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_by_if_forward_control_inside_net():
     """
     Feature: Control flow
@@ -1315,8 +1289,7 @@ def test_if_by_if_forward_control_inside_net():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_forward_use_namespace():
     """
     Feature: Control flow
@@ -1360,8 +1333,7 @@ def test_if_by_if_forward_use_namespace():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_forward_use_global_op():
     """
     Feature: Control flow
@@ -1410,8 +1382,7 @@ def test_if_by_if_forward_use_global_op():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_for_with_if_by_if_forward():
     """
     Feature: Control flow
@@ -1447,8 +1418,7 @@ def test_for_with_if_by_if_forward():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_for_with_if_by_if_forward_namespace():
     """
     Feature: Control flow
@@ -1486,8 +1456,7 @@ def test_for_with_if_by_if_forward_namespace():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_forward_const_branch_inner():
     """
     Feature: Control flow
@@ -1536,8 +1505,7 @@ def test_if_by_if_forward_const_branch_inner():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_forward_all_const_branch():
     """
     Feature: Control flow
@@ -1586,8 +1554,7 @@ def test_if_by_if_forward_all_const_branch():
     assert np.allclose(graph_output.asnumpy(), expect, 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_const_grad():
     """
     Feature: Control flow
@@ -1625,8 +1592,7 @@ def test_if_const_grad():
     net(a, b)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_const_grad():
     """
     Feature: Control flow
@@ -1668,8 +1634,7 @@ def test_if_by_if_const_grad():
     net(a, b)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_const_grad():
     """
     Feature: Control flow
@@ -1705,8 +1670,7 @@ def test_while_const_grad():
     net(a, b)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_while_const_grad():
     """
     Feature: Control flow

@@ -151,8 +151,7 @@ Status YelpReviewNode::to_json(nlohmann::json *out_json) {
 }
 
 Status YelpReviewNode::SetupSamplerForCache(std::shared_ptr<SamplerObj> *sampler) {
-  bool shuffle_files = (shuffle_ == ShuffleMode::kGlobal || shuffle_ == ShuffleMode::kFiles);
-  *sampler = SelectSampler(num_samples_, shuffle_files, num_shards_, shard_id_);
+  *sampler = SelectSampler(num_samples_, shuffle_, num_shards_, shard_id_);
   return Status::OK();
 }
 

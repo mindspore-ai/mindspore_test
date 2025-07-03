@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/trivial_augment_wide_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/trivial_augment_wide_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // TrivialAugmentWideOperation
 TrivialAugmentWideOperation::TrivialAugmentWideOperation(int32_t num_magnitude_bins, InterpolationMode interpolation,
                                                          const std::vector<uint8_t> &fill_value)
@@ -72,7 +69,6 @@ Status TrivialAugmentWideOperation::from_json(nlohmann::json op_params, std::sha
   *operation = std::make_shared<vision::TrivialAugmentWideOperation>(num_magnitude_bins, interpolation, fill_value);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

@@ -54,6 +54,7 @@ Status ActivationInfo::GetAttrs() {
   if (iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(iter->second);
     if (iter->second->isa<StringImm>()) {
+      MS_EXCEPTION_IF_NULL(iter->second->cast<StringImmPtr>());
       std::string val = iter->second->cast<StringImmPtr>()->value();
       if ((val != RELU_TYPE) && (val != RELU6_TYPE) && (val != SIGMOID_TYPE)) {
         MS_LOG(ERROR) << name_ << " : Activation type is wrong.";
@@ -70,21 +71,35 @@ Status ActivationInfo::GetAttrs() {
 
 Status ActivationBase::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   return SUCCESS;
 }
 
 Status ActivationBase::CheckOutputLayout() {
-  if (outputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
-                  << " rather than 1.";
+  if (outputs_tensor_info_.size() != outputs_size_) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of output_tensor_layout for " << name_ << " is " << outputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
-    MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";
@@ -92,10 +107,14 @@ Status ActivationBase::CheckOutputLayout() {
   return SUCCESS;
 }
 
+Status AShardIdentityInfo::CheckOutputLayout() { return SUCCESS; }
+
 Status ActivationBase::InferOutputTensorInfo() {
   output_infer_tensor_layout_ = inputs_tensor_info_[kIndex0].tensor_layout();
   TensorInfo output_tensor_info(output_infer_tensor_layout_);
-  outputs_tensor_info_.push_back(output_tensor_info);
+  for (size_t i = 0; i < outputs_size_; ++i) {
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
   return SUCCESS;
 }
 
@@ -348,8 +367,13 @@ std::vector<StrategyPtr> Softmax::GenerateOpStrategies(int64_t stage_id) {
 
 Status Softmax::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
@@ -365,7 +389,11 @@ Status Softmax::CheckInputLayout() {
     if (corresponding_tensor_map.size() == 1 && corresponding_tensor_map[0] == -1) {
       return SUCCESS;
     } else {
-      MS_LOG(ERROR) << "Calculate axis can not be split";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << "Calculate axis can not be split";
+      } else {
+        MS_LOG(ERROR) << "Calculate axis can not be split";
+      }
       return FAILED;
     }
   }
@@ -374,13 +402,14 @@ Status Softmax::CheckInputLayout() {
 
 Status CumOpBase::GetAttrs() {
   std::string op_name = GetPrimNameFromInfoName(this->name_);
-  if (input_value_.size() != ops::GetOpInputsNum(op_name)) {
+  if (input_value_.size() != ops::GetOpInputsNum(op_name) &&
+      input_value_.size() != (ops::GetOpInputsNum(op_name) - 1)) {
     MS_LOG(ERROR) << name_ << ": Invalid inputs size " << input_value_.size()
                   << ", ops::GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
     return FAILED;
   }
-
-  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, AXIS);
+  auto axis_name = is_axis_ ? AXIS : DIM;
+  std::optional<int64_t> axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, op_name, axis_name);
   if (!axis_opt.has_value()) {
     MS_LOG(ERROR) << name_ << ": The type of axis has no value.";
     return FAILED;
@@ -421,7 +450,8 @@ Status CumOpBase::CheckStrategy(const StrategyPtr &strategy) {
   }
   auto axis_split = input_strategy[LongToSize(axis_)];
   if (axis_split != NO_SPLIT_STRATEGY) {
-    MS_LOG(ERROR) << "Currently, CumSum does not support the sharding strategies which splits axis.";
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the input's dimension 'dim'/'axis' can not be split, "
+                  << "the 'dim'/'axis' is " << axis_ << " and the shard strategy is " << input_strategy << ".";
     return FAILED;
   }
 
@@ -458,6 +488,14 @@ Status CumOpBase::InferMirrorOps() {
   OperatorVector op_for_axis;
   (void)mirror_ops_.emplace_back(std::move(op_for_axis));
   return SUCCESS;
+}
+
+ReplaceGraphPtr CumsumExtInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
 }
 
 Status ActivationBase::InferDevMatrixShape() {
@@ -698,9 +736,9 @@ Status DropoutExtInfo::InferTensorInfo() {
 
   size_t real_input_index = 0;
   for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
-    // Insert placeholder TensorInfo for optional input
+    // Insert placeholder TensorInfo for `keep_prob`, which is a float
     while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
-           input_value_[real_input_index]->isa<None>()) {
+           (input_value_[real_input_index]->isa<None>() || input_value_[real_input_index]->isa<FloatImm>())) {
       (void)inputs_tensor_info_.emplace_back(TensorInfo());
       ++real_input_index;
     }
@@ -745,26 +783,28 @@ CNodePtr DropoutExtInfo::GetGeneratorCNode(const CNodePtr &cnode) const {
   }
 
   // if using mint.nn.Dropout, seed and offset are TupleGetItem from Generator
-  // if using dropout_ext_op(input, p, seed, offset) directly, seed and offset should be Tensor, which is ValueNode
+  // if using dropout_ext_op(input, p, seed, offset) directly, seed and offset should be Tensor or Parameter
   AnfNodePtr get_item_seed = cnode->input(DROPOUT_EXT_SEED_INDEX);
   MS_EXCEPTION_IF_NULL(get_item_seed);
   if (!get_item_seed->isa<CNode>()) {
-    MS_LOG(DEBUG) << name_ << ": Seed is not from Generator";
     return nullptr;
   }
   auto get_item_seed_cnode = get_item_seed->cast<CNodePtr>();
-  if (get_item_seed_cnode->size() != TUPLE_GETITEM_CNODE_SIZE) {
-    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode)
-      << "Size should be " << TUPLE_GETITEM_CNODE_SIZE << ", but get " << get_item_seed_cnode->size();
+  if (GetPrimName(get_item_seed_cnode) != TUPLE_GETITEM_OP) {
+    return nullptr;
   }
 
   // Generator CNode
   AnfNodePtr generator = get_item_seed_cnode->input(1);
   MS_EXCEPTION_IF_NULL(generator);
   if (!generator->isa<CNode>()) {
-    MS_LOG_WITH_NODE(EXCEPTION, get_item_seed_cnode) << "input[1] should be a CNode";
+    return nullptr;
   }
-  return generator->cast<CNodePtr>();
+  auto generator_cnode = generator->cast<CNodePtr>();
+  if (GetPrimName(generator_cnode) != GENERATOR) {
+    return nullptr;
+  }
+  return generator_cnode;
 }
 
 bool DropoutExtInfo::HaveManualSeed(const CNodePtr &generator_cnode) const {
@@ -811,6 +851,7 @@ ParameterPtr DropoutExtInfo::GetSeedParameter(const CNodePtr &generator_cnode) c
     MS_LOG_WITH_NODE(EXCEPTION, generator_cnode) << "input[2] should be a CNode";
   }
   auto make_tuple_cnode = make_tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(make_tuple_cnode);
   if (make_tuple_cnode->size() != SIZE_FOUR) {
     MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "Size should be 4, but get " << make_tuple_cnode->size();
   }
@@ -837,6 +878,7 @@ void DropoutExtInfo::ReplaceNodeInputOrAttrs() {
     // if using dropout_ext_op(input, p, seed, offset) directly, can not get generator here
     // no need to rest seed since it is manual passed in directly
     if (generator == nullptr) {
+      MS_LOG(DEBUG) << name_ << ": Seed is not from Generator";
       continue;
     }
     // Generator with a False `manual_seed` means default_generator using random generated seed rather than manual seed
@@ -885,6 +927,9 @@ Status CastInfo::InferMirrorOps() {
 }
 
 Status ExpandDimsInfo::GetAttrs() {
+  if (input_value_.size() == EXPANDDIMS_INPUT_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != EXPANDDIMS_INPUT_SIZE) {
     MS_LOG(ERROR) << name_ << ": Invalid inputs size " << input_value_.size();
     return FAILED;
@@ -1210,7 +1255,239 @@ Status SortInfo::GetAttrs() {
   return SUCCESS;
 }
 
+Status SortExtInfo::GetAttrs() {
+  if (inputs_shape_.empty()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the inputs shape is empty.";
+    return FAILED;
+  }
+  int rank = SizeToInt(inputs_shape_[kIndex0].size());
+
+  // get attr dim
+  auto dim_opt = GetScalarValueFromInputs<int64_t>(input_value_, name_, DIM);
+  if (!dim_opt.has_value()) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", failed to get the input value of parameter 'dim'.";
+    return FAILED;
+  }
+  auto dim = dim_opt.value() < 0 ? dim_opt.value() + rank : dim_opt.value();
+  axis_.push_back(dim);
+
+  return SUCCESS;
+}
+
+Status SortExtInfo::CheckInputLayout() {
+  if (inputs_tensor_info_.size() != kSizeOne) {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                   << inputs_tensor_info_.size() << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of inputs_tensor_info should be 1, but got "
+                    << inputs_tensor_info_.size() << ".";
+    }
+    return FAILED;
+  }
+  auto input_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  auto input_tensor_map = input_tensor_layout.tensor_map_before();
+  dev_matrix_shape_ = input_tensor_layout.device_arrangement_origin().array();
+  auto device_dim = SizeToLong(dev_matrix_shape_.size());
+  Shapes input_shard_strategy;
+  Shape dim_shard_strategy;
+  for (size_t i = 0; i < input_tensor_map.size(); ++i) {
+    dim_shard_strategy.clear();
+    for (size_t j = 0; j < input_tensor_map[i].size(); ++j) {
+      auto shard_idx = device_dim - 1 - input_tensor_map[i][j];
+      dim_shard_strategy.push_back(dev_matrix_shape_[shard_idx]);
+    }
+    input_shard_strategy.push_back(dim_shard_strategy);
+  }
+  if (input_shard_strategy[axis_[kIndex0]].size() == 1 && input_shard_strategy[axis_[kIndex0]][kIndex0] == 1) {
+    return SUCCESS;
+  } else {
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "For distributed operator " << name_
+                   << ", the input's dimension 'dim' can not be split, the 'dim'"
+                   << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    } else {
+      MS_LOG(ERROR) << "For distributed operator " << name_
+                    << ", the input's dimension 'dim' can not be split, the 'dim'"
+                    << " is " << axis_[kIndex0] << " and the input shard strategy is " << input_shard_strategy << ".";
+    }
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status SortExtInfo::InferAsLossDivisorByLayout() {
+  if (outputs_tensor_info_.size() != kSizeTwo) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", the size of outputs_tensor_info should be 2, but got "
+                  << outputs_tensor_info_.size();
+    return FAILED;
+  }
+
+  auto out_dev_matrix_shape = outputs_tensor_info_[kIndex0].tensor_layout().device_arrangement_origin().array();
+  TensorMaps outputs_tensor_map = outputs_tensor_info_[kIndex0].tensor_layout().tensor_map_before();
+  if (out_dev_matrix_shape.empty()) {
+    MS_LOG(DEBUG) << "For distributed operator " << name_ << ", out_dev_matrix_shape is empty";
+    out_dev_matrix_shape = dev_matrix_shape_;
+  }
+  Shape squashed_tensor_map;
+  for (const auto &tensor_map : outputs_tensor_map) {
+    std::copy(tensor_map.begin(), tensor_map.end(), std::back_inserter(squashed_tensor_map));
+  }
+
+  as_loss_divisor_ = ComputeRepeatDeviceNumByTensorMap(out_dev_matrix_shape, squashed_tensor_map);
+  MS_LOG(DEBUG) << "For distributed operator " << name_ << ", the dev matrix is " << out_dev_matrix_shape << ", the "
+                << "output tensor map is " << squashed_tensor_map << ", the loss divisor is " << as_loss_divisor_;
+  return SUCCESS;
+}
+
+ReplaceGraphPtr SortExtInfo::replace_graph(const CNodePtr &cnode) {
+  if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
+                                       << "interleaved parallel.";
+  }
+  return replace_graph_;
+}
+
 Status GeLUInfo::InferForwardCommunicationByLayout() { return SUCCESS; }
+
+Status RemainderScalarTensorInfo::InferMirrorOpsByLayout() {
+  mirror_ops_.clear();
+  if (inputs_shape_.empty()) {
+    MS_LOG(INFO) << name_ << ": The inputs size is empty";
+    return SUCCESS;
+  }
+
+  bool group_is_empty = true;
+  for (size_t i = 0; i < inputs_tensor_info_.size(); ++i) {
+    auto input_tensor_layout = inputs_tensor_info_[i].tensor_layout();
+    auto repeated_rank_list = input_tensor_layout.InferRepeatedGroup();
+
+    OperatorVector mirror_op;
+    if (repeated_rank_list.size() == 1) {
+      MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << i;
+      mirror_ops_.push_back(mirror_op);
+      continue;
+    }
+
+    Group mirror_group;
+    if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
+      MS_LOG(ERROR) << name_
+                    << ": Create communication group by tensor_map failed, the rank_list is: " << repeated_rank_list
+                    << ", the full_name of node is: " << cnode_->fullname_with_scope();
+      return FAILED;
+    }
+    group_is_empty = false;
+    mirror_op = CreateMirrorOps(mirror_group.name(), mirror_group.GetDevNum());
+    mirror_ops_.push_back(mirror_op);
+  }
+
+  if (group_is_empty) {
+    mirror_ops_.clear();
+    MS_LOG(INFO) << name_ << ": No need to insert mirror ops";
+  }
+
+  inputs_tensor_info_.insert(inputs_tensor_info_.begin(), TensorInfo());
+  return SUCCESS;
+}
+
+Status RemainderScalarTensorInfo::InferTensorInfo() {
+  if (!inputs_shape_new_.empty()) {
+    return InferTensorInfoNew();
+  }
+  if (inputs_shape_.empty() || outputs_shape_.empty() || inputs_tensor_map_.empty() || outputs_tensor_map_.empty()) {
+    MS_LOG(ERROR) << name_ << ": Invalid args";
+    return FAILED;
+  }
+
+  size_t real_input_index = 0;
+  for (size_t i = 0; i < inputs_tensor_map_.size(); ++i) {
+    // Insert placeholder TensorInfo for optional input
+    inputs_tensor_info_.push_back(TensorInfo());
+    TensorLayout input_layout;
+    if (input_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[i], inputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer input tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    MS_LOG(DEBUG) << name_ << ": The input_layout is " << input_layout.ToString();
+    TensorInfo input_tensor_info(input_layout);
+    inputs_tensor_info_.push_back(input_tensor_info);
+    ++real_input_index;
+  }
+  MS_LOG(DEBUG) << name_ << ": The inputs tensor info size is " << inputs_tensor_info_.size();
+  for (size_t i = 0; i < outputs_tensor_map_.size(); ++i) {
+    TensorLayout output_layout;
+    if (output_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_[i], outputs_shape_[i]) != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": Infer output tensor layout failed, the index is " << i;
+      return FAILED;
+    }
+    TensorInfo output_tensor_info(output_layout);
+    outputs_tensor_info_.push_back(output_tensor_info);
+  }
+  return SUCCESS;
+}
+
+Status SwigluInfo::GetAttrs() {
+  auto input = GetInputValueFromCNode<int64_t>(cnode_, kIndex2);
+  axis_.push_back(input);
+
+  // for example: tensor dimension is 4, then axis range [-4, 3]
+  int64_t dim = SizeToLong(inputs_shape_.at(0).size());
+  auto it =
+    std::find_if(axis_.begin(), axis_.end(), [dim](int64_t element) { return ((element >= dim) || (element < -dim)); });
+  if (it != axis_.end()) {
+    MS_LOG(ERROR) << name_ << " : The axis(" << *it << ") is out of range[" << (-dim) << ", " << (dim - 1) << "].";
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status SwigluInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
+  GenerateGraph gen_g = GenerateGraph(attrs_);
+  if (gen_g.Init(cnode) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << "GenerateGraph Init failed";
+    return FAILED;
+  }
+  auto interleaved_num = ParallelContext::GetInstance()->fine_grained_micro_interleaved_size();
+  Attr output_nums_attr = {"output_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_begin_attrs = {output_nums_attr};
+  auto virtual_converter_begin = gen_g.PushBack(
+    {gen_g.NewOpInst(VIRTUAL_CONVERTER_BEGIN, virtual_converter_begin_attrs), gen_g.virtual_input_node()});
+  std::vector<AnfNodePtr> virtual_converter_end_inputs_vector;
+  std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(virtual_converter_begin, 1)};
+  for (int64_t i = 0; i < interleaved_num; ++i) {
+    auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
+    auto axis = CreatInt64Imm(axis_.at(kIndex0));
+    auto activation = gen_g.PushBack({gen_g.NewOpInst(prim_name_), tuple_get_item, axis});
+    virtual_converter_end_inputs_vector.push_back(activation);
+  }
+  Attr input_nums_attr = {"input_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_end_attrs = {input_nums_attr};
+  std::vector<AnfNodePtr> virtual_converter_end_inputs = {
+    gen_g.NewOpInst(VIRTUAL_CONVERTER_END, virtual_converter_end_attrs)};
+  std::copy(virtual_converter_end_inputs_vector.begin(), virtual_converter_end_inputs_vector.end(),
+            std::back_inserter(virtual_converter_end_inputs));
+  auto virtual_converter_end = gen_g.PushBack(virtual_converter_end_inputs);
+  replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
+    std::make_pair(input_nodes, virtual_converter_end));
+  return SUCCESS;
+}
+
+Status SwigluInfo::InferOutputTensorInfo() {
+  auto output_infer_tensor_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  TensorLayout output_infer_tensor_layout_new;
+  auto status = output_infer_tensor_layout_new.InitFromExtendVector(
+    output_infer_tensor_layout.device_arrangement_origin().array(), output_infer_tensor_layout.tensor_map_before(),
+    outputs_shape_[kIndex0]);
+  if (status != SUCCESS) {
+    MS_LOG(ERROR) << "Init layout failed";
+    return FAILED;
+  }
+  set_output_infer_tensor_layout(output_infer_tensor_layout_new);
+  TensorInfo output_tensor_info(output_infer_tensor_layout_new);
+  outputs_tensor_info_.push_back(output_tensor_info);
+  return SUCCESS;
+}
 
 REGISTER(ActivationInfo);
 REGISTER(GeLUInfo);
@@ -1219,16 +1496,18 @@ REGISTER(FastGeLUInfo);
 REGISTER(TanhInfo);
 REGISTER(SoftmaxInfo);
 REGISTER(SortInfo);
+REGISTER(SortExtInfo);
 REGISTER(LogSoftmaxInfo);
 REGISTER(ReverseV2Info);
 REGISTER(CumSumInfo);
+REGISTER(CumsumExtInfo);
 REGISTER(CummaxInfo);
 REGISTER(CumminInfo);
 REGISTER(CumProdInfo);
 REGISTER(EluInfo);
 REGISTER(ReLUInfo);
 REGISTER(SiLUInfo);
-REGISTER(identityInfo);
+REGISTER(IdentityInfo);
 REGISTER(AShardIdentityInfo);
 REGISTER(RepeatElementsInfo);
 REGISTER(ReLU6Info);
@@ -1252,7 +1531,14 @@ REGISTER(SeLUInfo);
 REGISTER(SoftShrinkInfo);
 REGISTER(L2LossInfo);
 REGISTER(ErfinvInfo);
-REGISTER(InvertInfo);           // has not bprop
-REGISTER(PopulationCountInfo);  // has not bprop
+REGISTER(EluExtInfo);
+REGISTER(LeakyReLUExtInfo);
+REGISTER(NanToNumInfo);
+REGISTER(SoftplusExtInfo);
+REGISTER(RemainderTensorScalarInfo);
+REGISTER(RemainderScalarTensorInfo);  // has not bprop
+REGISTER(InvertInfo);                 // has not bprop
+REGISTER(PopulationCountInfo);        // has not bprop
+REGISTER(SwigluInfo);
 }  // namespace parallel
 }  // namespace mindspore

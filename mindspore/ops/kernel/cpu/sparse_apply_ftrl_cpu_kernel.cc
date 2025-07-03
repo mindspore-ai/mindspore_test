@@ -20,14 +20,16 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/fused_sparse_ftrl.h"
 #include "infer/sparse_apply_ftrl.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_ftrl_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 // "var","accum","linear","grad","indices"
 constexpr size_t kVarIndex = 0;
@@ -473,5 +475,6 @@ bool SparseApplyFtrlCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseFtrl, FusedSparseFtrlCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyFtrl, SparseApplyFtrlCpuKernelMod);
+}  // namespace sparse_apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore

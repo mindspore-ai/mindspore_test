@@ -31,13 +31,13 @@
 #include <tuple>
 
 #include "include/backend/visible.h"
+#include "include/backend/mem_reuse/mem_pool_util.h"
 #include "include/common/utils/stream_util.h"
 #include "ir/device_event.h"
 
 namespace mindspore {
 namespace device {
 constexpr int kShiftOffset = 2;
-constexpr int kAllocatorTypeNum = 6;
 // Alloc memory aligned according to 512 bytes.
 constexpr size_t kDynamicMemAlignSize = 512;
 // The minimum unit size (1G) of memory block used for dynamic extend.
@@ -57,12 +57,8 @@ const char kCommonMemPoolType[] = "common_mem_pool";
 const char kPersistentMemPoolType[] = "persistent_mem_pool";
 
 // The status of memory buf.
-enum class DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
+enum class BACKEND_EXPORT DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
 BACKEND_EXPORT const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status);
-
-// Memory allocator type is used to record the memory classification statistics information.
-enum class AllocatorType : int { kWeight, kConstantValue, kKernelOutput, kGraphOutput, kWorkspace, kOther };
-BACKEND_EXPORT const std::string &AllocatorTypeToString(AllocatorType allocator_type);
 
 // The Comparator of device address from small to large.
 using DeviceMemPtr = void(*);
@@ -71,19 +67,19 @@ struct DeviceAddrCmp {
 };
 
 // The AllocatorDebugInfo wrapper which is the local thread for the dynamic memory pool.
-class DynamicMemAllocatorDebugInfo;
+class BACKEND_EXPORT DynamicMemAllocatorDebugInfo;
 // Memory buf is the smallest operation object of dynamic memory pool.
-struct DynamicMemBuf;
+struct BACKEND_EXPORT DynamicMemBuf;
 using DynamicMemBufPtr = std::shared_ptr<DynamicMemBuf>;
 // Multimap key is the tensor size, for finding the idle memory buf by tensor size.
 using SizeMapMemBuf = std::multimap<size_t, DynamicMemBufPtr>;
 // Map key is the device address, for finding the used memory buf in memory block by device address.
 using DeviceAddrMapMemBuf = std::map<DeviceMemPtr, DynamicMemBufPtr, DeviceAddrCmp>;
 // Memory block is composed of memory buf.
-class DynamicMemBlock;
+class BACKEND_EXPORT DynamicMemBlock;
 using DynamicMemBlockPtr = std::shared_ptr<DynamicMemBlock>;
 
-struct MemStatusManager;
+struct BACKEND_EXPORT MemStatusManager;
 using MemStatusManagerPtr = std::shared_ptr<MemStatusManager>;
 
 // Help class for unordered_map, pair has no hash method, need override it.
@@ -97,7 +93,7 @@ struct pair_hash {
   }
 };
 
-struct MemBuf;
+struct BACKEND_EXPORT MemBuf;
 
 // Interface of dynamic memory pool.
 class BACKEND_EXPORT DynamicMemPool {
@@ -133,6 +129,10 @@ class BACKEND_EXPORT DynamicMemPool {
                                                      const std::vector<size_t> &keep_addr_sizes) {
     return {};
   }
+
+  virtual size_t EmptyCache() { return -1L; }
+
+  virtual size_t ReleaseFreeBlocks() { return -1L; }
 
   // Element in vector : memory_stream_id, address
   virtual bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
@@ -235,8 +235,6 @@ class BACKEND_EXPORT DynamicMemPool {
 
   virtual void SetEnableVmm(bool enable_vmm) {}
 
-  virtual void WaitPipeline() {}
-
   virtual const bool SyncAllStreams() { return false; }
 
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
@@ -250,12 +248,39 @@ class BACKEND_EXPORT DynamicMemPool {
   virtual bool IsEnableTimeEvent() { return false; }
 
   virtual void SetEnableTimeEvent(bool enable_time_event) {}
+
+  // Use set method to avoid performance decrease.
+  void SetMemoryProfilerCallback(const std::function<void()> &memory_profiler_callback) {
+    memory_profiler_callback_ = memory_profiler_callback;
+  }
+
+  void SetMemoryMstxCallback(const std::function<void(void *, size_t)> memory_malloc_mstx_callback,
+                             const std::function<void(void *)> memory_free_mstx_callback) {
+    memory_malloc_mstx_callback_ = memory_malloc_mstx_callback;
+    memory_free_mstx_callback_ = memory_free_mstx_callback;
+  }
+
+  // Set rank id getter for memory pool to generate dump path.
+  virtual void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) {
+    if (rank_id_getter != nullptr) {
+      rank_id_getter_ = rank_id_getter;
+    }
+  }
+
+  void SetPipelineCallback(const std::function<void()> &pipeline_callback) { pipeline_callback_ = pipeline_callback; }
+
+ protected:
+  std::function<void()> memory_profiler_callback_{nullptr};
+  std::function<size_t()> rank_id_getter_ = []() { return SIZE_MAX; };
+  std::function<void()> pipeline_callback_{nullptr};
+  std::function<void(void *, size_t)> memory_malloc_mstx_callback_{nullptr};
+  std::function<void(void *)> memory_free_mstx_callback_{nullptr};
 };
 
 // Recording information for debugging the memory allocator.
 struct BACKEND_EXPORT AllocatorDebugInfo {
   std::string name_{"Unknown"};
-  AllocatorType type_{AllocatorType::kOther};
+  memory::mem_pool::MemType type_{memory::mem_pool::MemType::kOther};
   int input_index_{-1};
   int output_index_{-1};
   uint8_t run_mode_{0};
@@ -266,8 +291,8 @@ class BACKEND_EXPORT DynamicMemAllocatorDebugInfo {
   static AllocatorDebugInfo &GetDebugInfo() noexcept;
 
   // Set the debug info when memory alloc.
-  static void SetDebugInfo(const std::string &name, AllocatorType type, int input_index = -1, int output_index = -1,
-                           uint8_t run_mode = 0);
+  static void SetDebugInfo(const std::string &name, memory::mem_pool::MemType type, int input_index = -1,
+                           int output_index = -1, uint8_t run_mode = 0);
 
  private:
   DynamicMemAllocatorDebugInfo() = default;
@@ -294,7 +319,7 @@ struct BACKEND_EXPORT EventBase {
   std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::list<TaskIdOnStreamEvent>>>> events_{nullptr};
 };
 
-struct JsonBuilder {
+struct BACKEND_EXPORT JsonBuilder {
   JsonBuilder() { buffer_ << "{"; }
 
   template <typename T>

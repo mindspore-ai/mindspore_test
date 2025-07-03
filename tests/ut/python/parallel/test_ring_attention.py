@@ -149,7 +149,7 @@ def generate_strategy_for_fias(dp, mp, optinal_inputs, input_layout='BSH', spars
     return stra
 
 
-def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=False, sparse_mode=0):
+def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=False, sparse_mode=0, is_eod_pad=False):
     N_Q = N
     N_KV = 1 if use_mqa else N
     if input_layout == "BSH":
@@ -179,6 +179,8 @@ def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=Fal
     attn_mask = None
     sample_num = 4
     actual_seq_qlen = Tensor(tuple(range(S // sample_num, S + 1, S // sample_num)), ms.int64)
+    if is_eod_pad:
+        actual_seq_qlen = Tensor(tuple(range(S // sample_num, S - 2, S // sample_num)), ms.int64)
     actual_seq_kvlen = actual_seq_qlen
     return query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen
 
@@ -275,7 +277,17 @@ class Net(nn.Cell):
         if self.multi_fa:
             out1 = self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
                               actual_seq_qlen, actual_seq_kvlen)
-            out2 = self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
+            # If the inputs of the two FA ops are completely identical, the flash_sp pass will generate two identical
+            # Send nodes. The subsequent CSE pass in frontend-compilation may eliminate the second Send node (as CSE
+            # considers them duplicate nodes that can be removed).
+            # However, if the CSE logic changes, it could affect the number of Send nodes in this testcase and
+            # potentially cause test failure, which would increase maintenance costs for parallel and CSE developers.
+            # Therefore, we modify the input of the second FA op to differ from the first one to prevent this testcase
+            # from triggering CSE elimination.
+            query2 = query * 2
+            key2 = key * 2
+            value2 = value * 2
+            out2 = self.fa_op(query2, key2, value2, real_shift, drop_mask_bits, None, attn_mask, None,
                               actual_seq_qlen, actual_seq_kvlen)
             return self.mul(out1[0], out2[0])
         return self.fa_op(query, key, value, real_shift, drop_mask_bits, None, attn_mask, None,
@@ -567,7 +579,7 @@ def test_flash_sp_semi_auto_parallel_multi_fa(input_layout):
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "21"
+    assert out == "22"
 
     para = "Receive("
     output = subprocess.check_output(
@@ -644,6 +656,14 @@ def test_ring_attention_semi_auto_parallel_cp(input_layout):
     assert out == "3"
     context.reset_auto_parallel_context()
 
+    file = "./ring_attention_semi_auto_parallel_cp/rank_0/*opt_pass_2_opt_a*.ir"
+    para = "call"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "3"
+    context.reset_auto_parallel_context()
 
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 def test_ring_attention_semi_auto_parallel_eod_reset_attn_mask(input_layout):
@@ -663,6 +683,24 @@ def test_ring_attention_semi_auto_parallel_eod_reset_attn_mask(input_layout):
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, reset_attn_mask=True)
     compile_net(net, query, key, value, real_shift, None, actual_seq_qlen, actual_seq_kvlen)
 
+@pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
+def test_ring_attention_semi_auto_parallel_eod_reset_pad_attn_mask(input_layout):
+    """
+    Features: test Ring Attention
+    Description: semi_auto_parallel with strategy
+    Expectation: compile success
+    """
+    set_auto_parallel_context(device_num=4, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_context(save_graphs=False)
+    dp = 1
+    mp = 1
+    sp = 4
+    B, N, S, D = 8, 16, 1024, 128
+    query, key, value, real_shift, _, actual_seq_qlen, actual_seq_kvlen = generate_inputs(B, N, S, D, input_layout,
+                                                                                          is_eod_pad=True)
+    net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, reset_attn_mask=True)
+    compile_net(net, query, key, value, real_shift, None, actual_seq_qlen, actual_seq_kvlen)
 
 @pytest.mark.parametrize('input_layout', ['BSH', 'BNSD'])
 @pytest.mark.parametrize('strategys', [(1, 2, 4)])

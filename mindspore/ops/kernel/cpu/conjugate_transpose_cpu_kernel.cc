@@ -23,11 +23,12 @@
 #include "nnacl/matmul_parameter.h"
 #include "nnacl/op_base.h"
 #include "kernel/cpu/conjugate_transpose_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conjugate_transpose_cpu {
 namespace {
 constexpr size_t kConjugateTransposeInputsNum = 2;
 constexpr size_t kConjugateTransposeOutputsNum = 1;
@@ -567,5 +568,6 @@ void ConjugateTransposeCpuKernelMod::TransposeDims(const T *in_data, T *out_data
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConjugateTranspose, ConjugateTransposeCpuKernelMod);
+}  // namespace conjugate_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

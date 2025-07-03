@@ -39,6 +39,7 @@ class TestRecoveryContext : public UT::Common {
 /// Expectation: The return value of the normal interface is as expected, and the exception branch is expected to catch
 /// the exception.
 TEST_F(TestRecoveryContext, all_interface) {
+  MsContext::GetInstance()->set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
   common::SetEnv(kEnvEnableRecovery, "1");
   common::SetEnv(kEnvRecoveryInterval, "10");
   std::string recovery_path = "./recovery_path";
@@ -73,6 +74,9 @@ TEST_F(TestRecoveryContext, all_interface) {
 
   EXPECT_NO_THROW(RecoveryContext::GetInstance()->set_global_rank_id(1));
   EXPECT_NO_THROW(RecoveryContext::GetInstance()->set_global_rank_size(2));
+
+  EXPECT_NO_THROW(RecoveryContext::GetInstance()->SetIsRebootNode(false));
+  EXPECT_NO_THROW(RecoveryContext::GetInstance()->SetIsArf(false));
 
   EXPECT_THROW(RecoveryContext::GetInstance()->persistent_json(), std::runtime_error);
 

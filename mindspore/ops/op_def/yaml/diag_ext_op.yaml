@@ -1,0 +1,14 @@
+#operator diag_ext
+diag_ext:
+    args:
+        input:
+            dtype: tensor
+        diagonal:
+            dtype: int
+            default: 0
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True
+        Ascend: DiagExtAscend

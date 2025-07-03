@@ -111,7 +111,7 @@ ShapeArray AddRmsNormDynamicQuantFuncImpl::InferShape(const PrimitivePtr &primit
   const auto smooth_scale1 = input_values[kInputIndex3];
   const auto smooth_scale2 = input_values[kInputIndex4];
   if (smooth_scale1 != mindspore::kNone) {
-    const auto &smooth_scale1_tensor = smooth_scale1->cast<tensor::BaseTensorPtr>();
+    const auto &smooth_scale1_tensor = smooth_scale1->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(smooth_scale1_tensor);
     const auto &smooth_scale1_shape = smooth_scale1_tensor->shape();
     MS_CHECK_VALUE(
@@ -120,7 +120,7 @@ ShapeArray AddRmsNormDynamicQuantFuncImpl::InferShape(const PrimitivePtr &primit
   }
 
   if (smooth_scale2 != mindspore::kNone) {
-    const auto &smooth_scale2_tensor = smooth_scale2->cast<tensor::BaseTensorPtr>();
+    const auto &smooth_scale2_tensor = smooth_scale2->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(smooth_scale2_tensor);
     const auto &smooth_scale2_shape = smooth_scale2_tensor->shape();
     MS_CHECK_VALUE(
@@ -131,15 +131,15 @@ ShapeArray AddRmsNormDynamicQuantFuncImpl::InferShape(const PrimitivePtr &primit
     }
   }
 
-  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   const auto &gamma_shape = gamma_tensor->shape();
   MS_CHECK_VALUE(gamma_shape.size() == 1,
                  CheckAndConvertUtils::FormatCommMsg("The rank of gamma must be 1, but got: ", gamma_shape));
 
-  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x1_tensor);
-  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x2_tensor);
   const auto &x1_shape = x1_tensor->shape();
   const auto &x2_shape = x2_tensor->shape();
@@ -178,11 +178,11 @@ TypePtr AddRmsNormDynamicQuantFuncImpl::InferType(const PrimitivePtr &prim,
 
 TypePtrList AddRmsNormDynamicQuantFuncImpl::InferType(const PrimitivePtr &primitive,
                                                       const ValuePtrList &input_values) const {
-  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
-  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &smooth_scale1_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
-  const auto &smooth_scale2_tensor = input_values[kInputIndex4]->cast<tensor::BaseTensorPtr>();
+  const auto &x1_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &x2_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &smooth_scale1_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
+  const auto &smooth_scale2_tensor = input_values[kInputIndex4]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x1_tensor);
   MS_EXCEPTION_IF_NULL(x2_tensor);
   MS_EXCEPTION_IF_NULL(gamma_tensor);

@@ -16,18 +16,18 @@
 
 #include "kernel/ascend/pyboost/customize/one_hot_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/max.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/max.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr OneHotExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
-                                               const Int64ImmPtr &num_classes, const BaseTensorPtr &on_value,
-                                               const BaseTensorPtr &off_value, const Int64ImmPtr &axis) {
+tensor::TensorPtr OneHotExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor_tensor,
+                                           const Int64ImmPtr &num_classes, const TensorPtr &on_value,
+                                           const TensorPtr &off_value, const Int64ImmPtr &axis) {
   static const int64_t MIN_DEPTH = 1;
   static const int64_t AUTO_DEPTH = -1;
 

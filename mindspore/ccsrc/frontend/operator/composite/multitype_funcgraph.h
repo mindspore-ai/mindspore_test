@@ -46,6 +46,7 @@ class MultitypeFuncGraph : public MetaFuncGraph {
   virtual void Register(const TypePtrList &types, specialize_fn s_fn);
   virtual void Register(const TypePtrList &types, const py::function &py_fn);
   virtual void PyRegister(const py::tuple &tuple, const py::function &py_fn);
+  virtual void PyRegisterDefault(const py::function &py_fn);
 
   void set_doc_url(const std::string &doc_url) { doc_url_ = doc_url; }
   void set_need_raise() { need_raise_ = true; }
@@ -63,6 +64,7 @@ class MultitypeFuncGraph : public MetaFuncGraph {
   std::string doc_url_;
   py::object meta_obj_ = py::none();
   bool need_raise_ = false;
+  py::object default_fn_ = py::object();
 };
 using MultitypeFuncGraphPtr = std::shared_ptr<MultitypeFuncGraph>;
 bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, mindspore::TypePtr>> &key_values);

@@ -6,10 +6,10 @@ mindspore.ops.TensorDump
     将Tensor保存为numpy格式的npy文件。
 
     .. warning::
-        - 参数input_output将不再支持参数值为'all'。
+        参数input_output将不再支持参数值为'all'。
 
     .. note::
-        - 在Ascend平台上的Graph模式下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大Tesnor或输出Tensor比较密集场景下算子执行失败的问题。
+        在Ascend平台上的Graph模式下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大Tesnor或输出Tensor比较密集的场景下算子执行失败的问题。
 
     参数：
         - **input_output** (str，可选) - 控制Tensordump行为模式的参数，可选的值为 ['out', 'in'] 中的一个，默认值： ``out`` 。

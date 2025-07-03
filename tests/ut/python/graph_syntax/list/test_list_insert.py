@@ -104,7 +104,7 @@ def test_list_insert_5():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
     input_x = [Tensor([1]), Tensor([3]), Tensor([4])]
     res = list_insert(input_x)
-    assert np.all(res == np.array((2, Tensor([1]), 9, Tensor([3]), Tensor([4]))))
+    assert res == [2, Tensor([1]), 9, Tensor([3]), Tensor([4])]
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
@@ -125,7 +125,7 @@ def test_list_insert_pop_1():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
     input_x = [Tensor([1]), Tensor([3]), Tensor([4])]
     res_x, res_y, res_z = list_insert_pop(input_x)
-    assert np.all(res_x == np.array((2, Tensor([1]), Tensor([3]))))
+    assert res_x == [2, Tensor([1]), Tensor([3])]
     assert res_y == Tensor([4])
     assert res_z == 9
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
@@ -170,7 +170,7 @@ def test_list_insert_pop_append_1():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
     input_x = [Tensor([1]), Tensor([3]), Tensor([5])]
     res_x, res_y, res_z = list_insert_pop_append(input_x)
-    assert np.all(res_x == np.array((2, Tensor([1]), 9, 10, 5)))
+    assert res_x == [2, Tensor([1]), 9, 10, 5]
     assert res_y == Tensor([5])
     assert res_z == 3
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'

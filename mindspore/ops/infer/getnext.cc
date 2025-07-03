@@ -33,6 +33,8 @@
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 #include "infer/dynamic_getnext_v2.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace ops {

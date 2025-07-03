@@ -15,19 +15,19 @@
 """asgd"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore.common.api import jit
 
-_asgd_opt = C.MultitypeFuncGraph("asgd_opt")
+_asgd_opt = ops.MultitypeFuncGraph("asgd_opt")
 
-op_cast = P.Cast()
-op_pow = P.Pow()
-op_maximum = P.Maximum()
-op_assign = P.Assign()
-op_assignadd = P.AssignAdd()
+op_cast = ops.Cast()
+op_pow = ops.Pow()
+op_maximum = ops.Maximum()
+op_assign = ops.Assign()
+op_assignadd = ops.AssignAdd()
 
 
 @_asgd_opt.register("Number", "Number", "Number", "Tensor", "Tensor", "Tensor", "Tensor",
@@ -37,7 +37,7 @@ def _run_asgd_opt(lambd, alpha, t0, step, lr, param, grad, eta, mu, ax):
     if step == 1:
         op_assign(eta, lr)
     next_param = op_cast(param * (1. - lambd * eta) - eta * grad, param.dtype)
-    F.assign(param, next_param)
+    ops.assign(param, next_param)
 
     if mu != 1:
         op_assignadd(ax, op_cast((next_param - ax) * mu, ax.dtype))
@@ -121,22 +121,22 @@ class ASGD(Optimizer):
         self.ax = self.parameters.clone(prefix="ax", init='zeros')
         self.step_t = Parameter(Tensor(0, mstype.int32), "step_t")
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
-        self.op_cast = P.Cast()
+        self.assignadd = ops.AssignAdd()
+        self.op_cast = ops.Cast()
 
-    @jit
+    @jit(backend="ms_backend")
     def implementation(self, lambd, alpha, t0, lr, group_id, maximize, gradients, weight_decay):
         """Extract the common computing part for acceleration"""
         start_id = self.group_start_id[group_id]
         end_id = self.group_start_id[group_id + 1]
         params = self.parameters[start_id: end_id]
-        grads = tuple([grad if not maximize else F.neg(grad) for grad in gradients[start_id: end_id]])
+        grads = tuple([grad if not maximize else ops.neg(grad) for grad in gradients[start_id: end_id]])
         grads = self._decay_weight(weight_decay, params, grads)
 
         ax = self.ax[start_id: end_id]
         eta = self.eta[start_id: end_id]
         mu = self.mu[start_id: end_id]
-        self.hyper_map(F.partial(_asgd_opt, lambd, alpha, t0, self.step_t, lr),
+        self.hyper_map(ops.partial(_asgd_opt, lambd, alpha, t0, self.step_t, lr),
                        params, grads, eta, mu, ax)
         return True
 

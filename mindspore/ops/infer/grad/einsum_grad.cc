@@ -36,11 +36,11 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr int64_t kInputNum2 = 2;
 abstract::BaseShapePtr EinsumGradInferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);

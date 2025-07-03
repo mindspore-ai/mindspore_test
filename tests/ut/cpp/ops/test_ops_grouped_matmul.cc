@@ -42,6 +42,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(-1)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{2, 4, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -67,6 +71,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(-1)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-2}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -92,6 +100,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(-1)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-1, -1, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -117,6 +129,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(-1)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{2, 4, 10}, {1, 3}}, {kNumberTypeFloat32, kNumberTypeFloat32});
 
@@ -142,6 +158,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{10, 8}}, {kNumberTypeFloat32});
 
@@ -167,6 +187,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-1, 8}}, {kNumberTypeFloat32});
 
@@ -192,6 +216,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{10, 8}}, {kNumberTypeFloat32});
 
@@ -217,6 +245,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
 
@@ -242,6 +274,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, 10, 8}}, {kNumberTypeFloat32});
 
@@ -267,6 +303,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, -1, 8}}, {kNumberTypeFloat32});
 
@@ -292,6 +332,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, 10, -1}}, {kNumberTypeFloat32});
 
@@ -317,6 +361,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-1, 10, 8}}, {kNumberTypeFloat32});
 
@@ -342,6 +390,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, -1, 8}}, {kNumberTypeFloat32});
 
@@ -367,6 +419,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, 10, -1}}, {kNumberTypeFloat32});
 
@@ -392,6 +448,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{-1, 10, 8}}, {kNumberTypeFloat32});
 
@@ -417,6 +477,10 @@ std::vector<GeneralInferParam> prepare_params() {
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(3)},
       // group_type
       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)},
+      // transpose_a
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
+      // transpose_b
+      InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(False)},
     })
     .FeedExpectedOutput({{4, 10, 8}}, {kNumberTypeFloat32});
 

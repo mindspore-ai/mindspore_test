@@ -2,33 +2,5 @@ where:
   description: |
     where(condition, y) -> Tensor
 
-    Selects elements from `self` or `y` based on `condition` and returns a tensor.
+    For details, please refer to :func:`mindspore.ops.where`.
 
-    .. math::
-        output_i = \begin{cases} self_i,\quad &if\ condition_i \\ y_i,\quad &otherwise \end{cases}
-
-    Args:
-        condition (Tensor[bool]): If True, yield `self`, otherwise yield `y`.
-        y (Union[Tensor, Scalar]): When `condition` is False, values to select from.
-
-    Returns:
-        Tensor, elements are selected from `self` and `y`.
-
-    Raises:
-        TypeError: If `condition` is not a Tensor.
-        ValueError: If `condition`, `self` and `y` can not broadcast to each other.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import dtype as mstype
-        >>> a = Tensor(np.arange(4).reshape((2, 2)), mstype.float32)
-        >>> b = Tensor(np.ones((2, 2)), mstype.float32)
-        >>> condition = a < 3
-        >>> output = a.where(condition, b)
-        >>> print(output)
-        [[0. 1.]
-         [2. 1.]]

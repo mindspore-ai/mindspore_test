@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CORE_UTILS_MS_UTILS_H_
 #define MINDSPORE_CORE_UTILS_MS_UTILS_H_
 
+#include <map>
 #include <memory>
 #include <utility>
 #include <string>
@@ -27,6 +28,9 @@
 #include <chrono>
 #include <algorithm>
 #include <cctype>
+#include <mutex>
+#include <set>
+#include <sstream>
 #include "mindapi/base/macros.h"
 namespace mindspore {
 class MSLogTime {
@@ -73,6 +77,8 @@ const char kAllocEnableVmm[] = "enable_vmm";
 const char kAllocVmmAlignSize[] = "vmm_align_size";
 const char kAllocMemoryRecycle[] = "memory_recycle";
 const char kAllocMemoryTracker[] = "memory_tracker";
+const char kAllocSimpleTracker[] = "simple_tracker";
+const char kAllocMemoryTrackerPath[] = "memory_tracker_path";
 const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
 const char kAllocMemoryPool[] = "older_pool";
 
@@ -80,12 +86,13 @@ const char kAllocMemoryPool[] = "older_pool";
 const char kRuntimeConf[] = "MS_DEV_RUNTIME_CONF";
 const char kRuntimeInline[] = "inline";
 const char kRuntimeSwitchInline[] = "switch_inline";
+const char kRuntimeNewRefCount[] = "new_ref_count";
 const char kRuntimeControlFlowOptimize[] = "control_flow_optimize";
 const char kRuntimeMultiStream[] = "multi_stream";
 const char kRuntimePipeline[] = "pipeline";
 const char kRuntimeGraphPipeline[] = "graph_pipeline";
 const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";
-const char kRuntimeView[] = "view";
+const char kRuntimeCommunicationLaunchGroup[] = "communication_launch_group";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";
 const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
@@ -96,7 +103,11 @@ const char kRuntimeCopyAsync[] = "copy_async";
 const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
 const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
 const char kRuntimeAsyncInitComm[] = "async_init_comm";
+const char kRuntimeCpuAffinityList[] = "cpu_affinity_list";
+const char kRuntimeCpuAffinityMoudule[] = "cpu_affinity_module";
+const char kRuntimeActorThreadFixBind[] = "actor_thread_fix_bind";
 const char kRuntimeInputOptimize[] = "input_optimize";
+const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 // Runtime debug config.
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";
@@ -106,6 +117,8 @@ const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
 const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
 const char kRuntimeAclnnCache[] = "aclnn_cache";
 const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
+const char kRuntimeExecutionOrderCheckIteration[] = "execution_order_check_iteration";
+const char kRuntimeHPMode[] = "high_performance_mode";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';
@@ -122,8 +135,23 @@ MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsEnableAclnnViewOp(const std::string &op);
 
+// Get env thread safe with cache.
+struct EnvHelper;
+using EnvHelperPtr = std::shared_ptr<EnvHelper>;
+struct MS_CORE_API EnvHelper {
+  static EnvHelperPtr &GetInstance();
+
+  const char *GetEnv(const char *conf, bool cache_env = false);
+
+  // Reset env cache, if conf is nullptr, reset all cache.
+  void ResetCache(const char *conf);
+
+  std::map<std::string, std::string> env_cache_;
+  std::mutex mutex_;
+};
+
 static inline std::string GetEnv(const std::string &envvar, const std::string &default_value = "") {
-  const char *value = std::getenv(envvar.c_str());
+  const char *value = EnvHelper::GetInstance()->GetEnv(envvar.c_str());
 
   if (value == nullptr) {
     return default_value;
@@ -136,6 +164,7 @@ static inline int SetEnv(const char *envname, const char *envvar, int overwrite 
 #if defined(_WIN32)
   return 0;
 #else
+  EnvHelper::GetInstance()->ResetCache(envname);
   return ::setenv(envname, envvar, overwrite);
 #endif
 }
@@ -267,11 +296,14 @@ inline bool IsExecuteSimulation() {
   return simu_execute;
 }
 
-inline bool IsDryRun() {
-  static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
-  static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);
-  static const bool skip_launch = (launch_skipped == "all" || launch_skipped == "ALL" || IsCompileSimulation());
-  return skip_launch;
+inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
+  std::stringstream ss(str);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    if (!item.empty()) {
+      output_list->emplace(item);
+    }
+  }
 }
 }  // namespace common
 }  // namespace mindspore

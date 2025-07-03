@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// #define USE_DEPRECATED_API
 #include "tools/optimizer/graph/add_variable_node_pass.h"
 #include <memory>
 #include <vector>
@@ -33,6 +32,9 @@
 #include "op_def/conv_pool_ops.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {
@@ -572,20 +574,25 @@ lite::STATUS InsertVariableNodePass::RecordVariableName(const FuncGraphPtr &func
   return RET_OK;
 }
 
+void InsertVariableNodePass::InitWeightParam(const std::shared_ptr<ConverterPara> &param,
+                                             std::string *variable_weights_file, int32_t *max_weight_batch) {
+  if (param->config_infos.find(lite::kAscendContextSection) != param->config_infos.end()) {
+    auto ascend_context = param->config_infos.at(lite::kAscendContextSection);
+    if (ascend_context.find(lite::kVariableWeightsFile) != ascend_context.end()) {
+      *variable_weights_file = ascend_context.at(lite::kVariableWeightsFile);
+    }
+    if (ascend_context.find(lite::kMaxWeightBatch) != ascend_context.end()) {
+      *max_weight_batch = std::stoi(ascend_context.at(lite::kMaxWeightBatch));
+    }
+  }
+}
+
 lite::STATUS InsertVariableNodePass::BuildVariableNode(const std::shared_ptr<ConverterPara> &param,
                                                        FuncGraphPtr func_graph, std::vector<std::string> *const_names) {
   MS_CHECK_TRUE_RET(func_graph != nullptr, RET_ERROR);
   std::string variable_weights_file = "";
   int32_t max_weight_batch = 1;
-  if (param->config_infos.find(lite::kAscendContextSection) != param->config_infos.end()) {
-    auto ascend_context = param->config_infos.at(lite::kAscendContextSection);
-    if (ascend_context.find(lite::kVariableWeightsFile) != ascend_context.end()) {
-      variable_weights_file = ascend_context.at(lite::kVariableWeightsFile);
-    }
-    if (ascend_context.find(lite::kMaxWeightBatch) != ascend_context.end()) {
-      max_weight_batch = std::stoi(ascend_context.at(lite::kMaxWeightBatch));
-    }
-  }
+  InitWeightParam(param, &variable_weights_file, &max_weight_batch);
   MS_CHECK_TRUE_RET(variable_weights_file != "", RET_OK);
   bool has_alpha = false;
   std::map<std::string, std::vector<int>> variable_nodes;

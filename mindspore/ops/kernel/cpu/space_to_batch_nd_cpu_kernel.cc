@@ -18,10 +18,11 @@
 
 #include "mindspore/ops/infer/space_to_batch_nd.h"
 #include "kernel/cpu/space_to_batch_nd_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace space_to_batch_nd_cpu {
 namespace {
 constexpr size_t PADDING_SHAPE_1 = 2;
 constexpr size_t kSpaceToBatchNDInputsNum = 1;
@@ -189,5 +190,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &SpaceToBatchNDCpuKernel
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SpaceToBatchND, SpaceToBatchNDCpuKernelMod);
+}  // namespace space_to_batch_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -25,12 +25,13 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/base/unsorted_segment_sum_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unsorted_segment_arithmetic_cpu {
 class UnsortedSegmentArithmeticCpuKernelMod : public NativeCpuKernelMod,
                                               public MatchKernelHelper<UnsortedSegmentArithmeticCpuKernelMod> {
  public:
@@ -71,6 +72,7 @@ class UnsortedSegmentArithmeticCpuKernelMod : public NativeCpuKernelMod,
   int64_t out_stride_ = 1;
   int64_t num_segments_ = 0;
 };
+}  // namespace unsorted_segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_UNSORTED_SEGMENT_ARITHMETIC_CPU_KERNEL_H_

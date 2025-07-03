@@ -5,7 +5,7 @@ mindspore.numpy.ptp
 
     沿某个轴的值范围(最大值 - 最小值)。该函数名称来自于“peak to peak”的首字母缩写。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `dtype` 和 `out` 。
 
     参数：
@@ -15,6 +15,6 @@ mindspore.numpy.ptp
 
     返回：
         Tensor。
-    
+
     异常：
         - **TypeError** - 如果输入类型不是上述指定类型。

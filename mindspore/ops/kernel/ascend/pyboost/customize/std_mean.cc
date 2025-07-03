@@ -16,15 +16,15 @@
 
 #include "kernel/ascend/pyboost/customize/std_mean.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void StdMeanAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void StdMeanAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                             const std::optional<ValueTuplePtr> &dim, const Int64ImmPtr &correction,
                             const BoolImmPtr &keepdim) {
   OpRunner::InferOpOutput(op, input_tensor, dim, correction, keepdim);

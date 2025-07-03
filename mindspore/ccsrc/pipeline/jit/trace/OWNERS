@@ -1,0 +1,9 @@
+approvers:
+- ginfung #
+- liangzhibo
+- huangbingjian
+- Margaret_wangrui
+- zh_qh
+
+options:
+    no_parent_owners: true

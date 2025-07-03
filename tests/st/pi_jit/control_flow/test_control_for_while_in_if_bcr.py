@@ -7,14 +7,6 @@ from mindspore import context, jit
 from mindspore.common.parameter import Parameter
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 
 class CtrlForInIfBC(Cell):
     def __init__(self, t):
@@ -53,11 +45,11 @@ def test_control_flow_for_in_if_continue_break():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForInIfBC(t)
-    jit(fn=CtrlForInIfBC.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForInIfBC.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForInIfBC(t)
-    jit(fn=CtrlForInIfBC.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForInIfBC.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)
 
@@ -97,11 +89,11 @@ def test_control_flow_for_in_if_return_break():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForInIfBR(t)
-    jit(fn=CtrlForInIfBR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForInIfBR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForInIfBR(t)
-    jit(fn=CtrlForInIfBR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForInIfBR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)
 
@@ -143,11 +135,11 @@ def test_control_flow_for_in_if_break_continue_return():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForInIfBCR(t)
-    jit(fn=CtrlForInIfBCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlForInIfBCR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForInIfBCR(t)
-    jit(fn=CtrlForInIfBCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlForInIfBCR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)
 
@@ -186,11 +178,11 @@ def test_control_flow_while_in_if_continue_return():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileInIfCR(t)
-    jit(fn=CtrlWhileInIfCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileInIfCR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileInIfCR(t)
-    jit(fn=CtrlWhileInIfCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileInIfCR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)
 
@@ -234,10 +226,10 @@ def test_control_flow_while_in_if_break_continue_return():
     y = Tensor(input_np, ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhileInIfBCR(t)
-    jit(fn=CtrlWhileInIfBCR.construct, mode="PSJit")(ps_net, x, y)
+    jit(function=CtrlWhileInIfBCR.construct, capture_mode="ast")(ps_net, x, y)
     ps_out = ps_net(x, y)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhileInIfBCR(t)
-    jit(fn=CtrlWhileInIfBCR.construct, mode="PIJit")(pi_net, x, y)
+    jit(function=CtrlWhileInIfBCR.construct, capture_mode="bytecode")(pi_net, x, y)
     pi_out = pi_net(x, y)
     match_array(ps_out, pi_out)

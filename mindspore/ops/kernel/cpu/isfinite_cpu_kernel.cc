@@ -17,10 +17,11 @@
 #include "kernel/cpu/isfinite_cpu_kernel.h"
 #include <cmath>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isfinite_cpu {
 namespace {
 constexpr size_t kIsFiniteInputsNum = 1;
 constexpr size_t kIsFiniteOutputsNum = 1;
@@ -102,5 +103,6 @@ const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> &I
   return func_list_;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsFinite, IsFiniteCpuKernelMod);
+}  // namespace isfinite_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/unique_cpu_kernel.h"
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_cpu {
 namespace {
 constexpr size_t kBucketSortThreshold = 100000;
 constexpr size_t kWorkSpaceNum = 3;
@@ -109,5 +110,6 @@ void UniqueCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Unique, UniqueCpuKernelMod);
+}  // namespace unique_cpu
 }  // namespace kernel
 }  // namespace mindspore

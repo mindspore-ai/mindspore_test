@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest1d_grad {
 class UpsampleNearest1DGradAscend final : public AclnnKernelMod {
  public:
   UpsampleNearest1DGradAscend() : AclnnKernelMod(std::move("aclnnUpsampleNearest1dBackward")) {}
@@ -39,6 +40,7 @@ class UpsampleNearest1DGradAscend final : public AclnnKernelMod {
   std::vector<int64_t> output_size_;
   double scales_l_;
 };
+}  // namespace upsample_nearest1d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

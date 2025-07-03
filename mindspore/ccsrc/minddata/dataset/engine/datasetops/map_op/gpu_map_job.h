@@ -35,7 +35,7 @@ class GpuMapJob : public MapJob {
     RETURN_STATUS_UNEXPECTED("The run operation is not implemneted in GPU platform.");
   }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   // A pure virtual run function to execute a npu map job for Ascend910B DVPP
   Status Run(std::vector<TensorRow> in, std::vector<TensorRow> *out, mindspore::device::DeviceContext *device_context,
              const size_t &stream_id) override {

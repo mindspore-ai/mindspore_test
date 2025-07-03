@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/masked_select.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/masked_select.h"
 
 #include "ir/scalar.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "kernel/common/pyboost/customize/op_common.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MaskedSelectCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &mask_tensor) {
+tensor::TensorPtr MaskedSelectCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const TensorPtr &mask_tensor) {
   MS_LOG(DEBUG) << "MaskedSelect CPU start";
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor, mask_tensor);

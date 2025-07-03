@@ -33,7 +33,7 @@ deprecated_tensor_method_map = {
     # 7 allclose
     "allclose": "tensor_allclose",
     # 8 any
-    "any": "tensor_any",
+    "any": "reduce_tensor_any",
     # 9 arctan2
     "arctan2": "tensor_arctan2",
     # 10 argmax
@@ -97,7 +97,7 @@ deprecated_tensor_method_map = {
     # 39 greater
 
     # 40 greater_equal
-
+    "greater_equal": "deprecated_tensor_greater_equal",
     # 41 gt
 
     # 42 half
@@ -136,7 +136,6 @@ deprecated_tensor_method_map = {
 
     # 59 logical_or
     "logical_or": "tensor_logical_or",
-
     # 60 long
 
     # 61 lt
@@ -280,13 +279,14 @@ deprecated_tensor_method_map = {
     # 129 requires_grad_
 
     # 130 sub_
-
+    "sub_": "deprecated_tensor_sub_",
     # 131 uniform_
 
     # 132 absolute
 
     # 133 bincount
     "bincount": "tensor_bincount",
+    "roll": "tensor_roll",
     # 134 diff
 
     # 135 double
@@ -338,16 +338,23 @@ deprecated_tensor_method_map = {
     "atan": "deprecated_tensor_atan",
     "arctan": "deprecated_tensor_arctan",
     "dot": "deprecated_tensor_dot",
+    "copy_": "deprecated_tensor_copy_",
 
     # 153
+    "logsumexp": "deprecated_tensor_logsumexp",
 
     # 154
 
     # 155
-
+    "isneginf": "deprecated_tensor_isneginf",
     # 156
 
     # 157
+    "logaddexp": "deprecated_tensor_logaddexp",
+
+    "logaddexp2": "deprecated_tensor_logaddexp2",
+
+    "xlogy": "tensor_xlogy",
 
     # 158
     "unsqueeze": "deprecated_tensor_unsqueeze",
@@ -359,8 +366,18 @@ deprecated_tensor_method_map = {
 
     # 161
     "fmod": "deprecated_tensor_fmod",
+    "bitwise_or": "deprecated_bitwise_or",
+    "bitwise_and": "deprecated_bitwise_and",
+    "bitwise_xor": "deprecated_bitwise_xor",
+    "baddbmm": "deprecated_baddbmm",
+
     # 162 log10
     "log10": "tensor_log10",
+    # 732
+    "take": "deprecated_tensor_take",
+
+    # 186
+    "addcdiv": "deprecated_tensor_addcdiv",
 
     # 501
     "addbmm": "deprecated_tensor_addbmm",
@@ -370,6 +387,8 @@ deprecated_tensor_method_map = {
     "addmm": "deprecated_tensor_addmm",
     # 790 addmv
     "addmv": "deprecated_tensor_addmv",
+    # 846
+    "count_nonzero": "deprecated_tensor_count_nonzero",
     # 1028
     "var": "deprecated_tensor_var",
 }

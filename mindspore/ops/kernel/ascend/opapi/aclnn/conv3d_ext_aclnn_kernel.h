@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conv3d_ext {
 
 class Conv3DExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,8 @@ class Conv3DExtAscend : public AclnnKernelMod {
                                                   const TensorStorageInfoPtr &old_tensor_storage_info);
   template <typename T>
   void SetTensorStorageInfo(T kernel_tensor, ShapeVector shape);
+  template <typename T>
+  void SetBackTensorStorageInfo(T kernel_tensor, ShapeVector shape);
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
@@ -47,8 +50,11 @@ class Conv3DExtAscend : public AclnnKernelMod {
   bool transposed_{false};
   std::vector<int64_t> output_padding_ = {0, 0, 0};
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
+  std::shared_ptr<KernelTensor> output_kernel_tensor_;
   bool _is_batchify{true};
+  ShapeVector expand_out_shape_{};
 };
+}  // namespace conv3d_ext
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -22,10 +22,11 @@
 #include "ops/base_operator.h"
 #include "mindapi/base/types.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace silent_check_v3 {
 
 class SilentCheckV3Ascend : public AclnnKernelMod {
  public:
@@ -49,6 +50,7 @@ class SilentCheckV3Ascend : public AclnnKernelMod {
   std::vector<int64_t> dst_stride_;
   std::vector<int64_t> dst_offset_;
 };
+}  // namespace silent_check_v3
 }  // namespace kernel
 }  // namespace mindspore
 

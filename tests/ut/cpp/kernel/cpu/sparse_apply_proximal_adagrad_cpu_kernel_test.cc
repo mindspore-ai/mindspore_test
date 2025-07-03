@@ -29,7 +29,8 @@ namespace kernel {
 class SparseApplyProximalAdagradCpuKernelTest : public UT::Common {
  public:
   SparseApplyProximalAdagradCpuKernelTest()
-      : sparse_proximal_adagrad_(std::make_shared<SparseApplyProximalAdagradCpuKernelMod>()) {}
+      : sparse_proximal_adagrad_(
+          std::make_shared<sparse_apply_proximal_adagrad_cpu::SparseApplyProximalAdagradCpuKernelMod>()) {}
 
   void SetUp() override {
     var_.clear();
@@ -105,7 +106,7 @@ class SparseApplyProximalAdagradCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> outputs_;
   std::vector<KernelTensor *> kernel_tensor_inputs_;
   std::vector<KernelTensor *> kernel_tensor_outputs_;
-  std::shared_ptr<SparseApplyProximalAdagradCpuKernelMod> sparse_proximal_adagrad_;
+  std::shared_ptr<sparse_apply_proximal_adagrad_cpu::SparseApplyProximalAdagradCpuKernelMod> sparse_proximal_adagrad_;
   float lr_ = 0.01;
   float l1_ = 0.0;
   float l2_ = 0.0;

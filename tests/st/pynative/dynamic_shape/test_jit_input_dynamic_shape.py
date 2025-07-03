@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import pytest
 from mindspore.nn import Cell
 from mindspore import ops, context
 from mindspore.common import Tensor
@@ -82,6 +83,7 @@ class ShapeAdd(Cell):
         return x.shape + y.shape + self.eps
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
@@ -116,6 +118,7 @@ class EmptyLess(Cell):
         return out
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -151,6 +154,7 @@ class ListEQ(Cell):
         return out
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -184,6 +188,7 @@ class ListLt(Cell):
         return out
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -218,6 +223,7 @@ class ListInsert(Cell):
         return xshape
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
@@ -247,6 +253,7 @@ class NegStepSlice(Cell):
         return xshape[::step]
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -276,6 +283,7 @@ class SliceNegStep(Cell):
         return xshape[1:0:step]
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -310,6 +318,7 @@ class InTuple(Cell):
         return out
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -339,6 +348,7 @@ class TupleIndex(Cell):
         return idx
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
@@ -369,6 +379,7 @@ class SliceNeg(Cell):
         return xshape[a:b]
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -397,6 +408,7 @@ class GetItemNeg(Cell):
         return xshape[self.n]
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level1',
           card_mark='onecard',
@@ -426,6 +438,7 @@ class TupleMulInt(Cell):
         return xshape * t
 
 
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',

@@ -16,14 +16,10 @@
 import sys
 import pytest
 import types
-from mindspore import jit
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_listcomp():
@@ -32,7 +28,7 @@ def test_listcomp():
     Description: Test code <listcomp> unrolling
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config={"loop_unrolling": True, "kEnableGeneratorExpressionToTuple": False})
+    @pi_jit_with_config(jit_config={"loop_unrolling": True, "kEnableGeneratorExpressionToTuple": False})
     def func(a, b, c):
         x = [a, b, c]
         a = [(k if k is None else (i for i in k))
@@ -47,7 +43,6 @@ def test_listcomp():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skipif(sys.version_info > (3, 9), reason="graph break at python3.10")
 @pytest.mark.parametrize("x", [(1, 2, 3), (1, 1, 1, 1)])
 def test_genexpr(x):
     """
@@ -60,12 +55,11 @@ def test_genexpr(x):
         return any(i % mod == 0 for i in x)
 
     jit_config={
-        "kEnableEliminateUnusedOperation": True,
         "loop_unrolling": True,
         "kEnableGeneratorExpressionToTuple": True,
     }
 
-    res = jit(func, mode="PIJit", jit_config=jit_config)(x)
+    res = pi_jit_with_config(func, jit_config=jit_config)(x)
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
 

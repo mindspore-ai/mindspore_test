@@ -6,7 +6,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
 设备管理
 ------------
 
-.. mscnplatformautosummary::
+.. mscnautosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -22,7 +22,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
 流管理
 ------------
 
-.. mscnplatformautosummary::
+.. mscnautosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -38,7 +38,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
 事件管理
 ------------
 
-.. mscnplatformautosummary::
+.. mscnautosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst
@@ -48,7 +48,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
 内存管理
 ------------
 
-.. mscnplatformautosummary::
+.. mscnautosummary::
     :toctree: hal
     :nosignatures:
     :template: classtemplate.rst

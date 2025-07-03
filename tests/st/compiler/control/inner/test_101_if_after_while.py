@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore.common import dtype as mstype
 from mindspore import nn
 from mindspore import Tensor
@@ -24,6 +23,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.ops import functional as F
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 class ForwardNet(nn.Cell):
@@ -59,9 +59,8 @@ class BackwardNet(nn.Cell):
         return grads
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_forward():
     """
     Feature: Control flow
@@ -79,9 +78,8 @@ def test_forward():
     assert graph_mode_out == (Tensor(np.array(10), mstype.int32), Tensor(np.array(30), mstype.int32))
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_backward():
     """
     Feature: Control flow
@@ -92,11 +90,8 @@ def test_backward():
     y = Tensor(np.array(3), mstype.int32)
     # Graph Mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        graph_forward_net = ForwardNet(max_cycles=10)
-        graph_backward_net = BackwardNet(graph_forward_net)
-        graph_mode_grads = graph_backward_net(x, y)
+    graph_forward_net = ForwardNet(max_cycles=10)
+    graph_backward_net = BackwardNet(graph_forward_net)
+    graph_mode_grads = graph_backward_net(x, y)
 
-        assert graph_mode_grads == (Tensor(np.array(30), mstype.int32), Tensor(np.array(10), mstype.int32))
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    assert graph_mode_grads == (Tensor(np.array(30), mstype.int32), Tensor(np.array(10), mstype.int32))

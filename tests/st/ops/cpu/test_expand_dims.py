@@ -44,7 +44,7 @@ class NetConstant(nn.Cell):
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize("data_type",
-                         [np.bool, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
+                         [np.bool_, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
                           np.uint64, np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_net(data_type):
     """

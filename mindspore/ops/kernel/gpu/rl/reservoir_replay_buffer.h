@@ -22,7 +22,7 @@
 #include <vector>
 #include <memory>
 #include <random>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {

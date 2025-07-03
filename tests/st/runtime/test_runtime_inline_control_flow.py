@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import mindspore as ms
 from mindspore import Tensor, jit, ops, mutable, nn, lazy_inline, export, load, context
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.nn import Cell, GraphCell
 import mindspore.ops.operations as P
+import mindspore.runtime as rt
 import numpy as np
 from tests.mark_utils import arg_mark
 
@@ -27,10 +30,141 @@ def test_single_if():
     Description: Inline switch node into kernel graph.
     Expectation: Not throw exception.
     """
+
+    @jit(backend="ms_backend")
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return x - 3, z - x
+
+    x = Tensor(5, mstype.int32)
+    y = Tensor(7, mstype.int32)
+    ret1 = foo(x, y)
+    ret2 = foo(y, x)
+    assert ret1 == (Tensor(2, mstype.int32), Tensor(16, mstype.int32))
+    assert ret2 == (Tensor(4, mstype.int32), Tensor(1, mstype.int32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_same_branch():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit(backend="ms_backend")
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    x2 = Tensor(6, mstype.int32)
+    y2 = Tensor(8, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(x2, y2)
+    assert ret1 == Tensor(21, mstype.int32)
+    assert ret2 == Tensor(24, mstype.int32)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_same_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit(backend="ms_backend")
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    x2 = Tensor(6, mstype.int32)
+    y2 = Tensor(8, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(x2, y2)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(24, mstype.int32), Tensor(24, mstype.int32), Tensor(24, mstype.int32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_twice_diff_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit(backend="ms_backend")
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(y1, x1)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(8, mstype.int32), Tensor(8, mstype.int32), Tensor(8, mstype.int32))
+
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_single_if_triple_diff_branch_multi_output():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
+    rt.set_memory(optimize_level="O1")
+
+    @jit(backend="ms_backend")
+    def foo(x, y):
+        if x > y:
+            z = x + 1
+        else:
+            z = y * 3
+        return z, z, z
+
+    x1 = Tensor(5, mstype.int32)
+    y1 = Tensor(7, mstype.int32)
+    ret1 = foo(x1, y1)
+    ret2 = foo(y1, x1)
+    ret1 = foo(x1, y1)
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+    assert ret2 == (Tensor(8, mstype.int32), Tensor(8, mstype.int32), Tensor(8, mstype.int32))
+    assert ret1 == (Tensor(21, mstype.int32), Tensor(21, mstype.int32), Tensor(21, mstype.int32))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_single_if_return_parameter():
+    """
+    Feature: Contrtol flow inline.
+    Description: Inline switch node into kernel graph.
+    Expectation: Not throw exception.
+    """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -50,10 +184,10 @@ def test_return_parameter():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         if x < 3:
             return param_a
@@ -70,10 +204,10 @@ def test_return_param_untail_call():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(6))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(6), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         if x < 3:
             z = param_a
@@ -97,7 +231,7 @@ def test_return_valuenode():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         if x < 3:
             return 1
@@ -115,7 +249,7 @@ def test_return_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         if x < 3:
             return y
@@ -133,7 +267,7 @@ def test_value_node_output_in_single_branch():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def BranchReturnTensor(x, y):
         x = x + Tensor(2, mstype.int32)
         y = x + y
@@ -150,7 +284,7 @@ def test_value_node_output_in_single_branch():
     assert ret3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_diff_ref_count_in_branch():
     """
     Feature: Contrtol flow inline.
@@ -158,7 +292,7 @@ def test_diff_ref_count_in_branch():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def BranchDiffRefCount(x, y):
         x = x + Tensor(2, mstype.int32)
         y = x + y
@@ -190,7 +324,7 @@ def test_branch_kernel_backoff():
     Expectation: Not throw exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, shape):
         x = x + Tensor(2, mstype.int32)
         if y < 5:
@@ -209,7 +343,7 @@ def test_branch_kernel_backoff():
     assert ret3[0][0]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_update_parameter():
     """
     Feature: Contrtol flow inline.
@@ -219,7 +353,7 @@ def test_update_parameter():
 
     param_a = Parameter(Tensor(5))
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a):
         x = x + param_a
         if x < 3:
@@ -244,10 +378,10 @@ def test_update_and_return_parameter():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -274,10 +408,10 @@ def test_return_switch_input_in_branch():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -304,10 +438,10 @@ def test_return_switch_input():
     Expectation: AttributeError.
     """
 
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -326,7 +460,7 @@ def test_return_switch_input():
     assert ret3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tuple_args_to_dynamic_tuple_para():
     """
     Feature: Contrtol flow inline.
@@ -334,7 +468,7 @@ def test_tuple_args_to_dynamic_tuple_para():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y_shape = ops.shape(y)
         if x < 3:
@@ -351,7 +485,7 @@ def test_tuple_args_to_dynamic_tuple_para():
     assert ret3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_tuple_input_to_switch():
     """
     Feature: Contrtol flow inline.
@@ -359,7 +493,7 @@ def test_tuple_input_to_switch():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, dst_shape):
         y, _ = ops.unique(y)
         y = ops.reshape(y, dst_shape)
@@ -378,7 +512,7 @@ def test_tuple_input_to_switch():
     assert ret3[0]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dynamic_tuple_input_to_switch():
     """
     Feature: Contrtol flow inline.
@@ -386,7 +520,7 @@ def test_dynamic_tuple_input_to_switch():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, dyn_tuple):
         if x < 3:
             dyn_tuple = dyn_tuple * 2
@@ -410,7 +544,7 @@ def test_return_condition():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, cond):
         if cond:
             x = x * 2
@@ -434,7 +568,7 @@ def test_return_include_other_output():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y = y + 2
         y = y * 3
@@ -463,7 +597,7 @@ def test_branch_output_include_refnode_with_dynamic_shape():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, dst_shape):
         y, _ = ops.unique(y)
         y = ops.reshape(y, dst_shape)
@@ -488,7 +622,7 @@ def test_branch_output_include_refnode_true():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x < 3:
             y = ops.expand_dims(y, 1)
@@ -504,7 +638,7 @@ def test_branch_output_include_refnode_true():
     assert ret3.shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_output_include_refnode_false():
     """
     Feature: Contrtol flow inline.
@@ -512,7 +646,7 @@ def test_branch_output_include_refnode_false():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -532,7 +666,7 @@ def test_branch_output_include_refnode_false():
     assert ret3.shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_output_include_refnode_output_ref():
     """
     Feature: Contrtol flow inline.
@@ -540,7 +674,7 @@ def test_branch_output_include_refnode_output_ref():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -567,7 +701,7 @@ def test_branch_output_include_refnode_twice():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x > 3:
             y = ops.expand_dims(y, 1)
@@ -598,13 +732,14 @@ def test_include_dynamic_shape():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         y, _ = ops.unique(y)
         if x < 3:
             y = y * 2
         else:
-            z1 = y / 6
+            z = y / 6
+            z1 = ops.cast(z, y.dtype)
             z2 = y * 2
             z3 = y - Tensor([[6, 12, 18], [24, 30, 36]])
             z4 = y + Tensor([[1, 2, 3], [4, 5, 6]])
@@ -626,10 +761,10 @@ def test_control_arrow_from_switch_to_gather():
     Description: Control flow if.
     Expectation: AttributeError.
     """
-    param_a = Parameter(Tensor(5))
-    param_b = Parameter(Tensor(5))
+    param_a = Parameter(Tensor(5), name="a")
+    param_b = Parameter(Tensor(5), name="b")
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, param_a, param_b):
         x = x + param_a
         if x < 3:
@@ -647,7 +782,7 @@ def test_control_arrow_from_switch_to_gather():
     assert ret3
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_only_u_input():
     """
     Feature: Contrtol flow inline.
@@ -655,7 +790,7 @@ def test_branch_only_u_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x = x + 1
         if x < 3:
@@ -669,7 +804,7 @@ def test_branch_only_u_input():
     assert ret1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_u_input_and_input():
     """
     Feature: Contrtol flow inline.
@@ -677,7 +812,7 @@ def test_branch_u_input_and_input():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         x = x + 1
         if x < 3:
@@ -700,7 +835,7 @@ def test_branch_output_real_tuple():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y):
         if x < 3:
             y, _ = ops.unique(y)
@@ -717,7 +852,7 @@ def test_branch_output_real_tuple():
     assert ret2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_output_dynamic_tuple():
     """
     Feature: Contrtol flow inline.
@@ -725,7 +860,7 @@ def test_branch_output_dynamic_tuple():
     Expectation: AttributeError.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, shape):
         if y < 5:
             z = ops.reshape(x, shape)
@@ -750,7 +885,7 @@ def test_if_after_if():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -775,7 +910,7 @@ def test_if_in_if():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         if param_a > param_b:
             param_b += 1
@@ -790,7 +925,7 @@ def test_if_in_if():
     assert ret2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_output_ref_of_parameter():
     """
     Feature: Contrtol flow inline.
@@ -799,7 +934,7 @@ def test_output_ref_of_parameter():
     """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         if x > y:
             out = ops.addn([x, x, param_a])
@@ -824,7 +959,7 @@ def test_gather_switch_gather_output():
     """
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         if x > y:
             out = param_a
@@ -850,7 +985,7 @@ def test_if_in_if_directly():
     param_a = Parameter(Tensor(5, mstype.int32), name='a')
     param_b = Parameter(Tensor(4, mstype.int32), name='b')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a, param_b):
         x = x + 2
         if param_a > param_b:
@@ -867,7 +1002,7 @@ def test_if_in_if_directly():
     assert ret2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_lazy_inline():
     """
     Feature: Switch inline with lazy inline.
@@ -938,6 +1073,77 @@ def test_lazy_inline():
     grad_net(x, y)
 
 
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_lazy_inline_with_control_flow():
+    """
+    Feature: Switch inline with lazy inline.
+    Description: All inline in single graph.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    class Grad(Cell):
+        def __init__(self, net):
+            super(Grad, self).__init__()
+            self.grad = ops.GradOperation()
+            self.net = net
+
+        def construct(self, x):
+            grad_net = self.grad(self.net)
+            return grad_net(x)
+
+    class Block(Cell):
+        def __init__(self):
+            super(Block, self).__init__()
+            self.batch_matmul = P.BatchMatMul()
+            self.expand_dims = P.ExpandDims()
+            self.y = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+
+        def construct(self, x):
+            z1 = self.batch_matmul(x, x)
+            z2 = self.expand_dims(self.y, 1)
+            return z1 + z2
+
+    class BaseBlock(Cell):
+        @lazy_inline
+        def __init__(self):
+            super(BaseBlock, self).__init__()
+            self.block = Block()
+
+        def construct(self, x):
+            return self.block(x)
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            b = BaseBlock()
+            self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            for _ in range(5):
+                out = self.blocks[0](out)
+            return out
+    class GradNet(Cell):
+        def __init__(self, net):
+            super(GradNet, self).__init__()
+            self.grad_net = Grad(net)
+            self.a = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+            self.b = Parameter(Tensor(np.ones((8)).astype(np.float32)))
+
+        def construct(self, x, y):
+            out = self.grad_net(x)
+            if y > 3:
+                return out * 2, self.a
+            return out, self.b
+
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    x = Tensor(np.ones((8, 8)).astype(np.float32))
+    y = Tensor(6)
+    net = Net()
+    grad_net = GradNet(net)
+    grad_net(x, y)
+
 class TupleParaNet(Cell):
     def __init__(self):
         super(TupleParaNet, self).__init__()
@@ -976,7 +1182,7 @@ def test_call_same_graph():
     """
     param_a = Parameter(Tensor(5, mstype.float32), name='a')
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, param_a):
         out = Tensor(1, mstype.float32)
         for i in range(0, 2):
@@ -988,3 +1194,42 @@ def test_call_same_graph():
     x = Tensor(2, mstype.int32)
     ret = foo(x, x, param_a)
     assert ret
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_view_to_condition_switch():
+    """
+    Feature: Contrtol flow inline.
+    Description: View op to condition switch.
+    Expectation: Not throw exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+
+        def construct(self, a, b, d):
+            l = [1, 'str', [2, 'ss']]
+            l.append(self.relu(a))
+            l.append(self.relu(b))
+            l[2].append(self.relu(d))
+            tmp = a[0, :, :, :]
+            if tmp in l[2]:
+                out = self.relu(tmp)
+            else:
+                out = tmp + 1
+            return out
+
+    input_np_a = np.arange(16).reshape(2, 2, 2, 2)
+    input_np_b = np.random.randn(2, 3, 4, 5).astype(np.float32)
+    input_np_d = np.arange(8).reshape(2, 2, 2)
+    input_me_a = Tensor(input_np_a, ms.float32)
+    input_me_b = Tensor(input_np_b)
+    input_me_d = Tensor(input_np_d, ms.float32)
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    net = Net()
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = "1"
+    out = net(input_me_a, input_me_b, input_me_d)
+    print(out)
+    os.environ.pop("MS_DEV_TENSOR_INDEX_BOOST")

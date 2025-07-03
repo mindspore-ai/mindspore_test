@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+using namespace sparse_optimizer_cpu;
 class CommonUtilTest : public UT::Common {
  public:
   CommonUtilTest() = default;

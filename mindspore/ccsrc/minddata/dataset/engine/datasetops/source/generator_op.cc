@@ -22,6 +22,7 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/python_sampler.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/util/task_manager.h"
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -112,6 +113,16 @@ Status GeneratorOp::Launch() {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for GeneratorOp: " << id();
     try {
       python_multiprocessing_runtime_->launch(id());
+      py::dict worker_ids = python_multiprocessing_runtime_->get_worker_ids();
+      if (worker_ids.empty()) {
+        std::string msg = "The current thread/process id cannot be null.";
+        RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, msg);
+      }
+      bool is_thread = py::cast<bool>(worker_ids["is_thread"]);
+      std::vector<int64_t> worker_id = py::cast<std::vector<int64_t>>(worker_ids["worker_id"]);
+      for (int i = 0; i < worker_id.size(); i++) {
+        BindThreadCoreForMindDataOp("dataset::GeneratorOp", worker_id[i], is_thread);
+      }
     } catch (py::error_already_set &e) {
       std::string traceback;
       try {
@@ -127,8 +138,6 @@ Status GeneratorOp::Launch() {
         traceback = e.what();
       }
 
-      // Restore exception to python
-      e.restore();
       RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
     }
   }
@@ -150,7 +159,7 @@ Status GeneratorOp::Init() {
   return CreateGeneratorObject();
 }
 
-Status GeneratorOp::PyRowToTensorRow(py::object py_data, TensorRow *tensor_row) {
+Status GeneratorOp::PyRowToTensorRow(const py::object &py_data, TensorRow *tensor_row) {
   if (!py::isinstance<py::tuple>(py_data)) {
     RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException,
                         "Invalid Python function, the 'source' of 'GeneratorDataset' should return a tuple of NumPy "
@@ -314,8 +323,9 @@ Status GeneratorOp::operator()() {
   // Handshake with TaskManager to synchronize thread creation
   TaskManager::FindMe()->Post();
   RETURN_IF_NOT_OK(wp_.Register(tree_->AllTasks()));
-  num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
   RETURN_IF_NOT_OK(Init());
+  // calculate number samples after init the sampler
+  num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
 
   RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
   RETURN_IF_NOT_OK(GetNextBatchSize());
@@ -370,14 +380,10 @@ Status GeneratorOp::operator()() {
             traceback = e.what();
           }
 
-          // Restore exception to python
-          e.restore();
           RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
         }
         RETURN_IF_NOT_OK(
           CollectOpInfo(this->NameWithID(), "__next__", start_time, {{"TensorRowFlags", "StopIteration"}}));
-        // Restore exception to python
-        e.restore();
 
         // Check whether the number of samples is sufficient only when the first epoch
         if (op_current_repeats_ == 0) {
@@ -515,8 +521,6 @@ Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
           traceback = e.what();
         }
 
-        // Restore exception to python
-        e.restore();
         RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
       }
 

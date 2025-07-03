@@ -19,12 +19,13 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/inplace_scatter_value_aclnn_kernel.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_scatter_value_reduce {
 
-class InplaceScatterValueReduceAscend : public InplaceScatterValueAscend {
+class InplaceScatterValueReduceAscend : public inplace_scatter_value::InplaceScatterValueAscend {
  public:
   InplaceScatterValueReduceAscend() = default;
   ~InplaceScatterValueReduceAscend() = default;
@@ -32,6 +33,7 @@ class InplaceScatterValueReduceAscend : public InplaceScatterValueAscend {
  protected:
   int64_t GetReduce(const std::vector<KernelTensor *> &inputs) override;
 };
+}  // namespace inplace_scatter_value_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

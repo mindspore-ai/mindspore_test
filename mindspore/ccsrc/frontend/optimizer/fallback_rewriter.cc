@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ops_utils/op_utils.h"
 #include "abstract/abstract_value.h"
 #include "base/base.h"
@@ -52,6 +51,17 @@
 #include "utils/compile_config.h"
 #include "utils/check_convert_utils.h"
 #include "utils/tensor_construct_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 /* namespace to support opt */
@@ -418,6 +428,7 @@ class BeforeOptARewriter : public BaseRewriter {
 
   bool HasDictOutput() const {
     const AnfNodePtr &output = root_graph_->output();
+    MS_EXCEPTION_IF_NULL(output);
     return CheckContainsDict(output->abstract());
   }
 
@@ -593,7 +604,13 @@ class BeforeOptARewriter : public BaseRewriter {
         << "The extract_keyword_arg should have 3 or 4 inputs, but got " << node->size();
     }
     constexpr size_t key_index = 2;
-    return node->input(key_index);
+    auto key_node = node->input(key_index);
+    // Handle cnode as [extract_keyword_arg, arg, (KeywordArg(key, value))]
+    if (IsValueNode<KeywordArg>(key_node)) {
+      auto keyword_arg = GetValueNode<KeywordArgPtr>(key_node);
+      return NewValueNode(keyword_arg->get_value());
+    }
+    return key_node;
   }
 
   using Converter = AnfNodePtr (ThisClass::*)(const CNodePtr &) const;
@@ -868,7 +885,30 @@ class AfterOptARewriter : public BaseRewriter {
   }
   ~AfterOptARewriter() override = default;
 
+ public:
+  static bool NeedConvertToPyExecute(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                                     const AbstractBasePtr &output_abs) {
+    if (seq_prim_set_.find(prim) != seq_prim_set_.end()) {
+      return !CanBeConstantFolded(output_abs) && NeedConvertSequenceOpToPyExecute(args_abs_list, output_abs);
+    }
+    return false;
+  }
+
  protected:
+  static bool CanBeConstantFolded(const AbstractBasePtr &output_abs) {
+    if (output_abs == nullptr) {
+      return false;
+    }
+    auto value = output_abs->BuildValue();
+    return value != nullptr && !value->ContainsValueAny();
+  }
+
+  static bool NeedConvertSequenceOpToPyExecute(const AbstractBasePtrList &inputs_abs,
+                                               const AbstractBasePtr &output_abs) {
+    return CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) ||
+           (output_abs != nullptr && output_abs->isa<abstract::AbstractAny>());
+  }
+
   // From:
   //   MakeSparseTensor(indices, values, dense_shape)
   // To:
@@ -1170,6 +1210,7 @@ class AfterOptARewriter : public BaseRewriter {
       return nullptr;
     }
 
+    MS_EXCEPTION_IF_NULL(node);
     const auto &fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
 
@@ -2003,13 +2044,17 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr ConvertIs_(const CNodePtr &cnode) const {
     auto res = ConvertIsAndIsNot(cnode, true);
-    MS_LOG(DEBUG) << "Convert primitive Is_ to PyExecute node: " << res->DebugString();
+    if (res != nullptr) {
+      MS_LOG(DEBUG) << "Convert primitive Is_ to PyExecute node: " << res->DebugString();
+    }
     return res;
   }
 
   AnfNodePtr ConvertIsNot(const CNodePtr &cnode) const {
     auto res = ConvertIsAndIsNot(cnode, false);
-    MS_LOG(DEBUG) << "Convert primitive IsNot to PyExecute node: " << res->DebugString();
+    if (res != nullptr) {
+      MS_LOG(DEBUG) << "Convert primitive IsNot to PyExecute node: " << res->DebugString();
+    }
     return res;
   }
 
@@ -2236,6 +2281,52 @@ class AfterOptARewriter : public BaseRewriter {
                                                  key_value_tuple, key_value_tuple->debug_info());
   }
 
+  AnfNodePtr ConvertEllipsisToPyExecute(const FuncGraphPtr &func_graph) {
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto str_value = std::make_shared<StringImm>("...");
+    auto str_none = std::make_shared<StringImm>("None");
+    auto script_node = NewValueNode(str_value);
+
+    std::vector<ValuePtr> none_value{str_none};
+    const auto none_tuple = std::make_shared<ValueTuple>(none_value);
+    auto none_tuple_node = NewValueNode(none_tuple);
+    AbstractBasePtrList abs_list{std::make_shared<abstract::AbstractScalar>(MakeValue("None"))};
+    none_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abs_list));
+
+    AnfNodePtr ellipsis_execute_node = fallback::CreatePyExecuteCNodeInOrder(
+      func_graph, script_node, none_tuple_node, none_tuple_node, none_tuple_node->debug_info());
+    MS_LOG(DEBUG) << "ellipsis_execute_node:" << ellipsis_execute_node->DebugString();
+
+    set_need_renormalized(true);
+    return ellipsis_execute_node;
+  }
+
+  // Do not convert None to PyExectue
+  // make_tuple = MakeTuple(xx, None, ...)
+  // u2 = UpdateState(u1, make_tuple)
+  bool CheckNoneUsers(const FuncGraphPtr &fg, const ValueNodePtr &value_node) {
+    MS_EXCEPTION_IF_NULL(fg);
+    auto manager = Manage(fg, false);
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &node_users = manager->node_users();
+    auto found = node_users.find(value_node);
+    if (found == node_users.end()) {
+      return false;
+    }
+    for (auto &user : found->second) {
+      auto user_node = dyn_cast<CNode>(user.first);
+      if (IsPrimitiveCNode(user_node, prim::kPrimMakeTuple)) {
+        auto node_users_iter = node_users.find(user_node);
+        if (node_users_iter == node_users.end()) {
+          return false;
+        }
+        return std::all_of(node_users_iter->second.begin(), node_users_iter->second.end(),
+                           [](const auto &pair) { return IsPrimitiveCNode(pair.first, prim::kPrimUpdateState); });
+      }
+    }
+    return false;
+  }
+
   AnfNodePtr GetPyExecuteFromValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValuePtr &value,
                                    bool py_execute_input) {
     MS_EXCEPTION_IF_NULL(fg);
@@ -2245,6 +2336,10 @@ class AfterOptARewriter : public BaseRewriter {
       constexpr auto vmap_prefix = "VmapRule";
       if (value_node->scope() != nullptr &&
           value_node->scope()->name().compare(0, strlen(vmap_prefix), vmap_prefix) == 0) {
+        return value_node;
+      }
+      // None only used by MakeTuple, and is not the result of func_graph.
+      if (CheckNoneUsers(fg, value_node)) {
         return value_node;
       }
       return ConvertNoneToPyExecute(fg);
@@ -2286,6 +2381,9 @@ class AfterOptARewriter : public BaseRewriter {
     }
     if (value->isa<ValueSlice>()) {
       return ConvertValueSlice(fg, value_node, value->cast<ValueSlicePtr>());
+    }
+    if (value->isa<Ellipsis>()) {
+      return ConvertEllipsisToPyExecute(fg);
     }
     return value_node;
   }
@@ -2367,8 +2465,7 @@ class AfterOptARewriter : public BaseRewriter {
     MS_EXCEPTION_IF_NULL(output_abs);
     // Only sequence ops with nested sequence input or irregular input (element with different shape/type)
     // or the output abstract of sequence node is AbstractAny should be converted to PyExecute node.
-    if (!CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) &&
-        !output_abs->isa<abstract::AbstractAny>()) {
+    if (!NeedConvertSequenceOpToPyExecute(inputs_abs, output_abs)) {
       return nullptr;
     }
 
@@ -2426,7 +2523,9 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr PackDictValue(const FuncGraphPtr &fg, const ValueNodePtr &value_node, const ValueDictionaryPtr &dict) {
     const auto &keys_values = dict->value();
+    MS_EXCEPTION_IF_NULL(value_node->abstract());
     auto abs_dict = dyn_cast<abstract::AbstractDictionary>(value_node->abstract());
+    MS_EXCEPTION_IF_NULL(abs_dict);
     const auto &abs_keys_values = abs_dict->elements();
     if (keys_values.size() != abs_keys_values.size()) {
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
@@ -2550,6 +2649,7 @@ class AfterOptARewriter : public BaseRewriter {
   AnfNodePtr ConvertInterpretedObjectValue(const ValueNodePtr &node, const parse::InterpretedObjectPtr &value) const {
     // Convert InterpretedObject value node to PyExecute CNode.
     const auto interpreted_value = dyn_cast<parse::InterpretedObject>(value);
+    MS_EXCEPTION_IF_NULL(interpreted_value);
     const std::string &key = interpreted_value->name();
     return fallback::ConvertPyObjectToPyExecute(root_graph_, key, interpreted_value->obj(), node, true);
   }
@@ -2666,6 +2766,10 @@ void FindValueWithInplaceInner(const FuncGraphPtr &graph, const StringSetPtr &va
 
 void FindValueWithInplace(const FuncGraphPtr &root, const pipeline::ResourcePtr &resource,
                           const StringSetPtr &value_with_inplace) {
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return;
+  }
   const auto func_graphs_used_total = root->func_graphs_used_total();
   for (const auto &fg : func_graphs_used_total) {
     FindValueWithInplaceInner(fg, value_with_inplace);
@@ -2907,6 +3011,11 @@ bool OrderPyExecuteAfterRewriter(const FuncGraphPtr &root, const pipeline::Resou
     (void)pipeline::Renormalize(resource, root, new_args_spec);
   }
   return change;
+}
+
+bool ShouldRunWithJitFallback(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list,
+                              const AbstractBasePtr &output_abs) {
+  return AfterOptARewriter::NeedConvertToPyExecute(prim, args_abs_list, output_abs);
 }
 }  // namespace opt
 }  // namespace mindspore

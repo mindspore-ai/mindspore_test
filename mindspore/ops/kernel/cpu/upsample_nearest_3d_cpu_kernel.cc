@@ -17,11 +17,12 @@
 #include "kernel/cpu/upsample_nearest_3d_cpu_kernel.h"
 #include <string>
 #include <utility>
-#include "kernel/ops_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/kernel_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest_3d_cpu {
 namespace {
 const double kValueZero = 0.;
 }  // namespace
@@ -173,5 +174,6 @@ std::vector<KernelAttr> UpsampleNearest3DCpuKernelMod::GetOpSupport() {
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1D, UpsampleNearest3DCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2D, UpsampleNearest3DCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3D, UpsampleNearest3DCpuKernelMod);
+}  // namespace upsample_nearest_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

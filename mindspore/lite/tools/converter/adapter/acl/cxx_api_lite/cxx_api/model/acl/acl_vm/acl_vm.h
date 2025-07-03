@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 #include "backend/graph_compiler/transform.h"
-#include "backend/graph_compiler/backend.h"
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 
 namespace mindspore {

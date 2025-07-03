@@ -231,3 +231,37 @@ def test_jvp_multiple_inputs_multiple_outputs_custom_v_graph(mode):
     assert len(grad) == 2
     assert np.allclose(grad[0].asnumpy(), expect_grad_0.asnumpy())
     assert np.allclose(grad[1].asnumpy(), expect_grad_1.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_jvp_high_grad(mode):
+    """
+    Features: Function jvp
+    Description: Test nested Jvp net.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            xyy = x * y * y
+            xxy = x * x * y
+            return xyy, xxy
+
+    class JvpNet(nn.Cell):
+        def __init__(self, net):
+            super(JvpNet, self).__init__()
+            self.net = Jvp(net)
+            self.sens = Tensor(np.array([1, 1]).astype(np.float32))
+
+        def construct(self, x, y):
+            _, grad = self.net(x, y, (self.sens, self.sens))
+            return grad
+
+    net = Net()
+    x = Tensor(np.array([1, 1]).astype(np.float32))
+    y = Tensor(np.array([1, 1]).astype(np.float32))
+    first_grad_net = JvpNet(net)
+    second_grad_net = JvpNet(first_grad_net)
+    g = second_grad_net(x, y)
+    assert (g[0] == 6 * x).all()
+    assert (g[1] == 6 * x).all()

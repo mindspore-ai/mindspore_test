@@ -33,7 +33,7 @@ namespace distributed {
 namespace cluster {
 namespace topology {
 // The ComputeGraphNode is a separate process representing a sub-graph of the distributed computation graph.
-class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
+class BACKEND_COMMON_EXPORT ComputeGraphNode : public NodeBase {
  public:
   ComputeGraphNode(const std::string &node_id, const std::string &role)
       : NodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false) {

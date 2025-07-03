@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 namespace mindspore {
 class UpdateWeight {
  public:

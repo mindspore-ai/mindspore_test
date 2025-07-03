@@ -20,11 +20,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace check_valid_cpu {
 constexpr size_t COORDINATE = 4;
 class CheckValidCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -59,6 +60,7 @@ class CheckValidCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_shape_{};
   bool is_null_input_{false};
 };
+}  // namespace check_valid_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

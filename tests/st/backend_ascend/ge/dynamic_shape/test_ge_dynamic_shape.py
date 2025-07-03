@@ -37,7 +37,7 @@ class DynNet(nn.Cell):
 
 
 def dyn_basic():
-    context.set_context(jit_level='O2')
+    context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     x = Tensor(np.ones([2, 3, 4, 3]).astype(np.float32))
     y = Tensor(np.ones([2, 3, 4, 3]).astype(np.float32))

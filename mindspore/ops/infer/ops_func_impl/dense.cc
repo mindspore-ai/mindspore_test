@@ -25,6 +25,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace ops {
@@ -114,8 +115,8 @@ TypePtr DenseFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 }
 
 TypePtrList DenseFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
   TypePtr ret_type = x_tensor->Dtype();
@@ -128,7 +129,7 @@ TypePtrList DenseFuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
                             << x_type->ToString() << "] and 'x2' with type Tensor[" << y_type->ToString() << "].";
   }
   if (input_values[kInputIndex2] != mindspore::kNone) {
-    const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+    const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(bias_tensor);
     const auto bias_type = bias_tensor->Dtype();
     if (x_type->type_id() != bias_type->type_id()) {
@@ -141,8 +142,8 @@ TypePtrList DenseFuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
 }
 
 ShapeArray DenseFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   MS_EXCEPTION_IF_NULL(y_tensor);
 
@@ -164,7 +165,7 @@ ShapeArray DenseFuncImpl::InferShape(const PrimitivePtr &primitive, const ValueP
       MS_EXCEPTION(ValueError) << "The value of x.shape[-1] should be equal to w.shape[0]" << kDimW;
     }
     if (input_values[kInputIndex2] != mindspore::kNone) {
-      const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+      const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(bias_tensor);
       const auto b_shp = bias_tensor->shape();
       if (b_shp.size() != kZero) {
@@ -183,7 +184,7 @@ ShapeArray DenseFuncImpl::InferShape(const PrimitivePtr &primitive, const ValueP
     MS_EXCEPTION(ValueError) << "The dim of x should be at least 1" << kDimW;
   }
   if (input_values[kInputIndex2] != mindspore::kNone) {
-    const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+    const auto &bias_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(bias_tensor);
     const auto b_shp = bias_tensor->shape();
     if (b_shp.size() != kZero && b_shp.size() != kOne) {

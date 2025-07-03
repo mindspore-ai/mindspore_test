@@ -1,7 +1,5 @@
 import numpy as onp
-import sys  
 import pytest 
-
 from mindspore import jit, context, ops
 from mindspore.common import Parameter, Tensor, dtype
 from mindspore.nn import Cell
@@ -9,17 +7,12 @@ from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 class GradFactory:
     def __init__(self, shape, pos, weight):
         npw = onp.random.randn(*shape)
         npb = onp.random.randn(*shape)
         self.net = Net(npw, npb)
-        self.npx = onp.random.randn(*shape)
+        self.npx = onp.ones(shape)
         self.npy = onp.random.randn(*shape)
         self.nps = onp.ones(shape)
         self.pos = pos
@@ -34,18 +27,19 @@ class GradFactory:
             get.append(self.pos)
         else:
             get.extend(self.pos)
-        real_weights = []
-        if self.weight is not None:
-            if 'w' in self.weight:
+        real_weights = None
+        tmp_weights = self.weight
+        if tmp_weights is not None:
+            real_weights = []
+            if 'w' in tmp_weights:
                 real_weights.append(self.net.w)
                 get.append(self.net.w)
-            if 'b' in self.weight:
+            if 'b' in tmp_weights:
                 real_weights.append(self.net.b)
                 get.append(self.net.b)
-            self.weight = real_weights
 
         grad_net = Grad(self.net,
-                        self.pos, self.weight, get)
+                        self.pos, real_weights, get)
         x = Tensor(self.npx, dtype.float32)
         y = Tensor(self.npy, dtype.float32)
         grads = grad_net(x, y)
@@ -91,7 +85,7 @@ def grad_return_ids_pos0(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -103,7 +97,7 @@ def grad_return_ids_pos01(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -115,7 +109,7 @@ def grad_return_ids_weight_w(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -127,7 +121,7 @@ def grad_return_ids_weight_wb(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -140,7 +134,7 @@ def grad_return_ids_pos_weight(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact_pijit.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -195,7 +189,6 @@ def test_grad_return_ids_pos01_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_w])
 def test_grad_return_ids_weight_w_pynative(func):
@@ -220,7 +213,6 @@ def test_grad_return_ids_weight_w_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_weight_wb])
 def test_grad_return_ids_weight_wb_pynative(func):
@@ -245,7 +237,6 @@ def test_grad_return_ids_weight_wb_pynative(func):
     jit_grad2, pijit_grad2 = func(Grad)
     match_array(jit_grad2, pijit_grad2)
 
-@pytest.mark.skip
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func', [grad_return_ids_pos_weight])
 def test_grad_return_ids_pos_weight_pynative(func):

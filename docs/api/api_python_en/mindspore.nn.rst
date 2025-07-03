@@ -48,10 +48,8 @@ Wrapper Layer
     mindspore.nn.ForwardValueAndGrad
     mindspore.nn.GetNextSingleOp
     mindspore.nn.GradAccumulationCell
-    mindspore.nn.MicroBatchInterleaved
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
-    mindspore.nn.PipelineGradReducer
     mindspore.nn.TimeDistributed
     mindspore.nn.TrainOneStepCell
     mindspore.nn.TrainOneStepWithLossScaleCell
@@ -292,7 +290,6 @@ Optimizer
     mindspore.nn.Adagrad
     mindspore.nn.Adam
     mindspore.nn.AdaMax
-    mindspore.nn.AdamOffload
     mindspore.nn.AdamWeightDecay
     mindspore.nn.AdaSumByDeltaWeightWrapCell
     mindspore.nn.AdaSumByGradWrapCell
@@ -388,8 +385,8 @@ Image Processing Layer
     mindspore.nn.PixelUnshuffle
     mindspore.nn.Upsample
 
-Tools
------
+Common Layer
+------------
 
 .. msplatformautosummary::
     :toctree: nn
@@ -400,4 +397,13 @@ Tools
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+
+Tools
+-----
+
+.. autosummary::
+    :toctree: nn
+    :nosignatures:
+    :template: classtemplate.rst
+
     mindspore.nn.utils.no_init_parameters

@@ -21,6 +21,8 @@
 
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {
@@ -36,6 +38,7 @@ bool IsFromParallelOptimizerRs(const AnfNodePtr &node) {
     return false;
   }
   auto prim = GetCNodePrimitive(node->cast<CNodePtr>());
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->instance_name().find("grad_parallel_optimizer") == std::string::npos) {
     return false;
   }
@@ -47,6 +50,7 @@ bool IsFromGradMirrorAR(const AnfNodePtr &node) {
     return false;
   }
   auto prim = GetCNodePrimitive(node->cast<CNodePtr>());
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->instance_name().find("grad_mirror") == std::string::npos) {
     return false;
   }
@@ -57,8 +61,9 @@ bool IsTFTAllReduce(const AnfNodePtr &node) {
   auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
   constexpr std::string_view optUCE = "UCE:1";
   constexpr std::string_view optTTP = "TTP:1";
-
-  if (tftEnv.empty() || (tftEnv.find(optUCE) == std::string::npos && tftEnv.find(optTTP) == std::string::npos)) {
+  constexpr std::string_view optARF = "ARF:1";
+  if (tftEnv.empty() || (tftEnv.find(optUCE) == std::string::npos && tftEnv.find(optTTP) == std::string::npos &&
+                         tftEnv.find(optARF) == std::string::npos)) {
     return false;
   }
 
@@ -66,6 +71,7 @@ bool IsTFTAllReduce(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimAllReduce)) {
     auto tftAttr = "tft_report_before";
     auto nodePrim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(nodePrim);
     isTFTAllReduce = nodePrim->HasAttr(tftAttr) && GetValue<bool>(nodePrim->GetAttr(tftAttr));
     MS_LOG(INFO) << "Found TFT allreduce, is enable:" << isTFTAllReduce;
   }

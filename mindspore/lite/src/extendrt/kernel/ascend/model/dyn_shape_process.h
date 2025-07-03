@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include "extendrt/kernel/ascend/options/acl_model_options.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/api/types.h"
 #include "acl/acl.h"
 #include "acl/acl_mdl.h"

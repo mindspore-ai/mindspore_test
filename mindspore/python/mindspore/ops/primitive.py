@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ from mindspore.parallel._utils import _is_in_auto_parallel_mode, _is_in_data_par
 from mindspore.parallel._ps_context import _is_ps_mode, _is_role_sched
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _pynative_executor
-from mindspore.common._stub_tensor import _convert_stub
+from mindspore.common.jit_context import jit_context
 from mindspore._c_expression import Primitive_, PrimitiveFunction_, prim_type, typing
 from mindspore import _checkparam as Validator
 from mindspore.ops import signature as sig
@@ -170,10 +170,13 @@ class Primitive(Primitive_):
                 raise TypeError(f'The element of strategy must be tuple/Layout type, but got:{type(in_ele)}')
             if isinstance(in_ele, tuple):
                 for in_value in in_ele:
-                    if not isinstance(in_value, int) and self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
+                    if not isinstance(in_value, int) and self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY \
+                            and not self.attrs.get("self_define_shard", False):
                         raise TypeError(f'The {log_info}: {strategy} of {self.name} is not valid,'
                                         f' the value of strategy must be int type, but got:{type(in_value)}')
-                    if isinstance(in_value, Layout) and (self.name in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY):
+                    if isinstance(in_value, Layout) and (
+                            self.name in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY or self.attrs.get("self_define_shard",
+                                                                                             False)):
                         is_layout.append(True)
                         continue
                 is_layout.append(False)
@@ -194,13 +197,13 @@ class Primitive(Primitive_):
             layout_value = ()
             for in_ele in layout:
                 if isinstance(in_ele, Layout):
-                    layout_value += (in_ele.to_dict(),)
+                    layout_value += ({k: v for k, v in in_ele.to_dict().items() if k != 'rank_list'},)
                 elif isinstance(in_ele, tuple):
                     new_layout_list = ()
                     for ele in in_ele:
                         if not isinstance(ele, Layout):
                             raise TypeError(f"The {log_info} item should be a object of class Layout.")
-                        new_layout_list += (ele.to_dict(),)
+                        new_layout_list += ({k: v for k, v in ele.to_dict().items() if k != 'rank_list'},)
                     layout_value += (new_layout_list,)
                 else:
                     raise TypeError(f"The {log_info} item should be a object of class Layout or a tuple.")
@@ -315,7 +318,7 @@ class Primitive(Primitive_):
             out_is_layout = self._check_shard_strategy(out_strategy, "out_strategy")
         is_layout = in_is_layout if in_is_layout is not None else out_is_layout
         if out_is_layout is not None and is_layout != out_is_layout and \
-                self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
+                self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY and not self.attrs.get("self_define_shard", False):
             raise ValueError(f'The in_strategy type must equal to the out_strategy type, '
                              f'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
 
@@ -401,6 +404,9 @@ class Primitive(Primitive_):
         return (False, None)
 
     def __call__(self, *args):
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
         should_elim, output = self.check_elim(*args)
         if should_elim:
             return output
@@ -498,6 +504,28 @@ class Primitive(Primitive_):
         self.add_prim_attr("recompute", mode)
         return self
 
+    def _offload(self, backward_prefetch="Auto"):
+        """
+        Set the primitive offload. If a primitive set offload feeds into some nodes for offloading
+        gradient, rather than storing the intermediate activation computed in forward pass, we will
+        offload the activations computed in forward pass and upload them backward pass.
+
+        Note:
+            - Not supported in pynative mode
+
+        Args:
+            backward_prefetch(Union[str, int]): Specifies whether the activation is prefetched in backward pass.
+        """
+        if context.get_context("mode") == context.PYNATIVE_MODE:
+            raise ValueError("Offload is not supported in pynative mode currently.")
+        self.add_prim_attr("offload", True)
+        if isinstance(backward_prefetch, str):
+            Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', 'Primitive._offload')
+        else:
+            Validator.check_non_negative_int(backward_prefetch)
+        self.add_prim_attr("backward_prefetch", backward_prefetch)
+        return self
+
     def place(self, role, rank_id):
         """
         Set the label for this primitive.
@@ -563,7 +591,7 @@ class PrimitiveWithCheck(Primitive):
     the shape and type. Method infer_value() can also be defined (such as PrimitiveWithInfer) for constant propagation.
 
     More on how to customize a Op, please refer to `Custom Operators
-    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/op_custom.html>`_.
+    <https://www.mindspore.cn/tutorials/en/master/custom_program/op_custom.html>`_.
 
     Args:
         name (str): Name of the current Primitive.
@@ -657,7 +685,7 @@ class PrimitiveWithInfer(Primitive):
     logic of the shape and type. The infer_value() is used for constant propagation.
 
     More on how to customize a Op, please refer to `Custom Operators
-    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/op_custom.html>`_.
+    <https://www.mindspore.cn/tutorials/en/master/custom_program/op_custom.html>`_.
 
     Args:
         name (str): Name of the current Primitive.
@@ -874,14 +902,15 @@ def constexpr(fn=None, get_instance=True, name=None, reuse_result=True, check=Tr
     """Used to calculate constant in graph copmpiling process and improve compile performance in GRAPH_MODE.
 
     Args:
-        fn (function): A `fn` use as the infer_value of the output operator. Default: ``None`` .
-        get_instance (bool): If ``True`` , return the instance of operator,
+        fn (function, optional): A `fn` use as the infer_value of the output operator. Default: ``None`` .
+        get_instance (bool, optional): If ``True`` , return the instance of operator,
                              otherwise return the operator class. Default: ``True`` .
-        name (str): Defines the operator name. If `name` is ``None`` , use the function name as op name.
+        name (str, optional): Defines the operator name. If `name` is ``None`` , use the function name as op name.
                              Default: ``None`` .
-        reuse_result (bool): If ``True`` , the operator will be executed once and reuse the result next time,
+        reuse_result (bool, optional): If ``True`` , the operator will be executed once
+                             and reuse the result next time,
                              otherwise the operator will always be executed. Default: ``True`` .
-        check (bool): If ``True`` , the parameters will be checked
+        check (bool, optional): If ``True`` , the parameters will be checked
             and the warning message will raised if the parameter is not const value. Default: ``True`` .
 
     Examples:
@@ -1001,29 +1030,13 @@ def _primexpr(fn=None, get_instance=True, name=None, reuse_result=True):
     return deco
 
 
-class _RunOpHook:
-    """Hook for run op"""
-
-    current = None
-
-    def __init__(self, hook):
-        self.hook = hook
-        self.old = _RunOpHook.current
-
-    def __enter__(self):
-        _RunOpHook.current = self
-        return self
-
-    def __exit__(self, *err):
-        _RunOpHook.current = self.old
-
-
 def _run_op(obj, op_name, args):
     """Single op execution function supported by ge in PyNative mode."""
-    if not _RunOpHook.current:
-        stub = _pynative_executor.run_op_async(obj, op_name, args)
-        return _convert_stub(stub)
-    return _RunOpHook.current.hook(obj, args)
+    res = _pynative_executor.run_op_async(obj, op_name, args)
+    # Add for jit context.
+    if jit_context():
+        return jit_context().run_op(obj, res, *args)
+    return res
 
 
 @_wrap_func

@@ -6,10 +6,10 @@ mindspore.ops.SampleDistortedBoundingBoxV2
     在图像中创建一个随机扭曲的边界框。
 
     该函数常用于目标定位和图像识别任务。在这样的任务中，除了提供基准标签之外，还提供了边界框注释。通常使用数据增强技术对图像进行随机扭曲，同时保持其内容不变。
-    
+
     该函数需要输入 `image_size` 、 `bounding_boxes` 以及一系列限制条件，并基于这些输入输出一个随机扭曲的对象定位框（即边界框）。
-    
-    输出以三个Tensor的形式返回，分别是： 
+
+    输出以三个Tensor的形式返回，分别是：
     `begin` 、 `size` 和 `bboxes` 。前两个Tensor可以直接输入到 :class:`mindspore.ops.Slice` 中，以裁剪图像。第三个Tensor即为生成的扭曲边界框。
 
     参数：

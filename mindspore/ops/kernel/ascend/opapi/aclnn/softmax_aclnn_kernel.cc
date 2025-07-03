@@ -20,14 +20,15 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace softmax {
 int64_t SoftmaxAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
-  auto axis_vec = transform::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
+  auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
   auto dim = axis_vec[0];
   return dim;
 }
@@ -46,5 +47,6 @@ bool SoftmaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Softmax, SoftmaxAscend);
+}  // namespace softmax
 }  // namespace kernel
 }  // namespace mindspore

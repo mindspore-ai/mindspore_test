@@ -22,18 +22,18 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr PromptFlashAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query, const BaseTensorPtr &key, const BaseTensorPtr &value,
-  const std::optional<BaseTensorPtr> &atten_mask, const std::optional<ValueTuplePtr> &actual_seq_qlen,
-  const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<BaseTensorPtr> &pse_shift,
-  const std::optional<BaseTensorPtr> &deq_scale1, const std::optional<BaseTensorPtr> &quant_scale1,
-  const std::optional<BaseTensorPtr> &deq_scale2, const std::optional<BaseTensorPtr> &quant_scale2,
-  const std::optional<BaseTensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
+tensor::TensorPtr PromptFlashAttentionAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query, const TensorPtr &key, const TensorPtr &value,
+  const std::optional<TensorPtr> &atten_mask, const std::optional<ValueTuplePtr> &actual_seq_qlen,
+  const std::optional<ValueTuplePtr> &actual_seq_qlen_kv, const std::optional<TensorPtr> &pse_shift,
+  const std::optional<TensorPtr> &deq_scale1, const std::optional<TensorPtr> &quant_scale1,
+  const std::optional<TensorPtr> &deq_scale2, const std::optional<TensorPtr> &quant_scale2,
+  const std::optional<TensorPtr> &quant_offset2, const Int64ImmPtr num_heads, const FP32ImmPtr scale_value,
   const Int64ImmPtr pre_tokens, const Int64ImmPtr next_tokens, const Int64ImmPtr input_layout,
   const Int64ImmPtr num_key_value_heads, const Int64ImmPtr sparse_mode, const Int64ImmPtr inner_precise);
 }  // namespace pyboost

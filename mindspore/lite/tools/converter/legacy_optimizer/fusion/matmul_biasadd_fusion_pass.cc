@@ -38,7 +38,7 @@ STATUS MatMulBiasAddFusionPass::DefinePattern() {
   bias_op->id = BiasName;
   bias_op->types = {schema::PrimitiveType_BiasAdd};
   bias_op->left = mul_op;
-  std::unique_ptr<FusionPattern> fusion_pattern(new (std::nothrow) FusionPattern("MatMulBiasAddFusion"));
+  auto fusion_pattern = std::make_unique<FusionPattern>("MatMulBiasAddFusion");
   if (fusion_pattern == nullptr) {
     MS_LOG(ERROR) << "new fusion_pattern failed";
     return RET_ERROR;

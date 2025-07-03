@@ -2,7 +2,7 @@ mindspore.mint
 ===============
 
 mindspore.mint provides a large number of functional, nn, optimizer interfaces. The API usages and functions are consistent with the mainstream usage in the industry for easy reference.
-The mint interface is currently an experimental interface and performs better than ops in graph mode of O0 and PyNative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
+The mint interface is currently an experimental interface and performs better than ops in graph mode of O0 and PyNative mode. Currently, the O2 (graph sinking mode) and CPU/GPU backend are not supported, and it will be gradually improved in the future.
 
 The module import method is as follows:
 
@@ -18,7 +18,7 @@ Tensor
 Creation Operations
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -47,7 +47,7 @@ Creation Operations
 Indexing, Slicing, Joining, Mutating Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -57,6 +57,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.concat
     mindspore.mint.count_nonzero
     mindspore.mint.gather
+    mindspore.mint.index_add
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute
@@ -82,7 +83,7 @@ Indexing, Slicing, Joining, Mutating Operations
 Random Sampling
 -----------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -98,7 +99,7 @@ Math Operations
 Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -140,6 +141,7 @@ Pointwise Operations
     mindspore.mint.fix
     mindspore.mint.float_power
     mindspore.mint.floor
+    mindspore.mint.floor_divide
     mindspore.mint.fmod
     mindspore.mint.frac
     mindspore.mint.lerp
@@ -148,6 +150,7 @@ Pointwise Operations
     mindspore.mint.log2
     mindspore.mint.log10
     mindspore.mint.logaddexp
+    mindspore.mint.logaddexp2
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
@@ -184,7 +187,7 @@ Pointwise Operations
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -193,6 +196,7 @@ Reduction Operations
     mindspore.mint.amin
     mindspore.mint.argmax
     mindspore.mint.argmin
+    mindspore.mint.argsort
     mindspore.mint.all
     mindspore.mint.any
     mindspore.mint.cumprod
@@ -214,7 +218,7 @@ Reduction Operations
 Comparison Operations
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -244,7 +248,7 @@ Comparison Operations
 BLAS and LAPACK Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -264,7 +268,7 @@ BLAS and LAPACK Operations
 Other Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -274,29 +278,21 @@ Other Operations
     mindspore.mint.cummax
     mindspore.mint.cummin
     mindspore.mint.cumsum
+    mindspore.mint.diag
     mindspore.mint.flatten
     mindspore.mint.flip
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril
+    mindspore.mint.triangular_solve
 
 mindspore.mint.nn
 ------------------
 
-Loss Functions
-^^^^^^^^^^^^^^^^^^^
-
-.. msplatwarnautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.L1Loss
-
 Convolution Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -310,7 +306,7 @@ Convolution Layers
 Normalization Layers
 ^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -325,13 +321,14 @@ Normalization Layers
 Non-linear Activations (weighted sum, nonlinearity)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.ELU
     mindspore.mint.nn.GELU
+    mindspore.mint.nn.GLU
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
@@ -343,14 +340,16 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.ReLU6
     mindspore.mint.nn.SELU
     mindspore.mint.nn.SiLU
+    mindspore.mint.nn.Sigmoid
     mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
     mindspore.mint.nn.Tanh
+    mindspore.mint.nn.Threshold
 
 Embedding Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -360,7 +359,7 @@ Embedding Layers
 Linear Layers
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -370,7 +369,7 @@ Linear Layers
 Dropout Layers
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -381,7 +380,7 @@ Dropout Layers
 Pooling Layers
 ^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -389,13 +388,15 @@ Pooling Layers
     mindspore.mint.nn.AdaptiveAvgPool1d
     mindspore.mint.nn.AdaptiveAvgPool2d
     mindspore.mint.nn.AdaptiveAvgPool3d
+    mindspore.mint.nn.AdaptiveMaxPool1d
     mindspore.mint.nn.AvgPool2d
+    mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
 
 Padding Layers
 ^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -416,7 +417,7 @@ Padding Layers
 Loss Functions
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -424,24 +425,27 @@ Loss Functions
     mindspore.mint.nn.BCELoss
     mindspore.mint.nn.BCEWithLogitsLoss
     mindspore.mint.nn.CrossEntropyLoss
+    mindspore.mint.nn.KLDivLoss
+    mindspore.mint.nn.L1Loss
     mindspore.mint.nn.MSELoss
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
 
-Image Processing Layer
+Vision Layer
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.PixelShuffle
     mindspore.mint.nn.Upsample
 
 Tools
 ^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -454,7 +458,7 @@ mindspore.mint.nn.functional
 Convolution functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -468,29 +472,34 @@ Convolution functions
 Pooling functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.functional.adaptive_avg_pool1d
     mindspore.mint.nn.functional.adaptive_avg_pool2d
+    mindspore.mint.nn.functional.adaptive_avg_pool3d
+    mindspore.mint.nn.functional.adaptive_max_pool1d
     mindspore.mint.nn.functional.avg_pool1d
     mindspore.mint.nn.functional.avg_pool2d
+    mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
 
 Non-linear activation functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.functional.batch_norm
     mindspore.mint.nn.functional.elu
+    mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu
+    mindspore.mint.nn.functional.glu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
     mindspore.mint.nn.functional.hardsigmoid
@@ -511,11 +520,13 @@ Non-linear activation functions
     mindspore.mint.nn.functional.softplus
     mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
+    mindspore.mint.nn.functional.threshold
+    mindspore.mint.nn.functional.threshold_
 
 Normalization functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -525,7 +536,7 @@ Normalization functions
 Linear functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -535,7 +546,7 @@ Linear functions
 Dropout functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -546,7 +557,7 @@ Dropout functions
 Sparse functions
 ^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -557,13 +568,15 @@ Sparse functions
 Loss Functions
 ^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.kl_div
     mindspore.mint.nn.functional.l1_loss
     mindspore.mint.nn.functional.mse_loss
     mindspore.mint.nn.functional.nll_loss
@@ -572,7 +585,7 @@ Loss Functions
 Vision functions
 ^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -580,17 +593,19 @@ Vision functions
     mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.grid_sample
     mindspore.mint.nn.functional.pad
+    mindspore.mint.nn.functional.pixel_shuffle
 
 mindspore.mint.optim
 ---------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.optim.Adam
     mindspore.mint.optim.AdamW
+    mindspore.mint.optim.SGD
 
 mindspore.mint.linalg
 ----------------------
@@ -598,7 +613,7 @@ mindspore.mint.linalg
 Inverses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -607,6 +622,7 @@ Inverses
     mindspore.mint.linalg.matrix_norm
     mindspore.mint.linalg.norm
     mindspore.mint.linalg.vector_norm
+    mindspore.mint.linalg.qr
 
 mindspore.mint.special
 ----------------------
@@ -614,7 +630,7 @@ mindspore.mint.special
 Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -630,7 +646,7 @@ Pointwise Operations
 mindspore.mint.distributed
 --------------------------------
 
-.. msplatwarnautosummary::
+.. msplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -657,6 +673,8 @@ mindspore.mint.distributed
     mindspore.mint.distributed.init_process_group
     mindspore.mint.distributed.irecv
     mindspore.mint.distributed.isend
+    mindspore.mint.distributed.is_available
+    mindspore.mint.distributed.is_initialized
     mindspore.mint.distributed.new_group
     mindspore.mint.distributed.P2POp
     mindspore.mint.distributed.recv
@@ -666,3 +684,4 @@ mindspore.mint.distributed
     mindspore.mint.distributed.scatter
     mindspore.mint.distributed.scatter_object_list
     mindspore.mint.distributed.send
+    mindspore.mint.distributed.TCPStore

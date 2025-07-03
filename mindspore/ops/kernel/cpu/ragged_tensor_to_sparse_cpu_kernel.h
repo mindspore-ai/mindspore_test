@@ -21,11 +21,12 @@
 #include <memory>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_tensor_to_sparse_cpu {
 class RaggedTensorToSparseCpuKernelMod : public NativeCpuKernelMod {
  public:
   RaggedTensorToSparseCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class RaggedTensorToSparseCpuKernelMod : public NativeCpuKernelMod {
   TypeId splits_type_{kTypeUnknown};
   TypeId values_type_{kTypeUnknown};
 };
+}  // namespace ragged_tensor_to_sparse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

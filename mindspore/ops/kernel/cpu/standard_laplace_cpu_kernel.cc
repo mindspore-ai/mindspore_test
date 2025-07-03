@@ -15,12 +15,13 @@
  */
 
 #include <memory>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/standard_laplace_cpu_kernel.h"
 #include "kernel/philox_random.h"
 
 namespace mindspore {
 namespace kernel {
+namespace standard_laplace_cpu {
 namespace {
 constexpr size_t kStandardLaplaceInputsNum = 1;
 constexpr size_t kStandardLaplaceOutputsNum = 1;
@@ -67,5 +68,6 @@ std::vector<KernelAttr> StandardLaplaceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, StandardLaplace, StandardLaplaceCpuKernelMod);
+}  // namespace standard_laplace_cpu
 }  // namespace kernel
 }  // namespace mindspore

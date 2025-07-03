@@ -27,7 +27,7 @@ def test_method_clamp_tensor():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func_clamp_tensor(x, min, max):
       return x.clamp(min, max)
 
@@ -44,7 +44,7 @@ def test_method_clamp_scalar():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func_clamp_scalar(x, min, max):
       return x.clamp(min, max)
 
@@ -61,7 +61,7 @@ def test_method_clamp_default():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func(x, min):
       return x.clamp(min)
 
@@ -77,7 +77,7 @@ def test_method_clamp_keyword():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func(x, min):
       return x.clamp(min, max=ms.Tensor(4)), x.clamp(max=3, min=1)
 
@@ -94,11 +94,10 @@ def test_method_clamp_asnumpy():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func(x, min, max):
       return x.clamp(min, ms.Tensor(max.asnumpy()))
 
-    ms.set_context(save_graphs=True, save_graphs_path="ir_pijit_method_clamp_asnumpy")
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
     assert np.all(out.asnumpy() == ms.Tensor([2, 2, 3, 4, 4]).asnumpy())
 
@@ -110,7 +109,7 @@ def test_method_clamp_keyword_asnumpy():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Run success
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func(x, min, max):
       return x.clamp(min=ms.Tensor(min.asnumpy())), x.clamp(2, max=int(max.asnumpy()))
 
@@ -126,7 +125,7 @@ def test_method_clamp_exception():
     Description: Test functional feature with Tensor.clamp.
     Expectation: Raise expected exception.
     """
-    @ms.jit(mode="PIJit")
+    @ms.jit(capture_mode="bytecode")
     def func(x, min, max):
       return x.clamp(min, max)
 

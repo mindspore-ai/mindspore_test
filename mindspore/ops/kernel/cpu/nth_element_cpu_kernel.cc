@@ -15,10 +15,11 @@
  */
 #include <algorithm>
 #include "kernel/cpu/nth_element_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/nth_element.h"
 namespace mindspore {
 namespace kernel {
+namespace nth_element_cpu {
 namespace {
 constexpr size_t kNthElementInputsNum = 2;
 constexpr size_t kNthElementOutputsNum = 1;
@@ -115,5 +116,6 @@ const std::vector<std::pair<KernelAttr, NthElementCpuKernelMod::KernelRunFunc>> 
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NthElement, NthElementCpuKernelMod);
 // }
+}  // namespace nth_element_cpu
 }  // namespace kernel
 }  // namespace mindspore

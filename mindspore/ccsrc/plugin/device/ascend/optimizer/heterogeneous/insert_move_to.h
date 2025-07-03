@@ -47,10 +47,12 @@ class BACKEND_EXPORT InsertMoveTo : public Pass {
   CNodePtr InsertParamMoveTo(const ParameterPtr &parameter, const OffloadParamInfo &info) const;
   void InsertParamMoveAssign(const ParameterPtr &parameter, const OffloadParamInfo &info,
                              const CNodePtr &move_to) const;
+  bool BackendInlineNode(const CNodePtr &node);
 
   std::map<ParameterPtr, std::vector<OffloadParamInfo>> offloaded_parameters_;
   FuncGraphPtr func_graph_{nullptr};
   KernelGraphPtr kernel_graph_{nullptr};
+  FuncGraphManagerPtr manager_{nullptr};
   size_t load_lead_dh_{1};
   size_t load_lead_hf_{1};
 };

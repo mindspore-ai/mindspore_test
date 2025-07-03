@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,43 +14,41 @@
  * limitations under the License.
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "frontend/expander/bprop/common_utils.h"
-#include "include/common/utils/utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "grad/grad_utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradScalarOps)
 REG_BPROP_BUILDER("ScalarAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(i3);
   return {dout, dout};
 });
 
 REG_BPROP_BUILDER("ScalarSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(i3);
   return {dout, ib->ScalarNeg(dout)};
 });
 
 REG_BPROP_BUILDER("ScalarMul").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {ib->ScalarMul(y, dout), ib->ScalarMul(x, dout)};
 });
 
 REG_BPROP_BUILDER("ScalarDiv").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   auto dx = ib->ScalarDiv(dout, y);
   return {dx, ib->ScalarNeg(ib->ScalarMul(dx, out))};
 });
 
 REG_BPROP_BUILDER("ScalarMod").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex3);
+  auto x = ib->GetInput(i0);
+  auto y = ib->GetInput(i1);
+  auto out = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   NodePtr dx = x->need_compute_grad_out() ? dout : ib->OutZeros(x);
   NodePtr dy = y->need_compute_grad_out()
                  ? ib->ScalarNeg(ib->ScalarMul(ib->ScalarDiv(dout, y), ib->ScalarFloorDiv(x, y)))
@@ -67,5 +65,7 @@ REG_BPROP_BUILDER("ScalarGt").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("bit_and").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("bit_or").SetBody(ReturnZeros);
 REG_BPROP_BUILDER("ScalarBool").SetBody(ReturnZeros);
+REG_BPROP_BUILDER("ScalarMax").SetBody(ReturnZeros);
+REG_BPROP_BUILDER("ScalarMin").SetBody(ReturnZeros);
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

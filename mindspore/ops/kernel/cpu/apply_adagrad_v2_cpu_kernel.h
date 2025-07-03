@@ -22,11 +22,12 @@
 #include <utility>
 
 #include "mindspore/ops/infer/apply_adagrad_v2.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adagrad_v2_cpu {
 class ApplyAdagradV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyAdagradV2CpuKernelMod() = default;
@@ -60,6 +61,7 @@ class ApplyAdagradV2CpuKernelMod : public NativeCpuKernelMod {
   int64_t batch_rank_{0};
   size_t inner_input_size_;
 };
+}  // namespace apply_adagrad_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_APPLY_ADAGRAD_V2_CPU_KERNEL_H_

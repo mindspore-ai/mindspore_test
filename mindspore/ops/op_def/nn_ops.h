@@ -22,7 +22,6 @@
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "utils/hash_map.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {
@@ -40,8 +39,6 @@ GVAR_DEF(PrimitivePtr, kPrimCTCLossV2, std::make_shared<Primitive>("CTCLossV2"))
 GVAR_DEF(PrimitivePtr, kPrimCTCLossV2Grad, std::make_shared<Primitive>("CTCLossV2Grad"));
 GVAR_DEF(PrimitivePtr, kPrimCTCLoss, std::make_shared<Primitive>(kCTCLossOpName));
 GVAR_DEF(PrimitivePtr, kPrimTripletMarginLoss, std::make_shared<Primitive>(kTripletMarginLossOpName));
-GVAR_DEF(PrimitivePtr, kPrimSoftMarginLoss, std::make_shared<Primitive>("SoftMarginLoss"));
-GVAR_DEF(PrimitivePtr, kPrimSoftMarginLossGrad, std::make_shared<Primitive>("SoftMarginLossGrad"));
 GVAR_DEF(PrimitivePtr, kPrimSoftmaxCrossEntropyWithLogits,
          std::make_shared<Primitive>("SoftmaxCrossEntropyWithLogits"));
 GVAR_DEF(PrimitivePtr, kPrimL2Loss, std::make_shared<Primitive>("L2Loss"));

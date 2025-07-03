@@ -13,17 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """test eval function"""
-import sys
-import sys
-import pytest
 from mindspore import jit
 from tests.mark_utils import arg_mark
-
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 
 def func2(x):
@@ -48,6 +39,6 @@ def test_pijit_catch_func():
         out = eval(f"func{x}(x)")
         return out
 
-    got = jit(fn=func, mode="PIJit")(2)
+    got = jit(function=func, capture_mode="bytecode")(2)
     expect = func(2)
     assert got == expect

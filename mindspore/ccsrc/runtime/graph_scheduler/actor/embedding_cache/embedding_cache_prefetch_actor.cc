@@ -17,7 +17,7 @@
 #include "runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.h"
 #include <limits>
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "runtime/graph_scheduler/actor/rpc/rpc_actor.h"
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/constants.h"
@@ -146,7 +146,7 @@ void DeduplicateId(UniqueIds *unique_ids) {
   std::thread threads[kMaxParallelNum];
 
   std::vector<mindspore::HashSet<int>> unique_batch_ids_sets(parallel_num);
-  auto unique_task = [&](int *origin_batch_ids, size_t proc_len, mindspore::HashSet<int> *unique_set) {
+  auto unique_task = [](int *origin_batch_ids, size_t proc_len, mindspore::HashSet<int> *unique_set) {
     (void)std::for_each(origin_batch_ids, origin_batch_ids + proc_len,
                         [&unique_set](int id) { (void)unique_set->insert(id); });
   };
@@ -331,6 +331,7 @@ void EmbeddingCachePrefetchActor::Run() {
   // Bind device to current thread to gain device control privileges
   MS_EXCEPTION_IF_NULL(device_context_);
   MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "embedding cache prefetch actor:" << GetAID() << " start run.";
   if (!device_context_->device_res_manager_->BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Failed to bind device to current thread.";
     running_ = false;
@@ -345,6 +346,7 @@ void EmbeddingCachePrefetchActor::Run() {
 
   // Wait data channel ready.
   WaitDataChannelInit();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "embedding cache prefetch actor:" << GetAID() << " end run.";
 }
 
 void EmbeddingCachePrefetchActor::CreateChannelLock(const std::string &channel_name) {

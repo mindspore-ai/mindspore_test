@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace clip_by_norm_cpu {
 namespace {
 std::vector<std::pair<TypeId, TypeId>> supported_data_type{{kNumberTypeFloat32, kNumberTypeFloat32},
                                                            {kNumberTypeFloat32, kNumberTypeFloat16},
@@ -367,5 +368,6 @@ void ClipByNormCpuKernelMod::ClipNormMulAndCmpLaunch(const T *x_addr, const floa
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ClipByNorm, ClipByNormCpuKernelMod);
+}  // namespace clip_by_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore

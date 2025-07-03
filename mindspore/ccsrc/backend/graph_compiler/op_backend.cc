@@ -22,7 +22,7 @@
 #include "op_def/structure_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -164,11 +164,11 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
     MS_LOG(DEBUG) << "Async exec enabled, op: " << op_run_info->base_op_run_info.op_name;
     auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
     runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, false);
-    auto device_address_list = runtime::DeviceAddressUtils::CreateGraphOutputDeviceAddress(
+    auto kernel_tensor_list = runtime::DeviceAddressUtils::CreateGraphOutputKernelTensor(
       op_compiler_info, op_run_info->base_op_run_info.abstract, op_run_info->base_op_run_info.stream_id);
     // Create output tensor
-    post_run_.UpdateOutputDynamic(op_run_info, op_compiler_info, device_address_list, outputs);
-    DispatchOpTaskDynamic(outputs, op_compiler_info, op_run_info, device_address_list);
+    post_run_.UpdateOutputDynamic(op_run_info, op_compiler_info, kernel_tensor_list, outputs);
+    DispatchOpTaskDynamic(outputs, op_compiler_info, op_run_info, kernel_tensor_list);
     return;
   }
   MS_LOG(DEBUG) << "Async exec disabled, op: " << op_run_info->base_op_run_info.op_name;
@@ -184,9 +184,9 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
     post_run_.ReleaseForwardOpOutput(op_run_info->base_op_run_info.expanded_input_values);
   }
 
-  const auto &device_address_list = GetOutputDeviceAddress(op_compiler_info);
+  const auto &kernel_tensor_list = GetOutputKernelTensor(op_compiler_info);
   // Create output tensor
-  post_run_.UpdateOutputDynamic(op_run_info, op_compiler_info, device_address_list, outputs);
+  post_run_.UpdateOutputDynamic(op_run_info, op_compiler_info, kernel_tensor_list, outputs);
   post_run_.UpdateOutputAbstract(*outputs, op_run_info);
   post_run_.ClearOpInputOutput(op_compiler_info);
   if (op_compiler_info->need_erase_) {
@@ -249,7 +249,7 @@ void OpBackend::OpRunCallback(const std::shared_ptr<runtime::OpTaskContext> &con
 
 void OpBackend::DispatchOpTaskDynamic(VectorRef *outputs, const OpCompilerInfoPtr &op_compiler_info,
                                       const session::BackendOpRunInfoPtr &op_run_info,
-                                      const vector<device::DeviceAddressPtr> &device_address_list) {
+                                      const std::vector<KernelTensorPtr> &kernel_tensor_list) {
   MS_EXCEPTION_IF_NULL(op_compiler_info);
   const auto &graph = op_compiler_info->graph_;
   MS_EXCEPTION_IF_NULL(graph);
@@ -288,14 +288,14 @@ void OpBackend::OpRunCallbackDynamic(const std::shared_ptr<runtime::OpTaskContex
   MS_LOG(DEBUG) << "OpRunCallback end";
 }
 
-device::DeviceAddressPtrList OpBackend::GetOutputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info) const {
+std::vector<KernelTensorPtr> OpBackend::GetOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info) const {
   MS_EXCEPTION_IF_NULL(op_compiler_info);
   const auto &output_edges = op_compiler_info->simple_graph_->outputs_;
-  device::DeviceAddressPtrList output_address;
-  output_address.reserve(output_edges.size());
-  std::transform(output_edges.begin(), output_edges.end(), std::back_inserter(output_address),
-                 [](const pynative::EdgePtr &edge) { return edge->address_; });
-  return output_address;
+  std::vector<KernelTensorPtr> output_kernel_tensors;
+  output_kernel_tensors.reserve(output_edges.size());
+  std::transform(output_edges.begin(), output_edges.end(), std::back_inserter(output_kernel_tensors),
+                 [](const pynative::EdgePtr &edge) { return edge->kernel_tensor_; });
+  return output_kernel_tensors;
 }
 
 void OpBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info,
@@ -303,7 +303,7 @@ void OpBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_inf
   view_backend_.RunViewKernelTask(base_op_run_info, task_type, enable_async);
 }
 
-void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+void OpBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                                 bool is_cpu_address_exist) const {
   view_backend_.RunAllocMemTask(device_context, tensor, enable_async, is_cpu_address_exist);
 }
@@ -323,12 +323,14 @@ void PostRunOp::UpdateOutput(const std::vector<session::KernelWithIndex> &output
   }
 }
 
-tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const {
+tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const {
   MS_EXCEPTION_IF_NULL(output_node);
-  const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(output_node, output_index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  const auto &user_data = device_tensor->user_data();
+  const auto &user_data = kernel_tensor->user_data();
   bool is_map_tensor_output = user_data && user_data->get<UserDataType>(kUserDataType) &&
                               *(user_data->get<UserDataType>(kUserDataType)) == UserDataType::kUserTypeHashTable;
   if (is_map_tensor_output) {
@@ -339,12 +341,9 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_nod
   device_tensor->set_padding_type(AnfAlgo::GetOutputReshapeType(output_node, output_index));
   runtime::DeviceAddressUtils::UpdateDeviceAddressHostInfoByNode(device_tensor, output_node, output_index);
 
-  const auto &kernel_tensor = device_tensor->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
-  auto tensor = std::make_shared<tensor::BaseTensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
+  auto tensor = std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector());
 
   // Put device tensor into host tensor.
   tensor->set_device_address(device_tensor);
@@ -366,7 +365,7 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_nod
 
 void PostRunOp::ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_values) {
   for (const auto &value : input_values) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor == nullptr) {
       continue;
     }
@@ -396,16 +395,20 @@ void PostRunOp::ClearGraphDeviceAddress(const KernelGraphPtr &graph, const Devic
       if (!AnfAlgo::OutputAddrExist(node, i, false)) {
         continue;
       }
-      const auto &device_address = AnfAlgo::GetMutableOutputAddr(node, i, false);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, i, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_address = kernel_tensor->device_address();
       if (device_address == nullptr) {
         continue;
       }
       MS_EXCEPTION_IF_NULL(device_context);
-      auto new_device_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(device_address, device_context);
+      auto new_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(kernel_tensor, device_context);
+      auto &new_device_address = new_kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(new_device_address);
       if (is_gradient_out) {
         new_device_address->set_from_persistent_mem(true);
       }
-      AnfAlgo::SetOutputAddr(new_device_address, i, node.get());
+      AnfAlgo::SetOutputAddr(new_device_address, i, node);
     }
 
     // Clear old workspace device address of kernel
@@ -416,9 +419,10 @@ void PostRunOp::ClearGraphDeviceAddress(const KernelGraphPtr &graph, const Devic
       if (!AnfAlgo::WorkspaceAddrExist(node, i)) {
         continue;
       }
-      const auto &device_address = AnfAlgo::GetMutableWorkspaceAddr(node, i);
-      auto new_device_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(device_address, device_context);
-      AnfAlgo::SetWorkspaceAddr(new_device_address, i, node.get());
+      const auto &kernel_tensor = AnfAlgo::GetWorkspaceKernelTensor(node, i);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto new_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(kernel_tensor, device_context);
+      AnfAlgo::SetWorkspaceKernelTensor(new_kernel_tensor, i, node.get());
     }
   }
 }
@@ -429,12 +433,14 @@ void PostRunOp::ClearInputDeviceAddress(const KernelGraphPtr &graph, const Devic
   for (const auto &node : graph->input_nodes()) {
     MS_EXCEPTION_IF_NULL(node);
     if (node->isa<Parameter>()) {
-      auto device_address = AnfAlgo::GetMutableOutputAddr(node, 0, false);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, 0, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_address = kernel_tensor->device_address();
       if (device_address == nullptr) {
         continue;
       }
-      auto new_device_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(device_address, device_context);
-      AnfAlgo::SetOutputAddr(new_device_address, 0, node.get());
+      auto new_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(kernel_tensor, device_context);
+      AnfAlgo::SetOutputAddr(new_kernel_tensor->device_address(), 0, node);
     }
   }
 }
@@ -447,7 +453,7 @@ void PostRunOp::ClearOpInputOutput(const OpCompilerInfoPtr &op_compiler_info) co
     if (edge->type_ != pynative::EdgeType::kValueNodeEdge) {
       // Just set edge address to null rather than clone empty address.
       // Clone empty address in next RunOp if needed.
-      edge->address_ = nullptr;
+      edge->kernel_tensor_ = nullptr;
     }
   }
 }
@@ -455,7 +461,7 @@ void PostRunOp::ClearOpInputOutput(const OpCompilerInfoPtr &op_compiler_info) co
 void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const {
   auto output_size = outputs.size();
   if (output_size == 1 && op_run_info->base_op_run_info.op_name != kGetNextOpName) {
-    auto output_tensor = utils::cast<tensor::BaseTensorPtr>(outputs[0]);
+    auto output_tensor = utils::cast<tensor::TensorPtr>(outputs[0]);
     MS_EXCEPTION_IF_NULL(output_tensor);
     op_run_info->base_op_run_info.abstract = output_tensor->ToAbstract();
     MS_LOG(DEBUG) << "Update output abstract of " << op_run_info->base_op_run_info.op_name << " to "
@@ -464,7 +470,7 @@ void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::Ba
   }
   AbstractBasePtrList elements;
   for (size_t i = 0; i < output_size; ++i) {
-    auto output_tensor = utils::cast<tensor::BaseTensorPtr>(outputs[i]);
+    auto output_tensor = utils::cast<tensor::TensorPtr>(outputs[i]);
     MS_EXCEPTION_IF_NULL(output_tensor);
     (void)elements.emplace_back(output_tensor->ToAbstract());
   }
@@ -475,8 +481,7 @@ void PostRunOp::UpdateOutputAbstract(const VectorRef &outputs, const session::Ba
 
 void PostRunOp::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info,
                                     const OpCompilerInfoPtr &op_compiler_info,
-                                    const vector<device::DeviceAddressPtr> &device_address_list,
-                                    VectorRef *outputs) const {
+                                    const std::vector<KernelTensorPtr> &kernel_tensor_list, VectorRef *outputs) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_LOG(DEBUG) << "No promise, just create tensor and address, op " << op_run_info->base_op_run_info.op_name;
   MS_EXCEPTION_IF_NULL(op_compiler_info);
@@ -487,8 +492,8 @@ void PostRunOp::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_i
                       << " is not equal to outputs_size:" << outputs_size;
   }
 
-  if (device_address_list.size() != outputs_size) {
-    MS_LOG(EXCEPTION) << "The size of device_address_list:" << device_address_list.size()
+  if (kernel_tensor_list.size() != outputs_size) {
+    MS_LOG(EXCEPTION) << "The size of kernel_tensor_list:" << kernel_tensor_list.size()
                       << " is not equal to outputs_size:" << outputs_size;
   }
 
@@ -498,34 +503,36 @@ void PostRunOp::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_i
     if (op_compiler_info->graph_outputs_tensor_num_[i] == 0) {
       continue;
     }
-    auto output_address = device_address_list[i];
-    MS_EXCEPTION_IF_NULL(output_address);
-    auto output_tensor =
-      CreateOutputTensorDynamicImpl(op_compiler_info, item_with_index.first, item_with_index.second, output_address, i);
+    auto output_kernel_tensor = kernel_tensor_list[i];
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto output_tensor = CreateOutputTensorDynamicImpl(op_compiler_info, item_with_index.first, item_with_index.second,
+                                                       output_kernel_tensor, i);
     MS_EXCEPTION_IF_NULL(output_tensor);
     output_tensor->set_need_pipeline_sync(true);
     outputs->emplace_back(output_tensor);
   }
 }
 
-tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
-                                                               const AnfNodePtr &output_node, size_t output_index,
-                                                               const std::shared_ptr<device::DeviceAddress> &address,
-                                                               size_t idx_in_graph_outputs) const {
+tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
+                                                           const AnfNodePtr &output_node, size_t output_index,
+                                                           const KernelTensorPtr &kernel_tensor,
+                                                           size_t idx_in_graph_outputs) const {
   MS_EXCEPTION_IF_NULL(output_node);
-  MS_EXCEPTION_IF_NULL(address);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(op_compiler_info);
 
-  const auto &user_data = address->user_data();
+  const auto &user_data = kernel_tensor->user_data();
   bool is_map_tensor_output = user_data && user_data->get<UserDataType>(kUserDataType) &&
                               *(user_data->get<UserDataType>(kUserDataType)) == UserDataType::kUserTypeHashTable;
   if (is_map_tensor_output) {
-    return AnfAlgo::CreateMapTensor(address);
+    return AnfAlgo::CreateMapTensor(kernel_tensor);
   }
 
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
-  auto tensor = std::make_shared<tensor::BaseTensor>(address->type_id(), address->host_shape());
+  const auto &address = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(address);
+  auto tensor = std::make_shared<tensor::Tensor>(address->type_id(), kernel_tensor->host_shape());
 
   // Put device tensor into host tensor.
   address->SetNodeIndex(output_node, output_index);
@@ -546,20 +553,8 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerI
 }
 
 void ViewBackend::ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
-  auto &inputs = op_run_info->base_op_run_info.expanded_input_values;
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    const auto &input = inputs[i];
-    if (!input->isa<tensor::BaseTensor>()) {
-      continue;
-    }
-    auto tensor = input->cast<tensor::BaseTensorPtr>();
-    if (tensor->storage_info() == nullptr) {
-      continue;
-    }
-
-    auto contiguous_tensor = runtime::DeviceAddressUtils::TensorContiguous(tensor);
-    inputs[i] = contiguous_tensor;
-  }
+  MS_EXCEPTION_IF_NULL(contiguous_func_);
+  contiguous_func_(op_run_info);
 }
 
 void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info,
@@ -572,7 +567,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   MS_EXCEPTION_IF_NULL(device_context);
 
   for (size_t idx = 0; idx < base_op_run_info.expanded_input_values.size(); idx++) {
-    auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::BaseTensorPtr>();
+    auto input_tensor = base_op_run_info.expanded_input_values[idx]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input_tensor);
     if (input_tensor->device_address() == nullptr) {
       if (idx == 0) {
@@ -580,13 +575,15 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
       }
       auto address_size = GetTypeByte(TypeIdToType(input_tensor->data_type())) * SizeOf(input_tensor->shape());
 
-      auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
+      auto kernel_tensor = AnfAlgo::CreateKernelTensor(
         nullptr, address_size, Format::DEFAULT_FORMAT, input_tensor->data_type(), input_tensor->shape(),
         device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
+      MS_LOG(DEBUG) << "Create kernel tensor:" << kernel_tensor->ToString();
       kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
       kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
       kernel_tensor->set_stream_id(base_op_run_info.stream_id);
-      auto input_addr = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      auto input_addr = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(input_addr);
 
       input_tensor->set_device_address(input_addr);
       RunAllocMemTask(device_context, input_tensor, enable_async, false);
@@ -617,7 +614,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
   }
 }
 
-void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                                   bool is_cpu_address_exist) const {
   if (!enable_async) {
     WaitTasksFinish();
@@ -642,7 +639,7 @@ void ViewBackend::RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task
     std::make_shared<runtime::PassthroughDeviceTask>(kernel_task_func));
 }
 
-void ViewBackend::AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *device_context,
+void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
                                        bool is_cpu_address_exist) const {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_context);
@@ -666,7 +663,8 @@ void ViewBackend::AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, Devi
   }
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "ContiguousAllocMem", "");
-  auto mem_type = tensor->is_parameter() ? device::tracker::MemType::kWeight : device::tracker::MemType::kPyNativeInput;
+  auto mem_type =
+    tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
   if ((device_address->GetPtr() == nullptr) &&

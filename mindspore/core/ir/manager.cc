@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -776,7 +776,7 @@ void FuncGraphManager::MoveAllCNodeDropGraph(const FuncGraphPtr &source, const F
   source->DropNode(source_return);
   for (auto &node : source->nodes()) {
     node->set_func_graph(target);
-    if (node->scope() == kDefaultScope) {
+    if (IsScopeDefault(node->scope())) {
       node->set_scope(scope);
     }
     if (update_debug_info && node->isa<CNode>()) {
@@ -805,6 +805,7 @@ void FuncGraphManager::MoveAllCNodeDropGraph(const FuncGraphPtr &source, const F
 void FuncGraphManager::OnEdgeAdded(const AnfNodePtr &node, int index, const AnfNodePtr &input) {
   auto fg = node->func_graph();
   if (input->isa<ValueNode>()) {
+    MS_EXCEPTION_IF_NULL(fg);
     fg->AddValueNode(input);
     if (IsValueNode<FuncGraph>(input)) {
       auto used = GetValueNode<FuncGraphPtr>(input);
@@ -823,6 +824,7 @@ void FuncGraphManager::OnEdgeAdded(const AnfNodePtr &node, int index, const AnfN
     constexpr int64_t kIndex1 = 1;
     auto func_union = dyn_cast<CNode>(input);
     if (IsValueNode<FuncGraph>(func_union->input(kIndex1))) {
+      MS_EXCEPTION_IF_NULL(fg);
       fg->AddMetaFgPrimValueNode(func_union->input(kIndex1));
     }
   } else if (fg != nullptr && fg != input->func_graph()) {
@@ -833,6 +835,7 @@ void FuncGraphManager::OnEdgeAdded(const AnfNodePtr &node, int index, const AnfN
 }
 
 void FuncGraphManager::OnEdgeRemoved(const AnfNodePtr &node, int index, const AnfNodePtr &input) {
+  MS_EXCEPTION_IF_NULL(input);
   auto fg = node->func_graph();
   if (fg != nullptr && input->isa<ValueNode>()) {
     fg->DropValueNode(input);
@@ -915,6 +918,7 @@ void FuncGraphTransaction::SetParameters(FuncGraphPtr fg, const std::vector<AnfN
 }
 
 void FuncGraphTransaction::AddParameter(FuncGraphPtr fg, const AnfNodePtr &param) {
+  MS_EXCEPTION_IF_NULL(param);
   (void)changes_.emplace_back(std::make_unique<change::AddParam>(fg, param->cast<ParameterPtr>()));
 }
 
@@ -1047,6 +1051,7 @@ FuncGraphSetPtr FuncGraphParentsTotalComputer::SeekParents(const FuncGraphPtr &f
       }
     }
   }
+  parents->erase(func_graph);
   return parents;
 }
 

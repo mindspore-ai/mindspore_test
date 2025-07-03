@@ -16,18 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/masked_select_grad.h"
 
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr MaskedSelectGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                      const BaseTensorPtr &input_tensor,
-                                                      const BaseTensorPtr &mask_tensor,
-                                                      const BaseTensorPtr &grad_tensor) {
+tensor::TensorPtr MaskedSelectGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                  const TensorPtr &mask_tensor, const TensorPtr &grad_tensor) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, input_tensor, mask_tensor, grad_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mask_tensor, grad_tensor);

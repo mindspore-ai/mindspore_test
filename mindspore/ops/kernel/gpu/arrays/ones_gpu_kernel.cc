@@ -16,7 +16,7 @@
 
 #include <cstdint>
 #include <algorithm>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/arrays/ones_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"

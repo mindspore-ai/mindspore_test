@@ -15,14 +15,13 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_for_2():
     """
     Feature: JIT Fallback
@@ -30,7 +29,7 @@ def test_while_after_for_in_for_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2322():
         x = Tensor([0])
         for i in range(3):
@@ -54,9 +53,8 @@ def test_while_after_for_in_for_2():
     assert res_y == 6
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_after_for_in_for_3():
     """
     Feature: JIT Fallback
@@ -64,7 +62,7 @@ def test_while_after_for_in_for_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func2323():
         y = [5, 6, 7]
         for _ in (0, 1, 2):

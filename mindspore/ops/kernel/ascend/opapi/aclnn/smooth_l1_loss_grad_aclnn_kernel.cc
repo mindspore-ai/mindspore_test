@@ -19,17 +19,18 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_grad {
 
 void SmoothL1LossGradAscendKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                        const std::vector<KernelTensor *> &outputs) {
-  beta_ = transform::ConvertKernelTensor<float>(inputs[kIndex3]);
-  const auto &reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  beta_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]);
+  const auto &reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
   // transform reduction enum value to corresponding value
   reduction_value_ = ops::ConvertReductionForAclnn(reduction_imm);
 
@@ -46,5 +47,6 @@ bool SmoothL1LossGradAscendKernelMod::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SmoothL1LossGrad, SmoothL1LossGradAscendKernelMod);
+}  // namespace smooth_l1_loss_grad
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,14 +19,15 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace add_rms_norm {
 
 void AddRmsNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  epsilon_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex3]));
+  epsilon_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]));
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], epsilon_, outputs[kIndex0], outputs[kIndex1],
                         outputs[kIndex2]);
 }
@@ -40,5 +41,6 @@ bool AddRmsNormAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AddRmsNorm, AddRmsNormAscend);
+}  // namespace add_rms_norm
 }  // namespace kernel
 }  // namespace mindspore

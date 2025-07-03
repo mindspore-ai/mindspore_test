@@ -400,6 +400,7 @@ int64_t AnfUtils::GetIntValue(const ValuePtr &value) {
 
 bool IsOutputNestedTuple(const FuncGraphPtr &fg) {
   auto output = fg->output();
+  MS_EXCEPTION_IF_NULL(output);
   auto abstract = output->abstract();
   if (!abstract || !abstract->isa<abstract::AbstractTuple>()) {
     return false;
@@ -644,6 +645,17 @@ bool AnfUtils::NeedJumpMonadOutput(const AnfNodePtr &node) {
     return true;
   }
   return false;
+}
+
+bool AnfUtils::UseMemScheduler() {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!context_ptr->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+    return false;
+  }
+  // Not use MemScheduler when running single op
+  return (!context_ptr->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER) &&
+          (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode));
 }
 
 void FlatParameterFinder::AddParameter(const ParameterPtr &param) {

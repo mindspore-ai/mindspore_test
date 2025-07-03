@@ -19,10 +19,11 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace map_uniform_cpu {
 namespace {
 constexpr size_t kMapUniformInputsNum = 3;
 constexpr size_t kMapUniformOutputsNum = 1;
@@ -100,5 +101,6 @@ std::vector<KernelAttr> MapUniformCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MapUniform, MapUniformCpuKernelMod);
+}  // namespace map_uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore

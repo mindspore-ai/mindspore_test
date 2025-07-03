@@ -12,7 +12,7 @@ mindspore.nn.AvgPool2d
         \text{input}(N_i, C_j, s_0 \times h + m, s_1 \times w + n)
 
     .. note::
-        该接口暂不支持Atlas A2 训练系列产品。
+        该接口暂不支持Atlas A2训练系列产品。
 
     参数：
         - **kernel_size** (Union[int, tuple[int]]) - 指定池化核尺寸大小。如果为整数或单元素tuple，则代表池化核的高和宽。如果为tuple且长度不为 ``1`` ，其值必须包含两个整数值分别表示池化核的高和宽。默认值： ``1`` 。
@@ -46,7 +46,7 @@ mindspore.nn.AvgPool2d
             \text{kernel_size}[1]}{\text{stride}[1]} + 1\right\rfloor
 
     异常：
-        - **TypeError** - `kernel_size` 或 `strides` 既不是整数也不是元组。
+        - **TypeError** - `kernel_size` 或 `strides` 既不是整数，也不是tuple。
         - **ValueError** - `pad_mode` 既不是"valid"，也不是"same" 或者 "pad"，不区分大小写。
         - **ValueError** - `data_format` 既不是'NCHW'，也不是'NHWC'。
         - **ValueError** - `data_format` 为 ``'NHWC'`` 时，使用了 `padding` 、 `ceil_mode` 、 `count_include_pad` 或者 `divisor_override` 之一，或 `pad_mode` 为 `pad`。

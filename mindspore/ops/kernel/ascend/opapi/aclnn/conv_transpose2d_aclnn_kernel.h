@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV3D_EXT_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV3D_EXT_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV2D_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV2D_ACLNN_KERNEL_MOD_H_
 #include <memory>
 #include <vector>
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conv_transpose2d {
 
 class ConvTranspose2DAscend final : public AclnnKernelMod {
  public:
@@ -51,7 +52,8 @@ class ConvTranspose2DAscend final : public AclnnKernelMod {
   KernelTensorPtr input_tensor_;
   KernelTensorPtr output_tensor_;
 };
+}  // namespace conv_transpose2d
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV3D_EXT_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CONV2D_ACLNN_KERNEL_MOD_H_

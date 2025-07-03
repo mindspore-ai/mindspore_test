@@ -29,6 +29,9 @@
 #include "ops/primitive_c.h"
 #include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -129,6 +132,7 @@ bool IsPrimitiveProper(const CNodePtr &pad_cnode) {
     return false;
   }
   auto pad_list = pad_cnode->input(kInputIndexTwo)->cast<ParameterPtr>();
+  MS_CHECK_TRUE_MSG(pad_list != nullptr, false, "pad_list is nullptr");
   auto tensor_param = pad_list->default_param();
   if (tensor_param == nullptr) {
     return false;

@@ -1,39 +1,40 @@
 inplace_index_put:
     description: |
-            Returns a Tensor. According to the index number of `indices` ,
-            replace the value corresponding to the "self Tensor" with the value in `values`.
+            Based on the indices in `indices`, replace the corresponding elements in Tensor `self` with the values
+            in `values`. The expression `Tensor.index_put_(indices, values)` is equivalent to `tensor[indices] = values`.
+            Update and return `self`.
+
+            .. warning::
+                The behavior is unpredictable in the following scenario:
+
+                - If `accumulate` is `False` and `indices` contains duplicate elements.
 
             Args:
                 indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64,
-                    used to index into the "self Tensor". The rank of tensors in indices should be 1-D,
-                    size of indices should <= the rank of "self Tensor" and the tensors in indices should be broadcastable.
-                    When the tensor types are bool and uint8, shape will match the input dimensions in turn. 
-                    For example: the first tensor of `indices` is of type bool, Shape(x, y), `input` Shape(a, b, c), and (x, y) needs to match (a, b).
-                values (Tensor): 1-D Tensor of the same type as "self Tensor". If size == 1, it will be broadcastable.
-                accumulate (bool, optional): If `accumulate` is True, the elements in values are added to "self Tensor",
-                    else the elements in `values` replace the corresponding element in the "self Tensor".
+                    used to index into the `self`. The size of indices should <=  the rank of `self`
+                    and the tensors in indices should be broadcastable.
+                values (Tensor): Tensor with the same type as `self`. If size == 1, it will be broadcastable.
+                accumulate (bool, optional): If `accumulate` is `True`, the elements in `values` will be added to `self`,
+                    otherwise the elements in `values` will replace the corresponding elements in the `self`.
                     Default: ``False``.
 
             Returns:
-                Tensor, with the same type and shape as the "self Tensor".
+                Tensor `self`.
 
             Raises:
-                TypeError: If the dtype of the "self Tensor" is not equal to the dtype of `values`.
+                TypeError: If the dtype of the `self` is not equal to the dtype of `values`.
                 TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
                 TypeError: If the dtype of tensors in `indices` are not bool, uint8, int32 or int64.
                 TypeError: If the dtypes of tensors in `indices` are inconsistent.
                 TypeError: If the dtype of `accumulate` is not bool.
-                ValueError: If rank(`values`) is not 1-D.
                 ValueError: If size(`values`) is not 1 or max size of the tensors in `indices` when
-                    rank("self Tensor") == size(`indices`).
-                ValueError: If size(`values`) is not 1 or "self Tensor".shape[-1] when
-                    rank("self Tensor") > size(`indices`).
-                ValueError: If the rank of tensors in `indices` is not 1-D.
+                    rank(`self`) == size(`indices`).
+                ValueError: If size(`values`) is not 1 or `self`.shape[-1] when rank(`self`) > size(`indices`).
                 ValueError: If the tensors in `indices` is not be broadcastable.
-                ValueError: If size(`indices`) > rank("self Tensor").
+                ValueError: If size(`indices`) > rank(`self`).
 
             Supported Platforms:
-                ``Ascend`` ``CPU``
+                ``Ascend``
 
             Examples:
                 >>> import numpy as np

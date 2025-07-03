@@ -36,6 +36,8 @@ constexpr auto kFusionNameFlashAttentionTik = "FlashAttentionTikPass";
 constexpr auto kFusionNameFlashAttentionAntiquant = "FlashAttentionAntiquant";
 constexpr auto kFusionNameMatMulAllReduce = "MatMulAllReduce";
 constexpr auto kFusionNameGroupNormSilu = "GroupNormSilu";
+constexpr auto kFusionNameLeakyRelu = "LeakyReluFusion";
+
 class AnfTransformForGe {
  public:
   AnfTransformForGe();

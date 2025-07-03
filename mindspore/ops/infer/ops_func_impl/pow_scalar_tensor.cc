@@ -18,6 +18,7 @@
 #include <set>
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore::ops {
 BaseShapePtr PowScalarTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -67,14 +68,14 @@ TypePtr PowScalarTensorFuncImpl::InferType(const PrimitivePtr &primitive,
 TypePtrList PowScalarTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &input_type = input_values[kInputIndex0]->type();
   auto input_type_id = input_type->type_id();
-  const auto &exp_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &exp_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   auto exp_type_id = exp_tensor->Dtype()->type_id();
 
   return {PowCheckAndInferType(input_type_id, exp_type_id, exp_tensor->Dtype())};
 }
 
 ShapeArray PowScalarTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

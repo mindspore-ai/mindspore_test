@@ -24,12 +24,12 @@ namespace pijit {
 
 class PyFrameEvalHookManager {
  public:
-  using Hook = bool (*)(PyThreadState *, EvalFrameObject *, PyObject **result);
+  using Hook = bool (*)(PyThreadState *, PyFrameWrapper, PyObject **result);
 
   static PyFrameEvalHookManager *GetInstance();
 
   void Register(Hook f) { func_.push_back(f); }
-  PyObject *RunHook(PyThreadState *, EvalFrameObject *);
+  PyObject *RunHook(PyThreadState *, PyFrameWrapper);
 
  private:
   PyFrameEvalHookManager();

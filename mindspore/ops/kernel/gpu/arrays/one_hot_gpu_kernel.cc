@@ -36,9 +36,12 @@ constexpr size_t kOneHotOutputsNum = 1;
       &OneHotGpuKernelMod::LaunchKernel<ValueImplType, IndicesImplType>                                         \
   }
 
-#define REG_ONE_HOT_GPU_KERNEL(ValueEnumType, ValueImplType)                                                       \
-  REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt32, int, kNumberTypeInt64, kNumberTypeInt64, ValueEnumType, ValueImplType), \
-    REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt64, int64_t, kNumberTypeInt64, kNumberTypeInt64, ValueEnumType,           \
+#define REG_ONE_HOT_GPU_KERNEL(ValueEnumType, ValueImplType)                                                         \
+  REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt32, int, kNumberTypeInt64, kNumberTypeInt64, ValueEnumType, ValueImplType),   \
+    REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt64, int64_t, kNumberTypeInt64, kNumberTypeInt64, ValueEnumType,             \
+                           ValueImplType),                                                                           \
+    REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt32, int, kNumberTypeInt32, kNumberTypeInt64, ValueEnumType, ValueImplType), \
+    REG_ONE_HOT_FIVE_INPUT(kNumberTypeInt64, int64_t, kNumberTypeInt32, kNumberTypeInt64, ValueEnumType,             \
                            ValueImplType)
 
 bool OneHotGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {

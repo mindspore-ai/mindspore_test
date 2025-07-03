@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <errno.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -40,7 +40,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(_WIN64)
 
 const int kShmPermission = 0600;
 

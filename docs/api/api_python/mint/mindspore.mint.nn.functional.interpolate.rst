@@ -8,7 +8,7 @@ mindspore.mint.nn.functional.interpolate
     .. warning::
         这是一个实验性API，后续可能修改或删除。
 
-    .. note:: 
+    .. note::
         - 在linear模式下， `align_corners` 为False时不支持 `scale_factor` 。
         - 在nearest模式下，在输入为3-D/4-D Tensor图像按 `scale_factor` 进行缩放的场景中可能存在精度问题.
         - `mode` 和 `recompute_scale_factor` 只能为常量。
@@ -18,7 +18,7 @@ mindspore.mint.nn.functional.interpolate
         - **size** (Union[int, tuple[int], list[int]], 可选) - 目标大小。如果 `size` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
         - **scale_factor** (Union[float, tuple[float], list[float]]，可选) - 每个维度的缩放系数。如果 `scale_factor` 为tuple或list，那么其长度应该和 `input` 去掉 `N, C` 的维度相同。 `size` 和 `scale_factor` 同时只能指定一个。默认值： ``None`` 。
         - **mode** (str) - 采样算法。以下采样方式的一种，'nearest'(最近邻插值)， 'linear' (线性插值，仅三维)，'bilinear' (双线性插值，仅四维)，'trilinear'(三线性插值，仅五维)，'bicubic' (双三次插值，仅四维)。默认值： ``"nearest"`` 。
-        - **align_corners** (bool) - 是否使用角对齐进行坐标映射。假设对输入Tensor沿x轴进行变换，具体计算公式如下：
+        - **align_corners** (bool, 可选) - 是否使用角对齐进行坐标映射。假设对输入Tensor沿x轴进行变换，具体计算公式如下：
 
           .. code-block::
 
@@ -28,7 +28,7 @@ mindspore.mint.nn.functional.interpolate
 
           其中， :math:`ori\_length` 与 :math:`new\_length` 分别表示Tensor在x轴方向上转换前、后的长度， :math:`new\_i` 表示转换后沿x轴第i个元素的坐标， :math:`ori\_i` 表示沿x轴原始数据的对应坐标。
 
-          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认值： ``False``。
+          此选项只对 ``'linear'`` 、 ``'bilinear'`` 和 ``'bicubic'`` 模式有效，默认值： ``None``。
 
         - **recompute_scale_factor** (bool, 可选) - 重计算 `scale_factor` 。如果为True，会使用参数 `scale_factor` 计算参数 `size`，最终使用 `size` 的值进行缩放。如果为False，将使用 `size` 或 `scale_factor` 直接进行插值。默认值： ``None`` 。
 
@@ -37,19 +37,19 @@ mindspore.mint.nn.functional.interpolate
     +---------------+-----------+---------------+--------------+----------------+
     | mode          | input.dim | align_corners | scale_factor | device         |
     +===============+===========+===============+==============+================+
-    | nearest       | 3         | \-            | √            | Ascend         |              
+    | nearest       | 3         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    |               | 4         | \-            | √            | Ascend         |              
+    |               | 4         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    |               | 5         | \-            | √            | Ascend         |              
+    |               | 5         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | linear        | 3         | √             | √            | Ascend         |              
+    | linear        | 3         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bilinear      | 4         | √             | ×            | Ascend         |              
+    | bilinear      | 4         | √             | ×            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bicubic       | 4         | √             | ×            | Ascend         |              
+    | bicubic       | 4         | √             | ×            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | trilinear     | 5         | √             | √            | Ascend         |              
+    | trilinear     | 5         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
 
     - `-` 表示无此参数。
@@ -58,19 +58,6 @@ mindspore.mint.nn.functional.interpolate
 
     返回：
         采样后的Tensor，维度和数据类型与 `input` 相同。
-
-    Shape:
-        输入: :math:`(N, C, W_{in})`, :math:`(N, C, H_{in}, W_{in})` 或 :math:`(N, C, D_{in}, H_{in}, W_{in})`
-        输出: :math:`(N, C, W_{out})`, :math:`(N, C, H_{out}, W_{out})` 或 :math:`(N, C, D_{out}, H_{out}, W_{out})`, 其中
-
-    .. math::
-        D_{out} = \left\lfloor D_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        H_{out} = \left\lfloor H_{in} \times \text{scale\_factor} \right\rfloor
-
-    .. math::
-        W_{out} = \left\lfloor W_{in} \times \text{scale\_factor} \right\rfloor
 
     异常：
         - **TypeError** - `input` 不是Tensor。

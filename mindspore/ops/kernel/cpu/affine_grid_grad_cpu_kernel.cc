@@ -20,12 +20,13 @@
 #include <string>
 #include <map>
 
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_grad_cpu {
 namespace {
 constexpr size_t kAffineGridGradInputsNum = 2;
 constexpr size_t kAffineGridGradOutputsNum = 1;
@@ -324,5 +325,6 @@ const std::vector<AffineGridGradPair> &AffineGridGradCpuKernelMod::GetFuncList()
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AffineGridGrad, AffineGridGradCpuKernelMod);
+}  // namespace affine_grid_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

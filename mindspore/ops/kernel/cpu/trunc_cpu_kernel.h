@@ -22,11 +22,12 @@
 #include <memory>
 #include <map>
 #include "mindspore/ops/infer/ops_func_impl/trunc.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace trunc_cpu {
 class TruncCpuKernelMod : public NativeCpuKernelMod {
  public:
   TruncCpuKernelMod() {}
@@ -53,6 +54,7 @@ class TruncCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, TruncFunc>> func_list_;
   TruncFunc kernel_func_;
 };
+}  // namespace trunc_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

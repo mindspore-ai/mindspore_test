@@ -41,6 +41,7 @@ namespace {
 constexpr int kInputIndexOne = 1;
 constexpr int kInputIndexTwo = 2;
 constexpr int kInputIndexThree = 3;
+constexpr int kInputSizeTwo = 2;
 }  // namespace
 OpParameter *PopulateSmoothL1LossParameter(const void *prim) {
   SmoothL1LossParameter *p = reinterpret_cast<SmoothL1LossParameter *>(malloc(sizeof(SmoothL1LossParameter)));
@@ -181,7 +182,7 @@ OpParameter *PopulateSparseSoftmaxCrossEntropyWithLogitsParameter(const void *pr
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_SparseSoftmaxCrossEntropyWithLogits();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   sce_param->op_parameter_.type_ = primitive->value_type();
   sce_param->is_grad_ = value->is_grad();
   return reinterpret_cast<OpParameter *>(sce_param);
@@ -212,10 +213,12 @@ OpParameter *PopulateMaxPoolGradParameter(const void *prim) {
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_MaxPoolGrad();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is null");
   pooling_param->op_parameter_.type_ = primitive->value_type();
 
   pooling_param->global_ = false;
+  MS_CHECK_TRUE_MSG(value->kernel_size() != nullptr, nullptr, "value's kernel_size is null");
+  MS_CHECK_TRUE_MSG(value->kernel_size()->size() >= kInputSizeTwo, nullptr, "value's kernel_size is < 2");
   pooling_param->window_w_ = static_cast<int>(value->kernel_size()->Get(1));
   pooling_param->window_h_ = static_cast<int>(value->kernel_size()->Get(0));
 
@@ -223,6 +226,8 @@ OpParameter *PopulateMaxPoolGradParameter(const void *prim) {
   pooling_param->pad_d_ = 0;
   pooling_param->pad_l_ = 0;
   pooling_param->pad_r_ = 0;
+  MS_CHECK_TRUE_MSG(value->strides() != nullptr, nullptr, "value's stride is null");
+  MS_CHECK_TRUE_MSG(value->strides()->size() >= kInputSizeTwo, nullptr, "value's stride is < 2");
   pooling_param->stride_w_ = static_cast<int>(value->strides()->Get(1));
   pooling_param->stride_h_ = static_cast<int>(value->strides()->Get(0));
   pooling_param->round_type_ = RoundType_No;
@@ -440,7 +445,7 @@ OpParameter *PopulateBNGradParameter(const void *prim) {
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_BatchNormGrad();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   bngrad_param->op_parameter_.type_ = primitive->value_type();
   bngrad_param->epsilon_ = value->epsilon();
   bngrad_param->is_training_ = value->is_training();
@@ -457,7 +462,7 @@ OpParameter *PopulateDropoutParameter(const void *prim) {
   MS_CHECK_TRUE_MSG(ret == EOK, nullptr, "memset_s failed");
   auto primitive = static_cast<const schema::Primitive *>(prim);
   auto value = primitive->value_as_Dropout();
-  MS_ASSERT(value != nullptr);
+  MS_CHECK_TRUE_MSG(value != nullptr, nullptr, "value is nullptr!");
   dropout_parameter->op_parameter_.type_ = primitive->value_type();
   dropout_parameter->ratio_ = value->keep_prob();
   if (dropout_parameter->ratio_ < 0.f || dropout_parameter->ratio_ > 1.f) {
@@ -513,7 +518,7 @@ OpParameter *PopulateResizeGradParameter(const void *prim) {
   auto primitive = static_cast<const schema::Primitive *>(prim);
   resize_grad_param->op_parameter_.type_ = primitive->value_type();
   auto param = primitive->value_as_ResizeGrad();
-  MS_ASSERT(param != nullptr);
+  MS_CHECK_TRUE_RET(param != nullptr, nullptr);
   resize_grad_param->method = static_cast<int>(param->method());
   resize_grad_param->align_corners_ = param->align_corners();
 

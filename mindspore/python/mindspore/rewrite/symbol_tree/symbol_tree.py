@@ -1790,7 +1790,7 @@ class SymbolTree(Observer, Observable, NodeManager):
                         if idx > 0:
                             name_need_suffix[name] = suffix_alias(alias, idx)
                         break
-                    elif ast_node.module.startswith(path):
+                    if ast_node.module.startswith(path):
                         # e.g. origin code is 'from a.b import A' and new code is 'from a.b.c import A'
                         # then we just need to update name to A_{idx}
                         if idx > 0:

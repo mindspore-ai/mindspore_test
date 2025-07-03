@@ -29,7 +29,7 @@
 #include "acl/acl_rt.h"
 #include "include/api/types.h"
 #include "include/errorcode.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "extendrt/kernel/ascend/options/acl_model_options.h"
 #include "extendrt/kernel/ascend/model/dyn_shape_process.h"
 #include "src/litert/kernel/ascend/src/acl_mem_manager.h"

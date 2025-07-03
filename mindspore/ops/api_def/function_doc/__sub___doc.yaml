@@ -1,0 +1,10 @@
+__sub__:
+  description: |
+    __sub__(input, other, *, alpha=1) -> Tensor
+
+    Alias for :func:`mindspore.mint.sub`.
+
+    .. method:: mint.__sub__(input, other, *, alpha=1) -> Tensor
+        :noindex:
+
+    Alias for overload function of :func:`mindspore.mint.sub`.

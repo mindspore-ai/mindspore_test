@@ -35,7 +35,7 @@ template <typename T>
 struct HQNode {
   std::atomic<Pointer> next;
   T *value = nullptr;
-  std::atomic_bool free = {true};
+  std::atomic_bool is_free = {true};
 };
 
 template <typename T>
@@ -59,7 +59,7 @@ class HQueue {
         return false;
       }
       node->value = nullptr;
-      node->free = true;
+      node->is_free = true;
       node->next = {-1, 0};
       nodes.emplace_back(node);
     }
@@ -67,7 +67,7 @@ class HQueue {
     // init first node as dummy head
     qhead = {0, 0};
     qtail = {0, 0};
-    nodes[0]->free = false;
+    nodes[0]->is_free = false;
     queue_size = sz;
     free_index = 1;
     return true;
@@ -85,7 +85,7 @@ class HQueue {
     int32_t nodeIdx = free_index;
     for (; nodeIdx < queue_size; ++nodeIdx) {
       bool expected = true;
-      if (nodes[nodeIdx]->free.compare_exchange_strong(expected, false)) {
+      if (nodes[nodeIdx]->is_free.compare_exchange_strong(expected, false)) {
         node = nodes[nodeIdx];
         free_index = nodeIdx + 1;
         break;
@@ -95,7 +95,7 @@ class HQueue {
       free_index = 1;
       for (nodeIdx = 1; nodeIdx < queue_size; ++nodeIdx) {
         bool expected = true;
-        if (nodes[nodeIdx]->free.compare_exchange_strong(expected, false)) {
+        if (nodes[nodeIdx]->is_free.compare_exchange_strong(expected, false)) {
           node = nodes[nodeIdx];
           free_index = nodeIdx + 1;
           break;
@@ -160,7 +160,7 @@ class HQueue {
         ret = nodes[next.index]->value;
         if (this->qhead.compare_exchange_strong(head, {next.index, head.version + 1})) {
           // free head
-          nodes[head.index]->free = true;
+          nodes[head.index]->is_free = true;
           return ret;
         }
       }

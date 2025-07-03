@@ -18,6 +18,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace pad_and_shift_cpu {
 int PadAndShiftCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
@@ -86,5 +87,6 @@ void PadAndShiftCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelT
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PadAndShift, PadAndShiftCpuKernelMod);
+}  // namespace pad_and_shift_cpu
 }  // namespace kernel
 }  // namespace mindspore

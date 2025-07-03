@@ -16,8 +16,10 @@ from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, nn
+from mindspore import ops, nn, context
 from mindspore.numpy import correlate
+
+context.set_context(jit_level='O0')
 
 
 class CorrelateNet(nn.Cell):

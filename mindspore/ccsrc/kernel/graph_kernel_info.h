@@ -24,7 +24,7 @@
 #include <utility>
 #include "ir/dtype.h"
 #include "ir/kernel_info_dev.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/visible.h"
 namespace mindspore {
 class GraphKernelInfo {
@@ -36,7 +36,7 @@ class GraphKernelInfo {
 
 using GraphKernelInfoCreator = std::function<std::shared_ptr<GraphKernelInfo>()>;
 
-class BACKEND_EXPORT GraphKernelInfoManager {
+class BACKEND_COMMON_EXPORT GraphKernelInfoManager {
  public:
   static GraphKernelInfoManager &Instance() {
     static GraphKernelInfoManager instance{};
@@ -72,6 +72,6 @@ class GraphKernelInfoRegister {
 
 #define REG_GRAPH_KERNEL_INFO(DEVICE_TYPE, KERNEL_CLASS)                           \
   static const GraphKernelInfoRegister g_graph_kernel_info_##DEVICE_TYPE##_##_reg( \
-    DEVICE_TYPE, []() { return std::make_shared<KERNEL_CLASS>(); });
+    DEVICE_TYPE, []() { return std::make_shared<KERNEL_CLASS>(); })
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_INFO_H_

@@ -1,4 +1,3 @@
-import sys
 import pytest
 from mindspore import Tensor, jit, ops
 from mindspore import numpy as np
@@ -6,11 +5,6 @@ import mindspore.nn as nn
 from mindspore import context
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 class ListTest():
     list = list()
@@ -29,7 +23,7 @@ class ListTest():
             elem = elem + elem
         return elem
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_pi_jit(self):
         elem = None
         for elem in self.list:
@@ -44,7 +38,7 @@ class ListTest():
         self.list.pop()
         return elem
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_sideeffect_pi_jit(self, x):
         self.list.append(x)
         elem = None
@@ -54,7 +48,6 @@ class ListTest():
         return elem
 
 
-@pytest.mark.skip(reason="self.list can't be as constant !!!")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_list():
     """
@@ -86,7 +79,7 @@ class CellListTest(nn.Cell):
             x = cell(x)
         return x
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test_pi_jit(self, x):
         for cell in self.cell_list:
             x = cell(x)
@@ -110,7 +103,6 @@ def test_celllist(input_x):
     match_array(res, ms_res, error=0, err_msg=str(ms_res))
 
 
-@pytest.mark.skip(reason="the pointer[GetDevicePtr] is null")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('input_x', [Tensor(ops.fill(np.float32, (2, 2), 4))])
 def test_sideeffect(input_x):

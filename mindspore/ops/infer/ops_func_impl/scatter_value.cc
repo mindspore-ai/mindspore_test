@@ -17,9 +17,9 @@
 #include "infer/ops_func_impl/scatter_value.h"
 #include <memory>
 #include <utility>
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_constants.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -45,7 +45,7 @@ TypePtr ScatterValueFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray ScatterValueFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_shape = input_tensor->shape();
   MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(input_shape),
@@ -54,7 +54,7 @@ ShapeArray ScatterValueFuncImpl::InferShape(const PrimitivePtr &primitive, const
 }
 
 TypePtrList ScatterValueFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_type = input_tensor->Dtype();
   return {input_type};

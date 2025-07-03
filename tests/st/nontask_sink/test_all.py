@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import subprocess
 from mindspore import context
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -26,11 +27,11 @@ def test_hccl_allreduce():
     Expectation: success
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_allreduce.py")
+    return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --master_port=12345 pytest -s test_allreduce.py")
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_hccl_reduce():
     """
@@ -76,6 +77,23 @@ def test_hccl_get_process_group_ranks_func_8p():
     context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
     return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_get_process_group_ranks.py")
     assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_get_comm_name_create_group_with_options_func_8p():
+    """
+    Feature: msrun 8P case
+    Description: msrun 8P case
+    Expectation: success
+    """
+    os.environ['GLOG_v'] = str(2)
+    result = subprocess.getoutput(
+        "export HCCL_BUFFSIZE=300; msrun --worker_num=8 --local_worker_num=8 --master_port=10969 --join=True "\
+        "--log_dir=get_comm_name_create_group_options pytest -s test_get_comm_name_create_group.py"
+    )
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_default, hcclBufferSize is 300 MB") != -1
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_400, hcclBufferSize is 400 MB") != -1
+    assert result.find("HcclCommInitRootInfoConfig for group_buffersize_100, hcclBufferSize is 100 MB") != -1
 
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
@@ -157,7 +175,43 @@ def test_hccl_send_receive():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_allgather_v():
+    """
+    Feature: mpi run 2P case of 'allgather_v' communication operator.
+    Description: mpi run 2P case of 'allgather_v' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_allgather_v.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_reduce_scatter_tensor_v():
+    """
+    Feature: mpi run 2P case of 'reduce_scatter_tensor_v' communication operator.
+    Description: mpi run 2P case of 'reduce_scatter_tensor_v' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_reduce_scatter_tensor_v.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@test_utils.run_test_with_On
+def test_uneven_net():
+    """
+    Feature: mpi run 2P case of 'reduce_scatter_tensor_v' communication operator.
+    Description: mpi run 2P case of 'reduce_scatter_tensor_v' communication operator.
+    Expectation: success
+    """
+    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_uneven_net.py")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 @test_utils.run_test_with_On
 def test_hccl_all_to_all_v():
     """

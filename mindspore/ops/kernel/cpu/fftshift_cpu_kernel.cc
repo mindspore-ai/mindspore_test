@@ -20,11 +20,13 @@
 #include <memory>
 #include <complex>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/cpu/fftshift_cpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fftshift_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -147,5 +149,6 @@ std::vector<KernelAttr> FFTShiftCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTShift, FFTShiftCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IFFTShift, FFTShiftCpuKernelMod);
+}  // namespace fftshift_cpu
 }  // namespace kernel
 }  // namespace mindspore

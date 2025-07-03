@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,19 @@
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
 #include "frontend/parallel/step_parallel.h"
 #include "include/common/utils/utils.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace parallel {
@@ -40,8 +53,10 @@ bool IsAnyMatMulInputTranspose(const CNodePtr &matmul_cnode) {
   if (!IsPrimitiveCNode(matmul_cnode)) {
     return false;
   }
-  return GetValue<bool>(GetCNodePrimitive(matmul_cnode)->GetAttr("transpose_a")) ||
-         GetValue<bool>(GetCNodePrimitive(matmul_cnode)->GetAttr("transpose_b"));
+  auto matmul_primitive = GetCNodePrimitive(matmul_cnode);
+  MS_EXCEPTION_IF_NULL(matmul_primitive);
+  return GetValue<bool>(matmul_primitive->GetAttr("transpose_a")) ||
+         GetValue<bool>(matmul_primitive->GetAttr("transpose_b"));
 }
 
 void CopyAllAttrs(const CNodePtr &dst_cnode, const CNodePtr &src_cnode) {
@@ -49,7 +64,9 @@ void CopyAllAttrs(const CNodePtr &dst_cnode, const CNodePtr &src_cnode) {
   MS_EXCEPTION_IF_NULL(src_cnode);
   dst_cnode->set_attrs(src_cnode->attrs());
   auto dst_prim_node = GetCNodePrimitive(dst_cnode);
+  MS_EXCEPTION_IF_NULL(dst_prim_node);
   auto src_prim_node = GetCNodePrimitive(src_cnode);
+  MS_EXCEPTION_IF_NULL(src_prim_node);
   auto src_attrs = src_prim_node->attrs();
   for (const auto &attr : src_attrs) {
     dst_prim_node->set_attr(attr.first, attr.second);
@@ -212,6 +229,7 @@ static bool PatternFilter(const AnfNodePtr &node) {
   AnfNodePtr cur_node = node;
   for (const auto &expect_prim : expect_primitive_list) {
     auto cur_cnode = cur_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cur_cnode);
     auto output_node_set = cur_cnode->func_graph()->manager()->node_users()[cur_cnode];
     if (output_node_set.size() != kSizeOne) {
       return true;
@@ -309,14 +327,18 @@ static void ExpandSliceRangeToRight(const FuncGraphPtr &func_graph, const FuncGr
 static void SplitIntoInterleaved(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager,
                                  const AnfNodePtr &layernorm_node) {
   auto layernorm_cnode = layernorm_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(layernorm_cnode);
   auto tuple_get_item_cnode = manager->node_users()[layernorm_cnode].front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_get_item_cnode);
   auto cast_cnode = manager->node_users()[tuple_get_item_cnode].front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cast_cnode);
   auto allgather_cnode = manager->node_users()[cast_cnode].front().first->cast<CNodePtr>();
   auto matmul1_cnode = manager->node_users()[allgather_cnode].front().first->cast<CNodePtr>();
   if (IsAnyMatMulInputTranspose(matmul1_cnode)) {
     return;
   }
   auto add_cnode = manager->node_users()[matmul1_cnode].front().first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(add_cnode);
   auto fast_gelu_cnode = manager->node_users()[add_cnode].front().first->cast<CNodePtr>();
   auto matmul2_cnode = manager->node_users()[fast_gelu_cnode].front().first->cast<CNodePtr>();
   if (IsAnyMatMulInputTranspose(matmul2_cnode)) {
@@ -415,10 +437,13 @@ void SplitLayerNormCommFp(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  circle_handler::SetAttrToDepend(func_graph);
   auto todo = DeepScopedGraphSearchWithFilter(func_graph->get_return(), AlwaysInclude, PatternFilter);
   for (const auto &node : todo) {
     SplitIntoInterleaved(func_graph, manager, node);
   }
+  circle_handler::DetectAndRevertGraphCircle(func_graph, manager, "SplitMatmulCommElementwiseFp",
+                                             "interleaved_layernorm_comm");
 }
 }  // namespace parallel
 }  // namespace mindspore

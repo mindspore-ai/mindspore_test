@@ -46,7 +46,7 @@ class TransposeFp32Coder : public OperatorCoder {
  private:
   void GetNHNCTransposeFunc();
   std::string NHNCTransposeFunc_;
-  int nhnc_param_[3];
+  int nhnc_param_[3] = {0};
 };
 }  // namespace mindspore::lite::micro::nnacl
 #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_MICRO_CODER_OPCODERS_NNACL_FP32_TRANSPOSE_FP32_CODER_H_

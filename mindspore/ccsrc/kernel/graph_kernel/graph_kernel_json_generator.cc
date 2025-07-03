@@ -17,17 +17,15 @@
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 
 #include <set>
+#include <tuple>
 #include <functional>
 #include <algorithm>
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/func_graph.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
-#include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
@@ -36,9 +34,10 @@
 #include <cuda.h>
 #endif
 #else
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "runtime/hardware/device_context_manager.h"
 #endif
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttr;
@@ -585,7 +584,9 @@ void GraphKernelJsonGenerator::GetAttrJson(const AnfNodePtr &anf_node, const std
     (*attr_json)[kJsonKeyValue] = GetValue<float>(attr_value);
   } else if (type == "listInt") {
     std::vector<int> list_int;
-    const auto &vals = attr_value->cast<ValueSequencePtr>()->value();
+    auto value_seq = attr_value->cast<ValueSequencePtr>();
+    MS_EXCEPTION_IF_NULL(value_seq);
+    const auto &vals = value_seq->value();
     (void)std::transform(vals.begin(), vals.end(), std::back_inserter(list_int), get_int_value);
     (*attr_json)[kJsonKeyValue] = list_int;
   } else if (type == "listStr") {
@@ -1247,11 +1248,18 @@ bool GraphKernelJsonGenerator::CollectFusedJson(const std::vector<AnfNodePtr> &a
   return CollectFusedJson(anf_nodes, input_list, output_list, &kernel_json_, use_akg_cce_lib);
 }
 
-bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(const CNodePtr &c_node) {
+bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(
+  const CNodePtr &c_node,
+  std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func) {
   kernel_json_ = nlohmann::json();
   std::vector<AnfNodePtr> node_list, input_list, output_list;
-  FuncGraphPtr fg = std::get<0>(BuildGraphFromNodes({c_node}));
-  FuncGraphManagerPtr mng = GkUtils::GetFuncGraphManager(fg);
+  FuncGraphPtr fg = std::get<0>(build_func({c_node}));
+  MS_EXCEPTION_IF_NULL(fg);
+  FuncGraphManagerPtr mng = fg->manager();
+  if (mng == nullptr) {
+    mng = Manage(fg, true);
+    fg->set_manager(mng);
+  }
   auto out_cnode = fg->output()->cast<CNodePtr>();
   if (out_cnode == nullptr) {
     MS_LOG(ERROR) << "Wrong graph generated for kernel [" << c_node->fullname_with_scope()
@@ -1292,7 +1300,8 @@ bool GraphKernelJsonGenerator::CollectFusedJsonWithSingleKernel(const CNodePtr &
     }
   }
   if (changed) {
-    GkUtils::UpdateFuncGraphManager(mng, fg);
+    mng->RemoveRoots();
+    mng->KeepRoots({fg});
   }
 
   node_list.push_back(out_cnode);

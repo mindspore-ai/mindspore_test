@@ -16,8 +16,8 @@
 
 #include "kernel/ascend/pyboost/customize/masked_fill.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -25,18 +25,17 @@ namespace kernel {
 namespace pyboost {
 namespace {
 
-tensor::BaseTensorPtr MaskedFillAscendCall(const std::shared_ptr<OpRunner> &op,
-                                           const device::DeviceContext *device_context,
-                                           const BaseTensorPtr &input_tensor, const BaseTensorPtr &mask_tensor,
-                                           const BaseTensorPtr &value_tensor, const BaseTensorPtr &output_tensor) {
+tensor::TensorPtr MaskedFillAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
+                                       const TensorPtr &input_tensor, const TensorPtr &mask_tensor,
+                                       const TensorPtr &value_tensor, const TensorPtr &output_tensor) {
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, op->stream_id(), output_tensor, input_tensor);
   LAUNCH_ACLNN(aclnnInplaceMaskedFillTensor, device_context, op->stream_id(), output_tensor, mask_tensor, value_tensor);
   return output_tensor;
 }
 }  // namespace
 
-tensor::BaseTensorPtr MaskedFillAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const BaseTensorPtr &mask_tensor, const BaseTensorPtr &value_tensor) {
+tensor::TensorPtr MaskedFillAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const TensorPtr &mask_tensor, const TensorPtr &value_tensor) {
   OpRunner::InferOpOutput(op, input_tensor, mask_tensor, value_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mask_tensor, value_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

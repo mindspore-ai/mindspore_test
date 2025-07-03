@@ -19,12 +19,13 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/square_sum_all.h"
 
 namespace mindspore {
 namespace kernel {
+namespace square_sum_all_cpu {
 class SquareSumAllCpuKernelMod : public NativeCpuKernelMod {
  public:
   SquareSumAllCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class SquareSumAllCpuKernelMod : public NativeCpuKernelMod {
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace square_sum_all_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

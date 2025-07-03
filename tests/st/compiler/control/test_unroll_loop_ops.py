@@ -13,18 +13,19 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
 import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore.common import dtype as mstype
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_while_loop():
     """
     Feature: control flow
@@ -41,7 +42,7 @@ def test_while_loop():
     def cond_func(init_value):
         return init_value.value() < 100
 
-    @jit
+    @jit(backend="ms_backend")
     def test_while_loop_inner(init_val):
         whileop = ops.WhileLoop()
         result = whileop(cond_func, complex_pure_function, init_val)
@@ -54,9 +55,8 @@ def test_while_loop():
     assert result == 100
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_loop2():
     """
     Feature: control flow
@@ -92,9 +92,42 @@ def test_while_loop2():
     assert result[-1] == 100
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu',], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_while_loop3():
+    """
+    Feature: control flow
+    Description: Using WhileLoopEvaluator to handle ops.WhileLoop operation
+    Expectation: No exception.
+    """
+
+    def cond_func(init_value):
+        return init_value[1] > 1
+
+    def while_function(init_value):
+        input_tensor, init, add = init_value
+        out = add(input_tensor, init)
+        init = init - 1
+        return [out, init, add]
+
+    class WhileLoopNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.add = ops.Add()
+            self.whileop = ops.WhileLoop()
+
+        def construct(self, inputs):
+            out = inputs
+            res = self.whileop(cond_func, while_function, [out, 3, self.add])
+            out = res[0]
+            return out
+
+    net = WhileLoopNet()
+    out = net(Tensor([2]))
+    assert out == 7
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_scan_unroll():
     """
     Feature: control flow
@@ -107,7 +140,7 @@ def test_scan_unroll():
         fc = activation(input_tensor)
         return fc, el
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), True)
@@ -123,9 +156,8 @@ def test_scan_unroll():
     assert len(result[-1]) == 10
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_scan_not_unroll():
     """
     Feature: control flow
@@ -138,7 +170,7 @@ def test_scan_not_unroll():
         fc = activation(input_tensor)
         return fc, el
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), False)
@@ -154,9 +186,32 @@ def test_scan_not_unroll():
     assert len(result[-1]) == 10
 
 
-@case_register.level0
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+def test_scan_simple_loop():
+    """
+    Feature: control flow
+    Description: Using ScanEvaluator to handle ops.Scan operation
+    Expectation: No exception.
+    """
+
+    def simple_loop_func(res, el):
+        res = res + el
+        return res, res
+
+    @jit(backend="ms_backend")
+    def test_simple_scan_inner(result_init):
+        array = [1, 2, 3, 4]
+        scan_op = ops.Scan()
+        return scan_op(simple_loop_func, result_init, array, len(array), False)
+
+    result_init = ms.Tensor(0)
+    result = test_simple_scan_inner(result_init)
+    assert result == (10, [1, 3, 6, 10])
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_foriloop_unroll():
     """
     Feature: control flow
@@ -168,7 +223,7 @@ def test_foriloop_unroll():
         add = ops.Add()
         return add(val, index)
 
-    @jit
+    @jit(backend="ms_backend")
     def test_fori_loop_inner(result_init):
         fori_loop = ops.ForiLoop()
         return fori_loop(0, 10, complex_pure_function, result_init)
@@ -179,10 +234,45 @@ def test_foriloop_unroll():
     assert result == 45
 
 
-@case_register.skip(reason="Cannot process ops.xx both in loop_func and whileloop declaration in construct")
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=["cpu_linux"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
+def test_high_order_with_unroll_as_false():
+    """
+    Feature: control flow
+    Description: test higher order grad with unroll as false
+    Expectation: Raise error with unsupported reason.
+    """
+    def for_in_foriloop_function(index, input_tensor):
+        add = ops.Add()
+        out = add(input_tensor, 1)
+        for _ in range(3):
+            out = add(out, index)
+        return out
+
+    class ForiLoopForNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.fori_loop = ops.ForiLoop()
+
+        def construct(self, inputs):
+            out = inputs
+            out = self.fori_loop(0, 7, for_in_foriloop_function, out, False)
+            return out
+
+    @jit
+    def get_grad(x):
+        net_2 = ForiLoopForNet()
+        grad_net_2_f = ops.grad(net_2) # pylint: disable=E1102
+        grad_net_2_s = ops.grad(grad_net_2_f) # pylint: disable=E1102
+        return grad_net_2_s(x)
+
+    with pytest.raises(RuntimeError, match="Loop op with unroll set as false is not allow do higher order grad"):
+        x = Tensor(np.random.randn(32, 1).astype(np.float32))
+        get_grad(x)
+
+
+@pytest.mark.skip(reason="Cannot process ops.xx both in loop_func and whileloop declaration in construct")
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_while_loop_unsupport1():
     """
     Feature: control flow
@@ -216,10 +306,9 @@ def test_while_loop_unsupport1():
     assert result[-1] == 100
 
 
-@case_register.skip(reason="Unsupported loop func with side effect")
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@pytest.mark.skip(reason="Unsupported loop func with side effect")
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_scan_unsupport1():
     """
     Feature: control flow
@@ -233,7 +322,7 @@ def test_scan_unsupport1():
         assign_op(input_tensor, activation(input_tensor))
         return input_tensor, input_tensor
 
-    @jit
+    @jit(backend="ms_backend")
     def test_scan_inner(result_init, array):
         scan_op = ops.Scan()
         return scan_op(complex_pure_function, result_init, array, len(array), True)

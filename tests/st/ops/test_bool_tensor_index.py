@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, context
 from mindspore import dtype as mstype
 
 
@@ -170,6 +170,7 @@ def test_bool_tensor_index_get_item_x_2x3_index_bool2_int1(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     x0 = np.arange(2 * 3).reshape(2, 3)
     index0 = np.array([True, False])
     # Mindspore

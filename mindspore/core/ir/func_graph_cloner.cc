@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,11 +67,16 @@ Cloner::Cloner(const FuncGraphVector &func_graphs, bool clone_all_valuenodes, bo
       clone_all_used_graphs_(clone_all_used_graphs),
       relation_(relation),
       target_relation_(target_relation == nullptr ? relation : target_relation),
-      scope_(kDefaultScope),
+      scope_(kDefaultScopeUnderGuard),
       type_(kBasic) {
   for (auto &func_graph : func_graphs) {
     AddClone(func_graph);
   }
+}
+
+ScopePtr Cloner::GetNodeScope(const AnfNodePtr &node) const {
+  MS_EXCEPTION_IF_NULL(node);
+  return (IsScopeDefault(node->scope()) && (this->scope() != nullptr)) ? this->scope() : node->scope();
 }
 
 void Cloner::AddClone(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
@@ -113,10 +118,10 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
   new_param->set_name(old_param->name());
   if (old_param->has_default()) {
     // Default parameter can be shared since it is readonly.
-    new_param->set_default_param(old_param->default_param());
+    new_param->set_default_param(old_param->default_param_raw());
   }
   new_param->set_is_top_graph_param(old_param->is_top_graph_param());
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_param->set_scope(scope);
   replicated_node_[node] = std::move(new_param);
 }
@@ -127,6 +132,7 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(target);
   auto old_node = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(old_node);
   AnfNodeWeakPtrList inputs;
   inputs.reserve(old_node->size());
   DebugInfoPtr debug_info;
@@ -152,7 +158,7 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
       // Synchronize callers' shadow debug infos.
       auto &new_shadow_debug_infos = new_node->debug_info()->shadow_debug_infos_map();
       const auto &old_shadow_debug_infos = debug_info->shadow_debug_infos_map();
-      new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
+      (void)new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
       const auto &old_real_loc = debug_info->real_loc();
       if (!old_real_loc.empty()) {
         new_node->debug_info()->set_real_loc(old_real_loc);
@@ -170,7 +176,7 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
   if (this->update_info() != nullptr && this->update_info()->scope_ != nullptr) {
     scope = this->update_info()->scope_;
   } else {
-    scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+    scope = GetNodeScope(node);
   }
   new_node->set_scope(scope);
   auto new_cnode = new_node->cast<CNodePtr>();
@@ -194,7 +200,7 @@ void Cloner::CloneValueNode(const AnfNodePtr &node) {
   } else {
     new_const = NewValueNode(GetValueNode(node));
   }
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_const->set_scope(scope);
   if (preset_abstract()) {
     new_const->set_abstract(node->abstract());
@@ -215,7 +221,7 @@ void Cloner::CloneFuncGraphValueNode(const AnfNodePtr &node, const FuncGraphPtr 
   } else {
     new_const = NewValueNode(target);
   }
-  ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
+  ScopePtr scope = GetNodeScope(node);
   new_const->set_scope(scope);
   if (preset_abstract()) {
     new_const->set_abstract(node->abstract());
@@ -317,7 +323,11 @@ void Cloner::CloneFuncGraphValueNodes(const FuncGraphPtr &func_graph, const Func
     MS_EXCEPTION_IF_NULL(cnode.first->first);
     auto user_cnode = cnode.first->first->cast_ptr<CNode>();
     MS_EXCEPTION_IF_NULL(user_cnode);
-    const auto &valuenode = user_cnode->input(IntToSize(cnode.first->second));
+    AnfNodePtr valuenode = nullptr;
+    {
+      MS_LOG_TRY_CATCH_SCOPE;
+      valuenode = user_cnode->input(IntToSize(cnode.first->second));
+    }
     if (valuenode == nullptr) {
       continue;
     }
@@ -352,6 +362,7 @@ void Cloner::SetFuncGraphInfo(const FuncGraphPtr &func_graph, const FuncGraphPtr
   target_func_graph->set_python_obj(func_graph->python_obj());
   target_func_graph->set_has_side_effect_node(func_graph->has_side_effect_node());
   target_func_graph->set_amp_strategy(func_graph->amp_strategy());
+  target_func_graph->set_is_tensor_condition_branch(func_graph->is_tensor_condition_branch());
 }
 
 void Cloner::CloneParameters(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph) {
@@ -413,7 +424,7 @@ void Cloner::CloneParameter(const ParameterPtr &param, const AnfNodePtr &node) c
     auto old_param = node->cast_ptr<Parameter>();
     if (old_param->has_default()) {
       // Default parameter can be shared since it is readonly.
-      param->set_default_param(old_param->default_param());
+      param->set_default_param(old_param->default_param_raw());
     }
     param->set_name(old_param->name());
     constexpr char lifted_user_data_key[] = "lifted_from_fv";

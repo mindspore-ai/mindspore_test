@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_grad_ext {
 
 class LayerNormGradExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class LayerNormGradExtAscend : public AclnnKernelMod {
   std::vector<int64_t> normalized_shape_;
   std::vector<uint8_t> output_mask_;
 };
+}  // namespace layer_norm_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

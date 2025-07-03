@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace muls {
 
 void MulsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
@@ -64,5 +65,6 @@ bool MulsAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Muls, MulsAscend);
+}  // namespace muls
 }  // namespace kernel
 }  // namespace mindspore

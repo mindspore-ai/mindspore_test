@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_avg_pool_3d_cpu {
 class AdaptiveAvgPool3DCPUKernelMod : public NativeCpuKernelMod {
  public:
   AdaptiveAvgPool3DCPUKernelMod() = default;
@@ -53,6 +54,7 @@ class AdaptiveAvgPool3DCPUKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_dim_sizes_;
   std::vector<int64_t> output_size_data_;
 };
+}  // namespace adaptive_avg_pool_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

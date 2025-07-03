@@ -165,6 +165,9 @@ SymbolPtr BuildSymbolicValue(const AbstractBasePtr &abstract) {
   if (value_ptr->isa<ValueAny>()) {
     return GenValueByShape(abstract->GetShape(), abstract->GetType());
   }
+  if (value_ptr->isa<None>()) {
+    return kNoneSymbol;
+  }
   auto shape = abstract->GetShape();
   MS_EXCEPTION_IF_NULL(shape);
   if (shape->isa<abstract::TensorShape>() && shape->cast_ptr<abstract::TensorShape>()->shape().empty()) {

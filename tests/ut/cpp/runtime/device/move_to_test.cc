@@ -21,22 +21,20 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/common/utils/utils.h"
 #include "runtime/device/move_to.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "securec/include/securec.h"
 #include "ir/tensor.h"
-#include "pybind_api/ir/tensor_py.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
-
+#include "frontend/ir/tensor_py.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
 namespace mindspore {
 namespace device {
-using mindspore::tensor::TensorPy;
 using device::DeviceAddressPtr;
-using device::cpu::CPUDeviceAddress;
 using device::ascend::AscendDeviceAddress;
-
+using device::cpu::CPUDeviceAddress;
+using mindspore::tensor::TensorPy;
 class MoveToTest : public UT::Common {
  public:
   MoveToTest() = default;
@@ -91,7 +89,7 @@ TEST_F(MoveToTest, TestNoNeedMove) {
   std::vector<int64_t> input = {2, 2, 2, 2};
   TypePtr type = kInt64;
   auto src_tensor = std::make_shared<tensor::Tensor>(input, type);
-  auto ptr = std::make_shared<CPUDeviceAddress>(input.data(), input.size() * sizeof(int64_t ));
+  auto ptr = std::make_shared<CPUDeviceAddress>(input.data(), input.size() * sizeof(int64_t));
   src_tensor->set_device_address(ptr);
   auto dst_tensor = std::make_shared<tensor::Tensor>(src_tensor->data_type(), src_tensor->shape());
   dst_tensor->set_device_address(nullptr);

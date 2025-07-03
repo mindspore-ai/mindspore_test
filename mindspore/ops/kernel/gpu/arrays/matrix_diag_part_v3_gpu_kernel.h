@@ -28,7 +28,7 @@
 #include <map>
 #include "kernel/gpu/cuda_impl/cuda_ops/matrix_diag_part_v3_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"

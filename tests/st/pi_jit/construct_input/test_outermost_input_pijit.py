@@ -1,7 +1,5 @@
 import numpy as np
-import sys  
 import pytest 
-
 import mindspore.nn as nn
 from mindspore import Tensor, Parameter, ParameterTuple, jit
 from mindspore.ops import composite as C
@@ -10,10 +8,6 @@ import mindspore.ops as ops
 from mindspore import context
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class Net(nn.Cell):
     def __init__(self):
@@ -91,7 +85,7 @@ class GradCell(nn.Cell):
         self.net = net
         self.grad_all = ops.GradOperation(get_all=True)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.grad_all(self.net)(x)
 
@@ -135,7 +129,7 @@ class GradCellWithParameterTuple(nn.Cell):
         self.param2 = self.net.param2
         self.params = ParameterTuple([self.param1, self.param2])
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.grad(self.net, self.params)(x)
 

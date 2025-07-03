@@ -15,18 +15,16 @@
  */
 
 #include "kernel/ascend/pyboost/customize/inplace_clamp_tensor.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceClampTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                        const BaseTensorPtr &input_tensor,
-                                                        const std::optional<BaseTensorPtr> &min_tensor,
-                                                        const std::optional<BaseTensorPtr> &max_tensor) {
+tensor::TensorPtr InplaceClampTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                    const std::optional<TensorPtr> &min_tensor,
+                                                    const std::optional<TensorPtr> &max_tensor) {
   MS_LOG(DEBUG) << "Call InplaceClampTensor start";
   OpRunner::InferOpOutput(op, input_tensor, min_tensor, max_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, min_tensor, max_tensor);

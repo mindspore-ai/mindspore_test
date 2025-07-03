@@ -22,11 +22,12 @@
 #include <random>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace random_shuffle_cpu {
 class RandomShuffleCpuKernelMod : public NativeCpuKernelMod {
  public:
   RandomShuffleCpuKernelMod() = default;
@@ -74,6 +75,7 @@ class RandomShuffleCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> input_shape_;
   std::default_random_engine rng_;
 };
+}  // namespace random_shuffle_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RANDOM_SHUFFLE_CPU_KERNEL_H_

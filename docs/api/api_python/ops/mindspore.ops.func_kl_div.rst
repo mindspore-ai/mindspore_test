@@ -31,7 +31,7 @@ mindspore.ops.kl_div
     参数：
         - **logits** (Tensor) - 数据类型支持float16、float32或float64。
         - **labels** (Tensor) - 标签Tensor，与 `logits` 的shape和数据类型相同。
-        - **reduction** (str) - 指定输出结果的计算方式，可选值为 ``'mean'`` 、 ``'batchmean'`` 、 ``'none'`` 或 ``'sum'`` 。默认值： ``'mean'`` 。
+        - **reduction** (str) - 指定输出结果的计算方式，可选值为 ``'mean'`` 、 ``'batchmean'`` 、 ``'none'`` 或 ``'sum'`` 。默认 ``'mean'`` 。
 
           - ``'none'``：不应用规约方法。
           - ``'mean'``：计算输出元素的加权平均值。

@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace convert_to_dynamic_cpu {
 namespace {
 constexpr auto kConvertToDynamicRank = "ConvertToDynamic";
 }  // namespace
@@ -139,5 +140,6 @@ std::vector<KernelAttr> ConvertToDynamicCpuKernelMod::GetOpSupport() {
   return kernel_attr;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConvertToDynamic, ConvertToDynamicCpuKernelMod);
+}  // namespace convert_to_dynamic_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -81,7 +81,7 @@ def _transform_target_modules(target_modules):
         obfuscate_layers = target_modules[2].split(':')
         if obfuscate_layers[1] != 'all':
             max_layers = int(obfuscate_layers[1])
-        layers = [i for i in range(0, max_layers)]
+        layers = list(range(0, max_layers))
         path_new = path.replace("blocks", "blocks/${layer}")
         network_obf_template['insert_ops'][0]['input_y'] = "obf_metadata_${layer}"
         weight_obf_template['weight_obf_ops'][0]['input_y'] = "obf_metadata_${layer}"
@@ -95,8 +95,8 @@ def _transform_target_modules(target_modules):
     obf_config['obf_metadata_config'].append(obf_medatadata)
 
     for name in target_list:
-        target_weight = path_new + '/' + name + '/weight'
-        target_bias = path_new + '/' + name + '/bias'
+        target_weight = '/'.join([path_new, name, 'weight'])
+        target_bias = '/'.join([path_new, name, 'bias'])
         weight_obf = weight_obf_template.copy()
         weight_obf['target'] = target_weight
         bias_obf = weight_obf_template.copy()
@@ -129,7 +129,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
         ckpt_files (str): The directory path of original ckpt files.
-        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+        target_modules (list[str], optional): The target ops that need to be obfuscated in the network. The first string
             represents the network path of the target ops in the original network, which should be in form of
             ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
             should be in form of ``"D|E|F"``. For example, the target_modules of GPT2 can be ``['backbone/blocks
@@ -137,10 +137,11 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
             format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of layers
             need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
             Default: ``None``.
-        obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
-        saved_path (str): The directory path for saving obfuscated ckpt files. Default: ``'./'``.
-        obfuscate_scale (Union[float, int]): Obfuscate scale of weights. The generated random obf_ratios will be in
-            range of (1 / obfuscate_scale, obfuscate_scale). Default: 100.
+        obf_config (dict, optional): The configuration of model obfuscation polices. Default: ``None``.
+        saved_path (str, optional): The directory path for saving obfuscated ckpt files. Default: ``'./'``.
+        obfuscate_scale (Union[float, int], optional): Obfuscate scale of weights.
+            The generated random obf_ratios will be in
+            range of (1 / obfuscate_scale, obfuscate_scale). Default: ``100``.
 
     Returns:
         dict[str], obf_metadata, which is the necessary data that needs to be load when running obfuscated network.
@@ -184,7 +185,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
     def _gen_obf_metadata(config):
         name = config.get('name')
         if name is None:
-            return False
+            return
         save_metadata = config.get('save_metadata', False)
         metadata_op_name = config.get('metadata_op')
         layers = config.get('layers')
@@ -212,7 +213,6 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
                         saved_obf_tensor = metadata_op(saved_obf_tensor)
                     if saved_obf_tensor is not None:
                         saved_metadata[obf_name] = saved_obf_tensor.asnumpy()
-        return True
 
     if not isinstance(network, nn.Cell):
         raise TypeError("network must be nn.Cell, but got {}.".format(type(network)))
@@ -282,13 +282,13 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
     def _obfuscate_param(param, obf_metadata, obf_ops, layer=0):
         param_dtype = F.dtype(param)
         obf_param = param
-        for i in range(len(obf_ops)):
-            op_name = obf_ops[i].get('name')
+        for obf_op in obf_ops:
+            op_name = obf_op.get('name')
             if not isinstance(op_name, str):
                 raise TypeError('{} should be str type, but got {}'.format(op_name, type(op_name)))
             if op_name == 'mul':
                 input_x = obf_param
-                input_y_name = _get_op_input_name(obf_ops[i], 'input_y', layer)
+                input_y_name = _get_op_input_name(obf_op, 'input_y', layer)
                 input_y = obf_metadata.get(input_y_name)
                 if input_x is None or input_y is None:
                     log.error("input_x or input_y is None")
@@ -296,22 +296,22 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
                 input_y = F.cast(input_y, param_dtype)
                 obf_param = ops.mul(input_x, input_y)
             elif op_name == 'permuate':
-                input_x_name = _get_op_input_name(obf_ops[i], 'input_x', layer)
+                input_x_name = _get_op_input_name(obf_op, 'input_x', layer)
                 p = obf_metadata.get(input_x_name, None)
                 if p is None or obf_param is None:
                     log.error("input_x or param is None")
                     return None
                 obf_param = obf_param[p]
             elif op_name == 'matmul':
-                input_x_name = _get_op_input_name(obf_ops[i], 'input_x', layer)
-                input_y_name = _get_op_input_name(obf_ops[i], 'input_y', layer)
+                input_x_name = _get_op_input_name(obf_op, 'input_x', layer)
+                input_y_name = _get_op_input_name(obf_op, 'input_y', layer)
                 input_x = _get_op_input(input_x_name, obf_param)
                 input_y = _get_op_input(input_y_name, obf_param)
                 if input_x is None or input_y is None:
                     log.error("the input_x or input_y of op: {} is None.".format(op_name))
                     return None
-                input_x = ops.transpose(input_x, (1, 0)) if obf_ops[i].get('transpose_a', False) else input_x
-                input_y = ops.transpose(input_y, (1, 0)) if obf_ops[i].get('transpose_b', False) else input_y
+                input_x = ops.transpose(input_x, (1, 0)) if obf_op.get('transpose_a', False) else input_x
+                input_y = ops.transpose(input_y, (1, 0)) if obf_op.get('transpose_b', False) else input_y
                 obf_param = ops.matmul(F.cast(input_x, param_dtype), F.cast(input_y, param_dtype))
             else:
                 log.error("unsupported op, op must be matmul or permuate or mul, but got {}."
@@ -371,7 +371,8 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
 
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
-        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+        target_modules (list[str], optional): The target ops that need to be obfuscated in the network.
+            The first string
             represents the network path of the target ops in the original network, which should be in form of
             ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
             should be in form of ``"D|E|F"``. For example, thr target_modules of GPT2 can be ``['backbone
@@ -379,9 +380,10 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
             in the format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of
             layers need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
             Default: ``None``.
-        obf_ratios (Tensor): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`. Default: ``None``.
-        obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
-        data_parallel_num (int): The data parallel number of parallel training. Default: 1.
+        obf_ratios (Tensor, optional): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`.
+            Default: ``None``.
+        obf_config (dict, optional): The configuration of model obfuscation polices. Default: ``None``.
+        data_parallel_num (int, optional): The data parallel number of parallel training. Default: ``1``.
         kwargs (dict): Configuration options dictionary.
 
             - ignored_func_decorators (list[str]): The name list of function decorators in network's python code.

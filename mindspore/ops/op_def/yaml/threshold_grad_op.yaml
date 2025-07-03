@@ -1,0 +1,17 @@
+#operator threshold_grad
+threshold_grad:
+    args:
+        grad_output:
+            dtype: tensor
+        input:
+            dtype: tensor
+        threshold:
+            dtype: number
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: ThresholdGradAscend

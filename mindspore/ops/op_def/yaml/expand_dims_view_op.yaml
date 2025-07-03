@@ -1,0 +1,17 @@
+#operator expand_dims_view
+expand_dims_view:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+      type_cast: tensor
+  returns:
+    output:
+      dtype: tensor
+  view: True
+  graph_view: True
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True

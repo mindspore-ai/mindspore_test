@@ -17,7 +17,7 @@
 #include "plugin/device/gpu/hal/device/gpu_tensor_array.h"
 #include <cuda_runtime_api.h>
 #include "plugin/device/gpu/hal/device/gpu_common.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 
 namespace mindspore {
 namespace device {

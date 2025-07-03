@@ -24,12 +24,13 @@
 #include <vector>
 #include <random>
 #include "mindspore/ops/infer/uniform.h"
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_cpu {
 namespace {
 const size_t kUniformInputsNum = 1;
 const size_t kUniformOutputsNum = 1;
@@ -131,5 +132,6 @@ std::vector<KernelAttr> UniformCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Uniform, UniformCpuKernelMod);
+}  // namespace uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore

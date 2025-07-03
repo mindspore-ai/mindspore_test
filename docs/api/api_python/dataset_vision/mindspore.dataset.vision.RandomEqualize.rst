@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomEqualize
 
 .. py:class:: mindspore.dataset.vision.RandomEqualize(prob=0.5)
 
-    以给定的概率随机对输入图像进行直方图均衡化。
+    以给定的概率，随机对输入图像进行直方图均衡化。
 
     参数：
         - **prob** (float, 可选) - 图像被均衡化的概率，取值范围：[0.0, 1.0]。默认值： ``0.5`` 。

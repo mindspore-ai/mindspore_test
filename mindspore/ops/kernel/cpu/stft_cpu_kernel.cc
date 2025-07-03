@@ -17,13 +17,15 @@
 #include "kernel/cpu/stft_cpu_kernel.h"
 
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/stft.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
+namespace stft_cpu {
 namespace {
 const size_t kSTFTInputsNum = 2;
 const size_t kSTFTOutputsNum = 1;
@@ -362,5 +364,6 @@ const std::vector<std::pair<KernelAttr, STFTCpuKernelMod::KernelRunFunc>> &STFTC
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, STFT,
                                  []() { return std::make_shared<STFTCpuKernelMod>(prim::kPrimSTFT->name()); });
+}  // namespace stft_cpu
 }  // namespace kernel
 }  // namespace mindspore

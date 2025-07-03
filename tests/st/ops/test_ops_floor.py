@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, context
 from mindspore.ops import floor
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -41,6 +41,7 @@ def floor_forward_func(x):
 
 @test_utils.run_with_cell
 def floor_backward_func(x):
+    # pylint: disable=E1102
     return ops.grad(floor_forward_func, (0))(x)
 
 
@@ -132,6 +133,7 @@ def test_ops_floor_backward_dynamic_rank(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(floor_backward_func)
     test_cell.set_inputs(x_dyn)

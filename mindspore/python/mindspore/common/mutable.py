@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore import log as logger
 
 _check_elements_set = set()
@@ -126,13 +126,14 @@ def mutable(input_data, dynamic_len=False):
     When the `input_data` is tuple or list and `dynamic_len` is False, `mutable` will return a constant length tuple
     or list with all mutable elements. If `dynamic_len` is True, the length of the return tuple or list will be dynamic.
 
-    If a dynamic length tuple or list is used as the input of the network and the network is repeatedly called, and
+    When a dynamic-length tuple or list returned by `mutable` is used as input to a network
+    and the network is called repeatedly, and
     the length of the tuple or list is different for each run, it does not need to be re-compiled.
 
     Args:
         input_data (Union[Tensor, scalar, tuple, list, dict]): The input data to be made mutable. If
             'input_data' is list/tuple/dict, the type of each element should also in the valid types.
-        dynamic_len (bool): Whether to set the whole sequence to be dynamic length. In graph compilation, if
+        dynamic_len (bool, optional): Whether to set the whole sequence to be dynamic length. In graph compilation, if
             `dynamic_len` is ``True`` , the `input_data` must be list or tuple and the elements of `input_data` must
             have the same type and shape. Default: ``False`` .
 
@@ -222,7 +223,7 @@ def mutable(input_data, dynamic_len=False):
                      We will add set_const_arg=False statement automatically.")
         ret.set_const_arg(False)
     elif isinstance(input_data, Tensor_):
-        ret = Tensor(input_data, internal=True)
+        ret = Tensor(input_data)
         logger.info("For 'mutable', the Tensor_ in 'input_data' must not be constant. \
                      We will add set_const_arg=False statement automatically.")
         ret.set_const_arg(False)

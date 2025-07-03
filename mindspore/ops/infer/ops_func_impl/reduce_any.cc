@@ -19,14 +19,15 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr ReduceAnyFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  return ReduceInferShape(primitive, input_args);
+
+ShapeArray ReduceAnyFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return ReduceInferShape(primitive, input_infos);
 }
 
-TypePtr ReduceAnyFuncImpl::InferType(const PrimitivePtr &primitive,
-                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return std::make_shared<TensorType>(kBool);
+TypeIdList ReduceAnyFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto input_type_id = input_infos[kIndex0]->GetType();
+  auto out_type_id = input_type_id != kNumberTypeUInt8 ? kNumberTypeBool : kNumberTypeUInt8;
+  return {out_type_id};
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -21,14 +21,13 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SoftShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_grad_tensor,
-                                                    const BaseTensorPtr &input_x_tensor, const ScalarPtr &lambd);
+tensor::TensorPtr SoftShrinkGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_grad_tensor,
+                                                const TensorPtr &input_x_tensor, const ScalarPtr &lambd);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

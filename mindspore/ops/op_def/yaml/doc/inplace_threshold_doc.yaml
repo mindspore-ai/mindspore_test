@@ -1,0 +1,36 @@
+inplace_threshold:
+    description: |
+        Update the `input` tensor in-place by computing the Threshold activation function element-wise.
+
+        The Threshold is defined as:
+
+        .. math::
+            y =
+            \begin{cases}
+            x, &\text{ if } x > \text{threshold} \\
+            \text{value}, &\text{ otherwise }
+            \end{cases}
+
+        Args:
+            input (Tensor): The input Tensor.
+            threshold (Union[int, float]): The value of the threshold.
+            value (Union[int, float]): The value to replace with when element is less than threshold.
+            
+        Returns:
+            Tensor, the same shape and data type as the input.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If `threshold` is not a float or an int.
+            TypeError: If `value` is not a float or an int.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, ops
+            >>> inputs = mindspore.Tensor([0.0, 2, 3], mindspore.float32)
+            >>> outputs = ops.threshold_(inputs, 1, 100)
+            >>> print(outputs)
+            [100.   2.   3.]

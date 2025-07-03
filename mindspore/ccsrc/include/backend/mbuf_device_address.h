@@ -18,7 +18,7 @@
 
 #include <string>
 #include <memory>
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -31,13 +31,13 @@ class MbufDeviceAddress : public device::DeviceAddress {
     auto tensor_shape = std::make_shared<abstract::TensorShape>();
     tensor_shape->SetShapeVector(shape);
     auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));
-    kernel_tensor_ = std::make_shared<KernelTensor>(tensor_shape, tensor_type, nullptr, ptr, size, "DefaultFormat",
-                                                    type, shape, device_name, device_id, nullptr);
-    address_common_ = kernel_tensor_->address_common();
+    address_common_ = std::make_shared<AddressCommon>(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"),
+                                                      type, device_name, device_id, 0);
   }
   void SetData(void *data) { set_ptr(data); }
 
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override {
     MS_LOG(ERROR) << "Mbuf address does not support sync data from device to host, please use graph mode";
     return false;
   }

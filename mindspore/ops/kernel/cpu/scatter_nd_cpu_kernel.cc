@@ -19,10 +19,11 @@
 #include <string>
 #include <mutex>
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_cpu {
 namespace {
 constexpr size_t kScatterNdOutputSize = 1;
 constexpr size_t kMinIndiceRank = 2;
@@ -44,7 +45,7 @@ void ComputeOffset(ScatterNdCpuKernelMod *content, const ComputeParams<S, T> *pa
   S *indices = params->indices_;
   std::vector<int> *out_strides = params->out_strides_;
   size_t indices_unit_rank = IntToSize(params->indices_unit_rank_);
-  auto task = [&](size_t start, size_t end) {
+  auto task = [indices_unit_rank, indices, content, out_strides, params](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       int offset = 0;
       for (size_t j = 0; j < indices_unit_rank; j++) {
@@ -192,43 +193,43 @@ bool ScatterNdCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   return true;
 }
 
-#define DTYPE_REGISTER_(DT1, UPDATES, SHAPE, OUTPUT, DT2, T)                                                        \
+#define SCATTER_OP_DTYPE_REGISTER_(DT1, UPDATES, SHAPE, OUTPUT, DT2, T)                                             \
   KernelAttr().AddInputAttr(DT1).AddInputAttr(UPDATES).AddInputAttr(kObjectTypeTuple, SHAPE).AddOutputAttr(OUTPUT), \
     &ScatterNdCpuKernelMod::LaunchKernel<DT2, T>
 
-#define DTYPE_REGISTER(UPDATES, SHAPE, OUTPUT, T)                              \
-  {DTYPE_REGISTER_(kNumberTypeInt16, UPDATES, SHAPE, OUTPUT, int16_t, T)},     \
-    {DTYPE_REGISTER_(kNumberTypeInt32, UPDATES, SHAPE, OUTPUT, int32_t, T)}, { \
-    DTYPE_REGISTER_(kNumberTypeInt64, UPDATES, SHAPE, OUTPUT, int64_t, T)      \
+#define SCATTER_OP_DTYPE_REGISTER(UPDATES, SHAPE, OUTPUT, T)                              \
+  {SCATTER_OP_DTYPE_REGISTER_(kNumberTypeInt16, UPDATES, SHAPE, OUTPUT, int16_t, T)},     \
+    {SCATTER_OP_DTYPE_REGISTER_(kNumberTypeInt32, UPDATES, SHAPE, OUTPUT, int32_t, T)}, { \
+    SCATTER_OP_DTYPE_REGISTER_(kNumberTypeInt64, UPDATES, SHAPE, OUTPUT, int64_t, T)      \
   }
 
 std::vector<std::pair<KernelAttr, ScatterNdCpuKernelMod::ScatterNdFunc>> ScatterNdCpuKernelMod::func_list_ = {
-  DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeInt32, kNumberTypeFloat64, double),
-  DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt32, kNumberTypeFloat32, float),
-  DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt32, kNumberTypeInt64, int64_t),
-  DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
-  DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt16, int16_t),
-  DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt32, kNumberTypeInt8, int8_t),
-  DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeInt32, kNumberTypeUInt64, uint64_t),
-  DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeInt32, kNumberTypeUInt32, uint32_t),
-  DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeInt32, kNumberTypeUInt16, uint16_t),
-  DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeInt32, kNumberTypeUInt8, uint8_t),
-  DTYPE_REGISTER(kNumberTypeComplex128, kNumberTypeInt32, kNumberTypeComplex128, complex128),
-  DTYPE_REGISTER(kNumberTypeComplex64, kNumberTypeInt32, kNumberTypeComplex64, complex64),
-  DTYPE_REGISTER(kNumberTypeBool, kNumberTypeInt32, kNumberTypeBool, bool),
-  DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeInt64, kNumberTypeFloat64, double),
-  DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt64, kNumberTypeFloat32, float),
-  DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
-  DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt64, kNumberTypeInt32, int32_t),
-  DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt64, kNumberTypeInt16, int16_t),
-  DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt64, kNumberTypeInt8, int8_t),
-  DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeInt64, kNumberTypeUInt64, uint64_t),
-  DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeInt64, kNumberTypeUInt32, uint32_t),
-  DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeInt64, kNumberTypeUInt16, uint16_t),
-  DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeInt64, kNumberTypeUInt8, uint8_t),
-  DTYPE_REGISTER(kNumberTypeComplex128, kNumberTypeInt64, kNumberTypeComplex128, complex128),
-  DTYPE_REGISTER(kNumberTypeComplex64, kNumberTypeInt64, kNumberTypeComplex64, complex64),
-  DTYPE_REGISTER(kNumberTypeBool, kNumberTypeInt64, kNumberTypeBool, bool),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeInt32, kNumberTypeFloat64, double),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt32, kNumberTypeFloat32, float),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt32, kNumberTypeInt64, int64_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt32, kNumberTypeInt32, int32_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt16, int16_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt32, kNumberTypeInt8, int8_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeInt32, kNumberTypeUInt64, uint64_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeInt32, kNumberTypeUInt32, uint32_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeInt32, kNumberTypeUInt16, uint16_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeInt32, kNumberTypeUInt8, uint8_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeComplex128, kNumberTypeInt32, kNumberTypeComplex128, complex128),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeComplex64, kNumberTypeInt32, kNumberTypeComplex64, complex64),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeBool, kNumberTypeInt32, kNumberTypeBool, bool),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeFloat64, kNumberTypeInt64, kNumberTypeFloat64, double),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeFloat32, kNumberTypeInt64, kNumberTypeFloat32, float),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt64, kNumberTypeInt64, kNumberTypeInt64, int64_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt32, kNumberTypeInt64, kNumberTypeInt32, int32_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt16, kNumberTypeInt64, kNumberTypeInt16, int16_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeInt8, kNumberTypeInt64, kNumberTypeInt8, int8_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt64, kNumberTypeInt64, kNumberTypeUInt64, uint64_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt32, kNumberTypeInt64, kNumberTypeUInt32, uint32_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt16, kNumberTypeInt64, kNumberTypeUInt16, uint16_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeUInt8, kNumberTypeInt64, kNumberTypeUInt8, uint8_t),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeComplex128, kNumberTypeInt64, kNumberTypeComplex128, complex128),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeComplex64, kNumberTypeInt64, kNumberTypeComplex64, complex64),
+  SCATTER_OP_DTYPE_REGISTER(kNumberTypeBool, kNumberTypeInt64, kNumberTypeBool, bool),
 };
 
 std::vector<KernelAttr> ScatterNdCpuKernelMod::GetOpSupport() {
@@ -239,5 +240,6 @@ std::vector<KernelAttr> ScatterNdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNd, ScatterNdCpuKernelMod);
+}  // namespace scatter_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

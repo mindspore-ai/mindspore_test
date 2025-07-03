@@ -18,6 +18,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ops {
@@ -43,7 +44,7 @@ TypePtr TrilExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray TrilExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto &input_shape_vec = x_tensor->shape();
   const int64_t kMinShapeSize = 2;
@@ -54,7 +55,7 @@ ShapeArray TrilExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList TrilExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto input_type = x_tensor->Dtype();
   return {input_type};

@@ -20,6 +20,7 @@
 #include <functional>
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cross_entropy_with_logits_v2_cpu {
 namespace {
 constexpr std::size_t kSparseSoftmaxCrossEntropyWithLogitsV2InputNum{2};
 constexpr std::size_t kSparseSoftmaxCrossEntropyWithLogitsV2OutputNum{2};
@@ -161,5 +162,6 @@ std::vector<KernelAttr> SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::GetOp
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSoftmaxCrossEntropyWithLogitsV2,
                       SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod);
+}  // namespace sparse_softmax_cross_entropy_with_logits_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

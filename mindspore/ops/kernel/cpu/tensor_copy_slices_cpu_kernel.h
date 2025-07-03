@@ -20,12 +20,13 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/fp32/strided_slice_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_copy_slices_cpu {
 class TensorCopySlicesCpuKernelMod : public NativeCpuKernelMod {
  public:
   TensorCopySlicesCpuKernelMod() = default;
@@ -86,6 +87,7 @@ class TensorCopySlicesCpuKernelMod : public NativeCpuKernelMod {
   void InitOffsetAndCopySize(const std::vector<int64_t> &begin, const std::vector<int64_t> &end,
                              const std::vector<int64_t> &stride);
 };
+}  // namespace tensor_copy_slices_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

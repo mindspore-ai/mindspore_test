@@ -20,11 +20,12 @@
 #include <vector>
 #include <utility>
 #include "mindspore/ops/infer/approximate_equal.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace approximate_equal_cpu {
 class ApproximateEqualCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApproximateEqualCpuKernelMod() {}
@@ -57,6 +58,7 @@ class ApproximateEqualCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> output_shape_;
   static std::vector<std::pair<KernelAttr, ApproximateEqualFunc>> func_list_;
 };
+}  // namespace approximate_equal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

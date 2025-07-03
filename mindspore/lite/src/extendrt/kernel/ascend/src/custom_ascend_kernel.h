@@ -25,8 +25,8 @@
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "include/api/types.h"
 #include "include/api/context.h"
-#include "kernel/kernel.h"
-#include "kernel/common_utils.h"
+#include "common/kernel.h"
+#include "common/common_utils.h"
 #include "include/errorcode.h"
 
 bool SaveOM(const void *model, size_t length, const std::string &file_path);

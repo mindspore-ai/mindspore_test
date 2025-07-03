@@ -2,6 +2,705 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.6.0 Release Notes
+
+### 主要特性及增强
+
+#### Dataset
+
+- [STABLE] [MindDataset](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.MindDataset.html)接口分片采样行为由原来的按块采样（链接中的数据分片的策略2）变更为间隔采样（链接中的数据分片的策略1），用户可以通过 MS_DEV_MINDRECORD_SHARD_BY_BLOCK 环境变量，控制是否切换回按块采样。
+- [STABLE] GeneratorDataset 支持 spawn 方式启动多进程，支持在多进程时，使用Ascend后端的数据增强方法。用户可以设置 [mindspore.dataset.config.set_multiprocessing_start_method("spawn")](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.config.set_multiprocessing_start_method.html) 以 spawn 的方式启动多进程。
+- [STABLE] [MindDataset](https://www.mindspore.cn/docs/zh-CN/master/api_python/dataset/mindspore.dataset.MindDataset.html) 的 `shuffle` 参数新增了 `Shuffle.ADAPTIVE` 行为，根据样本数量自适应调整 shuffle 样本数量的策略以降低训练内存开销，减少 OOM 风险。若期望强制采用全局 shuffle，可以指定为 `Shuffle.GLOBAL`，用户需确保机器内存足够。
+
+#### Ascend
+
+- [STABLE] 动态图模式场景，[ops.Custom](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.Custom.html) 原语接入Ascend C自定义算子，支持多输出类型，`ops.Custom`支持C++侧infer type。
+- [BETA] 动态图模式场景，新增CustomOpBuilder支持在线编译和加载自定义算子。
+- [STABLE] 使用O1编译选项时，支持用户控制图算融合优化范围，用户通过环境变量MS_DEV_GRAPH_KERNEL_FLAGS的enable_fusion_pattern_only/disable_fusion_pattern选项，控制打开或者关闭对应融合pattern，同时支持通过--path=example.json方式读取文件配置。
+- [STABLE] 支持通过 [mindspore.device_context.ascend.op_debug.aclinit_config](https://www.mindspore.cn/docs/zh-CN/master/api_python/device_context/mindspore.device_context.ascend.op_debug.aclinit_config.html) 接口，设置aclop算子缓存信息老化配置和错误信息上报模式配置。
+- [STABLE] GE后端仅支持整图下沉和lazy inline子图下沉，其他场景不再支持。
+- [BETA] 静态图O0/O1模式场景，`mindspore.nn.Cell`基类新增offload接口与backward_prefetch接口属性，用户可通过[Cell.offload(backward_prefetch)](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.offload) 使用该接口，在训练正向阶段，将特定`Cell`类内的激活值从device侧卸载至host侧，并在训练反向阶段，将激活值从host侧提前预取回device侧。
+
+#### Parallel
+
+- [STABLE] 分布式pdb调试，支持动态图和静态图，更推荐使用动态图。
+- [STABLE] 新增接口[mindspore.communication.get_comm_name](https://www.mindspore.cn/docs/zh-CN/master/api_python/communication/mindspore.communication.get_comm_name.html)，用户可以通过该接口查询HCCL集合通信库底层通信器名称。
+- [STABLE] 新增 [AutoParallel](https://www.mindspore.cn/docs/zh-CN/master/api_python/parallel/mindspore.parallel.auto_parallel.AutoParallel.html) 接口，支持对单个网络进行并行配置，解决并行配置作用域过大的问题。
+- [STABLE] seqpipe新增支持两种调度方式seqvpp、seqsmartvpp，显著降低seqpipe结合vpp场景下的显存开销。
+- [STABLE] 静态图模式场景，支持zero2/zero3级别的内存优化，降低有纯dp训练需求的模型的显存开销。
+- [STABLE] 静态图模式场景，支持流水线并行下的1b1f通信掩盖，提升流水线并行性能。
+- [STABLE] 静态图模式场景，支持张量模型并行和专家模型并行下的反向通信掩盖，提升模型训练性能。
+- [STABLE] 静态图模式场景，自动并行策略传播模式更新为优先传播算子的Layout策略，提高策略传播准确性。
+- [STABLE] 静态图模式场景，自动并行支持使用 [mindspore.parallel.shard](https://www.mindspore.cn/docs/zh-CN/master/api_python/parallel/mindspore.parallel.shard.html) 接口为mint算子配置策略，优化了多输入算子的策略。
+- [STABLE]支持强化学习场景中，DP/MP/PP 多维混合并行模式下的训推权重在线权重重排。
+- [STABLE] 支持用户查询分布式模块是否可用和通信模块是否初始化功能，用户可以通过 [mint.distributed.is_available](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.is_available.html) 接口查询分布式模块是否可用，以及通过 [mint.distributed.is_initialized](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.is_initialized.html) 接口查询通信模块是否初始化。
+- [STABLE] 静态图模式场景，支持 `AlltoAllV` 正反向算子，用户可通过 [ops.AlltoAllV](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.AlltoAllV.html) 接口使用该算子。
+- [STABLE] 支持CPU通信接口[mindspore.mint.distributed.allreduce](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.all_reduce.html#mindspore.mint.distributed.all_reduce)、[mindspore.mint.distributed.barrier](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.barrier.html#mindspore.mint.distributed.barrier)、[mindspore.mint.distributed.send](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.send.html#mindspore.mint.distributed.send)、[mindspore.mint.distributed.recv](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.distributed.recv.html#mindspore.mint.distributed.recv)，用户可通过这些接口使用对应的集合通信算子功能。
+
+#### Inference
+
+- [STABLE] 支持DeepSeek-V3/R1大模型的BFloat16全精度推理和W8A8量化推理，并为提升其推理性能开发或优化了RmsNormQuant、MatMul+Sigmoid+Add、Transpose+BatchMatMul+Transpose等12个融合算子。
+- [BETA] 支持使用MindIE和MindSpore Transformers大模型套件，服务化部署DeepSeek-V3/R1。
+- [STABLE] 优化了使用MindIE和MindSpore Transformers大模型套件进行推理服务部署时，加载safetensors的过程，实现了GE按需初始化，分别降低了内存占用量和启动耗时。
+- [BETA] 支持使用[vLLM-MindSpore](https://gitee.com/mindspore/vllm-mindspore)插件和vLLM v0.6.6.post1，服务化部署DeepSeek-V3/R1、Qwen2.5大模型。
+
+#### profiler
+
+- [STABLE] 支持获取通信域并行策略信息，并行策略信息支持可视化显示，提升集群场景下性能定位效率。
+- [STABLE] 动态profiling支持轻量化打点，用户可动态开启轻量化打点，实时查看性能数据。
+- [STABLE] Profiler轻量化打点能力增强，支持dataloader、save checkpoint等关键阶段轻量化打点信息。
+- [STABLE] Profiler支持查看memory_access相关aicore metric信息。
+- [STABLE] Profiler支持[mindspore.profiler.profile](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.profile.html)、[_ExperimentalConfig](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler._ExperimentalConfig.html) 和[tensorboard_trace_handler](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html)，提升工具易用性。
+- [STABLE] 动态profiling支持内存采集，用户可动态开启内存数据采集，提升工具易用性。
+
+#### Compiler
+
+- [BETA] 图模式支持inplace和view算子正向表达能力。
+- [BETA] 图模式新增 [mindspore.ops.Morph](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.Morph.html) 算子，允许将自定义函数封装成 [mindspore.ops.Morph](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.Morph.html) 算子，易于分布式自动并行训练场景封装非规整集合通信（例如：[mindspore.ops.AlltoAllV](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.AlltoAllV.html)）。
+
+### API 变更
+
+#### 新增API
+
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.mint.html) API新增了大量的functional、nn接口。mint接口当前是实验性接口，在图编译模式为O0/O1和PyNative模式下性能比ops更优。当前暂不支持O2编译模式(图下沉)及CPU、GPU后端，后续会逐步完善。
+
+  | mindspore.mint                  |
+  | :------------------------------ |
+  | mindspore.mint.reshape          |
+  | mindspore.mint.triangular_solve |
+  | mindspore.mint.index_add        |
+  | mindspore.mint.logaddexp2       |
+  | mindspore.mint.diag             |
+
+  | mindspore.mint.nn              |
+  | :----------------------------- |
+  | mindspore.mint.nn.Sigmoid      |
+  | mindspore.mint.nn.Conv2d       |
+  | mindspore.mint.nn.PixelShuffle |
+
+  | mindspore.mint.nn.functional                     |
+  | :----------------------------------------------- |
+  | mindspore.mint.nn.functional.adaptive_avg_pool3d |
+  | mindspore.mint.nn.functional.conv2d              |
+  | mindspore.mint.nn.functional.avg_pool3d          |
+  | mindspore.mint.nn.functional.elu_                |
+  | mindspore.mint.nn.functional.pixel_shuffle       |
+
+  | others                   |
+  | ------------------------ |
+  | mindspore.mint.optim.SGD |
+  | mindspore.mint.linalg.qr |
+
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.mint.html) API 也提供了一些新增的stable接口。此外, 一些demo的接口也转为了stable。
+
+  | mindspore.mint           |
+  | :----------------------- |
+  | mindspore.mint.full_like |
+  | mindspore.mint.log2      |
+  | mindspore.mint.isneginf  |
+
+  | mindspore.mint.nn           |
+  | :-------------------------- |
+  | mindspore.mint.nn.GLU       |
+  | mindspore.mint.nn.KLDivLoss |
+
+  | mindspore.mint.nn.functional        |
+  | :---------------------------------- |
+  | mindspore.mint.nn.functional.glu    |
+  | mindspore.mint.nn.functional.kl_div |
+
+  | mindspore.Tensor          |
+  | :------------------------ |
+  | mindspore.Tensor.isneginf |
+  | mindspore.Tensor.log2     |
+
+- [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API新增了大量的Tensor方法的接口。当前仍属于实验性接口，当前暂不支持图下沉模式及CPU、GPU后端，后续会逐步完善。详细见[官网接口列表](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor)。
+- [STABLE] [mindspore.ops](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.ops.html) API新增[mindspore.ops.moe_token_permute](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.moe_token_permute.html#mindspore.ops.moe_token_permute) 和 [mindspore.ops.moe_token_unpermute](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.moe_token_unpermute.html#mindspore.ops.moe_token_unpermute)两个推理算子接口，当前仅支持Ascend后端。
+- [STABLE] [mindspore.mint.nn.functional.gelu](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.nn.functional.gelu.html) 和 [mindspore.mint.nn.GeLU](https://www.mindspore.cn/docs/zh-CN/master/api_python/mint/mindspore.mint.nn.GELU.html) 新增支持了入参 "approximate"。
+- [STABLE] 新增离线解析接口[mindspore.profiler.profiler.analyse](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.profiler.analyse.html)。
+
+#### 非兼容性接口变更
+
+- [mindspore.ops.Xlogy](https://www.mindspore.cn/docs/zh-CN/master/api_python/ops/mindspore.ops.Xlogy.html) 接口入参input和other移除了对非Tensor输入的支持！[(!81625)](https://gitee.com/mindspore/mindspore/pulls/81625)
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  ops.Xlogy(input [Tensor, numbers.Number, bool],
+            other [Tensor, numbers.Number, bool])
+  </pre>
+  </td>
+  <td><pre>
+  ops.Xlogy(input [Tensor],
+            other [Tensor])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- `&`运算符在Ascend后端PyNative模式下不再支持uint32、uint64类型的Tensor输入，`^`运算符在Ascend后端PyNative模式下不再支持uint16、uint32、uint64类型的Tensor输入，`|`运算符在Ascend后端PyNative模式 `tensor | scalar`的场景下不再支持uint16、uint32、uint64类型的Tensor输入。[(!81625)](https://gitee.com/mindspore/mindspore/pulls/81625)
+- `%`运算符在CPU和GPU后端不再支持uint16、uint32、uint64类型的Tensor输入。[(!81625)](https://gitee.com/mindspore/mindspore/pulls/81625)
+- [mindspore.jit](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.jit.html) 接口参数变更。[(!80248)](https://gitee.com/mindspore/mindspore/pulls/80248)
+
+  参数 `fn` 名称变更为 `function` 。
+
+  移除参数 `mode` 、 `input_signature` 、 `hash_args` 、 `jit_config` 和 `compile_once` 。
+
+  新增参数 `capture_mode` ，设置编译成MindSpore图的方式。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(mode="PIJit")
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(capture_mode="bytecode")
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+  新增参数 `jit_level` ，设置编译优化的级别。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit, JitConfig
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(jit_config=JitConfig(jit_level="O0"))
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(jit_level="O0")
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+  新增参数 `dynamic` ，设置是否需要进行动态shape编译。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(dynamic=1)
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+  新增参数 `fullgraph` ，设置是否捕获整个函数来编译成图。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit, JitConfig
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(jit_config=JitConfig(jit_syntax_level="STRICT"))
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(fullgraph=True)
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+  新增参数 `backend` ，设置使用的编译后端。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(backend="ms_backend")
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+  新增参数 `options` ，设置传给编译后端的选项字典。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit, JitConfig
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(jit_config=JitConfig(infer_boost="on"))
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  <td><pre>
+  >>> import numpy as np
+  >>> from mindspore import Tensor, jit
+  >>>
+  >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
+  >>>
+  >>> @jit(infer_boost="on")
+  ... def tensor_add_with_dec(x, y):
+  ...     z = x + y
+  ...     return z
+  ...
+  >>> out = tensor_add_with_dec(x, y)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- `mindspore.profiler.tensor_board_trace_handler` 接口变更。
+
+  `mindspore.profiler.tensor_board_trace_handler`接口变更为 [mindspore.profiler.tensorboard_trace_handler](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.profiler.tensorboard_trace_handler.html)。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> from mindspore.profiler import tensor_board_trace_handler
+  </pre>
+  </td>
+  <td><pre>
+  >>> from mindspore.profiler import tensorboard_trace_handler
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- `mindspore.set_context`接口变更。
+
+  参数 `ascend_config` 中的 `exception_dump`字段变更为 [device_context.ascend.op_debug.aclinit_config](https://www.mindspore.cn/docs/zh-CN/master/api_python/device_context/mindspore.device_context.ascend.op_debug.aclinit_config.html) 中的 `"dump"`字段。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> ms.set_context(ascend_config = {"exception_dump": "2"})
+  </pre>
+  </td>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> ms.device_context.ascend.op_debug.aclinit_config({"dump": {"dump_scene": "lite_exception"}})
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- `mindspore.Tensor`打印内容变更。
+
+  原有Tensor打印内容，只打印值，新Tensor打印内容包含shape和dtype等Tensor关键信息。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 2.5.0 </td> <td style="text-align:center"> 2.6.0 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> tensor = ms.Tensor([1,1,1], dtype=ms.float32)
+  >>> print(tensor)
+  [1. 1. 1.]
+  </pre>
+  </td>
+  <td><pre>
+  >>> import mindspore as ms
+  >>> tensor = ms.Tensor([1,1,1], dtype=ms.float32)
+  >>> print(tensor)
+  Tensor(shape=[3], dtype=Float32, value= [ 1.00000000e+00,  1.00000000e+00,  1.00000000e+00])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 静态图模式，Ascend后端，jit_level为O2模式下Dump接口变更。
+
+  在静态图Ascend 后端 jit_level为O2场景下，环境变量 `MINDSPORE_DUMP_CONFIG`和 `ENABLE_MS_GE_DUMP`已废弃，Dump相关功能已迁移到 msprobe 工具，更多详情请查看[《msprobe 工具 MindSpore 场景精度数据采集指南》](https://gitee.com/ascend/mstt/blob/master/debug/accuracy_tools/msprobe/docs/06.data_dump_MindSpore.md)。
+
+### 贡献者
+
+amyMaYun,Ava,baishanyang,br_fix_save_strategy_ckpt,caifubi,caoxubo,cccc1111,ccsszz,chaijinwei,chaiyouheng,changzherui,chengbin,chopupu,chujinjin,congcong,dairenjie,DavidFFFan,DeshiChen,dingjinshan,fary86,fengqiang,fengyixing,ffmh,fuhouyu,Gallium,gaoshuanglong,gaoyong10,geyuhong,guoyq16,guoyuzhe,GuoZhibin,guozhijian,gupengcheng0401,hangq,Hanshize,haozhang,hedongdong,hhz886,HighCloud,horcham,huangbingjian,huangxiang360729,huangzhichao2023,huangzhuo,huangziling,huda,Huilan Li,hujiahui8,huoxinyou,jiangchao_j,jiangchenglin3,jiangshanfeng,jiaorui,jiaxueyu,jizewei,jjfeing,JoeyLin,jshawjc,kairui_kou,kakyo82,kisnwang,leida,lianghongrui,LiangZhibo,LiaoTao_Wave,lichen,limingqi107,LiNuohang,linux,litingyu,liubuyu,liuchuting,liuluobin,liuyanwei,LLLRT,looop5,luochao60,luojianing,luoxuewei,luoyang,lyk,maoyuanpeng1,Margaret_wangrui,mengxian,MengXiangyu,mylinchi,NaCN,panzhihui,pengqi,PingqiLi,pipecat,qiuyufeng,qiuzhongya,qiwenlun,r1chardf1d0,rachel0858,rainyhorse,Rudy_tan,shaoshengqi,shen_haochen,shenhaojing,shenwei41,shiro-zzz,shuqian0,stavewu,TAJh,tanghuikang,tangmengcheng,tongdabao,TuDouNi,VectorSL,wang_ziqi,wangjie,wangliaohui97,wangpingan,wangyibo,weiyang,wja,wudongkun,wujueying,wuweikang,wwwbby,xfan233,XianglongZeng,xiaopeng,xiaotianci,xiaoyao,xiedejin1,XinDu,xuxinglei,xuzhen,xuzixiang,yang guodong,yangben,yanghaoran,yangruoqi713,yangzhenzhang,yanx,Yanzhi_YI,yao_yf,yide12,yihangchen,YijieChen,yonibaehr,Youmi,yuanqi,yuchaojie,yuezenglin,Yuheng Wang,YuJianfeng,YukioZzz,ZeyuHan,zhaiyukun,Zhang QR,zhangbuxue,zhangdanyang,zhangshucheng,zhangyinxia,ZhangZGC,zhangzhen,zhengzuohe,zhouyaqiang0,zichun_ye,zlq2020,zong_shuai,ZPaC,zyli2020,舛扬,范吉斌,冯一航,胡犇,胡彬,宦晓玲,简云超,李栋,李良灿,李林杰,李寅杰3,刘思铭,刘勇琪,刘子涵,梅飞要,任新,十一雷,孙昊辰,王泓皓,王禹程,王振邦,熊攀,俞涵,虞良斌,云骑士,张栩浩,赵文璇,周一航
+
+## MindSpore Lite 2.6.0 Release Notes
+
+### 主要特性及增强
+
+- [STABLE] MindSpore Lite支持模型转换时配置算子并行推理加速，只需在模型转换时配置stream_label_file选项，指定需要进行并行推理的算子。
+- [STABLE] MindSpore Lite支持在昇腾后端下转换onnx控制流中的if算子。
+
+### API 变更
+
+- [STABLE] acl模型转换配置中，ascend_context选项下新增stream_label_file选项，用于启用多流并行。
+
+### 贡献者
+
+熊攀,ZhangZGC,yanghaoran,李林杰,shenwei41,xiaotianci,panzhihui,guozhijian,胡彬,tangmengcheng,XianglongZeng,cccc1111,stavewu,刘思铭,r1chardf1d0,jiangshanfeng
+
+## MindSpore 2.5.0 Release Notes
+
+### 主要特性及增强
+
+#### 分布式启动组件msrun
+
+- [STABLE] msrun支持传入节点的hostname（如localhost）作为 `--master_addr`，提升msrun易用性。
+- [STABLE] msrun支持将训练日志打印到标准输出，用户可通过 `--tail_worker_log` 参数控制要打印哪些rank。
+- [STABLE] 设置 `export VLOG_v=12500` 后， `scheduler` 日志能输出集群信息，帮助用户快速统计集群数据。
+- [STABLE] msrun支持通过 `--worker_log_name` 参数来格式化日志文件名，帮助用户快速定位到问题节点。
+
+详情可参考[msrun启动](https://www.mindspore.cn/docs/zh-CN/r2.5.0/model_train/parallel/msrun_launcher.html)。
+
+#### Profiler
+
+- [STABLE] 新增[mindspore.profiler.schedule](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/mindspore.profiler.schedule.html)和[mindspore.profiler.tensor_board_trace_handler](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/mindspore.profiler.tensor_board_trace_handler.html)接口，支持动态图场景按step采集和呈现，提升动态图场景易用性。
+- [STABLE] 动态Profiling支持自定义for循环，提升动态图场景易用性。
+- [STABLE] Profiler初始化参数和交付件目录结构优化，降低用户迁移难度。
+- [STABLE] 新增轻量化打点接口[mindspore.profiler.mstx](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/mindspore.profiler.mstx.html)，提供用户低开销性能数据采集方式。
+- [STABLE] Timeline支持展示硬件利用率数据，帮助用户定位降频问题。
+
+详情可参考[Ascend性能调优](https://www.mindspore.cn/docs/zh-CN/r2.5.0/model_train/optimize/profiler.html)。
+
+#### 动态图
+
+- [BETA] 动态图支持算子的原地操作，引入可以原地操作的算子。以[mindspore.mint.nn.functional.relu](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mint/mindspore.mint.nn.functional.relu.html)算子为列，如果你想使用原地更新版本的relu算子，则可以调用[mindspore.mint.nn.functional.relu_](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mint/mindspore.mint.nn.functional.relu_.html)算子。
+- [STABLE] 使能环境变量MS_SIMULATION_LEVEL=1开启动态图dryrun，支持不占卡模拟多卡进程，通过日志查看显存占用情况。详情可参考[环境变量](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/env_var_list.html?highlight=ms_simulation_level#%E5%88%86%E5%B8%83%E5%BC%8F%E5%B9%B6%E8%A1%8C)。
+
+#### FrontEnd
+
+- [STABLE] 新增[mindspore.nn.utils.no_init_parameters](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/nn/mindspore.nn.utils.no_init_parameters.html)接口，支持网络参数延迟初始化，缩短推理场景下模型启动时间。
+
+### API 变更
+
+#### 新增API
+
+- [DEMO] [mindspore.mint](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore.mint.html) API新增了大量的functional、nn接口。mint接口当前是实验性接口，在图编译模式为O0/O1和PyNative模式下性能比ops更优。当前暂不支持O2编译模式(图下沉)及CPU、GPU后端，后续会逐步完善。
+
+  | mindspore.mint  |                           |                                   |                            |
+  | :-------------------------- | :------------------------ | :-------------------------------- | :------------------------- |
+  | mindspore.mint.bernoulli    | mindspore.mint.bincount   | mindspore.mint.clone              | mindspore.mint.einsum      |
+  | mindspore.mint.empty        | mindspore.mint.empty_like | mindspore.mint.full_like          | mindspore.mint.randint     |
+  | mindspore.mint.randint_like | mindspore.mint.randn      | mindspore.mint.randn_like         | mindspore.mint.randperm    |
+  | mindspore.mint.chunk        | mindspore.mint.concat     | mindspore.mint.count_nonzero      | mindspore.mint.scatter     |
+  | mindspore.mint.select       | mindspore.mint.squeeze    | mindspore.mint.swapaxes           | mindspore.mint.transpose   |
+  | mindspore.mint.triu         | mindspore.mint.unbind     | mindspore.mint.unique_consecutive | mindspore.mint.multinomial |
+  | mindspore.mint.addmv        | mindspore.mint.diff       | mindspore.mint.exp2               | mindspore.mint.float_power |
+  | mindspore.mint.fix          | mindspore.mint.fmod       | mindspore.mint.frac               | mindspore.mint.lerp        |
+  | mindspore.mint.log2         | mindspore.mint.log10      | mindspore.mint.logaddexp          | mindspore.mint.mv          |
+  | mindspore.mint.nansum       | mindspore.mint.nan_to_num | mindspore.mint.polar              | mindspore.mint.ravel       |
+  | mindspore.mint.outer        | mindspore.mint.softmax    | mindspore.mint.t                  | mindspore.mint.cdist       |
+  | mindspore.mint.amax         | mindspore.mint.amin       | mindspore.mint.cumprod            | mindspore.mint.histc       |
+  | mindspore.mint.logsumexp    | mindspore.mint.norm       | mindspore.mint.std                | mindspore.mint.std_mean    |
+  | mindspore.mint.var          | mindspore.mint.var_mean   | mindspore.mint.allclose           | mindspore.mint.argsort     |
+  | mindspore.mint.equal        | mindspore.mint.isinf      | mindspore.mint.isneginf           | mindspore.mint.not_equal   |
+  | mindspore.mint.addbmm       | mindspore.mint.addmm      | mindspore.mint.baddbmm            | mindspore.mint.dot         |
+  | mindspore.mint.meshgrid     | mindspore.mint.mm         | |                            |
+
+  | mindspore.mint.nn                   |                                    |
+  | :---------------------------------- | ---------------------------------- |
+  | mindspore.mint.nn.Conv3d            | mindspore.mint.nn.ConstantPad1d    |
+  | mindspore.mint.nn.ConvTranspose2d   | mindspore.mint.nn.ConstantPad2d    |
+  | mindspore.mint.nn.BatchNorm1d       | mindspore.mint.nn.ConstantPad3d    |
+  | mindspore.mint.nn.BatchNorm2d       | mindspore.mint.nn.ReflectionPad1d  |
+  | mindspore.mint.nn.BatchNorm3d       | mindspore.mint.nn.ReflectionPad2d  |
+  | mindspore.mint.nn.LayerNorm         | mindspore.mint.nn.ReflectionPad3d  |
+  | mindspore.mint.nn.SyncBatchNorm     | mindspore.mint.nn.ReplicationPad1d |
+  | mindspore.mint.nn.ELU               | mindspore.mint.nn.ZeroPad1d        |
+  | mindspore.mint.nn.GELU              | mindspore.mint.nn.ZeroPad2d        |
+  | mindspore.mint.nn.LogSigmoid        | mindspore.mint.nn.ZeroPad3d        |
+  | mindspore.mint.nn.ReLU6             | mindspore.mint.nn.BCELoss          |
+  | mindspore.mint.nn.SiLU              | mindspore.mint.nn.CrossEntropyLoss |
+  | mindspore.mint.nn.Tanh              | mindspore.mint.nn.NLLLoss          |
+  | mindspore.mint.nn.Embedding         | mindspore.mint.nn.SmoothL1Loss     |
+  | mindspore.mint.nn.Dropout2d         | mindspore.mint.nn.Upsample         |
+  | mindspore.mint.nn.AdaptiveAvgPool1d | mindspore.mint.nn.MaxUnpool2d      |
+  | mindspore.mint.nn.AdaptiveAvgPool2d |                                    |
+
+  | mindspore.mint.nn.functional                     |
+  | :----------------------------------------------- |
+  | mindspore.mint.nn.functional.adaptive_avg_pool1d |
+  | mindspore.mint.nn.functional.adaptive_avg_pool2d |
+  | mindspore.mint.nn.functional.avg_pool1d          |
+  | mindspore.mint.nn.functional.max_unpool2d        |
+  | mindspore.mint.nn.functional.logsigmoid          |
+  | mindspore.mint.nn.functional.relu6               |
+  | mindspore.mint.nn.functional.relu_               |
+  | mindspore.mint.nn.functional.normalize           |
+  | mindspore.mint.nn.functional.dropout2d           |
+  | mindspore.mint.nn.functional.nll_loss            |
+  | mindspore.mint.nn.functional.smooth_l1_loss      |
+  | mindspore.mint.nn.functional.interpolate         |
+  | mindspore.mint.nn.functional.conv3d              |
+
+  | mindspore.mint.distributed                        |                                                    |
+  | ------------------------------------------------- | -------------------------------------------------- |
+  | mindspore.mint.distributed.all_gather             | mindspore.mint.distributed.get_global_rank         |
+  | mindspore.mint.distributed.all_gather_into_tensor | mindspore.mint.distributed.get_group_rank          |
+  | mindspore.mint.distributed.all_gather_object      | mindspore.mint.distributed.get_process_group_ranks |
+  | mindspore.mint.distributed.all_reduce             | mindspore.mint.distributed.init_process_group      |
+  | mindspore.mint.distributed.all_to_all             | mindspore.mint.distributed.irecv                   |
+  | mindspore.mint.distributed.all_to_all_single      | mindspore.mint.distributed.isend                   |
+  | mindspore.mint.distributed.barrier                | mindspore.mint.distributed.new_group               |
+  | mindspore.mint.distributed.batch_isend_irecv      | mindspore.mint.distributed.P2POp                   |
+  | mindspore.mint.distributed.broadcast              | mindspore.mint.distributed.recv                    |
+  | mindspore.mint.distributed.broadcast_object_list  | mindspore.mint.distributed.reduce                  |
+  | mindspore.mint.distributed.gather                 | mindspore.mint.distributed.reduce_scatter          |
+  | mindspore.mint.distributed.gather_object          | mindspore.mint.distributed.reduce_scatter_tensor   |
+  | mindspore.mint.distributed.get_backend            | mindspore.mint.distributed.scatter                 |
+  | mindspore.mint.distributed.scatter_object_list    | mindspore.mint.distributed.send                    |
+
+  | others                            |
+  | --------------------------------- |
+  | mindspore.mint.optim.Adam         |
+  | mindspore.mint.linalg.matrix_norm |
+  | mindspore.mint.linalg.norm        |
+  | mindspore.mint.linalg.vector_norm |
+  | mindspore.mint.special.exp2       |
+
+- [STABLE] 新增[mindspore.ops.incre_flash_attention](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/ops/mindspore.ops.incre_flash_attention.html)和[mindspore.ops.prompt_flash_attention](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/ops/mindspore.ops.prompt_flash_attention.html)两个推理算子接口，当前仅支持Ascend后端。
+- [STABLE] [mindspore.runtime](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore.runtime.html)替代原mindspore.hal接口，提供了流、显存、Event等运行时资源相关的接口。
+- [STABLE] [mindspore.device_context](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore.device_context.html)替代原set_context接口部分参数，提供了硬件平台相关的设置接口。
+- [DEMO] [mindspore.Tensor](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor) API新增了大量的Tensor方法的接口。当前仍属于实验性接口，当前暂不支持图下沉模式及CPU、GPU后端，后续会逐步完善。同时大量的存量Tensor接口，包括+=、-=、*=、/=等运算符，通过重载的方式在Ascend后端接入了Aclnn算子。详细见[官网接口列表](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/mindspore.Tensor.html#mindspore.Tensor)。
+
+#### 非兼容性接口变更
+
+- [mindspore.Tensor.new_ones](https://www.mindspore.cn/docs/zh-CN/r2.5.0/api_python/mindspore/Tensor/mindspore.Tensor.new_zeros.html)接口的size入参取消对Tensor类型的支持。
+- mindspore.Profiler删除参数timeline_limit、rank_id、analyse_only、env_enable。
+
+- 接口名称：mindspore.Profiler
+
+  变更内容：废弃profile_communication参数，通过设置profiler_level=ProfilerLevel.Level1或profiler_level=ProfilerLevel.Level2采集通讯矩阵数据。
+
+  说明：profiler_level默认值为ProfilerLevel.Level0。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.5.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_communication=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(profiler_level=ProfilerLevel.Level1)或Profiler(profiler_level=ProfilerLevel.Level2)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.Profiler
+
+  变更内容：废弃op_time参数，通过设置activaties=[mindspore.profiler.ProfilerActivity.NPU]设置采集NPU侧算子性能数据。
+
+  说明：activaties参数类型为列表，只要包含mindspore.profiler.ProfilerActivity.NPU参数就表示使能采集NPU侧算子性能数据，默认开启采集。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.5.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(op_time=True)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.NPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.Profiler
+
+  变更内容：aicore_metrics的参数类型由int改为mindspore.profiler.AicoreMetrics枚举值。
+
+  说明：aicore_metrics默认值为mindspore.profiler.AicoreMetric.AiCoreNone。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.5.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(aicore_metrics=0)
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(aicore_metrics=mindspore.profiler.AicoreMetric.AiCoreNone)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.Profiler
+
+  变更内容：废弃profile_framework参数，通过设置activaties=[mindspore.profiler.ProfilerActivity.CPU]采集框架测数据。
+
+  说明：activaties参数类型为列表，只要包含mindspore.profiler.ProfilerActivity.CPU参数就表示使能采集框架性能数据，默认开启采集。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.5.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  Profiler(profile_framework="all")
+  </pre>
+  </td>
+  <td><pre>
+  Profiler(activaties=[mindspore.profiler.ProfilerActivity.CPU])
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+### 贡献者
+
+baishanyang ,bantao ,Bellatan ,biangelin ,BigSkySea ,caifubi ,candanzg ,candyhong ,Carey ,cccc1111 ,chaijinwei ,changzherui ,chengbin ,chengfeng27 ,chengxb7532 ,chujinjin ,coder2237 ,czrz ,dairenjie ,DavidFFFan ,DeshiChen ,dingjinshan ,ehaleva ,Erpim ,fary86 ,fengyixing ,ffmh ,fuchao ,fuhouyu ,gaoyong10 ,geyuhong ,guoyuzhe ,GuoZhibin ,guozhijian ,halo ,hangq ,haozhang ,hedongdong ,hehongzhe ,hhz886 ,HighCloud ,huangbingjian ,HuangLe02 ,huangziling ,huda ,Huilan Li ,hujiahui8 ,jiahaochen666 ,jiangchao_j ,jiangchenglin3 ,jiangshanfeng ,jiaorui ,jiaxueyu ,jizewei ,jjfeing ,JoeyLin ,jshawjc ,kakyo82 ,kingxian ,kisnwang ,leida ,liangchenghui ,lianghongrui ,LiangZhibo ,lichen ,limingqi107 ,LINH ,linux ,lionelchang ,lishanni ,liubuyu ,liujunzhu ,liuluobin ,liuxu ,liuyanwei ,liyan2022 ,LLLRT ,looop5 ,luochao60 ,luoxuewei ,luoyang ,lyk ,machenggui ,maoyuanpeng1 ,Margaret_wangrui ,master,mengxian ,MengXiangyu ,mengyuanli ,Mrtutu ,mylinchi ,NaCN ,Nikanuo ,niujunhao ,panzhihui ,pengqi ,PingqiLi ,pipecat ,qiuleilei ,qiuyufeng ,qiuzhongya ,r1chardf1d0 ,shaoshengqi ,shen_haochen ,shenhaojing ,shenwei41 ,shilishan ,shiro-zzz ,shuqian0 ,St.Universe ,stavewu ,superxf ,suteng ,TAJh ,tanghuikang ,tangmengcheng ,tan-wei-cheng ,tianxiaodong ,TuDouNi ,TYWZ22259 ,user_0145 ,VectorSL ,vincen45 ,wang_ziqi ,wangshaocong ,wangwensheng4 ,weiyang ,wtcheng ,wtobill ,wujiangming ,wujueying ,wuweikang ,wwwbby ,XianglongZeng ,xiaopeng ,xiaotianci ,xiaoyao ,xiedejin1 ,XinDu ,xuxinglei ,yang guodong ,yangben ,yanghaoran ,yanglong ,yanx ,Yanzhi_YI ,yao_yf ,yefeng ,Yi_zhang95 ,yide12 ,yihangchen ,YijieChen ,YingtongHu ,ylw ,yonibaehr ,yuanqi ,yuchaojie ,yuezenglin ,YuJianfeng ,yyuse ,Zhang QR ,zhangbuxue ,zhangdanyang ,zhanghaibo ,zhangminli ,zhangyinxia ,ZhangZGC ,zhangzhen ,zhengzuohe ,zhouyaqiang0 ,zhuguodong ,zichun_ye ,zlq2020 ,zong_shuai ,ZPaC ,zyli2020 ,陈一 ,程超 ,冯一航 ,胡彬 ,宦晓玲 ,黄勇 ,简云超 ,康伟 ,李栋 ,李良灿 ,李林杰 ,李寅杰,刘崇鸣 ,刘力力 ,刘思铭 ,刘涛Liu ,刘勇琪 ,刘子涵 ,吕浩宇 ,吕凯盟 ,梅飞要 ,倪轩 ,任新 ,十一雷 ,孙昊辰 ,王禹程 ,王振邦 ,熊攀 ,俞涵 ,虞良斌 ,张栩浩 ,赵文璇 ,周莉莉 ,周一航 ,邹文祥
+
 ## MindSpore 2.4.1 Release Notes
 
 ### 主要特性及增强
@@ -52,7 +751,6 @@ bantao;caifubi;candanzg;chaijinwei;changzherui;chengbin;chujinjin;DeshiChen;ding
 - [STABLE] O1模式下支持kernel packet融合优化，提升动态shape网络执行性能，默认使能。
 - [BETA] O1模式下支持MatMul后向融合（epilogue fuse）Elementwise算子。通过`mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`使能。
 - [BETA] O1模式下支持用户控制图算融合优化范围，用户通过graph_kernel_flags的enable_pass/disable_pass选项控制打开或者关闭对应融合算子。
-- [BETA] O0模式下支持GPTO执行序优化模块，通过mindspore.set_context(exec_order="gpto")使能。
 
 #### PyNative
 
@@ -640,7 +1338,7 @@ ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxin
 - [STABLE] 提供分级Profiler功能，通过profiler_level参数可控制按照不同级别进行性能数据采集。
 - [STABLE] Profiler analyse方法新增mode参数，可配置异步解析模式，性能数据解析与训练并行。
 - [STABLE] Profiler接口新增data_simplification参数，用户可控制性能数据解析完成后是否删除多余数据，节省硬盘空间。
-- [STABLE] Profiler接口增强内存分析功能，用户通过profile_memory参数可采集框架、CANN、硬件的内存申请、释放信息，并可通过[MindStudio工具](https://www.hiascend.com/forum/thread-0230130822583032044-1-1.html)进行可视化分析。
+- [STABLE] Profiler接口增强内存分析功能，用户通过profile_memory参数可采集框架、CANN、硬件的内存申请、释放信息，并可通过[MindStudio工具](https://www.hiascend.com/developer/blog/details/0230130822583032044)进行可视化分析。
 - [BETA] PyNative模式下Timeline整合host profiling信息，包括任务耗时、用户侧堆栈信息。
 
 #### Dump

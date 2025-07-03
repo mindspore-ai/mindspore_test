@@ -16,10 +16,21 @@
 """Implementation for internal polymorphism `sub` operations."""
 
 from __future__ import absolute_import
+from mindspore.ops.auto_generate.gen_ops_prim import InplaceSubExt, InplaceSubScalar
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._constexpr_utils import check_equal, make_tensor
 from mindspore.ops.composite import base
 from mindspore.ops import functional as F
+
+
+# x -= y
+augassign_sub = base.MultitypeFuncGraph('augassign_sub', True)
+"""
+`augassign_sub` is a metafuncgraph object which will compute the subtraction of two objects
+using ".register" decorator.
+"""
+
+augassign_sub.set_need_raise()
 
 
 sub = base.MultitypeFuncGraph("sub", True)
@@ -30,10 +41,17 @@ using ".register" decorator.
 sub.set_need_raise()
 
 
+@augassign_sub.register("Number", "Number")
 @sub.register("Number", "Number")
 def _sub_scalar(x, y):
     """Returns x - y where x and y are all scalars."""
     return F.scalar_sub(x, y)
+
+
+@augassign_sub.register("Tensor", "Tensor")
+def _sub_tensor_augassign(x, y):
+    """Returns x - y where x and y are all tensors."""
+    return InplaceSubExt()(x, y)
 
 
 @sub.register("Tensor", "Tensor")
@@ -42,10 +60,17 @@ def _sub_tensor(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("Number", "Tensor")
 @sub.register("Number", "Tensor")
 def _scalar_sub_tensor(x, y):
     """Returns x - y where x is a scalar and y is a tensor. x and y should have same dtype."""
     return F.tensor_sub(x, y)
+
+
+@augassign_sub.register("Tensor", "Number")
+def _tensor_sub_scalar_augassign(x, y):
+    """Returns x - y where x is a tensor and y is a scalar. x and y should have same dtype."""
+    return InplaceSubScalar()(x, y)
 
 
 @sub.register("Tensor", "Number")
@@ -54,6 +79,7 @@ def _tensor_sub_scalar(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("Tuple", "Tensor")
 @sub.register("Tuple", "Tensor")
 def _tuple_sub_tensor(x, y):
     """Returns x - y where x is a tuple and y is a tensor. """
@@ -61,6 +87,7 @@ def _tuple_sub_tensor(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("Tensor", "Tuple")
 @sub.register("Tensor", "Tuple")
 def _tensor_sub_tuple(x, y):
     """Returns x - y where x is a tensor and y is a tuple. """
@@ -68,6 +95,7 @@ def _tensor_sub_tuple(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("List", "Tensor")
 @sub.register("List", "Tensor")
 def _list_sub_tensor(x, y):
     """Returns x - y where x is a list and y is a tensor. """
@@ -75,6 +103,7 @@ def _list_sub_tensor(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("Tensor", "List")
 @sub.register("Tensor", "List")
 def _tensor_sub_list(x, y):
     """Returns x - y where x is a tensor and y is a list. """
@@ -82,6 +111,7 @@ def _tensor_sub_list(x, y):
     return F.tensor_sub(x, y)
 
 
+@augassign_sub.register("CSRTensor", "CSRTensor")
 @sub.register("CSRTensor", "CSRTensor")
 def _sub_csrtensor(x, y):
     """Returns x - y where x and y are all CSR tensors."""
@@ -89,6 +119,7 @@ def _sub_csrtensor(x, y):
     return F.csr_add(x, y, make_tensor(1, x.values.dtype), make_tensor(-1, x.values.dtype))
 
 
+@augassign_sub.register("COOTensor", "COOTensor")
 @sub.register("COOTensor", "COOTensor")
 def _sub_cootensor(x, y):
     """Returns x - y where x and y are all COO tensors."""
@@ -96,6 +127,7 @@ def _sub_cootensor(x, y):
     return F.coo_add(x, -y, make_tensor(0, x.values.dtype))
 
 
+@augassign_sub.register("Tensor", "COOTensor")
 @sub.register("Tensor", "COOTensor")
 def _tensor_sub_cootensor(x, y):
     """Returns x - y where x is a tensor and y is a COO tensor."""
@@ -103,6 +135,7 @@ def _tensor_sub_cootensor(x, y):
     return F.tensor_scatter_sub(x, y.indices, y.values)
 
 
+@augassign_sub.register("COOTensor", "Tensor")
 @sub.register("COOTensor", "Tensor")
 def _cootensor_sub_tensor(x, y):
     """Returns x - y where x is a COO tensor and y is a tensor."""
@@ -110,7 +143,9 @@ def _cootensor_sub_tensor(x, y):
     return F.tensor_scatter_add(-y, x.indices, x.values)
 
 
-@sub.register_default()
+# pylint: disable=protected-access
+@augassign_sub._register_default()
+@sub._register_default()
 def default_sub(x, y):
     """Default function for sub."""
     return x - y

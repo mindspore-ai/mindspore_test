@@ -26,7 +26,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, MicroBatchInterleaved, _MicroBatch, Cell
+from mindspore.nn.wrap.cell_wrapper import Cell
+from mindspore.parallel.nn.parallel_cell_wrapper import PipelineCell, MicroBatchInterleaved, _MicroBatch
 
 
 class DatasetLenet():
@@ -291,7 +292,7 @@ def run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1):
     label = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
     net = PipelineCell(MicroBatchInterleaved(pipeline_net, micro_batch_interleaved), 4)
-    params = net.infer_param_pipeline_stage()
+    params = net.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)

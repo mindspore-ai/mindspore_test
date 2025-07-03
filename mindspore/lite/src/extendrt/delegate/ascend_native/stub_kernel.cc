@@ -17,6 +17,7 @@
 #include "extendrt/delegate/ascend_native/stub_kernel.h"
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ops/ascend_native_stub.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameAscendNativeStub;

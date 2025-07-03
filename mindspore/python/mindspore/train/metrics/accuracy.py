@@ -45,11 +45,11 @@ class Accuracy(EvaluationBase):
         >>> from mindspore import Tensor
         >>> from mindspore.train import Accuracy
         >>>
-        >>> x = Tensor(np.array([[0.2, 0.5], [0.3, 0.1], [0.9, 0.6]]), mindspore.float32)
-        >>> y = Tensor(np.array([1, 0, 1]), mindspore.float32)
+        >>> y_pred = Tensor(np.array([[0.2, 0.5], [0.3, 0.1], [0.9, 0.6]]), mindspore.float32)
+        >>> y_true = Tensor(np.array([1, 0, 1]), mindspore.float32)
         >>> metric = Accuracy('classification')
         >>> metric.clear()
-        >>> metric.update(x, y)
+        >>> metric.update(y_pred, y_true)
         >>> accuracy = metric.eval()
         >>> print(accuracy)
         0.6666666666666666

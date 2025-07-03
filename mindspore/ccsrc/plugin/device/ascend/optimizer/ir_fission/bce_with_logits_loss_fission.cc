@@ -29,6 +29,9 @@
 #include "include/common/utils/anfalgo.h"
 #include "utils/trace_base.h"
 #include "abstract/dshape.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

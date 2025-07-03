@@ -1,0 +1,10 @@
+#deprecated logaddexp2
+logaddexp2:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

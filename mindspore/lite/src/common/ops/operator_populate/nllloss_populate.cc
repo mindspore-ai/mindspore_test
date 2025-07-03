@@ -17,6 +17,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/nllloss_parameter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 using mindspore::ops::kNameNLLLoss;
 using mindspore::ops::kNameNLLLossGrad;

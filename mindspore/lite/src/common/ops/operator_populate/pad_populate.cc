@@ -17,6 +17,7 @@
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/pad_parameter.h"
 #include "infer/cxx_api/pad_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 using mindspore::ops::kNamePadFusion;
 using mindspore::schema::PrimitiveType_PadFusion;
 

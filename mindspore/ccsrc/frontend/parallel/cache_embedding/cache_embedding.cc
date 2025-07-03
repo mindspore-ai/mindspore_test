@@ -37,6 +37,18 @@
 #include "frontend/optimizer/optimizer.h"
 #include "ir/func_graph.h"
 #include "utils/cache_embedding_hashmap_struct.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 namespace mindspore {
 namespace parallel {
 using ParamMap = mindspore::HashMap<ParameterPtr, ParameterPtr>;
@@ -317,7 +329,9 @@ AnfNodePtr CreateMapCacheIdx(const FuncGraphPtr &func_graph, const AnfNodePtr &i
   auto map_cache_idx = func_graph->NewCNode(map_cache_nodes);
 
   auto indices_ori_shp = indices->Shape();
+  MS_EXCEPTION_IF_NULL(indices_ori_shp);
   auto indices_shp = indices_ori_shp->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(indices_shp);
   ShapeVector shape(indices_shp->shape().size(), -1);
 
   auto cache_idx = std::make_shared<abstract::AbstractTensor>(indices_element_type, indices_shp);

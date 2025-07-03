@@ -16,10 +16,12 @@
 
 #include "kernel/cpu/fftfreq_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fftfreq_cpu {
 namespace {
 constexpr auto kInputNum = 3;
 constexpr auto kOutputNum = 1;
@@ -89,5 +91,6 @@ std::vector<KernelAttr> FFTFreqCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FFTFreq, FFTFreqCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFTFreq, FFTFreqCpuKernelMod);
+}  // namespace fftfreq_cpu
 }  // namespace kernel
 }  // namespace mindspore

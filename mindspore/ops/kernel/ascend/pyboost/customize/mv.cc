@@ -16,17 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/mv.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr MvAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                        const BaseTensorPtr &vec_tensor) {
+tensor::TensorPtr MvAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                    const TensorPtr &vec_tensor) {
   OpRunner::InferOpOutput(op, input_tensor, vec_tensor);
 
   // No need to convert input

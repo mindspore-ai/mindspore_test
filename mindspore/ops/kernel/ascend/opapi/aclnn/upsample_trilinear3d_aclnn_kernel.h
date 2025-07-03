@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear3d {
 
 class UpsampleTrilinear3DAscend final : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class UpsampleTrilinear3DAscend final : public AclnnKernelMod {
   double scales_h_;
   double scales_w_;
 };
+}  // namespace upsample_trilinear3d
 }  // namespace kernel
 }  // namespace mindspore
 

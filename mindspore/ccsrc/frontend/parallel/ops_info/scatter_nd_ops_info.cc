@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,14 +211,13 @@ Status ScatterNdOpsInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return FAILED;
   }
   auto anf_node_list = PrepareReplaceGraph();
-  // {indices_sub, mul, div, dtype};
   auto indices_sub = anf_node_list[0];
   auto mul = anf_node_list[1];
   auto div = anf_node_list[2];
   auto dtype = anf_node_list[3];
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " does not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g_.PushBack({gen_g_.NewOpInst(node_name), gen_g_.virtual_input_node(), indices_sub, mul});
@@ -246,7 +245,6 @@ Status ScatterNdMulDivBaseInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return FAILED;
   }
   auto anf_node_list = PrepareReplaceGraph();
-  // {indices_sub, mul, div, dtype};
   auto indices_sub = anf_node_list[0];
   auto mul = anf_node_list[1];
   auto div = anf_node_list[2];
@@ -257,7 +255,7 @@ Status ScatterNdMulDivBaseInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto add_mask = gen_g_.PushBack({gen_g_.NewOpInst(ADD), mul, reverse_sub});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " does not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g_.PushBack({gen_g_.NewOpInst(node_name), gen_g_.virtual_input_node(), indices_sub, add_mask});

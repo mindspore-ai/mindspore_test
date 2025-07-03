@@ -125,7 +125,7 @@ def test_exception_log_with_node_1():
     Expectation: specific error python code lines can be printed
     """
     # fork from test_manual_gatherv2.py::test_auto_parallel_error
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=2,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=2,
                                       global_rank=0)
     net = Net()
     _x = Tensor(np.ones([8, 8]), dtype=ms.int32)
@@ -196,7 +196,6 @@ def test_internal_exception_log_with_node_1():
     net = GradWrap(
         NetWithLoss(NetWithAdd2(bias, add_layout)))
     with pytest.raises(RuntimeError) as exec_info:
-        net.set_auto_parallel()
         compile_net(net, x)
     error_info = str(exec_info.value)
     index = error_info.find('self.add(y, self.bias)')
@@ -219,7 +218,6 @@ def test_internal_exception_log_with_node_2():
     indices = Tensor(np.array([[[0, 0], [1, 1]], [[0, 0], [1, 1]]]).astype(np.int32))
     update = Tensor(np.ones((2, 2, 3)).astype(np.float32))
     with pytest.raises(RuntimeError) as exec_info:
-        net.set_auto_parallel()
         compile_net(net, input_x, indices, update)
     error_info = str(exec_info.value)
     index = error_info.find('self.tensor_scatter_update(out, indices, update)')

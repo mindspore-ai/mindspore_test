@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_ftrl_cpu {
 class ApplyFtrlCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyFtrlCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class ApplyFtrlCpuKernelMod : public NativeCpuKernelMod {
   size_t input_elements_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

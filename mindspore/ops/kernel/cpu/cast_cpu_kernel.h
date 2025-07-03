@@ -23,11 +23,12 @@
 #include <vector>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cast_cpu {
 class CastCpuKernelMod : public NativeCpuKernelMod {
  public:
   CastCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class CastCpuKernelMod : public NativeCpuKernelMod {
 
   std::shared_ptr<CpuKernelFunc> kernel_func_;
 };
+}  // namespace cast_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

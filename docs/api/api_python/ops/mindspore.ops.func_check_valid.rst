@@ -17,7 +17,7 @@ mindspore.ops.check_valid
 
     :math:`y1 <= height * ratio - 1`
 
-    时，认为检查边界框在图片内。
+    时，认为边界框在图片内。
 
     .. warning::
         由 `bboxes` 指定的边界框和由 `img_metas` 指定的图片信息需要是有效的，即：
@@ -28,7 +28,7 @@ mindspore.ops.check_valid
         - **img_metas** (Tensor) - 原始图片的信息 :math:`(height, width, ratio)` ，指定有效边界为 :math:`(height * ratio - 1, width * ratio - 1)` 。数据类型必须是float16或float32。
 
     返回：
-        Tensor，shape为 :math:`(N,)` ，类型为bool，需要指出边界框是否在图片内。`True` 表示在，`False` 表示不在。
+        Tensor，shape为 :math:`(N,)` ，类型为bool，表示边界框是否在图片内。`True` 表示在，`False` 表示不在。
 
     异常：
         - **TypeError** - 如果 `bboxes` 或者 `img_metas` 不是Tensor。

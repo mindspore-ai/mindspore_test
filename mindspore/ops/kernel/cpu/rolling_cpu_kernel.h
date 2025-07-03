@@ -18,11 +18,12 @@
 
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rolling_cpu {
 namespace rolling {
 enum Method : int {
   Max,
@@ -53,6 +54,7 @@ class RollingCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
 };
+}  // namespace rolling_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

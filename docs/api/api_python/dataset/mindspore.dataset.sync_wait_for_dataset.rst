@@ -5,7 +5,7 @@ mindspore.dataset.sync_wait_for_dataset
 
     等待所有的卡需要的数据集文件下载完成。
 
-    .. note:: 
+    .. note::
         需要配合 :class:`mindspore.dataset.OBSMindDataset` 使用，建议在每次epoch开始前调用。
 
     参数：

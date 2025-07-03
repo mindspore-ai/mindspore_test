@@ -18,6 +18,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameLess;

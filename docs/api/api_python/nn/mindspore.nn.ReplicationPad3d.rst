@@ -3,7 +3,7 @@ mindspore.nn.ReplicationPad3d
 
 .. py:class:: mindspore.nn.ReplicationPad3d(padding)
 
-    根据 `padding` 对输入 `x` 的DHW维度上进行填充。
+    根据 `padding` 对输入 `x` 的DHW维度进行填充。
 
     参数：
         - **padding** (union[int, tuple]) - 填充 `x` 最后三个维度的大小。

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.common.parameter import Parameter
@@ -22,12 +21,12 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_01():
     """
     Feature: Control flow
@@ -75,9 +74,8 @@ def test_for_in_if_01():
     assert graph_backward_res == (Tensor([64], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_02():
     """
     Feature: Control flow
@@ -129,9 +127,8 @@ def test_for_in_if_02():
     assert graph_backward_res == (Tensor([1], mstype.float32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_03():
     """
     Feature: Control flow
@@ -184,9 +181,8 @@ def test_for_in_if_03():
     assert graph_backward_res == (Tensor([3], mstype.float32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_04():
     """
     Feature: Control flow
@@ -225,21 +221,17 @@ def test_for_in_if_04():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_in_if_net = ForInIfNet()
-        net = GradNet(for_in_if_net)
-        forward_net = ForInIfNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
-        assert graph_forward_res == Tensor([45], mstype.int32)
-        assert graph_backward_res == (Tensor([9], mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    for_in_if_net = ForInIfNet()
+    net = GradNet(for_in_if_net)
+    forward_net = ForInIfNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
+    assert graph_forward_res == Tensor([45], mstype.int32)
+    assert graph_backward_res == (Tensor([9], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_05():
     """
     Feature: Control flow
@@ -280,15 +272,12 @@ def test_for_in_if_05():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_in_if_net = ForInIfNet()
-        net = GradNet(for_in_if_net)
+    for_in_if_net = ForInIfNet()
+    net = GradNet(for_in_if_net)
 
-        forward_net = ForInIfNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
+    forward_net = ForInIfNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
 
-        assert graph_forward_res == Tensor([-91], mstype.int32)
-        assert graph_backward_res == (Tensor([13], mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    assert graph_forward_res == Tensor([-91], mstype.int32)
+    assert graph_backward_res == (Tensor([13], mstype.int32),)

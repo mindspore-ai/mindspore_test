@@ -39,14 +39,14 @@ namespace ps {
 namespace core {
 // File storage persistent information.
 // for example
-//{
+// {
 //   "scheduler_ip": "127.0.0.1",
 //   "scheduler_port": 1,
 //   "worker_num": 8,
 //   "server_num": 16,
 //   "total_node_num": 16
-//}
-class FileConfiguration : public Configuration {
+// }
+class BACKEND_COMMON_EXPORT FileConfiguration : public Configuration {
  public:
   explicit FileConfiguration(const std::string &path) : file_path_(path), is_initialized_(false) {}
   ~FileConfiguration() = default;

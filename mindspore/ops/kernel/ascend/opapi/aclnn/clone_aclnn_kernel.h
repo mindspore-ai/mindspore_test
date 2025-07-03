@@ -21,6 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace clone {
 
 class CloneAscend : public AclnnKernelMod {
  public:
@@ -33,6 +34,7 @@ class CloneAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace clone
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -17,16 +17,15 @@
 #include "kernel/ascend/pyboost/customize/matmul_ext.h"
 #include <string>
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void MatMulExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                              const BaseTensorPtr &mat2_tensor) {
+void MatMulExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                              const TensorPtr &mat2_tensor) {
   OpRunner::InferOpOutput(op, input_tensor, mat2_tensor);
   // No need to convert input
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, mat2_tensor);

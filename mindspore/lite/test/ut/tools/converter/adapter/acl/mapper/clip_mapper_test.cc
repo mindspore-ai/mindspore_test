@@ -25,6 +25,7 @@
 #include "tools/converter/anf_transform.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "mindapi/ir/tensor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 constexpr float kNumClipFloatMinValue = -1.0;

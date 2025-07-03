@@ -92,6 +92,8 @@ class MS_CORE_API Cloner {
   GraphFilterFunc lifting_func_graph_filter() const { return lifting_func_graph_filter_; }
   void set_lifting_func_graph_filter(GraphFilterFunc filter) { lifting_func_graph_filter_ = filter; }
 
+  ScopePtr GetNodeScope(const AnfNodePtr &node) const;
+
  private:
   void CloneNodes();
   void LinkCNodeEdges();

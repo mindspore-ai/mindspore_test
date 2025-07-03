@@ -24,11 +24,12 @@
 #include <random>
 #include <algorithm>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_avg_pool_cpu {
 class FractionalAvgPoolCpuKernelMod : public NativeCpuKernelMod {
  public:
   FractionalAvgPoolCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class FractionalAvgPoolCpuKernelMod : public NativeCpuKernelMod {
   int seed_{0};
   int seed2_{0};
 };
+}  // namespace fractional_avg_pool_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FRACTIONAL_AVG_POOL_CPU_KERNEL_H_

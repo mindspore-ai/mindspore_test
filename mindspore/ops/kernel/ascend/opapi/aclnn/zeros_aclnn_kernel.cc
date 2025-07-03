@@ -23,12 +23,13 @@
 #include "ir/tensor.h"
 #include "runtime/stream.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace zeros {
 
 void ZerosAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -43,5 +44,6 @@ bool ZerosAscendCall::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Zeros, ZerosAscendCall);
+}  // namespace zeros
 }  // namespace kernel
 }  // namespace mindspore

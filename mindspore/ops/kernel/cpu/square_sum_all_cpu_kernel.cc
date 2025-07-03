@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/square_sum_all_cpu_kernel.h"
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace square_sum_all_cpu {
 namespace {
 constexpr size_t kSquareSumAllInputsNum = 2;
 constexpr size_t kSquareSumAllOutputsNum = 2;
@@ -125,5 +126,6 @@ std::vector<KernelAttr> SquareSumAllCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SquareSumAll, SquareSumAllCpuKernelMod);
+}  // namespace square_sum_all_cpu
 }  // namespace kernel
 }  // namespace mindspore

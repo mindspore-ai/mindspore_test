@@ -22,11 +22,12 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace edit_distance_cpu {
 class EditDistanceCpuKernelMod : public NativeCpuKernelMod {
  public:
   EditDistanceCpuKernelMod() = default;
@@ -85,6 +86,7 @@ inline size_t LevenshteinDistance(const Container1 &s, const Container2 &t, cons
   return LevenshteinDistance(std::vector<typename Container1::value_type>(s.data(), s.data() + s.size()),
                              std::vector<typename Container1::value_type>(t.data(), t.data() + t.size()), cmp);
 }
+}  // namespace edit_distance_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

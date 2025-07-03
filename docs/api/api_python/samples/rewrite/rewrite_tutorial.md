@@ -40,7 +40,7 @@ print(stree.get_code())
 
 运行结果如下：
 
-``` log
+```python
 import sys
 sys.path.append('...') # Current working directory
 import mindspore
@@ -75,7 +75,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -111,7 +111,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNet_2Opt]
 node type          name        codes                         arg providers             target users
 -----------------  ----------  ----------------------------  ------------------------  --------------------------
@@ -149,7 +149,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                 arg providers           target users
 -----------------  --------  --------------------  ----------------------  ------------------------
@@ -194,7 +194,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                   arg providers           target users
 -----------------  --------  ----------------------  ----------------------  ------------------------
@@ -228,7 +228,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -273,7 +273,7 @@ stree.print_node_tabulate()
 
 运行结果如下：
 
-``` log
+```text
 [MyNet_3Opt]
 node type          name     codes              arg providers          target users
 -----------------  -------  -----------------  ---------------------  ----------------------
@@ -302,7 +302,7 @@ stree.print_node_tabulate()
 
 该样例将原始网络里的relu节点替换为new_relu节点，运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name      codes                 arg providers           target users
 -----------------  --------  --------------------  ----------------------  ------------------------
@@ -337,7 +337,7 @@ stree.print_node_tabulate()
 
 该用例将relu节点替换为两个新的节点，其中第一个节点的输出 ``y1`` 作为返回值更新return节点。运行结果如下：
 
-``` log
+```text
 [MyNetOpt]
 node type          name        codes                    arg providers             target users
 -----------------  ----------  -----------------------  ------------------------  ---------------------------------------------

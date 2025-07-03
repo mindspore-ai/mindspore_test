@@ -21,12 +21,13 @@
 #include <algorithm>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/convert_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace median_grad_cpu {
 class MedianGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MedianGradCpuKernelMod> {
  public:
   MedianGradCpuKernelMod() = default;
@@ -71,6 +72,7 @@ class MedianGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
   template <typename T1, typename T2>
   bool MedianGradCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace median_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

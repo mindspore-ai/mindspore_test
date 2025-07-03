@@ -20,11 +20,12 @@
 #include <functional>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hamming_window_cpu {
 class HammingWindowCpuKernelMod : public NativeCpuKernelMod {
  public:
   HammingWindowCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class HammingWindowCpuKernelMod : public NativeCpuKernelMod {
   bool periodic_;
   float alpha_, beta_;
 };
+}  // namespace hamming_window_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

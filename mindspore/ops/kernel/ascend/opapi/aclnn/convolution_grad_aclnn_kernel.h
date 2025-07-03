@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace convolution_grad {
 
 class ConvolutionGradAscend : public AclnnKernelMod {
  public:
@@ -45,6 +46,7 @@ class ConvolutionGradAscend : public AclnnKernelMod {
   int8_t cube_math_type_{0};
   std::vector<int64_t> output_padding_;
 };
+}  // namespace convolution_grad
 }  // namespace kernel
 }  // namespace mindspore
 

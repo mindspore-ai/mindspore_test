@@ -25,12 +25,13 @@
 #include <vector>
 #include <tuple>
 #include <complex>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/base/unstack_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unpack_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -83,6 +84,7 @@ class UnpackCpuKernelMod : public NativeCpuKernelMod {
   size_t input_size_{1};
   int64_t origin_axis_{0};
 };
+}  // namespace unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

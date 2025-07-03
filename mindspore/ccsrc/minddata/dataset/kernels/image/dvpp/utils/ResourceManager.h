@@ -28,22 +28,13 @@
 
 #include "acl/acl.h"
 
-#ifndef BUILD_LITE
 #include "acl_env_guard.h"
-#else
-#include "mindspore/lite/src/extendrt/kernel/ascend/model/acl_env_guard.h"
-#endif
 #include "minddata/dataset/kernels/image/dvpp/utils/CommonDataType.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/ErrorCode.h"
 #include "minddata/dataset/kernels/image/dvpp/utils/resouce_info.h"
 #include "minddata/dataset/util/log_adapter.h"
-#ifndef BUILD_LITE
 using AclEnvGuard = mindspore::AclEnvGuard;
 using AclInitAdapter = mindspore::AclInitAdapter;
-#else
-using AclEnvGuard = mindspore::kernel::acl::AclEnvGuard;
-using AclInitAdapter = mindspore::kernel::acl::AclInitAdapter;
-#endif
 
 APP_ERROR ExistFile(const std::string &filePath);
 

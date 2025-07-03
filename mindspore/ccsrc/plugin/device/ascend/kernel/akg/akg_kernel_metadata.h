@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_AKG_AKG_KERNEL_METADATA_H_
 
 #include <vector>
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 
 namespace mindspore {
 namespace kernel {

@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace add {
 
 void AddAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
@@ -34,5 +35,6 @@ bool AddAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vec
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Add, AddAscend);
+}  // namespace add
 }  // namespace kernel
 }  // namespace mindspore

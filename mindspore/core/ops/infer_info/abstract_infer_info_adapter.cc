@@ -145,6 +145,7 @@ InferInfoPtr AbstractInferInfoAdapter::GetDynamicSequenceElement() {
     MS_LOG(EXCEPTION) << "Calling GetDynamicSequenceElement on a non-dynamic-sequence, " << BaseDebugInfo();
   }
   auto abstract_sequence = abs_->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(abstract_sequence);
   auto element_abs = abstract_sequence->dynamic_len_element_abs();
   return std::make_unique<AbstractInferInfoAdapter>(element_abs, op_type_, arg_name_);
 }

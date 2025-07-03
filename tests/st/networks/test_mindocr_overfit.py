@@ -204,7 +204,7 @@ def main_test_process(args, cfg):
     return loss_start, loss_end, average_step_time, time_compile
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_db_r50_1p():
     """
     Feature: MindOCR dbnet-resnet50 1p test
@@ -215,7 +215,8 @@ def test_db_r50_1p():
         [f"--config={workspace}/mindocr/configs/det/dbnet/db_r50_icdar15.yaml"]
     )
     config = Dict(config)
-    set_context(jit_config={"jit_level": "O2"})
+    # O2 does not support the non-contiguous tensor.
+    set_context(jit_config={"jit_level": "O0"})
 
     loss_start, loss_end, _, _ = main_test_process(args, config)
 
@@ -227,7 +228,7 @@ def test_db_r50_1p():
     ), f"Loss end should in less than 11.5, but got {loss_end}"
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_crnn_vgg7_1p():
     """
     Feature: MindOCR crnn_vgg7 1p test

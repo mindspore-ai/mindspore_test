@@ -8,7 +8,7 @@ mindspore.numpy.corrcoef
 
     .. note::
         目前不支持复数。
-    
+
     参数：
         - **x** (Union[int, float, bool, tuple, list, Tensor]) - 这是一个1-D或2-D的数组，包含多个变量和观测值。 每一行的 `x` 代表一个变量，每一列代表所有这些变量的一个观测值。 详细见下文 `rowvar` 的说明。
         - **y** (Union[int, float, bool, tuple, list, Tensor], 可选) - 这是一个附加的变量和观测值集合，默认值： ``None`` 。

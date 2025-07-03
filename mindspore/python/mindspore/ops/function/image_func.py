@@ -19,7 +19,7 @@ from mindspore.ops import operations as P
 from mindspore.ops.operations import image_ops as IMG
 import mindspore.common.dtype as mstype
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from .._primitive_cache import _get_cache_prim
 
 check_valid_ = P.CheckValid()

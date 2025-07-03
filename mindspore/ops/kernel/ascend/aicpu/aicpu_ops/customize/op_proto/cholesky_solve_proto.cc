@@ -31,30 +31,24 @@ CUST_IMPLEMT_INFERFUNC(CholeskySolve, CholeskySolveInfer) {
   Shape x1_shape = op.GetInputDescByName("x1").GetShape();
   Shape x2_shape = op.GetInputDescByName("x2").GetShape();
   if (x1_shape.GetDimNum() != 2 && x1_shape.GetDimNum() != 3) {
-    // OP_LOGE(TbeGetName(op), "Op CholeskySolve's inputs must be rank 2 or 3.");
     return GRAPH_FAILED;
   }
   if (x1_shape.GetDimNum() != x2_shape.GetDimNum()) {
-    // OP_LOGE(TbeGetName(op), "Op CholeskySolve's two inputs cannot match.");
     return GRAPH_FAILED;
   }
   size_t rank = x1_shape.GetDimNum();
   if (rank == 2) {
     if (x1_shape.GetDim(0) != x2_shape.GetDim(0)) {
-      // OP_LOGE(TbeGetName(op), "Op CholeskySolve's two inputs cannot match.");
       return GRAPH_FAILED;
     }
     if (x2_shape.GetDim(0) != x2_shape.GetDim(1)) {
-      // OP_LOGE(TbeGetName(op), "Op CholeskySolve's second input should be batch square.");
       return GRAPH_FAILED;
     }
   } else {
     if (x1_shape.GetDim(0) != x2_shape.GetDim(0) || x1_shape.GetDim(1) != x2_shape.GetDim(1)) {
-      // OP_LOGE(TbeGetName(op), "Op CholeskySolve's two inputs cannot match.");
       return GRAPH_FAILED;
     }
     if (x2_shape.GetDim(1) != x2_shape.GetDim(2)) {
-      // OP_LOGE(TbeGetName(op), "Op CholeskySolve's second input should be batch square.");
       return GRAPH_FAILED;
     }
   }

@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "ops/base_operator.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace ops {

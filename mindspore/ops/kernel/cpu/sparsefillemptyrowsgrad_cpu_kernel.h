@@ -18,11 +18,12 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSEFILLEMPTYROWSGRAD_CPU_KERNEL_H_
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparsefillemptyrowsgrad_cpu {
 class SparseFillEmptyRowsGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseFillEmptyRowsGradCpuKernelMod() = default;
@@ -46,6 +47,7 @@ class SparseFillEmptyRowsGradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector reverse_index_map_shape_;
   ShapeVector grad_values_shape_;
 };
+}  // namespace sparsefillemptyrowsgrad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSEFILLEMPTYROWSGRAD_CPU_KERNEL_H_

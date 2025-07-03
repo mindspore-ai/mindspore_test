@@ -17,11 +17,12 @@
 #include "kernel/cpu/softmax_grad_fusion_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/softmax_grad_fusion_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace softmax_grad_fusion_cpu {
 namespace {
 constexpr size_t kSoftmaxGradFusionInputsNum = 2;
 constexpr size_t kSoftmaxGradFusionOutputsNum = 1;
@@ -87,5 +88,6 @@ bool SoftmaxGradFusionCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SoftmaxGradFusion, SoftmaxGradFusionCpuKernelMod);
+}  // namespace softmax_grad_fusion_cpu
 }  // namespace kernel
 }  // namespace mindspore

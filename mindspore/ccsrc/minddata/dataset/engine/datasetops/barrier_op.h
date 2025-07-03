@@ -41,10 +41,10 @@ class BarrierOp : public PipelineOp {
   // @param condition_func - the blocking condition check per row
   // The reason for this is having other values would complicate how the pipeline behaves with other operators
   // One example of such case is having batch after barrier.
-  BarrierOp(int32_t op_connector_size, const std::string &condition_name, py::function condition_func);
+  BarrierOp(int32_t op_connector_size, const std::string &condition_name, const py::function &condition_func);
 
   /// Destructor
-  ~BarrierOp();
+  ~BarrierOp() override;
 
   Status EofReceived(int32_t) override;
 

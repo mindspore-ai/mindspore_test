@@ -18,11 +18,12 @@
 
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fused_cast_adam_weight_decay_cpu {
 class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
  public:
   FusedCastAdamWeightDecayCpuKernelMod() = default;
@@ -107,6 +108,7 @@ class FusedCastAdamWeightDecayCpuKernelMod : public NativeCpuKernelMod {
   TypeId var_dtype_{kTypeUnknown};
   TypeId gradient_dtype_{kTypeUnknown};
 };
+}  // namespace fused_cast_adam_weight_decay_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

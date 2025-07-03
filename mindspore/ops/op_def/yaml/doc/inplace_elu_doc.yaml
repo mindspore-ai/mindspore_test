@@ -1,0 +1,49 @@
+inplace_elu:
+    description: |
+        Exponential Linear Unit activation function.
+
+        Applies the exponential linear unit function of input tensors inplace element-wise.
+        The activation function is defined as:
+
+        .. math::
+
+            \text{ELU}(x)= \left\{
+            \begin{array}{align}
+                \alpha(e^{x}  - 1) & \text{if } x \le 0\\
+                x & \text{if } x \gt 0\\
+            \end{array}\right.
+
+        Where :math:`x` is the element of input Tensor `input`, :math:`\alpha` is param `alpha`,
+        it determines the smoothness of ELU.
+
+        ELU Activation function graph:
+
+        .. image:: ../images/ELU.png
+            :align: center
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input of ELU is a Tensor of any dimension.
+            alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0``.
+
+        Returns:
+            Tensor, has the same shape and data type as `input`.
+
+        Raises:
+            RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+            TypeError: If the dtype of `alpha` is not float.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+            >>> ops.auto_generate.inplace_elu(input)
+            >>> print(input)
+            [[-0.63212055  4.         -0.99966455]
+             [ 2.         -0.99326205  9.        ]]

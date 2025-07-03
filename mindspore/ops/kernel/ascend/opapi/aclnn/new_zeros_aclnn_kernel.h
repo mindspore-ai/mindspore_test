@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace new_zeros {
 
 class NewZerosAscend : public AclnnKernelMod {
  public:
@@ -34,6 +35,7 @@ class NewZerosAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace new_zeros
 }  // namespace kernel
 }  // namespace mindspore
 

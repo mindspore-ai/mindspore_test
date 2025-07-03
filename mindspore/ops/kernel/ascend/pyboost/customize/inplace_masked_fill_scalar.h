@@ -21,15 +21,14 @@
 
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceMaskedFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &input, const BaseTensorPtr &mask,
-                                                             const ScalarPtr &value);
+tensor::TensorPtr InplaceMaskedFillScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                         const TensorPtr &mask, const ScalarPtr &value);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

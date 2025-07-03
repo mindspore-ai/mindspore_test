@@ -26,6 +26,13 @@
 #include "utils/convert_utils_base.h"
 #include "frontend/parallel/step_parallel.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace parallel {
@@ -202,8 +209,6 @@ AnfNodeIndex FindNodeLastInput(const CNodePtr &node, const FuncGraphPtr &graph, 
 }
 
 std::vector<BlockBorder> DivideIntoCommAndCalBlock(const std::vector<CNodePtr> &block) {
-  // the divided comm and call block like this.
-  // {cal_blk1_first, cal_blk1_last}, {comm_node1, comm_node1}, {cal_blk2_first, cal_blk2_last}
   std::vector<BlockBorder> borders;
   for (const auto &node : block) {
     if (node->HasAttr(kRecomputeInsert)) {
@@ -499,8 +504,8 @@ void OverlapRecomputeAndGradModelParallel(const FuncGraphPtr &graph) {
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_enable = ms_context->get_param<bool>(MS_CTX_RECOMPUTE_COMM_OVERLAP);
-  if (!is_enable) {
+  auto recompute_comm_overlap = ms_context->get_param<std::string>(MS_CTX_RECOMPUTE_COMM_OVERLAP);
+  if (recompute_comm_overlap != "grad_model_parallel") {
     return;
   }
   if (ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse) {

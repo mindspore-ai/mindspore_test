@@ -22,11 +22,12 @@
 #include <map>
 
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
-class SparseApplyAdagradDACpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_adagrad_da_cpu {
+class SparseApplyAdagradDACpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                          public MatchKernelHelper<SparseApplyAdagradDACpuKernelMod> {
  public:
   SparseApplyAdagradDACpuKernelMod() = default;
@@ -53,6 +54,7 @@ class SparseApplyAdagradDACpuKernelMod : public SparseOptimizerCpuKernelMod,
  protected:
   void ResetResource() noexcept;
 };
+}  // namespace sparse_apply_adagrad_da_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

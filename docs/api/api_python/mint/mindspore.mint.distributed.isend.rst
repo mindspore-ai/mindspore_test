@@ -10,9 +10,9 @@ mindspore.mint.distributed.isend
 
     参数：
         - **tensor** (Tensor) - 输入发送Tensor。
-        - **dst** (int，可选) - 表示发送目标的进程编号。只有目标进程会收到张量。默认值：0。
+        - **dst** (int，可选) - 表示发送目标的进程编号。只有目标进程会收到张量。默认值： ``0``。
         - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
-        - **tag** (int，可选) - 用于区分发送、接收消息的标签。该消息将被拥有相同 `tag` 的Receive接收。默认值：0。当前为预留参数。
+        - **tag** (int，可选) - 用于区分发送、接收消息的标签。该消息将被拥有相同 `tag` 的Receive接收。默认值： ``0``。当前为预留参数。
 
     返回：
         CommHandle，CommHandle是一个异步工作句柄。

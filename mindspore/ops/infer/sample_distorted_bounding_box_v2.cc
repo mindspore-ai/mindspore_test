@@ -38,6 +38,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -51,9 +52,6 @@ abstract::TupleShapePtr SampleDistortedBoundingBoxV2InferShape(const PrimitivePt
                                                                const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  const constexpr int64_t kIndex0 = 0;
-  const constexpr int64_t kIndex1 = 1;
-  const constexpr int64_t kIndex2 = 2;
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);

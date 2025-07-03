@@ -22,11 +22,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace multi_margin_loss_grad_cpu {
 class MultiMarginLossGradCPUKernelMod : public NativeCpuKernelMod,
                                         public MatchKernelHelper<MultiMarginLossGradCPUKernelMod> {
  public:
@@ -71,6 +72,7 @@ class MultiMarginLossGradCPUKernelMod : public NativeCpuKernelMod,
   size_t y_grad_dims = 1;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace multi_margin_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MULTI_MARGIN_LOSS_GRAD_CPU_KERNEL_H_

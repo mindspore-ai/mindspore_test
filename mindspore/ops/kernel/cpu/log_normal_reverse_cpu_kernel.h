@@ -19,11 +19,12 @@
 
 #include <map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace log_normal_reverse_cpu {
 class LogNormalReverseCpuKernel : public NativeCpuKernelMod {
  public:
   LogNormalReverseCpuKernel() = default;
@@ -49,6 +50,7 @@ class LogNormalReverseCpuKernel : public NativeCpuKernelMod {
   float input_mean_;
   float input_std_;
 };
+}  // namespace log_normal_reverse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

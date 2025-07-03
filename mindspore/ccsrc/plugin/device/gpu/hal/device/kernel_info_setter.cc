@@ -28,13 +28,15 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "kernel/kernel.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/oplib/opinfo.h"
-#include "kernel/oplib/oplib.h"
+#include "common/kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/oplib/opinfo.h"
+#include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/gpu/custom/custom_aot_gpu_kernel.h"
@@ -43,7 +45,13 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace device {
@@ -199,7 +207,7 @@ bool SelectAkgKernel(const CNodePtr &kernel_node, const std::shared_ptr<KernelBu
     MS_LOG(EXCEPTION) << "Parsed metadata of op[" << op_name << "] failed.";
   }
   if (kernel_info_list.empty()) {
-    MS_LOG(EXCEPTION) << "Akg dose not has metadata of op[" << op_name << "].";
+    MS_LOG(EXCEPTION) << "Akg does not has metadata of op[" << op_name << "].";
   }
 
   bool match = std::any_of(kernel_info_list.begin(), kernel_info_list.end(),
@@ -504,12 +512,12 @@ void FormatTransformChecker::CheckSupportFormatTransform(const std::shared_ptr<s
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM)) {
+  if (AnfAlgo::GetDisableFormatTransform(kernel_graph)) {
     MS_LOG(INFO) << "Disable the automatic format transform function.";
     format_transform_ = false;
     return;
   }
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!IsJit()) {
     format_transform_ = false;
     return;
   }
@@ -654,8 +662,8 @@ std::pair<bool, std::pair<std::string, ExceptionType>> GetSelectKernelObjectType
 
     MS_LOG(DEBUG) << "Set kernel object type build info for node:" << kernel_node->DebugString()
                   << " output type:" << output_object_types << " output element type:" << output_element_object_types;
-    kernel::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types,
-                                         output_element_object_types);
+    AnfAlgo::SetKernelObjectTypeBuildInfo(kernel_node, input_object_types, output_object_types,
+                                          output_element_object_types);
     if (!kernel_attrs.empty()) {
       auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(kernel_node);
       kernel_build_info->SetOpType(kernel::OpType::SKIP);
@@ -664,11 +672,11 @@ std::pair<bool, std::pair<std::string, ExceptionType>> GetSelectKernelObjectType
   }
 
   std::vector<kernel::KernelAttr> object_selected_kernel_attrs;
-  if (!kernel::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
+  if (!AnfAlgo::SelectKernelByObjectType(kernel_node, kernel_attrs, &object_selected_kernel_attrs)) {
     return {false, kernel::KernelObjectTypeNotSupportWarning(kernel_node)};
   }
 
-  kernel::SetKernelObjectTypeWithSelectedAttr(kernel_node, object_selected_kernel_attrs[0]);
+  AnfAlgo::SetKernelObjectTypeWithSelectedAttr(kernel_node, object_selected_kernel_attrs[0]);
   return {true, {}};
 }
 

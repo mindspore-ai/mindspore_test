@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 #include "kernel/ascend/pyboost/customize/copy.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr CopyAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr CopyAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
 
-  std::vector<tensor::BaseTensorPtr> outputs;
+  std::vector<tensor::TensorPtr> outputs;
   PyBoostUtils::CreateOutputTensor(input_tensor->data_type(), input_tensor->shape(), &outputs);
   op->set_outputs(outputs);
 

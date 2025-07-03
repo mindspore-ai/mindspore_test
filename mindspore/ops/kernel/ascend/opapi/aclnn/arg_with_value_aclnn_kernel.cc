@@ -21,17 +21,18 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace arg_with_value {
 
 void ArgMaxWithValueAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  axis_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   GetWorkspaceForResize(inputs[kIndex0], axis_, keep_dims_, outputs[kIndex1], outputs[kIndex0]);
 }
 
@@ -45,8 +46,8 @@ bool ArgMaxWithValueAscend::Launch(const std::vector<KernelTensor *> &inputs,
 
 void ArgMinWithValueAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  axis_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   GetWorkspaceForResize(inputs[kIndex0], axis_, keep_dims_, outputs[kIndex1], outputs[kIndex0]);
 }
 
@@ -59,5 +60,6 @@ bool ArgMinWithValueAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMaxWithValue, ArgMaxWithValueAscend);
 MS_ACLNN_KERNEL_FACTORY_REG(ArgMinWithValue, ArgMinWithValueAscend);
+}  // namespace arg_with_value
 }  // namespace kernel
 }  // namespace mindspore

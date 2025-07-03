@@ -26,9 +26,8 @@
 #include <map>
 #include <algorithm>
 
-using namespace std;
-using namespace ge;
 namespace reduce_ops {
+using namespace ge;
 
 /*
  * only do infer shape for reduce with input_shape/axes, when keepdims = true

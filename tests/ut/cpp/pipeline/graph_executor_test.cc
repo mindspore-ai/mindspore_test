@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 #include "common/common_test.h"
 #include "utils/log_adapter.h"
 #include "pipeline/jit/ps/action.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 
 namespace mindspore {

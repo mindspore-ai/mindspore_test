@@ -46,7 +46,10 @@ def test_train():
     Description: Test context parallel trainer for train.
     Expectation: AssertionError
     """
-    os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+    ascend_home_path = os.getenv('ASCEND_HOME_PATH')
+    if not ascend_home_path:
+        os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     commands = [(f"export MS_DEV_P2P_HCCL_BUFFSIZE=24 && export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
                  f"bash {sh_path}/msrun_launch_llama.sh 4 test_train 8128",

@@ -31,5 +31,9 @@ class COMMON_EXPORT SignalGuard {
   void (*old_handler)(int, siginfo_t *, void *) = nullptr;
   struct sigaction int_action;
 };
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
+COMMON_EXPORT bool RegisterGlobalSignalHandler(IntHandlerFunc handler);
+COMMON_EXPORT void DefaultIntHandler(int, siginfo_t *, void *);
+#endif
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_SIGNAL_UTIL_H_

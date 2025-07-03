@@ -22,7 +22,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "ir/primitive.h"
 #include "frontend/operator/ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace pipeline {

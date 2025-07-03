@@ -1,17 +1,15 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: vfscanf_s  function
+ * Create: 2014-02-25
  */
 
 #include "secinput.h"
@@ -44,16 +42,16 @@ int vfscanf_s(FILE *stream, const char *format, va_list argList)
     int retVal;                 /* If initialization causes  e838 */
     SecFileStream fStr;
 
-    if ((stream == NULL) || (format == NULL)) {
+    if (stream == NULL || format == NULL) {
         SECUREC_ERROR_INVALID_PARAMTER("vfscanf_s");
         return SECUREC_SCANF_EINVAL;
     }
-    if (stream == stdin) {
+    if (stream == SECUREC_STREAM_STDIN) {
         return vscanf_s(format, argList);
     }
 
     SECUREC_LOCK_FILE(stream);
-    SECUREC_INIT_SEC_FILE_STREAM(fStr, SECUREC_FILE_STREAM_FLAG, stream, SECUREC_UNINITIALIZED_FILE_POS, NULL, 0);
+    SECUREC_FILE_STREAM_FROM_FILE(&fStr, stream);
     retVal = SecInputS(&fStr, format, argList);
     SECUREC_UNLOCK_FILE(stream);
     if (retVal < 0) {
@@ -63,5 +61,4 @@ int vfscanf_s(FILE *stream, const char *format, va_list argList)
 
     return retVal;
 }
-
 

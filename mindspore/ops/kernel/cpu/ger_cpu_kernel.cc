@@ -24,13 +24,15 @@
 #include <utility>
 
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl/fp32/matmul_fp32.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ger_cpu {
 namespace {
 const size_t kGerInputsNum = 2;
 const size_t kGerOutputsNum = 1;
@@ -301,5 +303,6 @@ const std::vector<std::pair<KernelAttr, GerCpuKernelMod::KernelRunFunc>> &GerCpu
 
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Ger,
                                  []() { return std::make_shared<GerCpuKernelMod>(prim::kPrimGer->name()); });
+}  // namespace ger_cpu
 }  // namespace kernel
 }  // namespace mindspore

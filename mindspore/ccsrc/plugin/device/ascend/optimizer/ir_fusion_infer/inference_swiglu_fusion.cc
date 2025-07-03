@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.h"
 #include <vector>
 #include <string>
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"
@@ -25,6 +25,9 @@
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -35,6 +38,7 @@ CNodePtr InferenceSwiGLUFusion::CreateSwiGLUNode(const FuncGraphPtr &func_graph,
   MS_ASSERT(func_graph != nullptr && node != nullptr && equiv != nullptr);
   std::string prim_name = "Swiglu";
   auto glu_prim = std::make_shared<Primitive>(prim_name);
+  glu_prim->AddAttr("FusionType", MakeValue("swiglu_v1"));
   auto input_node = utils::cast<AnfNodePtr>((*equiv)[input_]);
   MS_ASSERT(input_node != nullptr);
   auto axis_node = utils::cast<AnfNodePtr>((*equiv)[axis_]);
@@ -104,10 +108,6 @@ const AnfNodePtr InferenceSwiGLUFusion::Process(const FuncGraphPtr &func_graph, 
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   constexpr auto kInferenceSwiGLUName = "InferenceSwiGLU";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   auto enable_fusion =

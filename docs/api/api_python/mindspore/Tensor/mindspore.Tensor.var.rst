@@ -1,7 +1,7 @@
 mindspore.Tensor.var
 ====================
 
-.. py:method:: mindspore.Tensor.var(axis=None, ddof=0, keepdims=False)
+.. py:method:: mindspore.Tensor.var(axis=None, ddof=0, keepdims=False) -> Tensor
 
     在指定维度上的方差。
 
@@ -26,7 +26,7 @@ mindspore.Tensor.var
         - **TypeError** - 如果 `keepdims` 不是bool类型。
         - **ValueError** - 如果 `axis` 不在 :math:`[-self.ndim, self.ndim)` 范围内。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.mean` ：通过对Tensor中的所有元素求平均值来减少Tensor的维数。
         - :func:`mindspore.Tensor.std` ：计算沿指定轴的标准差。
 
@@ -39,16 +39,16 @@ mindspore.Tensor.var
 
     .. math::
         \delta ^2 = \frac{1}{\max(0, N - \delta N)}\sum^{N - 1}_{i = 0}(x_i - \bar{x})^2
-    
+
     其中 :math:`x` 表示用来计算方差的样本集， :math:`\bar{x}` 表示样本的均值， :math:`N` 表示样本的数量，:math:`\delta N` 则为 `correction` 的值。
 
     参数：
         - **dim** (None，int，tuple(int)，可选) - 用来进行规约计算的维度。默认值为 ``None`` ，所有维度都进行规约计算。
-    
+
     关键字参数：
         - **correction** (int，可选) - 样本大小和样本自由度之间的差异。默认为Bessel校正，默认值为 ``1`` 。
         - **keepdim** (bool，可选) - 是否保留输出Tensor的维度。如果为 ``True`` ，则保留缩小的维度，其大小为1，否则移除维度。默认值为 ``False`` 。
-    
+
     返回：
         Tensor，方差。
         假设 `self` Tensor的shape为 :math:`(x_0, x_1, ..., x_R)` ：

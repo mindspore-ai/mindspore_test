@@ -19,12 +19,16 @@ try:
     from mindspore._c_expression import GPUOpTuningConf
 except ImportError:
     pass
+from .device import _is_supported
+
+function_status = {'conv_fprop_algo': False, 'conv_wgrad_algo': False, 'conv_dgrad_algo': False}
 
 
 def conv_fprop_algo(mode):
     """
     Specifies convolution forward algorithm.
-    For detailed information, please refer to `NVIDA cuDNN about cudnnConvolutionForward <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN about cudnnConvolutionForward
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution forward algorithm. If not configured, the framework defaults to 'normal'.
@@ -57,8 +61,12 @@ def conv_fprop_algo(mode):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.op_tuning.conv_fprop_algo("performance")
+        >>> ms.device_context.gpu.op_tuning.conv_fprop_algo("performance")
     """
+    if not function_status['conv_fprop_algo']:
+        function_status['conv_fprop_algo'] = True
+        if not _is_supported():
+            return
     conv_fprop_algo_mode = ["normal", "performance", "implicit_gemm", "precomp_gemm", "gemm", "direct",
                             "fft", "fft_tiling", "winograd", "winograd_nonfused"]
     if mode in conv_fprop_algo_mode:
@@ -73,7 +81,8 @@ def conv_fprop_algo(mode):
 def conv_wgrad_algo(mode):
     """
     Specifies convolution filter grad algorithm.
-    For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution filter grad algorithm. If not configured, the framework defaults to 'normal'.
@@ -101,8 +110,12 @@ def conv_wgrad_algo(mode):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.op_tuning.conv_wgrad_algo("performance")
+        >>> ms.device_context.gpu.op_tuning.conv_wgrad_algo("performance")
     """
+    if not function_status['conv_wgrad_algo']:
+        function_status['conv_wgrad_algo'] = True
+        if not _is_supported():
+            return
     conv_wgrad_algo_mode = ["normal", "performance", "algo_0", "algo_1", "fft", "algo_3",
                             "fft_tiling", "winograd_nonfused"]
 
@@ -118,7 +131,8 @@ def conv_wgrad_algo(mode):
 def conv_dgrad_algo(mode):
     """
     Specifies convolution data grad algorithm.
-    For detailed information, please refer to `NVIDA cuDNN <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
+    For detailed information, please refer to `NVIDA cuDNN
+    <https://docs.nvidia.com/deeplearning/cudnn/latest/api/cudnn-cnn-library.html>`_.
 
     Args:
         mode (str): convolution data grad algorithm. If not configured, the framework defaults to 'normal'.
@@ -146,8 +160,12 @@ def conv_dgrad_algo(mode):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.device_count.gpu.op_tuning.conv_dgrad_algo("performance")
+        >>> ms.device_context.gpu.op_tuning.conv_dgrad_algo("performance")
     """
+    if not function_status['conv_dgrad_algo']:
+        function_status['conv_dgrad_algo'] = True
+        if not _is_supported():
+            return
     conv_dgrad_algo_mode = ["normal", "performance", "algo_0", "algo_1", "fft", "fft_tiling",
                             "winograd", "winograd_nonfused"]
 

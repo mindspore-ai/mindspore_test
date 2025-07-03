@@ -22,11 +22,12 @@
 #include <unordered_map>
 #include <algorithm>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/thread_pool.h"
 namespace mindspore {
 namespace kernel {
+namespace sparse_optimizer_cpu {
 template <typename T>
 struct SparseGradient {
   float *value_{nullptr};
@@ -449,6 +450,7 @@ class SparseOptimizerCpuKernelMod : public NativeCpuKernelMod {
   size_t var_first_dim_size_{0};
   size_t var_outer_dim_size_{1};
 };
+}  // namespace sparse_optimizer_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

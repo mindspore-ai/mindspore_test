@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,24 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/batch_norm_grad_ext.h"
+
 #include <memory>
+
 #include "abstract/dshape.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "utils/log_adapter.h"
-#include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr BatchNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  // Get input tensor shape.
-  auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
-  auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
-  std::vector<BaseShapePtr> shapes_list{x_shape_ptr->Clone(), weight_shape_ptr->Clone(), weight_shape_ptr->Clone()};
-  return std::make_shared<abstract::TupleShape>(shapes_list);
+ShapeArray BatchNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                const InferInfoPtrList &input_infos) const {
+  const auto &input_shape = input_infos[kIndex1]->GetShape();
+  auto channel = input_infos[kIndex1]->IsDynamicRank() ? abstract::Shape::kShapeDimAny : input_shape[kIndex1];
+  const std::vector<int64_t> weight_bias_shape{channel};
+  return {input_shape, weight_bias_shape, weight_bias_shape};
 }
 
-TypePtr BatchNormGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                            const std::vector<AbstractBasePtr> &input_args) const {
-  auto dy_type = input_args[kInputIndex0]->GetType();
-  std::vector<TypePtr> types_list;
-  types_list = {dy_type, kFloat32, kFloat32};
-  return std::make_shared<Tuple>(types_list);
+std::vector<TypeId> BatchNormGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                        const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType(), kNumberTypeFloat32, kNumberTypeFloat32};
 }
-
 }  // namespace ops
 }  // namespace mindspore

@@ -26,8 +26,8 @@
 #include "ir/anf.h"
 #include "ir/dtype/type.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/ccsrc/kernel/kernel.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
+#include "common/kernel.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace infer {

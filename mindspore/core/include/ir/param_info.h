@@ -148,6 +148,17 @@ class ParamInfo {
   std::string storage_format() const { return storage_format_; }
   void set_storage_format(const std::string &storage_format) { storage_format_ = storage_format; }
 
+  bool is_pipeline_shared_param() const { return is_pipeline_shared_param_; }
+  void set_is_pipeline_shared_param(bool is_pipeline_shared_param) {
+    is_pipeline_shared_param_ = is_pipeline_shared_param;
+  }
+
+  bool is_param_init() const { return is_param_init_; }
+  void set_is_param_init(bool is_param_init) { is_param_init_ = is_param_init; }
+
+  bool is_in_pynative_shard() const { return is_in_pynative_shard_; }
+  void set_is_in_pynative_shard(bool is_in_pynative_shard) { is_in_pynative_shard_ = is_in_pynative_shard; }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -167,6 +178,7 @@ class ParamInfo {
   bool requires_aggr_{true};
   std::vector<int64_t> parameter_shape_;
   std::string storage_format_{""};
+  bool is_in_pynative_shard_{false};
 
   // Record the origin shape before cut huge parameter to a small one.
   std::vector<int64_t> origin_shape_;
@@ -189,6 +201,10 @@ class ParamInfo {
   std::vector<int64_t> quant_shape_;
   // Used to ignore unused param
   bool ignore_device_addr_{false};
+  // Used to indicate shared parameter for pipeline parallel
+  bool is_pipeline_shared_param_{false};
+  // Used to indicate is auto_parallel mode and parameter is inited.
+  bool is_param_init_{false};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_PARAM_INFO_H_

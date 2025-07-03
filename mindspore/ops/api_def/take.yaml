@@ -1,0 +1,14 @@
+take:
+  - op_yaml: take_op.yaml
+    py_method: tensor_take # callback to python function "def tensor_take"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/take_method.yaml
+    py_method: deprecated_tensor_take # callback to python function "def deprecated_tensor_take"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

@@ -23,6 +23,7 @@
 #include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace ops {
@@ -41,7 +42,7 @@ BaseShapePtr BinaryCrossEntropyWithLogitsBackwardFuncImpl::InferShape(
 
 ShapeArray BinaryCrossEntropyWithLogitsBackwardFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                                     const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape_vector = x_tensor->shape();
   return {x_shape_vector};
@@ -49,7 +50,7 @@ ShapeArray BinaryCrossEntropyWithLogitsBackwardFuncImpl::InferShape(const Primit
 
 TypePtrList BinaryCrossEntropyWithLogitsBackwardFuncImpl::InferType(const PrimitivePtr &primitive,
                                                                     const ValuePtrList &input_values) const {
-  const auto &target_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &target_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(target_tensor);
   return {target_tensor->Dtype()};
 }

@@ -19,6 +19,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_impl/add.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameAddFusion;

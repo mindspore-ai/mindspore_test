@@ -20,11 +20,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace linalg_vector_norm {
 void LinalgVectorNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   auto ord_dtype_id = inputs[kIndex1]->dtype_id();
@@ -36,7 +37,7 @@ void LinalgVectorNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> 
   if (dim_opt.has_value()) {
     dim_ = dim_opt.value();
   }
-  keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
   dtype_ = outputs[kIndex0]->dtype_id();
 
   GetWorkspaceForResize(inputs[kIndex0], ord_scalar_, dim_, keepdim_, dtype_, outputs[kIndex0]);
@@ -51,5 +52,6 @@ bool LinalgVectorNormAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(LinalgVectorNorm, LinalgVectorNormAscend);
+}  // namespace linalg_vector_norm
 }  // namespace kernel
 }  // namespace mindspore

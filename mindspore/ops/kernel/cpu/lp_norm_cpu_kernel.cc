@@ -29,12 +29,14 @@
 #if defined(__aarch64__) && !defined(__APPLE__)
 #include <stdio.h>
 #endif
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/cpu/nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lp_norm_cpu {
 namespace {
 // An empiric parameters for parallel
 constexpr size_t kGrainSize = 32768;
@@ -241,5 +243,6 @@ std::vector<KernelAttr> LpNormCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LpNorm, LpNormCpuKernelMod);
+}  // namespace lp_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore

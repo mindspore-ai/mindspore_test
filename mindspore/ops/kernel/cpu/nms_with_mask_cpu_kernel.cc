@@ -20,10 +20,11 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nms_with_mask_cpu {
 namespace {
 constexpr size_t kIndexDataBuff = 0;
 constexpr size_t kIndexIndexBuff = 1;
@@ -35,6 +36,9 @@ constexpr size_t kIndexSelBoxes = 2;
 uint32_t NmsRoundUpPower2(int v) {
   constexpr uint32_t ONE = 1, TWO = 2, FOUR = 4, EIGHT = 8, SIXTEEN = 16;
   v--;
+  if (v <= 0) {
+    return ONE;
+  }
   uint32_t value = IntToUint(v);
   value |= value >> ONE;
   value |= value >> TWO;
@@ -282,5 +286,6 @@ const std::vector<std::pair<KernelAttr, NMSWithMaskCpuKernelMod::KernelRunFunc>>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NMSWithMask, NMSWithMaskCpuKernelMod);
+}  // namespace nms_with_mask_cpu
 }  // namespace kernel
 }  // namespace mindspore

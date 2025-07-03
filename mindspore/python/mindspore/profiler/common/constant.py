@@ -51,6 +51,7 @@ class AicoreMetrics(Enum):
     MemoryUB = "MemoryUB"
     ResourceConflictRatio = "ResourceConflictRatio"
     L2Cache = "L2Cache"
+    MemoryAccess = "MemoryAccess"
     AiCoreNone = "None"
 
 
@@ -137,6 +138,7 @@ class EventConstant:
     TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
     KERNEL_LAUNCH_KEYWORDS = ("KernelLaunch", "LaunchTask")
     MSTX_KEYWORD = "Mstx"
+    STACK_EVENT_CAT = "python_function"
 
     FLOW_OP = "flow"
     INVALID_FLOW_ID = 18446744073709551615
@@ -184,6 +186,8 @@ class TimelineLayerName(Enum):
     ACC_PMU = "Acc PMU"
     SIO = "SIO"
     QOS = "QoS"
+    NIC = "NIC"
+    ROCE = "RoCE"
     OVERLAP_ANALYSIS = "Overlap Analysis"
 
 
@@ -198,3 +202,27 @@ class JitLevel:
     KBK_LEVEL = "O0"
     KBK_DVM_LEVEL = "O1"
     GRAPH_LEVEL = "O2"
+
+
+class ExportType(Enum):
+    Db = "db"
+    Text = "text"
+
+
+class CannLibName:
+    """CANN lib name"""
+    CANN_MSPTI = "libmspti.so"
+
+
+class DynoMode:
+    """dyno mode"""
+    DYNO_DAEMON = "KINETO_USE_DAEMON"
+
+
+class HostSystem(Enum):
+    """host system"""
+    CPU = "cpu"
+    MEM = "mem"
+    DISK = "disk"
+    NETWORK = "network"
+    OSRT = "osrt"

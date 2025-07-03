@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_add_grad_cpu {
 // Value check constant
 constexpr size_t kInputNum = 4;
 constexpr size_t kOutputNum = 2;
@@ -204,5 +205,6 @@ const std::vector<std::pair<KernelAttr, SparseAddGradCpuKernelMod::KernelRunFunc
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseAddGrad, SparseAddGradCpuKernelMod);
+}  // namespace sparse_add_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

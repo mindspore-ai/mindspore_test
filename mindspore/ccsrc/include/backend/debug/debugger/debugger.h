@@ -26,7 +26,7 @@
 #include "google/protobuf/repeated_field.h"
 #include "include/backend/debug/tensor_data.h"
 #include "include/backend/kernel_graph.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/backend/visible.h"
 #include "runtime/hardware/device_context.h"
 
@@ -48,7 +48,7 @@ namespace mindspore {
 using mindspore::device::DeviceContext;
 
 class DebugServices;
-class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
+class BACKEND_COMMON_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
  public:
   static std::shared_ptr<Debugger> GetInstance();
 
@@ -80,8 +80,6 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
   // analyze tensors and wait for command
   // don't need a graph_ptr because it is saved during pre_execute
   void PostExecute();
-
-  static uint32_t GetRankID();
 
   void DumpConstantDataAscend(const KernelGraphPtr &graph);
 

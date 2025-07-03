@@ -19,16 +19,13 @@
 #include <algorithm>
 #include <vector>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/cut_out_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 CutOutOperation::CutOutOperation(int32_t length, int32_t num_patches, bool is_hwc)
     : length_(length), num_patches_(num_patches), is_hwc_(is_hwc) {}
 
@@ -70,7 +67,6 @@ Status CutOutOperation::from_json(nlohmann::json op_params, std::shared_ptr<Tens
   *operation = std::make_shared<vision::CutOutOperation>(length, num_patches, is_hwc);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,14 @@
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/parameter_eliminate.h"
-#include "pipeline/jit/ps/resource.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "pipeline/jit/ps/action.h"
+#include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
+#include "pipeline/jit/ps/resource.h"
 #include "include/common/utils/convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -44,9 +47,6 @@ class TestOptLib : public UT::Common {
   void SetUp() override {
     UT::InitPythonPath();
     parse::data_converter::ClearObjectCache();
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
   }
 
   FuncGraphPtr RunTransform(FuncGraphPtr gbefore, const SubstitutionList &transform) {

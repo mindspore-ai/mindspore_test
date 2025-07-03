@@ -18,16 +18,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/normalize_pad_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // NormalizePadOperation
 NormalizePadOperation::NormalizePadOperation(const std::vector<float> &mean, const std::vector<float> &std,
                                              const std::string &dtype, bool is_hwc)
@@ -74,7 +71,6 @@ Status NormalizePadOperation::from_json(nlohmann::json op_params, std::shared_pt
   *operation = std::make_shared<vision::NormalizePadOperation>(mean, std, dtype, is_hwc);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace blackman_window_cpu {
 class BlackmanWindowCpuKernelMod : public NativeCpuKernelMod {
  public:
   BlackmanWindowCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class BlackmanWindowCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, BlackmanWindowFunc>> func_list_;
   BlackmanWindowFunc kernel_func_;
 };
+}  // namespace blackman_window_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CPU_BLACKMAN_WINDOW_CPU_KERNEL_H_

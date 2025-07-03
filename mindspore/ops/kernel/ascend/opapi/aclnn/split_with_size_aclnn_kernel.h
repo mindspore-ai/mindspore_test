@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_TENSOR_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_TENSOR_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_WITH_SIZE_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_WITH_SIZE_ACLNN_KERNEL_MOD_H_
 
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_with_size {
 
 class SplitWithSizeAscend : public AclnnKernelMod {
  public:
@@ -48,6 +49,7 @@ class SplitWithSizeAscend : public AclnnKernelMod {
   std::vector<int64_t> dims_{};
   int64_t axis_;
 };
+}  // namespace split_with_size
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_TENSOR_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_SPLIT_WITH_SIZE_ACLNN_KERNEL_MOD_H_

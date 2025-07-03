@@ -194,9 +194,10 @@ function(__install_white_list_ops)
             DESTINATION ${CONVERTER_ROOT_DIR}/include/infer/cxx_api
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
+    file(GLOB GEN_OPS_NAME_H ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name_*.h)
     install(FILES
             ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_lite_ops.h
-            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name.h
+            ${GEN_OPS_NAME_H}
             DESTINATION ${CONVERTER_ROOT_DIR}/include/op_def/auto_generate
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
@@ -226,19 +227,19 @@ endfunction()
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
     # full header files
     install(FILES
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/constants.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/data_helper.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/execute.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/iterator.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/samplers.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/transforms.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_lite.h
-            ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/liteapi/include/datasets.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/constants.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/data_helper.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/execute.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/iterator.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/samplers.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/transforms.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_lite.h
+            ${TOP_DIR}/mindspore/lite/minddata/dataset/liteapi/include/datasets.h
         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
 
     if(PLATFORM_ARM64)
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-            install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
+            install(FILES ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_ascend.h
                     DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
             install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
                     DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -260,7 +261,7 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
         if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
-                install(FILES ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/dataset/vision_ascend.h
+                install(FILES ${TOP_DIR}/mindspore/lite/minddata/dataset/include/dataset/vision_ascend.h
                         DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
                 install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/kernels-dvpp-image/utils/libdvpp_utils.so
                         DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -269,21 +270,21 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.a DESTINATION
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib
+        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.4.0 DESTINATION ${TURBO_DIR}/lib
                 RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib
+        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.3.0 DESTINATION ${TURBO_DIR}/lib
                 RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/securec/src/libsecurec.a
                 DESTINATION ${SECUREC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
 
     # lite_cv header files
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
             DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
 endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h" PATTERN "vision.h" EXCLUDE)
     if(PLATFORM_ARM64)
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
@@ -296,15 +297,15 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "wrapper")
     else()
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.3.0 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62
+        install(FILES ${jpeg_turbo_LIBPATH}/libjpeg.so.62.4.0 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.2.0 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0
+        install(FILES ${jpeg_turbo_LIBPATH}/libturbojpeg.so.0.3.0 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
 endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite")
-    install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
+    install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/include/ DESTINATION ${MIND_DATA_INC_DIR}
             COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
     if(PLATFORM_ARM64)
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
@@ -323,26 +324,26 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite")
     else()
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so.62.3.0
+        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libjpeg.so.62.4.0
                 DESTINATION ${TURBO_DIR}/lib RENAME libjpeg.so.62 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so.0.2.0
+        install(FILES ${TOP_DIR}/third_party/libjpeg-turbo/lib/libturbojpeg.so.0.3.0
                 DESTINATION ${TURBO_DIR}/lib RENAME libturbojpeg.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
 endif()
 
 if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "lite_cv")
     if(PLATFORM_ARM64)
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     elseif(PLATFORM_ARM32)
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
         ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     else()
-        install(DIRECTORY ${TOP_DIR}/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv
+        install(DIRECTORY ${TOP_DIR}/mindspore/lite/minddata/dataset/kernels/image/lite_cv
                 DESTINATION ${MIND_DATA_INC_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME} FILES_MATCHING PATTERN "*.h")
         install(FILES ${TOP_DIR}/mindspore/lite/build/minddata/libminddata-lite.so DESTINATION
                 ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -549,6 +550,10 @@ if(PLATFORM_ARM64)
                 endif()
                 install(FILES ${LITE_ACL_DIR}/libascend_pass_plugin.so DESTINATION ${CONVERTER_ROOT_DIR}/lib
                         COMPONENT ${RUNTIME_COMPONENT_NAME})
+                install(FILES ${LITE_ACL_DIR}/_mindspore_transform_graph_ir/libmindspore_graph_ir.so DESTINATION
+                        ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
+                install(FILES ${LITE_ACL_DIR}/_mindspore_transform_graph_ir/libmindspore_graph_ir.so DESTINATION
+                        ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
             endif()
 
             if(MSLITE_ENABLE_DPICO_ATC_ADAPTER)
@@ -984,6 +989,10 @@ else()
             endif()
             install(FILES ${LITE_ACL_DIR}/libascend_pass_plugin.so DESTINATION ${CONVERTER_ROOT_DIR}/lib
                     COMPONENT ${RUNTIME_COMPONENT_NAME})
+            install(FILES ${LITE_ACL_DIR}/_mindspore_transform_graph_ir/libmindspore_graph_ir.so DESTINATION
+                    ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
+            install(FILES ${LITE_ACL_DIR}/_mindspore_transform_graph_ir/libmindspore_graph_ir.so DESTINATION
+                    ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
 
         if(MSLITE_ENABLE_DPICO_ATC_ADAPTER)
@@ -1066,9 +1075,10 @@ else()
 endif()
 
 if(MSLITE_ENABLE_KERNEL_EXECUTOR)
+    file(GLOB GEN_OPS_NAME_H ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name_*.h)
     install(FILES
             ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_lite_ops.h
-            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name.h
+            ${GEN_OPS_NAME_H}
             ${TOP_DIR}/mindspore/core/include/ops/base_operator.h
             ${TOP_DIR}/mindspore/ops/infer/custom.h
             ${TOP_DIR}/mindspore/ops/infer/conv2d.h

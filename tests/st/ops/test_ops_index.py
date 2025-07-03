@@ -95,7 +95,7 @@ def test_ops_index_forward(context_mode):
         print(output_index_error)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_index_backward(context_mode):
@@ -121,7 +121,8 @@ def test_ops_index_backward(context_mode):
     tmp = np.zeros(x.shape)
     expect_b = np.zeros(x.shape)
     ### The original value does not exist.When the value of grads is 1,It can be avoided.
-    tmp[[indices1, indices2]] = grads
+    indices2 = np.broadcast_to(indices2, indices1.shape)
+    tmp[indices1, indices2] = grads
     for i in np.nditer([indices1, indices2]):
         expect_b[i] += tmp[i]
     np.testing.assert_allclose(output_b.asnumpy(), expect_b, rtol=1e-3)
@@ -139,12 +140,11 @@ def test_ops_index_bf16(context_mode):
     ms.context.set_context(mode=context_mode)
     if context_mode == ms.GRAPH_MODE:
         ms.set_context(jit_level='O0')
-    x = generate_random_input((5, 6, 4, 3, 2, 4), np.float64)
-    indices1 = np.array([[0, 1], [1, 3], [2, 1]], dtype=np.int32)
-    indices2 = np.array([[0, 4]], dtype=np.int32)
-
-    output = index_forward_func(ms.Tensor(x, dtype=ms.bfloat16), [ms.Tensor(indices1), ms.Tensor(indices2)])
-    expect = x[[indices1, indices2]]
+    x1 = x_np = generate_random_input((5, 6, 4, 3, 2, 4), np.float64)
+    indices1 = indices1_np = np.array([[0, 1], [1, 3], [2, 1]], dtype=np.int32)
+    indices2 = indices2_np = np.array([[0, 4]], dtype=np.int32)
+    output = index_forward_func(ms.Tensor(x1, dtype=ms.bfloat16), [ms.Tensor(indices1), ms.Tensor(indices2)])
+    expect = np.squeeze(x_np[indices1_np, indices2_np[:, np.newaxis]], axis=0)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=4e-3, atol=4e-3)
 
 

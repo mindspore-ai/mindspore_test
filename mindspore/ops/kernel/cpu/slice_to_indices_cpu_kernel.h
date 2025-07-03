@@ -20,12 +20,13 @@
 #include <map>
 #include <utility>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/tile_size.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace slice_to_indices_cpu {
 class SliceToIndicesCpuKernelMod : public NativeCpuKernelMod {
  public:
   SliceToIndicesCpuKernelMod() = default;
@@ -58,6 +59,7 @@ class SliceToIndicesCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tuple_index_types_;
   std::vector<int64_t> init_by_none_;
 };
+}  // namespace slice_to_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SLICE_TO_INDICES_CPU_KERNEL_H_

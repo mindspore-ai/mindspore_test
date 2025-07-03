@@ -18,6 +18,7 @@ endif()
 if(MSVC)
     # define this for msvc:dllexport or dllimport
     add_compile_definitions(BUILDING_DATASET_DLL)
+    add_compile_options(/utf-8)
 endif()
 
 # fix for GCC8.0
@@ -203,7 +204,7 @@ endif()
 
 ################# Link with external libraries ########################
 if(NOT MSLITE_ENABLE_CLOUD_MIND_DATA)
-    target_link_libraries(_c_dataengine PRIVATE mindspore)
+    target_link_libraries(_c_dataengine PRIVATE proto_input mindspore::sentencepiece)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -235,8 +236,9 @@ target_link_libraries(_c_dataengine PUBLIC mindspore::jpeg_turbo mindspore::turb
                                           mindspore::opencv_imgcodecs mindspore::opencv_imgproc mindspore::tinyxml2
                                           mindspore::sentencepiece_train ${ICU_LIB})
 
-target_link_libraries(_c_dataengine PRIVATE mindspore_backend)
+target_link_libraries(_c_dataengine PRIVATE mindspore_ms_backend mindspore_profiler mindspore_backend_common)
 
+target_link_libraries(_c_dataengine PRIVATE mindspore_common)
 add_dependencies(_c_dataengine _c_mindrecord)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if(MSVC)

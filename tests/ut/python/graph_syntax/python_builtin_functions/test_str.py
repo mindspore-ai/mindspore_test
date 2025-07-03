@@ -30,7 +30,7 @@ def test_fallback_str_with_input_tensor_2():
         x = Tensor([10])
         return str(x)
 
-    assert foo() == "Tensor(shape=[1], dtype=Int64, value=[10])"
+    assert foo() == "[10]"
 
 
 def test_fallback_str_with_input_scalar():

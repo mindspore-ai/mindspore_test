@@ -19,6 +19,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {
@@ -34,12 +35,12 @@ TypePtr LeakyReLUGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
   return input_type;
 }
 TypePtrList LeakyReLUGradExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
 ShapeArray LeakyReLUGradExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

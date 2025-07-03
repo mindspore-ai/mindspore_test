@@ -5,7 +5,7 @@ mindspore.ops.group_norm
 
     在mini-batch输入上进行组归一化。
 
-    Group Normalization被广泛用于递归神经网络中。适用单个训练用例的mini-batch输入归一化，详见论文 `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_ 。
+    Group Normalization被广泛用于递归神经网络中。适用于单个训练用例的mini-batch输入归一化，详见论文 `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_ 。
 
     Group Normalization把通道划分为组，然后计算每一组之内的均值和方差，以进行归一化。其中 :math:`\gamma` 是通过训练学习出的scale值，:math:`\beta` 是通过训练学习出的shift值。
 
@@ -21,7 +21,7 @@ mindspore.ops.group_norm
         - **num_groups** (int) - 沿通道维度待划分的组数。
         - **weight** (Tensor, 可选) - shape为 :math:`(C,)` ，默认值为： ``None`` ，具有与 `input` 相同的数据类型。
         - **bias** (Tensor, 可选) - shape为 :math:`(C,)` ，默认值为： ``None`` ，具有与 `input` 相同的数据类型。
-        - **eps** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认值： ``1e-5`` 。
+        - **eps** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认 ``1e-5`` 。
 
     返回：
         Tensor，标准化和缩放的偏移Tensor，具有与 `input` 相同的shape和数据类型。

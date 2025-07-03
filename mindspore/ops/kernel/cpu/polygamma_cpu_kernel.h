@@ -22,11 +22,12 @@
 #include <map>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace polygamma_cpu {
 class PolygammaCpuKernelMod : public NativeCpuKernelMod {
  public:
   PolygammaCpuKernelMod() = default;
@@ -50,6 +51,7 @@ class PolygammaCpuKernelMod : public NativeCpuKernelMod {
   TypeId a_dtype_{kTypeUnknown};
   TypeId x_dtype_{kTypeUnknown};
 };
+}  // namespace polygamma_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_POLYGAMMA_CPU_KERNEL_H_

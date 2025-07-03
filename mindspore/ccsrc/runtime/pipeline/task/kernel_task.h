@@ -23,11 +23,12 @@
 #include <future>
 
 #include "runtime/pipeline/task/task.h"
+#include "runtime/pipeline/visible.h"
 
 namespace mindspore {
 namespace runtime {
 
-class BACKEND_EXPORT KernelTaskContext {
+class KernelTaskContext {
  public:
   KernelTaskContext(const device::DeviceContext *device_context, device::DeviceAddressPtrList input_addr_list,
                     device::DeviceAddressPtrList output_addr_list, void *stream)
@@ -65,7 +66,7 @@ class BACKEND_EXPORT KernelTaskContext {
   void *stream_;
 };
 
-class BACKEND_EXPORT KernelTask : public AsyncTask {
+class KernelTask : public AsyncTask {
  public:
   explicit KernelTask(std::shared_ptr<KernelTaskContext> context)
       : AsyncTask(kKernelTask), context_(std::move(context)) {}

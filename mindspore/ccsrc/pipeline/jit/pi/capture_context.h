@@ -80,6 +80,7 @@ class CaptureContext {
 
   // check the code need skip
   bool IsSkip(const PyFrameWrapper &f) const;
+  bool IsSkip(PyCodeObject *co, PyObject *globals) const;
 
   // set context attribute
   void SetContext(const py::args &va, const py::kwargs &kw);
@@ -113,7 +114,7 @@ class CaptureContext {
   Stat stat_;
 
   // config skip rule
-  bool use_white_list_;
+  bool use_white_list_{true};
 };
 }  // namespace pijit
 }  // namespace mindspore

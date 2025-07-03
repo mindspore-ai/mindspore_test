@@ -6,10 +6,10 @@ mindspore.nn.probability.distribution.Normal
     正态分布（Normal distribution）。
     连续随机分布，取值范围为 :math:`(-\inf, \inf)` ，概率密度函数为
 
-    .. math:: 
+    .. math::
         f(x, \mu, \sigma) = 1 / \sigma\sqrt{2\pi} \exp(-(x - \mu)^2 / 2\sigma^2).
 
-    其中 :math:`\mu, \sigma` 为分别为正态分布的期望与标准差。
+    其中 :math:`\mu, \sigma` 分别为正态分布的期望与标准差。
 
     参数：
         - **mean** (int, float, list, numpy.ndarray, Tensor) - 正态分布的平均值。默认值： ``None`` 。
@@ -18,7 +18,7 @@ mindspore.nn.probability.distribution.Normal
         - **dtype** (mindspore.dtype) - 事件样例的类型。默认值： ``mstype.float32`` 。
         - **name** (str) - 分布的名称。默认值： ``'Normal'`` 。
 
-    .. note:: 
+    .. note::
         - `sd` 必须大于零。
         - `dtype` 必须是float，因为正态分布是连续的。
 
@@ -44,7 +44,7 @@ mindspore.nn.probability.distribution.Normal
 
     .. py:method:: cdf(value, mean, sd)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulative Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -95,7 +95,7 @@ mindspore.nn.probability.distribution.Normal
 
     .. py:method:: log_cdf(value, mean, sd)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -142,7 +142,7 @@ mindspore.nn.probability.distribution.Normal
 
     .. py:method:: prob(value, mean, sd)
 
-        计算给定值下的概率。对于连续是计算概率密度函数（Probability Density Function）。
+        计算给定值下的概率。对于连续分布是计算概率密度函数（Probability Density Function）。
 
         参数：
             - **value** (Tensor) - 要计算的值。

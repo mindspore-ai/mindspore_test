@@ -21,10 +21,11 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace memcpy_cpu {
 class MemcpyCpuKernelMod : public NativeCpuKernelMod {
  public:
   MemcpyCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class MemcpyCpuKernelMod : public NativeCpuKernelMod {
 
   bool is_empty_tensor_{false};
 };
+}  // namespace memcpy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

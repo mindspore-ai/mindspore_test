@@ -17,17 +17,17 @@
 #include "kernel/ascend/pyboost/customize/non_zero.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/customize/op_common.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "NonZero Ascend start";
   OpRunner::InferOpOutput(op, input_tensor);
 
@@ -44,9 +44,8 @@ tensor::BaseTensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op
   PyBoostUtils::MallocOpInputs(device_context, input_tensor);
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
-  auto return_values = LAUNCH_ACLNN_SYNC(aclnnNonzero, device_context, op->stream_id(), input_tensor, outputs[0]);
-  const auto &cache_func_ptr = std::get<kIndex2>(return_values);
-  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
+  const auto &all_acl_tensor =
+    LAUNCH_ACLNN_SYNC(aclnnNonzero, device_context, op->stream_id(), input_tensor, outputs[0]);
 
   // update shape
   auto output_real_shape = all_acl_tensor[kIndex1];
@@ -58,12 +57,6 @@ tensor::BaseTensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op
   simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape};
   op->UpdateOutputShape(outputs[kIndex0], output_real_shape);
   MS_LOG(DEBUG) << "NonZero Ascend end";
-
-  const auto &release_func = std::get<kIndex3>(return_values);
-  if (release_func) {
-    release_func();
-  }
-
   return op->output(0);
 }
 }  // namespace pyboost

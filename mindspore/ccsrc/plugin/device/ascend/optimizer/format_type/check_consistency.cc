@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "include/common/utils/utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

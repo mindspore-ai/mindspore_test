@@ -17,20 +17,15 @@
 #include "kernel/ascend/pyboost/customize/grouped_matmul.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt) {
-  if (tensor_list_opt.has_value()) {
-    return ConvertValueTupleToVector<BaseTensorPtr>(tensor_list_opt.value());
-  }
-  return {};
-}
+std::vector<TensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt);
 }  // namespace
 void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list,
                                   const ValueTuplePtr &weight_tensor_list,
@@ -39,22 +34,23 @@ void GroupedMatmulAscendCustomize(const std::shared_ptr<OpRunner> &op, const Val
                                   const std::optional<ValueTuplePtr> &offset_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
                                   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-                                  const std::optional<BaseTensorPtr> &group_list_tensor, const Int64ImmPtr &split_item,
-                                  const Int64ImmPtr &group_type) {
+                                  const std::optional<TensorPtr> &group_list_tensor, const Int64ImmPtr &split_item,
+                                  const Int64ImmPtr &group_type, const mindspore::BoolImmPtr &transpose_a,
+                                  const mindspore::BoolImmPtr &transpose_b) {
   MS_LOG(DEBUG) << "Call GroupedMatmul start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, x_tensor_list, weight_tensor_list, bias_tensor_list, scale_tensor_list,
                           offset_tensor_list, antiquant_scale_tensor_list, antiquant_offset_tensor_list,
-                          group_list_tensor, split_item, group_type);
+                          group_list_tensor, split_item, group_type, transpose_a, transpose_b);
 
-  std::vector<BaseTensorPtr> x_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(x_tensor_list);
-  std::vector<BaseTensorPtr> weight_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(weight_tensor_list);
-  std::vector<BaseTensorPtr> bias_tensor_list_vector = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
-  std::vector<BaseTensorPtr> scale_tensor_list_vector = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
-  std::vector<BaseTensorPtr> offset_tensor_list_vector = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_scale_tensor_list_vector =
+  std::vector<TensorPtr> x_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(x_tensor_list);
+  std::vector<TensorPtr> weight_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(weight_tensor_list);
+  std::vector<TensorPtr> bias_tensor_list_vector = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
+  std::vector<TensorPtr> scale_tensor_list_vector = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
+  std::vector<TensorPtr> offset_tensor_list_vector = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
+  std::vector<TensorPtr> antiquant_scale_tensor_list_vector =
     ConvertOptiaonlValueTupleToVector(antiquant_scale_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_offset_tensor_list_vector =
+  std::vector<TensorPtr> antiquant_offset_tensor_list_vector =
     ConvertOptiaonlValueTupleToVector(antiquant_offset_tensor_list);
 
   auto split_item_imm = GetValue<int64_t>(split_item);

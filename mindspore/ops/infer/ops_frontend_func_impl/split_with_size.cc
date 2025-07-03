@@ -56,6 +56,9 @@ class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
     } else {
       auto output_shape = input_shape;
       auto rank = SizeToLong(input_shape.size());
+      if (rank <= 0) {
+        MS_EXCEPTION(ValueError) << "For [SplitWithSize], expected at least a 1-dimensional tensor.";
+      }
       auto axis = axis_opt.value();
       if (axis < 0) {
         axis += rank;
@@ -83,5 +86,9 @@ class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 };
 REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitWithSize", SplitWithSizeFrontendFuncImpl);
+
+// Reuse abstract infer for SplitWithSizeView kernel
+class SplitWithSizeViewFrontendFuncImpl : public SplitWithSizeFrontendFuncImpl {};
+REGISTER_PRIMITIVE_FUNCTION_FRONTEND_FUNC_IMPL("SplitWithSizeView", SplitWithSizeViewFrontendFuncImpl);
 }  // namespace ops
 }  // namespace mindspore

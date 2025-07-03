@@ -1,7 +1,7 @@
 mindspore.mint.div
 =====================
 
-.. py:function:: mindspore.mint.div(input, other, *, rounding_mode=None)
+.. py:function:: mindspore.mint.div(input, other, *, rounding_mode=None) -> Tensor
 
     逐元素计算 `input` 除以 `other` 的商。
 

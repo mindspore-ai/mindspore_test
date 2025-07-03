@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "pybind_api/ir/base_ref_py.h"
+#include "frontend/ir/base_ref_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "ir/anf.h"
@@ -35,6 +35,9 @@ ValuePtr InferValuePyPythonDef(const std::string &op_name, const AbstractBasePtr
 
   py::list args;
   for (const auto &abs : input_args) {
+    if (abs->isa<abstract::AbstractMonad>()) {
+      continue;
+    }
     auto value = abs->GetValue();
     args.append(ValueToPyData(value));
   }

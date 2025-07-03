@@ -56,22 +56,22 @@ class DivFactory():
 
     def forward_cmp(self):
         ps_net = Div()
-        jit(ps_net.construct, mode="PSJit")(self.inputx_ms, self.inputy_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.inputx_ms, self.inputy_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Div()
-        jit(pi_net.construct, mode="PIJit")(self.inputx_ms, self.inputy_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.inputx_ms, self.inputy_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
 
     def grad_cmp(self):
         ps_net = Div()
-        jit(ps_net.construct, mode="PSJit")(self.inputx_ms, self.inputy_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.inputx_ms, self.inputy_ms)
         context.set_context(mode=context.GRAPH_MODE)
         input_grad_psjit_a, input_grad_psjit_b = self.grad_mindspore_impl(ps_net)
         pi_net = Div()
-        jit(pi_net.construct, mode="PIJit")(self.inputx_ms, self.inputy_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.inputx_ms, self.inputy_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         input_grad_pijit_a, input_grad_pijit_b = self.grad_mindspore_impl(ps_net)
         allclose_nparray(input_grad_pijit_a, input_grad_psjit_a, self.loss, self.loss)

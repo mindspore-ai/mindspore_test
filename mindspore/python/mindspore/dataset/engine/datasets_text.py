@@ -25,7 +25,8 @@ After declaring the dataset object, you can further apply dataset operations
 """
 import mindspore._c_dataengine as cde
 
-from .datasets import TextBaseDataset, SourceDataset, MappableDataset, Shuffle
+from .samplers import Shuffle
+from .datasets import TextBaseDataset, SourceDataset, MappableDataset
 from .validators import check_imdb_dataset, check_iwslt2016_dataset, check_iwslt2017_dataset, \
     check_penn_treebank_dataset, check_ag_news_dataset, check_amazon_review_dataset, check_udpos_dataset, \
     check_wiki_text_dataset, check_conll2000_dataset, check_cluedataset, \
@@ -61,18 +62,17 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL``: Shuffle both the files and samples.
-
             - ``Shuffle.FILES``: Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into.
             Default: ``None``. When this argument is specified, `num_samples` reflects the
             max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . This
             argument can only be specified when `num_shards` is also specified. Default: ``None``.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None``, which means no cache is used.
 
     Raises:
@@ -90,9 +90,9 @@ class AGNewsDataset(SourceDataset, TextBaseDataset):
         >>> ag_news_dataset_dir = "/path/to/ag_news_dataset_file"
         >>> dataset = ds.AGNewsDataset(dataset_dir=ag_news_dataset_dir, usage='all')
 
-    About AGNews dataset:
+    About AG News dataset:
 
-    AG is a collection of over 1 million news articles. The news articles were collected
+    AG News is a collection of over 1 million news articles. The news articles were collected
     by ComeToMyHead from over 2,000 news sources in over 1 year of activity. ComeToMyHead
     is an academic news search engine that has been in operation since July 2004.
     The dataset is provided by academics for research purposes such as data mining
@@ -172,17 +172,16 @@ class AmazonReviewDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -272,17 +271,16 @@ class CLUEDataset(SourceDataset, TextBaseDataset):
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting `shuffle` to ``True``.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     The generated dataset with different task setting has different output columns:
@@ -521,15 +519,15 @@ class CoNLL2000Dataset(SourceDataset, TextBaseDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided into.
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Default: ``None`` . Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Default: ``None`` . Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . This
             argument can only be specified when `num_shards` is also specified. Default: ``None`` .
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -620,17 +618,16 @@ class DBpediaDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -721,17 +718,16 @@ class EnWik9Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -816,12 +812,12 @@ class IMDBDataset(MappableDataset, TextBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -949,20 +945,19 @@ class IWSLT2016Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1083,20 +1078,19 @@ class IWSLT2017Dataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1198,12 +1192,12 @@ class Multi30kDataset(SourceDataset, TextBaseDataset):
         num_shards (int, optional): Number of shards that the dataset will be divided
             into. Default: ``None`` . When this argument is specified, `num_samples` reflects
             the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1229,7 +1223,7 @@ class Multi30kDataset(SourceDataset, TextBaseDataset):
 
     Multi30K is a multilingual dataset that features approximately 31,000 standardized images
     described in multiple languages. The images are sourced from Flickr and each image comes
-    with sentence descripitions in both English and German, as well as descriptions in other
+    with sentence descriptions in both English and German, as well as descriptions in other
     languages. Multi30k is used primarily for training and testing in tasks such as image
     captioning, machine translation, and visual question answering.
 
@@ -1304,17 +1298,16 @@ class PennTreebankDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1335,7 +1328,7 @@ class PennTreebankDataset(SourceDataset, TextBaseDataset):
     About PennTreebank dataset:
 
     Penn Treebank (PTB) dataset, is widely used in machine learning for NLP (Natural Language Processing)
-    research. Word-level PTB does not contain capital letters, numbers, and punctuations, and the vocabulary
+    research. Word-level PTB does not contain capital letters, numbers, and punctuation, and the vocabulary
     is capped at 10k unique words, which is relatively small in comparison to most modern datasets which
     can result in a larger number of out of vocabulary tokens.
 
@@ -1406,19 +1399,19 @@ class SogouNewsDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
-
             - ``Shuffle.FILES`` : Shuffle files only.
+
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1436,11 +1429,11 @@ class SogouNewsDataset(SourceDataset, TextBaseDataset):
         >>> sogou_news_dataset_dir = "/path/to/sogou_news_dataset_dir"
         >>> dataset = ds.SogouNewsDataset(dataset_dir=sogou_news_dataset_dir, usage='all')
 
-    About SogouNews Dataset:
+    About Sogou News Dataset:
 
-    SogouNews dataset includes 3 columns, corresponding to class index (1 to 5), title and content. The title and
+    Sogou News dataset includes 3 columns, corresponding to class index (1 to 5), title and content. The title and
     content are escaped using double quotes ("), and any internal double quote is escaped by 2 double quotes ("").
-    New lines are escaped by a backslash followed with an "n" character, that is "\n".
+    New lines are escaped by a backslash followed with an "n" character, that is "\\n".
 
     You can unzip the dataset files into the following structure and read by MindSpore's API:
 
@@ -1513,12 +1506,12 @@ class SQuADDataset(SourceDataset, TextBaseDataset):
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1629,16 +1622,17 @@ class SST2Dataset(SourceDataset, TextBaseDataset):
             If `shuffle` is ``True`` , the behavior is the same as setting shuffle to be Shuffle.GLOBAL
             Set the mode of data shuffling by passing in enumeration variables:
 
-            - ``Shuffle.GLOBAL`` : Shuffle the samples.
+            - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
+            - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards`. This argument can only be specified when
             `num_shards` is also specified. Default: ``None`` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1733,17 +1727,16 @@ class TextFileDataset(SourceDataset, TextBaseDataset):
             There are three levels of shuffling, desired shuffle enum defined by :class:`mindspore.dataset.Shuffle` .
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples, same as setting shuffle to True.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1799,20 +1792,19 @@ class UDPOSDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1887,17 +1879,16 @@ class WikiTextDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -1986,17 +1977,16 @@ class YahooAnswersDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
 
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the maximum sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:
@@ -2074,11 +2064,14 @@ class YelpReviewDataset(SourceDataset, TextBaseDataset):
     Args:
         dataset_dir (str): Path to the root directory that contains the dataset.
         usage (str, optional): Usage of this dataset, can be ``'train'`` , ``'test'`` or ``'all'`` .
-            For Polarity, ``'train'`` will read from 560,000 train samples,
-            ``'test'`` will read from 38,000 test samples,
-            ``'all'`` will read from all 598,000 samples.
-            For Full, ``'train'`` will read from 650,000 train samples, ``'test'`` will read from 50,000 test samples,
-            ``'all'`` will read from all 700,000 samples. Default: ``None`` , all samples.
+            Default: ``None`` , all samples.
+
+            - For Polarity, ``'train'`` will read from 560,000 train samples,
+              ``'test'`` will read from 38,000 test samples,
+              ``'all'`` will read from all 598,000 samples.
+            - For Full, ``'train'`` will read from 650,000 train samples, ``'test'`` will read from 50,000 test samples,
+              ``'all'`` will read from all 700,000 samples.
+
         num_samples (int, optional): Number of samples (rows) to read. Default: ``None`` , reads all samples.
         shuffle (Union[bool, Shuffle], optional): Perform reshuffling of the data every epoch.
             Bool type and Shuffle enum are both supported to pass in.
@@ -2089,19 +2082,19 @@ class YelpReviewDataset(SourceDataset, TextBaseDataset):
             Set the mode of data shuffling by passing in enumeration variables:
 
             - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-
             - ``Shuffle.FILES`` : Shuffle files only.
+
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This
             argument can only be specified when `num_shards` is also specified.
         num_parallel_workers (int, optional): Number of worker threads to read the data.
             Default: ``None`` , will use global default workers(8), it can be set
             by :func:`mindspore.dataset.config.set_num_parallel_workers` .
         cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing. More details:
-            `Single-Node Data Cache <https://www.mindspore.cn/docs/en/master/model_train/dataset/cache.html>`_ .
+            `Single-Node Data Cache <https://www.mindspore.cn/tutorials/en/master/dataset/cache.html>`_ .
             Default: ``None`` , which means no cache is used.
 
     Raises:

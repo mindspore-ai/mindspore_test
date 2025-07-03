@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/log_adapter.h"
 #include "ir/graph_utils.h"
+#include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"
@@ -36,6 +37,12 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace ad {
@@ -223,8 +230,6 @@ TEST_F(TestAD, test_constant_output) { AssertExpect("test_constant_output"); }
 // Description: Test the imag bprop with complex inputs and complex outputs.
 // Expectation: The final func_graph construct is correct.
 TEST_F(TestAD, TestImagBpropComplexInputComplexOutput) {
-  auto ms_context = MsContext::GetInstance();
-  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
   // Parse the forward fg and do renormalize.
   auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
   AbstractBasePtrList args_spec_list;

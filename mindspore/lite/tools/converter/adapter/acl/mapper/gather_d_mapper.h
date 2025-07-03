@@ -18,15 +18,12 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_GATHER_D_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-
-using mindspore::ops::kNameGatherD;
 
 namespace mindspore {
 namespace lite {
 class GatherDMapper : public PrimitiveMapper {
  public:
-  GatherDMapper() : PrimitiveMapper(kNameGatherD) {}
+  GatherDMapper();
   ~GatherDMapper() override = default;
 
   STATUS Mapper(const CNodePtr &cnode) override;

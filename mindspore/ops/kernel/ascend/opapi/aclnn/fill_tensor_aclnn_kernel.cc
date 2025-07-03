@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/fill_tensor_aclnn_kernel.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_tensor {
 
 void FillTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   auto value_tensor = inputs[kIndex1];
   if (value_tensor->device_ptr() == nullptr) {
     MS_LOG(INFO) << "For " << primitive_->name() << ", Input [fill_value] is a host tensor, FillScalar will be used.";
-    value_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+    value_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
     op_type_ = "aclnnInplaceFillScalar";
     GetWorkspaceForResize(outputs[kIndex0], value_);
     return;
@@ -44,5 +45,6 @@ bool FillTensorAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(FillTensor, FillTensorAscend);
+}  // namespace fill_tensor
 }  // namespace kernel
 }  // namespace mindspore

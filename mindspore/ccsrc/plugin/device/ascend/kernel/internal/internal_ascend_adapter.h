@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "include/backend/visible.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 
 namespace mindspore {
 namespace kernel {

@@ -18,11 +18,12 @@
 #include <functional>
 #include "infer/bucketize.h"
 #include "kernel/cpu/bucketize_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bucketize_cpu {
 namespace {
 const size_t kOutputNum = 1;
 const size_t kInputNum = 1;
@@ -111,5 +112,6 @@ std::vector<KernelAttr> BucketizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bucketize, BucketizeCpuKernelMod);
+}  // namespace bucketize_cpu
 }  // namespace kernel
 }  // namespace mindspore

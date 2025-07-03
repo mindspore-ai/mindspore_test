@@ -9,11 +9,11 @@
         Tensor类型的 `axis` 仅用作兼容旧版本，不推荐使用。
 
     参数：
-        - **keep_dims** (bool) - 如果为 ``True`` ，则保留缩小的维度，大小为1。否则移除维度。默认值： ``False`` 。
+        - **keep_dims** (bool，可选) - 如果为 ``True`` ，则保留缩小的维度，大小为1。否则移除维度。默认值： ``False`` 。
 
     输入：
         - **x** (Tensor[bool]) - bool类型的输入Tensor。
-        - **axis** (Union[int, tuple(int), list(int), Tensor]) - 要规约计算的维度。默认值:  ``()`` ，在所有维度上规约。只允许常量值。取值必须在[-rank(`x`), rank(`x`))范围内。
+        - **axis** (Union[int, tuple(int), list(int), Tensor]，可选) - 要规约计算的维度。默认值:  ``()`` ，在所有维度上规约。只允许常量值。取值必须在[-rank(`x`), rank(`x`))范围内。
 
     输出：
         bool类型的Tensor。

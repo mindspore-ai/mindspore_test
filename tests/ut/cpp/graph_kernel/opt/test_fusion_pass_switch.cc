@@ -25,7 +25,6 @@
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "ir/anf.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/phase.h"
@@ -55,6 +54,7 @@ class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithPa
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
+    context->SetMsInternalEnableCustomKernelList();
 
     if (switch_off) {
       std::map<std::string, std::string> gk_jit_config;
@@ -65,10 +65,6 @@ class TestPassSwitch : public GraphKernelCommonTestSuite, public testing::WithPa
       gk_jit_config["graph_kernel_flags"] = "";
       graphkernel::GraphKernelFlags::SaveJitConfig(gk_jit_config);
     }
-
-    std::map<std::string, std::string> ms_jit_config;
-    ms_jit_config["infer_boost"] = "on";
-    PhaseManager::GetInstance().set_jit_config(ms_jit_config);
   }
 };
 

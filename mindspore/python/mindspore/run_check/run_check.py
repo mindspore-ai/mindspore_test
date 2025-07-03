@@ -47,7 +47,7 @@ def _check_mul():
 def run_check():
     """
     Provide a convenient API to check if the installation is successful or failed.
-    If the version in the check result is not what you expect, use :func:`mindspore.set_context` to set device_target
+    If the version in the check result is not as expected, use :func:`mindspore.set_context` to set device_target
     before run_check().
 
     Examples:

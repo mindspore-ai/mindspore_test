@@ -21,6 +21,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {
@@ -50,7 +51,7 @@ int32_t InnerNonZeroFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray InnerNonZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape = x_tensor->shape();
   auto x_rank = SizeToLong(x_shape.size());
@@ -59,7 +60,7 @@ ShapeArray InnerNonZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const
 }
 
 TypePtrList InnerNonZeroFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {kInt64};
 }

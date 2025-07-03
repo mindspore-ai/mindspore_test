@@ -21,11 +21,12 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace argmax_cpu {
 class ArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArgmaxCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class ArgmaxCpuKernelMod : public NativeCpuKernelMod {
   int64_t dim_axis_{0};
   int64_t axis_{0};
 };
+}  // namespace argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

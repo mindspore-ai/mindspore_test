@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mul_no_nan_cpu {
 class MulNoNanCPUKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MulNoNanCPUKernelMod> {
  public:
   MulNoNanCPUKernelMod() = default;
@@ -62,6 +63,7 @@ class MulNoNanCPUKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   template <typename T>
   void BcastCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace mul_no_nan_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

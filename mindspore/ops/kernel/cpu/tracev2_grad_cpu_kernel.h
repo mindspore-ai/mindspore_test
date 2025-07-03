@@ -21,11 +21,12 @@
 #include <vector>
 #include <algorithm>
 #include <complex>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tracev2_grad_cpu {
 class TraceV2GradCpuKernelMod : public NativeCpuKernelMod {
  public:
   TraceV2GradCpuKernelMod() = default;
@@ -145,6 +146,7 @@ class TraceV2GradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> rev_tanspose_index_;
   int64_t batch_size_{1};
 };
+}  // namespace tracev2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

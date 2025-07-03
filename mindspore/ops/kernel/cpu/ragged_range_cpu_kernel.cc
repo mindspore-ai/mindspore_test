@@ -20,10 +20,11 @@
 #include <type_traits>
 #include <memory>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_range_cpu {
 namespace {
 const size_t kOutputNum = 2;
 const size_t kInputNum = 3;
@@ -224,5 +225,6 @@ std::vector<KernelAttr> RaggedRangeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RaggedRange, RaggedRangeCpuKernelMod);
+}  // namespace ragged_range_cpu
 }  // namespace kernel
 }  // namespace mindspore

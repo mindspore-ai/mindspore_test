@@ -29,9 +29,9 @@
 
 namespace mindspore {
 namespace opt {
-bool BACKEND_EXPORT AlwaysReturnTrue(const BaseRef &);
+bool BACKEND_COMMON_EXPORT AlwaysReturnTrue(const BaseRef &);
 
-class BACKEND_EXPORT PatternMap {
+class BACKEND_COMMON_EXPORT PatternMap {
  public:
   PatternMap() = default;
   bool Contains(const std::string &name) const;
@@ -56,13 +56,13 @@ using PatternMapPtr = std::shared_ptr<PatternMap>;
 using BuildCNodeFunc = std::function<AnfNodePtr(const PatternMap &, const AnfNodePtr &)>;
 using BuildValueFunc = std::function<AnfNodePtr(const PatternMap &)>;
 
-class BACKEND_EXPORT DefaultCNodeFunc {
+class BACKEND_COMMON_EXPORT DefaultCNodeFunc {
  public:
   DefaultCNodeFunc() = default;
   AnfNodePtr operator()(const PatternMap &, const AnfNodePtr &default_cnode) const { return default_cnode; }
 };
 
-class BACKEND_EXPORT InplaceCNodeFunc {
+class BACKEND_COMMON_EXPORT InplaceCNodeFunc {
  public:
   explicit InplaceCNodeFunc(std::string s) : s_(std::move(s)) {}
   AnfNodePtr operator()(const PatternMap &m, const AnfNodePtr & /* default_cnode */) const { return m.Get(s_); }
@@ -71,7 +71,7 @@ class BACKEND_EXPORT InplaceCNodeFunc {
   std::string s_;
 };
 
-class BACKEND_EXPORT DefaultValueFunc {
+class BACKEND_COMMON_EXPORT DefaultValueFunc {
  public:
   explicit DefaultValueFunc(ValuePtr v) : v_(std::move(v)) {}
   AnfNodePtr operator()(const PatternMap &) const { return NewValueNode(v_); }
@@ -80,7 +80,7 @@ class BACKEND_EXPORT DefaultValueFunc {
   ValuePtr v_;
 };
 
-class BACKEND_EXPORT InplaceValueFunc {
+class BACKEND_COMMON_EXPORT InplaceValueFunc {
  public:
   explicit InplaceValueFunc(std::string s) : s_(std::move(s)) {}
   AnfNodePtr operator()(const PatternMap &m) const { return m.Get(s_); }
@@ -89,8 +89,8 @@ class BACKEND_EXPORT InplaceValueFunc {
   std::string s_;
 };
 
-class BACKEND_EXPORT PatternToPatternPass;
-class BACKEND_EXPORT UnpackNode {
+class BACKEND_COMMON_EXPORT PatternToPatternPass;
+class BACKEND_COMMON_EXPORT UnpackNode {
  public:
   UnpackNode &operator=(const std::string &name);
   UnpackNode &operator=(const UnpackNode &u) = default;
@@ -104,7 +104,7 @@ class BACKEND_EXPORT UnpackNode {
   friend class PatternToPatternPass;
 };
 
-class BACKEND_EXPORT PatternNode {
+class BACKEND_COMMON_EXPORT PatternNode {
  public:
   PatternNode(const PrimitivePtr &p)  // NOLINT
       : type_("prim"), p_(NewValueNode(std::make_shared<Primitive>(p->name()))) {}
@@ -122,7 +122,7 @@ class BACKEND_EXPORT PatternNode {
   friend class DstPattern;
 };
 
-class BACKEND_EXPORT SrcPattern {
+class BACKEND_COMMON_EXPORT SrcPattern {
  public:
   SrcPattern &AddVar(const std::string &name, const PatternConditionFunc &f = AlwaysReturnTrue);
   SrcPattern &AddSeqVar(const std::string &name, const PatternConditionFunc &f = AlwaysReturnTrue);
@@ -144,7 +144,7 @@ class BACKEND_EXPORT SrcPattern {
   friend class PatternToPatternPass;
 };
 
-class BACKEND_EXPORT DstPattern {
+class BACKEND_COMMON_EXPORT DstPattern {
  public:
   DstPattern &AddCNode(const string &name, const std::initializer_list<PatternNode> &inputs,
                        const BuildCNodeFunc &buildfunc = DefaultCNodeFunc());
@@ -164,7 +164,7 @@ class BACKEND_EXPORT DstPattern {
   PatternToPatternPass *pass_ = nullptr;
 };
 
-class BACKEND_EXPORT PatternToPatternPass : public PatternPass {
+class BACKEND_COMMON_EXPORT PatternToPatternPass : public PatternPass {
  public:
   explicit PatternToPatternPass(const std::string &name = "", bool is_fast_pass = false, bool multigraph = true)
       : PatternPass(name, multigraph),

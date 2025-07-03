@@ -14,6 +14,6 @@ mindspore.numpy.argmin
 
     返回：
         Tensor，原数组中元素的索引的数组。 与移除指定 `axis` 后的入参 `a` 的shape相同。
-        
+
     异常：
         - **ValueError** - 如果 `axis` 超出范围。

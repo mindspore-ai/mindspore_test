@@ -15,7 +15,6 @@
  */
 
 #include "frontend/optimizer/irpass/cast_eliminate.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/irpass.h"
@@ -24,6 +23,9 @@
 #include "ir/func_graph.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/python_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {

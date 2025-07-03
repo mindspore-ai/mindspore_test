@@ -495,7 +495,7 @@ def get_image_num_channels(image):
 
     Raises:
         RuntimeError: If the dimension of `image` is less than 2.
-        TypeError: If `image` is not of type <class 'numpy.ndarray'> or <class 'PIL.Image.Image'>.
+        TypeError: If `image` is not of type numpy.ndarray or PIL Image.
 
     Examples:
         >>> import mindspore.dataset.vision as vision
@@ -528,7 +528,7 @@ def get_image_size(image):
 
     Raises:
         RuntimeError: If the dimension of `image` is less than 2.
-        TypeError: If `image` is not of type <class 'numpy.ndarray'> or <class 'PIL.Image.Image'>.
+        TypeError: If `image` is not of type type numpy.ndarray or PIL Image.
 
     Examples:
         >>> import mindspore.dataset.vision as vision
@@ -635,10 +635,12 @@ def read_video(filename, start_pts=0, end_pts=None, pts_unit="pts"):
 
     Args:
         filename(str): The path to the video file to be read.
-        start_pts(Union[float, Fraction, int], optional): The start presentation timestamp of the video. Default: 0.
-        end_pts(Union[float, Fraction, int], optional): The end presentation timestamp of the video. Default: None.
+        start_pts(Union[float, Fraction, int], optional): The start presentation timestamp of the video.
+            Default: ``0``.
+        end_pts(Union[float, Fraction, int], optional): The end presentation timestamp of the video.
+            Default: ``None``.
             The None is represented by 2147483647.
-        pts_unit(str, optional): The unit of the timestamps. It can be any of ["pts", "sec"]. Default: "pts".
+        pts_unit(str, optional): The unit of the timestamps. It can be any of ["pts", "sec"]. Default: ``"pts"``.
 
     Returns:
         - numpy.ndarray, four dimensions uint8 data for video. The format is [T, H, W, C]. `T` is the number of frames,

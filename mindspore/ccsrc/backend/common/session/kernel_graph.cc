@@ -24,19 +24,26 @@
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/hash_set.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace session {
@@ -104,7 +111,7 @@ void SyncDeviceInfoToValueNode(const ValueNodePtr &value_node, std::vector<std::
   MS_EXCEPTION_IF_NULL(device_formats);
   MS_EXCEPTION_IF_NULL(device_types);
   ValuePtr value = value_node->value();
-  std::vector<tensor::BaseTensorPtr> tensors;
+  std::vector<tensor::TensorPtr> tensors;
   TensorValueToTensor(value, &tensors);
   if (!tensors.empty()) {
     device_formats->clear();
@@ -452,7 +459,7 @@ ParameterPtr KernelGraph::NewParameter(const ParameterPtr &parameter) {
   if (parameter != nullptr) {
     new_parameter->set_name(parameter->name());
     if (common::AnfAlgo::IsParameterWeight(parameter)) {
-      new_parameter->set_default_param(parameter->default_param());
+      new_parameter->set_default_param(parameter->default_param_raw());
     }
   } else {
     // The created parameter name is empty, so set name to ensure that the parameter name is unique.
@@ -516,6 +523,7 @@ ValueNodePtr KernelGraph::NewValueNode(const tensor::TensorPtr &input_tensor) {
 }
 
 ValueNodePtr KernelGraph::NewValueNode(const ValuePtr &input_value) {
+  MS_EXCEPTION_IF_NULL(input_value);
   if (input_value->isa<tensor::Tensor>()) {
     return NewValueNode(input_value->cast<tensor::TensorPtr>());
   }
@@ -566,10 +574,13 @@ AnfNodePtr KernelGraph::TransParameterTuple(const AbstractBasePtr &abstract) {
     mindspore::NewValueNode(std::make_shared<Primitive>(prim::kPrimMakeTuple->name()))};
   for (size_t index = 0; index < tuple_abstract->size(); ++index) {
     const auto &abs = (*tuple_abstract)[index];
-    if (abs != nullptr && abs->isa<abstract::AbstractSequence>() &&
-        abs->cast<abstract::AbstractSequencePtr>()->dynamic_len()) {
-      make_tuple_inputs.push_back(NewParameter(abs));
-      continue;
+    if (abs != nullptr && abs->isa<abstract::AbstractSequence>()) {
+      const auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+      MS_EXCEPTION_IF_NULL(seq_abs);
+      if (seq_abs->dynamic_len()) {
+        make_tuple_inputs.push_back(NewParameter(abs));
+        continue;
+      }
     }
     make_tuple_inputs.push_back(TransParameterTuple(abs));
   }
@@ -783,8 +794,14 @@ AnfWithOutIndex KernelGraph::GetRefNodeRecursive(const AnfWithOutIndex &out_pair
 
 void KernelGraph::AddRefCorrespondPairs(const AnfWithOutIndex &final_pair, const AnfWithOutIndex &origin_pair) {
   if (IsInRefOutputMap(final_pair)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Out_pair is already in RefOutputMap, node is " << final_pair.first->DebugString()
-                               << ", index is " << final_pair.second;
+    MS_LOG(INFO) << "Out_pair is already in RefOutputMap, node is " << final_pair.first->DebugString() << ", index is "
+                 << final_pair.second
+                 << " new origin node:" << (origin_pair.first == nullptr ? "null" : origin_pair.first->DebugString())
+                 << " index:" << origin_pair.second << " old origin node:"
+                 << (ref_out_in_map_[final_pair].first == nullptr ? "null"
+                                                                  : ref_out_in_map_[final_pair].first->DebugString())
+                 << " index:" << ref_out_in_map_[final_pair].second;
+    return;
   }
   (void)ref_out_in_map_.emplace(final_pair, origin_pair);
 }
@@ -1210,9 +1227,13 @@ void KernelGraph::CacheGraphOutputToFrontNodeWithIndex(const AnfNodePtrList &bac
 }
 
 bool IsTupleGetItemOutputDynamicSequence(const CNodePtr &get_item, size_t index) {
-  return index == 0 && get_item != nullptr && get_item->abstract() != nullptr &&
-         get_item->abstract()->isa<abstract::AbstractSequence>() &&
-         get_item->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len();
+  if (index != 0 || get_item == nullptr || get_item->abstract() == nullptr ||
+      !get_item->abstract()->isa<abstract::AbstractSequence>()) {
+    return false;
+  }
+  const auto &seq_abs = get_item->abstract()->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(seq_abs);
+  return seq_abs->dynamic_len();
 }
 
 kernel::KernelObjectType GetTupleGetItemOutputKernelObjectType(const AnfNodePtr &node) {
@@ -1295,7 +1316,7 @@ void KernelGraph::SetKernelObjectTypesForUnrealNodes() const {
     if (output_kernel_object_types.empty() && input_kernel_object_types.empty()) {
       return;
     }
-    kernel::SetKernelObjectTypeBuildInfo(node, input_kernel_object_types, output_kernel_object_types);
+    AnfAlgo::SetKernelObjectTypeBuildInfo(node, input_kernel_object_types, output_kernel_object_types);
   };
 
   auto node_list = TopoSort(get_return());
@@ -1503,15 +1524,7 @@ bool KernelGraph::IsChildGraphResult(const AnfNodePtr &node) {
   return find(child_graph_results.begin(), child_graph_results.end(), node) != child_graph_results.end();
 }
 
-KernelGraph::~KernelGraph() {
-  try {
-    device::KernelRuntimeManager::Instance().ClearGraphResource(graph_id_);
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "KernelGraph call destructor failed: " << e.what();
-  } catch (...) {
-    MS_LOG(ERROR) << "KernelGraph call destructor failed";
-  }
-}
+KernelGraph::~KernelGraph() {}
 
 std::vector<abstract::AbstractBasePtr> FetchInputAbstracts(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);

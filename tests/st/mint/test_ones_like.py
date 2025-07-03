@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore import ops, mint, Tensor, jit, JitConfig
+from mindspore import ops, mint, Tensor, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -32,7 +32,7 @@ def ones_like_backward_func(input_tensor, dtype=None):
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
 def test_ones_like_normal(mode):
     """
@@ -51,11 +51,11 @@ def test_ones_like_normal(mode):
         y = ones_like_forward_func(input_tensor, dtype)
         input_grad = ones_like_backward_func(input_tensor, dtype1)
     elif mode == 'KBK':
-        y = (jit(ones_like_forward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, dtype)
-        input_grad = (jit(ones_like_backward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, dtype1)
+        y = (jit(ones_like_forward_func, jit_level="O0"))(input_tensor, dtype)
+        input_grad = (jit(ones_like_backward_func, jit_level="O0"))(input_tensor, dtype1)
     else:
-        y = (jit(ones_like_forward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, dtype)
-        input_grad = (jit(ones_like_backward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, dtype1)
+        y = (jit(ones_like_forward_func, backend="GE"))(input_tensor, dtype)
+        input_grad = (jit(ones_like_backward_func, backend="GE"))(input_tensor, dtype1)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
     np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, rtol=1e-5)
 

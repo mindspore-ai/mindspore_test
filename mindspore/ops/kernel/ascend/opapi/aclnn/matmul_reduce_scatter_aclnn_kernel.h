@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matmul_reduce_scatter {
 class MatmulReduceScatterAscend : public AclnnKernelMod {
  public:
   MatmulReduceScatterAscend() : AclnnKernelMod(std::move("aclnnMatmulReduceScatter")) {}
@@ -37,6 +38,7 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_;
   std::pair<KernelTensor *, bool> x2_;
   std::string group_;
+  int64_t world_size_;
   std::string hccl_inner_comm_name_;
   std::string reduce_op_;
   int64_t comm_turn_;
@@ -44,6 +46,7 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
   bool trans_x2_;
   int64_t stream_mode_ = 1;
 };
+}  // namespace matmul_reduce_scatter
 }  // namespace kernel
 }  // namespace mindspore
 

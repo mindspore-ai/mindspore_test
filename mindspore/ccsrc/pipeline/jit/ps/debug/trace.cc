@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -398,6 +398,7 @@ void AnalyzeFailExporter::OutputStatementComment(const CNodePtr &node, const Fun
 void AnalyzeFailExporter::OutputCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph,
                                       const OrderedMap<AnfNodePtr, int32_t> &para_map,
                                       const std::shared_ptr<SubGraphIRInfo> &gsub) {
+  MS_EXCEPTION_IF_NULL(node);
   if (node != sub_graph->get_return()) {
     gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")"
                  << " = ";

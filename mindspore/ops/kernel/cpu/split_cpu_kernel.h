@@ -23,12 +23,13 @@
 #include <tuple>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/base/split_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_cpu {
 class SplitCpuKernelMod : public NativeCpuKernelMod {
  public:
   SplitCpuKernelMod() = default;
@@ -126,7 +127,13 @@ class SplitCpuKernelMod : public NativeCpuKernelMod {
                                                      .AddInputAttr(kNumberTypeBool)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
-                                                     .AddOutputAttr(kNumberTypeBool)};
+                                                     .AddOutputAttr(kNumberTypeBool),
+                                                   KernelAttr()
+                                                     .AddAllSameAttr(true)
+                                                     .AddInputAttr(kNumberTypeBFloat16)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+                                                     .AddOutputAttr(kNumberTypeBFloat16)};
     return support_list;
   }
 
@@ -153,6 +160,7 @@ class SplitCpuKernelMod : public NativeCpuKernelMod {
   size_t output_num_{1};
   std::vector<int> input_shape_;
 };
+}  // namespace split_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

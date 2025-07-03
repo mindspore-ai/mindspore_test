@@ -18,29 +18,30 @@
 #include <string>
 #include <unordered_map>
 #include "kernel/ascend/pyboost/customize/matmul_reduce_scatter.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-ValueTuplePtr GetTransposePerm(const BaseTensorPtr &tensor) {
-  std::vector<ValuePtr> perm(tensor->shape().size());
-  perm[kDim0] = MakeValue(static_cast<int64_t>(kDim1));
-  perm[kDim1] = MakeValue(static_cast<int64_t>(kDim0));
-  return std::make_shared<ValueTuple>(perm);
+namespace matmul_reduce_scatter_in {
+std::vector<int64_t> GetTransposePerm(const TensorPtr &tensor) {
+  std::vector<int64_t> perm(tensor->shape().size());
+  perm[kDim0] = static_cast<int64_t>(kDim1);
+  perm[kDim1] = static_cast<int64_t>(kDim0);
+  return perm;
 }
-}  // namespace
+}  // namespace matmul_reduce_scatter_in
 
-tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const BaseTensorPtr &x2, const StringImmPtr &group,
-  const Int64ImmPtr &world_size, const Int64ImmPtr &reduction, const std::optional<BaseTensorPtr> &bias,
-  const Int64ImmPtr &comm_turn, const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2) {
+tensor::TensorPtr MatmulReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                     const TensorPtr &x2, const StringImmPtr &group,
+                                                     const Int64ImmPtr &world_size, const Int64ImmPtr &reduction,
+                                                     const std::optional<TensorPtr> &bias, const Int64ImmPtr &comm_turn,
+                                                     const BoolImmPtr &trans_input, const BoolImmPtr &trans_x2) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
 
   OpRunner::InferOpOutput(op, input, x2, group, world_size, reduction, bias, comm_turn, trans_input, trans_x2);
@@ -48,27 +49,29 @@ tensor::BaseTensorPtr MatmulReduceScatterAscendCustomize(
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   auto group_imm = GetValue<std::string>(group);
+  auto world_size_imm = GetValue<int64_t>(world_size);
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
   auto comm_turn_imm = GetValue<int64_t>(comm_turn);
   auto trans_input_imm = GetValue<bool>(trans_input);
   auto trans_x2_imm = GetValue<bool>(trans_x2);
 
-  auto hccl_inner_comm_name_imm = mindspore::transform::OpApiUtil::GetCommName(group_imm);
+  auto hccl_inner_comm_name_imm = mindspore::device::ascend::OpApiUtil::GetCommName(group_imm);
+  mindspore::device::ascend::OpApiUtil::CheckWorldSize(group_imm, world_size_imm, op->primitive()->name());
   std::unordered_map<Reduction, std::string> reduction_map = {{Reduction::REDUCTION_SUM, "sum"}};
   auto iter = reduction_map.find(reduction_imm);
   if (iter == reduction_map.end()) {
     MS_LOG(EXCEPTION) << op->primitive()->name() << ": the value of reduce_op is invalid.";
   }
   auto reduce_op_imm = iter->second;
-  BaseTensorPtr input_ = input;
-  BaseTensorPtr x2_ = x2;
+  TensorPtr input_ = input;
+  TensorPtr x2_ = x2;
   const auto &device_name = op->device_context()->device_context_key_.device_name_;
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   if (trans_input_imm) {
-    input_ = transpose_op->Call(input, GetTransposePerm(input));
+    input_ = transpose_op->Call(input, matmul_reduce_scatter_in::GetTransposePerm(input));
   }
   if (trans_x2_imm) {
-    x2_ = transpose_op->Call(x2, GetTransposePerm(x2));
+    x2_ = transpose_op->Call(x2, matmul_reduce_scatter_in::GetTransposePerm(x2));
   }
 
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(

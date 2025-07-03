@@ -17,23 +17,12 @@
 #include "include/common/utils/hook.h"
 #include <string>
 #include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_py.h"
 #include "pybind11/pytypes.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace {
-py::object GetPythonArg(const ValuePtr &grad) {
-  // Get _c_expression tensor
-  auto c_expression_tensor = ValueToPyData(grad);
-  // Get python tensor
-  return ConvertCTensorToPyTensor(c_expression_tensor);
-}
-
-ValuePtr GetCValue(const py::object &output) {
-  // Convert pyobject output to c++ tensor.
-  return ConvertPyObjectToCTensor(output);
-}
-
 py::object RunHook(uint64_t tensor_id, const py::function &hook, const py::object &arg) {
   if (hook.ptr() == nullptr) {
     MS_LOG(DEBUG) << "Hook for tensor id " << tensor_id << " have been deleted by python";
@@ -60,8 +49,15 @@ TensorBackwardHook::~TensorBackwardHook() { py::gil_scoped_acquire acquire_gil; 
 
 ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
-  auto py_args = GetPythonArg(grad);
-  auto ret = RunHook(tensor_id_, hook_, py_args);
-  return GetCValue(ret);
+  const auto py_arg = CValueToPybindObj(grad);
+  const auto ret = RunHook(tensor_id_, hook_, py_arg);
+  ValuePtr val;
+  if (tensor::IsTensorPy(ret)) {
+    val = tensor::ConvertToTensor(ret);
+  } else {
+    MS_LOG(EXCEPTION) << "Tensor hook should be return Tensor, but get type: "
+                      << py::str(ret.get_type().attr("__name__")).cast<std::string>() << ".";
+  }
+  return val;
 }
 }  // namespace mindspore

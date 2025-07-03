@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -93,7 +92,7 @@ def zeros_like_dynamic(x):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_bool():
-    x = Tensor(np.arange(120).reshape(3, 4, 1, 2, 5).astype(np.bool))
+    x = Tensor(np.arange(120).reshape(3, 4, 1, 2, 5).astype(np.bool_))
     output = zeros_like_dynamic(x)
     expected = np.zeros([3, 4, 1, 2, 5])
     np.testing.assert_array_equal(output.asnumpy(), expected)

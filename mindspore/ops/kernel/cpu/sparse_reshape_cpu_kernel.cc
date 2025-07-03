@@ -16,11 +16,12 @@
 
 #include "kernel/cpu/sparse_reshape_cpu_kernel.h"
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_reshape_cpu {
 namespace {
 constexpr size_t kIndicesShapeSize = 2;
 constexpr size_t kSparseReshapeInputsNum = 3;
@@ -187,5 +188,6 @@ std::vector<KernelAttr> SparseReshapeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseReshape, SparseReshapeCpuKernelMod);
+}  // namespace sparse_reshape_cpu
 }  // namespace kernel
 }  // namespace mindspore

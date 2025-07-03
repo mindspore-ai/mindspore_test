@@ -1,17 +1,15 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: vsnprintf_s  function
+ * Create: 2014-02-25
  */
 
 #include "secureprintoutput.h"
@@ -47,20 +45,17 @@ int vsnprintf_s(char *strDest, size_t destMax, size_t count, const char *format,
 {
     int retVal;
 
-    if (format == NULL || strDest == NULL || destMax == 0 || destMax > SECUREC_STRING_MAX_LEN ||
-        (count > (SECUREC_STRING_MAX_LEN - 1) && count != (size_t)(-1))) {
-        if (strDest != NULL && destMax > 0 && destMax <= SECUREC_STRING_MAX_LEN) {
-            strDest[0] = '\0';
-        }
+    if (SECUREC_VSNPRINTF_PARAM_ERROR(format, strDest, destMax, count, SECUREC_STRING_MAX_LEN)) {
+        SECUREC_VSPRINTF_CLEAR_DEST(strDest, destMax, SECUREC_STRING_MAX_LEN);
         SECUREC_ERROR_INVALID_PARAMTER("vsnprintf_s");
         return -1;
     }
 
     if (destMax > count) {
         retVal = SecVsnprintfImpl(strDest, count + 1, format, argList);
-        if (retVal == SECUREC_PRINTF_TRUNCATE) {  /* lsd add to keep dest buffer not destroyed 2014.2.18 */
-            /* the string has been truncated, return  -1 */
-            return -1;          /* to skip error handler,  return strlen(strDest) or -1 */
+        if (retVal == SECUREC_PRINTF_TRUNCATE) {  /* To keep dest buffer not destroyed 2014.2.18 */
+            /* The string has been truncated, return  -1 */
+            return -1;          /* To skip error handler,  return strlen(strDest) or -1 */
         }
     } else {
         retVal = SecVsnprintfImpl(strDest, destMax, format, argList);
@@ -72,20 +67,18 @@ int vsnprintf_s(char *strDest, size_t destMax, size_t count, const char *format,
     }
 
     if (retVal < 0) {
-        strDest[0] = '\0';      /* empty the dest strDest */
-
+        strDest[0] = '\0';      /* Empty the dest strDest */
         if (retVal == SECUREC_PRINTF_TRUNCATE) {
             /* Buffer too small */
             SECUREC_ERROR_INVALID_RANGE("vsnprintf_s");
         }
-
         SECUREC_ERROR_INVALID_PARAMTER("vsnprintf_s");
         return -1;
     }
 
     return retVal;
 }
-#if SECUREC_IN_KERNEL
+#if SECUREC_EXPORT_KERNEL_SYMBOL
 EXPORT_SYMBOL(vsnprintf_s);
 #endif
 #endif
@@ -120,30 +113,26 @@ int vsnprintf_truncated_s(char *strDest, size_t destMax, const char *format, va_
 {
     int retVal;
 
-    if (format == NULL || strDest == NULL || destMax == 0 || destMax > SECUREC_STRING_MAX_LEN) {
-        if (strDest != NULL && destMax > 0 && destMax <= SECUREC_STRING_MAX_LEN) {
-            strDest[0] = '\0';
-        }
+    if (SECUREC_VSPRINTF_PARAM_ERROR(format, strDest, destMax, SECUREC_STRING_MAX_LEN)) {
+        SECUREC_VSPRINTF_CLEAR_DEST(strDest, destMax, SECUREC_STRING_MAX_LEN);
         SECUREC_ERROR_INVALID_PARAMTER("vsnprintf_truncated_s");
         return -1;
     }
 
     retVal = SecVsnprintfImpl(strDest, destMax, format, argList);
-
     if (retVal < 0) {
         if (retVal == SECUREC_PRINTF_TRUNCATE) {
-            return (int)(destMax - 1);  /* to skip error handler,  return strlen(strDest) */
+            return (int)(destMax - 1);  /* To skip error handler,  return strlen(strDest) */
         }
-        strDest[0] = '\0';      /* empty the dest strDest */
+        strDest[0] = '\0';      /* Empty the dest strDest */
         SECUREC_ERROR_INVALID_PARAMTER("vsnprintf_truncated_s");
         return -1;
     }
 
     return retVal;
 }
-#if SECUREC_IN_KERNEL
+#if SECUREC_EXPORT_KERNEL_SYMBOL
 EXPORT_SYMBOL(vsnprintf_truncated_s);
 #endif
 #endif
-
 

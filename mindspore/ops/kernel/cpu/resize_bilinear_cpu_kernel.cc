@@ -17,13 +17,13 @@
 #include "kernel/cpu/resize_bilinear_cpu_kernel.h"
 #include <functional>
 #include <map>
-#include "kernel/ops_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "common/kernel_utils.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bilinear_cpu {
 namespace {
 constexpr size_t kResizeBilinearV2InputsNum = 4;
 constexpr size_t kResizeBilinearOutputsNum = 1;
@@ -258,5 +258,6 @@ FuncVec &ResizeBilinearCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBilinearV2, ResizeBilinearCpuKernelMod);
+}  // namespace resize_bilinear_cpu
 }  // namespace kernel
 }  // namespace mindspore

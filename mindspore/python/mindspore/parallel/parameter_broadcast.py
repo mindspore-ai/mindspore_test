@@ -19,7 +19,10 @@ __all__ = ["parameter_broadcast"]
 
 import numpy as np
 import mindspore as ms
-from mindspore.communication import get_rank, create_group, get_group_size
+from mindspore.communication import create_group, get_group_size
+from mindspore.parallel._utils import _get_auto_parallel_net, _parallel_mode_map, _check_rank
+# disable pylint too broad Exception
+# pylint: disable=W0212
 
 
 def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
@@ -34,7 +37,8 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         layout (Dict): Parameter layout dictionary. Come from
             :func:`mindspore.nn.Cell.parameter_layout_dict`
             or read from file(for example: "strategy.ckpt" saved by using the
-            `strategy_ckpt_config` parameter of :func:`mindspore.set_auto_parallel_context`).
+            `strategy_ckpt_config` parameter of
+            :func:`mindspore.parallel.auto_parallel.AutoParallel.save_param_strategy_file` ).
             The key is param name, the value is the layout of this parameter.
         cur_rank (int, optional): current rank id. Default: ``0``.
         initial_rank (int, optional): Start rank id for each pipeline. Default: ``0``.
@@ -45,6 +49,9 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ValueError: Parameter name in `layout` can not be found in
             :func:`mindspore.nn.Cell.parameters_dict`.
 
+    Supported Platforms:
+        ``Ascend``
+
     Examples:
         >>> import os
         >>> import mindspore as ms
@@ -53,11 +60,11 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         >>> from mindspore.communication import init
         >>> from mindspore.common.initializer import initializer
         >>> from mindspore.train import Model
-        >>> from mindspore.parallel.parameter_broadcast import parameter_broadcast
         >>> from mindspore.train.serialization import load_checkpoint, load_param_into_net
+        >>> from mindspore.parallel.auto_parallel import AutoParallel
+        >>> from mindspore.parallel import parameter_broadcast
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> ms.runtime.set_memory(max_size="28GB")
-        >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
         >>> init()
         >>> ms.set_seed(1)
         >>> class Network(nn.Cell):
@@ -90,7 +97,8 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         >>> dataset = create_dataset()
         >>> optim = nn.SGD(net.trainable_params(), 1e-2)
         >>> loss = nn.CrossEntropyLoss()
-        >>> model = Model(net, loss_fn=loss, optimizer=optim)
+        >>> parallel_net = AutoParallel(net)
+        >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim)
         >>> model.train(1, dataset)
         >>> ms.save_checkpoint(net, "./simple.ckpt", False)
         >>> layout = model.train_network.parameter_layout_dict
@@ -104,17 +112,20 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ...         print("step end, cur step num: ", cb_params.cur_step_num, flush=True)
         >>> model.train(1, dataset, callbacks=[LossCallBack()])
     """
-    if not layout:
+    if not layout or get_group_size() <= 1:
         return
     from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
     from mindspore.nn.wrap.cell_wrapper import AllreduceGraph
-    origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
-    if origin_parallel_mode not in ("semi_auto_parallel", "auto_parallel"):
-        return
-    if cur_rank != get_rank():
-        raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
-    if initial_rank % (get_group_size() / ms.get_auto_parallel_context("pipeline_stages")) != 0:
-        raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")
+    origin_parallel_mode = ""
+    pipeline_stages = 1
+    parallel_net = _get_auto_parallel_net(net)
+    if type(parallel_net).__name__ == 'AutoParallel':
+        origin_parallel_mode = _parallel_mode_map(parallel_net._parallel_mode)
+        pipeline_stages = parallel_net._pipeline_stages
+    else:
+        origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
+        pipeline_stages = ms.get_auto_parallel_context("pipeline_stages")
+    _check_rank(cur_rank, initial_rank, pipeline_stages)
     param_redundancy = get_parameter_redundancy(layout, initial_rank)
     if not param_redundancy:
         return

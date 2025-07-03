@@ -19,10 +19,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummin_ext {
 
 void CumminExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
   dim_ = dim_ < 0 ? dim_ + SizeToLong(input_shape.size()) : dim_;
   GetWorkspaceForResize(inputs[kIndex0], dim_, outputs[kIndex0], outputs[kIndex1]);
@@ -36,5 +37,6 @@ bool CumminExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(CumminExt, CumminExtAscend);
+}  // namespace cummin_ext
 }  // namespace kernel
 }  // namespace mindspore

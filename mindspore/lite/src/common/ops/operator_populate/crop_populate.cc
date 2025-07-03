@@ -17,6 +17,7 @@
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/crop_parameter.h"
 #include "infer/crop.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 using mindspore::ops::kNameCrop;
 using mindspore::schema::PrimitiveType_Crop;
 namespace mindspore {

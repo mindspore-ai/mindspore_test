@@ -29,6 +29,11 @@
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -42,6 +47,7 @@ std::string ParameterName(const AnfNodePtr &node_ptr) {
 }
 
 bool ParameterRequireGrad(const AnfNodePtr &node_ptr) {
+  MS_EXCEPTION_IF_NULL(node_ptr);
   auto para_ptr = node_ptr->cast<ParameterPtr>();
   if (para_ptr == nullptr) {
     return false;
@@ -133,6 +139,7 @@ std::string ExtractInputParameterNameByNode(const CNodePtr &node) {
     if (input->isa<Parameter>()) {
       param_name = input->fullname_with_scope();
       auto input_parameter = input->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(input_parameter);
       MS_LOG(INFO) << "node name: " << node->fullname_with_scope() << "involved parameter: " << input_parameter->name();
     }
   }
@@ -256,6 +263,7 @@ std::vector<size_t> ExtractInputTypeLengthByNode(const CNodePtr &node) {
   if ((node_inputs.size() == kMinInputSize || IsSomePrimitiveList(node, INPUT_IS_TUPLE_OR_LIST_OPS)) &&
       IsValueSequence(node_inputs[1])) {
     std::vector<ValuePtr> inputs_seq;
+    MS_EXCEPTION_IF_NULL(node_inputs[1]);
     if (IsValueNode<ValueList>(node_inputs[1])) {
       inputs_seq = node_inputs[1]->cast<ValueNodePtr>()->value()->cast<ValueListPtr>()->value();
     } else {
@@ -274,6 +282,7 @@ std::vector<size_t> ExtractInputTypeLengthByNode(const CNodePtr &node) {
 
   if ((node_inputs.size() == kMinInputSize || IsSomePrimitiveList(node, INPUT_IS_TUPLE_OR_LIST_OPS)) &&
       IsMakeSequence(node_inputs[1])) {
+    MS_EXCEPTION_IF_NULL(node_inputs[1]);
     node_inputs = node_inputs[1]->cast<CNodePtr>()->inputs();
   }
 
@@ -378,6 +387,7 @@ bool FindReshape(const CNodePtr &cnode, mindspore::HashSet<std::string> *op_cach
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == RESHAPE) {
     auto operator_info = cnode->user_data<OperatorInfo>();
+    MS_EXCEPTION_IF_NULL(operator_info);
     std::string op_info_name = operator_info->name();
     if (op_cache->find(op_info_name) != op_cache->end()) {
       return false;
@@ -445,6 +455,7 @@ bool FindReshapePreNodeStraCosts(const AnfNodePtr &node, OperatorInfoPtr *pre_op
     *out_index = GetTupleGetItemIndex(cnode);
     // find tuple_get_item's previous node
     auto pre_node = cnode->input(1);
+    MS_EXCEPTION_IF_NULL(pre_node);
     if (!pre_node->isa<CNode>()) {
       MS_LOG_WITH_NODE(EXCEPTION, pre_node) << "tuple get item's second input is not a cnode";
     }
@@ -495,6 +506,7 @@ void FindReshapeNextNodeStraCosts(const CNodePtr &cnode,
     auto pair = node_pair;
     if (IsValueNode<FuncGraph>(use_apply->input(0))) {
       auto sub_graph = GetValueNode<FuncGraphPtr>(use_apply->input(0));
+      MS_EXCEPTION_IF_NULL(sub_graph);
       auto params = sub_graph->parameters();
       auto sub_manager = sub_graph->manager();
       auto sub_node_set = sub_manager->node_users()[params[node_pair.second - 1]];
@@ -579,6 +591,7 @@ const AnfNodePtr RealInputNode(const CNodePtr cnode, size_t index) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "cnode inputs size: " << cnode->size() << " is less equal index: " << index;
   }
   auto input0 = cnode->input(index);
+  MS_EXCEPTION_IF_NULL(input0);
   if (!IsPrimitiveCNode(input0)) {
     return input0;
   }
@@ -617,6 +630,7 @@ AnfNodePtr RefParameterToActualNode(const AnfNodePtr &node,
     return nullptr;
   }
   auto node_param_ptr = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(node_param_ptr);
   if (node_param_ptr->has_default()) {
     return node;
   }

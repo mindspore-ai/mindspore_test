@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_do_mask_ext {
 
 class DropoutDoMaskExtAscend : public AclnnKernelMod {
  public:
@@ -36,6 +37,7 @@ class DropoutDoMaskExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   double p_value_;
 };
+}  // namespace dropout_do_mask_ext
 }  // namespace kernel
 }  // namespace mindspore
 

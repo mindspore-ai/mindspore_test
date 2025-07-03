@@ -19,7 +19,15 @@ set(LITE_SRC_COMMON_MID_SRC
 if(NOT MSLITE_ENABLE_RUNTIME_CONVERT OR MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
     set(LITE_SRC_COMMON_MID_SRC
             ${LITE_SRC_COMMON_MID_SRC}
-            ${CMAKE_CURRENT_SOURCE_DIR}/config_file.cc)
+            ${CMAKE_CURRENT_SOURCE_DIR}/config_file.cc
+            )
+endif()
+
+if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
+    set(LITE_SRC_COMMON_MID_SRC
+            ${LITE_SRC_COMMON_MID_SRC}
+            ${CMAKE_CURRENT_SOURCE_DIR}/crypto.cc
+            )
 endif()
 
 if(NOT ANDROID_NDK_TOOLCHAIN_INCLUDED)
@@ -69,9 +77,15 @@ set(LITE_SRC_TRAIN_COMMON_MID_SRC
         ${LITE_SRC_TRAIN_COMMON_MID_SRC}
         ${CMAKE_CURRENT_SOURCE_DIR}/quant_utils.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/storage.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/file_utils.cc
         )
 
 add_library(lite_src_common_mid OBJECT ${LITE_SRC_COMMON_MID_SRC})
 add_dependencies(lite_src_common_mid fbs_src fbs_inner_src)
 add_library(lite_src_train_common_mid OBJECT ${LITE_SRC_TRAIN_COMMON_MID_SRC})
 add_dependencies(lite_src_train_common_mid fbs_src fbs_inner_src)
+if((${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR APPLE) AND (NOT TARGET_AOS_ARM) AND (NOT ANDROID_NDK) AND
+        (NOT MSLITE_TARGET_SITEAI) AND (TARGET mindspore::crypto))
+    add_compile_definitions(ENABLE_OPENSSL)
+    target_link_libraries(lite_src_common_mid PRIVATE mindspore::crypto -pthread)
+endif()

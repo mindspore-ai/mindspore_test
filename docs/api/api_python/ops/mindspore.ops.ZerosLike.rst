@@ -9,7 +9,7 @@ mindspore.ops.ZerosLike
         - **input_x** (Tensor) - 任意维度的输入Tensor。
 
     输出：
-        Tensor，具有与 `input_x` 相同的shape和数据类型，并填充了0。
+        Tensor，具有与 `input_x` 相同的shape和数据类型，并用0填充。
 
     异常：
         - **TypeError** - `input_x` 不是Tensor。

@@ -87,10 +87,12 @@ SymbolPtrList ElemwiseBinop::Process(const SymbolPtrList &lhs, const SymbolPtrLi
 REG_SYMBOL_OP_BUILDER("Add").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("AddExt").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Div").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("DivMod").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Equal").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("FloorDiv").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Greater").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("GreaterEqual").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("IsClose").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Less").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("LessEqual").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("LogicalAnd").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
@@ -99,8 +101,10 @@ REG_SYMBOL_OP_BUILDER("Maximum").SetShapeDependN<DependOn::kShape, 2>().SetShape
 REG_SYMBOL_OP_BUILDER("Minimum").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Mul").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("NotEqual").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("Polar").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Pow").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("RealDiv").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("RemainderTensorTensor").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Sub").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("SubExt").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 

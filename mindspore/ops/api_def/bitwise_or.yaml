@@ -1,0 +1,19 @@
+bitwise_or:
+  - op_yaml: bitwise_or_scalar_op.yaml
+    py_method: deprecated_bitwise_or
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+  - op_yaml: bitwise_or_tensor_op.yaml
+    py_method: deprecated_bitwise_or
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+  - op_yaml: deprecated/bitwise_or_method.yaml
+    py_method: deprecated_bitwise_or
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

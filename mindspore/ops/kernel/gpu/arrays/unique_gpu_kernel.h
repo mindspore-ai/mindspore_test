@@ -21,7 +21,7 @@
 #include <memory>
 #include <map>
 #include "kernel/gpu/gpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/unique_helper.h"
 namespace mindspore {
 namespace kernel {

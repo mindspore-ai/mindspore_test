@@ -41,8 +41,8 @@
 #include "minddata/dataset/kernels/image/sharpness_op.h"
 #include "minddata/dataset/kernels/image/solarize_op.h"
 #include "minddata/dataset/kernels/data/data_utils.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 
 #include "acldvppop/acldvpp_adjust_brightness.h"
 #include "acldvppop/acldvpp_adjust_contrast.h"
@@ -68,7 +68,7 @@
 #include "acldvppop/acldvpp_vertical_flip.h"
 #include "acldvppop/acldvpp_warp_affine.h"
 #include "acldvppop/acldvpp_warp_perspective.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace dataset {
@@ -764,10 +764,10 @@ APP_ERROR DvppAutoContrast(const std::shared_ptr<DeviceTensorAscend910B> &input,
 APP_ERROR GetDVPPConvertMode(ConvertMode convertMode, acldvppConvertMode *dvpp_mode) {
   switch (convertMode) {
     case ConvertMode::COLOR_BGR2BGRA:                   // COLOR_BGR2BGRA=COLOR_RGB2RGBA
-      *dvpp_mode = acldvppConvertMode::COLOR_BGR2BGRA;  // dvpp alpah channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
+      *dvpp_mode = acldvppConvertMode::COLOR_BGR2BGRA;  // dvpp alpha channel COLOR_BGR2BGRA/COLOR_RGB2RGBA
       break;
     case ConvertMode::COLOR_BGRA2BGR:                   // COLOR_BGRA2BGR=COLOR_RGBA2RGB
-      *dvpp_mode = acldvppConvertMode::COLOR_BGRA2BGR;  // dvpp alpah channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
+      *dvpp_mode = acldvppConvertMode::COLOR_BGRA2BGR;  // dvpp alpha channel COLOR_BGRA2BGR/COLOR_RGBA2RGB
       break;
     case ConvertMode::COLOR_BGR2RGBA:                   // COLOR_BGR2RGBA=COLOR_RGB2BGRA
       *dvpp_mode = acldvppConvertMode::COLOR_BGR2RGBA;  // dvpp COLOR_BGR2RGBA/COLOR_RGB2BGRA

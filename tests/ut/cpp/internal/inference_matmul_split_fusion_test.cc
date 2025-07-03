@@ -35,9 +35,9 @@ class InferenceMatmulSplitFusionUT : public UT::Common {
 /// Description: Convert Reshape + Matmul + Reshape + SplitWithSize to MatmulSplitOut3
 /// Expectation: After optimize, match MatmulSplitOut3.
 TEST_F(InferenceMatmulSplitFusionUT, TestMatmulSplitOut3) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1, 16, 8192});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{16, 8192}));
@@ -67,9 +67,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestMatmulSplitOut3) {
 /// Description: Convert Reshape + Matmul + Reshape + SplitWithSize to MatmulSplitOut2
 /// Expectation: After optimize, match MatmulSplitOut2.
 TEST_F(InferenceMatmulSplitFusionUT, TestMatmulSplitOut2) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1, 256, 12288});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{256, 12288}));
@@ -99,9 +99,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestMatmulSplitOut2) {
 /// Description: Convert Reshape + Matmul + BiasAdd + Reshape + SplitWithSize to MatmulBiasSplitOut3
 /// Expectation: After optimize, match MatmulBiasSplitOut3.
 TEST_F(InferenceMatmulSplitFusionUT, TestMatmulBiasSplitOut3) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1, 16, 12288});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{16, 12288}));
@@ -134,9 +134,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestMatmulBiasSplitOut3) {
 /// Description: Convert Reshape + Matmul + BiasAdd + Reshape + SplitWithSize to MatmulBiasSplitOut2
 /// Expectation: After optimize, match MatmulBiasSplitOut2.
 TEST_F(InferenceMatmulSplitFusionUT, TestMatmulBiasSplitOut2) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kFloat16, {1, 1024, 8192});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{1024, 8192}));
@@ -169,9 +169,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestMatmulBiasSplitOut2) {
 /// Description: Convert Reshape + QuantBatchMatmul + Reshape + SplitWithSize to QuantbatchmatmulSplitOut3
 /// Expectation: After optimize, match QuantbatchmatmulSplitOut3.
 TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut3) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kInt8, {1, 32, 4096});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{32, 4096}));
@@ -206,9 +206,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut3) {
 /// Description: Convert Reshape + QuantBatchMatmul + Reshape + SplitWithSize to QuantbatchmatmulSplitOut2
 /// Expectation: After optimize, match QuantbatchmatmulSplitOut2.
 TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut2) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kInt8, {1, 256, 4096});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{256, 4096}));
@@ -243,9 +243,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut2) {
 /// Description: Convert Reshape + QuantBatchMatmul + Add + Reshape + SplitWithSize to QuantbatchmatmulSplitOut3
 /// Expectation: After optimize, match QuantbatchmatmulSplitOut3.
 TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulAddSplitOut3) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kInt8, {1, 32, 4096});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{32, 4096}));
@@ -295,9 +295,9 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulAddSplitOut3) {
 /// Description: Convert Reshape + QuantBatchMatmul + Add + Reshape + SplitWithSize to QuantbatchmatmulSplitOut2
 /// Expectation: After optimize, match QuantbatchmatmulSplitOut2.
 TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulAddSplitOut2) {
-  std::map<std::string, std::string> jit_config;
-  jit_config["infer_boost"] = "on";
-  PhaseManager::GetInstance().set_jit_config(jit_config);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  context->SetMsInternalEnableCustomKernelList();
   test::ConstructGraph c;
   auto input = c.NewTensorInput("input", kInt8, {1, 256, 4096});
   auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{256, 4096}));

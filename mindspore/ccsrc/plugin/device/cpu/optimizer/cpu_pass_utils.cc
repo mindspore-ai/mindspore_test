@@ -21,16 +21,20 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "kernel/kernel_build_info.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/trace_base.h"
 #include "kernel/framework_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
+namespace device::cpu {
+void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs);
+}
 namespace opt {
 AnfNodePtr AddCastOpNodeToGraph(const FuncGraphPtr &func_graph, const AnfNodePtr &input, const std::string &format,
                                 const TypeId &input_type, const TypeId &output_type,
@@ -73,7 +77,7 @@ AnfNodePtr AddCastOpNodeToGraph(const FuncGraphPtr &func_graph, const AnfNodePtr
   }
 
   auto kernel_attrs = cpu_kernel->GetOpSupport();
-  kernel::SetCpuRefMapToKernelInfo(cast, kernel_attrs);
+  device::cpu::SetCpuRefMapToKernelInfo(cast, kernel_attrs);
   auto thread_pool = kernel::GetActorMgrInnerThreadPool();
   cpu_kernel->SetThreadPool(thread_pool);
 

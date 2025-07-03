@@ -1,35 +1,36 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: gets_s function
+ * Create: 2014-02-25
  */
 
 #include "securecutil.h"
 
-static void SecTrimCRLF(char *buffer, size_t len)
+/*
+ * The parameter size is buffer size in byte
+ */
+SECUREC_INLINE void SecTrimCRLF(char *buffer, size_t size)
 {
-    int i;
-    /* No need to determine whether integer overflow exists */
-    for (i = (int)(len - 1); i >= 0 && (buffer[i] == '\r' || buffer[i] == '\n'); --i) {
-        buffer[i] = '\0';
+    size_t len = strlen(buffer);
+    --len; /* Unsigned integer wrapping is accepted and is checked afterwards */
+    while (len < size && (buffer[len] == '\r' || buffer[len] == '\n')) {
+        buffer[len] = '\0';
+        --len; /* Unsigned integer wrapping is accepted and is checked next loop */
     }
-    return;
 }
 
 /*
  * <FUNCTION DESCRIPTION>
  *    The gets_s function reads at most one less than the number of characters
- *    specified by destMax from the stream pointed to by stdin, into the array pointed to by buffer
+ *    specified by destMax from the std input stream, into the array pointed to by buffer
  *    The line consists of all characters up to and including
  *    the first newline character ('\n'). gets_s then replaces the newline
  *    character with a null character ('\0') before returning the line.
@@ -38,7 +39,7 @@ static void SecTrimCRLF(char *buffer, size_t len)
  *
  * <INPUT PARAMETERS>
  *    buffer                         Storage location for input string.
- *    numberOfElements       The size of the buffer.
+ *    destMax                        The size of the buffer.
  *
  * <OUTPUT PARAMETERS>
  *    buffer                         is updated
@@ -47,13 +48,12 @@ static void SecTrimCRLF(char *buffer, size_t len)
  *    buffer                         Successful operation
  *    NULL                           Improper parameter or read fail
  */
-char *gets_s(char *buffer, size_t numberOfElements)
+char *gets_s(char *buffer, size_t destMax)
 {
-    size_t len;
 #ifdef SECUREC_COMPATIBLE_WIN_FORMAT
-    size_t bufferSize = ((numberOfElements == (size_t)-1) ? SECUREC_STRING_MAX_LEN : numberOfElements);
+    size_t bufferSize = ((destMax == (size_t)(-1)) ? SECUREC_STRING_MAX_LEN : destMax);
 #else
-    size_t bufferSize = numberOfElements;
+    size_t bufferSize = destMax;
 #endif
 
     if (buffer == NULL || bufferSize == 0 || bufferSize > SECUREC_STRING_MAX_LEN) {
@@ -61,15 +61,11 @@ char *gets_s(char *buffer, size_t numberOfElements)
         return NULL;
     }
 
-    if (fgets(buffer, (int)bufferSize, stdin) == NULL) {
-        return NULL;
+    if (fgets(buffer, (int)bufferSize, SECUREC_STREAM_STDIN) != NULL) {
+        SecTrimCRLF(buffer, bufferSize);
+        return buffer;
     }
 
-    len = strlen(buffer);
-    if (len > 0 && len < bufferSize) {
-        SecTrimCRLF(buffer, len);
-    }
-
-    return buffer;
+    return NULL;
 }
 

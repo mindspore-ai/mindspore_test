@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 from mindspore import Tensor
 from mindspore.ops import operations as P
@@ -112,4 +111,4 @@ def test_dynamic_shape_float32():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_bool():
-    dynamic_shape(np.bool)
+    dynamic_shape(np.bool_)

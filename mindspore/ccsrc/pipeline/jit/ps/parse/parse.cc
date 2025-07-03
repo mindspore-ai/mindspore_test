@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,14 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace parse {
@@ -178,6 +186,9 @@ void Parser::UpdateTopFuncGraph(const FuncGraphPtr &func_graph) { top_func_graph
 void Parser::InitParserEnvironment(const py::object &obj) {
   Parser::top_func_graph_ = FuncGraphWeakPtr();
   ScopeManager::GetInstance().ClearScope();
+  if (obj.ptr() == nullptr) {
+    return;
+  }
   (void)python_adapter::CallPyFn(PYTHON_MOD_PARSE_MODULE, PYTHON_PARSE_GENERATE_SCOPE, obj);
   // CellList need convert to FuncGraph in Parse, add flag for input from top graph.
   if (py::hasattr(obj, PYTHON_CELL_AS_LIST)) {
@@ -777,6 +788,14 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
     function_name = class_name + '_' + cell_construct;
     MS_LOG(DEBUG) << "The generated function full name: " << function_name;
   }
+
+  // If meet trace_begin or trace_end, throw exception.
+  constexpr auto trace_begin = "_jit_trace_begin";
+  constexpr auto trace_end = "_jit_trace_end";
+  if (function_name == trace_begin || function_name == trace_end) {
+    MS_LOG(EXCEPTION) << "Do not support using " << function_name << "under ast mode or graph mode.";
+  }
+
   // Normalize the name.
   std::replace(function_name.begin(), function_name.end(), '.', '_');
   std::replace(function_name.begin(), function_name.end(), '<', '_');
@@ -1046,6 +1065,7 @@ bool Parser::HandleSetAttrClassMemberForInplace(const FunctionBlockPtr &block, c
   }
   // attr_cnode: self.attr
   auto attr_cnode = attr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(attr_cnode);
   MS_LOG(DEBUG) << "attr cnode: " << attr_cnode->DebugString(recursive_level);
   const auto &attr_cnode_inputs = attr_cnode->inputs();
   constexpr size_t target_index = 1;
@@ -1584,11 +1604,21 @@ bool Parser::CompareNotEqual(const FunctionBlockPtr &block, const py::object &le
 
 bool Parser::CompareGreater(const FunctionBlockPtr &, const py::object &left_obj, const py::object &comparator_obj,
                             bool *bool_res) const {
-  auto comparator_type_name = ast_->GetNodeType(comparator_obj)->node_name();
-  if (comparator_type_name != "Num" || (!py::isinstance<py::int_>(left_obj) && !py::isinstance<py::float_>(left_obj))) {
+  if (!py::isinstance<py::int_>(left_obj) && !py::isinstance<py::float_>(left_obj)) {
+    MS_LOG(DEBUG) << "left_obj is not int or float.";
     return false;
   }
-  py::object num_value = python_adapter::GetPyObjAttr(comparator_obj, "n");
+  py::object num_value;
+  auto comparator_type_name = ast_->GetNodeType(comparator_obj)->node_name();
+  if (comparator_type_name == "Num") {
+    num_value = python_adapter::GetPyObjAttr(comparator_obj, "n");
+  } else if (comparator_type_name == "Constant") {
+    // The type_name is "Constant" in py3.9.
+    num_value = python_adapter::GetPyObjAttr(comparator_obj, "value");
+  } else {
+    MS_LOG(DEBUG) << "comparator_type_name is not Num or Constant.";
+    return false;
+  }
   MS_LOG(DEBUG) << "num_value: " << py::str(num_value);
 
   if (!py::isinstance<py::int_>(num_value) && !py::isinstance<py::float_>(num_value)) {
@@ -1798,22 +1828,15 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
   // If the expression is to create Tensor(including adapter tensor) without jit annotation,
   // using functional api to create corresponding tensor since the functional api has jit annotation.
   auto class_tensor_object = call_function_node->user_data<py::object>(kClassTensorObject);
-  ClassInstanceType class_tensor_type = CLASS_INSTANCE_TYPE_INVALID;
   if (class_tensor_object != nullptr) {
     auto call_location = GetLocation(node);
     if (call_location != nullptr && call_location->comments().empty()) {
-      class_tensor_type = ClassInstanceType(
+      ClassInstanceType class_tensor_type = ClassInstanceType(
         ast_->CallParserObjMethod(PYTHON_PARSE_GET_CLASS_TENSOR_TYPE, *class_tensor_object).cast<int32_t>());
       AnfNodePtr new_call_function_node = nullptr;
       if (class_tensor_type == CLASS_INSTANCE_TYPE_TENSOR) {
         constexpr auto tensor_func_str = "__ms_tensor_func__";
         new_call_function_node = block->MakeResolveSymbol(tensor_func_str);
-      } else if (class_tensor_type == CLASS_INSTANCE_TYPE_ADAPTER_TENSOR) {
-        constexpr auto adapter_convert_function = "get_adapter_convert_function";
-        py::object generate_func = ast_->CallParserObjMethod(adapter_convert_function, *class_tensor_object);
-        if (!py::isinstance<py::none>(generate_func)) {
-          new_call_function_node = NewValueNode(ParsePythonCode(generate_func));
-        }
       }
       if (new_call_function_node != nullptr) {
         MS_LOG(INFO) << "Convert Tensor call node " << call_function_node->DebugString()
@@ -1851,10 +1874,6 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
         call_cnode->set_interpret_internal_type(true);
       }
     }
-  }
-  if (class_tensor_type == CLASS_INSTANCE_TYPE_ADAPTER_TENSOR) {
-    MS_LOG(DEBUG) << "Current adapter tensor node: " << call_cnode->DebugString();
-    call_cnode->set_user_data<bool>(fallback::kAdapterTensor, std::make_shared<bool>(true));
   }
   return call_cnode;
 }
@@ -1991,21 +2010,11 @@ AnfNodePtr Parser::ParseMsTensor(const FunctionBlockPtr &block, const py::object
     if (global_dict.contains(module_name)) {
       py::object module_obj = global_dict[py::str(module_name)];
       std::string module_str = py::cast<std::string>(py::str(module_obj));
-      // The module of Tensor imported from MsAdapter could be:
-      // module 'msadapter' or module 'msadapter.pytorch' and so on.
-      if (module_str.find("module 'mindspore'") != std::string::npos ||
-          module_str.find("module 'mindtorch") != std::string::npos ||
-          module_str.find("module 'msadapter") != std::string::npos) {
+      if (module_str.find("module 'mindspore'") != std::string::npos) {
         std::string script_text = py::cast<std::string>(ast()->GetAstNodeText(node));
         AnfNodePtr interpret_node = MakeInterpretNode(block, value_node, script_text);
         interpret_node->set_interpret(true);
         interpret_node->set_interpret_internal_type(true);
-        if ((module_str.find("module 'mindtorch") != std::string::npos ||
-             module_str.find("module 'msadapter") != std::string::npos) &&
-            py::hasattr(module_obj, "Tensor")) {
-          py::object tensor_obj = py::getattr(module_obj, "Tensor");
-          interpret_node->set_user_data<py::object>(kClassTensorObject, std::make_shared<py::object>(tensor_obj));
-        }
         return interpret_node;
       }
     }
@@ -2091,16 +2100,50 @@ AnfNodePtr TransPropertyToFunc(const FuncGraphPtr &fg, const AnfNodePtr &node, c
   return call_func_node;
 }
 
+AnfNodePtr Parser::ParseSelfAttribute(const FunctionBlockPtr &block, const py::object &node) {
+  // Process the node attr
+  auto attr_str = python_adapter::GetPyObjAttr(node, "attr").cast<std::string>();
+  // Process the attr body
+  py::object value_body = python_adapter::GetPyObjAttr(node, "value");
+  MS_LOG(DEBUG) << "node: " << node << ", attr: " << attr_str << ", value: " << value_body;
+
+  auto cur_fg = block->func_graph();
+  MS_EXCEPTION_IF_NULL(cur_fg);
+  // Check if the current Attribute is decorated by @property.
+  py::module mod = python_adapter::GetPyModule(PYTHON_MOD_PARSE_MODULE);
+  bool is_property =
+    (python_adapter::CallPyModFn(mod, PYTHON_PARSE_CHECK_ATTR_IS_PROPERTY, ast()->obj(), attr_str)).cast<bool>();
+  if (is_property) {
+    py::object property_net_obj = ast()->obj();
+    AnfNodePtr value_node = ParseExprNode(block, value_body);
+    return TransPropertyToFunc(cur_fg, value_node, property_net_obj, attr_str);
+  }
+  py::object getattr_obj = ast()->obj();
+  AnfNodePtr ret_node;
+  AnfNodePtr getattr_node = MakeGetAttrWithInterpret("self", attr_str, getattr_obj, cur_fg);
+  // If setattr before, should make the getattr call into PyExecute also.
+  if (getattr_node != nullptr) {
+    ret_node = getattr_node;
+    // If processing class value 'self', but did not find setattr before getattr, convert getattr later
+  } else {
+    ret_node = ProcessAttributeWithClassMember(block, node);
+    (void)getattr_nodes_map_["self"][attr_str].emplace_back(ret_node);
+  }
+  ret_node->set_user_data<py::object>("__getattr__", std::make_shared<py::object>(getattr_obj));
+  return ret_node;
+}
+
 // Process call attributes of class type define, eg: x.y()
 AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::object &node) {
   MS_LOG(DEBUG) << "Process ast Attribute";
   auto cur_fg = block->func_graph();
   MS_EXCEPTION_IF_NULL(cur_fg);
 
-  // Process the get attr
-  // Use the Primitive replace the operation resolve node (getattr),
-  // because the getattr will eventually be converted to Primitive node
-  AnfNodePtr op_node = NewValueNode(prim::kPrimGetAttr);
+  // If getting class value 'self', eg: self.xx, use self object.
+  const bool &is_self = ast()->target_type() == PARSE_TARGET_OBJECT_INSTANCE && ast()->IsClassMemberOfSelf(node);
+  if (is_self) {
+    return ParseSelfAttribute(block, node);
+  }
 
   // Process the node attr
   auto attr_str = python_adapter::GetPyObjAttr(node, "attr").cast<std::string>();
@@ -2110,35 +2153,6 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
   py::object value_body = python_adapter::GetPyObjAttr(node, "value");
   MS_LOG(DEBUG) << "node: " << node << ", attr: " << attr_str << ", value: " << value_body;
 
-  // If getting class value 'self', eg: self.xx, use self object.
-  std::string obj_name;
-  py::object getattr_obj;
-  const bool &is_self = ast()->target_type() == PARSE_TARGET_OBJECT_INSTANCE && ast()->IsClassMemberOfSelf(node);
-  if (is_self) {
-    // Check if the current Attribute is decorated by @property.
-    py::module mod = python_adapter::GetPyModule(PYTHON_MOD_PARSE_MODULE);
-    bool is_property =
-      (python_adapter::CallPyModFn(mod, PYTHON_PARSE_CHECK_ATTR_IS_PROPERTY, ast()->obj(), attr_str)).cast<bool>();
-    if (is_property) {
-      py::object property_net_obj = ast()->obj();
-      AnfNodePtr value_node = ParseExprNode(block, value_body);
-      return TransPropertyToFunc(cur_fg, value_node, property_net_obj, attr_str);
-    }
-    obj_name = "self";
-    getattr_obj = ast()->obj();
-    AnfNodePtr ret_node;
-    AnfNodePtr getattr_node = MakeGetAttrWithInterpret(obj_name, attr_str, getattr_obj, cur_fg);
-    // If setattr before, should make the getattr call into PyExecute also.
-    if (getattr_node != nullptr) {
-      ret_node = getattr_node;
-      // If processing class value 'self', but did not find setattr before getattr, convert getattr later
-    } else {
-      ret_node = ProcessAttributeWithClassMember(block, node);
-      (void)getattr_nodes_map_["self"][attr_str].emplace_back(ret_node);
-    }
-    ret_node->set_user_data<py::object>("__getattr__", std::make_shared<py::object>(getattr_obj));
-    return ret_node;
-  }
   // If not self.xx, process the obj, eg: obj.xx
   AnfNodePtr value_node = ParseExprNode(block, value_body);
   if (value_node == nullptr) {
@@ -2158,6 +2172,12 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
       return res;
     }
   }
+
+  // Process the get attr
+  // Use the Primitive replace the operation resolve node (getattr),
+  // because the getattr will eventually be converted to Primitive node
+  AnfNodePtr op_node = NewValueNode(prim::kPrimGetAttr);
+
   // Create the apply node
   AnfNodePtr attr_cnode = cur_fg->NewCNodeInOrder({op_node, value_node, attr_node});
 
@@ -2197,7 +2217,8 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
     return attr_cnode;
   }
   // If getting other object, eg: obj.xx, find object from namespace by name
-  obj_name = location->expr_src();
+  std::string obj_name = location->expr_src();
+  py::object getattr_obj;
   try {
     py::tuple namespace_info = ast_->CallParserObjMethod(PYTHON_PARSE_GET_NAMESPACE_SYMBOL, obj_name);
     constexpr size_t value_index = 2;
@@ -2543,13 +2564,7 @@ AnfNodePtr Parser::ParseSubscript(const FunctionBlockPtr &block, const py::objec
   if (!py::isinstance<py::none>(value_id) && !value_id_is_builtins) {
     value_obj = GetValuePythonObject(value_id);
   }
-  bool is_adapter = false;
   if (!py::isinstance<py::none>(value_obj)) {
-    if (py::hasattr(value_obj, "adapter_flag")) {
-      is_adapter = py::cast<bool>(py::getattr(value_obj, "adapter_flag"));
-    }
-  }
-  if (!py::isinstance<py::none>(value_obj) && !is_adapter) {
     AnfNodePtr getitem_node =
       block->func_graph()->NewCNodeInOrder({NewValueNode(prim::kPrimGetAttr), value, NewValueNode(str_getitem)});
     new_node = block->func_graph()->NewCNodeInOrder({getitem_node, slice});
@@ -2703,7 +2718,14 @@ FunctionBlockPtr Parser::ParseAugAssign(const FunctionBlockPtr &block, const py:
   py::object value_object = python_adapter::GetPyObjAttr(node, "value");
   AnfNodePtr target_node = nullptr;
 
-  const auto &ns = block->GetAstOpNameSpace(op_object);
+  py::tuple ns;
+  auto enable_augassign = common::GetCompileConfig("JIT_ENABLE_AUGASSIGN_INPLACE") == "1";
+  MS_LOG(DEBUG) << "enable_augassign: " << enable_augassign;
+  if (enable_augassign) {
+    ns = block->GetAugAssignAstOpNameSpace(op_object);
+  } else {
+    ns = block->GetAstOpNameSpace(op_object);
+  }
   auto op_node = block->MakeResolveAstOpNameSpace(ns);
 
   AnfNodePtr value_node = ParseExprNode(block, value_object);
@@ -2936,6 +2958,57 @@ bool Parser::CheckConstantCondition(const FunctionBlockPtr &block, const py::obj
   return false;
 }
 
+void Parser::ProcessBranch(const py::object &branch_node, const FunctionBlockPtr &block,
+                           const FunctionBlockPtr &branch_block, const FunctionBlockPtr &after_block,
+                           bool is_true_branch, std::pair<FunctionBlockPtr, FunctionBlockPtr> *branch_graphs) {
+  FunctionBlockPtr end_block = ParseStatements(branch_block, branch_node);
+  std::string branch_name = is_true_branch ? "true branch" : "false branch";
+  end_block->set_block_name(branch_name);
+  MS_EXCEPTION_IF_NULL(end_block->func_graph());
+  CheckControlFlowAlterationInIf(branch_graphs, branch_block, end_block, after_block, block);
+  // If the return_ is set, it has its own continuation block
+  if (end_block->func_graph()->get_return() == nullptr) {
+    if (is_true_branch || py::len_hint(branch_node) != 0) {
+      TraceGuard trace_guard(GetLocation(branch_node));
+      end_block->Jump(after_block, {});
+    } else {
+      end_block->Jump(after_block, {});
+    }
+    MS_LOG(DEBUG) << (is_true_branch ? "True" : "False")
+                  << " branch: The end block jump to after, branch block: " << branch_block->ToString()
+                  << ", end block: " << end_block->ToString() << ", after block : " << after_block->ToString();
+    after_block->UpdateGlobalPyParam(end_block->global_py_params());
+  }
+}
+
+void Parser::ProcessNonConstCond(const AnfNodePtr &bool_node, const FunctionBlockPtr &block,
+                                 const FunctionBlockPtr &true_block, const FunctionBlockPtr &false_block,
+                                 std::pair<FunctionBlockPtr, FunctionBlockPtr> *true_branch_graphs,
+                                 std::pair<FunctionBlockPtr, FunctionBlockPtr> *false_branch_graphs) {
+  MS_EXCEPTION_IF_NULL(bool_node);
+  auto switch_app = block->ConditionalJump(bool_node, true_block, false_block);
+
+  // Record the former, middle, latter graphs info.
+  static const auto transform_tail_call_to_parallel_call = (common::GetCompileConfig("IF_PARALLEL_CALL") != "0");
+  if (transform_tail_call_to_parallel_call && true_branch_graphs->second != nullptr &&
+      false_branch_graphs->second != nullptr) {
+    true_branch_graphs->first = block;
+    false_branch_graphs->first = block;
+    MS_LOG(DEBUG) << "Record tail call {former: " << block->func_graph()->ToString()
+                  << ", true middle: " << true_branch_graphs->second->func_graph()->ToString()
+                  << ", false middle: " << false_branch_graphs->second->func_graph()->ToString() << "}";
+    std::vector<std::pair<FunctionBlockPtr, FunctionBlockPtr>> branch_graphs_vec{*true_branch_graphs,
+                                                                                 *false_branch_graphs};
+    (void)parallel_call_graphs_.emplace_back(branch_graphs_vec);
+  }
+
+  static const auto transform_for_half_unroll_call = (common::GetCompileConfig("FOR_HALF_UNROLL") == "1");
+  if (transform_for_half_unroll_call) {
+    // Lift the if branches in for statement.
+    (void)if_branch_calls_.emplace_back(std::make_tuple(switch_app, true_block, false_block));
+  }
+}
+
 // Process a if statement
 FunctionBlockPtr Parser::ParseIf(const FunctionBlockPtr &block, const py::object &node) {
   MS_LOG(DEBUG) << "Process ast If";
@@ -2997,67 +3070,19 @@ FunctionBlockPtr Parser::ParseIf(const FunctionBlockPtr &block, const py::object
   std::pair<FunctionBlockPtr, FunctionBlockPtr> true_branch_graphs;
   if (!is_bool_const_cond || is_true_cond) {
     py::object bodyNode = python_adapter::GetPyObjAttr(node, "body");
-    FunctionBlockPtr true_end = ParseStatements(true_block, bodyNode);
-    std::string true_branch_name = "true branch";
-    true_end->set_block_name(true_branch_name);
-    MS_EXCEPTION_IF_NULL(true_end->func_graph());
-    CheckControlFlowAlterationInIf(&true_branch_graphs, true_block, true_end, after_block, block);
-    // If the return_ is set, it has its own continuation block
-    if (true_end->func_graph()->get_return() == nullptr) {
-      TraceGuard trace_guard_true(GetLocation(bodyNode));
-      true_end->Jump(after_block, {});
-      MS_LOG(DEBUG) << "The true_end block jump to after, true_block: " << true_block->ToString()
-                    << ", true_end: " << true_end->ToString() << ", after: " << after_block->ToString();
-      after_block->UpdateGlobalPyParam(true_end->global_py_params());
-    }
+    ProcessBranch(bodyNode, block, true_block, after_block, true, &true_branch_graphs);
   }
 
   // Process the orelse branch
   std::pair<FunctionBlockPtr, FunctionBlockPtr> false_branch_graphs;
   if (!is_bool_const_cond || !is_true_cond) {
     py::object orelseNode = python_adapter::GetPyObjAttr(node, "orelse");
-    FunctionBlockPtr false_end = ParseStatements(false_block, orelseNode);
-    std::string false_branch_name = "false branch";
-    false_end->set_block_name(false_branch_name);
-    MS_EXCEPTION_IF_NULL(false_end->func_graph());
-    CheckControlFlowAlterationInIf(&false_branch_graphs, false_block, false_end, after_block, block);
-    // If the return_ is set, it has its own continuation block
-    if (false_end->func_graph()->get_return() == nullptr) {
-      if (py::len_hint(orelseNode) != 0) {
-        TraceGuard trace_guard_false(GetLocation(orelseNode));
-        false_end->Jump(after_block, {});
-      } else {
-        false_end->Jump(after_block, {});
-      }
-      MS_LOG(DEBUG) << "The false_end block jump to after, false_block: " << false_block->ToString()
-                    << ", false_end: " << false_end->ToString() << ", after: " << after_block->ToString();
-      after_block->UpdateGlobalPyParam(false_end->global_py_params());
-    }
+    ProcessBranch(orelseNode, block, false_block, after_block, false, &false_branch_graphs);
   }
 
   if (!is_bool_const_cond) {
     MS_EXCEPTION_IF_NULL(bool_node);
-    auto switch_app = block->ConditionalJump(bool_node, true_block, false_block);
-
-    // Record the former, middle, latter graphs info.
-    static const auto transform_tail_call_to_parallel_call = (common::GetCompileConfig("IF_PARALLEL_CALL") != "0");
-    if (transform_tail_call_to_parallel_call && true_branch_graphs.second != nullptr &&
-        false_branch_graphs.second != nullptr) {
-      true_branch_graphs.first = block;
-      false_branch_graphs.first = block;
-      MS_LOG(DEBUG) << "Record tail call {former: " << block->func_graph()->ToString()
-                    << ", true middle: " << true_branch_graphs.second->func_graph()->ToString()
-                    << ", false middle: " << false_branch_graphs.second->func_graph()->ToString() << "}";
-      std::vector<std::pair<FunctionBlockPtr, FunctionBlockPtr>> branch_graphs_vec{true_branch_graphs,
-                                                                                   false_branch_graphs};
-      (void)parallel_call_graphs_.emplace_back(branch_graphs_vec);
-    }
-
-    static const auto transform_for_half_unroll_call = (common::GetCompileConfig("FOR_HALF_UNROLL") == "1");
-    if (transform_for_half_unroll_call) {
-      // Lift the if branches in for statement.
-      (void)if_branch_calls_.emplace_back(std::make_tuple(switch_app, true_block, false_block));
-    }
+    ProcessNonConstCond(bool_node, block, true_block, false_block, &true_branch_graphs, &false_branch_graphs);
   }
 
   if (after_block->prev_blocks().empty()) {
@@ -4880,7 +4905,7 @@ bool ParseFunctionAst::InitParseAstInfo(const std::string &python_mod_get_parse_
   if (type == RESOLVE_TYPE_FUNCTION) {
     target_type_ = PARSE_TARGET_FUNCTION;
     function_ = obj_;
-  } else if (type == RESOLVE_TYPE_METHOD) {
+  } else if (type == RESOLVE_TYPE_METHOD || type == RESOLVE_TYPE_BUILTIN_METHOD) {
     // Process the method ,need get the method's self obj
     target_type_ = PARSE_TARGET_METHOD;
     py::object method_object = python_adapter::GetPyObjAttr(obj_, PYTHON_GET_METHOD_SELF_CLASS);
@@ -5058,6 +5083,76 @@ bool Parser::IsSubscriptReferenceType(const py::object &obj) {
   auto node_type = ast_->GetNodeType(slice_node);
   auto node_name = node_type->node_name();
   return node_name != "Slice";
+}
+
+void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNodePtr> &isolated_nodes) {
+  if (isolated_nodes.empty()) {
+    return;
+  }
+  std::vector<AnfNodePtr> states;
+  (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
+  constexpr int recursive_level = 2;
+  for (const auto &node : isolated_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
+                  << func_graph->ToString();
+    if (node->func_graph() == func_graph) {
+      (void)states.emplace_back(node);
+    } else {
+      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
+                   << func_graph->ToString();
+    }
+  }
+
+  AnfNodePtr state = nullptr;
+  constexpr size_t no_state_size = 1;
+  constexpr size_t only_one_state_size = 2;
+  if (states.size() == no_state_size) {
+    // Only MakeTuple, no state left.
+    return;
+  } else if (states.size() == only_one_state_size) {
+    // If there are only MakeTuple and another node in states(the states size is 2),
+    // do not need to MakeTuple, just use the node.
+    state = states[1];
+  } else {
+    state = func_graph->NewCNode(std::move(states));
+    if (state != nullptr && state->debug_info() != nullptr) {
+      state->debug_info()->set_location(nullptr);
+    }
+  }
+
+  AnfNodePtr old_output = nullptr;
+  auto return_node = func_graph->get_return();
+  if (return_node != nullptr) {
+    const size_t return_input_size = 2;
+    if (return_node->size() < return_input_size) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Length of inputs of output node is less than 2";
+    }
+    old_output = return_node->input(1);
+  } else {
+    old_output = NewValueNode(kNone);
+  }
+  AnfNodePtr stop_grad_node = func_graph->NewCNode({NewValueNode(prim::kPrimStopGradient), state});
+  CNodePtr depend_node = func_graph->NewCNode({NewValueNode(prim::kPrimDepend), old_output, stop_grad_node});
+  if (stop_grad_node->debug_info() != nullptr) {
+    stop_grad_node->debug_info()->set_location(nullptr);
+  }
+  if (old_output->debug_info() != nullptr && depend_node->debug_info() != nullptr) {
+    depend_node->debug_info()->set_location(old_output->debug_info()->location());
+  }
+  // We add this attribute for @constexpr use scene, since we must infer them before other nodes.
+  // That means isolated nodes will be evaluated first. It's not complete, but works in most scenes.
+  depend_node->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
+  MS_EXCEPTION_IF_NULL(state);
+  MS_LOG(INFO) << "Attached for side-effect nodes, depend_node: " << depend_node->DebugString()
+               << ", state: " << state->DebugString(recursive_level);
+  func_graph->set_output(depend_node, true);
+  // Update new return node's debug_info with old one.
+  if (return_node != nullptr && return_node->debug_info() != nullptr) {
+    auto new_return = func_graph->get_return();
+    MS_EXCEPTION_IF_NULL(new_return);
+    new_return->set_debug_info(return_node->debug_info());
+  }
 }
 
 struct CompileConfigCollectRegister {

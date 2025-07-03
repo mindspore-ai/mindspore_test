@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace prelu_grad_cpu {
 bool PReLUGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
@@ -139,5 +140,6 @@ std::vector<KernelAttr> PReLUGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PReLUGrad, PReLUGradCpuKernelMod);
+}  // namespace prelu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

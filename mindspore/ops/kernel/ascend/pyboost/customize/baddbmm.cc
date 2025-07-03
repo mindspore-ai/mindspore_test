@@ -16,18 +16,18 @@
 
 #include "kernel/ascend/pyboost/customize/baddbmm.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr BaddbmmAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const BaseTensorPtr &batch1_tensor, const BaseTensorPtr &batch2_tensor,
-                                             const ScalarPtr &beta, const ScalarPtr &alpha) {
+tensor::TensorPtr BaddbmmAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const TensorPtr &batch1_tensor, const TensorPtr &batch2_tensor,
+                                         const ScalarPtr &beta, const ScalarPtr &alpha) {
   OpRunner::InferOpOutput(op, input_tensor, batch1_tensor, batch2_tensor, beta, alpha);
 
   // No need to convert input

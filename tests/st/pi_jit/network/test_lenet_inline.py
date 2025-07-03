@@ -1,25 +1,18 @@
 """LeNet."""
-import sys  
 import pytest 
 import numpy as onp
 import mindspore.nn as nn
 from mindspore.common.initializer import Normal
 from mindspore import context, Tensor, jit
 from mindspore import numpy as np
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
@@ -66,7 +59,7 @@ class LeNet5Jit(BaseLeNet5):
 
 
 class LeNet5GraphJit(BaseLeNet5):
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def construct(self, x):
         return self.forward(x)
 
@@ -77,7 +70,7 @@ def method_lenet(x):
     return res
 
 
-@jit(mode="PIJit", jit_config=cfg)
+@pi_jit_with_config(jit_config=cfg)
 def func_lenet(x):
     net = LeNet5()
     res = net(x)

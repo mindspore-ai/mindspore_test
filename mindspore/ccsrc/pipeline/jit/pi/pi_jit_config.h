@@ -19,7 +19,7 @@
 #include <set>
 #include <string>
 #include "pybind11/pybind11.h"
-#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 
 namespace mindspore {
 namespace pijit {
@@ -30,66 +30,52 @@ class GraphJitConfig {
   enum Options {
     kBoolConf = 0,
     kAutoJitCell,
-    kAutoGrad,
     kAutoJit,
-    kPrintAfterAll,
-    kPrintTraceback,
     kPrintBB,
-    kPrintCFG,
     kInterpretCapturedCode,
-    kCompileWithoutCapture,
     kCompileWithTry,
     kGuardSpecializeScalar,
     kGuardSpecializeContainer,
     kGuardSpecializeTensor,
-    kGuardDetachObject,
-    kPrintGuard,
-    kReuseGraph,
-    kPrintReuseGraph,
-    kAutoCleanCache,
-    kPruneCase,
     kLoopUnrolling,
     kInferOnly,
-    kInferPrimitive,
     kStrictTrace,
     kPerfStatistics,
-    kLogGraphBreak,
     kLogPerf,
     kLogGuardPerf,
-    kTestGraphIR,
-    kEnableOptimizeForAttrItem,
-    kEnableEliminateUnusedOperation,
-    kEnableGeneratorExpressionToTuple,
-    kFeatureBreakAtInlinedFunction,
     kEnableDynamicShape,
-    kEnableMsApiInfer,
-    kTraceFlag,
     kSkipException,
-    kPIJitContextMode,
+    kExpandGraphInput,
+    kExpandGraphOutput,
+    kEliminateRedundantArgs,
+    kReCaptureLoopBody,
+    kSubgraphBreakOpt,
+    kFullGraph,
+    kEnableOldGuardStrategy,
     /* ------------------------------ */
     kIntConf,
-    kMaxInlineDepth,
+    kSymbolic,
     kMaxTraceDepth,
-    kMaxPruneCase,
-    kMaxLoopUnrolling,
     kStaticGraphBytecodeMin,
     kPerfStatisticsCount,
     kPerfStatisticsScale10000x,
-    kInferPrimitiveMask,
-    kInferPrimitiveMax,
     kLimitGraphSize,
     kLimitGraphCount,
     kGuardRelaxCount,
     /* ------------------------------ */
     kOptionsCount
   };
+  enum LogConfig { kAll = 0, kBytecode, kGuard, kGraphBreak, kLogMax };
   GraphJitConfig();
   explicit GraphJitConfig(const py::object &c);
   bool GetBoolConfig(Options o) const { return o > kBoolConf && o < kIntConf ? bool_conf[o - kBoolConf] : false; }
+  bool GetLogConfig(LogConfig value) const {
+    return log_conf_[kAll] == true ? true : (value < kLogMax ? log_conf_[value] : false);
+  }
   int getIntConfig(Options o) const { return o > kIntConf && o < kOptionsCount ? int_conf[o - kIntConf] : 0; }
   const std::set<std::string> &allowed_inline_modules() const;
 
-  bool ShouldAutoJit(EvalFrameObject *f);
+  bool ShouldAutoJit(PyFrameWrapper f);
 
   void AddAllowedInlineModules(const std::string &module_name);
 
@@ -97,6 +83,7 @@ class GraphJitConfig {
   bool AddJitRelaxGuard(PyObject *list);
   bool AddJitConstexpr(PyObject *callable_list);
   bool AddJitForbidden(PyObject *callable_list);
+
   bool AddAllowedInlineModules(PyObject *str_list);
   std::string getJitLevel() const;
   bool AddJitLevel(PyObject *str);
@@ -126,6 +113,7 @@ class GraphJitConfig {
  private:
   int int_conf[kOptionsCount - kIntConf];
   bool bool_conf[kIntConf - kBoolConf];
+  bool log_conf_[kLogMax] = {false};
   std::string jit_level;
 };
 

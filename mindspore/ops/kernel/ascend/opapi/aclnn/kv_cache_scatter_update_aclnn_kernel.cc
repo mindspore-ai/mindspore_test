@@ -19,10 +19,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace kv_cache_scatter_update {
 
 void KVCacheScatterUpdateAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
-  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  axis_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
   GetWorkspaceForResize(outputs[kIndex0], inputs[kIndex1], inputs[kIndex2], axis_);
 }
 
@@ -35,5 +36,6 @@ bool KVCacheScatterUpdateAscend::Launch(const std::vector<KernelTensor *> &input
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(KVCacheScatterUpdate, KVCacheScatterUpdateAscend);
+}  // namespace kv_cache_scatter_update
 }  // namespace kernel
 }  // namespace mindspore

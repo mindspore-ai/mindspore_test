@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import tests.st.backend_ascend.ge.ge_test_utils as utils
+from mindspore import context
 from tests.mark_utils import arg_mark
+import tests.st.backend_ascend.ge.ge_test_utils as utils
+
+context.set_context(jit_level='O0')
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -46,7 +49,7 @@ def test_tensor_asnumpy():
     utils.run_testcase('ge_fallback_numpy', 'test_tensor_asnumpy')
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_jit_tensor_asnumpy():
     """
     Feature: Support JIT Fallback runtime feature.

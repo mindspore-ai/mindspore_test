@@ -1,15 +1,9 @@
-import sys  
-import pytest 
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context, jit
 import numpy as np
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cell_dict_getitem():
@@ -27,7 +21,7 @@ def test_cell_dict_getitem():
                                           ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                          )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, key, x):
             op = self.cell_dict[key]
             return op(x)
@@ -59,7 +53,7 @@ def test_cell_dict_contain():
                                           ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                          )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, key1, key2):
             ret1 = key1 in self.cell_dict
             ret2 = key2 in self.cell_dict
@@ -90,7 +84,7 @@ def test_cell_dict_get_keys():
                                           ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                          )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self):
             return self.cell_dict.keys()
 
@@ -118,7 +112,7 @@ def test_cell_dict_get_values():
                                           ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                          )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             outputs = ()
             for cell in self.cell_dict.values():
@@ -155,7 +149,7 @@ def test_cell_dict_get_items():
                                           ['max_pool2d', nn.MaxPool2d(kernel_size=4, stride=4)]]
                                          )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             key_outputs = ()
             res_outputs = ()
@@ -198,7 +192,7 @@ def test_cell_dict_duplicated_parameter():
                                            ['dense', nn.Dense(3, 4)]]
                                           )
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, key1, x1, key2, x2):
             a = self.cell_dict1[key1](x1)
             b = self.cell_dict2[key2](x2)

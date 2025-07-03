@@ -22,7 +22,7 @@ from mindspore.nn.optim import Momentum
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
 
 class LeNet(nn.Cell):
@@ -80,7 +80,7 @@ def train(net, data, label):
     assert np.all(diff < 1.e-6)
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="essential")
 def test_lenet():
     data = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
     label = Tensor(np.ones([32]).astype(np.int32))

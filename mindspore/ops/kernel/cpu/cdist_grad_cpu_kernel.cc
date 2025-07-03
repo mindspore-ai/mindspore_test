@@ -20,6 +20,7 @@
 #include "kernel/cpu/nnacl/op_base.h"
 namespace mindspore {
 namespace kernel {
+namespace cdist_grad_cpu {
 namespace {
 constexpr size_t kCdistInputDimsMin = 2;
 
@@ -193,6 +194,7 @@ bool CdistGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CdistGrad, CdistGradCpuKernelMod);
 
+}  // namespace cdist_grad_cpu
 };  // namespace kernel
 
 }  // namespace mindspore

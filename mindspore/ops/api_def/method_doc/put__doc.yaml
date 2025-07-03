@@ -1,0 +1,35 @@
+put_:
+  description: |
+    put_(index, source, accumulate=False) -> Tensor
+
+    Copies the elements from source into the positions specified by index.
+    index and source need to have the same number of elements, but not necessarily the same shape.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        index (LongTensor): the index to be operated in the tensor.
+        source (Tensor): the tensor containing values to copy from.
+        accumulate (bool, optional): whether to accumulate into self, default: ``False``.
+
+    Returns:
+        Tensor, with the same dtype and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `index` is not long type.
+        TypeError: If `input` and `source` have different dtypes.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> src = Tensor([[4, 3, 5],[6, 7, 8]], ms.float32)
+        >>> index = Tensor([1, 3], ms.int64)
+        >>> source = Tensor([9, 10], ms.float32)
+        >>> src.put_(index, source)
+        >>> print(src)
+        [[4. 9. 5.]
+         [10. 7. 8.]]

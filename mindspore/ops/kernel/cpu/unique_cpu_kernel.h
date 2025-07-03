@@ -24,13 +24,14 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/thread_pool.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_cpu {
 template <typename DataType, typename IndexType>
 struct UniqueParam {
   DataType *input_{nullptr};
@@ -513,6 +514,7 @@ class UniqueCpuKernelMod : public NativeCpuKernelMod {
     MergeBuckets(buckets, params);
   }
 };
+}  // namespace unique_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UNIQUE_CPU_KERNEL_H_

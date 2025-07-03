@@ -27,6 +27,8 @@
 #include "nnacl/fp32/scale_fp32.h"
 #include "infer/cxx_api/scale_fusion.h"
 #include "nnacl/fp32/matmul_fp32.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 namespace {

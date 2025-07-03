@@ -867,8 +867,12 @@ def test_greater_equal_op_with_two_dynamic_axis():
     assert validator.check_node_inputs('AllGather-0', ['Cast-0'])
     assert validator.check_node_inputs('Flatten-0', ['AllGather-0'])
     assert validator.check_node_inputs('Cast-1', ['Flatten-0', 43])
+    assert validator.check_node_inputs('Split-2', ['Cast-1', 0, 8])
+    assert validator.check_node_inputs('TupleGetItem-3', ['Split-2', 0])
     assert validator.check_node_inputs('Flatten-1', ['TupleGetItem-0'])
-    assert validator.check_node_inputs('Div-0', ['Cast-1', 'Flatten-1'])
+    assert validator.check_node_inputs('Split-3', ['Flatten-1', 0, 8])
+    assert validator.check_node_inputs('TupleGetItem-4', ['Split-3', 0])
+    assert validator.check_node_inputs('Div-0', ['TupleGetItem-3', 'TupleGetItem-4'])
 
 
 def test_two_matmul_with_different_layout():

@@ -1365,7 +1365,12 @@ class MultiHeadAttention(Cell):
 class TransformerEncoderLayer(Cell):
     r"""
         Transformer Encoder Layer. This is an implementation of the single layer of the transformer
-        encoder layer, including multihead attention and feedward layer.
+        encoder layer, mainly including Multi-Head Attention, Feed Forward, Add and LayerNorm layer.
+
+        The TransformerEncoderLayer structure is shown in the following figure:
+
+        .. image:: ../images/TransformerEncoderLayer.png
+            :align: center
 
         Args:
             batch_size(int): The batch size of the input tensor when do increnmental prediction. Should be a positive
@@ -1532,7 +1537,7 @@ class TransformerEncoderLayer(Cell):
                     "and parallel_config. model_parallel is {}."
                     .format(ffn_hidden_size, parallel_config.model_parallel))
             _check_moe_config(moe_config, parallel_config)
-            self.use_moe = (moe_config.expert_num > 1)
+            self.use_moe = moe_config.expert_num > 1
             self.use_past = use_past
             self.seq_length = seq_length
             self.hidden_size = hidden_size
@@ -1607,7 +1612,7 @@ class TransformerEncoderLayer(Cell):
                     "and parallel_config. model_parallel is {}."
                     .format(ffn_hidden_size, parallel_config.model_parallel))
             _check_moe_config(moe_config, parallel_config)
-            self.use_moe = (moe_config.expert_num > 1)
+            self.use_moe = moe_config.expert_num > 1
             self.use_past = use_past
             self.seq_length = seq_length
             self.hidden_size = hidden_size
@@ -1902,7 +1907,7 @@ class TransformerDecoderLayer(Cell):
                  parallel_config=default_dpmp_config):
         super(TransformerDecoderLayer, self).__init__()
         _check_moe_config(moe_config, parallel_config)
-        self.use_moe = (moe_config.expert_num > 1)
+        self.use_moe = moe_config.expert_num > 1
         config_to_attention = parallel_config.dpmp if self.use_moe else parallel_config
         if batch_size or use_past:
             Validator.check_positive_int(batch_size)
@@ -2440,7 +2445,7 @@ class TransformerEncoder(Cell):
         super(TransformerEncoder, self).__init__()
         _check_config(parallel_config)
         _check_moe_config(moe_config, parallel_config)
-        self.use_moe = (moe_config.expert_num > 1)
+        self.use_moe = moe_config.expert_num > 1
         config_to_layer = parallel_config.moe_parallel_config if self.use_moe else parallel_config.dp_mp_config
         if _get_parallel_mode() in (ParallelMode.AUTO_PARALLEL,):
             self.add = P.Add()
@@ -2677,7 +2682,7 @@ class TransformerDecoder(Cell):
         super(TransformerDecoder, self).__init__()
         _check_moe_config(moe_config, parallel_config)
         _check_config(parallel_config)
-        self.use_moe = (moe_config.expert_num > 1)
+        self.use_moe = moe_config.expert_num > 1
         config_to_layer = parallel_config.moe_parallel_config if self.use_moe else parallel_config.dp_mp_config
         if _get_parallel_mode() in (ParallelMode.AUTO_PARALLEL,):
             self.add = P.Add()
@@ -2959,7 +2964,7 @@ class Transformer(Cell):
             if not lambda_func:
                 lambda_func = _get_lambda_func(total_layer=encoder_layers + decoder_layers)
             _check_moe_config(moe_config, parallel_config)
-            self.use_moe = (moe_config.expert_num > 1)
+            self.use_moe = moe_config.expert_num > 1
             self.add = P.Add()
             self.aux_loss = Tensor(0.0, mstype.float32)
             if encoder_layers > 0:
@@ -3026,7 +3031,7 @@ class Transformer(Cell):
             if not lambda_func:
                 lambda_func = _get_lambda_func(total_layer=encoder_layers + decoder_layers)
             _check_moe_config(moe_config, parallel_config)
-            self.use_moe = (moe_config.expert_num > 1)
+            self.use_moe = moe_config.expert_num > 1
             self.add = P.Add().shard(((), ()))
             self.aux_loss = Tensor(0.0, mstype.float32)
             if encoder_layers > 0:

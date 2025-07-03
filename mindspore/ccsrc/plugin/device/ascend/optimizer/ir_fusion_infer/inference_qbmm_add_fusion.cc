@@ -17,9 +17,11 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore {
 namespace opt {
@@ -80,7 +82,9 @@ const AnfNodePtr QbmmAddFusion::Process(const FuncGraphPtr &func_graph, const An
     MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with add.";
     return nullptr;
   }
-  CheckValid();
+  if (!CheckValid()) {
+    return nullptr;
+  }
   auto cnode = CreateQbmmAddNode(func_graph, node, equiv);
   return cnode;
 }

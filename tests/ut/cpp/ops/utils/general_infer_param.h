@@ -20,11 +20,14 @@
 #include <memory>
 #include <string>
 #include <variant>
+#include <sstream>
 
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/dtype.h"
 #include "utils/anf_utils.h"
+#include "utils/shape_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/utils.h"
 #include "ops/infer_info/abstract_infer_info_adapter.h"
@@ -39,6 +42,49 @@ struct InferInfoParam {
   std::variant<ValuePtr, ValuePtrList> value{kValueAny};
   bool is_dynamic_seq{false};  // only meaningful for tuple/list input
 };
+
+// Stream operator for InferInfoParam
+inline std::ostream &operator<<(std::ostream &os, const InferInfoParam &param) {
+  os << "InferInfoParam{shape: ";
+
+  // Handle shape variant
+  if (std::holds_alternative<ShapeVector>(param.shape)) {
+    os << VectorToString<int64_t>(std::get<ShapeVector>(param.shape));
+  } else {
+    os << "[";
+    for (const auto &shape : std::get<ShapeArray>(param.shape)) {
+      os << VectorToString<int64_t>(shape) << ", ";
+    }
+    os << "]";
+  }
+
+  os << ", type: ";
+
+  // Handle type variant
+  if (std::holds_alternative<TypeId>(param.type)) {
+    os << TypeIdToString(std::get<TypeId>(param.type));
+  } else {
+    os << "[";
+    for (const auto &type : std::get<TypeIdList>(param.type)) {
+      os << TypeIdToString(type) << ", ";
+    }
+    os << "]";
+  }
+
+  // Only output is_dynamic_seq if it's true
+  if (param.is_dynamic_seq) {
+    os << ", is_dynamic_seq: true";
+  }
+
+  os << "}";
+  return os;
+}
+
+inline std::string ToString(const InferInfoParam &param) {
+  std::ostringstream os;
+  os << param;
+  return os.str();
+}
 
 struct InferOutput {
   ShapeArray shapes;

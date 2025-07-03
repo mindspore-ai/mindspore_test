@@ -59,7 +59,7 @@ def isclose_forward_func2(x, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -135,7 +135,7 @@ def test_tensor_isclose_dynamic():
     equal_nan2 = False
     TEST_OP(isclose_forward_func1,
             [[ms_data1, other1, rtol1, atol1, equal_nan1], [ms_data2, other2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_grad=True)
+            disable_mode=["GRAPH_MODE"], disable_grad=True)
     TEST_OP(isclose_forward_func2,
             [[ms_data1, x2_1, rtol1, atol1, equal_nan1], [ms_data2, x2_2, rtol2, atol2, equal_nan2]], 'isclose',
-            disable_grad=True, disable_yaml_check=True)
+            disable_mode=["GRAPH_MODE"], disable_grad=True, disable_yaml_check=True)

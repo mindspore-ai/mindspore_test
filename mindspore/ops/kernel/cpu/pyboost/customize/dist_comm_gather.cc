@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/dist_comm_gather.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/dist_comm_gather.h"
 #include <memory>
 #include <utility>
 #include <string>
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
@@ -31,7 +31,7 @@ using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
-void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
                                 const ValueTuplePtr &gather_list, const Int64ImmPtr &rank_size, const Int64ImmPtr &dst,
                                 const Int64ImmPtr &rank_id, const StringImmPtr &group) {
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -39,7 +39,7 @@ void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseT
   auto dst_rank = GetValue<int64_t>(dst);
   auto local_rank = GetValue<int64_t>(rank_id);
   auto rank_size_imm = static_cast<size_t>(GetValue<int64_t>(rank_size));
-  std::vector<BaseTensorPtr> gather_tensors = ConvertValueTupleToVector<BaseTensorPtr>(gather_list);
+  std::vector<TensorPtr> gather_tensors = ConvertValueTupleToVector<TensorPtr>(gather_list);
   if (local_rank == dst_rank) {
     PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, gather_tensors);
   } else {
@@ -48,12 +48,11 @@ void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseT
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   auto run_func = [op, gather_tensors, input_tensor, local_rank, dst_rank, group, rank_size_imm]() {
-    if (local_rank == dst_rank) {
-      PyBoostUtils::MallocOpInputs(op->device_context(), gather_tensors, input_tensor);
-    } else {
-      PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
-    }
+    PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
+    if (local_rank == dst_rank) {
+      PyBoostUtils::MallocOpOutputs(op->device_context(), gather_tensors);
+    }
 
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(op->device_context(), op->stream_id(), op->input_abs(), input_tensor);
@@ -79,10 +78,10 @@ void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseT
         auto gather_addr = (gather_address_info.first)[r]->device_ptr();
         auto output_addr = out_addr[0]->device_ptr();
         auto offset = static_cast<size_t>(r * data_size);
-        auto mem_ret = memcpy_s(reinterpret_cast<char *>(gather_addr), data_size,
-                                reinterpret_cast<char *>(output_addr) + offset, data_size);
+        auto mem_ret = Memcpy(reinterpret_cast<char *>(gather_addr), data_size,
+                              reinterpret_cast<char *>(output_addr) + offset, data_size);
         if (mem_ret != EOK) {
-          MS_LOG(EXCEPTION) << "memcpy_s failed.";
+          MS_LOG(EXCEPTION) << "Memcpy failed. ret is " << mem_ret;
         }
       }
     }

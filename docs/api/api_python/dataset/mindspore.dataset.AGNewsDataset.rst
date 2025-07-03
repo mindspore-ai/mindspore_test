@@ -19,9 +19,9 @@ mindspore.dataset.AGNewsDataset
           - ``Shuffle.GLOBAL`` ：混洗文件和样本。
           - ``Shuffle.FILES`` ：仅混洗文件。
 
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - `dataset_dir` 参数所指向的文件目录不存在或缺少数据集文件。
@@ -33,9 +33,9 @@ mindspore.dataset.AGNewsDataset
         - `使用数据Pipeline加载 & 处理数据集
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
-    **关于AGNews数据集：**
+    **关于AG News数据集：**
 
-    AG是一个大型合集，具有超过100万篇新闻文章。这些新闻文章是由ComeToMyHead在持续1年多的活动中，从2000多个新闻来源收集的。ComeToMyHead是一个学术新闻搜索引擎，自2004年7月以来一直在运营。
+    AG News是一个大型合集，具有超过100万篇新闻文章。这些新闻文章是由ComeToMyHead在持续1年多的活动中，从2000多个新闻来源收集的。ComeToMyHead是一个学术新闻搜索引擎，自2004年7月以来一直在运营。
     数据集由学者提供，用于研究目的，如数据挖掘（聚类、分类等）、信息检索（排名、搜索等）、xml、数据压缩、数据流和任何其他非商业活动。
     AG的新闻主题类别来自于原始语料库中四个最大的类别。每个分类包含30000个训练样本和1900个测试样本。train.csv中的训练样本总数为12万，test.csv中的测试样本总数为7600。
 

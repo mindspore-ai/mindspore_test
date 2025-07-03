@@ -79,14 +79,14 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
 #ifdef ENABLE_PYTHON
   BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size, int32_t num_workers,
           const std::vector<std::string> &in_col_names, const std::vector<std::string> &out_col_names,
-          py::function batch_size_func, py::function batch_map_func, PadInfo pad_map);
+          const py::function &batch_size_func, const py::function &batch_map_func, PadInfo pad_map);
 #endif
 
   BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size, int32_t num_workers, std::vector<std::string>,
           PadInfo pad_map);
 
   // BatchOp destructor
-  ~BatchOp() override = default;
+  ~BatchOp() override;
 
   // @param int32_t workerId
   // @return Status The status code returned

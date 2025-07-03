@@ -182,7 +182,9 @@ CNodePtr GenReshapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_
 
 CNodePtr GenTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &input, size_t index);
 
-CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const float mul_scale);
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, float mul_scale);
+
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const AnfNodePtr &mul_scale_node);
 
 STATUS FetchShapeFromAbstract(const abstract::AbstractBasePtr &abstract, ShapeVector *shape);
 

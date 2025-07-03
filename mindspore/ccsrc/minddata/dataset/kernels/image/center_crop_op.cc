@@ -18,11 +18,7 @@
 #include <string>
 
 #include "minddata/dataset/kernels/data/data_utils.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/status.h"
 #include "utils/ms_utils.h"
 

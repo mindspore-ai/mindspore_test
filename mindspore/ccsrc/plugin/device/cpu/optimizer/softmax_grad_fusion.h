@@ -24,12 +24,7 @@ namespace mindspore {
 namespace opt {
 class SoftmaxGradFusionCpu : public PatternProcessPass {
  public:
-  explicit SoftmaxGradFusionCpu(bool multigraph = true) : PatternProcessPass("softmax_grad_fusion_cpu", multigraph) {
-    reduce_sum_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimReduceSum->name()));
-    input0_ = std::make_shared<Var>();
-    input1_ = std::make_shared<Var>();
-    axis_ = std::make_shared<Var>();
-  }
+  explicit SoftmaxGradFusionCpu(bool multigraph = true);
   ~SoftmaxGradFusionCpu() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &equiv) const override;

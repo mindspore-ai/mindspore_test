@@ -3,7 +3,7 @@ mindspore.ops.BCEWithLogitsLoss
 
 .. py:class:: mindspore.ops.BCEWithLogitsLoss(reduction='mean')
 
-    输入经过sigmoid激活函数后作为预测值，`BCEWithLogitsLoss` 计算预测值和目标值之间的二值交叉熵损失。
+    输入经过sigmoid激活函数计算后作为预测值，`BCEWithLogitsLoss` 计算预测值和目标值之间的二值交叉熵损失。
 
     将输入 `input` 设置为 :math:`X` ，输入 `target` 设置为 :math:`Y` ，输入 `weight` 设置为 :math:`W` ，输出设置为 :math:`L` 。则，
 
@@ -26,7 +26,7 @@ mindspore.ops.BCEWithLogitsLoss
 
     该算子会将输出乘以相应的权重。
     `weight` 表示一个batch中的每条数据分配不同的权重，
-    `pos_weight` 为每个类别的正例子添加相应的权重。
+    `pos_weight` 为每个类别的正例添加相应的权重。
 
     此外，它可以通过向正例添加权重来权衡召回率和精度。
     在多标签分类的情况下，损失可以描述为：

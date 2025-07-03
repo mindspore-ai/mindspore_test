@@ -19,6 +19,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace ops {
@@ -54,7 +55,7 @@ TypePtr FillTensorFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 ShapeArray FillTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &value_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &value_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(value_tensor);
   const auto value_shape = value_tensor->shape();
   (void)CheckAndConvertUtils::CheckInRange<int64_t>("dimension of the input [fill_value]", value_shape.size(),
@@ -64,7 +65,7 @@ ShapeArray FillTensorFuncImpl::InferShape(const PrimitivePtr &primitive, const V
 
 TypePtrList FillTensorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto prim_name = primitive->name();
-  const auto &value_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &value_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(value_tensor);
   auto dtype_ptr = input_values[kInputIndex2];
   if (dtype_ptr->isa<None>()) {

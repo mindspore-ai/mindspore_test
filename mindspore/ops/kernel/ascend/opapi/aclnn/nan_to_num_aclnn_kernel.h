@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num {
 
 class NanToNumAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class NanToNumAscend : public AclnnKernelMod {
   float posinf_ = 0.0;
   float neginf_ = 0.0;
 };
+}  // namespace nan_to_num
 }  // namespace kernel
 }  // namespace mindspore
 

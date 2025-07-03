@@ -15,7 +15,7 @@
  */
 
 #include "kernel/cpu/eigen/tridiagonal_matmul_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Core"
 #include "Eigen/LU"
 

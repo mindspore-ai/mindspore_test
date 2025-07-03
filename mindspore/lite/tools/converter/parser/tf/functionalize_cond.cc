@@ -28,6 +28,8 @@
 #include "src/common/log_util.h"
 #include "infer/return.h"
 #include "tools/lite_exporter/fetch_content.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 STATUS FunctionalizeCond::GetSwitchBranchType(const CNodePtr &switch_cnode, const std::unordered_set<AnfNodePtr> &link,

@@ -31,7 +31,8 @@ def _right_shift_scalar(x, y):
     return inner.bit_right_shift(x, y)
 
 
-@right_shift.register_default()
+# pylint: disable=protected-access
+@right_shift._register_default()
 def default_right_shift(x, y):
     """Default function for right shift."""
     return x >> y

@@ -22,8 +22,8 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **probs_b** (Tensor) - the event probability of the other distribution.
-        - **probs** (Tensor) - the event probability. Default: ``None`` .
+        - **probs_b** (Tensor) - the event probability of the distribution b.
+        - **probs** (Tensor) - the event probability of the distribution a. Default: ``None`` .
 
     Returns
         Tensor, the value of the cross entropy.
@@ -44,8 +44,8 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **probs_b** (Tensor) - the event probability of the other distribution.
-        - **probs** (Tensor) - the event probability. Default: ``None`` .
+        - **probs_b** (Tensor) - the event probability of the distribution b.
+        - **probs** (Tensor) - the event probability of the distribution a. Default: ``None`` .
 
     Returns
         Tensor, the value of the K-L loss.

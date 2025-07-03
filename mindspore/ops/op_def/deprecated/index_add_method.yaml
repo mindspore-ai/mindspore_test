@@ -1,0 +1,20 @@
+#deprecated index_add
+index_add:
+    args:
+        input:
+            dtype: tensor
+        indices:
+            dtype: tensor
+        y:
+            dtype: tensor
+        axis:
+            dtype: int
+        use_lock:
+            dtype: bool
+            default: True
+        check_index_bound:
+            dtype: bool
+            default: True
+    returns:
+        output:
+            dtype: tensor

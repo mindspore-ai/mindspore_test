@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/random_invert_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/random_invert_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomInvertOperation
 RandomInvertOperation::RandomInvertOperation(float prob) : TensorOperation(true), probability_(prob) {}
 
@@ -55,7 +52,6 @@ Status RandomInvertOperation::from_json(nlohmann::json op_params, std::shared_pt
   *operation = std::make_shared<vision::RandomInvertOperation>(prob);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

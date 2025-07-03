@@ -16,10 +16,11 @@
 #include "kernel/cpu/cholesky_inverse_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cholesky_inverse_cpu {
 bool CholeskyInverseCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
   constexpr size_t kInputNum = 2;
@@ -79,5 +80,6 @@ const std::vector<std::pair<KernelAttr, CholeskyInverseCpuKernelMod::KernelRunFu
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CholeskyInverse, CholeskyInverseCpuKernelMod);
+}  // namespace cholesky_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore

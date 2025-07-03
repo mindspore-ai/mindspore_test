@@ -5,9 +5,6 @@ mindspore.mint.full_like
 
     返回一个shape与 `input` 相同并且使用 `fill_value` 填充的Tensor。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor，输出Tensor与 `input` 具有相同的shape。
         - **fill_value** (Number) - 用来填充输出Tensor的值。当前不支持复数类型。

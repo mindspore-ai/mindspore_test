@@ -595,7 +595,7 @@ class SentencePieceTokenizer(TextTensorOperation):
         >>> numpy_slices_dataset = numpy_slices_dataset.map(operations=tokenizer)
         >>> for item in numpy_slices_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         ...     print(item["text"])
-        ['▁H' 'e' 'l' 'lo' '▁w' 'o' 'r' 'l' 'd']
+        ['▁H' 'el' 'lo' '▁' 'w' 'or' 'l' 'd']
         >>>
         >>> # Use the transform in eager mode
         >>> data = "Hello world"
@@ -603,7 +603,7 @@ class SentencePieceTokenizer(TextTensorOperation):
         ...                                           SentencePieceModel.UNIGRAM, {})
         >>> output = text.SentencePieceTokenizer(vocab, out_type=SPieceTokenizerOutType.STRING)(data)
         >>> print(output)
-        ['▁' 'H' 'e' 'l' 'l' 'o' '▁' 'w' 'o' 'r' 'l' 'd']
+        ['▁' 'H' 'e' 'l' 'l' 'o' '▁' 'w' 'or' 'l' 'd']
 
     Tutorial Examples:
         - `Illustration of text transforms
@@ -623,11 +623,11 @@ class SentencePieceTokenizer(TextTensorOperation):
 
 class SlidingWindow(TextTensorOperation):
     """
-    Construct a tensor from given data (only support 1-D for now), where each element in the dimension axis
+    Construct a tensor from given data (only support 1-D for now), where each element in the dimension `axis`
     is a slice of data starting at the corresponding position, with a specified width.
 
     Args:
-        width (int): The width of the window. It must be an integer and greater than zero.
+        width (int): The width of the window. Must be greater than zero.
         axis (int, optional): The axis along which the sliding window is computed. Default: ``0``.
 
     Raises:
@@ -1332,7 +1332,8 @@ if platform.system().lower() != 'windows':
 
     class FilterWikipediaXML(TextTensorOperation):
         """
-        Filter Wikipedia XML dumps to "clean" text consisting only of lowercase letters (a-z, converted from A-Z),
+        Filter the text in the format of Wikipedia XML dumps to "clean" text
+        consisting only of lowercase letters (a-z, converted from A-Z),
         and spaces (never consecutive).
 
         Note:

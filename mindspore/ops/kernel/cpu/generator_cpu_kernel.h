@@ -18,11 +18,12 @@
 #include <complex>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace generator_cpu {
 class GeneratorCpuKernelMod : public NativeCpuKernelMod {
  public:
   GeneratorCpuKernelMod() = default;
@@ -36,6 +37,7 @@ class GeneratorCpuKernelMod : public NativeCpuKernelMod {
               const std::vector<KernelTensor *> &outputs) override;
   std::vector<KernelAttr> GetOpSupport() override;
 };
+}  // namespace generator_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

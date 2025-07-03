@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 from mindspore import Tensor, complex64
 from mindspore.ops.operations import array_ops as P
 import mindspore.common.dtype as ms
@@ -30,7 +29,7 @@ def test_conjugate_transpose_bool_3x3():
     input_c = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
     input_c = Tensor(input_c, ms.bool_)
     perm = (1, 0)
-    expected_out = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]], np.bool)
+    expected_out = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]], np.bool_)
     conjugate_transpose_net = P.ConjugateTranspose()
     conjugate_transpose_ms_out = conjugate_transpose_net(input_c, perm)
 

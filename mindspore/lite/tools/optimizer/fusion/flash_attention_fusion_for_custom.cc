@@ -27,6 +27,12 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/custom.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -310,6 +316,7 @@ CNodePtr FlashAttentionFusionForCustom::CreateFlashAttentionNodePart2(const std:
   flash_attention_prim->AddAttr("reg_op_name", api::MakeValue("FlashAttention"));
   auto fa_prim_c = flash_attention_prim->GetPrim();
   auto matmul_2 = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_MSG(matmul_2 != nullptr, nullptr, "matmul_2 is nullptr!");
   node_names.push_back(matmul_2->fullname_with_scope());
   MS_CHECK_TRUE_RET(matmul_2->size() >= kNumInputSize3, nullptr);
   auto cast_2 = matmul_2->input(1)->cast<CNodePtr>();

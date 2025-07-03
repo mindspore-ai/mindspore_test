@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/cpu/pyboost/customize/inner_comm_all_reduce.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/inner_comm_all_reduce.h"
 #include <memory>
 #include <utility>
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InnerCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                                     const BaseTensorPtr &input_tensor, const StringImmPtr &op_type,
-                                                     const StringImmPtr &group) {
+tensor::TensorPtr InnerCommAllReduceCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                 const StringImmPtr &op_type, const StringImmPtr &group) {
   CommonCommFunc(op, input_tensor, nullptr, nullptr);
   return op->output(0);
 }

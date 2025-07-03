@@ -15,12 +15,13 @@
  */
 
 #include "kernel/cpu/in_top_k_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 #include "infer/in_top_k.h"
 
 namespace mindspore {
 namespace kernel {
+namespace in_top_k_cpu {
 namespace {
 constexpr size_t kInTopKInputsNum = 2;
 constexpr size_t kInTopKOutputsNum = 1;
@@ -124,5 +125,6 @@ std::vector<KernelAttr> InTopKCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, InTopK, InTopKCpuKernelMod);
+}  // namespace in_top_k_cpu
 }  // namespace kernel
 }  // namespace mindspore

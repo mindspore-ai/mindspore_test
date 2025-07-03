@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/graph_info.h"
+#include "frontend/parallel/graph_util/parallel_tensordump.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
 #include "ir/primitive.h"
 #include "ir/func_graph.h"
@@ -105,6 +106,7 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
       continue;
     }
     auto expect_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(expect_prim);
     if (expect_prim->name() != J && expect_prim->name() != SHARD) {
       continue;
     }
@@ -112,6 +114,7 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
       auto graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       MS_LOG(DEBUG) << "Find the forward graph success";
       (void)graph_set.insert(graph);
+      MS_EXCEPTION_IF_NULL(graph);
       auto manager = graph->manager();
       MS_EXCEPTION_IF_NULL(manager);
       auto graph_used = manager->func_graphs_used_total(graph);
@@ -401,6 +404,7 @@ int64_t CountDynamicAxis(const AnfNodePtrList &shape_input) {
   for (size_t i = 0; i < shape_input.size(); ++i) {
     if (shape_input[i]->isa<ValueNode>()) {
       auto val_node = shape_input[i]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(val_node);
       MS_EXCEPTION_IF_NULL(val_node->value());
       int64_t index = GetValue<int64_t>(val_node->value());
       if (index == -1) {
@@ -498,6 +502,7 @@ AnfNodePtr ConvertConstParamToDynamic(const TensorRedistributionPtr &tensor_redi
     std::vector<int64_t> const_shape(shape_input.size());
     for (size_t i = 0; i < shape_input.size(); ++i) {
       auto val_node = shape_input[i]->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(val_node);
       MS_EXCEPTION_IF_NULL(val_node->value());
       int64_t value = GetValue<int64_t>(val_node->value());
       const_shape[i] = value;
@@ -806,7 +811,7 @@ std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::st
   OperatorArgs arg_replace_op = replace_op.second;
   OperatorParams params = arg_replace_op.second;
   if (node->size() < SIZE_TWO) {
-    // GetNext operator dose not has input
+    // GetNext operator does not has input
     if (node->size() == 1) {
       return ConvertToRealInputs(replace_op.first, instance_name, AnfNodePtrList{}, arg_replace_op.first);
     }
@@ -883,6 +888,7 @@ CNodePtr InsertNode(const Operator &op, const CNodePtr &node, size_t index, cons
   auto new_node_value = node_input[0]->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(new_node_value);
   auto new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(new_node_prim);
   new_node_prim->set_instance_name(instance_name);
   new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
   if (instance_name.find(NOT_RECOMPUTE) != std::string::npos) {
@@ -917,14 +923,16 @@ CNodePtr FindPreviousCareNode(const CNodePtr &current, int32_t depth = 0) {
   if (depth == MAX_RECURSIVE_DEPTH) {
     return nullptr;
   }
-  auto prev = current->input(1);
+  size_t travel_index = IsSomePrimitive(current, DUMPGRADIENT) ? kDumpGradientSkipIndex : kIndex1;
+  auto prev = current->input(travel_index);
   // If prev is parameter maybe problem here.
   auto cnode = prev->cast<CNodePtr>();
   if (cnode == nullptr) {
     MS_LOG(INFO) << "Input of node is not a cnode: " << prev->fullname_with_scope();
     return nullptr;
   }
-  if (!IsParallelCareNode(cnode) && (IsTargetOp(cnode, "Cast") || IsTupleGetItem(cnode))) {
+  static std::set<std::string> RECURSIVE_WHITE_LIST = {CAST, TUPLE_GETITEM_OP, INSERTGRADIENTOF, DEPEND, DUMPGRADIENT};
+  if (!IsParallelCareNode(cnode) && (RECURSIVE_WHITE_LIST.find(GetPrimName(cnode)) != RECURSIVE_WHITE_LIST.end())) {
     return FindPreviousCareNode(cnode, depth + 1);
   }
   return cnode;
@@ -959,8 +967,8 @@ Status GetDistributeOperatorFromCNode(const CNodePtr &cnode, TensorInfo *tensor_
       (*tensor_info) = root_tensor_info[output_index];
       return Status::SUCCESS;
     }
-    MS_LOG(WARNING) << "Outputs number cannot be larger than 1, but " << target_cnode->fullname_with_scope() << " has "
-                    << root_tensor_info.size() << " outputs.";
+    MS_LOG(INFO) << "Outputs number cannot be larger than 1, but " << target_cnode->fullname_with_scope() << " has "
+                 << root_tensor_info.size() << " outputs.";
   }
   (*tensor_info) = root_tensor_info[0];
   return Status::SUCCESS;
@@ -1084,6 +1092,7 @@ bool SkipSupplyForReshape(const CNodePtr &cnode) {
     return false;
   }
   auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(SKIP_REDISTRIBUTION)) {
     bool skip_redistribution = GetValue<bool>(prim->GetAttr(SKIP_REDISTRIBUTION));
     return skip_redistribution;

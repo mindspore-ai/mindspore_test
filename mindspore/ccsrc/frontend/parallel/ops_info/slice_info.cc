@@ -42,6 +42,7 @@ Status SliceInfo::GetInput(const ValuePtr &input_value, std::vector<int64_t> *in
   for (auto &element : value_tuple->value()) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t value = element->cast<Int64ImmPtr>()->value();
       input->push_back(value);
     } else {
@@ -54,6 +55,9 @@ Status SliceInfo::GetInput(const ValuePtr &input_value, std::vector<int64_t> *in
 }
 
 Status SliceInfo::GetAttrs() {
+  if (input_value_.size() == SLICE_INPUTS_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != SLICE_INPUTS_SIZE) {
     MS_LOG(ERROR) << name_ << ": The size of input value must be " << SLICE_INPUTS_SIZE << ", but got "
                   << input_value_.size();
@@ -229,6 +233,7 @@ Status SliceInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
 Status SliceExtInfo::GetInput(const ValuePtr &input_value, int64_t *input) {
   MS_EXCEPTION_IF_NULL(input_value);
   if (input_value->isa<Int64Imm>()) {
+    MS_EXCEPTION_IF_NULL(input_value->cast<Int64ImmPtr>());
     int64_t value = input_value->cast<Int64ImmPtr>()->value();
     *input = value;
   } else {
@@ -239,6 +244,9 @@ Status SliceExtInfo::GetInput(const ValuePtr &input_value, int64_t *input) {
 }
 
 Status SliceExtInfo::GetAttrs() {
+  if (input_value_.size() == SLICE_EXT_INPUTS_SIZE + 1) {
+    input_value_.pop_back();
+  }
   if (input_value_.size() != SLICE_EXT_INPUTS_SIZE) {
     MS_LOG(ERROR) << name_ << ": The size of input value must be " << SLICE_EXT_INPUTS_SIZE << ", but got "
                   << input_value_.size();

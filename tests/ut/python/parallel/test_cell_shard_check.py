@@ -67,6 +67,7 @@ def add_one_func2(x):
     return shard(add_one_func)((None,))(x) + 1
 
 
+@pytest.mark.skip(reason="Jit pipeline doesn't support parallel.")
 def test_in_strategy_numbers_check():
     """
     Feature: shard function for cell
@@ -80,6 +81,7 @@ def test_in_strategy_numbers_check():
     cell_shard_execution(in_strategy, out_strategy, error_log)
 
 
+@pytest.mark.skip(reason="Jit pipeline doesn't support parallel.")
 def test_in_strategy_dimension_check():
     """
     Feature: shard function for cell
@@ -102,7 +104,7 @@ def test_in_strategy_format_check():
     set_context(mode=context.PYNATIVE_MODE)
     in_strategy = ([8, 1], (1, 1))
     out_strategy = None
-    error_log = "The 'in_strategy' should be a tuple(tuple(int)) or tuple(mindspore.Layout), but got list"
+    error_log = "The 'in_strategy' should be a tuple(tuple(int)) or tuple(mindspore.parallel.Layout), but got list"
     with pytest.raises(Exception) as err:
         net = NetMul()
         net.shard(in_strategy=in_strategy, out_strategy=out_strategy)
@@ -158,6 +160,7 @@ def test_parameter_plan_format_check():
     assert error_log in str(err.value)
 
 
+@pytest.mark.skip(reason="Jit pipeline doesn't support parallel.")
 def test_vmap_nested_shard_check():
     """
     Feature: vmap nested shard
@@ -174,6 +177,7 @@ def test_vmap_nested_shard_check():
     assert error_log in str(err.value)
 
 
+@pytest.mark.skip(reason="Jit pipeline doesn't support parallel.")
 def test_shard_nested_shard_check_pynative():
     """
     Feature: shard nested shard

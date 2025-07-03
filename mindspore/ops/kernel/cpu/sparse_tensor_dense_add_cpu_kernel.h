@@ -23,11 +23,12 @@
 #include <utility>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_dense_add_cpu {
 class SparseTensorDenseAddCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseTensorDenseAddCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class SparseTensorDenseAddCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector output_shape_;
   size_t values_size_{0};
 };
+}  // namespace sparse_tensor_dense_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_TENSOR_DENSE_ADD_CPU_KERNEL_H_

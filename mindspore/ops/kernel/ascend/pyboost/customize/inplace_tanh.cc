@@ -17,15 +17,14 @@
 #include "kernel/ascend/pyboost/customize/inplace_tanh.h"
 #include <memory>
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceTanhAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                 const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr InplaceTanhAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call InplaceTanh start";
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);

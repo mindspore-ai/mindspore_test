@@ -21,11 +21,12 @@
 #include <utility>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_tensor_dense_matmul_cpu {
 class SparseTensorDenseMatmulCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseTensorDenseMatmulCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class SparseTensorDenseMatmulCpuKernelMod : public NativeCpuKernelMod {
   bool adj_dt_{false};
   enum input_list_ { INDICES, VALUES, SPARSE_SHAPE, DENSE };
 };
+}  // namespace sparse_tensor_dense_matmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RMSPROP_CPU_KERNEL_H_

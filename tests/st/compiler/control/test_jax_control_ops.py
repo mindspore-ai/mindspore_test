@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
@@ -20,6 +20,7 @@ from mindspore.ops import composite as C
 from mindspore import mutable
 import numpy as np
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)
 
@@ -46,13 +47,13 @@ def while_body_fun(val):
     return val
 
 
-@jit
+@jit(backend="ms_backend")
 def call_while_loop(x):
     val = while_loop(while_cond, while_body_fun, x)
     return val
 
 
-@jit
+@jit(backend="ms_backend")
 def grad_while_loop(x):
     x = grad_all(call_while_loop)(x)
     return x
@@ -83,7 +84,7 @@ def cumsum(res, el):
     return res, res  # ("carryover", "accumulated")
 
 
-@jit
+@jit(backend="ms_backend")
 def call_scan(a):
     result_init = 0
     return scan(cumsum, result_init, a)
@@ -95,20 +96,19 @@ def for_body_fun(i, val):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def call_fori_loop(x):
     x = fori_loop(1, 100, for_body_fun, x)
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def grad_for_loop(x):
     x = grad_all(call_fori_loop)(x)
     return x
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_for_loop():
     """
     Feature: control flow function.
@@ -121,8 +121,7 @@ def test_grad_for_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fori_loop():
     """
     Feature: control flow function.
@@ -135,8 +134,7 @@ def test_fori_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scan():
     """
     Feature: control flow function.
@@ -149,8 +147,7 @@ def test_scan():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_while_loop():
     """
     Feature: control flow function.
@@ -163,8 +160,7 @@ def test_while_loop():
     print(x)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_while_loop():
     """
     Feature: control flow function.
@@ -184,15 +180,14 @@ def no_inline_fun(val):
     return x
 
 
-@jit
+@jit(backend="ms_backend")
 def call_no_inline_fun(val):
     for _ in range(100):
         val = no_inline_fun(val)
     return val
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_no_inline_fun():
     """
     Feature: control flow function.

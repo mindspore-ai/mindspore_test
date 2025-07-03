@@ -15,18 +15,18 @@
 """radam"""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 from mindspore.common import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore import _checkparam as validator
 from mindspore.experimental.optim.optimizer import Optimizer, check_not_less_than, check_not_less_than_without_equal
 from mindspore import jit
 
-_radam_opt = C.MultitypeFuncGraph("radam_opt")
+_radam_opt = ops.MultitypeFuncGraph("radam_opt")
 
-op_pow = P.Pow()
-op_sqrt = P.Sqrt()
-op_cast = P.Cast()
+op_pow = ops.Pow()
+op_sqrt = ops.Sqrt()
+op_cast = ops.Cast()
 
 
 @_radam_opt.register("Number", "Number", "Number", "Tensor", "Number", "Tensor", "Tensor", "Tensor", "Tensor", "Tensor",
@@ -35,17 +35,17 @@ def _tensor_run_opt(beta1, beta2, eps, lr, rho_inf, rho_t, bias_correction1, bia
                     exp_avg_sq):
     """Apply radam optimizer to the weight parameter."""
 
-    F.assign(exp_avg, exp_avg * beta1 + grad * (1 - beta1))
-    F.assign(exp_avg_sq, exp_avg_sq * beta2 + grad * grad * (1 - beta2))
+    ops.assign(exp_avg, exp_avg * beta1 + grad * (1 - beta1))
+    ops.assign(exp_avg_sq, exp_avg_sq * beta2 + grad * grad * (1 - beta2))
     bias_corrected_exp_avg = exp_avg / bias_correction1
 
     if rho_t > 5.0:
         rect = op_sqrt((rho_t - 4) * (rho_t - 2) * rho_inf / ((rho_inf - 4) * (rho_inf - 2) * rho_t))
         exp_avg_sq_sqrt = op_sqrt(exp_avg_sq) + eps
         adaptive_lr = op_sqrt(bias_correction2) / exp_avg_sq_sqrt
-        F.assign(param, param - bias_corrected_exp_avg * lr * adaptive_lr * rect)
+        ops.assign(param, param - bias_corrected_exp_avg * lr * adaptive_lr * rect)
     else:
-        F.assign(param, param - bias_corrected_exp_avg * lr)
+        ops.assign(param, param - bias_corrected_exp_avg * lr)
 
     return True
 
@@ -56,7 +56,7 @@ class RAdam(Optimizer):
 
     .. math::
         \begin{align*}
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\textbf{Input}:
                 \gamma \text{ (lr)}, \: \beta_1, \beta_2 \text{ (betas)}, \: \theta_0 \text{ (params)}, \:f(\theta)
                 \text{ (objective)}, \:
@@ -67,7 +67,7 @@ class RAdam(Optimizer):
                     v_0 \leftarrow 0 \text{ (second moment)} \\
                     \rho_{\infty} \xleftarrow{\text{def}} \dfrac{2}{1 - \beta_2} - 1
                 \end{cases} \\
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\textbf{For } t = 1 \text{ to } \ldots \text{ do}: \\
             &\quad g_t \leftarrow \nabla_{\theta} f_t(\theta_{t - 1}) \\
             &\quad \text{If } \lambda \neq 0: \\
@@ -84,9 +84,9 @@ class RAdam(Optimizer):
             &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} r_t l_t \\
             &\quad \text{Else}: \\
             &\quad\quad \theta_t \leftarrow \theta_{t - 1} - \gamma \widehat{m_t} \\
-            &\rule{110mm}{0.4pt} \\
+            &\rule{180mm}{0.4pt} \\
             &\bf{Return}: \theta_t \\
-            &\rule{110mm}{0.4pt}
+            &\rule{180mm}{0.4pt}
         \end{align*}
 
     .. warning::
@@ -155,9 +155,9 @@ class RAdam(Optimizer):
         self.exp_avg = self.parameters.clone(prefix="exp_avg", init='zeros')
         self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
         self.increase_tensor = Tensor(1, mstype.int32)
-        self.assignadd = P.AssignAdd()
+        self.assignadd = ops.AssignAdd()
 
-    @jit
+    @jit(backend="ms_backend")
     def implementation(self, lr, beta1, beta2, weight_decay, eps, start_id, end_id, gradients):
         """Extract the common computing part for acceleration"""
         params = self.parameters[start_id: end_id]
@@ -175,7 +175,8 @@ class RAdam(Optimizer):
 
         rho_t = rho_inf - right
 
-        self.hyper_map(F.partial(_radam_opt, beta1, beta2, eps, lr, rho_inf, rho_t, bias_correction1, bias_correction2),
+        self.hyper_map(ops.partial(_radam_opt, beta1, beta2, eps, lr, rho_inf,
+                                   rho_t, bias_correction1, bias_correction2),
                        params, grads, exp_avg, exp_avg_sq)
         return True
 

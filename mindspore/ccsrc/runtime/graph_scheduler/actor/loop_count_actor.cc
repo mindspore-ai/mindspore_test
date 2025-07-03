@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
+#include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "runtime/device/stream_synchronizer.h"
@@ -37,43 +38,53 @@ namespace runtime {
 using distributed::collective::CollectiveManager;
 using distributed::recovery::RecoveryContext;
 
-void LoopCountActor::Run(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   // Need wait MemoryManagerActor running finished to avoid the illegal memory timing problem before
   // LoopCountActor exits, because other processors which are not in actor also will process device tensor.
   ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::Wait, context, GetAID());
 }
 
-void LoopCountActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::OnMemoryAllocFinish(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   IncreaseLoopCount(context);
 }
 
-void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::IncreaseLoopCount(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
 
   total_running_count_++;
   current_count_++;
   MS_LOG(INFO) << "Loop count actor(" << GetAID().Name() << ") running, loop count: " << loop_count_
                << ", current count: " << current_count_ << ", total running count: " << total_running_count_;
-  if (!WaitRuntimePipelineFinish(context)) {
+  if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
     MS_LOG(INFO) << "Run graph failed and please check error log.";
     return;
   }
 
+  static auto &process = Process::GetInstance();
+  process.CheckCommOrderIteration(total_running_count_);
+
   // Debug actor is blocked, must wait debug actor callback message to process continue.
   if (debug_aid_ != nullptr) {
     SendDebugReq(context);
-    return;
   }
 
   if (profiler_aid_ != nullptr) {
     MS_LOG(INFO) << "Sync stream in the step end by profiler.";
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kStreamSync, GetAID().Name());
     SendProfilerReq(context);
-    return;
   }
 
+  if (first_control_aids_.empty() && entrance_aids_.empty()) {
+    RealRun(context);
+    return;
+  }
+  HandleNotifyOnePhase(context);
+}
+
+void LoopCountActor::RealRun(OpContext<KernelTensor> *const context) {
+  notify_messages_.clear();
   // Sync device stream.
   if ((strategy_ == GraphExecutionStrategy::kPipeline) && is_need_sync_stream_) {
     MS_LOG(INFO) << "Sync stream in the step end.";
@@ -99,19 +110,70 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   PostRun(context);
 }
 
-void LoopCountActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::SendDebugReq(OpContext<KernelTensor> *const context) {
   ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_,
                             sink_size_);
-  OnDebugFinish(context);
 }
 
-void LoopCountActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::SendProfilerReq(OpContext<KernelTensor> *const context) {
   ActorDispatcher::SendSync(*profiler_aid_, &ProfilerActor::ProfilerOnStepEnd, context, &GetAID(),
                             total_running_count_);
-  OnDebugFinish(context);
 }
 
-void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
+void LoopCountActor::HandleNotifyOnePhase(OpContext<KernelTensor> *const context) {
+  if (first_control_aids_.empty()) {
+    HandleNotifyTwoPhase(context);
+    return;
+  }
+  for (auto &first_control_aid : first_control_aids_) {
+    ActorDispatcher::Send(first_control_aid, &AbstractActor::HandleWaitMessage, context, GetAID());
+  }
+}
+
+void LoopCountActor::HandleNotifyTwoPhase(OpContext<KernelTensor> *const context) {
+  if (entrance_aids_.empty()) {
+    RealRun(context);
+    return;
+  }
+  // Send to EntranceActor to clear the data which are generated in the loop body execution.
+  for (auto &entrance_aid : entrance_aids_) {
+    ActorDispatcher::Send(entrance_aid, &AbstractActor::HandleWaitMessage, context, GetAID());
+  }
+  return;
+}
+
+void LoopCountActor::HandleNotifyMessage(OpContext<KernelTensor> *const context, const AID &from_aid) {
+  notify_messages_.emplace_back(from_aid);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor:" << GetAID() << " receive signal message from actor:" << from_aid
+    << " current size:" << notify_messages_.size() << " need size:" << first_control_aids_.size() << " and"
+    << entrance_aids_.size() << " for actor:" << GetAID();
+  if (notify_messages_.size() < first_control_aids_.size() ||
+      (notify_messages_.size() < first_control_aids_.size() + entrance_aids_.size() &&
+       notify_messages_.size() > first_control_aids_.size())) {
+    return;
+  }
+
+  if (notify_messages_.size() == first_control_aids_.size()) {
+    MS_LOG(DEBUG) << "Handle first control aid finish for actor:" << GetAID();
+    HandleNotifyTwoPhase(context);
+    return;
+  }
+
+  if (notify_messages_.size() == first_control_aids_.size() + entrance_aids_.size()) {
+    MS_LOG(DEBUG) << "Handle first control aid and entrance aid finish for actor:" << GetAID();
+    RealRun(context);
+    return;
+  }
+
+  std::stringstream ofs;
+  ofs << "Invalid input signals size:" << notify_messages_.size()
+      << " first control aid size:" << first_control_aids_.size() << " entrance aid size:" << entrance_aids_.size()
+      << " for actor:" << GetAID();
+  SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), ofs.str());
+}
+
+void LoopCountActor::SendOutput(OpContext<KernelTensor> *const context) {
   // Send recorder info.
   if (recorder_aid_ != nullptr) {
     ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordOnStepEnd, context);
@@ -121,12 +183,7 @@ void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
   auto from_aid = const_cast<AID *>(&GetAID());
   for (auto &output_control : output_control_arrows_) {
     MS_EXCEPTION_IF_NULL(output_control);
-    ActorDispatcher::Send(output_control->to_op_id_, &OpActor::RunOpControl, from_aid, context);
-  }
-
-  // Send to EntranceActor to clear the data which are generated in the loop body execution.
-  for (auto &entrance_aid : entrance_aids_) {
-    ActorDispatcher::Send(entrance_aid, &EntranceActor::ClearDataOnStepEnd, from_aid, context);
+    ActorDispatcher::Send(output_control->to_op_id_, &OpRTActor::RunOpControl, from_aid, context);
   }
 
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -141,7 +198,7 @@ void LoopCountActor::SendOutput(OpContext<DeviceTensor> *const context) {
   }
 
   // Send to DataPrepareActor to trigger next step running.
-  ActorDispatcher::Send(data_prepare_aid_, &OpActor::RunOpControl, from_aid, context);
+  ActorDispatcher::Send(data_prepare_aid_, &OpRTActor::RunOpControl, from_aid, context);
 }
 }  // namespace runtime
 }  // namespace mindspore

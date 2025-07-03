@@ -19,28 +19,44 @@
 #include <memory>
 #include <functional>
 
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-std::vector<BaseTensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt) {
-  if (tensor_list_opt.has_value()) {
-    return ConvertValueTupleToVector<BaseTensorPtr>(tensor_list_opt.value());
+std::vector<TensorPtr> ConvertOptiaonlValueTupleToVector(const std::optional<ValueTuplePtr> &tensor_list_opt);
+
+void UnifyWeightShape(const std::vector<TensorPtr> &ori_weights, std::vector<TensorPtr> *new_weights) {
+  for (const auto &ori_weight : ori_weights) {
+    if (ori_weight->data_type() == kNumberTypeInt4) {
+      const auto &storage_info = ori_weight->storage_info();
+      if (storage_info != nullptr && !storage_info->is_contiguous) {
+        MS_LOG(EXCEPTION) << "Currently, GroupedMatMulV4 does not support noncontiguous input tensor for int4 quant, "
+                          << "but got noncontiguous input tensor: " << ori_weight->ToString()
+                          << ", storage info: " << storage_info->ToString();
+      }
+      auto new_weight = std::make_shared<Tensor>(*ori_weight);
+      auto ori_weight_shape = ori_weight->shape();
+      ori_weight_shape.back() *= kSizeTwo;
+      (void)new_weight->set_shape(ori_weight_shape);
+      (void)new_weights->emplace_back(new_weight);
+    } else {
+      (void)new_weights->emplace_back(ori_weight);
+    }
   }
-  return {};
 }
 }  // namespace
+
 void GroupedMatmulV4AscendCustomize(
   const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &x_tensor_list, const ValueTuplePtr &weight_tensor_list,
   const std::optional<ValueTuplePtr> &bias_tensor_list, const std::optional<ValueTuplePtr> &scale_tensor_list,
   const std::optional<ValueTuplePtr> &offset_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &antiquant_offset_tensor_list,
-  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<BaseTensorPtr> &group_list,
+  const std::optional<ValueTuplePtr> &pre_token_scale_tensor_list, const std::optional<TensorPtr> &group_list,
   const std::optional<ValueTuplePtr> &activation_input_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_scale_tensor_list,
   const std::optional<ValueTuplePtr> &activation_quant_offset_tensor_list, const Int64ImmPtr &split_item_imm,
@@ -53,18 +69,17 @@ void GroupedMatmulV4AscendCustomize(
                           group_type_imm, group_list_type_imm, act_type_imm);
 
   // Convert ValuePtr to c++ scalar
-  std::vector<BaseTensorPtr> x = ConvertValueTupleToVector<BaseTensorPtr>(x_tensor_list);
-  std::vector<BaseTensorPtr> weight = ConvertValueTupleToVector<BaseTensorPtr>(weight_tensor_list);
-  std::vector<BaseTensorPtr> bias = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
-  std::vector<BaseTensorPtr> scale = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
-  std::vector<BaseTensorPtr> offset = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_scale = ConvertOptiaonlValueTupleToVector(antiquant_scale_tensor_list);
-  std::vector<BaseTensorPtr> antiquant_offset = ConvertOptiaonlValueTupleToVector(antiquant_offset_tensor_list);
-  std::vector<BaseTensorPtr> pre_token_scale = ConvertOptiaonlValueTupleToVector(pre_token_scale_tensor_list);
-  std::vector<BaseTensorPtr> activation_input = ConvertOptiaonlValueTupleToVector(activation_input_tensor_list);
-  std::vector<BaseTensorPtr> activation_quant_scale =
-    ConvertOptiaonlValueTupleToVector(activation_quant_scale_tensor_list);
-  std::vector<BaseTensorPtr> activation_quant_offset =
+  std::vector<TensorPtr> x = ConvertValueTupleToVector<TensorPtr>(x_tensor_list);
+  std::vector<TensorPtr> weight = ConvertValueTupleToVector<TensorPtr>(weight_tensor_list);
+  std::vector<TensorPtr> bias = ConvertOptiaonlValueTupleToVector(bias_tensor_list);
+  std::vector<TensorPtr> scale = ConvertOptiaonlValueTupleToVector(scale_tensor_list);
+  std::vector<TensorPtr> offset = ConvertOptiaonlValueTupleToVector(offset_tensor_list);
+  std::vector<TensorPtr> antiquant_scale = ConvertOptiaonlValueTupleToVector(antiquant_scale_tensor_list);
+  std::vector<TensorPtr> antiquant_offset = ConvertOptiaonlValueTupleToVector(antiquant_offset_tensor_list);
+  std::vector<TensorPtr> pre_token_scale = ConvertOptiaonlValueTupleToVector(pre_token_scale_tensor_list);
+  std::vector<TensorPtr> activation_input = ConvertOptiaonlValueTupleToVector(activation_input_tensor_list);
+  std::vector<TensorPtr> activation_quant_scale = ConvertOptiaonlValueTupleToVector(activation_quant_scale_tensor_list);
+  std::vector<TensorPtr> activation_quant_offset =
     ConvertOptiaonlValueTupleToVector(activation_quant_offset_tensor_list);
 
   auto split_item = GetValue<int64_t>(split_item_imm);
@@ -76,13 +91,16 @@ void GroupedMatmulV4AscendCustomize(
                                 antiquant_offset, pre_token_scale, group_list, activation_input, activation_quant_scale,
                                 activation_quant_offset);
 
-  std::vector<BaseTensorPtr> activation_feature_out;
-  std::vector<BaseTensorPtr> dyn_quant_scale_out;
+  std::vector<TensorPtr> activation_feature_out;
+  std::vector<TensorPtr> dyn_quant_scale_out;
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+
+  std::vector<TensorPtr> new_weights;
+  UnifyWeightShape(weight, &new_weights);
 
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, group_list,
+    [op, x, new_weights, weight, bias, scale, offset, antiquant_scale, antiquant_offset, pre_token_scale, group_list,
      activation_input, activation_quant_scale, activation_quant_offset, split_item, group_type, group_list_type,
      act_type, activation_feature_out, dyn_quant_scale_out]() {
       auto device_context = op->device_context();
@@ -94,7 +112,7 @@ void GroupedMatmulV4AscendCustomize(
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-      LAUNCH_ACLNN(aclnnGroupedMatmulV4, device_context, op->stream_id(), x, weight, bias, scale, offset,
+      LAUNCH_ACLNN(aclnnGroupedMatmulV4, device_context, op->stream_id(), x, new_weights, bias, scale, offset,
                    antiquant_scale, antiquant_offset, pre_token_scale, group_list, activation_input,
                    activation_quant_scale, activation_quant_offset, split_item, group_type, group_list_type, act_type,
                    outputs, activation_feature_out, dyn_quant_scale_out);

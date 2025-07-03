@@ -31,7 +31,7 @@ bool AssignSubFwdGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "' dose not support this kernel type: " << kernel_attr;
+    MS_LOG(ERROR) << "For '" << kernel_name_ << "' does not support this kernel type: " << kernel_attr;
     return false;
   }
   kernel_func_ = func_list_[index].second;
@@ -83,19 +83,47 @@ bool AssignSubFwdGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
 }
 
 std::vector<std::pair<KernelAttr, AssignSubFwdGpuKernelMod::AssignSubFunc>> AssignSubFwdGpuKernelMod::func_list_ = {
-  {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeUInt8),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeUInt8)
+     .AddInputAttr(kNumberTypeUInt8)
+     .AddOutputAttr(kNumberTypeUInt8)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<uint8_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeInt32)
+     .AddInputAttr(kNumberTypeInt32)
+     .AddOutputAttr(kNumberTypeInt32)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<int>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeInt8)
+     .AddInputAttr(kNumberTypeInt8)
+     .AddOutputAttr(kNumberTypeInt8)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<int8_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeInt64)
+     .AddInputAttr(kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt64)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<int64_t>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddOutputAttr(kNumberTypeFloat64)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<double>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddOutputAttr(kNumberTypeFloat32)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<float>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddOutputAttr(kNumberTypeFloat16)
+     .AddOutInRef(0, 0),
    &AssignSubFwdGpuKernelMod::LaunchKernel<half>}};
 
 std::vector<KernelAttr> AssignSubFwdGpuKernelMod::GetOpSupport() {

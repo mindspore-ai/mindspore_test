@@ -87,11 +87,11 @@ def test_moe_init_routing_case0(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         expanded_x_ms, expanded_row_idx_ms, expanded_expert_idx_ms = \
-            (jit(moe_init_routing_forward_func, jit_config=JitConfig(jit_level="O0")))(x, rowIdx, expertIdx, activeNum)
+            (jit(moe_init_routing_forward_func, jit_level="O0"))(x, rowIdx, expertIdx, activeNum)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         expanded_x_ms, expanded_row_idx_ms, expanded_expert_idx_ms = \
-            (jit(moe_init_routing_forward_func, jit_config=JitConfig(jit_level="O2")))(x, rowIdx, expertIdx, activeNum)
+            (jit(moe_init_routing_forward_func, backend="GE"))(x, rowIdx, expertIdx, activeNum)
 
     np.testing.assert_allclose(expanded_x_ms.asnumpy(), expanded_x, rtol=1e-3)
     np.testing.assert_allclose(expanded_row_idx_ms.asnumpy(), expanded_row_idx, rtol=1e-3)

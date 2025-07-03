@@ -22,7 +22,8 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"
-#include "pybind_api/export_flags.h"
+#include "frontend/ir/export_flags.h"
+#include "include/common/visible.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -60,8 +61,8 @@ enum ParseTargetType {
 const char PYTHON_MOD_MODULE[] = "mindspore";
 const char PYTHON_MOD_PARSE_MODULE[] = "mindspore._extends.parse";
 const char PYTHON_MOD_OPS_TENSOR_METHOD_MODULE[] = "mindspore.ops.tensor_method";
-const char PYTHON_MOD_PRIMITIVE_ARG_HANDLER_MODULE[] = "mindspore.ops.auto_generate.gen_arg_handler";
-const char PYTHON_MOD_PRIMITIVE_ARG_DTYPE_CAST_MODULE[] = "mindspore.ops.auto_generate.gen_arg_dtype_cast";
+const char PYTHON_MOD_PRIMITIVE_ARG_HANDLER_MODULE[] = "mindspore.ops._utils.arg_handler";
+const char PYTHON_MOD_PRIMITIVE_ARG_DTYPE_CAST_MODULE[] = "mindspore.ops._utils.arg_dtype_cast";
 const char PYTHON_MOD_PRIMITIVE_OP_CREATE_INSTANCE_HELPER_MODULE[] =
   "mindspore.ops.auto_generate.cpp_create_prim_instance_helper";
 const char PYTHON_MOD_PRIMITIVE_OP_TYPE_CAST[] = "do_type_cast";
@@ -78,9 +79,6 @@ const char PYTHON_MOD_GET_CLASS_INSTANCE_TYPE[] = "get_class_instance_type";
 const char PYTHON_MOD_CREATE_INSTANCE[] = "create_instance";
 const char PYTHON_MOD_IS_SUPPORTED_CREATE_INSTANCE_TYPE[] = "is_supported_create_instance_type";
 const char PYTHON_MOD_IS_CLASS_TYPE[] = "is_class_type";
-const char PYTHON_MOD_GET_ADAPTER_TENSOR_ATTR[] = "get_adapter_tensor_attr";
-const char PYTHON_MOD_IS_ADAPTER_TENSOR_CLASS[] = "is_adapter_tensor_class";
-const char PYTHON_MOD_IS_ADAPTER_PARAMETER_CLASS[] = "is_adapter_parameter_class";
 const char PYTHON_MOD_GET_MS_CLASS_NAME[] = "get_ms_class_name";
 const char PYTHON_MOD_GET_MODULE_NAMESPACE[] = "get_module_namespace";
 const char PYTHON_MOD_GET_MEMBER_NAMESPACE_SYMBOL[] = "get_class_member_namespace_symbol";
@@ -107,7 +105,6 @@ const char PYTHON_MOD_GET_CONST_LEN[] = "get_const_len";
 const char PYTHON_MOD_CHECK_ATTRS[] = "check_attrs";
 const char PYTHON_MOD_CHECK_IS_SUBCLASS[] = "check_is_subclass";
 const char PYTHON_MOD_GET_METHOD_INFO[] = "get_method_info";
-const char PYTHON_MOD_IS_MS_TENSOR_METHOD[] = "is_ms_tensor_method";
 const char PYTHON_MOD_CAN_CONSTANT_FOLD[] = "can_constant_fold";
 
 const char PYTHON_PARSE_GET_ARGS[] = "get_args";
@@ -115,6 +112,7 @@ const char PYTHON_PARSE_GET_ARGS_DEFAULT_VALUES[] = "get_args_default_values";
 const char PYTHON_PARSE_GET_NODE_TYPE[] = "get_node_type";
 const char PYTHON_PARSE_GET_AST_TYPE[] = "get_ast_type";
 const char PYTHON_PARSE_GET_AST_NAMESPACE_SYMBOL[] = "get_ast_namespace_symbol";
+const char PYTHON_PARSE_GET_AUGASSIGN_AST_NAMESPACE_SYMBOL[] = "get_ast_augassign_namespace_symbol";
 const char PYTHON_PARSE_GET_OPERATION_SYMBOL[] = "get_operation_symbol";
 const char PYTHON_PARSE_GET_OPERATION_NAMESPACE_SYMBOL[] = "get_operation_namespace_symbol";
 const char PYTHON_PARSE_GET_CLASS_TENSOR_TYPE[] = "get_tensor_class_type";
@@ -198,13 +196,7 @@ const char STAGE_NAME[] = "_pipeline_stage";
 const char SEGMENT_NAME[] = "_pipeline_segment";
 
 // Define python cell attributes and methods
-const char CELL_PARAMETERS_FORWARD_HOOK[] = "_parameters_forward_hook";
-const char CELL_PARAMETERS_BACKWARD_HOOK[] = "_parameters_backward_hook";
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
-const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
-
-// Define ref tensor user data keys.
-const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";
 
 // Define the Namespace name.
 const char RESOLVE_NAMESPACE_NAME_AST[] = "Ast";                   // For ast type namespace.
@@ -228,16 +220,16 @@ enum ResolveType : int64_t {
   RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8,   // Resolve numpy bool number.
   RESOLVE_TYPE_TUPLE = 9,               // Resolve builtin tuple type.
   RESOLVE_TYPE_LIST = 10,               // Resolve builtin list type.
+  RESOLVE_TYPE_BUILTIN_METHOD = 11,     // Resolve builtin method.
   RESOLVE_TYPE_INVALID = 0xFF           // Resolve invalid.
 };
 
 // Define the class instance detail type When the type is RESOLVE_TYPE_CLASS_INSTANCE.
 enum ClassInstanceType {
-  CLASS_INSTANCE_TYPE_CELL = 0,            // Class instance type is Cell.
-  CLASS_INSTANCE_TYPE_PRIMITIVE = 1,       // Class instance type is Primitive.
-  CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2,     // Class instance type is Numpy Array.
-  CLASS_INSTANCE_TYPE_TENSOR = 3,          // Class instance type is Tensor
-  CLASS_INSTANCE_TYPE_ADAPTER_TENSOR = 4,  // Class instance type is Adapter Tensor
+  CLASS_INSTANCE_TYPE_CELL = 0,         // Class instance type is Cell.
+  CLASS_INSTANCE_TYPE_PRIMITIVE = 1,    // Class instance type is Primitive.
+  CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2,  // Class instance type is Numpy Array.
+  CLASS_INSTANCE_TYPE_TENSOR = 3,       // Class instance type is Tensor
   CLASS_INSTANCE_TYPE_INVALID = 0xFF
 };
 
@@ -251,8 +243,8 @@ enum SyntaxSupportType : int {
 };
 
 // Convert python object to ValuePtr.
-bool ConvertData(const py::object &obj, ValuePtr *data, bool use_signature = false, const TypePtr &dtype = nullptr,
-                 bool forbid_reuse = false);
+FRONTEND_EXPORT bool ConvertData(const py::object &obj, ValuePtr *data, bool use_signature = false,
+                                 const TypePtr &dtype = nullptr, bool forbid_reuse = false);
 
 bool ConvertStubData(const py::object &obj, ValuePtr *data, bool use_signature = false, const TypePtr &dtype = nullptr,
                      bool forbid_reuse = false);
@@ -271,6 +263,8 @@ ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg
 AnfNodePtr TransPropertyToFunc(const FuncGraphPtr &fg, const AnfNodePtr &node, const py::object &property_net_obj,
                                std::string attr_str);
 void CleanParameterNameCache();
+
+void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNodePtr> &isolated_nodes);
 }  // namespace parse
 }  // namespace mindspore
 

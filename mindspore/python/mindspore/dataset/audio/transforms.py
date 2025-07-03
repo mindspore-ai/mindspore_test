@@ -1423,10 +1423,6 @@ class FrequencyMasking(AudioTensorOperation):
     Tutorial Examples:
         - `Illustration of audio transforms
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/audio_gallery.html>`_
-
-    .. image:: frequency_masking_original.png
-
-    .. image:: frequency_masking.png
     """
 
     @check_masking
@@ -1500,10 +1496,10 @@ class GriffinLim(AudioTensorOperation):
     Args:
         n_fft (int, optional): Size of FFT. Default: ``400``.
         n_iter (int, optional): Number of iteration for phase recovery. Default: ``32``.
-        win_length (int, optional): Window size for GriffinLim. Default: ``None``, will be set to `n_fft` .
+        win_length (int, optional): Window size for Griffin-Lim. Default: ``None``, will be set to `n_fft` .
         hop_length (int, optional): Length of hop between STFT windows.
             Default: ``None``, will be set to `win_length // 2` .
-        window_type (WindowType, optional): Window type for GriffinLim, which can be ``WindowType.BARTLETT``,
+        window_type (WindowType, optional): Window type for Griffin-Lim, which can be ``WindowType.BARTLETT``,
             ``WindowType.BLACKMAN``, ``WindowType.HAMMING``, ``WindowType.HANN`` or ``WindowType.KAISER``.
             Default: ``WindowType.HANN``. Currently kaiser window is not supported on macOS.
         power (float, optional): Exponent for the magnitude spectrogram. Default: ``2.0``.
@@ -2075,7 +2071,7 @@ class Magphase(AudioTensorOperation):
         power (float): Power of the norm, which must be non-negative. Default: ``1.0``.
 
     Raises:
-        RuntimeError: If the shape of input audio waveform does not match (..., 2).
+        RuntimeError: If the shape of input audio waveform does not match :math:`(..., 2)`.
 
     Supported Platforms:
         ``CPU``
@@ -3336,10 +3332,6 @@ class TimeMasking(AudioTensorOperation):
     Tutorial Examples:
         - `Illustration of audio transforms
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/audio_gallery.html>`_
-
-    .. image:: time_masking_original.png
-
-    .. image:: time_masking.png
     """
 
     @check_masking
@@ -3405,12 +3397,6 @@ class TimeStretch(AudioTensorOperation):
     Tutorial Examples:
         - `Illustration of audio transforms
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/audio_gallery.html>`_
-
-    .. image:: time_stretch_rate1.5.png
-
-    .. image:: time_stretch_original.png
-
-    .. image:: time_stretch_rate0.8.png
     """
 
     @check_time_stretch

@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/auto_augment_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/auto_augment_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AutoAugmentOperation
 AutoAugmentOperation::AutoAugmentOperation(AutoAugmentPolicy policy, InterpolationMode interpolation,
                                            const std::vector<uint8_t> &fill_value)
@@ -75,7 +72,6 @@ Status AutoAugmentOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<vision::AutoAugmentOperation>(policy, interpolation, fill_value);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

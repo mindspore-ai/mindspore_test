@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_v2_cpu {
 class FillV2CpuKernelMod : public NativeCpuKernelMod {
  public:
   FillV2CpuKernelMod() = default;
@@ -50,6 +51,7 @@ class FillV2CpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, FillV2LaunchFunc>> func_list_;
   FillV2LaunchFunc kernel_func_;
 };
+}  // namespace fill_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FILL_V2_CPU_KERNEL_H_

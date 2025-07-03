@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace softmax {
 
 class SoftmaxAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class SoftmaxAscend : public AclnnKernelMod {
   int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;
   int64_t dim_;
 };
+}  // namespace softmax
 }  // namespace kernel
 }  // namespace mindspore
 

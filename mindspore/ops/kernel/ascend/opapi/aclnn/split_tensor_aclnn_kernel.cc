@@ -21,15 +21,16 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_tensor {
 
 int64_t SplitTensorAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
-  auto axis_vec = transform::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
+  auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
   auto dim = axis_vec[0];
   return dim;
 }
@@ -49,7 +50,7 @@ std::vector<KernelTensor *> SplitTensorAscend::GetSplitRealOutputs(const std::ve
   std::vector<KernelTensor *> split_results;
   for (auto &output : outputs) {
     if (IsTuple(output)) {
-      converted_output_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(output);
+      converted_output_ = device::ascend::ConvertKernelTensor<std::vector<KernelTensorPtr>>(output);
       std::transform(converted_output_.begin(), converted_output_.end(), std::back_inserter(split_results),
                      [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
     } else {
@@ -78,5 +79,6 @@ bool SplitTensorAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SplitTensor, SplitTensorAscend);
+}  // namespace split_tensor
 }  // namespace kernel
 }  // namespace mindspore

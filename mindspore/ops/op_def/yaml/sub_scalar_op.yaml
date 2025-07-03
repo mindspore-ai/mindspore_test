@@ -1,0 +1,19 @@
+#operator sub_scalar
+sub_scalar:
+  args:
+    input:
+      dtype: tensor
+      type_cast: number
+    other:
+      dtype: number
+    alpha:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: SubScalar
+  dispatch:
+    enable: True
+    Ascend: SubScalarAscend

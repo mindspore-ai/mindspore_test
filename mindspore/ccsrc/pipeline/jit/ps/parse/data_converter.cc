@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,18 @@
  */
 
 #include "pipeline/jit/ps/parse/data_converter.h"
+
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/ops/op_def/structure_ops.h"
+#include <map>
+
+#include "include/common/utils/tensor_py.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/composite/multitype_funcgraph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/cell.h"
 #include "ir/dtype.h"
@@ -33,9 +37,12 @@
 #include "include/common/fallback.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/primfunc_utils.h"
-#include "frontend/operator/composite/multitype_funcgraph.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parse {
@@ -46,10 +53,11 @@ struct PyDataToValueRegister {
   }
 } callback_register;
 }  // namespace
+
 using Tensor = mindspore::tensor::Tensor;
 using TensorPtr = mindspore::tensor::TensorPtr;
-using BaseTensor = mindspore::tensor::BaseTensor;
-using BaseTensorPtr = mindspore::tensor::BaseTensorPtr;
+using Tensor = mindspore::tensor::Tensor;
+using TensorPtr = mindspore::tensor::TensorPtr;
 using MetaTensor = mindspore::tensor::MetaTensor;
 using MetaTensorPtr = mindspore::tensor::MetaTensorPtr;
 using CSRTensor = mindspore::tensor::CSRTensor;
@@ -217,6 +225,31 @@ FuncGraphPtr ConvertToBpropCut(const py::object &obj) {
   bprop_graph->set_output(bprop_graph->NewCNode(std::move(outputs)));
   data_converter::SetObjGraphValue(obj_key, bprop_graph);
   return bprop_graph;
+}
+
+ValuePtr ConvertSlice(const py::object &obj) {
+  MS_LOG(DEBUG) << "Converting slice object";
+
+  auto convert_func = [obj](const std::string &attr) -> ValuePtr {
+    auto py_attr = py::getattr(obj, attr.c_str());
+    if (py::isinstance<py::none>(py_attr)) {
+      return kNone;
+    }
+    if (py::isinstance<py::int_>(py_attr)) {
+      auto value = py::cast<int64_t>(py_attr);
+      return MakeValue(value);
+    }
+
+    if (tensor::IsTensorPy(py_attr)) {
+      return tensor::ConvertToTensor(py_attr);
+    }
+    MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
+                      << " should be int or Tensor with Int type but got " << py::str(py_attr);
+  };
+  ValuePtr start = convert_func(kSliceStart);
+  ValuePtr stop = convert_func(kSliceStop);
+  ValuePtr step = convert_func(kSliceStep);
+  return std::make_shared<ValueSlice>(start, stop, step);
 }
 
 namespace {
@@ -475,188 +508,14 @@ ValuePtr ConvertFuncGraph(const py::object &obj) {
   return func_graph;
 }
 
-ValuePtr ConvertSlice(const py::object &obj) {
-  MS_LOG(DEBUG) << "Converting slice object";
-
-  auto convert_func = [obj](const std::string &attr) -> ValuePtr {
-    auto py_attr = py::getattr(obj, attr.c_str());
-    if (py::isinstance<py::none>(py_attr)) {
-      return kNone;
-    }
-    if (py::isinstance<py::int_>(py_attr)) {
-      auto value = py::cast<int64_t>(py_attr);
-      return MakeValue(value);
-    }
-    if (py::isinstance<Tensor>(py_attr)) {
-      return py::cast<TensorPtr>(py_attr);
-    }
-    if (IsStubTensor(py_attr)) {
-      return ConvertStubTensor(py_attr);
-    }
-    MS_LOG(EXCEPTION) << "Attribute '" << attr << "' of " << py::str(obj)
-                      << " should be int or Tensor with Int type but got " << py::str(py_attr);
-  };
-  ValuePtr start = convert_func(kSliceStart);
-  ValuePtr stop = convert_func(kSliceStop);
-  ValuePtr step = convert_func(kSliceStep);
-  return std::make_shared<ValueSlice>(start, stop, step);
-}
-
-FuncGraphPtr ConvertHookToFuncGraph(const py::object &obj, const std::string &cb_name) {
-  if (!py::hasattr(obj, py::str(cb_name))) {
-    MS_LOG(DEBUG) << "Python object " << py::str(obj) << " has no forward hook function " << cb_name << ".";
-    return nullptr;
-  }
-
-  auto params_cb_obj = py::getattr(obj, py::str(cb_name));
-  if (params_cb_obj.is_none()) {
-    MS_LOG(DEBUG) << "The attribute " << cb_name << " of " << py::str(obj) << " is None, ignore it.";
-    return nullptr;
-  }
-
-  if (!py::isinstance<py::function>(params_cb_obj)) {
-    MS_EXCEPTION(TypeError) << "Invalid hook was defined, " << cb_name << " should be a function, but got "
-                            << py::str(params_cb_obj) << ".";
-  }
-
-  auto params_cb_graph = ConvertToFuncGraph(params_cb_obj, {});
-  if (params_cb_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "Failed to convert " << py::str(params_cb_obj) << " to func graph.";
-  }
-
-  return params_cb_graph;
-}
-
-std::map<std::string, AnfNodePtr> TryAddFvParameter(const py::object &obj) {
-  std::map<std::string, AnfNodePtr> fvs;
-  auto params_and_names = py::getattr(obj, CELL_PARAMETERS_AND_NAMES, py::none())("", false);
-  if (params_and_names.is_none()) {
-    MS_LOG(WARNING) << "Invalid attribute " << CELL_PARAMETERS_AND_NAMES << " of python object: " << py::str(obj)
-                    << ".";
-    return fvs;
-  }
-
-  auto top_fg = Parser::GetTopFuncGraph();
-  for (const auto &item : params_and_names) {
-    auto name_and_param = py::cast<py::tuple>(item);
-    const auto &param_name = py::getattr(name_and_param[1], "name", name_and_param[0]).cast<std::string>();
-    auto param_value = parse::GetParameterValue(name_and_param[1]);
-
-    AnfNodePtr fv = nullptr;
-    auto exist_fv = top_fg->GetParameterByName(param_name);
-    if (exist_fv) {
-      fv = exist_fv;
-      MS_LOG(DEBUG) << "Found exist fv for param: " << param_name;
-    } else {
-      auto new_fv = top_fg->AddFvParameter(param_name, param_value);
-      auto context = parallel::ParallelContext::GetInstance();
-      if (context != nullptr && new_fv->has_default()) {
-        auto fv_abs = pipeline::GetDefaultValueAbstract(new_fv);
-        context->ParallelParameterContextRestoreShape(top_fg, new_fv, fv_abs);
-        new_fv->set_abstract(fv_abs);
-      }
-      fv = new_fv;
-      MS_LOG(DEBUG) << "Create new fv for param: " << param_name;
-    }
-
-    fvs[param_name] = fv;
-  }
-
-  return fvs;
-}
-
-void AddForwardHookToTopFuncGraph(const py::object &obj, const FuncGraphPtr &params_cb_graph) {
-  AnfNodePtrList hook_inputs;
-  std::map<std::string, std::pair<size_t, AnfNodePtr>> parameters;
-  auto top_fg = Parser::GetTopFuncGraph();
-  auto fvs = TryAddFvParameter(obj);
-
-  size_t index = 0;
-  for (const auto &item : fvs) {
-    const auto &param_name = item.first;
-    auto fv = item.second;
-    parameters[param_name] = std::make_pair(index++, fv);
-    auto cnode = top_fg->NewCNode(prim::kPrimMakeTuple, {NewValueNode(std::make_shared<StringImm>(param_name)), fv});
-    hook_inputs.push_back(cnode);
-  }
-
-  if (hook_inputs.size() == 0) {
-    MS_LOG(DEBUG) << py::str(obj) << " has no trainable parameters.";
-    return;
-  }
-
-  auto hook_cnode = top_fg->NewCNode(prim::kPrimMakeTuple, hook_inputs);
-  auto hook_output = top_fg->NewCNodeInFront({NewValueNode(params_cb_graph), hook_cnode});
-  auto depend = top_fg->NewCNode({NewValueNode(prim::kPrimDepend), top_fg->output(), hook_output});
-  top_fg->set_output(depend);
-
-  return;
-}
-
-void ConvertForwardHookToFuncGraph(const py::object &obj) {
-  MS_LOG(DEBUG) << "Convert " << CELL_PARAMETERS_FORWARD_HOOK << " of " << py::str(obj) << " to FuncGraph begin.";
-  auto params_cb_graph = ConvertHookToFuncGraph(obj, CELL_PARAMETERS_FORWARD_HOOK);
-  if (params_cb_graph == nullptr) {
-    MS_LOG(DEBUG) << py::str(obj) << " has no forward hook function.";
-    return;
-  }
-  AddForwardHookToTopFuncGraph(obj, params_cb_graph);
-  MS_LOG(DEBUG) << "Convert " << CELL_PARAMETERS_FORWARD_HOOK << " of " << py::str(obj) << " to FuncGraph end.";
-
-  return;
-}
-
-void ConvertBackwardHookToFuncGraph(const py::object &obj) {
-  auto convert_cell_to_fg = [](const py::object &cell) {
-    MS_LOG(DEBUG) << "Convert " << CELL_PARAMETERS_BACKWARD_HOOK << " of " << py::str(cell) << " to FuncGraph begin.";
-    auto params_cb_graph = ConvertHookToFuncGraph(cell, CELL_PARAMETERS_BACKWARD_HOOK);
-    if (params_cb_graph == nullptr) {
-      MS_LOG(DEBUG) << py::str(cell) << " has no backward hook function.";
-      return;
-    }
-
-    auto fvs = TryAddFvParameter(cell);
-    for (const auto &item : fvs) {
-      auto fv = item.second;
-      auto fv_abs = dyn_cast<abstract::AbstractRefTensor>(fv->abstract());
-      if (fv_abs == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Invalid type of fv: " << fv->ToString();
-        return;
-      }
-      fv_abs->set_user_data<FuncGraph>(REF_TENSOR_BACKWARD_HOOK, params_cb_graph);
-    }
-
-    MS_LOG(DEBUG) << "Convert " << CELL_PARAMETERS_BACKWARD_HOOK << " of " << py::str(cell) << " to FuncGraph end.";
-  };
-
-  auto const backward_hook_resolved_flag = "_backward_hook_resolved";
-  if (py::hasattr(obj, backward_hook_resolved_flag)) {
-    MS_LOG(DEBUG) << "The backward hook of " << py::str(obj) << " has been resolved";
-    return;
-  }
-
-  auto cells_and_names = py::getattr(obj, CELL_CELLS_AND_NAMES, py::none())();
-  if (cells_and_names.is_none()) {
-    MS_LOG(EXCEPTION) << "Python object: " << py::str(obj) << " has no attribute: " << CELL_CELLS_AND_NAMES << ".";
-    return;
-  }
-  for (const auto &item : cells_and_names) {
-    auto name_and_cell = py::cast<py::tuple>(item);
-    const auto &cell_name = py::cast<std::string>(name_and_cell[0]);
-    auto cell = name_and_cell[1];
-    if (py::hasattr(cell, backward_hook_resolved_flag)) {
-      MS_LOG(DEBUG) << "The backward hook of {" << cell_name << " : " << py::str(cell) << "} has been resolved";
-    } else {
-      MS_LOG(DEBUG) << "Resolve backward hook of {" << cell_name << " : " << py::str(cell) << "}.";
-      convert_cell_to_fg(cell);
-      py::setattr(cell, backward_hook_resolved_flag, py::bool_(true));
-    }
-  }
-
-  return;
-}
-
 ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list) {
+  if (py::hasattr(obj, "construct")) {
+    const auto &construct_obj = py::getattr(obj, "construct");
+    bool graph_mode = GraphPipelineCompiling();
+    if (py::hasattr(construct_obj, "__trace_func__") && !graph_mode) {
+      return prim::kPrimTraceGraph;
+    }
+  }
   FuncGraphPtr func_graph = ConvertToFuncGraph(obj, args_value_list);
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Parse resolve function error.";
@@ -687,11 +546,6 @@ ValuePtr ConvertCellObjToFuncGraph(const py::object &obj, const ValuePtrList &ar
     auto value = cell->GetAttr(kAttrRandomOpSnapShot);
     MS_EXCEPTION_IF_NULL(value);
     func_graph->set_attr(kAttrRandomOpSnapShot, value);
-  }
-
-  if (common::GetCompileConfig("CELL_PARAMETERS_HOOK") == "1") {
-    ConvertForwardHookToFuncGraph(obj);
-    ConvertBackwardHookToFuncGraph(obj);
   }
 
   return func_graph;
@@ -729,7 +583,7 @@ void CheckJITForbiddenAPI(const py::object &obj) {
         << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
         << "such as initialized in the method '__init__' before assigning"
         << ".\nFor more details, please refer to "
-        << "https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/overview.html \n";
+        << "https://www.mindspore.cn/docs/zh-CN/master/features/program_form/overview.html \n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
     if (is_jit_forbidden_register) {
@@ -755,9 +609,10 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
     // desc has format "<class xxxx>", strip the '<' and '>' by offset 1.
     return std::make_shared<ClassType>(obj, std::string(desc.begin() + 1, desc.end() - 1));
   }
-  if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD ||
+  if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD || obj_type == RESOLVE_TYPE_BUILTIN_METHOD ||
       (obj_type == RESOLVE_TYPE_CLASS_INSTANCE && py::hasattr(obj, PYTHON_PARSE_METHOD))) {
-    if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD) {
+    if (obj_type == RESOLVE_TYPE_FUNCTION || obj_type == RESOLVE_TYPE_METHOD ||
+        obj_type == RESOLVE_TYPE_BUILTIN_METHOD) {
       // Check JIT forbidden API
       CheckJITForbiddenAPI(obj);
       // Check if the function is from a third-party library.
@@ -768,6 +623,10 @@ ValuePtr ConvertOtherObj(const py::object &obj, bool forbid_reuse = false) {
         MS_LOG(DEBUG) << "Converting the function from third-party library: " << py::str(obj);
         return std::make_shared<InterpretedObject>(obj);
       }
+    }
+    bool graph_mode = GraphPipelineCompiling();
+    if (py::hasattr(obj, "__trace_func__") && !graph_mode) {
+      return prim::kPrimTraceGraph;
     }
     MS_LOG(DEBUG) << "Convert the obj to func graph, type is " << obj_type;
     FuncGraphPtr func_graph = ConvertToFuncGraph(obj, {}, PYTHON_MOD_GET_PARSE_METHOD, forbid_reuse);
@@ -897,12 +756,9 @@ ValuePtr ObjCast(const py::object &obj) {
 static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    // AdapterTensor needs to be processed before Tensor because it inherits from Tensor.
-    std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
-    std::make_shared<ByTypeDataConvertFunc<Tensor>>(ConvertTensorAndSyncCompiling),
+    std::make_shared<ByFuncDataConvertFunc>(tensor::IsTensorPy, ConvertTensorAndSyncCompiling),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
-    std::make_shared<ByTypeDataConvertFunc<BaseTensor>>(ObjCast<BaseTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ConvertTensorNode),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertList),
@@ -911,7 +767,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     std::make_shared<ByTypeDataConvertFunc<py::float_>>(ConvertFloatWithType),
     std::make_shared<ByTypeDataConvertFunc<py::str>>(PyCast<StringImm, string>),
     std::make_shared<ByTypeDataConvertFunc<py::none>>(kNone),
-    std::make_shared<ByTypeDataConvertFunc<MetaTensor>>(ObjCast<MetaTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<CSRTensor>>(ObjCast<CSRTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<COOTensor>>(ObjCast<COOTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<MapTensor>>(ObjCast<MapTensorPtr>),
@@ -938,8 +793,6 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
 static const std::vector<DataConvertFuncPtr> &GetStubDataConvertFuncs() {
   // Convert data by python object type.
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
-    std::make_shared<ByFuncDataConvertFunc>([](const py::object &obj) -> bool { return IsStubTensor(obj); },
-                                            PyStubNodeCast),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ObjCast<std::shared_ptr<stub::TensorNode>>),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertStubTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertStubList),
@@ -1063,8 +916,9 @@ FuncGraphPtr ProcessLazyInline(const py::object &obj, const ValuePtrList &args_v
     }
     PyObjectWrapperPtr python_obj = std::make_shared<PyObjectWrapper>(obj, "graph python obj");
     base_graph->set_python_obj(python_obj);
-    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     reusing_graph = MakeReusingGraph(base_graph);
+    MS_EXCEPTION_IF_NULL(reusing_graph);
+    MS_LOG(DEBUG) << "Parse reusing function: " << reusing_graph->ToString();
     data_converter::CacheObjectValue(obj_key, reusing_graph);
   }
   // Let the original cell graph call the reusable graph.
@@ -1296,6 +1150,19 @@ void ClearObjectCache() {
   object_map_.clear();
   object_graphs_map_.clear();
 }
+
+ValuePtr PyObjToValue(const py::object &obj, bool stub) {
+  ValuePtr converted_ret;
+  if (stub) {
+    converted_ret = parse::data_converter::PyDataToStubNode(obj);
+  } else {
+    converted_ret = parse::data_converter::PyDataToValue(obj);
+  }
+  if (converted_ret == nullptr) {
+    MS_LOG(EXCEPTION) << "Attribute convert error with type: " << ConvertPyObjToString(obj);
+  }
+  return converted_ret;
+}
 }  // namespace data_converter
 
 ValuePtr DataConverter::ConvertData(const py::object &obj) {
@@ -1359,51 +1226,19 @@ ValuePtr ConvertNumber(const py::object &obj) {
 }
 
 ValuePtr ConvertTensor(const py::object &obj) {
-  if (IsStubTensor(obj)) {
-    return PyStubNodeCast(obj);
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToValue(obj);
   }
 
-  if (!py::isinstance<mindspore::tensor::Tensor>(obj)) {
-    return nullptr;
-  }
-
-  return ObjCast<TensorPtr>(obj);
+  return nullptr;
 }
 
 TensorPtr ConvertTensorValue(const py::object &obj) {
-  // The difference between the new ConvertTensorValue function and the existing ConvertTensor is:
-  // If the obj a StubNode, it must be called the WaitValue to convert to a Tensor.
-  if (IsStubTensor(obj)) {
-    auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
-    auto stub = py_stub.cast<stub::StubNodePtr>();
-    if (stub == nullptr) {
-      return py::getattr(obj, stub::PY_ATTR_TENSOR).cast<tensor::TensorPtr>();
-    }
-    auto value = stub->WaitValue();
-    auto tensor = value->cast<TensorPtr>();
-    if (tensor == nullptr) {
-      // BaseTensor should convert to Tensor for Graph mode
-      auto base_tensor = value->cast<BaseTensorPtr>();
-      auto real_tensor = std::make_shared<Tensor>(*base_tensor);
-      stub->SetValue(real_tensor);
-      return real_tensor;
-    }
-    return tensor;
+  if (tensor::IsTensorPy(obj)) {
+    return tensor::ConvertToTensor(obj);
   }
-  if (!py::isinstance<mindspore::tensor::Tensor>(obj)) {
-    return nullptr;
-  }
-  return obj.cast<TensorPtr>();
-}
 
-static inline void *GetTensorDataPtr(const tensor::TensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  const auto &device_address = tensor->device_address();
-  if (device_address != nullptr) {
-    // Before get data, sync form device address should be performed first
-    tensor->data_sync();
-  }
-  return tensor->data_c();
+  return nullptr;
 }
 
 ValuePtr ConvertStr(const py::object &obj) {
@@ -1420,23 +1255,6 @@ ValuePtr ConvertDtype(const py::object &obj) {
     MS_LOG(EXCEPTION) << "Get arg is not mindspore type " << py::str(obj);
   }
   return obj.cast<TypePtr>();
-}
-
-template <typename TS, typename TD, OpDefConvertFunc func>
-ValuePtr ConvertSequence(const py::object &obj) {
-  if (!py::isinstance<TS>(obj)) {
-    return nullptr;
-  }
-  auto seq = obj.cast<TS>();
-  std::vector<ValuePtr> value_list;
-  for (size_t it = 0; it < seq.size(); ++it) {
-    auto out = func(seq[it]);
-    if (out == nullptr) {
-      return nullptr;
-    }
-    value_list.emplace_back(out);
-  }
-  return std::make_shared<TD>(value_list);
 }
 
 template <typename T, OpDefConvertFunc func>
@@ -1691,6 +1509,48 @@ ValuePtr ConvertTensorToInt64(const py::object &obj) {
   }
 }
 
+ValuePtr ConvertTensorToInt(const py::object &obj) {
+  auto tensor = ConvertTensorValue(obj);
+  if (tensor == nullptr) {
+    return nullptr;
+  }
+  if (tensor->DataSize() != 1) {
+    MS_LOG(ERROR) << "Can only convert tensor with one element to int, but got " << tensor->ToString();
+    return nullptr;
+  }
+  switch (tensor->data_type()) {
+    case kNumberTypeInt64:
+      return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt32:
+      return std::make_shared<Int32Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt16:
+      return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeInt8:
+      return std::make_shared<Int64Imm>(static_cast<int8_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt64:
+      return std::make_shared<Int64Imm>(static_cast<uint64_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt32:
+      return std::make_shared<Int64Imm>(static_cast<uint32_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt16:
+      return std::make_shared<Int64Imm>(static_cast<uint16_t *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeUInt8:
+      return std::make_shared<Int64Imm>(static_cast<uint8_t *>(GetTensorDataPtr(tensor))[0]);
+    default:
+      MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to Int.";
+  }
+}
+
+ValuePtr ConvertTensorAndInt(const py::object &obj) {
+  // bool is also an instance of py::int_
+  if (py::isinstance<py::bool_>(obj)) {
+    return nullptr;
+  } else if (py::isinstance<py::int_>(obj)) {
+    return ConvertIntegerWithType(obj);
+  } else {
+    return ConvertTensorToInt(obj);
+  }
+}
+
 ValuePtr ConvertTensorToFloat(const py::object &obj) {
   auto tensor = ConvertTensorValue(obj);
   if (tensor == nullptr) {
@@ -1734,7 +1594,7 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
     case kNumberTypeInt64:
       return std::make_shared<Int64Imm>(static_cast<int64_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt32:
-      return std::make_shared<Int32Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
+      return std::make_shared<Int64Imm>(static_cast<int32_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt16:
       return std::make_shared<Int64Imm>(static_cast<int16_t *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeInt8:
@@ -1751,6 +1611,8 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
       return ConvertPythonFloatToScalarValue(static_cast<double *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeFloat32:
       return ConvertPythonFloatToScalarValue(static_cast<float *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeFloat16:
+      return ConvertPythonFloatToScalarValue(static_cast<float>(static_cast<float16 *>(GetTensorDataPtr(tensor))[0]));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to number";
   }
@@ -1775,14 +1637,14 @@ static const std::unordered_map<int32_t, OpDefConvertFunc> kConverters = {
   {(int32_t)mindspore::ops::DT_ANY, ConvertAny},
   {(int32_t)mindspore::ops::DT_TYPE, ConvertDtype},
   {(int32_t)mindspore::ops::DT_TUPLE_BOOL, ConvertSequence<py::tuple, ValueTuple, ConvertBool>},
-  {(int32_t)mindspore::ops::DT_TUPLE_INT, ConvertSequence<py::tuple, ValueTuple, ConvertInt>},
+  {(int32_t)mindspore::ops::DT_TUPLE_INT, ConvertSequence<py::tuple, ValueTuple, ConvertTensorAndInt>},
   {(int32_t)mindspore::ops::DT_TUPLE_FLOAT, ConvertSequence<py::tuple, ValueTuple, ConvertFloat>},
   {(int32_t)mindspore::ops::DT_TUPLE_NUMBER, ConvertSequence<py::tuple, ValueTuple, ConvertNumber>},
   {(int32_t)mindspore::ops::DT_TUPLE_TENSOR, ConvertSequence<py::tuple, ValueTuple, ConvertTensor>},
   {(int32_t)mindspore::ops::DT_TUPLE_STR, ConvertSequence<py::tuple, ValueTuple, ConvertStr>},
   {(int32_t)mindspore::ops::DT_TUPLE_ANY, ConvertSequence<py::tuple, ValueTuple, ConvertAny>},
   {(int32_t)mindspore::ops::DT_LIST_BOOL, ConvertSequence<py::list, ValueList, ConvertBool>},
-  {(int32_t)mindspore::ops::DT_LIST_INT, ConvertSequence<py::list, ValueList, ConvertInt>},
+  {(int32_t)mindspore::ops::DT_LIST_INT, ConvertSequence<py::list, ValueList, ConvertTensorAndInt>},
   {(int32_t)mindspore::ops::DT_LIST_FLOAT, ConvertSequence<py::list, ValueList, ConvertFloat>},
   {(int32_t)mindspore::ops::DT_LIST_NUMBER, ConvertSequence<py::list, ValueList, ConvertNumber>},
   {(int32_t)mindspore::ops::DT_LIST_TENSOR, ConvertSequence<py::list, ValueList, ConvertTensor>},

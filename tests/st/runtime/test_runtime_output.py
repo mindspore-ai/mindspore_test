@@ -64,7 +64,7 @@ def test_subgraph_output_with_load():
     Description: Test the subgraph output is the load node.
     Expectation: Not throw exception.
     """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     x = Tensor(np.ones([32, 10])).astype(np.float32)
     net1 = NetSubGraphOutputWithLoad()
     output1 = net1(x)
@@ -95,6 +95,29 @@ def test_runtime_heter():
         return f
     ret = foo(Tensor(1), Tensor(2))
     assert ret
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_runtime_multigraphs():
+    """
+    Feature: Runtime multi graphs.
+    Description: Test multi graph with the different shape.
+    Expectation: Not throw exception.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    relu = nn.ReLU()
+    conv = nn.Conv2d(1, 6, kernel_size=5, pad_mode='valid')
+
+    @jit
+    def foo(a):
+        x = conv(a)
+        output = relu(x)
+        return output
+    data1 = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
+    foo(data1)
+
+    data2 = Tensor(np.ones([30, 1, 32, 32]).astype(np.float32) * 0.01)
+    foo(data2)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

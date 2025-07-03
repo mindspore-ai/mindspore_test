@@ -16,14 +16,15 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_INSERT_TENSOR_MOVE_FOR_COMMUNICATION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_INSERT_TENSOR_MOVE_FOR_COMMUNICATION_H_
 
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
 // If the input Tensor of the graph is connected to the AllReduce operator,
 // and the input Tensor of the graph already has a device address,
 // we need to copy the data in the device address to the contiguous memory of AllReduce.
-class BACKEND_EXPORT InsertTensorMoveForCommunication : public Pass {
+class BACKEND_COMMON_EXPORT InsertTensorMoveForCommunication : public Pass {
  public:
   InsertTensorMoveForCommunication() : Pass("insert_tensor_move_for_communication") {}
   ~InsertTensorMoveForCommunication() override = default;

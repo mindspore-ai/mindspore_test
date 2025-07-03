@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allreduce_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::CollectiveOpReduceType::Reduce_Sum;
 using device::cpu::kMCCLGlobalGroupName;
@@ -75,8 +76,9 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   for (size_t i = 0; i < inputs.size(); ++i) {
     data_size += inputs[i]->size();
   }
-  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), data_size,
-                                                          kNumberTypeFloat32, Reduce_Sum, kMCCLGlobalGroupName);
+  bool ret = MsCollectiveCommLib::GetInstance().AllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(),
+                                                          data_size / sizeof(float), kNumberTypeFloat32, Reduce_Sum,
+                                                          kMCCLGlobalGroupName);
   if (!ret) {
     MS_LOG(ERROR) << "AllReduceCPUKernelMod launch failed.";
   }
@@ -87,5 +89,6 @@ bool AllReduceCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AllReduce, AllReduceCPUKernelMod);
+}  // namespace allreduce_cpu
 }  // namespace kernel
 }  // namespace mindspore

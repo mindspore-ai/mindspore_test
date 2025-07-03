@@ -19,7 +19,7 @@ from mindspore import context
 from mindspore import Tensor
 from mindspore import Symbol
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.ops import operations as P
 from mindspore import lazy_inline
 from .test_pipeline_split import DatasetLenet, MatMulCell
@@ -58,7 +58,6 @@ class PipelineSplitWithScalarLoss(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
         self.loss = P.ReduceSum()
 
     def construct(self, x, label):

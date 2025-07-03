@@ -33,7 +33,7 @@ class CelebANode : public MappableSourceNode {
   /// \brief Constructor
   CelebANode(const std::string &dataset_dir, const std::string &usage, const std::shared_ptr<SamplerObj> &sampler,
              const bool &decode, const std::set<std::string> &extensions, const std::shared_ptr<DatasetCache> &cache,
-             py::function decrypt = py::none());
+             const py::function &decrypt = py::object());
 #else
   /// \brief Constructor
   CelebANode(const std::string &dataset_dir, const std::string &usage, const std::shared_ptr<SamplerObj> &sampler,
@@ -41,7 +41,7 @@ class CelebANode : public MappableSourceNode {
 #endif
 
   /// \brief Destructor
-  ~CelebANode() override = default;
+  ~CelebANode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node
@@ -88,13 +88,11 @@ class CelebANode : public MappableSourceNode {
   /// \return Status of the function
   Status to_json(nlohmann::json *out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json
   /// \param[in] json_obj The JSON object to be deserialized
   /// \param[out] ds Deserialized dataset
   /// \return Status The status code returned
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds);
-#endif
 
   /// \brief Sampler getter
   /// \return SamplerObj of the current node

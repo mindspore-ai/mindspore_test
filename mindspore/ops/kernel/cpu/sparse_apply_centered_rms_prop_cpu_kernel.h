@@ -22,11 +22,12 @@
 #include <map>
 
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
-class SparseApplyCenteredRMSPropCpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_centered_rms_prop_cpu {
+class SparseApplyCenteredRMSPropCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                                public MatchKernelHelper<SparseApplyCenteredRMSPropCpuKernelMod> {
  public:
   SparseApplyCenteredRMSPropCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class SparseApplyCenteredRMSPropCpuKernelMod : public SparseOptimizerCpuKernelMo
  protected:
   void ResetResource() noexcept;
 };
+}  // namespace sparse_apply_centered_rms_prop_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

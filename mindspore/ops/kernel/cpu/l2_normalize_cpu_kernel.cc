@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace l2_normalize_cpu {
 namespace {
 constexpr size_t kL2NormalizeInputsNum = 1;
 constexpr size_t kL2NormalizeOutputsNum = 1;
@@ -232,5 +233,6 @@ std::vector<KernelAttr> L2NormalizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, L2Normalize, L2NormalizeCpuKernelMod);
+}  // namespace l2_normalize_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adam_delta_cpu {
 class AdamDeltaCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdamDeltaCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class AdamDeltaCpuKernelMod : public NativeCpuKernelMod {
   size_t elem_num_{0};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace adam_delta_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

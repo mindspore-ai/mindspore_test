@@ -9,6 +9,8 @@ from mindspore.experimental.optim import AdamW
 from mindspore.experimental.optim.lr_scheduler import StepLR
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class Network(nn.Cell):
     def __init__(self, lin_weight, lin_bias):
@@ -182,7 +184,7 @@ def test_adamw_basic(mode):
     Description: Test adamw with default parameter.
     Expectation: success.
     """
-    mindspore.set_context(mode=mode, jit_syntax_level=mindspore.STRICT)
+    mindspore.set_context(mode=mode, jit_level="O0", jit_syntax_level=mindspore.STRICT)
     fact = AdamWFactory(False, False)
     fact.result_cmp()
 

@@ -60,6 +60,15 @@ struct OpData {
   int index_;
 };
 
+// OpRTActor data.
+template <typename T>
+struct OpRTData {
+  OpRTData(const AID &op_id, const std::shared_ptr<T> &data, int index) : op_id_(op_id), data_(data), index_(index) {}
+  AID op_id_;
+  std::shared_ptr<T> data_;
+  int index_;
+};
+
 class MS_CORE_API RandInt {
  public:
   int Get() const { return rand(); }
@@ -75,6 +84,12 @@ using OpDataPtr = std::shared_ptr<OpData<T>>;
 template <typename T>
 using OpDataUniquePtr = std::unique_ptr<OpData<T>>;
 
+template <typename T>
+using OpRTDataPtr = std::shared_ptr<OpRTData<T>>;
+
+template <typename T>
+using OpRTDataUniquePtr = std::unique_ptr<OpRTData<T>>;
+
 // The context of opActor running.
 template <typename T>
 struct OpContext {
@@ -82,6 +97,34 @@ struct OpContext {
   std::vector<OpDataPtr<T>> *output_data_;
   std::vector<Promise<int>> *results_;
   // Record the error info for print.
+  std::string error_info_{""};
+  const void *kernel_call_back_before_;
+  const void *kernel_call_back_after_;
+
+  void SetFailed(int32_t code) const {
+    if (code == MindrtStatus::KINIT) {
+      code = MindrtStatus::KERROR;
+    }
+    results_->front().SetFailed(code);
+  }
+
+  void SetSuccess(int32_t code) const {
+    for (auto promise : *results_) {
+      promise.SetValue(code);
+    }
+  }
+
+  void SetResult(size_t index, int value) const { results_->at(index).SetValue(value); }
+};
+
+// The context of opRTActor running.
+template <typename T>
+struct OpRTContext {
+  int sequential_num_;
+  std::vector<OpRTDataPtr<T>> *output_data_;
+  std::vector<Promise<int>> *results_;
+  // Record the error info for print.
+  bool is_error_{false};
   std::string error_info_{""};
   const void *kernel_call_back_before_;
   const void *kernel_call_back_after_;
@@ -120,6 +163,31 @@ class OpActor : public ActorBase {
  protected:
   // The op data.
   mindspore::HashMap<int, std::vector<OpData<T> *>> input_op_datas_;
+  std::vector<DataArrowPtr> output_data_arrows_;
+
+  // The op controls.
+  mindspore::HashMap<int, std::vector<AID *>> input_op_controls_;
+  std::vector<ControlArrowPtr> output_control_arrows_;
+};
+
+template <typename T>
+class OpRTActor : public ActorBase {
+ public:
+  explicit OpRTActor(const std::string &op_name) : ActorBase(op_name) {}
+  ~OpRTActor() override = default;
+
+  // The op actor run when receive the input data.
+  virtual void RunOpData(OpRTData<T> *input_data, OpRTContext<T> *context = nullptr) {}
+
+  // The op actor run when receive the input control.
+  virtual void RunOpControl(AID *input_control, OpRTContext<T> *context = nullptr) {}
+
+  const std::vector<DataArrowPtr> &output_data_arrows() const { return output_data_arrows_; }
+  const std::vector<ControlArrowPtr> &output_control_arrows() const { return output_control_arrows_; }
+
+ protected:
+  // The op data.
+  mindspore::HashMap<int, std::vector<OpRTData<T> *>> input_op_datas_;
   std::vector<DataArrowPtr> output_data_arrows_;
 
   // The op controls.

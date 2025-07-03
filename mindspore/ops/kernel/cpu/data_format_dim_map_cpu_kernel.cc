@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include "mindspore/ops/infer/data_format_dim_map.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
 constexpr auto kDataFormatDimMap = "DataFormatDimMap";

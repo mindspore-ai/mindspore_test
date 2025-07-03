@@ -22,12 +22,13 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 class ArithmeticCpuKernelMod : public NativeCpuKernelMod {
@@ -57,6 +58,7 @@ class ArithmeticCpuKernelMod : public NativeCpuKernelMod {
   std::string kernel_type_{"Unknown"};
   bool is_null_input_{false};
 };
+}  // namespace arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ARITHMETIC_CPU_KERNEL_H_

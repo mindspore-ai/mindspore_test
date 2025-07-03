@@ -15,8 +15,8 @@
  */
 
 #include "kernel/ascend/pyboost/customize/log_softmax_grad.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
@@ -24,9 +24,8 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr LogSoftmaxGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &logits_tensor,
-                                                    const BaseTensorPtr &grad_tensor, const Int64ImmPtr &axis) {
+tensor::TensorPtr LogSoftmaxGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &logits_tensor,
+                                                const TensorPtr &grad_tensor, const Int64ImmPtr &axis) {
   MS_LOG(DEBUG) << op->primitive()->name() << " call start";
   OpRunner::InferOpOutput(op, logits_tensor, grad_tensor, axis);
   auto axis_imm = GetValue<int64_t>(axis);

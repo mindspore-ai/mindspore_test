@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/boundingbox_decode_cpu_kernel.h"
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace boundingbox_decode_cpu {
 namespace {
 const size_t kInputRank = 2;
 const size_t kLastDim = 4;
@@ -226,5 +227,6 @@ std::vector<KernelAttr> BoundingBoxDecodeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BoundingBoxDecode, BoundingBoxDecodeCpuKernelMod);
+}  // namespace boundingbox_decode_cpu
 }  // namespace kernel
 }  // namespace mindspore

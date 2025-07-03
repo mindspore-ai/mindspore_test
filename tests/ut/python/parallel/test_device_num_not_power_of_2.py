@@ -155,7 +155,7 @@ def test_auto_parallel_device_num_24_dyn_search():
     """
     context.set_context(device_target="Ascend")
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=24, global_rank=0,
-                                      search_mode="dynamic_programming")
+                                      search_mode="sharding_propagation")
     mul_strategy1 = None
     matmul_strategy2 = None
     gather_strategy3 = None
@@ -187,6 +187,6 @@ def test_auto_parallel_device_num_24_dyn_search_1():
     """
     context.set_context(device_target="Ascend")
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=24, global_rank=0,
-                                      search_mode="dynamic_programming")
+                                      search_mode="sharding_propagation")
     net = Net1()
     compile_net(net, True)

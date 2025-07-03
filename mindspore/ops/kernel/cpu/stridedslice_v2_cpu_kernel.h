@@ -21,12 +21,13 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/fp32/strided_slice_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace stridedslice_v2_cpu {
 constexpr auto kStridedSliceV2 = "StridedSliceV2";
 class StridedSliceV2CpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -77,6 +78,7 @@ class StridedSliceV2CpuKernelMod : public NativeCpuKernelMod {
   ShapeVector stride_shape_;
   StridedSliceParameter slice_param_;
 };
+}  // namespace stridedslice_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

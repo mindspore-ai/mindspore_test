@@ -15,10 +15,12 @@
  */
 
 #include "kernel/cpu/max_dim_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_dim_cpu {
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxDim, MaxDimCpuKernelMod);
+}  // namespace max_dim_cpu
 }  // namespace kernel
 }  // namespace mindspore

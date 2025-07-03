@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace selu_cpu {
 bool SeluCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' got empty inputs or outputs, which is invalid.";
@@ -86,5 +87,6 @@ const std::vector<std::pair<KernelAttr, SeluCpuKernelMod::KernelRunFunc>> &SeluC
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SeLU, SeluCpuKernelMod);
+}  // namespace selu_cpu
 }  // namespace kernel
 }  // namespace mindspore

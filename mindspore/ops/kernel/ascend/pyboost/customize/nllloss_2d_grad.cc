@@ -17,26 +17,26 @@
 #include "kernel/ascend/pyboost/customize/nllloss_2d_grad.h"
 #include <memory>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NLLLoss2dGradAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &loss_grad_tensor, const BaseTensorPtr &logits_tensor,
-  const BaseTensorPtr &labels_tensor, const BaseTensorPtr &weight_tensor, const Int64ImmPtr &reduction,
-  const Int64ImmPtr &ignore_index, const BaseTensorPtr &total_weight_tensor) {
+tensor::TensorPtr NLLLoss2dGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &loss_grad_tensor,
+                                               const TensorPtr &logits_tensor, const TensorPtr &labels_tensor,
+                                               const TensorPtr &weight_tensor, const Int64ImmPtr &reduction,
+                                               const Int64ImmPtr &ignore_index, const TensorPtr &total_weight_tensor) {
   MS_LOG(DEBUG) << "NLLLoss2dGrad call start";
   OpRunner::InferOpOutput(op, loss_grad_tensor, logits_tensor, labels_tensor, weight_tensor, reduction, ignore_index,
                           total_weight_tensor);
 
   auto reduction_imm = static_cast<Reduction>(GetValue<int64_t>(reduction));
-  auto reduction_value = transform::AclHelper::ConvertMsReductionToGe(reduction_imm);
+  auto reduction_value = device::ascend::AclHelper::ConvertMsReductionToGe(reduction_imm);
 
   auto ignore_index_imm = GetValue<int64_t>(ignore_index);
 

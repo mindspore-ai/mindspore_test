@@ -19,11 +19,7 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/core/type_id.h"
 #include "minddata/dataset/util/log_adapter.h"
-#ifndef ENABLE_ANDROID
 #define EXCEPTION_IF_NULL(ptr) MS_EXCEPTION_IF_NULL(ptr)
-#else
-#define EXCEPTION_IF_NULL(ptr) MS_ASSERT((ptr) != nullptr)
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -35,7 +31,6 @@ DETensor::DETensor(std::shared_ptr<dataset::Tensor> tensor_impl)
       shape_(tensor_impl_->shape().AsVector()),
       is_device_(false) {}
 
-#ifndef ENABLE_ANDROID
 DETensor::DETensor(std::shared_ptr<dataset::DeviceTensor> device_tensor_impl, bool is_device)
     : device_tensor_impl_(device_tensor_impl), name_("MindDataDeviceTensor"), is_device_(is_device) {
   // The sequence of shape_ is (width, widthStride, height, heightStride) in Dvpp module
@@ -54,28 +49,23 @@ DETensor::DETensor(std::shared_ptr<dataset::DeviceTensor> device_tensor_impl, bo
   MS_LOG(INFO) << "This is a YUV420 format image, one pixel takes 1.5 bytes. Therefore, the shape of"
                << " image is in (H, W) format. You can search for more information about YUV420 format";
 }
-#endif
 
 const std::string &DETensor::Name() const { return name_; }
 
 enum mindspore::DataType DETensor::DataType() const {
-#ifndef ENABLE_ANDROID
   if (is_device_) {
     EXCEPTION_IF_NULL(device_tensor_impl_);
     return static_cast<mindspore::DataType>(DETypeToMSType(device_tensor_impl_->DeviceDataType()));
   }
-#endif
   EXCEPTION_IF_NULL(tensor_impl_);
   return static_cast<mindspore::DataType>(DETypeToMSType(tensor_impl_->type()));
 }
 
 size_t DETensor::DataSize() const {
-#ifndef ENABLE_ANDROID
   if (is_device_) {
     EXCEPTION_IF_NULL(device_tensor_impl_);
     return device_tensor_impl_->DeviceDataSize();
   }
-#endif
   EXCEPTION_IF_NULL(tensor_impl_);
   return static_cast<size_t>(tensor_impl_->SizeInBytes());
 }
@@ -91,22 +81,18 @@ int64_t DETensor::ElementNum() const {
 }
 
 std::shared_ptr<const void> DETensor::Data() const {
-#ifndef ENABLE_ANDROID
   if (is_device_) {
     EXCEPTION_IF_NULL(device_tensor_impl_);
     return std::shared_ptr<const void>(device_tensor_impl_->GetHostBuffer(), [](const void *) {});
   }
-#endif
   return std::shared_ptr<const void>(tensor_impl_->GetBuffer(), [](const void *) {});
 }
 
 void *DETensor::MutableData() {
-#ifndef ENABLE_ANDROID
   if (is_device_) {
     EXCEPTION_IF_NULL(device_tensor_impl_);
     return static_cast<void *>(device_tensor_impl_->GetDeviceMutableBuffer());
   }
-#endif
   EXCEPTION_IF_NULL(tensor_impl_);
   return static_cast<void *>(tensor_impl_->GetMutableBuffer());
 }
@@ -114,12 +100,10 @@ void *DETensor::MutableData() {
 bool DETensor::IsDevice() const { return is_device_; }
 
 std::shared_ptr<mindspore::MSTensor::Impl> DETensor::Clone() const {
-#ifndef ENABLE_ANDROID
   if (is_device_) {
     EXCEPTION_IF_NULL(device_tensor_impl_);
     return std::make_shared<DETensor>(device_tensor_impl_, is_device_);
   }
-#endif
   return std::make_shared<DETensor>(tensor_impl_);
 }
 }  // namespace dataset

@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/prelu_parameter.h"
 #include "infer/cxx_api/prelu_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 using mindspore::ops::kNamePReLUFusion;
 using mindspore::schema::PrimitiveType_PReLUFusion;
 

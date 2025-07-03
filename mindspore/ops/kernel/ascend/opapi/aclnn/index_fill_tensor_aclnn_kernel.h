@@ -20,10 +20,11 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace index_fill_tensor {
 
 class IndexFillTensorAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class IndexFillTensorAscend : public AclnnKernelMod {
   ScalarPtr value_ = nullptr;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace index_fill_tensor
 }  // namespace kernel
 }  // namespace mindspore
 

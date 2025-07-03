@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"
@@ -30,6 +31,8 @@
 #include "include/backend/distributed/init.h"
 #ifndef _WIN32
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #endif
 
 namespace mindspore {
@@ -135,6 +138,7 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &all_to_a
   common::AnfAlgo::SetNodeAttr(kAttrSendRankIds, MakeValue<std::vector<int64_t>>(rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
+  common::AnfAlgo::SetNodeAttr(kAttrBlockSize, MakeValue<int64_t>(1), all_to_all_v);
   MS_LOG(INFO) << "Create AllToAllv success, split count " << split_count << ", rank size " << rank_size;
   return all_to_all_v;
 }

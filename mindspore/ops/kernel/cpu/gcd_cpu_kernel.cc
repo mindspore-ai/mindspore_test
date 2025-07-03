@@ -21,11 +21,12 @@
 #include <utility>
 #include <numeric>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gcd_cpu {
 namespace {
 const size_t kGcdInputsNum = 2;
 const size_t kGcdOutputsNum = 1;
@@ -99,5 +100,6 @@ std::vector<KernelAttr> GcdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Gcd, GcdCpuKernelMod);
+}  // namespace gcd_cpu
 }  // namespace kernel
 }  // namespace mindspore

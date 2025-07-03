@@ -22,6 +22,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lstsqv2_grad_cpu {
 namespace {
 using Eigen::ColMajor;
 using Eigen::ComputeFullU;
@@ -217,5 +218,6 @@ std::vector<KernelAttr> LstsqV2GradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LstsqV2Grad, LstsqV2GradCpuKernelMod);
+}  // namespace lstsqv2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

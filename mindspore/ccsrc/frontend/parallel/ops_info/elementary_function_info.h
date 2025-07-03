@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include "utils/hash_map.h"
 #include "ir/value.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
@@ -317,6 +318,47 @@ class TruncInfo : public BesselJ1Info {
             const PrimitiveAttrs &attrs)
       : BesselJ1Info(name, inputs_shape, outputs_shape, attrs) {}
   ~TruncInfo() override = default;
+};
+
+class RepeatInterleaveInfo : public ActivationOther {
+ public:
+  RepeatInterleaveInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                       const PrimitiveAttrs &attrs)
+      : ActivationOther(name, inputs_shape, outputs_shape, attrs, std::make_shared<RepeatInterleaveCost>()) {}
+  ~RepeatInterleaveInfo() override = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+
+ protected:
+  Status GetAttrs() override;
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+  int64_t dim_ = 0;
+  bool is_tensor_repeat_ = false;
+};
+
+class RepeatInterleaveIntInfo : public RepeatInterleaveInfo {
+ public:
+  RepeatInterleaveIntInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                          const PrimitiveAttrs &attrs)
+      : RepeatInterleaveInfo(name, inputs_shape, outputs_shape, attrs) {
+    is_tensor_repeat_ = false;
+  }
+  ~RepeatInterleaveIntInfo() override = default;
+};
+
+class RepeatInterleaveTensorInfo : public RepeatInterleaveInfo {
+ public:
+  RepeatInterleaveTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                             const PrimitiveAttrs &attrs)
+      : RepeatInterleaveInfo(name, inputs_shape, outputs_shape, attrs) {
+    is_tensor_repeat_ = true;
+  }
+  ~RepeatInterleaveTensorInfo() override = default;
+
+ protected:
+  Status InferTensorMap() override;
 };
 }  // namespace parallel
 }  // namespace mindspore

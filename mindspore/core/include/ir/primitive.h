@@ -93,6 +93,8 @@ class MS_CORE_API Primitive : public Named {
   ///
   /// \param[in] prim The input primitive.
   Primitive(const Primitive &prim);
+
+  void SetSideEffectFlag(const std::string &name, bool inplace_prim);
   /// \brief The copy assignment operator for Primitive.
   ///
   /// \param[in] other An existing Primitive object.
@@ -317,22 +319,50 @@ class MS_CORE_API Primitive : public Named {
   ///
   /// \return Return true if primitive is a inplace primitive, else return false.
   bool inplace_prim() const { return inplace_prim_; }
+
   /// \brief Set primitive inplace flag.
   ///
   /// \param inplace_prim The flag of primitive to be set.
   void set_inplace_prim(bool inplace_prim) { inplace_prim_ = inplace_prim; }
 
-  /// \brief Set rw_write input index for primitive.
+  /// \brief Check whether the primitive is graph view primitive.
+  ///
+  /// \return Return true if primitive is a graph view primitive, else return false.
+  bool graph_view_prim() const { return graph_view_prim_; }
+
+  /// \brief Set primitive graph view flag.
+  ///
+  /// \param graph_view_prim The flag of primitive to be set.
+  void set_graph_view_prim(bool graph_view_prim) { graph_view_prim_ = graph_view_prim; }
+
+  /// \brief Set rw_write input indexes for primitive.
   ///
   /// \param rw_write_input_indexes The rw_write input index of the primitive to be set.
   void set_rw_write_input_indexes(const std::vector<size_t> &rw_write_input_indexes) {
     rw_write_input_indexes_ = rw_write_input_indexes;
   }
 
-  /// \brief Rw_write input index of the primitive.
+  /// \brief Rw_write input indexes of the primitive.
   ///
   /// \return Rw_write input indexes of the primitive.
   const std::vector<size_t> &rw_write_input_indexes() const { return rw_write_input_indexes_; }
+
+  /// \brief Set inplace input indexes for primitive.
+  ///
+  /// \param inplace_input_indexes The inplace input index of the primitive to be set.
+  void set_inplace_input_indexes(const std::vector<int64_t> &inplace_input_indexes) {
+    inplace_input_indexes_ = inplace_input_indexes;
+  }
+
+  /// \brief Inplace input indexes of the primitive.
+  ///
+  /// \return Inplace input indexes of the primitive.
+  const std::vector<int64_t> &inplace_input_indexes() const { return inplace_input_indexes_; }
+
+  /// \brief Get Inplace input indexes of the primitive.
+  ///
+  /// \return Inplace input indexes of the primitive.
+  std::vector<int64_t> GetInplaceIndexes();
 
   /// \brief Enable primitive read/write lock.
   void EnableSharedMutex() {
@@ -361,8 +391,10 @@ class MS_CORE_API Primitive : public Named {
   bool record_evaluate_add_attr_;
   bool const_prim_;
   bool inplace_prim_;
+  bool graph_view_prim_;
   std::vector<size_t> const_input_indexes_;
   std::vector<size_t> rw_write_input_indexes_;
+  std::vector<int64_t> inplace_input_indexes_;
   uint64_t id_{0};
   std::shared_ptr<std::shared_mutex> shared_mutex_{nullptr};
 };

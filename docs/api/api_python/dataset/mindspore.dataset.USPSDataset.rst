@@ -20,9 +20,9 @@ mindspore.dataset.USPSDataset
           - ``Shuffle.GLOBAL`` ：混洗文件和样本。
           - ``Shuffle.FILES`` ：仅混洗文件。
 
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - `dataset_dir` 路径下不包含数据文件。
@@ -37,7 +37,7 @@ mindspore.dataset.USPSDataset
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
     **关于USPS数据集：**
-    
+
     USPS是美国邮政服务公司从信封中自动扫描的数字数据集，包含总共9,298个16×16像素灰度样本。
     数据集中的图片内容已被预处理为居中和归一化，并集中了多种样式的字体。
 

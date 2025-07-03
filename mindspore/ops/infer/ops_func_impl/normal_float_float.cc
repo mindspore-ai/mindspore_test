@@ -17,22 +17,36 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <optional>
 #include "infer/ops_func_impl/normal_float_float.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "ops_utils/type_dispatch.h"
 
 namespace mindspore {
 namespace ops {
+namespace {
+template <typename T>
+void GetStdValue(const ValuePtr &std, std::optional<float> *std_opt) {
+  std::optional<T> value = GetScalarValue<T>(std);
+  if (value.has_value()) {
+    *std_opt = static_cast<float>(value.value());
+  }
+}
+}  // namespace
 BaseShapePtr NormalFloatFloatFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   if (!CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]) &&
       !CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
     auto shape_shape = input_args[kInputIndex2]->GetShape();
-    auto std_opt = GetScalarValue<float>(input_args[kInputIndex1]->GetValue());
+    std::optional<float> std_opt;
+    TYPE_DISPATCH_INT_AND2(kNumberTypeFloat32, kNumberTypeFloat64, input_args[kInputIndex1]->GetType()->type_id(),
+                           "GetStdValue",
+                           [&]() { GetStdValue<scalar_t>(input_args[kInputIndex1]->GetValue(), &std_opt); });
     if (std_opt.has_value()) {
       auto std = std_opt.value();
       MS_CHECK_VALUE(std >= 0.0,

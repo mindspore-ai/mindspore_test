@@ -37,10 +37,6 @@ from mindformers import Trainer, TrainingArguments
 
 ms.set_context(jit_config={"jit_level": "O1"})
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
-                             gradients_mean=True,
-                             full_batch=True,
-                             enable_parallel_optimizer=True)
 init()
 
 
@@ -91,7 +87,6 @@ def build_model(test_mode,
                                fine_grain_interleave=fine_grain_interleave)
     model = LlamaForCausalLM(model_config)
 
-
     train_dataset = GeneratorDataset(
         generator_train, column_names=["input_ids"])
     train_dataset = train_dataset.batch(batch_size=8)
@@ -124,6 +119,11 @@ def build_model(test_mode,
 
 def run_llama_4p_train():
     """test msrun launch llama on 4p for Trainer.train()."""
+    ms.reset_auto_parallel_context()
+    ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
+                                 gradients_mean=True,
+                                 full_batch=True,
+                                 enable_parallel_optimizer=True)
     ms.set_auto_parallel_context(pipeline_config={'pipeline_scheduler': '1f1b', 'pipeline_interleave': True})
     task_trainer = build_model('test_train', fine_grain_interleave=2)
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
@@ -131,6 +131,7 @@ def run_llama_4p_train():
     task_trainer.config.runner_config.epochs = 1
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
+    ms.set_auto_parallel_context(pipeline_stages=2)
     task_trainer.set_parallel_config(data_parallel=1,
                                      model_parallel=2,
                                      pipeline_stage=2,
@@ -143,6 +144,11 @@ def run_llama_4p_train():
 
 def run_llama_2p_train_cp():
     """test msrun launch llama on context parallel for Trainer.train()."""
+    ms.reset_auto_parallel_context()
+    ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
+                                 gradients_mean=True,
+                                 full_batch=True,
+                                 enable_parallel_optimizer=True)
     task_trainer = build_model('test_train_cp', gradient_accumulation_steps=2)
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
     task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
@@ -150,11 +156,12 @@ def run_llama_2p_train_cp():
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
     task_trainer.config.runner_config.gradient_accumulation_steps = 2
+    task_trainer.config.model.model_config.use_flash_attention = True
     task_trainer.set_parallel_config(data_parallel=1,
                                      model_parallel=1,
                                      context_parallel=2,
                                      pipeline_stage=1,
-                                     micro_batch_num=2,
+                                     micro_batch_num=1,
                                      micro_batch_interleave_num=2)
     task_trainer.train()
     sys.exit(0)
@@ -162,6 +169,11 @@ def run_llama_2p_train_cp():
 
 def run_llama_2p_train_dp():
     """test msrun launch llama on data parallel for Trainer.train()."""
+    ms.reset_auto_parallel_context()
+    ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
+                                 gradients_mean=True,
+                                 full_batch=True,
+                                 enable_parallel_optimizer=True)
     task_trainer = build_model('test_train_dp')
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
     task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
@@ -173,7 +185,7 @@ def run_llama_2p_train_dp():
                                      model_parallel=1,
                                      context_parallel=1,
                                      pipeline_stage=1,
-                                     micro_batch_num=2,
+                                     micro_batch_num=1,
                                      micro_batch_interleave_num=2)
     task_trainer.train()
     sys.exit(0)

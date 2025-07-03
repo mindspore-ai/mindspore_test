@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,17 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                 const BaseTensorPtr &weight_tensor, const BaseTensorPtr &bias_tensor,
-                                 const std::optional<BaseTensorPtr> &mean_tensor,
-                                 const std::optional<BaseTensorPtr> &variance_tensor,
-                                 const BoolImmPtr &training, const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
+void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                 const std::optional<TensorPtr> &weight_tensor,
+                                 const std::optional<TensorPtr> &bias_tensor,
+                                 const std::optional<TensorPtr> &mean_tensor,
+                                 const std::optional<TensorPtr> &variance_tensor, const BoolImmPtr &training,
+                                 const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

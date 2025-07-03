@@ -18,19 +18,19 @@
 #include <cassert>
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> SilentCheckV2AscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &val, const BaseTensorPtr &input_grad,
-  const BaseTensorPtr &sfda, const BaseTensorPtr &step, const Int64ImmPtr &c_min_steps_ptr,
-  const FloatImmPtr &c_thresh_l1_ptr, const FloatImmPtr &c_coeff_l1_ptr, const FloatImmPtr &c_thresh_l2_ptr,
-  const FloatImmPtr &c_coeff_l2_ptr, const Int64ImmPtr &npu_asd_detect_ptr) {
+std::vector<tensor::TensorPtr> SilentCheckV2AscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &val, const TensorPtr &input_grad, const TensorPtr &sfda,
+  const TensorPtr &step, const Int64ImmPtr &c_min_steps_ptr, const FloatImmPtr &c_thresh_l1_ptr,
+  const FloatImmPtr &c_coeff_l1_ptr, const FloatImmPtr &c_thresh_l2_ptr, const FloatImmPtr &c_coeff_l2_ptr,
+  const Int64ImmPtr &npu_asd_detect_ptr) {
   MS_LOG(INFO) << op->primitive()->name() << "Call start";
   OpRunner::InferOpOutput(op, val, input_grad, sfda, step, c_min_steps_ptr, c_thresh_l1_ptr, c_coeff_l1_ptr,
                           c_thresh_l2_ptr, c_coeff_l2_ptr, npu_asd_detect_ptr);
@@ -55,7 +55,7 @@ std::vector<tensor::BaseTensorPtr> SilentCheckV2AscendCustomize(
       LAUNCH_ACLNN(aclnnSilentCheck, device_context, op->stream_id(), val, input_grad, sfda, step, c_min_steps,
                    c_thresh_l1, c_coeff_l1, c_thresh_l2, c_coeff_l2, npu_asd_detect, op->output(kIndex3));
     }));
-  op->set_outputs(std::vector<tensor::BaseTensorPtr>{input_grad, sfda, step, op->output(kIndex3)});
+  op->set_outputs(std::vector<tensor::TensorPtr>{input_grad, sfda, step, op->output(kIndex3)});
   MS_LOG(INFO) << op->primitive()->name() << " Launch end";
   return op->outputs();
 }

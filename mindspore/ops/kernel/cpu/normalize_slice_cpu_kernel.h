@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_slice_cpu {
 class NormalizeSliceInfoCpuKernelMod : public NativeCpuKernelMod {
  public:
   NormalizeSliceInfoCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class NormalizeSliceInfoCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tuple_index_types_;
   std::vector<int64_t> init_by_none_;
 };
+}  // namespace normalize_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NORMALIZE_SLICE_CPU_KERNEL_H_

@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/binary_cross_entropy_with_logits.h"
-#include "kernel/cpu/pyboost/auto_generate/cast.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/binary_cross_entropy_with_logits.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                              const BaseTensorPtr &target_tensor,
-                                              const std::optional<BaseTensorPtr> &weight_tensor,
-                                              const std::optional<BaseTensorPtr> &posWeight_tensor,
+void BinaryCrossEntropyWithLogitsCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                              const TensorPtr &target_tensor,
+                                              const std::optional<TensorPtr> &weight_tensor,
+                                              const std::optional<TensorPtr> &posWeight_tensor,
                                               const Int64ImmPtr &reduction) {
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, weight_tensor, posWeight_tensor, reduction);

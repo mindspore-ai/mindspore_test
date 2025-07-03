@@ -24,11 +24,12 @@
 #include <functional>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace svd_cpu {
 class SvdCpuKernelMod : public NativeCpuKernelMod {
  public:
   SvdCpuKernelMod() {}
@@ -64,6 +65,7 @@ class SvdCpuKernelMod : public NativeCpuKernelMod {
   int64_t num_of_rows_;
   int64_t num_of_cols_;
 };
+}  // namespace svd_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

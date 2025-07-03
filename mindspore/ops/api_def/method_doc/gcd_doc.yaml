@@ -2,31 +2,4 @@ gcd:
   description: |
     gcd(other) -> Tensor
 
-    Computes greatest common divisor of input tensors element-wise.
-    The shape of two inputs should be broadcastable, and data types should be one of: int16 (supported when using the Ascend backend, GRAPH mode is only supported when the graph compilation level is O0), int32, int64.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Args:
-        other (Tensor): The other input tensor.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is one
-        with higher precision in the two inputs.
-
-    Raises:
-        TypeError: If data type `self` or `other` is not int32 or int64.
-        ValueError: If shapes of two inputs are not broadcastable.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([7, 8, 9]))
-        >>> other = Tensor(np.array([14, 6, 12]))
-        >>> y = input.gcd(other)
-        >>> print(y)
-        [7 2 3]
+    For details, please refer to :func:`mindspore.ops.gcd`.

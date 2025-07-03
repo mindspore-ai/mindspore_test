@@ -19,12 +19,13 @@
 #include <algorithm>
 #include <utility>
 #include "Eigen/Core"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "utils/tensor_iterator.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reversev2_cpu {
 namespace {
 constexpr size_t kReverseV2InputsNum = 2;
 constexpr size_t kReverseV2OutputsNum = 1;
@@ -207,5 +208,6 @@ std::vector<KernelAttr> ReverseV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ReverseV2, ReverseV2CpuKernelMod);
+}  // namespace reversev2_cpu
 }  // namespace kernel
 }  // namespace mindspore

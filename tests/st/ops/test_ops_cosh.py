@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.mint import cosh
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -44,7 +44,7 @@ def cosh_vmap_func(x):
     return ops.vmap(cosh_forward_func)(x)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_x86_cpu
 @pytest.mark.platform_x86_gpu_training
@@ -61,7 +61,7 @@ def test_ops_cosh_forward_backward(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cosh_forward_func(ms.Tensor(x))
     else:
-        output = (jit(cosh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(cosh_forward_func, jit_level="O0"))(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
@@ -70,7 +70,7 @@ def test_ops_cosh_forward_backward(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cosh_backward_func(ms.Tensor(x))
     else:
-        output = (jit(cosh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(cosh_backward_func, jit_level="O0"))(ms.Tensor(x))
     expect = np.array([[1.175201, 3.62682, 10.017875], [27.289917, 74.20321, 201.71315]])
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
@@ -92,7 +92,7 @@ def test_ops_cosh_vmap(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cosh_vmap_func(ms.Tensor(x))
     else:
-        output = (jit(cosh_vmap_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(cosh_vmap_func, jit_level="O0"))(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 

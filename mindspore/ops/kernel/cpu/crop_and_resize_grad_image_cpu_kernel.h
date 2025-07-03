@@ -23,11 +23,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_grad_image_cpu {
 class CropAndResizeGradImageCpuKernelMod : public NativeCpuKernelMod {
  public:
   CropAndResizeGradImageCpuKernelMod() = default;
@@ -64,6 +65,7 @@ class CropAndResizeGradImageCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> output_shape_;
   std::string attr_method_ = "bilinear";
 };
+}  // namespace crop_and_resize_grad_image_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

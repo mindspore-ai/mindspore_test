@@ -20,12 +20,13 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mean_ext {
 void MeanExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
@@ -34,7 +35,7 @@ void MeanExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   } else {
     axis_ = std::vector<int64_t>{};
   }
-  keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+  keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
   // Infer function has confirmed the actual dtype of output
   dtype_ = outputs[kIndex0]->dtype_id();
   GetWorkspaceForResize(inputs[kIndex0], axis_, keep_dims_, dtype_, outputs[kIndex0]);
@@ -48,5 +49,6 @@ bool MeanExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MeanExt, MeanExtAscend);
+}  // namespace mean_ext
 }  // namespace kernel
 }  // namespace mindspore

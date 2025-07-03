@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/kernel/hccl/hcom_all_to_all.h"
 #include <algorithm>
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
@@ -39,6 +39,10 @@ bool HcomAllToAllKernel::Launch(const std::vector<KernelTensor *> &inputs, const
   params_.sendcount = count;
 
   auto output_device_ptr = outputs.empty() ? nullptr : outputs[0]->device_ptr();
+  if (NeedReGetHcom()) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllToAll(inputs[0]->device_ptr(), output_device_ptr, params_,
                                                                    data_type_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

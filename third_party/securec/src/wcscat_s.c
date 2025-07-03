@@ -1,27 +1,23 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: wcscat_s  function
+ * Create: 2014-02-25
  */
-
-#define SECUREC_INLINE_DO_MEMCPY 1
 
 #include "securecutil.h"
 
 /*
  * Befor this function, the basic parameter checking has been done
  */
-static errno_t SecDoWcscat(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
+SECUREC_INLINE errno_t SecDoCatW(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
 {
     size_t destLen;
     size_t srcLen;
@@ -50,7 +46,8 @@ static errno_t SecDoWcscat(wchar_t *strDest, size_t destMax, const wchar_t *strS
         SECUREC_ERROR_INVALID_RANGE("wcscat_s");
         return ERANGE_AND_RESET;
     }
-    SecDoMemcpy(strDest + destLen, strSrc, (srcLen + 1) * sizeof(wchar_t)); /* single character length  include \0 */
+    /* Copy single character length  include \0 */
+    SECUREC_MEMCPY_WARP_OPT(strDest + destLen, strSrc, (srcLen + 1) * sizeof(wchar_t));
     return EOK;
 }
 
@@ -81,7 +78,7 @@ static errno_t SecDoWcscat(wchar_t *strDest, size_t destMax, const wchar_t *strS
  *    EOK                   Success
  *    EINVAL                strDest is  NULL and destMax != 0 and destMax <= SECUREC_WCHAR_STRING_MAX_LEN
  *    EINVAL_AND_RESET      (strDest unterminated and all other parameters are valid) or
- *                          (strDest != NULL and strSrc is NULLL and destMax != 0
+ *                          (strDest != NULL and strSrc is NULL and destMax != 0
  *                           and destMax <= SECUREC_WCHAR_STRING_MAX_LEN)
  *    ERANGE                destMax > SECUREC_WCHAR_STRING_MAX_LEN or destMax is 0
  *    ERANGE_AND_RESET      strDest have not enough space  and all other parameters are valid  and not overlap
@@ -105,7 +102,6 @@ errno_t wcscat_s(wchar_t *strDest, size_t destMax, const wchar_t *strSrc)
         return EINVAL;
     }
 
-    return SecDoWcscat(strDest, destMax, strSrc);
+    return SecDoCatW(strDest, destMax, strSrc);
 }
-
 

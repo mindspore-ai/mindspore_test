@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,15 @@ constexpr size_t kIndex25 = 25;
 constexpr size_t kIndex26 = 26;
 constexpr size_t kIndex27 = 27;
 constexpr size_t kIndex28 = 28;
+constexpr size_t kIndex29 = 29;
+constexpr size_t kIndex30 = 30;
+constexpr size_t kIndex31 = 31;
+constexpr size_t kIndex32 = 32;
+constexpr size_t kIndex33 = 33;
+constexpr size_t kIndex34 = 34;
+constexpr size_t kIndex35 = 35;
+constexpr size_t kIndex36 = 36;
+constexpr size_t kIndex37 = 37;
 // dim of shape
 constexpr size_t kDim0 = 0;
 constexpr size_t kDim1 = 1;
@@ -58,6 +67,17 @@ constexpr size_t kDim3 = 3;
 constexpr size_t kDim4 = 4;
 constexpr size_t kDim5 = 5;
 constexpr size_t kDim6 = 6;
+// output size of op
+constexpr size_t kOutputSize1 = 1;
+constexpr size_t kOutputSize2 = 2;
+constexpr size_t kOutputSize3 = 3;
+
+// Number of input
+constexpr size_t kInputNum0 = 0;
+constexpr size_t kInputNum1 = 1;
+constexpr size_t kInputNum2 = 2;
+constexpr size_t kInputNum3 = 3;
+constexpr size_t kInputNum4 = 4;
 
 // attr key name
 constexpr auto kAttrInternalSepcialFormat = "internal_special_format";
@@ -88,6 +108,7 @@ constexpr auto kAttrVisited = "visited";
 constexpr auto kAttrReshapePaddingAxis = "reshape_padding_axis";
 constexpr auto kAttrBeginNormAxis = "begin_norm_axis";
 constexpr auto kAttrBeginParamsAxis = "begin_params_axis";
+constexpr auto kAttrBackwardPrefetch = "backward_prefetch";
 constexpr auto kAttrShape = "shape";
 constexpr auto kAttrMomentum = "momentum";
 constexpr auto kAttrEps = "eps";
@@ -153,6 +174,7 @@ constexpr auto kAttrRecomputeCommDepend = "recompute_comm_depend";
 constexpr auto kAttrEagerDepend = "eager_depend";
 constexpr auto kAttrNotDelayFusion = "not_delay_fusion";
 constexpr auto kAttrGroup = "group";
+constexpr auto kAttrBlockSize = "block_size";
 constexpr auto kAttrRankList = "rank_list";
 constexpr auto kAttrGroups = "groups";
 constexpr auto kAttrGroupBack = "group_back";
@@ -495,5 +517,6 @@ constexpr auto kOpFormat_NCL = "NCL";
 constexpr auto kSliceStart = "start";
 constexpr auto kSliceStop = "stop";
 constexpr auto kSliceStep = "step";
+constexpr auto kCustomInputsType = "custom_inputs_type";
 }  // namespace mindspore
 #endif

@@ -18,18 +18,18 @@
 #include <memory>
 #include <string>
 
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr IndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                     const Int64ImmPtr &dim, const BaseTensorPtr &index,
-                                                     const BaseTensorPtr &value) {
+tensor::TensorPtr IndexFillTensorAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                                 const Int64ImmPtr &dim, const TensorPtr &index,
+                                                 const TensorPtr &value) {
   OpRunner::InferOpOutput(op, input, dim, index, value);
   auto value_scalar = CreateValueFromTensor(value->cast<TensorPtr>())->cast<ScalarPtr>();
   auto dim_imm = GetValue<int64_t>(dim);

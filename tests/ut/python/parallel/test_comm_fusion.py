@@ -22,7 +22,7 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from tests.ut.python.parallel.test_adafactor import compile_net
 from tests.ut.python.parallel.test_adafactor import Net as Net2

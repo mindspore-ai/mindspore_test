@@ -18,11 +18,12 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "infer/ops_func_impl/resize_linear_1d_grad.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore::kernel {
+namespace resize_linear_1d_grad_cpu {
 constexpr auto kResizeLinear1DGrad = "ResizeLinear1DGrad";
 constexpr const size_t kResizeLinear1DGradInputsNum = 3;
 constexpr const size_t kResizeLinear1DGradOutputsNum = 1;
@@ -174,4 +175,5 @@ int ResizeLinear1DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &in
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ResizeLinear1DGrad, []() {
   return std::make_shared<ResizeLinear1DGradCpuKernelMod>(kResizeLinear1DGrad);
 });
+}  // namespace resize_linear_1d_grad_cpu
 }  // namespace mindspore::kernel

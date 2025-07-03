@@ -22,11 +22,12 @@
 #include <utility>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace renorm_cpu {
 class RenormCpuKernelMod : public NativeCpuKernelMod {
  public:
   RenormCpuKernelMod() = default;
@@ -71,6 +72,7 @@ class RenormCpuKernelMod : public NativeCpuKernelMod {
   size_t axis_size_{1};
   size_t total_size_{1};
 };
+}  // namespace renorm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

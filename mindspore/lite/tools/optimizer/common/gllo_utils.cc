@@ -47,6 +47,15 @@
 #include "tools/optimizer/common/format_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "infer/cxx_api/mul_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -514,6 +523,7 @@ tensor::TensorPtr GetTensorInfo(const AnfNodePtr &node) {
   if (!utils::isa<ParameterPtr>(node)) {
     if (utils::isa<ValueNodePtr>(node)) {
       auto valueNode = node->cast<ValueNodePtr>();
+      MS_CHECK_TRUE_MSG(valueNode != nullptr, nullptr, "valueNode is nullptr!");
       auto value_ptr = valueNode->value();
       MS_CHECK_TRUE_RET(value_ptr != nullptr, nullptr);
       auto value = value_ptr->cast<tensor::TensorPtr>();
@@ -525,7 +535,7 @@ tensor::TensorPtr GetTensorInfo(const AnfNodePtr &node) {
     return nullptr;
   }
   auto param = node->cast<ParameterPtr>();
-  MS_ASSERT(param != nullptr);
+  MS_CHECK_TRUE_MSG(param != nullptr, nullptr, "param is nullptr!");
   if (!param->has_default() || param->default_param() == nullptr) {
     return nullptr;
   }
@@ -553,6 +563,7 @@ AbstractBasePtr GetCNodeInputAbstract(const CNodePtr &cnode, size_t index) {
     abstract = parameter->abstract();
   } else if (utils::isa<ValueNodePtr>(input)) {
     auto value_node = input->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node != nullptr, nullptr);
     abstract = value_node->abstract();
   } else if (utils::isa<CNodePtr>(input)) {
     auto input_cnode = input->cast<CNodePtr>();
@@ -1482,7 +1493,7 @@ CNodePtr GenTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &inp
   return tuple_cnode;
 }
 
-CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const float mul_scale) {
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, float mul_scale) {
   MS_LOG(INFO) << "create mul_fusion node start.";
   MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
   MS_CHECK_TRUE_RET(input_cnode != nullptr, nullptr);
@@ -1496,6 +1507,29 @@ CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_c
     return nullptr;
   }
   auto cnode = func_graph->NewCNode(mul_fusion_prim_c, {input_cnode, scale_node});
+  if (cnode == nullptr) {
+    MS_LOG(ERROR) << "cnode is nullptr!";
+    return nullptr;
+  }
+  cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_mul_fusion");
+  if (input_cnode->abstract() != nullptr) {
+    cnode->set_abstract(input_cnode->abstract()->Clone());
+  }
+  MS_LOG(INFO) << "create mul_fusion node end.";
+  return cnode;
+}
+
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode,
+                       const AnfNodePtr &mul_scale_node) {
+  MS_LOG(INFO) << "create mul_fusion node start.";
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(input_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(mul_scale_node != nullptr, nullptr);
+  auto mul_fusion_op = std::make_unique<ops::MulFusion>();
+  MS_CHECK_TRUE_RET(mul_fusion_op != nullptr, nullptr);
+  auto mul_fusion_prim_c = mul_fusion_op->GetPrim();
+  MS_CHECK_TRUE_RET(mul_fusion_prim_c != nullptr, nullptr);
+  auto cnode = func_graph->NewCNode(mul_fusion_prim_c, {input_cnode, mul_scale_node});
   if (cnode == nullptr) {
     MS_LOG(ERROR) << "cnode is nullptr!";
     return nullptr;
@@ -1761,6 +1795,7 @@ int DetermineCertainVarInputHasInferred(const CNodePtr &cnode, size_t index, boo
   }
   MS_CHECK_TRUE_MSG(value_ptr->isa<ValueSequeue>(), RET_ERROR, "infer flag should be a vector.");
   auto value_sequence = value_ptr->cast<ValueSequeuePtr>();
+  MS_CHECK_TRUE_MSG(value_sequence != nullptr, lite::RET_NULL_PTR, "value_sequence is nullptr!");
   auto elements = value_sequence->value();
   MS_CHECK_TRUE_MSG(!elements.empty(), RET_ERROR, "infer_info has no content.");
   auto first_element = elements.front();

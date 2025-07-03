@@ -23,11 +23,12 @@
 #include <limits>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_logic_cpu {
 class ArithmeticLogicCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArithmeticLogicCpuKernelMod() = default;
@@ -77,6 +78,7 @@ class ArithmeticComplexLogicCpuKernelMod : public NativeCpuKernelMod {
   std::shared_ptr<CpuKernelFunc> func_obj_;
   std::string kernel_type_{"Unknown"};
 };
+}  // namespace arithmetic_logic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

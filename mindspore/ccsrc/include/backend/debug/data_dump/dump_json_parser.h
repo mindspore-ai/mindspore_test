@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ void CheckJsonUnsignedType(const nlohmann::json &content, const std::string &key
 void CheckJsonStringType(const nlohmann::json &content, const std::string &key);
 void CheckJsonArrayType(const nlohmann::json &content, const std::string &key);
 
-class BACKEND_EXPORT DumpJsonParser {
+class BACKEND_COMMON_EXPORT DumpJsonParser {
  public:
   static DumpJsonParser &GetInstance() {
     std::call_once(instance_mutex_, []() {
@@ -51,7 +51,6 @@ class BACKEND_EXPORT DumpJsonParser {
   static bool DumpToFile(const std::string &filename, const void *data, size_t len, const ShapeVector &shape,
                          TypeId type);
   void CopyDumpJsonToDir(uint32_t rank_id);
-  void CopyHcclJsonToDir(uint32_t rank_id);
   void CopyMSCfgJsonToDir(uint32_t rank_id);
   bool NeedDump(const std::string &op_full_name);
   void MatchKernel(const std::string &kernel_name);
@@ -77,10 +76,11 @@ class BACKEND_EXPORT DumpJsonParser {
   bool save_args_flag() const { return save_args_flag_; }
   uint32_t sample_mode() const { return sample_mode_; }
   uint32_t sample_num() const { return sample_num_; }
-  uint32_t cur_dump_iter() const { return cur_dump_iter_; }
+  uint32_t cur_dump_iter() const;
   uint32_t input_output() const { return input_output_; }
   void UpdateDumpIter() { ++cur_dump_iter_; }
-  void UpdateDumpIter(int cur_step_count) { cur_dump_iter_ = cur_step_count; }
+  void UpdateDumpIter(int cur_step_count);
+  void UpdateUserDumpStep(const uint32_t step);
   bool GetDatasetSink() { return is_dataset_sink_; }
   void SetDatasetSink(bool is_dataset_sink) { is_dataset_sink_ = is_dataset_sink; }
   bool FileFormatIsNpy() const { return file_format_ == JsonFileFormat::FORMAT_NPY; }
@@ -88,16 +88,14 @@ class BACKEND_EXPORT DumpJsonParser {
   bool DumpEnabledForIter() const;
   bool InputNeedDump() const;
   bool OutputNeedDump() const;
-  std::string GetOpOverflowBinPath(uint32_t graph_id) const;
   void GetCellDumpFlag(const session::KernelGraph &kernel_graph);
   void UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph);
   bool IsDumpEnabled();
   bool IsDeviceCalcStats() const;
-  void PyNativeModeCheck();
   void CheckE2eSetting();
-  bool IsHCCLKernelInput(const std::string &kernel_name) const;
   bool IsCallbackRegistered() { return dumpdatacallback_registered_; }
   void SetCallbackRegistered() { dumpdatacallback_registered_ = true; }
+  void SetInitialIteration(uint32_t initial_iteration);
 
   void ClearGraph() { graphs_.clear(); }
   void SaveGraph(session::KernelGraph *graph) { (void)graphs_.emplace_back(graph); }
@@ -113,7 +111,6 @@ class BACKEND_EXPORT DumpJsonParser {
     DUMP_LITE_EXCEPTION = 4
   };
   enum JosonSampleMode { DUMP_NORMAL = 0, DUMP_HEAD_AND_TAIL = 1 };
-  static bool IsGeDump();
   bool IsDeviceStatHighPrecisionMode() const;
   nlohmann::json GetKernelsJson() { return kernels_json_; }
   std::map<std::string, std::regex> GetKernelRegs() { return kernel_regs_; }
@@ -153,7 +150,10 @@ class BACKEND_EXPORT DumpJsonParser {
   uint32_t sample_mode_{0};
   uint32_t sample_num_{100};
   uint32_t cur_dump_iter_{0};
+  uint32_t cur_user_dump_iter_{0};
+  uint32_t initial_dump_iter_{0};
   bool already_parsed_{false};
+  bool dump_user_step_flag_{false};
   std::string dump_layer_{""};
   std::string stat_calc_mode_{"host"};
   std::string device_stat_precision_mode_{"high"};
@@ -174,6 +174,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseNetName(const nlohmann::json &content);
   void ParseSavedData(const nlohmann::json &content);
   void ParseIteration(const nlohmann::json &content);
+  void ParseInitialIteration(const nlohmann::json &content);
   void ParseInputOutput(const nlohmann::json &content);
   void ParseKernels(const nlohmann::json &content);
   void ParseSupportDevice(const nlohmann::json &content);

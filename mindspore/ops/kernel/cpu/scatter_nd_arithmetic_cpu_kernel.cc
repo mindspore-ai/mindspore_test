@@ -23,11 +23,13 @@
 #include <limits>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_arithmetic_cpu {
 namespace {
 constexpr size_t kMinIndiceRank = 2;
 template <typename T>
@@ -261,5 +263,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMul, ScatterNdArithmeticCpuKe
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdDiv, ScatterNdArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMax, ScatterNdArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ScatterNdMin, ScatterNdArithmeticCpuKernelMod);
+}  // namespace scatter_nd_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

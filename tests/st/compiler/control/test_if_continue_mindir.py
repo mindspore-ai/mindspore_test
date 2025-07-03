@@ -15,12 +15,11 @@
 """Export if continue mindir."""
 import numpy as np
 import os
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, nn, export, load
 
 ms.set_context(mode=ms.GRAPH_MODE)
-ms.set_context(device_target='Ascend')
 
 class Conv_for_if_continue_net(nn.Cell):
     def __init__(self):
@@ -37,8 +36,7 @@ class Conv_for_if_continue_net(nn.Cell):
         return x
 
 
-@case_register.level0
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_if_continue_mindir():
     """
     Feature: export complex if-continue mindir and run.

@@ -26,11 +26,7 @@
 #include "minddata/dataset/include/dataset/text.h"
 #include "minddata/dataset/util/status.h"
 #include "include/api/status.h"
-#ifndef BUILD_LITE
 #include "utils/file_utils.h"
-#else
-#include "mindspore/lite/src/common/file_utils.h"
-#endif
 
 namespace mindspore {
 namespace dataset {

@@ -19,7 +19,7 @@
 #include <utility>
 #include <functional>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/arrays/adjust_contrast_v2_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/adjust_contrast_v2_impl.cuh"
 #include "mindspore/ops/op_def/op_name.h"

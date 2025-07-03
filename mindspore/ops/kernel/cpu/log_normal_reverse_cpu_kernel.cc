@@ -20,11 +20,12 @@
 #include <ctime>
 #include <iostream>
 #include "abstract/utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Core"
 
 namespace mindspore {
 namespace kernel {
+namespace log_normal_reverse_cpu {
 namespace {
 constexpr uint32_t kNumInput = 1;
 constexpr uint32_t kNumOutput = 1;
@@ -88,5 +89,6 @@ void LogNormalReverseCpuKernel::LaunchKernelFloat(const std::vector<KernelTensor
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LogNormalReverse, LogNormalReverseCpuKernel);
+}  // namespace log_normal_reverse_cpu
 }  // namespace kernel
 }  // namespace mindspore

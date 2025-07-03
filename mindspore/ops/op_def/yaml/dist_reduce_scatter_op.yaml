@@ -21,3 +21,4 @@ dist_comm_reduce_scatter:
         enable: True
         is_comm_op: True
         Ascend: DistCommReduceScatterAscend
+    non-differentiable: True

@@ -15,17 +15,16 @@
  */
 
 #include "kernel/ascend/pyboost/customize/dropout_ext.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                const FP32ImmPtr &p, const BaseTensorPtr &seed,
-                                                const BaseTensorPtr &offset) {
+tensor::TensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                            const FP32ImmPtr &p, const TensorPtr &seed, const TensorPtr &offset) {
   OpRunner::InferOpOutput(op, input, p, seed, offset);
   // Create device address for input/output tensors.
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);

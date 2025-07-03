@@ -19,12 +19,12 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/inplace_scatter_src_aclnn_kernel.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-
-class InplaceScatterSrcReduceAscend : public InplaceScatterSrcAscend {
+namespace inplace_scatter_src_reduce {
+class InplaceScatterSrcReduceAscend : public inplace_scatter_src::InplaceScatterSrcAscend {
  public:
   InplaceScatterSrcReduceAscend() = default;
   ~InplaceScatterSrcReduceAscend() = default;
@@ -35,6 +35,7 @@ class InplaceScatterSrcReduceAscend : public InplaceScatterSrcAscend {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace inplace_scatter_src_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

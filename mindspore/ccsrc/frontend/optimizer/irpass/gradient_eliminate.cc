@@ -17,8 +17,8 @@
 #include <algorithm>
 
 #include "frontend/optimizer/irpass/gradient_eliminate.h"
-#include "pipeline/pynative/pynative_execute.h"
 #include "ir/func_graph_cloner.h"
+#include "include/common/pynative/adapter.h"
 
 namespace mindspore {
 namespace opt {
@@ -39,15 +39,37 @@ AnfNodePtr ExpandJPrimitive(const ValueNodePtr &vnode, const pipeline::ResourceB
   return nullptr;
 }
 
-AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerPtr &optimizer) {
+AnfNodePtrList ExpandMultiJ(const FuncGraphVector &func_graphs, const OptimizerPtr &optimizer,
+                            const std::vector<bool> &is_view_inplace) {
   AnfNodePtrList expanded_nodes;
-  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, true);
+  auto new_func_graphs = ad::GradMultiFuncGraph(func_graphs, optimizer, is_view_inplace, true);
   (void)std::transform(new_func_graphs.cbegin(), new_func_graphs.cend(), std::back_inserter(expanded_nodes),
                        [](const FuncGraphPtr &new_func_graph) {
                          MS_EXCEPTION_IF_NULL(new_func_graph);
                          return NewValueNode(new_func_graph);
                        });
   return expanded_nodes;
+}
+
+void AddHighOrderUnsupportAttr(const FuncGraphPtr &need_grad_fg, const AnfNodePtr &j_node,
+                               const FuncGraphManagerPtr &manager) {
+  if (!need_grad_fg->has_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON)) {
+    return;
+  }
+  const auto &node_users = manager->node_users();
+  auto iter = node_users.find(j_node);
+  if (iter == node_users.end()) {
+    return;
+  }
+  // Set attr for j_node users' func_graph
+  for (auto &user_pair : iter->second) {
+    auto user_node = user_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_node);
+    auto caller_func_graph = user_node->func_graph();
+    MS_EXCEPTION_IF_NULL(caller_func_graph);
+    auto reason = need_grad_fg->get_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON);
+    caller_func_graph->set_attr(FUNC_GRAPH_ATTR_UNSUPPORT_HIGHER_GRAD_REASON, reason);
+  }
 }
 }  // namespace internal
 
@@ -75,13 +97,6 @@ void ExpandJPrim::CloneUsedPrimalGraph(const FuncGraphManagerPtr &manager, FuncG
 }
 
 bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
-  // Check whether need to eliminate forward cnodes in pynative mode.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
-    const auto &jit = pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit();
-    jit->set_eliminate_forward(jit->eliminate_forward() && prim_nodes_.empty());
-  }
-
   // Expand j nodes that don't have embed j nodes.
   bool change = false;
   auto manager = optimizer->manager();
@@ -95,13 +110,16 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
       func_graph->set_flag(FUNC_GRAPH_FLAG_K_GRAPH, false);
     }
   };
+  std::vector<bool> is_view_inplace;
   for (auto &j_node : prim_nodes_) {
     const auto &j_node_inp1 = j_node->input(1);
+    is_view_inplace.push_back(j_node->has_user_data("has_view_inplace_grad"));
     if (IsValueNode<FuncGraph>(j_node_inp1)) {
       auto cur_func_graph = GetValueNode<FuncGraphPtr>(j_node_inp1);
       func_graphs.push_back(cur_func_graph);
       MS_LOG(DEBUG) << "FuncGraph: " << cur_func_graph->ToString() << " will expandJ now";
       j_node_to_index_map[j_node] = index++;
+      internal::AddHighOrderUnsupportAttr(cur_func_graph, j_node, manager);
     } else if (IsValueNode<Primitive>(j_node_inp1)) {
       auto expanded_j = internal::ExpandJPrimitive(j_node_inp1->cast<ValueNodePtr>(), optimizer->resource());
       (void)manager->Replace(j_node, expanded_j);
@@ -111,7 +129,7 @@ bool ExpandJPrim::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr 
   }
   CloneUsedPrimalGraph(manager, &func_graphs);
 
-  auto grad_func_graphs = internal::ExpandMultiJ(func_graphs, optimizer);
+  auto grad_func_graphs = internal::ExpandMultiJ(func_graphs, optimizer, is_view_inplace);
   for (const auto &j_node_index_iter : j_node_to_index_map) {
     const auto &j_node = j_node_index_iter.first;
     (void)manager->Replace(j_node, grad_func_graphs[j_node_index_iter.second]);

@@ -21,7 +21,7 @@
 #include "include/backend/optimizer/pass_manager.h"
 namespace mindspore {
 namespace opt {
-void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm);
+PassManagerPtr GetBackendCommonUnifyMindIRPassManager();
 PassManagerPtr GetBackendFusionGroupPassManager();
 void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph);
 }  // namespace opt

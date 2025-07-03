@@ -20,29 +20,41 @@
 
 namespace mindspore {
 namespace parallel {
-StrategyCheckpoint& StrategyCheckpoint::GetInstance() {
+StrategyCheckpoint &StrategyCheckpoint::GetInstance() {
   static StrategyCheckpoint instance = StrategyCheckpoint();
   return instance;
 }
 
 bool StrategyCheckpoint::CheckPointExit(const std::string path) const { return false; }
 
-Status StrategyCheckpoint::Load(StrategyMap* strategy_map) { return SUCCESS; }
+Status StrategyCheckpoint::Load(StrategyMap *strategy_map) { return SUCCESS; }
 
 Status StrategyCheckpoint::Save(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
-                                const ManualShapeMap &manual_shape_map) { return SUCCESS; }
-
-Status StrategyCheckpoint::LoadGroupInfo(const std::string &file,
-                                         GroupInfoMap *group_info_map) const { return SUCCESS; }
-
-Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map,
-                                         const RankList &restore_rank_list) { return SUCCESS; }
-
-Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map) {
+                                const ManualShapeMap &manual_shape_map) {
   return SUCCESS;
 }
 
-Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map) {
+Status StrategyCheckpoint::LoadGroupInfo(const std::string &file, GroupInfoMap *group_info_map) const {
+  return SUCCESS;
+}
+
+Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map, const RankList &restore_rank_list) {
+  return SUCCESS;
+}
+
+Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map,
+                                              TensorLayoutValueMap *tensor_layout_map,
+                                              TensorLayoutValueMap *out_tensor_layout_map,
+                                              TensorLayoutValueMap *tensor_layout_newshape_map,
+                                              TensorLayoutValueMap *out_tensor_layout_newshape_map) {
+  return SUCCESS;
+}
+
+Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map,
+                                              const TensorLayoutValueMap &tensor_layout_map,
+                                              const TensorLayoutValueMap &out_tensor_layout_map,
+                                              const TensorLayoutValueMap &tensor_layout_newshape_map,
+                                              const TensorLayoutValueMap &out_tensor_layout_newshape_map) {
   return SUCCESS;
 }
 }  // namespace parallel

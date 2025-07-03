@@ -19,10 +19,11 @@
 #include <utility>
 #include <string>
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding {
 
 class EmbeddingAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class EmbeddingAscend : public AclnnKernelMod {
   double max_norm_{0};
   double norm_type_{0};
 };
+}  // namespace embedding
 }  // namespace kernel
 }  // namespace mindspore
 

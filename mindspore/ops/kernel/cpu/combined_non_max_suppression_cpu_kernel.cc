@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 #include "kernel/cpu/combined_non_max_suppression_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace combined_non_max_suppression_cpu {
 namespace {
 constexpr char kKernelName[] = "CombinedNonMaxSuppression";
 constexpr size_t kCombinedNonMaxSuppressionInputsNum = 6;
@@ -470,5 +471,6 @@ std::vector<KernelAttr> CombinedNonMaxSuppressionCpuKernelMod::GetOpSupport() {
   return kernel_attr_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CombinedNonMaxSuppression, CombinedNonMaxSuppressionCpuKernelMod);
+}  // namespace combined_non_max_suppression_cpu
 }  // namespace kernel
 }  // namespace mindspore

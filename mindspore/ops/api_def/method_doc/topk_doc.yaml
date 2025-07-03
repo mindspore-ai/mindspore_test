@@ -2,10 +2,10 @@ topk:
   description: |
     topk(k, dim=-1, largest=True, sorted=True) -> tuple(Tensor, Tensor)
     
-    Finds values and indices of the `k` largest or smallest entries along a given dimension.
+    Finds the `k` largest or smallest element along the given dimension and returns its value and corresponding index.
     
     .. warning::
-        - If sorted is set to False, due to different memory layout and traversal methods on different platforms,
+        - Due to different memory layout and traversal methods on different platforms,
           the display order of calculation results may be inconsistent when `sorted` is False.
     
     If the `self` is a one-dimensional Tensor, finds the `k` largest or smallest entries in the Tensor,

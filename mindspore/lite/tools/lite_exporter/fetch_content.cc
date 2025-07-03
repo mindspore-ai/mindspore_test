@@ -37,6 +37,8 @@
 #include "tools/optimizer/graph/specify_graph_input_format.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_utils_secure.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace lite {
@@ -102,7 +104,9 @@ STATUS GetShapeVectorFromStringTensor(const tensor::TensorPtr &tensor_info, Shap
 }
 
 STATUS GetDataTypeAndShape(const ParameterPtr &param_node, TypeId *data_type, ShapeVector *shape_vector) {
-  MS_ASSERT(param_node != nullptr && data_type != nullptr && shape_vector != nullptr);
+  MS_CHECK_TRUE_MSG(param_node != nullptr, RET_ERROR, "param_node is nullptr");
+  MS_CHECK_TRUE_MSG(data_type != nullptr, RET_ERROR, "data_type is nullptr");
+  MS_CHECK_TRUE_MSG(shape_vector != nullptr, RET_ERROR, "shape_vector is nullptr");
   auto abstract_base = param_node->abstract();
   if (abstract_base == nullptr) {
     MS_LOG(ERROR) << "Abstract of parameter is nullptr, " << param_node->name();

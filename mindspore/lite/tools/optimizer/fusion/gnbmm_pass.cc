@@ -23,6 +23,11 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "op_def/auto_generate/gen_lite_ops.h"
 #include "infer/custom.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -223,6 +228,10 @@ CNodePtr GNBMMPass::CreateGNBMMNodeForSDXL(const std::string &pattern_name, cons
   MS_CHECK_TRUE_RET(bias != nullptr, nullptr);
 
   auto instance_norm_prim = GetCNodePrimitive(instance_norm);
+  if (instance_norm_prim == nullptr) {
+    MS_LOG(ERROR) << "instance_norm_prim is nullptr!";
+    return nullptr;
+  }
   auto num_groups = GetInstanceNormGroups(instance_norm);
   auto gnbmm_prim = std::make_shared<ops::Custom>();
   if (gnbmm_prim == nullptr) {

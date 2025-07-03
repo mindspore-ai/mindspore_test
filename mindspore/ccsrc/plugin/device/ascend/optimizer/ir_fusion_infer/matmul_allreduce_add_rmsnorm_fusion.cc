@@ -18,20 +18,25 @@
 #include <vector>
 #include <string>
 
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/core_ops_name.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 #include "ir/primitive.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
+static const std::vector<uint32_t> supported_rank_size{1, 2, 4, 8};
 const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
   auto transpose_a = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(transpose_a != nullptr, {});
@@ -51,12 +56,18 @@ const BaseRef MatMulAllReduceAddRmsNormFusion::DefinePattern() const {
 bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const FuncGraphPtr &graph) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
+
+  if (common::IsExecuteSimulation()) {
+    MS_LOG(INFO) << "Not support MatMulAllReduceAddRmsNormFusion when MS_SIMULATION_LEVEL=3.";
+    return false;
+  }
+
   if (!ms_context->IsEnableInferBoost()) {
     MS_LOG(INFO) << "for MatMulAllReduceAddRmsNormFusion ops, infer_boost must be enabled.";
     return false;
   }
 
-  bool is_enable_lccl = device::ascend::EnableLccl();
+  bool is_enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   if (is_enable_lccl) {
     MS_LOG(INFO) << "disable MatMulAllReduceAddRmsNormFusion when lccl is enabled.";
     return false;
@@ -97,6 +108,11 @@ bool MatMulAllReduceAddRmsNormFusion::IsSupport(const AnfNodePtr &node, const Fu
 
   auto x1_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex0);
   auto x2_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(matmul_node, kIndex1);
+  auto residual_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(add_node, kIndex0);
+  if (residual_shape.size() != kSizeThree) {
+    MS_LOG(INFO) << "only support residual with three dimensions.";
+    return false;
+  }
   if ((x1_shape.size() != kSizeTwo && x1_shape.size() != kSizeThree) || x2_shape.size() != kSizeTwo) {
     MS_LOG(INFO) << "only support x1 two or three dimensions and x2 two dimensions, but got x1 " << x1_shape.size()
                  << " dimensions and x2 " << x2_shape.size() << " dimensions.";
@@ -125,8 +141,7 @@ AnfNodePtr NewTransposeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &x2
 
   std::vector<TypeId> transpose_types;
   std::vector<BaseShapePtr> transpose_shapes;
-  ShapeVector x2_shape_vector;
-  x2_shape_vector = x2->Shape()->GetShapeVector();
+  ShapeVector x2_shape_vector = x2->Shape()->GetShapeVector();
   std::reverse(x2_shape_vector.begin(), x2_shape_vector.end());
   auto transpose_shape = x2->Shape()->Clone();
   MS_EXCEPTION_IF_NULL(transpose_shape);
@@ -172,6 +187,17 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   MS_EXCEPTION_IF_NULL(allreduce_cnode);
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
   auto group_ptr = allreduce_prim->GetAttr(kAttrNameGroup);
+  auto group_name = GetValue<std::string>(group_ptr);
+  auto collective_mgr = distributed::collective::CollectiveManager::instance();
+  auto rank_size = collective_mgr->GetGroupSize(group_name);
+  auto rank_list = collective_mgr->GetGroupRanks(group_name);
+  auto is_single_node =
+    device::ascend::MultiAscendCollectiveCommLib::GetInstance().isGroupWithinLocalMachine(rank_list);
+  auto it = std::find(supported_rank_size.begin(), supported_rank_size.end(), rank_size);
+  if (it == supported_rank_size.end() || !is_single_node) {
+    MS_LOG(INFO) << "only support rank size 1, 2, 4, 8 in single node.";
+    return nullptr;
+  }
   auto reduce_op_ptr = allreduce_prim->GetAttr(kAttrNameOp);
   auto reduction = GetValue<std::string>(reduce_op_ptr);
   auto iter = std::find(support_reduce_op_list_.begin(), support_reduce_op_list_.end(), reduction);
@@ -228,7 +254,7 @@ const AnfNodePtr MatMulAllReduceAddRmsNormFusion::Process(const FuncGraphPtr &gr
   add_result_shapes.push_back(AnfAlgo::GetOutputDetailShape(add, kIndex0));
 
   auto matmul_allreduce_addrmsnorm_cnode = CreateMatMulAllReduceAddRmsNormNode(graph, node, equiv, add_result_types[0]);
-  MS_EXCEPTION_IF_NULL(matmul_allreduce_addrmsnorm_cnode);
+  MS_CHECK_TRUE_RET(matmul_allreduce_addrmsnorm_cnode != nullptr, nullptr);
 
   std::vector<TypeId> types;
   std::vector<BaseShapePtr> shapes;

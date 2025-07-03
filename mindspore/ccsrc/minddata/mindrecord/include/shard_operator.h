@@ -17,7 +17,9 @@
 #define MINDSPORE_CCSRC_MINDDATA_MINDRECORD_INCLUDE_SHARD_OPERATOR_H_
 
 #include <memory>
+#include <string>
 #include <vector>
+
 #include "minddata/mindrecord/include/shard_task_list.h"
 #include "minddata/dataset/include/dataset/constants.h"
 
@@ -26,6 +28,8 @@ namespace mindrecord {
 class MINDRECORD_API ShardOperator {
  public:
   virtual ~ShardOperator() = default;
+
+  virtual std::string Name() { return "ShardOperator"; }
 
   Status operator()(ShardTaskList &tasks) {  // NOLINT
     RETURN_IF_NOT_OK_MR(this->PreExecute(tasks));

@@ -18,13 +18,15 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace {
 int CleanTdtChannel() {
   const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_name);
+  MS_EXCEPTION_IF_NULL(device_ctx);
+  device_ctx->Initialize();
   MS_EXCEPTION_IF_NULL(device_ctx);
   MS_EXCEPTION_IF_NULL(device_ctx->device_res_manager_);
   device::DeviceContextManager::GetInstance().SyncAllStreams();

@@ -16,7 +16,7 @@
 #include "kernel/gpu/other/dynamic_stitch_gpu_kernel.h"
 #include <functional>
 #include <algorithm>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/dynamic_stitch_impl.cuh"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 
@@ -77,8 +77,6 @@ void DynamicStitchKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTe
                                      "DynamicStitch cudaStreamSynchronized failed");
   auto output_shape = GetShapeAdaptively(outputs, 0);
   output_shape[0] = max_index_ + 1;
-  // auto data_type = AnfAlgo::GetInputDeviceDataType(kernel_node_.lock(), n_);
-  // common::AnfAlgo::SetOutputInferTypeAndShape({data_type}, {output_shape}, kernel_node_.lock().get());
   outputs[0]->SetShapeVector(output_shape);
   MS_LOG(DEBUG) << "Run PostExecute for dynamicstitch, real output shape is " << output_shape;
   size_t dtype_byte = GetTypeByte(TypeIdToType(outputs[0]->dtype_id()));

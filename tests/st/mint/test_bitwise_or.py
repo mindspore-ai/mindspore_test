@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import ops, mint, Tensor, jit, JitConfig, context
+from mindspore import ops, mint, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -38,7 +38,7 @@ def bitwise_or_backward_func(x, y):
     return ops.grad(bitwise_or_forward_func, 0)(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_bitwise_or_forward_backward(mode):
@@ -58,8 +58,8 @@ def test_bitwise_or_forward_backward(mode):
         output2 = bitwise_or_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(bitwise_or_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(bitwise_or_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(bitwise_or_forward_func, backend="ms_backend", jit_level="O0"))(x, y)
+        output2 = (jit(bitwise_or_forward_func, backend="ms_backend", jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = bitwise_or_forward_func(x, y)
@@ -78,8 +78,8 @@ def test_bitwise_or_forward_backward(mode):
         grad2 = bitwise_or_backward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(bitwise_or_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        grad2 = (jit(bitwise_or_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        grad = (jit(bitwise_or_backward_func, backend="ms_backend", jit_level="O0"))(x, y)
+        grad2 = (jit(bitwise_or_backward_func, backend="ms_backend", jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = bitwise_or_backward_func(x, y)

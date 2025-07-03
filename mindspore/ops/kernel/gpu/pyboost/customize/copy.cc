@@ -15,13 +15,13 @@
  */
 
 #include "kernel/gpu/pyboost/customize/copy.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr CopyGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr CopyGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   return CopyCustomizeCall(op, input_tensor);
 }

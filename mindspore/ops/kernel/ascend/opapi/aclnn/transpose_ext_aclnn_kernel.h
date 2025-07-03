@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_ext {
 
 class TransposeExtAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class TransposeExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<int64_t> input_perm_{};
 };
+}  // namespace transpose_ext
 }  // namespace kernel
 }  // namespace mindspore
 

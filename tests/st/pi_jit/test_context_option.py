@@ -16,16 +16,7 @@
 from mindspore import Tensor, jit
 import mindspore as ms
 from tests.mark_utils import arg_mark
-import sys  
-import pytest
 import os
-
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_initial_tensor_body_ref():
@@ -56,14 +47,14 @@ def test_initial_tensor_body_ref():
     input_b = Tensor([6])
     test_net(input_a, input_b)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(a, b):
         return ms.ops.grad(test_net)(a, b)
 
     input_a = Tensor([2])
     input_b = Tensor([6])
-    res = jit(mode="PIJit", fn=func)(input_a, input_b)
-    except_res = jit(mode="PSJit", fn=func)(input_a, input_b)
+    res = jit(function=func, capture_mode="bytecode")(input_a, input_b)
+    except_res = jit(function=func, capture_mode="ast")(input_a, input_b)
 
     if reserved_env is None:
         os.unsetenv('MS_DEV_PRECOMPILE_ONLY')

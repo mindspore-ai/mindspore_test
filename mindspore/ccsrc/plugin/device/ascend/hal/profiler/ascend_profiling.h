@@ -17,11 +17,13 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <vector>
 #include "acl/acl_prof.h"
 #include "include/backend/kernel_graph.h"
-#include "kernel/kernel.h"
-#include "common/debug/profiler/profiling_data_dumper.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "common/kernel.h"
+#include "debug/profiler/profiling_data_dumper.h"
+#include "debug/profiler/profiling.h"
+#include "plugin/device/ascend/hal/profiler/feature_mgr.h"
 
 namespace mindspore {
 namespace profiler {
@@ -38,34 +40,48 @@ struct AscendProfilerConfig {
   bool l2Cache{false};
   bool hbmDdr{false};
   bool pcie{false};
+  bool sysIo{false};
+  bool sysInterconnection{false};
+  std::string hostSys;
   bool withStack{false};
   bool mstx{false};
   bool parallelStrategy{false};
   bool cpuTrace{false};
   bool npuTrace{false};
+  bool recordShapes{false};
   std::string profilerLevel;
   std::string aicoreMetrics;
   std::string outputPath;
   std::string frameworkDataPath;
+  std::vector<std::string> mstxDomainInclude;
+  std::vector<std::string> mstxDomainExclude;
 
   AscendProfilerConfig() = default;
-  AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool pcie,
-                       bool withStack, bool mstx, bool parallelStrategy, const std::string &profilerLevel,
+  AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool sysIo,
+                       bool sysInterconnection, const std::string &hostSys, bool withStack, bool mstx,
+                       bool parallelStrategy, bool pcie, bool recordShapes, const std::string &profilerLevel,
                        const std::string &aicoreMetrics, const std::string &outputPath,
-                       const std::string &frameworkDataPath)
+                       const std::string &frameworkDataPath, const std::vector<std::string> &mstxDomainInclude,
+                       const std::vector<std::string> &mstxDomainExclude)
       : deviceId(deviceId),
         rankId(rankId),
         profileMemory(profileMemory),
         l2Cache(l2Cache),
         hbmDdr(hbmDdr),
         pcie(pcie),
+        sysIo(sysIo),
+        sysInterconnection(sysInterconnection),
+        hostSys(hostSys),
         withStack(withStack),
         mstx(mstx),
         parallelStrategy(parallelStrategy),
+        recordShapes(recordShapes),
         profilerLevel(profilerLevel),
         aicoreMetrics(aicoreMetrics),
         outputPath(outputPath),
-        frameworkDataPath(frameworkDataPath) {}
+        frameworkDataPath(frameworkDataPath),
+        mstxDomainInclude(mstxDomainInclude),
+        mstxDomainExclude(mstxDomainExclude) {}
 
   void Clear() {
     deviceId = 0;
@@ -74,14 +90,21 @@ struct AscendProfilerConfig {
     l2Cache = false;
     hbmDdr = false;
     pcie = false;
+    sysIo = false;
+    sysInterconnection = false;
+    hostSys.clear();
     withStack = false;
+    mstx = false;
     parallelStrategy = false;
     cpuTrace = false;
     npuTrace = false;
+    recordShapes = false;
     profilerLevel.clear();
     aicoreMetrics.clear();
     outputPath.clear();
     frameworkDataPath.clear();
+    mstxDomainInclude.clear();
+    mstxDomainExclude.clear();
   }
 };
 
@@ -101,9 +124,12 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
-  void MstxMark(const std::string &message, void *stream = nullptr) override;
-  int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
-  void MstxRangeEnd(int range_id) override;
+  void MstxMark(const std::string &message, void *stream = nullptr,
+                const std::string &domain_name = "default") override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr,
+                     const std::string &domain_name = "default") override;
+  void MstxRangeEnd(int range_id, const std::string &domain_name = "default") override;
+  bool EnableRecordShapes();
 
  protected:
   void SaveProfileData() override { return; }
@@ -119,6 +145,7 @@ class AscendProfiler : public Profiler {
                                 const std::string &profiling_options);
   void InitAclConfig();
   aclprofAicoreMetrics GetAicMetrics() const;
+  aclprofAicoreMetrics CheckAicMetricsFeature(aclprofAicoreMetrics aic_metrics, const std::string &profiler_level);
   uint64_t GetAclProfMask(aclprofAicoreMetrics aicMetrics);
   void InitFwkMemProfiling();
   void StartFwkMemProfiling();

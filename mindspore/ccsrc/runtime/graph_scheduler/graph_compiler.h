@@ -32,7 +32,7 @@
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "kernel/framework_utils.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 
 namespace mindspore {
 using device::DeviceContext;
@@ -59,9 +59,6 @@ const char kStageBuild[] = "Build";
 const char kStageLink[] = "Link";
 const char kStageOptimize[] = "Optimize";
 const char kStageRunGraph[] = "RunGraph";
-const char kStageGetInputs[] = "GetInputs";
-const char kStageRun[] = "Run";
-const char kStageConstructOutputs[] = "ConstructOutputs";
 namespace runtime {
 // Position of kernel with index, the value pair<branch_id, vector<pos>> means the branch id of the kernel and the pos
 // of the kernel. Generally, there is only one branch, and the branch id is 0 at this time. In control flow, there are
@@ -86,7 +83,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
                     const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func,
                     const std::string &graph_phase)
-      : graphs_(graphs),
+      : root_func_graph_(nullptr),
+        graphs_(graphs),
         device_contexts_(device_contexts),
         tensors_mask_(tensors_mask),
         input_tensors_(input_tensors),
@@ -94,15 +92,20 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         control_node_parser_(parser),
         origin_parameters_order_(origin_parameters_order),
         origin_outputs_order_(origin_outputs_order),
+        origin_output_node_(nullptr),
         outputs_num_(outputs_num),
         inputs_num_(inputs_num),
         name_(name),
+        id_(backend_graph_id_++),
         need_erase_(need_erase),
+        enable_graph_pipeline_(false),
         exist_flatten_concat_(false),
         strategy_(strategy),
+        is_pynative_mode_(false),
         compile_func_(std::move(compile_func)),
         graph_phase_(graph_phase) {}
   ~GraphCompilerInfo();
+  FuncGraphPtr root_func_graph_;
   std::vector<KernelGraphPtr> graphs_;
   std::vector<DeviceContext *> device_contexts_;
   std::vector<std::vector<int64_t> *> tensors_mask_;
@@ -112,15 +115,24 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   std::vector<AnfNodePtr> origin_parameters_order_;
   mutable mindspore::HashMap<AnfNodePtr, std::vector<std::pair<KernelWithIndex, KernelWithIndex>>>
     origin_parameters_to_backend_parameters_;
-  KernelMapPosition origin_outputs_order_;
+  mutable KernelMapPosition origin_outputs_order_;
+  // The origin output node of func graph before build.
+  AnfNodePtr origin_output_node_;
   size_t outputs_num_;
   size_t inputs_num_;
   std::string name_;
+  uint32_t id_;
   bool need_erase_;
+  // Whether this root_graph can enable single op and graph pipeline or not.
+  mutable bool enable_graph_pipeline_;
   mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
+  bool is_pynative_mode_;
   CompileFunc compile_func_;
   std::string graph_phase_;
+  std::map<FuncGraphPtr, std::vector<std::vector<GraphId>>> func_graph_to_kernel_graph_ids_;
+
+  static uint32_t backend_graph_id_;
 };
 
 class GraphCompiler {
@@ -131,19 +143,11 @@ class GraphCompiler {
   // Construct kernel graph from anf nodes list and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileGraph(const GraphSegmentPtr &segment, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative = false);
+                       const DeviceContext *device_context, const backend::BackendJitConfig &backend_jit_config,
+                       bool run_in_pynative = false);
 
   GraphId CompileGraph(const KernelGraphPtr &kernel_graph, const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
-                       const DeviceContext *device_context, device::RunMode run_mode, bool run_in_pynative);
-
-  // For Pyantive dynamic shape or dynamic structure
-  GraphId CompileDynamicGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs,
-                              const DeviceContext *device_context);
-  GraphId CompileDynamicGraph(const KernelGraphPtr &kernel_graph, const DeviceContext *device_context);
-
-  // Construct kernel graph from function graph and compile kernel graph in Graph mode,
-  // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
-  GraphId CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
+                       const DeviceContext *device_context, bool run_in_pynative);
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
@@ -155,56 +159,15 @@ class GraphCompiler {
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;
 
-  // The following four methods used in PyNative back propagation to split complete kernel graph to single
-  // op graph, and these methods will be removed to class MindRTBackend after deleting session module.
-
-  // Cache index for all parameter and output nodes of kernel graph, used to get parameter of single op and
-  // recover output of original complete back propagation kernel graph.
-  void GetParamAndOutputIndex(const KernelGraphPtr &graph, const std::vector<TensorPtr> &inputs,
-                              VectorRef *const outputs, std::map<AnfNodePtr, size_t> *parameter_index,
-                              std::map<KernelWithIndex, std::vector<std::vector<size_t>>> *output_indexes);
-
-  // Get input tensors for single op compile and run, input tensors may convert from value node and parameter in graph
-  // and prev kernel node's output.
-  void GetSingleOpInputTensors(const CNodePtr &kernel,
-                               const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
-                               const std::map<AnfNodePtr, size_t> &parameter_index,
-                               const std::vector<TensorPtr> &graph_inputs, bool is_run_pyboost,
-                               InputInfo *const input_info);
-  // Get one input tensor for single control op, such as bprop_cut.
-  tensor::BaseTensorPtr GetSingleOpInputTensorByIndex(const CNodePtr &kernel,
-                                                      const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
-                                                      const std::map<AnfNodePtr, size_t> &parameter_index,
-                                                      const std::vector<TensorPtr> &graph_inputs,
-                                                      InputInfo *const input_info, size_t input_index);
-
-  // Get OpRunInfo and GraphInfo for single op compile and run.
-  void GetSingleOpRunInfoAndGraphInfo(const CNodePtr &kernel, const InputInfo &input_info,
-                                      bool use_dynamic_shape_process, session::BackendOpRunInfoPtr *op_run_info,
-                                      const GraphOutputInfo *const graph_output_info);
-
-  // Calculate ref count of PyNative back propagation operators.
-  void CalculateRefCount(const KernelGraphPtr &graph, std::map<KernelWithIndex, size_t> *ref_count) const;
-
-  // Calculate forward op output ref count of PyNative back graph.
-  void CalculateForwardOpOutputCount(const KernelGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
-                                     std::map<std::string, size_t> *forward_op_output_tensor_id,
-                                     const std::map<AnfNodePtr, size_t> &parameter_index) const;
+  void ClearGraphBuildMember() {
+    MS_EXCEPTION_IF_NULL(session_);
+    session_->ClearGraphBuildMember();
+  }
 
   // Update ref count of PyNative back propagation operators.
   void UpdateRefCount(const std::set<KernelWithIndex> &input_kernels_with_index,
                       std::map<KernelWithIndex, size_t> *ref_count,
-                      std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map) const;
-
-  // Update forward op output ref count of PyNative back graph.
-  void UpdateForwardOpOutputRefCount(const std::vector<ValuePtr> &input_values,
-                                     std::map<std::string, size_t> *forward_op_output_tensor_id) const;
-
-  // Handle single op output tensor and recover output of original complete kernel graph.
-  void RecoverGraphOutput(const AnfNodePtr &kernel, const VectorRef &op_outputs,
-                          const std::map<KernelWithIndex, size_t> &ref_count,
-                          std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map,
-                          GraphOutputInfo *const graph_output_info) const;
+                      std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const;
 
   // Register a summary callback function, which is called in the final stages of summary.
   void RegisterSummaryCallBackFunc(const CallBackFunc &callback) const;
@@ -225,12 +188,6 @@ class GraphCompiler {
 
   // Set Graph's dependencies for pre_graph and post_graph
   void SetGraphDependency(const KernelGraphPtr &graph, const GraphSegmentPtr &segment) const;
-  KernelGraphPtr ConstructKernelGraphForGraphRunMode(const FuncGraphPtr &func_graph,
-                                                     const DeviceContext *device_context,
-                                                     std::vector<KernelGraphPtr> *const all_graphs,
-                                                     bool *const need_return_ahead);
-  KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target,
-                                      const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes);
 
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.

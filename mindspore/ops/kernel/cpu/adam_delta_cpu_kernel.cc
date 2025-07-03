@@ -21,12 +21,13 @@
 #include <memory>
 #include <map>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adam_delta_cpu {
 namespace {
 constexpr size_t kSizeFloat32 = sizeof(float);
 constexpr size_t kAdamDeltaInputsNum = 9;
@@ -172,5 +173,6 @@ std::vector<KernelAttr> AdamDeltaCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdamNoUpdateParam, AdamDeltaCpuKernelMod);
+}  // namespace adam_delta_cpu
 }  // namespace kernel
 }  // namespace mindspore

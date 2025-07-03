@@ -40,6 +40,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {
@@ -260,7 +261,7 @@ abstract::ShapePtr EinsumInferShape(const PrimitivePtr &primitive, const std::ve
   abstract::BaseShapePtrList elements;
   if (input_args.size() == 1 && CheckAndConvertUtils::IsSequence(input_args[0])) {
     if (CheckAndConvertUtils::IsDynamicSequence(input_args[0])) {
-      MS_EXCEPTION(ValueError) << "Op " << primitive->name() << " dose not support dynamic len sequence input now.";
+      MS_EXCEPTION(ValueError) << "Op " << primitive->name() << " does not support dynamic len sequence input now.";
     }
     auto seq_shape = input_args[0]->GetShape()->cast<abstract::SequenceShapePtr>();
     MS_EXCEPTION_IF_NULL(seq_shape);

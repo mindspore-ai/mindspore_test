@@ -21,11 +21,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace truncate_mod_cpu {
 class TruncateModCpuKernelMod : public NativeCpuKernelMod {
  public:
   TruncateModCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class TruncateModCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_2_;
   ShapeVector output_shape_;
 };
+}  // namespace truncate_mod_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

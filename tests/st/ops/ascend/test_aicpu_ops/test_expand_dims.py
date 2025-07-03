@@ -32,7 +32,7 @@ class Net(nn.Cell):
 
 
 def test_net_bool():
-    x = np.random.randn(1, 16, 1, 1).astype(np.bool)
+    x = np.random.randn(1, 16, 1, 1).astype(np.bool_)
     net = Net()
     output = net(Tensor(x), -1)
     print(output.asnumpy())

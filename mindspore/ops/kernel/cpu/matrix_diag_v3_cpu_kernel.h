@@ -22,11 +22,12 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_diag_v3_cpu {
 class MatrixDiagV3CpuKernelMod : public NativeCpuKernelMod {
  public:
   MatrixDiagV3CpuKernelMod() = default;
@@ -71,6 +72,7 @@ class MatrixDiagV3CpuKernelMod : public NativeCpuKernelMod {
   int64_t diag_batch_base_index_ = 0;
   int64_t diag_elements_in_batch_ = 0;
 };
+}  // namespace matrix_diag_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

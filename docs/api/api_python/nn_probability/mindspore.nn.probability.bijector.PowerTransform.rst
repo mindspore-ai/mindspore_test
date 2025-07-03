@@ -17,7 +17,7 @@ mindspore.nn.probability.bijector.PowerTransform
 
     参数：
         - **power** (float, list, numpy.ndarray, Tensor) - 比例因子。默认值： ``0`` 。
-        - **name** (str) - Bijector名称。默认值：``'PowerTransform'`` 。
+        - **name** (str) - Bijector名称。默认值： ``'PowerTransform'`` 。
 
     .. note::
         `power` 中元素的数据类型必须为float。
@@ -42,7 +42,7 @@ mindspore.nn.probability.bijector.PowerTransform
             - **value** (Tensor) - 输入随机变量的值。
 
         返回：
-            Tensor，输入随机变量的值。
+            Tensor，输出随机变量的值。
 
     .. py:method:: forward_log_jacobian(value)
 
@@ -56,13 +56,13 @@ mindspore.nn.probability.bijector.PowerTransform
 
     .. py:method:: inverse(value)
 
-        正映射，计算输出随机变量对应的输入随机变量的值。
+        逆映射，计算输出随机变量对应的输入随机变量的值。
 
         参数：
             - **value** (Tensor) - 输出随机变量的值。
 
         返回：
-            Tensor，输出随机变量的值。
+            Tensor，输入随机变量的值。
 
     .. py:method:: inverse_log_jacobian(value)
 

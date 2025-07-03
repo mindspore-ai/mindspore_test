@@ -18,11 +18,12 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_zero {
 
 void InplaceZeroAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &outputs) {
@@ -37,5 +38,6 @@ bool InplaceZeroAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceZero, InplaceZeroAclnnKernelMod);
+}  // namespace inplace_zero
 }  // namespace kernel
 }  // namespace mindspore

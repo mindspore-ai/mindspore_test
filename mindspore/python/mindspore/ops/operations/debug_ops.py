@@ -19,16 +19,16 @@ from pathlib import Path
 import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import security, HookType
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import _tensordump_process_file
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
+from mindspore.common.jit_context import jit_context
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
 from mindspore.ops import operations as P
-
 
 SUMMARY_TENSOR_CACHE = []
 
@@ -62,9 +62,7 @@ class ScalarSummary(Primitive):
     """
     This operator will put a scalar to a summary file with protocol buffer format.
     It must be used with :class:`mindspore.SummaryRecord` or :class:`mindspore.SummaryCollector`,
-    which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
@@ -122,11 +120,9 @@ class ScalarSummary(Primitive):
 class ImageSummary(Primitive):
     """
     This operator will put an image tensor to a summary file with protocol buffer format. It must be used with
-    SummaryRecord or SummaryCollector, which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    SummaryRecord or SummaryCollector, which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    can be set to solve operator execution failure when calling this operator intensively.
+    can be set to solve execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.
@@ -175,9 +171,7 @@ class ImageSummary(Primitive):
 class TensorSummary(Primitive):
     """
     This operator will put a tensor to a summary file with protocol buffer format. It must be used with SummaryRecord
-    or SummaryCollector, which specify the directory of the summary file. The summary file can
-    be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
+    or SummaryCollector, which specify the directory of the summary file.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
@@ -236,7 +230,7 @@ class TensorDump(Primitive):
     Save the Tensor as an npy file in numpy format.
 
     .. warning::
-        - The parameter input_output will no longer support the value 'all'.
+        The parameter input_output will no longer support the value 'all'.
 
     .. note::
         In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
@@ -344,8 +338,6 @@ class HistogramSummary(Primitive):
     """
     This operator will calculate the histogram of a tensor and put it to a summary file with protocol buffer format.
     It must be used with SummaryRecord or SummaryCollector, which specify the directory of the summary file.
-    The summary file can be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
-    mindinsight/docs/en/master/index.html>`_ for details.
     In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
     can be set to solve operator execution failure when calling this operator intensively.
 
@@ -402,6 +394,10 @@ class HistogramSummary(Primitive):
 class InsertGradientOf(Primitive):
     """
     Attaches callback to the graph node that will be invoked on the node's gradient.
+
+    .. warning::
+        In the callback, exercise caution when using side-effect operators,
+        such as the TensorDump operator, as current support is incomplete.
 
     Args:
         f (Function): MindSpore's Function. Callback function.
@@ -466,6 +462,159 @@ class InsertGradientOf(Primitive):
         self.f = f
 
 
+class DumpGradient(Primitive):
+    """
+        The `DumpGradient` Primitive is a hook, used to dump dout which pass to `x`.
+
+        Inputs:
+            - **path** (str) - The path of the file to be saved.
+            - **x** (Tensor) - Input Tensor of any dimension.
+            - **input_output** (str) - support value should be one of ['in', 'out'].
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import ops
+            >>> from mindspore import Tensor
+            >>> ms.set_context(mode=ms.PYNATIVE_MODE)
+            >>> ms.set_device(device_target="Ascend")
+            >>> dg = ops.DumpGradient()
+            >>> def dout_dump_test(x, y):
+            ...     x = dg("x_dout.npy", x, 'out')
+            ...     print(f"x value is {x}")
+            ...     z = x * y
+            ...     return z
+            >>> ms_grad = ms.grad(dout_dump_test, grad_position=(0,1))
+            >>> x_grad, y_grad = ms_grad(Tensor(1, ms.float32), Tensor(2, ms.float32))
+            >>> print(f"x grad is {x_grad}, y_grad is {y_grad}")
+            >>> x_grad_npy = np.load("x_dout.npy")
+            >>> print(f"load x_grad from npy, x_grad is {x_grad_npy}")
+            x value is 1.0
+            x grad is 2.0, y grad is 1.0
+            load x_grad from npy, x_grad is array(2., dtype=float32)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        pass
+
+    def _dump_hook(self, dout):
+        P.TensorDump()(self.bwd_dump_path, dout)
+        return dout
+
+    def __call__(self, path, x, input_output):
+        self.bwd_dump_path = path
+        x = P.InsertGradientOf(self._dump_hook)(x)
+        return x
+
+
+class Morph(PrimitiveWithInfer):
+    """
+    The `Morph` Primitive is used to encapsulate a user-defined function `fn`, allowing it to be used as a custom
+    Primitive.
+
+    The `Morph` Primitive is primarily designed for custom graph optimization in GRAPH mode. For example, it supports
+    encapsulation of irregular collective communications (such as :func:`mindspore.ops.AlltoAllV`) in distributed
+    auto-parallel training scenarios.
+
+    When the `Morph` Primitive is applied to inputs, it is actually the encapsulated user-defined function `fn` that is
+    applied to the inputs.
+
+    The main difference between the `Morph` Primitive and :func:`mindspore.ops.Custom` is that the former is expanded
+    and replaced by the user-defined `fn` before automatic differentiation, so there is no need to implement a backward
+    function.
+
+    .. note::
+        - This primitive is only supported in GRAPH_MODE.
+        - `fn` must satisfy the syntax constraints of the graph mode.
+        - Users do not need to implement a custom backward function.
+        - `vararg`, `kwarg`, `kwonlyargs` and free variables are not supported in user-defined function.
+
+    Args:
+        fn (Function): Mindspore's function, user-defined function.
+        infer_shape (Function): Mindspore's function, user-defined infer_shape function.
+        infer_dtype (Function): Mindspore's function, user-defined infer_dtype function.
+
+    Inputs:
+        The inputs of user-defined `fn`.
+
+    Outputs:
+        The outputs of user-defined `fn`.
+
+    Raises:
+        RuntimeError: if not used in GRAPH_MODE.
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import context, nn, ops, Tensor, Parameter
+        >>>
+        >>> np_weight0 = np.array([1.0, 2.0, 3.0])
+        >>> np_weight1 = np.array([4.0, 5.0, 6.0])
+        >>> np_input_x = np.array([7.0, 8.0, 9.0])
+        >>>
+        >>> def infer_dtype(args):
+        ...     return args
+        >>>
+        >>> def infer_shape(args):
+        ...     return args
+        >>>
+        >>> def mul_by(*args):
+        ...     def inner(x):
+        ...         return args[0] * x
+        ...     return inner
+        >>>
+        >>> NUMBER_100 = 100
+        >>> class MorphNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super(MorphNet, self).__init__()
+        ...         self.weight0 = Parameter(Tensor(np_weight0, ms.float32), name="weight0")
+        ...         self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+        ...         self.mul_by_100 = ops.Morph(mul_by(NUMBER_100), infer_shape, infer_dtype)
+        ...     def construct(self, x):
+        ...         a = x * self.weight0
+        ...         b = self.mul_by_100(a)
+        ...         out = b * self.weight1
+        ...         return out
+        >>>
+        >>> context.set_context(mode=context.GRAPH_MODE)
+        >>> input_x = Tensor(np_input_x, ms.float32)
+        >>> net = MorphNet()
+        >>> grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+        >>> grad_net = grad_op(net, net.trainable_params())
+        >>> bwd_out = grad_net(input_x)
+        >>> x_grad = bwd_out[0][0].asnumpy()
+        >>> weight0_grad = bwd_out[1][0].asnumpy()
+        >>> weight1_grad = bwd_out[1][1].asnumpy()
+        >>> print("x_grad", x_grad)
+        >>> print("weight0_grad", weight0_grad)
+        >>> print("weight1_grad", weight1_grad)
+        x_grad [ 400. 1000. 1800.]
+        weight0_grad [2800. 4000. 5400.]
+        weight1_grad [ 700. 1600. 2700.]
+    """
+    @prim_attr_register
+    def __init__(self, fn, infer_shape, infer_dtype):
+        self.add_prim_attr('side_effect_backprop', True)
+        self.add_prim_attr('side_effect_mem', True)
+        self.add_prim_attr('side_effect_io', True)
+        self.add_prim_attr('__metamorphosis__', fn)
+        self._infer_shape = infer_shape
+        self._infer_dtype = infer_dtype
+
+    def infer_shape(self, *args):
+        return self._infer_shape(*args)
+
+    def infer_dtype(self, *args):
+        return self._infer_dtype(*args)
+
+    def __call__(self, *args):
+        raise RuntimeError("Morph is only supported in GRAPH_MODE.")
+
+
 class HookBackward(PrimitiveWithInfer):
     """
     This operation is used as a tag to hook gradient in intermediate variables. Note that this function
@@ -527,8 +676,7 @@ class HookBackward(PrimitiveWithInfer):
     def __init__(self, hook_fn, cell_id=""):
         """Initialize HookBackward."""
         super(HookBackward, self).__init__(self.__class__.__name__)
-        if not check_hook_fn("HookBackward", hook_fn):
-            return
+        check_hook_fn(hook_fn)
         if cell_id != "":
             logger.warning(f"The args 'cell_id' of HookBackward will be removed in a future version. If the value of "
                            f"'cell_id' is set, the hook function will not work.")
@@ -600,6 +748,9 @@ class Print(Primitive):
         self.add_prim_attr("side_effect_io", True)
 
     def __call__(self, *args):
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return
         for arg in args:
             if isinstance(arg, Parameter):
                 print(Tensor_.__repr__(arg))
@@ -607,6 +758,9 @@ class Print(Primitive):
                 print(arg.__repr__())
             else:
                 print(arg)
+        # Add for jit context.
+        if jit_context():
+            jit_context().run_op(self, None, *args)
 
 
 class Assert(PrimitiveWithInfer):

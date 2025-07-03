@@ -16,6 +16,7 @@
 #include "common/common.h"
 #include "include/api/types.h"
 #include "minddata/dataset/core/tensor_row.h"
+#include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/include/dataset/datasets.h"
 #include "minddata/dataset/include/dataset/vision.h"
 #include "minddata/dataset/kernels/ir/data/transforms_ir.h"
@@ -1007,7 +1008,7 @@ TEST_F(MindDataTestPipeline, TestDistributedGetDatasetSize1) {
 
   // Create an ImageFolder Dataset
   std::string folder_path = datasets_root_path_ + "/testPK/data/";
-  std::shared_ptr<Dataset> ds = ImageFolder(folder_path, true, std::make_shared<DistributedSampler>(4, 0, false, 10));
+  std::shared_ptr<Dataset> ds = ImageFolder(folder_path, true, std::make_shared<DistributedSampler>(4, 0, ShuffleMode::kFalse, 10));
   EXPECT_NE(ds, nullptr);
 
   // num_per_shard is equal to 44/4 = 11 which is more than num_samples = 10, so the output is 10
@@ -1041,7 +1042,7 @@ TEST_F(MindDataTestPipeline, TestDistributedGetDatasetSize2) {
 
   // Create an ImageFolder Dataset
   std::string folder_path = datasets_root_path_ + "/testPK/data/";
-  std::shared_ptr<Dataset> ds = ImageFolder(folder_path, true, std::make_shared<DistributedSampler>(4, 0, false, 15));
+  std::shared_ptr<Dataset> ds = ImageFolder(folder_path, true, std::make_shared<DistributedSampler>(4, 0, ShuffleMode::kFalse, 15));
   EXPECT_NE(ds, nullptr);
 
   // num_per_shard is equal to 44/4 = 11 which is less than num_samples = 15, so the output is 11

@@ -50,7 +50,7 @@ def test_fallback_runtime_zip_asnumpy():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         ret = zip(x.asnumpy(), x.asnumpy())
         return ret
@@ -70,7 +70,7 @@ def test_fallback_runtime_zip_asnumpy_tuple():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         ret = zip(x.asnumpy(), x.asnumpy())
         return tuple(ret)

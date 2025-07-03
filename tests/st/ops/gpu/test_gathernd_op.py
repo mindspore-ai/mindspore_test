@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 from mindspore import Tensor
 from mindspore.ops import operations as P
 import mindspore.nn as nn
@@ -200,9 +199,9 @@ def test_gathernd2_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gathernd_bool():
-    x = Tensor(np.array([[True, False], [False, False]]).astype(np.bool))
+    x = Tensor(np.array([[True, False], [False, False]]).astype(np.bool_))
     indices = Tensor(np.array([[0, 0], [0, 1], [1, 0], [1, 1]]).astype(np.int32))
-    expect = np.array([True, False, False, False]).astype(np.bool)
+    expect = np.array([True, False, False, False]).astype(np.bool_)
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     gathernd = GatherNdNet()
@@ -213,9 +212,9 @@ def test_gathernd_bool():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gathernd_indices_int64():
-    x = Tensor(np.array([[True, False], [False, False]]).astype(np.bool))
+    x = Tensor(np.array([[True, False], [False, False]]).astype(np.bool_))
     indices = Tensor(np.array([[0, 0], [0, 1], [1, 0], [1, 1]]).astype(np.int64))
-    expect = np.array([True, False, False, False]).astype(np.bool)
+    expect = np.array([True, False, False, False]).astype(np.bool_)
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     gathernd = GatherNdNet()

@@ -17,6 +17,7 @@
 #include "nnacl/op_base.h"
 #include "nnacl/splice_parameter.h"
 #include "infer/splice.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 using mindspore::ops::kNameSplice;
 using mindspore::schema::PrimitiveType_Splice;
 

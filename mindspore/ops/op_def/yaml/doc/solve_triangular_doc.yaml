@@ -4,7 +4,7 @@ solve_triangular:
 
         Note:
             - `solve_triangular` is currently only used in `mindscience` scientific computing scenarios and
-              dose not support other usage scenarios.
+              does not support other usage scenarios.
             - `solve_triangular` is not supported on Windows platform yet.
 
         Args:

@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool2d {
 class AvgPool2DAscend final : public AclnnKernelMod {
  public:
   AvgPool2DAscend() : AclnnKernelMod(std::move("aclnnAvgPool2d")) {}
@@ -35,6 +36,7 @@ class AvgPool2DAscend final : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace avg_pool2d
 }  // namespace kernel
 }  // namespace mindspore
 

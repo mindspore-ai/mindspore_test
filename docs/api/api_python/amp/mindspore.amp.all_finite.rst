@@ -3,7 +3,7 @@ mindspore.amp.all_finite
 
 .. py:function:: mindspore.amp.all_finite(inputs)
 
-    检查inputs是否是有效值（无溢出）。
+    检查输入是否有溢出，返回为True为溢出，False为无溢出。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
@@ -15,7 +15,7 @@ mindspore.amp.all_finite
 
     返回：
         Tensor，布尔类型的标量Tensor。
-    
+
     教程样例：
         - `自动混合精度 - 损失缩放
           <https://mindspore.cn/tutorials/zh-CN/master/beginner/mixed_precision.html#损失缩放>`_

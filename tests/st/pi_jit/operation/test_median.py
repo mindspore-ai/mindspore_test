@@ -1,4 +1,3 @@
-import sys  
 import pytest 
 import numpy as np
 from mindspore import Tensor, jit, context
@@ -6,10 +5,6 @@ from ..share.ops.primitive.median_ops import MedianFactory
 from ..share.ops.primitive.median_ops import Median
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_median_input_1d_fp32():
@@ -166,11 +161,11 @@ def test_p_median_input_same_value():
     """
     x = np.array([[2, 2, 2, 2], [2, 2, 2, 2]]).astype(np.float32)
     ps_net = Median(global_median=False, axis=1, keep_dims=True)
-    jit(ps_net.construct, mode="PSJit")(Tensor(x))
+    jit(ps_net.construct, capture_mode="ast")(Tensor(x))
     context.set_context(mode=context.GRAPH_MODE)
     y_psjit, _ = ps_net(Tensor(x))
     pi_net = Median(global_median=False, axis=1, keep_dims=True)
-    jit(ps_net.construct, mode="PIJit")(Tensor(x))
+    jit(ps_net.construct, capture_mode="bytecode")(Tensor(x))
     context.set_context(mode=context.PYNATIVE_MODE)
     y_pijit, _ = pi_net(Tensor(x))
     assert np.allclose(y_psjit.asnumpy(), y_pijit.asnumpy(), 0.0001, 0.0001)

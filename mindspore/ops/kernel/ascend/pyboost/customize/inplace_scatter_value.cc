@@ -18,14 +18,14 @@
 #include "kernel/ascend/pyboost/customize/inplace_scatter_value.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceScatterValueAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                         const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                         const BaseTensorPtr &index_tensor, const ScalarPtr &value) {
+tensor::TensorPtr InplaceScatterValueAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                     const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                                     const ScalarPtr &value) {
   MS_LOG(DEBUG) << "Call InplaceScatterValue start";
   // No need to call infer
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, index_tensor);

@@ -52,7 +52,7 @@
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "tools/optimizer/graph/clip_convert_activation_pass.h"
 #include "tools/optimizer/fusion/adjust_matmul_pass.h"
-#include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
+#include "tools/optimizer/graph/adjust_ascend_quant_pass.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "tools/optimizer/fusion/transpose_fusion.h"
 #include "tools/optimizer/fusion/batchnorm_to_scale_fusion.h"
@@ -80,8 +80,18 @@
 #include "tools/optimizer/fusion/gnsnz_pass.h"
 #include "tools/optimizer/fusion/ffn_custom_pass.h"
 #include "tools/optimizer/fusion/gnbmm_pass.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {
@@ -97,16 +107,20 @@ constexpr auto kToNCHWFormatPass = "ToNCHWFormat";
 constexpr auto kInferShapePass = "InferShapePass";
 constexpr auto kConstFoldPass = "ConstFoldPass";
 constexpr auto kAdjustCol2imPass = "AdjustCol2imPass";
+constexpr auto kAdjustControlFlowPass = "AdjustControlflowPass";
 constexpr auto kRemoveRedundantOpPass = "RemoveRedundantOpPass";
 constexpr auto kAdjustMatmulPass = "AdjustMatmulPass";
-constexpr auto kAdjustQuantMatmulPass = "AdjustQuantMatmulPass";
+constexpr auto kAdjustAscendQunatPass = "AdjustAscendQunatPass";
 constexpr auto kDelRedundantTranspose = "DeleteRedundantTranspose";
 constexpr auto kRemoveUnusedAddNodePass = "RemoveUnusedAddNodePass";
 constexpr auto kAdjustResizeDimsPass = "AdjustResizeDimsPass";
 constexpr auto kCustomOpFlashAttentionFusionForCustom = "FlashAttentionFusionForCustom";
 constexpr auto kFlashAttentionTikPass = "FlashAttentionTikPass";
 constexpr auto kCustomOpInsertVariableNodePass = "InsertVariableNodePass";
+constexpr auto kAddStreamLabelPass = "AddStreamLabelPass";
 constexpr auto kCustomOpFlashAttentionFusion = "FlashAttentionFusion";
+constexpr auto kCustomOpLeakyReluFusion = "LeakyReluFusion";
+
 constexpr auto kCustomOpGroupNormSiluFusion = "GroupNormSiluFusion";
 constexpr auto kCustomOpGeGluV2Fusion = "GeGluV2Fusion";
 constexpr auto kLayerNormV3Fusion = "LayerNormV3Fusion";
@@ -126,6 +140,7 @@ constexpr auto kOpsTransPose = "Transpose";
 /* 1. For compatibility reasons (on MindIRs with old primitives), ResizeBilinear op still needs to be processed.
    2. ResizeBilinear in core/ops is deprecated, avoid using name string defined in core/ops. */
 constexpr auto kNameResizeBilinear = "ResizeBilinear";
+constexpr auto kNameScatterNdMax = "ScatterNdMax";
 const std::set<std::string> kSocVersionForAscendCFA = {
   "Ascend910B1",    "Ascend910B2",    "Ascend910B2C",   "Ascend910B3",    "Ascend910B4",    "Ascend310P3",
   "Ascend910_9391", "Ascend910_9381", "Ascend910_9392", "Ascend910_9382", "Ascend910_9372", "Ascend910_9361"};
@@ -316,9 +331,9 @@ STATUS AclPassImpl::CommonPass(const FuncGraphPtr &func_graph) {
   return lite::RET_OK;
 }
 
-// From:
+// Convert From
 //   MakeList(arg1, arg2, ...)
-// To:
+// Convert To
 //   MakeTuple(arg1, arg2, ...)
 static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
@@ -332,9 +347,9 @@ static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
   return node->func_graph()->NewCNode(std::move(inputs));
 }
 
-// From:
+// From
 //   list_getitem(list, key)
-// To:
+// To
 //   TupleGetItem(list, key)
 static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
@@ -355,9 +370,9 @@ static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
   return node->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleGetItem), data, key});
 }
 
-// From:
+// From
 //   ListSetItem(list, index, item)
-// To:
+// To
 //   TupleSetItem(list, index, item)
 static AnfNodePtr ConvertListSetItemToTupleSetItem(const CNodePtr &node) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
@@ -622,6 +637,10 @@ STATUS FlashAttentionPass(const FuncGraphPtr &func_graph, const string &soc_vers
       MS_LOG(ERROR) << kCustomOpFlashAttentionFusion << " op pass failed.";
       return lite::RET_ERROR;
     }
+    if (!lite::RunOptimizerPass(func_graph, {kCustomOpLeakyReluFusion})) {
+      MS_LOG(ERROR) << kCustomOpLeakyReluFusion << " op pass failed.";
+      return lite::RET_ERROR;
+    }
   } else {
     MS_LOG(INFO) << "run " << kCustomOpFlashAttentionFusionForCustom;
     if (!lite::RunOptimizerPass(func_graph, {kCustomOpFlashAttentionFusionForCustom})) {
@@ -644,7 +663,7 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
     }
   }
   MS_LOG(INFO) << "Insert AscendQuant node before matmul input.";
-  MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustQuantMatmulPass}), lite::RET_ERROR,
+  MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustAscendQunatPass}), lite::RET_ERROR,
                     "Insert AscendQuant node before matmul input failed!");
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FFN") != plugin_custom_ops.end()) {
     MS_LOG(INFO) << "using FFN";
@@ -820,7 +839,7 @@ STATUS AclPassImpl::MapperForOrgMindIR(const FuncGraphPtr &func_graph) {
 
   std::set<std::string> mindir_mapper = {ops::kNameTranspose, ops::kNameStandardNormal, ops::kNameBatchMatMul,
                                          ops::kNameMatMul,    ops::kNameAvgPool,        ops::kNameBatchNorm,
-                                         kNameResizeBilinear};
+                                         kNameResizeBilinear, kNameScatterNdMax};
   const std::set<PrimitivePtr> support_ptq_mindir_types = {prim::kPrimQuantDTypeCast, prim::kPrimAddFusion,
                                                            prim::kPrimMulFusion};
   for (auto graph : all_func_graphs) {
@@ -947,7 +966,10 @@ STATUS AclPassImpl::ConvertGraphToOm(const FuncGraphPtr &func_graph, Buffer *om_
     MS_LOG(ERROR) << "convert args to attr pass failed";
     return lite::RET_ERROR;
   }
-
+  if (!lite::RunOptimizerPass(func_graph, {kAdjustControlFlowPass})) {
+    MS_LOG(ERROR) << "kAdjustControlFlowPass failed!";
+    return lite::RET_ERROR;
+  }
   // call interface of cloud
   ModelConverter model_converter;
   options_->SetConstName(param_->const_names);
@@ -1235,7 +1257,7 @@ bool AclPassImpl::Run(const FuncGraphPtr &func_graph) {
     // func_graph is already acl custom node
     return true;
   }
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   MS_CHECK_TRUE_MSG(func_graph != nullptr, false, "func_graph is nullptr.");
 
   auto manager = Manage(func_graph, true);
@@ -1265,6 +1287,11 @@ bool AclPassImpl::Run(const FuncGraphPtr &func_graph) {
   if (DeparseGraph(func_graph, manager) != lite::RET_OK) {
     MS_LOG(ERROR) << "Deparse graph failed.";
     return false;
+  }
+
+  if (!lite::RunOptimizerPass(func_graph, {kAddStreamLabelPass})) {
+    MS_LOG(ERROR) << "add stream label pass failed!";
+    return lite::RET_ERROR;
   }
 
   if (param_->provider == "ge") {

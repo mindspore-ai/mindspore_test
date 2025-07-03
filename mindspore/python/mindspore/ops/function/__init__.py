@@ -27,7 +27,16 @@ from . import (
     linalg_func,
     clip_func,
     fft_func,
-    reshard_func
+    reshard_func,
+    sparse_func,
+    random_func,
+    debug_func,
+    image_func,
+    spectral_func,
+    vmap_func,
+    sparse_unary_func,
+    other_func,
+    _add_attr_func
 )
 from .array_func import (
     unique,
@@ -70,6 +79,7 @@ from .array_func import (
     select_scatter,
     scalar_to_array,
     scalar_to_tensor,
+    take,
     tuple_to_array,
     expand_dims,
     squeeze,
@@ -217,6 +227,7 @@ from .math_func import (
     sqrt,
     square,
     tensor_mul,
+    tensor_muls,
     mul,
     multiply,
     digamma,
@@ -241,6 +252,7 @@ from .math_func import (
     lcm,
     tensor_exp,
     einsum,
+    einsum_ext,
     view_as_real,
     var,
     var_mean,
@@ -448,6 +460,7 @@ from .math_func import (
     count_nonzero,
     tensor_dot,
     vecdot,
+    multi_scale_deformable_attn_function,
     dot,
     isnan_ext,
     batch_dot,
@@ -466,6 +479,8 @@ from .nn_func import (
     avg_pool3d,
     max_pool2d,
     max_pool3d,
+    moe_token_permute,
+    moe_token_unpermute,
     batch_norm,
     add_rms_norm,
     rms_norm,
@@ -487,6 +502,7 @@ from .nn_func import (
     flipud,
     fractional_max_pool2d,
     fractional_max_pool3d,
+    speed_fusion_attention,
     pixel_shuffle,
     pixel_unshuffle,
     hardshrink,
@@ -494,6 +510,8 @@ from .nn_func import (
     is_floating_point,
     incre_flash_attention,
     prompt_flash_attention,
+    flash_attention_score,
+    fused_infer_attention_score,
     intopk,
     interpolate,
     upsample,
@@ -513,7 +531,6 @@ from .nn_func import (
     softsign,
     silu,
     selu,
-    soft_margin_loss,
     softmax,
     softmin,
     softshrink,
@@ -538,6 +555,7 @@ from .nn_func import (
     conv2d,
     conv_transpose2d,
     sigmoid,
+    soft_margin_loss,
     logsigmoid,
     relu,
     relu_,
@@ -644,6 +662,7 @@ from .grad import (
     vjp,
     linearize,
     stop_gradient,
+    stop_gradient_,
     get_grad
 )
 from .debug_func import (
@@ -765,7 +784,16 @@ from .other_func import (
     depend,
     partial,
     rotary_position_embedding,
+    move_to,
+    moe_init_routing_v2,
+    moe_distribute_dispatch,
+    moe_distribute_combine
 )
+
+from ._add_attr_func import (
+    _add_attr,
+)
+
 from .reshard_func import (
     reshard,
 )
@@ -789,5 +817,6 @@ __all__.extend(sparse_unary_func.__all__)
 __all__.extend(clip_func.__all__)
 __all__.extend(fft_func.__all__)
 __all__.extend(other_func.__all__)
+__all__.extend(_add_attr_func.__all__)
 __all__.extend(reshard_func.__all__)
 __all__.sort()

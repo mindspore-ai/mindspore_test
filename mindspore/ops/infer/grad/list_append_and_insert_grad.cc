@@ -34,6 +34,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {
@@ -96,6 +97,8 @@ class ListAppendAndInsertGradInfer : public abstract::OpInferBase {
                           const std::vector<AbstractBasePtr> &input_args) const override {
     auto input_shape = input_args[kIndex0]->GetShape();
     auto index_value = input_args[kIndex1]->GetValue();
+    MS_EXCEPTION_IF_NULL(input_shape);
+    MS_EXCEPTION_IF_NULL(input_shape->cast<abstract::SequenceShapePtr>());
     auto list_shape = input_shape->cast<abstract::SequenceShapePtr>()->shape();
     auto index = GetIndexArgValue(index_value, list_shape.size(), primitive->name());
     list_shape.erase(list_shape.begin() + index);

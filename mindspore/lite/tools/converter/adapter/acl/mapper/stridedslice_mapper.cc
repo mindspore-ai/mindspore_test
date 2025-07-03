@@ -21,9 +21,12 @@
 #include "include/registry/converter_context.h"
 #include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
-
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
 namespace mindspore {
 namespace lite {
+using mindspore::ops::kNameStridedSlice;
+
+StridedSliceMapper::StridedSliceMapper() : PrimitiveMapper(kNameStridedSlice) {}
 STATUS StridedSliceMapper::Mapper(const CNodePtr &cnode) {
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;

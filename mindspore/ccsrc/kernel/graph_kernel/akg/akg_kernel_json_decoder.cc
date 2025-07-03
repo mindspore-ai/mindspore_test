@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/framework_utils.h"
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -38,6 +38,9 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {

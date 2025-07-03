@@ -20,10 +20,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cross {
 
 void CrossAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   const int64_t default_dim = -65530;
   if (dim_ == default_dim) {
     const auto &input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
@@ -41,5 +42,6 @@ bool CrossAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Cross, CrossAscend);
+}  // namespace cross
 }  // namespace kernel
 }  // namespace mindspore

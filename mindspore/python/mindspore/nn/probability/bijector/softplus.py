@@ -29,10 +29,11 @@ class Softplus(Bijector):
     .. math::
         Y = \frac{\log(1 + e ^ {kX})}{k}
 
-    where k is the sharpness factor.
+    where :math:`k` is the sharpness factor.
 
     Args:
-        sharpness (float, list, numpy.ndarray, Tensor): The scale factor. Default: ``1.0`` .
+        sharpness (float, list, numpy.ndarray, Tensor): The scale factor. :math:`k` in the above formula.
+            Default: ``1.0`` .
         name (str): The name of the Bijector. Default: ``'Softplus'`` .
 
     Note:

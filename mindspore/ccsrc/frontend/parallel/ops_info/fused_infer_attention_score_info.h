@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,21 +74,21 @@ class FusedInferAttentionScoreInfo : public OperatorInfo {
                             AnfNodePtr *output);
   Status ComputeReplaceGraphForSplitKVSeq(const CNodePtr &cnode);
   void InferOptionalTensorMapForAntiquant();
-  int64_t head_num_;
-  int64_t kv_head_num_;
-  int64_t input_layout_;
-  int64_t antiquant_mode_;
-  int64_t dp_;
-  int64_t mp_;
-  int64_t sp_;
-  int64_t sparse_mode_;
-  int64_t pre_tokens_;
-  int64_t next_tokens_;
+  int64_t head_num_ = 1;
+  int64_t kv_head_num_ = 1;
+  int64_t input_layout_ = 1;
+  int64_t antiquant_mode_ = 0;
+  int64_t dp_ = 1;
+  int64_t mp_ = 1;
+  int64_t sp_ = 1;
+  int64_t sparse_mode_ = 0;
+  int64_t pre_tokens_ = 2147483647;
+  int64_t next_tokens_ = 2147483647;
   bool softmax_lse_flag_ = false;
-  int64_t dev_matrix_batch_dim_;
-  int64_t dev_matrix_s1_dim_;
-  int64_t dev_matrix_n1_dim_;
-  size_t expect_strategies_size_;
+  int64_t dev_matrix_batch_dim_ = 0;
+  int64_t dev_matrix_s1_dim_ = 2;
+  int64_t dev_matrix_n1_dim_ = 1;
+  size_t expect_strategies_size_ = 4;
   std::vector<Shape> optional_tensor_map_ = {{}, {}, {}, {}, {}, {2}, {2}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
   std::vector<Shape> optional_op_strategies_ = {{},  {},  {},  {1, 0, 0, 0}, {1, 0, 0}, {1}, {1}, {0}, {0},
                                                 {0}, {0}, {0}, {0},          {0},       {0}, {0}, {0}};

@@ -1,6 +1,6 @@
 acosh:
     description: |
-        Computes inverse hyperbolic cosine of the inputs element-wise.
+        Computes inverse hyperbolic cosine of each element in inputs tensors.
 
         .. math::
 
@@ -11,22 +11,16 @@ acosh:
             Input range is [1, inf].
 
         Args:
-            input (Tensor): The input tensor of inverse hyperbolic cosine function.
+            input (Tensor): The input tensor.
 
         Returns:
-            Tensor, has the same shape and type as `input`.
-
-        Raises:
-            TypeError: If `input` is not a Tensor.
+            Tensor
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([1.0, 1.5, 3.0, 100.0]), mindspore.float32)
-            >>> output = ops.acosh(input)
+            >>> output = mindspore.ops.acosh(mindspore.tensor([1.0, 1.5, 3.0, 100.0]))
             >>> print(output)
             [0.        0.9624237 1.7627472 5.298292 ]

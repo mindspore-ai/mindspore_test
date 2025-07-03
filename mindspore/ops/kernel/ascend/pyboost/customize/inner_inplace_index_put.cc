@@ -16,27 +16,45 @@
 
 #include <functional>
 #include "kernel/ascend/pyboost/customize/inner_inplace_index_put.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &input_tensor,
-                                                          const ValueTuplePtr &indices_tensor_list,
-                                                          const BaseTensorPtr &values_tensor,
-                                                          const BoolImmPtr &accumulate) {
+namespace {
+constexpr size_t kInplaceIndexPutEmptyShape = 9;
+// Remove empty tensors from the end of the indices list.
+std::vector<TensorPtr> RemoveTrailingEmptyTensor(const std::vector<TensorPtr> &indices) {
+  std::vector<TensorPtr> new_indices = indices;
+  while (!new_indices.empty()) {
+    auto back_shape = new_indices.back()->shape();
+    if (back_shape.size() == kInplaceIndexPutEmptyShape &&
+        std::all_of(back_shape.begin(), back_shape.end(), [](int i) { return i == 0; })) {
+      new_indices.pop_back();
+    } else {
+      break;
+    }
+  }
+  return new_indices;
+}
+}  // namespace
+
+tensor::TensorPtr InnerInplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                      const TensorPtr &input_tensor,
+                                                      const ValueTuplePtr &indices_tensor_list,
+                                                      const TensorPtr &values_tensor, const BoolImmPtr &accumulate) {
   // Inplace op does not require infer, but for check broadcasts of indexes, inputs and value.
   OpRunner::InferOpOutput(op, input_tensor, indices_tensor_list, values_tensor, accumulate);
   op->set_outputs({input_tensor});
 
   const auto &input_shape = input_tensor->shape();
   const auto &values_shape = values_tensor->shape();
-  std::vector<BaseTensorPtr> indices_tensor_vector = ConvertValueTupleToVector<BaseTensorPtr>(indices_tensor_list);
+  std::vector<TensorPtr> indices_tensor_vector = ConvertValueTupleToVector<TensorPtr>(indices_tensor_list);
+  indices_tensor_vector = RemoveTrailingEmptyTensor(indices_tensor_vector);
   auto input_numel =
     std::accumulate(input_shape.begin(), input_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto values_numel =

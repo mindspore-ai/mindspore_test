@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/round.h"
-#include "kernel/cpu/pyboost/auto_generate/cast.h"
-#include "kernel/cpu/pyboost/auto_generate/round.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/op_runner.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/round.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/cast.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/round.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void RoundCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const ValuePtr &decimals,
+void RoundCPUCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &input, const ValuePtr &decimals,
                   const std::vector<AbstractBasePtr> &input_abs) {
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
@@ -49,10 +48,10 @@ void RoundCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &inpu
 }
 }  // namespace
 
-void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const Int64ImmPtr &decimals) {
+void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input, const Int64ImmPtr &decimals) {
   OpRunner::InferOpOutput(op, input, decimals);
 
-  BaseTensorPtr act_tensor = input;
+  TensorPtr act_tensor = input;
 
   if (act_tensor->data_type() == kNumberTypeFloat16) {
     const auto &device_name = op->device_context()->device_context_key_.device_name_;

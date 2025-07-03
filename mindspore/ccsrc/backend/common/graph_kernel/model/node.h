@@ -21,12 +21,11 @@
 #include <set>
 #include <string>
 #include "ir/anf.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "utils/shape_utils.h"
-#include "include/common/utils/utils.h"
 #include "include/backend/visible.h"
 #include "symbolic_shape/symbol.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::graphkernel::inner {
 enum class NType {
@@ -43,7 +42,7 @@ using DFormat = std::string;
 using DShape = ShapeVector;
 using DAttrs = mindspore::HashMap<std::string, ValuePtr>;
 
-struct BACKEND_EXPORT NodeBase {
+struct BACKEND_COMMON_EXPORT NodeBase {
   DShape shape;
   TypeId type;
   DFormat format;
@@ -51,14 +50,14 @@ struct BACKEND_EXPORT NodeBase {
 };
 using NodeBaseList = std::vector<NodeBase>;
 
-struct BACKEND_EXPORT ExtraInfo {
+struct BACKEND_COMMON_EXPORT ExtraInfo {
   DAttrs cnode_attrs_;
 };
 
-class BACKEND_EXPORT Node;
+class BACKEND_COMMON_EXPORT Node;
 using NodePtr = std::shared_ptr<Node>;
 using NodePtrList = std::vector<NodePtr>;
-class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
+class BACKEND_COMMON_EXPORT Node : public NodeBase, public std::enable_shared_from_this<Node> {
  public:
   explicit Node(const NodeBase &baseinfo) : NodeBase(baseinfo) {}
   virtual ~Node() { ClearInputs(); }  // remove this node from the previous nodes' user.
@@ -110,20 +109,20 @@ class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this
   void RemoveUser(Node *const user, size_t index);
 };
 
-class BACKEND_EXPORT ConstTensorNode : public Node {
+class BACKEND_COMMON_EXPORT ConstTensorNode : public Node {
  public:
-  explicit ConstTensorNode(const tensor::BaseTensorPtr &data)
+  explicit ConstTensorNode(const tensor::TensorPtr &data)
       : Node({data->DataSize() == 1 ? DShape({1}) : data->shape(), data->data_type(), kOpFormat_DEFAULT}),
         data_(data) {}
   ~ConstTensorNode() = default;
 
   NType NodeType() override { return NType::Tensor; }
   std::string ToString() const override { return data_->data().ToString(data_->data_type(), data_->shape(), false); }
-  const tensor::BaseTensorPtr data() const { return data_; }
+  const tensor::TensorPtr data() const { return data_; }
   abstract::AbstractBasePtr ToAbstract() const override { return data_->ToAbstract(); }
 
  protected:
-  tensor::BaseTensorPtr data_;
+  tensor::TensorPtr data_;
 };
 
 class ConstScalarNode : public Node {

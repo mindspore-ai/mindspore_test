@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/mkldnn/batch_norm_cpu_kernel.h"
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
@@ -108,9 +108,13 @@ bool BatchNormCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
     ExecutePrimitive();
 
     auto moving_mean = GetDeviceAddress<float>(inputs, kIndex3);
+    MS_EXCEPTION_IF_NULL(moving_mean);
     auto moving_variance = GetDeviceAddress<float>(inputs, kIndex4);
+    MS_EXCEPTION_IF_NULL(moving_variance);
     auto mean = GetDeviceAddress<float>(outputs, kIndex3);
+    MS_EXCEPTION_IF_NULL(mean);
     auto variance = GetDeviceAddress<float>(outputs, kIndex4);
+    MS_EXCEPTION_IF_NULL(variance);
     float bessel_correction = static_cast<float>(nhw_size_) / (nhw_size_ - 1);
     for (size_t i = 0; i < inputs[kIndex3]->size() / sizeof(float); ++i) {
       moving_mean[i] = moving_mean[i] * (1 - momentum_) + mean[i] * momentum_;

@@ -28,11 +28,23 @@ using SoftMarginLossPtrCreatorFunc =
   std::function<std::unique_ptr<cukernel::GpuKernelHelperBase>(const std::string &, const uint32_t &)>;
 
 const std::vector<std::pair<KernelAttr, SoftMarginLossPtrCreatorFunc>> kernel_attr = {
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat32),
    CreateSoftMarginLossKernelPtr<float>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat16),
    CreateSoftMarginLossKernelPtr<half>},
-  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+  {KernelAttr()
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat64),
    CreateSoftMarginLossKernelPtr<double>}};
 }  // namespace
 
@@ -56,10 +68,7 @@ bool SoftMarginLossGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (!is_match) {
     return false;
   }
-  attr_ptr_->reduction = GetValue<std::string>(primitive_->GetAttr("reduction"));
-
   helper_ptr_ = std::move(kernel_attr[index].second(kernel_name_, device_id_));
-  helper_ptr_->SetKernelParam(attr_ptr_);
 
   Resize(inputs, outputs);
   return true;
@@ -67,6 +76,20 @@ bool SoftMarginLossGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 
 int SoftMarginLossGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
+  }
+
+  auto reduction = static_cast<Reduction>(inputs[kIndex2]->GetValueWithCheck<int64_t>());
+  if (reduction == Reduction::NONE) {
+    attr_ptr_->reduction = "none";
+  } else if (reduction == Reduction::MEAN) {
+    attr_ptr_->reduction = "mean";
+  } else {
+    attr_ptr_->reduction = "sum";
+  }
+  helper_ptr_->SetKernelParam(attr_ptr_);
+
   std::vector<std::vector<int64_t>> input_shapes;
   std::vector<std::vector<int64_t>> output_shapes;
   std::vector<int64_t> inp_shape = inputs[0]->GetShapeVector();

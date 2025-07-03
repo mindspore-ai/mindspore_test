@@ -14,7 +14,7 @@ mindspore.ops.Conv3D
         \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
         \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
 
-    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作， 
+    其中， :math:`bias` 为输出偏置，:math:`ccor` 为 `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_ 操作，
     :math:`weight` 为卷积核的值， :math:`X` 为输入的特征图。
 
     - :math:`i` 对应batch数，其范围为 :math:`[0, N-1]` ，其中 :math:`N` 为输入batch。
@@ -62,39 +62,7 @@ mindspore.ops.Conv3D
 
     输出：
         Tensor，卷积后的值。shape为 :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})` 。
-
-        `pad_mode` 为 ``"same"`` 时：
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lceil{\frac{D_{in}}{\text{stride[0]}}} \right \rceil \\
-                H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[1]}}} \right \rceil \\
-                W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[2]}}} \right \rceil \\
-            \end{array}
-
-        `pad_mode` 为 ``"valid"`` 时：
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
-                {\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
-                {\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
-                {\text{stride[2]}} + 1} \right \rfloor \\
-            \end{array}
-
-        `pad_mode` 为 ``"pad"`` 时：
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} + pad[0] + pad[1] - (\text{dilation[0]} - 1) \times
-                \text{kernel_size[0]} - 1 }{\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} + pad[2] + pad[3] - (\text{dilation[1]} - 1) \times
-                \text{kernel_size[1]} - 1 }{\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} + pad[4] + pad[5] - (\text{dilation[2]} - 1) \times
-                \text{kernel_size[2]} - 1 }{\text{stride[2]}} + 1} \right \rfloor \\
-            \end{array}
+        要了解不同的填充模式如何影响输出shape，请参考 :class:`mindspore.nn.Conv3d` 以获取更多详细信息。
 
     异常：
         - **TypeError** - `out_channel` 或 `group` 不是int。

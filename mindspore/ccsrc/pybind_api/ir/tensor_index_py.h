@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
-#define MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_
 
 #include <tuple>
 #include <algorithm>
@@ -25,15 +25,15 @@
 #include "pybind11/numpy.h"
 #include "pybind11/pytypes.h"
 #include "ir/map_tensor.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace tensor {
-using tensor::TensorPy;
+using tensor::TensorPybind;
 //
 // Tensor index python adapter.
 //
@@ -78,8 +78,8 @@ class Slice final {
  public:
   Slice(const py::object &start_index, const py::object &stop_index, const py::object &step_index) {
     dim_size_ = kIndexMax;
-    if (py::isinstance<Tensor>(step_index) || IsStubTensor(step_index)) {
-      auto step_tensor = IsStubTensor(step_index) ? ConvertStubTensor(step_index) : step_index.cast<TensorPtr>();
+    if (IsTensorPy(step_index)) {
+      auto step_tensor = ConvertToTensor(step_index);
       MS_EXCEPTION_IF_NULL(step_tensor);
       if (step_tensor->data_type() == kMetaTypeNone) {
         step_ = 1;
@@ -193,13 +193,10 @@ class Slice final {
   }
 
   static inline bool InitByNone(const py::object &index) {
-    if (py::isinstance<Tensor>(index)) {
-      auto tensor_index = index.cast<TensorPtr>();
+    if (IsTensorPy(index)) {
+      auto tensor_index = ConvertToTensor(index);
       MS_EXCEPTION_IF_NULL(tensor_index);
       return tensor_index->data_type() == kMetaTypeNone;
-    } else if (IsStubTensor(index)) {
-      auto type_id = GetStubTensorInfo(index).second->type_id();
-      return type_id == kMetaTypeNone;
     } else if (py::isinstance<py::none>(index)) {
       return true;
     }
@@ -208,8 +205,8 @@ class Slice final {
 
   static inline int64_t NormalizeIndex(const py::object &index, int64_t step, int64_t dim_size) {
     int64_t normalized_index;
-    if (py::isinstance<Tensor>(index) || IsStubTensor(index)) {
-      auto tensor_index = IsStubTensor(index) ? ConvertStubTensor(index) : index.cast<TensorPtr>();
+    if (IsTensorPy(index)) {
+      auto tensor_index = ConvertToTensor(index);
       MS_EXCEPTION_IF_NULL(tensor_index);
       normalized_index = NormalizeIndex(tensor_index, step, dim_size);
     } else if (py::isinstance<py::int_>(index)) {
@@ -245,7 +242,9 @@ class TensorIndex final {
   explicit TensorIndex(const py::slice &py_slice)
       : TensorIndex(Slice(py_slice.attr("start"), py_slice.attr("stop"), py_slice.attr("step"))) {}
 
-  explicit TensorIndex(TensorPtr tensor) : tensor_(std::move(tensor)), type_(TensorIndexType::Tensor) {}
+  explicit TensorIndex(TensorPtr tensor)
+      : tensorpynew_(py::handle(TensorPythonInitFromTensor(tensor))), type_(TensorIndexType::Tensor) {}
+  explicit TensorIndex(TensorPyPtr tensorpy) : tensorpy_(std::move(tensorpy)), type_(TensorIndexType::Tensor) {}
   explicit TensorIndex(py::array py_array) : array_(std::move(py_array)), type_(TensorIndexType::Array) {}
 
   explicit TensorIndex(py::list py_list) : list_(std::move(py_list)), type_(TensorIndexType::List) {}
@@ -254,40 +253,7 @@ class TensorIndex final {
   explicit TensorIndex(float float_input) : float_(float_input), type_(TensorIndexType::Float) {}
   explicit TensorIndex(const py::float_ &float_input) : TensorIndex(float_input.cast<float>()) {}
 
-  explicit TensorIndex(const py::handle &py_object) {
-    if (py::isinstance<py::list>(py_object)) {
-      this->list_ = py_object.cast<py::list>();
-      this->type_ = TensorIndexType::List;
-    } else if (py::isinstance<py::int_>(py_object) && !py::isinstance<py::bool_>(py_object)) {
-      this->integer_ = py_object.cast<py::int_>();
-      this->type_ = TensorIndexType::Integer;
-    } else if (py::isinstance<py::float_>(py_object)) {
-      this->float_ = py_object.cast<py::float_>();
-      this->type_ = TensorIndexType::Float;
-    } else if (py::isinstance<tensor::Tensor>(py_object)) {
-      this->tensor_ = py_object.cast<tensor::TensorPtr>();
-      this->type_ = TensorIndexType::Tensor;
-    } else if (py::isinstance<py::tuple>(py_object)) {
-      this->tuple_ = py_object.cast<py::tuple>();
-      this->type_ = TensorIndexType::Tuple;
-    } else if (py::isinstance<py::slice>(py_object)) {
-      this->slice_ = TensorIndex(py_object.cast<py::slice>()).slice_;
-      this->type_ = TensorIndexType::Slice;
-    } else if (py::isinstance<py::ellipsis>(py_object)) {
-      this->type_ = TensorIndexType::Ellipsis;
-    } else if (py::isinstance<py::none>(py_object)) {
-      this->type_ = TensorIndexType::None;
-    } else if (py::isinstance<py::array>(py_object)) {
-      this->array_ = py_object.cast<py::array>();
-      this->type_ = TensorIndexType::Array;
-    } else if (py::isinstance<py::bool_>(py_object)) {
-      this->boolean_ = py_object.cast<py::bool_>();
-      this->type_ = TensorIndexType::Boolean;
-    } else if (IsStubTensor(py_object)) {
-      this->tensor_ = ConvertStubTensor(py_object);
-      this->type_ = TensorIndexType::Tensor;
-    }
-  }
+  explicit TensorIndex(const py::handle &py_object);
 
   inline bool IsNone() const { return type_ == TensorIndexType::None; }
 
@@ -307,7 +273,9 @@ class TensorIndex final {
 
   inline bool IsTensor() const { return type_ == TensorIndexType::Tensor; }
 
-  inline const TensorPtr &tensor() const { return tensor_; }
+  inline const TensorPyPtr &tensor() const { return tensorpy_; }
+
+  inline const py::handle &tensorNew() const { return tensorpynew_; }
 
   inline bool IsList() const { return type_ == TensorIndexType::List; }
 
@@ -329,7 +297,7 @@ class TensorIndex final {
 
   inline const TensorIndexType &type() const { return type_; }
 
-  static py::object GetItemByTensor(const ShapeVector &data_shape, const TensorPtr &index);
+  static py::object GetItemByTensor(const ShapeVector &data_shape, const py::handle index);
   static py::object GetItemByList(const ShapeVector &data_shape, const TensorIndex &tensor_index);
   static py::object GetItemByTuple(const ShapeVector &data_shape, const std::vector<TensorIndex> &tensor_indexes);
   static bool GetItemByTupleWithView(const ValuePtr &data_value, const ShapeVector &data_shape,
@@ -349,6 +317,7 @@ class TensorIndex final {
   static py::object SetItemByNumberWithView(const ShapeVector &data_shape, const TypePtr &data_type, bool is_parameter,
                                             const TensorIndex &tensor_index, const TensorIndexType &py_value_type,
                                             const ValuePtr &data_value);
+  static py::object SetItemByTensorResult(py::array np_index);
   static py::object SetItemByTensor(const ShapeVector &data_shape, bool is_parameter, const TensorIndex &tensor_index,
                                     const TensorIndexType &py_value_type);
 
@@ -375,7 +344,8 @@ class TensorIndex final {
   bool boolean_ = false;
   float float_ = 0.0;
   Slice slice_;
-  TensorPtr tensor_;
+  TensorPyPtr tensorpy_;
+  py::handle tensorpynew_;
   py::array array_;
   py::list list_;
   py::tuple tuple_;
@@ -405,28 +375,8 @@ class TensorIndex final {
     return out;
   }
   static ShapeVector BroadCastShape(const ShapeVector &x_shape, const ShapeVector &y_shape);
-  static ShapeVector BroadCastShape(const std::vector<ShapeVector> &tensor_indexes_shapes) {
-    if (tensor_indexes_shapes.empty()) {
-      return {};
-    }
-    return std::accumulate(tensor_indexes_shapes.begin(), tensor_indexes_shapes.end(), tensor_indexes_shapes[0],
-                           [](const auto &output_shape, const auto &tensor_indexes_shape) {
-                             return BroadCastShape(output_shape, tensor_indexes_shape);
-                           });
-  }
-  static std::vector<int64_t> SliceToVector(int64_t start, int64_t stop, int64_t step) {
-    std::vector<int64_t> slice_ele_list_index;
-    if (step > 0) {
-      for (int64_t j = start; j < stop; j += step) {
-        (void)slice_ele_list_index.emplace_back(j);
-      }
-      return slice_ele_list_index;
-    }
-    for (int64_t j = start; j > stop; j += step) {
-      (void)slice_ele_list_index.emplace_back(j);
-    }
-    return slice_ele_list_index;
-  }
+  static ShapeVector BroadCastShape(const std::vector<ShapeVector> &tensor_indexes_shapes);
+  static std::vector<int64_t> SliceToVector(int64_t start, int64_t stop, int64_t step);
 
   // This is the c++ version of sequence_to_index in
   // "mindspore/python/mindspore/ops/composite/multitype_ops/_constexpr_utils.py"
@@ -454,20 +404,7 @@ class TensorIndex final {
     return (dim_size + (x % dim_size)) % dim_size;
   }
 
-  static bool CheckScalarValue(const py::handle &value) {
-    if (py::isinstance<Tensor>(value)) {
-      TensorPtr data = value.cast<TensorPtr>();
-      MS_EXCEPTION_IF_NULL(data);
-      auto data_shape = data->shape();
-      return data_shape.empty();
-    }
-    if (IsStubTensor(value)) {
-      auto data_shape = GetStubTensorInfo(value).first;
-      return data_shape.empty();
-    }
-    return CheckTypeIsInstance(TensorIndex(value).type(),
-                               {TensorIndexType::Float, TensorIndexType::Integer, TensorIndexType::Boolean});
-  }
+  static bool CheckScalarValue(const py::handle &value);
 
   static py::object DeepList(const py::object &array_like, int64_t dim_size);
   static py::object DeepTensorToNdArray(const py::object &array_like);
@@ -489,48 +426,22 @@ class TensorIndex final {
   // This is the c++ version of convert_slice_to_tensor in
   // "mindspore/python/mindspore/ops/composite/multitype_ops/_compile_utils.py"
   // Converts slice index into array
-  static TensorIndex SliceToArray(const TensorPtr &index, const ShapeVector &final_shape, size_t slice_cnt,
+  static TensorIndex SliceToArray(py::object index, const ShapeVector &final_shape, size_t slice_cnt,
                                   const ShapeVector &broadcast_shape, const ShapeVector &slice_shape,
                                   int64_t fancy_position);
 
   static ShapeVector ComputeSliceShape(const ShapeVector &slice_shape, size_t broadcast_shape_len, size_t slice_cnt,
-                                       int64_t fancy_position) {
-    ShapeVector shape(slice_shape.size(), 1);
-    if (slice_cnt >= shape.size()) {
-      MS_EXCEPTION(IndexError) << "Index out of shape size.";
-    }
-    shape[slice_cnt] = slice_shape[slice_cnt];
-    ShapeVector temp_shape(broadcast_shape_len, 1);
-    (void)shape.insert(shape.begin() + fancy_position, temp_shape.begin(), temp_shape.end());
-    return shape;
-  }
+                                       int64_t fancy_position);
 
-  static ShapeVector ComputeMultiples(const ShapeVector &origin_shape, const ShapeVector &broadcast_shape) {
-    int64_t len_gap = SizeToLong(broadcast_shape.size()) - SizeToLong(origin_shape.size());
-    ShapeVector output_shape = broadcast_shape;
-    (void)std::transform(broadcast_shape.begin() + len_gap, broadcast_shape.end(), origin_shape.begin(),
-                         output_shape.begin() + len_gap, [](int64_t x, int64_t y) {
-                           MS_EXCEPTION_IF_ZERO("dim of data shape", y);
-                           return x / y;
-                         });
-    return output_shape;
-  }
+  static ShapeVector GeneratePaddingShape(const ShapeVector &shape, int64_t length);
 
-  static ShapeVector GeneratePaddingShape(const ShapeVector &shape, int64_t length) {
-    if (SizeToLong(shape.size()) > length) {
-      MS_EXCEPTION(ValueError) << "Can not pad " << shape << " to length " << length;
-    }
-    ShapeVector pad_shape(length - SizeToLong(shape.size()), 1);
-    (void)pad_shape.insert(pad_shape.begin(), shape.begin(), shape.end());
-    return pad_shape;
-  }
   static py::object BroadCastTo(const ShapeVector &broadcast_shape, const py::object &item);
 
   // This is the c++ version of _transform_indexing_tensor in
   // "mindspore/python/mindspore/ops/composite/multitype_ops/_compile_utils.py"
   //  BroadCast tensor to the required
   static TensorIndex BroadCastTensor(const ShapeVector &broadcast_shape, const ShapeVector &final_shape,
-                                     const ShapeVector &new_shape, const TensorPtr &item);
+                                     const ShapeVector &new_shape, py::object item);
   static constexpr int64_t set_item_by_one_tensor = 0;
   static constexpr int64_t set_item_by_tuple_tensor = 1;
   static constexpr int64_t set_item_by_non_tensor = 2;
@@ -584,23 +495,29 @@ class TensorIndex final {
   // This is the c++ version of get_stride_info_from_tuple in
   // "mindspore/python/mindspore/ops/composite/multitype_ops/_constexpr_utils.py"
   // Get stride info from a tuple
-  static py::tuple GenerateNonZeroIndex(const ShapeVector &data_shape, const TensorPtr &tensor_index, bool check_align);
-  static std::vector<TensorPtr> GenerateNonZeroIndexTensorList(const ShapeVector &data_shape,
-                                                               const TensorPtr &tensor_index, bool check_align);
+  static py::tuple GenerateNonZeroIndex(const ShapeVector &data_shape, const PyType<TensorPy> *tensor_index,
+                                        bool check_align);
+  static std::vector<py::object> GenerateNonZeroIndexTensorList(const ShapeVector &data_shape,
+                                                                const PyType<TensorPy> *tensor_index, bool check_align);
   static std::tuple<std::vector<std::vector<int64_t>>, std::vector<int64_t>> GetStrideInfoFromTuple(
     const ShapeVector &data_shape, const std::vector<TensorIndex> &tuple_index);
-  static bool TensorGetitemByTupleParseTensorIndex(const ShapeVector &data_shape, const TensorPtr &tensor_index,
-                                                   std::vector<TensorPtr> *tuple_index_new,
-                                                   std::vector<TensorPtr> *tensor_indexes,
+  static bool TensorGetitemByTupleParseTensorIndex(const ShapeVector &data_shape, const py::object &tensor_index,
+                                                   std::vector<py::object> *tuple_index_new,
+                                                   std::vector<py::object> *tensor_indexes,
                                                    std::vector<int64_t> *tensor_positions, bool check_align);
   static std::tuple<bool, ShapeVector, std::vector<TensorIndex>> GetExpandDimsInfo(
     const ShapeVector &data_shape, const std::vector<TensorIndex> &index);
-  static py::object GenerateIndices(const std::vector<TensorPtr> &tuple_index_new,
+  static py::object GenerateIndices(const std::vector<py::object> &tuple_index_new,
                                     const std::vector<int64_t> &broadcast_shape,
                                     const std::vector<int64_t> &index_tensor_new_shape,
                                     const std::vector<int64_t> &final_shape,
                                     const std::vector<int64_t> &tensor_positions,
                                     const std::vector<int64_t> &slice_shapes, int64_t fancy_position);
+  static void TensorGetitemByTupleInner(const TensorIndex &index, int64_t dim_size, const ShapeVector &data_shape,
+                                        size_t i, std::vector<int64_t> *tensor_positions,
+                                        std::vector<py::object> *tuple_index_new,
+                                        std::vector<py::object> *tensor_indexes, std::vector<int64_t> *slice_shapes,
+                                        bool *empty_mask_tensor);
   static py::object TensorGetitemByTuple(const ShapeVector &data_shape, const std::vector<TensorIndex> &tuple_index,
                                          std::vector<int64_t> *data_transfer_type,
                                          std::vector<py::object> *data_transfer_args);
@@ -637,7 +554,7 @@ class TensorIndex final {
   // Converts advanced index into array
   static TensorIndex FormatIndex(const TensorIndex &idx, const ShapeVector &data_shape, size_t cur_dim,
                                  bool *need_format);
-  static bool RemoveExpandedDimsParseTensorIndex(const ShapeVector &data_shape, const TensorPtr &index_out,
+  static bool RemoveExpandedDimsParseTensorIndex(const ShapeVector &data_shape, const py::handle &obj,
                                                  std::vector<TensorIndex> *indices_out,
                                                  std::vector<ShapeVector> *shapes, bool *has_sequence, size_t *cur_dim,
                                                  bool check_align);
@@ -651,6 +568,10 @@ class TensorIndex final {
   static py::object ReSetitemByTensor(const std::vector<TensorIndex> &new_tuple_index,
                                       const std::vector<int64_t> &value_transfer_types,
                                       const std::vector<py::object> &value_transfer_args);
+  static py::object SetitemByTupleWithTensorInner(const std::vector<TensorIndex> &new_indices,
+                                                  const ShapeVector &data_shape,
+                                                  std::vector<int64_t> *value_transfer_types,
+                                                  std::vector<py::object> *value_transfer_args);
   static py::object SetitemByTupleWithTensor(const ShapeVector &data_shape, const std::vector<TensorIndex> &indices,
                                              const ShapeVector &value_shape, std::vector<int64_t> *value_transfer_type,
                                              std::vector<py::object> *value_transfer_args);
@@ -660,8 +581,8 @@ class TensorIndex final {
                                              std::vector<py::object> *value_transfer_args, const ValuePtr &data_value,
                                              const TypePtr &data_type);
 
-  static py::array SetItemByTensorByBool(const ShapeVector &data_shape, const TensorPtr &index, int64_t data_dims,
-                                         std::vector<int64_t> *value_transfer_types,
+  static py::array SetItemByTensorByBool(const ShapeVector &data_shape, const PyType<TensorPy> *index,
+                                         int64_t data_dims, std::vector<int64_t> *value_transfer_types,
                                          std::vector<py::object> *value_transfer_args,
                                          ValueTransferType *tensor_update_type);
 
@@ -670,4 +591,4 @@ class TensorIndex final {
 };
 }  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_UTILS_TENSOR_INDEX_PY_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_INDEX_PY_H_

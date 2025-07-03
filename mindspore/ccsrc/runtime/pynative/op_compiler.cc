@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include "utils/core_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/pynative/acl_adapter.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
@@ -46,7 +47,7 @@ inline std::string GetNumString(int n) {
   return kNumStrCache[n];
 }
 
-inline std::string GetShapeString(const tensor::BaseTensorPtr &input_tensor) {
+inline std::string GetShapeString(const tensor::TensorPtr &input_tensor) {
   if (input_tensor->base_shape_ptr() != nullptr) {
     return input_tensor->base_shape_ptr()->ToString();
   }
@@ -77,7 +78,7 @@ void CreateDeviceAddressWithoutWorkspace(const KernelGraphPtr &graph, const Devi
   DeviceAddressUtils::CreateValueNodeDeviceAddress(device_context, graph);
   DeviceAddressUtils::CreateKernelOutputDeviceAddress(device_context, graph, is_gradient_out);
   DeviceAddressUtils::UpdateDeviceAddressForInplaceNode(graph);
-  DeviceAddressUtils::UpdateDeviceAddressForRefNode(graph);
+  DeviceAddressUtils::UpdateDeviceAddressForRefNodeForSingleOp(graph);
 }
 
 void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const DeviceContext *device_context) {
@@ -87,7 +88,7 @@ void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const Dev
     const auto &edges = single_op->inputs_;
 
     MS_EXCEPTION_IF_NULL(device_context);
-    auto kernel_executor = device_context->GetKernelExecutor(false);
+    auto kernel_executor = device_context->GetKernelExecutor();
     MS_EXCEPTION_IF_NULL(kernel_executor);
     std::vector<size_t> ignore_input_index_list = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel);
 
@@ -191,8 +192,7 @@ OpCompilerInfoPtr OpCompiler::Compile(const session::BackendOpRunInfoPtr &op_run
   MS_EXCEPTION_IF_NULL(graph);
 
   graph->set_run_mode(device::RunMode::kKernelMode);
-  bool use_dynamic_shape_process = op_run_info->base_op_run_info.use_dynamic_shape_process;
-  auto kernel_executor = device_context->GetKernelExecutor(use_dynamic_shape_process);
+  auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
 
   opt::OptimizationWithoutBackend(graph);
@@ -260,7 +260,7 @@ void OpCompiler::KernelBuild(const OpCompilerInfoPtr &op_compiler_info, const De
   const auto &nodes = graph->execution_order();
   (void)std::copy(nodes.begin(), nodes.end(), std::back_inserter(node_to_build));
   // Kernel build
-  auto kernel_executor = device_context->GetKernelExecutor(is_dynamic);
+  auto kernel_executor = device_context->GetKernelExecutor();
   MS_EXCEPTION_IF_NULL(kernel_executor);
   kernel_executor->CreateKernel(node_to_build);
   kernel_executor->PreprocessBeforeRun(graph);
@@ -332,8 +332,8 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
   const auto &depend_list = GetDependList(op_info, op_prim);
   for (size_t index = 0; index < op_info.expanded_input_values.size(); ++index) {
     auto const &value = op_info.expanded_input_values[index];
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &input_tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      const auto &input_tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(input_tensor);
       if (op_info.use_dynamic_shape_process) {
         graph_info += GetNumString(static_cast<int>(input_tensor->shape().size()));
@@ -368,13 +368,14 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
     (void)graph_info.append("r_").append(std::to_string(op_info.py_prim_id_)).append("_");
   }
 
-  if (get_graph_info_func_) {
+  if (acl_adapter::AclAdapterCallback::GetAclGraphInfoFuncHandlerValid()) {
     MS_LOG(DEBUG) << "Call reg get graph info func.";
-    graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
+    graph_info =
+      acl_adapter::AclAdapterCallback::GetAclGraphInfoFunc(op_info.expanded_input_values, op_prim, graph_info);
   }
   // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.
   if (op_name == kAvgPoolGradOpName) {
-    auto const tensor = op_info.expanded_input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+    auto const tensor = op_info.expanded_input_values[kIndex0]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     graph_info += GetShapeString(tensor);
   }
@@ -398,7 +399,7 @@ void OpCompiler::UpdateRefNodeOutputDeviceAddress(const KernelGraphPtr &graph) {
       continue;
     }
     auto input_addr = AnfAlgo::GetMutableOutputAddr(input_node, input_node_output_index, false);
-    AnfAlgo::SetOutputAddr(input_addr, output_index, ref_node.get());
+    AnfAlgo::SetOutputAddr(input_addr, output_index, ref_node);
   }
 }
 }  // namespace pynative

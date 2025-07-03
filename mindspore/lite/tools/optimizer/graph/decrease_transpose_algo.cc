@@ -30,6 +30,12 @@
 #include "tools/common/tensor_util.h"
 #include "nnacl/op_base.h"
 #include "tools/optimizer/graph/specify_graph_input_format.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace opt {
@@ -376,6 +382,7 @@ STATUS DecreaseTransposeAlgo::DoPreInsert(const FuncGraphPtr &func_graph, const 
   MS_CHECK_TRUE_RET(abstract != nullptr, lite::RET_NULL_PTR);
   if (utils::isa<abstract::AbstractTuplePtr>(abstract)) {
     auto abstract_tuple = abstract->cast<abstract::AbstractTuplePtr>();
+    MS_CHECK_TRUE_RET(abstract_tuple != nullptr, lite::RET_NULL_PTR);
     auto abstract_list = abstract_tuple->elements();
     MS_CHECK_TRUE_RET(!abstract_list.empty(), lite::RET_OUT_OF_TENSOR_RANGE);
     abstract = abstract_list.front();
@@ -406,7 +413,7 @@ STATUS DecreaseTransposeAlgo::DoPreInsert(const FuncGraphPtr &func_graph, const 
     if (CheckPrimitiveType(cnode->input(i), prim::kPrimMakeTuple) ||
         CheckPrimitiveType(cnode->input(i), prim::kPrimMakeTupleV2)) {
       auto input_make_tuple = cnode->input(i)->cast<CNodePtr>();
-      MS_ASSERT(input_make_tuple != nullptr);
+      MS_CHECK_TRUE_RET(input_make_tuple != nullptr, lite::RET_NULL_PTR);
       for (size_t j = 1; j < input_make_tuple->size(); ++j) {
         MS_CHECK_TRUE_RET(input_make_tuple->input(j) != nullptr, lite::RET_NULL_PTR);
         if (HandleFunc(func_graph, input_make_tuple, j, trans_type) != lite::RET_OK) {
@@ -690,8 +697,9 @@ int DecreaseTransposeAlgo::SetSubGraphOutput(const FuncGraphPtr &sub_graph) {
       continue;
     }
     auto trans_cnode = return_node->input(i)->cast<CNodePtr>();
-    MS_ASSERT(trans_cnode != nullptr);
+    MS_CHECK_TRUE_MSG(trans_cnode != nullptr, lite::RET_ERROR, "trans_cnode is nullptr!");
     auto trans_input = trans_cnode->input(1);
+    MS_CHECK_TRUE_MSG(trans_input != nullptr, lite::RET_ERROR, "trans_input is nullptr!");
     auto trans_input_name = trans_input->fullname_with_scope();
     if (utils::isa<ParameterPtr>(trans_input)) {
       trans_input->cast<ParameterPtr>()->set_name(node_name);

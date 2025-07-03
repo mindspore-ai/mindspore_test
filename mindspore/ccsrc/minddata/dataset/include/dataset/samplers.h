@@ -22,6 +22,7 @@
 
 #include "include/api/visible.h"
 #include "include/api/status.h"
+#include "minddata/dataset/include/dataset/constants.h"
 
 namespace mindspore {
 namespace dataset {
@@ -79,8 +80,9 @@ class DATASET_API Sampler : std::enable_shared_from_this<Sampler> {
   friend class VOCDataset;
   friend class WIDERFaceDataset;
   friend class YesNoDataset;
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -109,16 +111,16 @@ class DATASET_API Sampler : std::enable_shared_from_this<Sampler> {
 /// \brief A class to represent a Distributed Sampler in the data pipeline.
 /// \note A Sampler that accesses a shard of the dataset.
 class DATASET_API DistributedSampler final : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
   /// \param[in] num_shards Number of shards to divide the dataset into.
   /// \param[in] shard_id Shard ID of the current shard within num_shards.
-  /// \param[in] shuffle If true, the indices are shuffled (default=true).
+  /// \param[in] shuffle_mode If not kFalse, the indices are shuffled (default=kGlobal).
   /// \param[in] num_samples The number of samples to draw (default=0, return all samples).
-  /// \param[in] seed The seed in use when shuffle is true (default=1).
+  /// \param[in] seed The seed in use when shuffle_mode is not kFalse (default=1).
   /// \param[in] offset The starting position where access to elements in the dataset begins (default=-1).
   /// \param[in] even_dist If true, each shard would return the same number of rows (default=true).
   ///     If false the total rows returned by all the shards would not have overlap.
@@ -128,7 +130,8 @@ class DATASET_API DistributedSampler final : public Sampler {
   ///      std::string file_path = "/path/to/test.mindrecord";
   ///      std::shared_ptr<Dataset> ds = MindData(file_path, {}, std::make_shared<DistributedSampler>(2, 0, false));
   /// \endcode
-  DistributedSampler(int64_t num_shards, int64_t shard_id, bool shuffle = true, int64_t num_samples = 0,
+  DistributedSampler(int64_t num_shards, int64_t shard_id,
+                     dataset::ShuffleMode shuffle_mode = dataset::ShuffleMode::kGlobal, int64_t num_samples = 0,
                      uint32_t seed = 1, int64_t offset = -1, bool even_dist = true);
   /// \brief Destructor.
   ~DistributedSampler() override = default;
@@ -141,7 +144,7 @@ class DATASET_API DistributedSampler final : public Sampler {
  private:
   int64_t num_shards_;
   int64_t shard_id_;
-  bool shuffle_;
+  dataset::ShuffleMode shuffle_mode_;
   int64_t num_samples_;
   uint32_t seed_;
   int64_t offset_;
@@ -152,8 +155,8 @@ class DATASET_API DistributedSampler final : public Sampler {
 /// \note Samples K elements for each P class in the dataset.
 ///        This will sample all classes.
 class DATASET_API PKSampler final : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -185,8 +188,8 @@ class DATASET_API PKSampler final : public Sampler {
 /// \brief A class to represent a Random Sampler in the data pipeline.
 /// \note Samples the elements randomly.
 class DATASET_API RandomSampler final : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -198,7 +201,8 @@ class DATASET_API RandomSampler final : public Sampler {
   ///      std::string folder_path = "/path/to/image/folder";
   ///      std::shared_ptr<Dataset> ds = ImageFolder(folder_path, true, std::make_shared<RandomSampler>(false, 10));
   /// \endcode
-  explicit RandomSampler(bool replacement = false, int64_t num_samples = 0);
+  explicit RandomSampler(bool replacement = false, int64_t num_samples = 0,
+                         dataset::ShuffleMode shuffle_mode = dataset::ShuffleMode::kGlobal);
 
   /// \brief Destructor.
   ~RandomSampler() override = default;
@@ -211,13 +215,14 @@ class DATASET_API RandomSampler final : public Sampler {
  private:
   bool replacement_;
   int64_t num_samples_;
+  dataset::ShuffleMode shuffle_mode_;
 };
 
 /// \brief A class to represent a Sequential Sampler in the data pipeline.
 /// \note Samples the dataset elements sequentially, same as not having a sampler.
 class DATASET_API SequentialSampler final : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -247,8 +252,8 @@ class DATASET_API SequentialSampler final : public Sampler {
 /// \brief A class to represent a Subset Sampler in the data pipeline.
 /// \note Samples the elements from a sequence of indices.
 class DATASET_API SubsetSampler : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -277,8 +282,8 @@ class DATASET_API SubsetSampler : public Sampler {
 /// \brief A class to represent a Subset Random Sampler in the data pipeline.
 /// \note Samples the elements randomly from a sequence of indices.
 class DATASET_API SubsetRandomSampler final : public SubsetSampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor
@@ -305,8 +310,8 @@ class DATASET_API SubsetRandomSampler final : public SubsetSampler {
 /// \note Samples the elements from [0, len(weights) - 1] randomly with the given
 ///        weights (probabilities).
 class DATASET_API WeightedRandomSampler final : public Sampler {
-  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards,
-                                                   int32_t shard_id);
+  friend std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode,
+                                                   int32_t num_shards, int32_t shard_id);
 
  public:
   /// \brief Constructor

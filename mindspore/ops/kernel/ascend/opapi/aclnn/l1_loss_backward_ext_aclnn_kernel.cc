@@ -17,19 +17,20 @@
 #include <memory>
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace l1_loss_backward_ext {
 void L1LossBackwardExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                        const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
 
-  const auto &reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  const auto &reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   // transform reduction enum value to corresponding value
   reduction_ = ops::ConvertReductionForAclnn(reduction_imm);
 
@@ -90,5 +91,6 @@ bool L1LossBackwardExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(L1LossBackwardExt, L1LossBackwardExtAclnnKernelMod);
+}  // namespace l1_loss_backward_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -27,6 +27,8 @@ from mindspore.nn import layer
 from mindspore.ops import functional as F
 from mindspore.ops.operations import _inner_ops as inner
 
+context.set_context(jit_level='O0')
+
 num_one = Tensor(np.ones([1]), mstype.float32)
 data_type = np.float32
 param_val = np.array([[1, 1, 2], [3, 4, 5], [5, 6, 7]]).astype(data_type)

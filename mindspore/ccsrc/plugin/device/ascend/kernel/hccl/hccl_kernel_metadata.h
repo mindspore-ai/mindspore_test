@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_HCCL_HCCL_KERNEL_METADATA_ANFALGO_H_
 #include <vector>
 #include <memory>
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 
 namespace mindspore {
 namespace kernel {

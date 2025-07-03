@@ -17,11 +17,12 @@
 #include "kernel/cpu/scatter_nd_update_cpu_kernel.h"
 #include <complex>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace scatter_nd_update_cpu {
 constexpr size_t kMinIndiceRank = 2;
 bool ScatterUpdateArithmeticCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
@@ -305,5 +306,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, TensorScatterUpdate, []() {
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ScatterNdUpdate, []() {
   return std::make_shared<ScatterUpdateArithmeticCpuKernelMod>("ScatterNdUpdate");
 });
+}  // namespace scatter_nd_update_cpu
 }  // namespace kernel
 }  // namespace mindspore

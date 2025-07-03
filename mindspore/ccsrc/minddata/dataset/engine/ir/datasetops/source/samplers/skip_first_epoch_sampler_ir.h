@@ -43,13 +43,11 @@ class SkipFirstEpochSamplerObj : public SequentialSamplerObj {
   /// \return Status of the function
   Status to_json(nlohmann::json *const out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function for read sampler from JSON object
   /// \param[in] json_obj JSON object to be read
   /// \param[out] sampler Sampler constructed from parameters in JSON object
   /// \return Status of the function
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<SamplerObj> *sampler);
-#endif
 };
 }  // namespace dataset
 }  // namespace mindspore

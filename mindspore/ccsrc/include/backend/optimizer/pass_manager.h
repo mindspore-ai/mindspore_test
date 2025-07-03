@@ -29,7 +29,7 @@
 namespace mindspore {
 namespace opt {
 // @brief For optimization passes management
-class BACKEND_EXPORT PassManager {
+class BACKEND_COMMON_EXPORT PassManager {
  public:
   explicit PassManager(const std::string &name = "pm", bool run_only_once = true);
   virtual ~PassManager() = default;

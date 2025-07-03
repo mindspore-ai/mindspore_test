@@ -7,8 +7,8 @@ cum_prod:
             y_i = x_1 * x_2 * x_3 * ... * x_i
 
         Args:
-            exclusive (bool): If ``True`` , perform exclusive cumulative product. Default: ``False`` .
-            reverse (bool): If ``True`` , reverse the result along axis. Default: ``False`` .
+            exclusive (bool, optional): If ``True`` , perform exclusive cumulative product. Default: ``False`` .
+            reverse (bool, optional): If ``True`` , reverse the result along axis. Default: ``False`` .
 
         Inputs:
             - **x** (Tensor[Number]) - The input Tensor with shape

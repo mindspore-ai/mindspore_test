@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/sparse_matrix_mat_mul_cpu_kernel.h"
 #include "utils/ms_utils.h"
 

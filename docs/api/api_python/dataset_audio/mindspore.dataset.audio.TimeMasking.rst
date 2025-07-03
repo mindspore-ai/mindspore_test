@@ -26,7 +26,3 @@ mindspore.dataset.audio.TimeMasking
     教程样例：
         - `音频变换样例库
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/audio_gallery.html>`_
-
-    .. image:: time_masking_original.png
-
-    .. image:: time_masking.png

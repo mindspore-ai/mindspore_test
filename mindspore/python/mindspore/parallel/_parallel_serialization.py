@@ -19,6 +19,7 @@ import os
 import json
 import numpy as np
 import mindspore as ms
+from mindspore import _checkparam as Validator
 from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_tensor_layout, \
     _get_needed_rank_list_by_layouts, _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
@@ -34,7 +35,12 @@ def _convert_to_list(strategy, rank_id=None):
         try:
             layout = strategy.get(param_name)
             dev_mat = list(layout.dev_matrix[0].dim)
-            tensor_map = list(layout.tensor_map[0].dim)
+            # for layout one axis two slices, layout(("dp", "mp"), "None")
+            if len(layout.tensor_map) > 1:
+                tensor_map = [list(tensor_map.dim) for tensor_map in layout.tensor_map
+                              if list(tensor_map.dim)]
+            else:
+                tensor_map = list(layout.tensor_map[0].dim)
             param_split_shape = list(layout.param_split_shape[0].dim)
             field_size = int(layout.field)
             shard_stride = int(layout.opt_weight_shard_step)
@@ -272,7 +278,7 @@ def _extract_pipeline_stage_num(strategy_file):
             pipeline_stage_set.update(layout[6])
         pipeline_stage_num = len(pipeline_stage_set)
         if list(pipeline_stage_set) != list(range(pipeline_stage_num)):
-            raise ValueError("The strategy file for pipeline parallel dose not contains all stages.")
+            raise ValueError("The strategy file for pipeline parallel does not contains all stages.")
     return pipeline_stage_num
 
 
@@ -417,7 +423,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         from_opt_shard_size = 0
         if src_strategy_list is not None:
             if param_name not in src_strategy_list:
-                ms.log.warning("The parameter {} is not in src_strategy.".format(param_name))
+                ms.log.info("The parameter {} is not in src_strategy.".format(param_name))
                 continue
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size = _extract_layout_item(
                 src_strategy_list.get(param_name))
@@ -427,7 +433,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         to_opt_shard_size = 0
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
-                ms.log.warning("The parameter {} is not in dst_strategy.".format(param_name))
+                ms.log.info("The parameter {} is not in dst_strategy.".format(param_name))
                 continue
             to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
                 dst_strategy_list.get(param_name))
@@ -440,6 +446,9 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
                 origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
                 continue
             origin_tensor_shape += (item * param_strategy[i],)
+
+        has_layout_from = any(isinstance(i, (list, tuple)) for i in from_tensor_map)
+        has_layout_to = any(isinstance(i, (list, tuple)) for i in to_tensor_map_origin)
 
         from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
             from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
@@ -460,6 +469,7 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
         to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
         _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+        _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple, has_layout_from, has_layout_to)
         transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
         param_total_dict_copy = param_total_dict[param_name].copy()
         _apply_tensor_transform_operators(transform_operator_stack, param_total_dict_copy, device_num)
@@ -555,6 +565,33 @@ def _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple):
                 to_slice_tensor_shape += (item // to_tensor_strategy[i],)
             param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
 
+
+def _insert_expand_layout_reshape(param_rank_map, from_info_tuple, to_info_tuple,
+                                  insert_from_reshape, insert_to_reshape):
+    """ insert layout expand op reshape """
+    from_opt_shard_size = from_info_tuple[0]
+    from_dev_matrix = from_info_tuple[1]
+    from_tensor_map = from_info_tuple[2]
+    from_full_tensor_shape = from_info_tuple[3]
+    to_opt_shard_size = to_info_tuple[0]
+    to_dev_matrix_origin = to_info_tuple[1]
+    to_tensor_map_origin = to_info_tuple[2]
+    origin_tensor_shape = to_info_tuple[3]
+    for param_rank, _ in param_rank_map.items():
+        if from_opt_shard_size == 0 and insert_from_reshape:
+            from_slice_tensor_shape = ()
+            from_tensor_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+            for i, item in enumerate(from_full_tensor_shape):
+                from_slice_tensor_shape += (item // from_tensor_strategy[i],)
+            param_rank_map.get(param_rank).insert(0, ('Reshape', list(from_slice_tensor_shape)))
+        if to_opt_shard_size == 0 and insert_to_reshape:
+            to_tensor_strategy = _get_tensor_strategy(to_dev_matrix_origin, to_tensor_map_origin)
+            to_slice_tensor_shape = ()
+            for i, item in enumerate(origin_tensor_shape):
+                to_slice_tensor_shape += (item // to_tensor_strategy[i],)
+            param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
+
+
 def _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_sharded_device_index, rank):
     """Calculate rank list for optimizer parallel when first dim of parameter is sharded by other parallel method"""
     total_device_num = 1
@@ -568,4 +605,59 @@ def _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_sharded
     start = rank - offset
     param_total_list = list(range(start, start + range_size))
     return param_total_list
-            
+
+
+def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
+                           output_format, name_map, return_param_dict):
+    """gather transform tasks"""
+    tasks = []
+    for rank in range(0, dst_device_num):
+        tasks.append(
+            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map,
+             return_param_dict))
+    return tasks
+
+
+def _check_checkpoint_file(checkpoint_filenames):
+    """Check checkpoint file name."""
+    for index, filename in enumerate(checkpoint_filenames):
+        if not isinstance(filename, str) or not os.path.exists(filename) \
+                or filename[-5:] != ".ckpt" or os.path.getsize(filename) == 0:
+            raise ValueError(f"For 'load_distributed_checkpoint', please check 'checkpoint_filenames', and "
+                             f"make sure the {filename} at index {index} is a valid checkpoint file, it must "
+                             f"be a string ending with '.ckpt', and the checkpoint file it represents must "
+                             f"be exist and not empty.")
+
+
+def _check_predict_strategy(predict_strategy):
+    """Check predict strategy."""
+
+    def _check_int_list(arg):
+        if not isinstance(arg, list):
+            return False
+        for item in arg:
+            if not isinstance(item, int):
+                return False
+        return True
+
+    if predict_strategy is None:
+        return
+
+    flag = True
+    predict_strategy = Validator.check_isinstance("predict_strategy", predict_strategy, dict)
+    for key in predict_strategy.keys():
+        if not isinstance(key, str) or not isinstance(predict_strategy[key], (list, tuple)) \
+                or len(predict_strategy[key]) < 4:
+            flag = False
+        dev_matrix, tensor_map, param_split_shape, field_size = predict_strategy[key][:4]
+        if not _check_int_list(dev_matrix) or not _check_int_list(tensor_map) or \
+                not (_check_int_list(param_split_shape) or not param_split_shape) or \
+                not (isinstance(field_size, int) and field_size == 0):
+            flag = False
+
+    if not flag:
+        raise ValueError(f"For 'load_distributed_checkpoint', the argument 'predict_strategy' is dict, "
+                         f"the key of it must be string, and the value of it must be list or tuple that "
+                         f"the first four elements must be dev_matrix (list[int]), tensor_map (list[int]), "
+                         f"param_split_shape (list[int]) and field_size (int, which value is 0)."
+                         f"Please check whether 'predict_strategy' is correct.")

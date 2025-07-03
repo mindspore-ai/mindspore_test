@@ -55,30 +55,24 @@ class PyRecursionScope {
 py::object AnyToPyData(const Any &value);
 COMMON_EXPORT py::object BaseRefToPyData(const BaseRef &value, const AbstractBasePtr &abs = nullptr);
 COMMON_EXPORT py::object ValueToPyData(const ValuePtr &value, const AbstractBasePtr &abs = nullptr);
-COMMON_EXPORT bool IsStubTensor(const py::handle &obj);
-COMMON_EXPORT tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
-// Convert sub node to base tensor, for pynative output tensor.
-COMMON_EXPORT tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj);
-COMMON_EXPORT py::object CTensorToPyStubNodes(const ValuePtr &val);
-COMMON_EXPORT tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
+COMMON_EXPORT py::object CValueToPybindObj(const ValuePtr &val);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT ValuePtr ConvertTensorNode(const py::object &obj);
-COMMON_EXPORT std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj);
 COMMON_EXPORT bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple &args,
                                                      const std::shared_ptr<py::object> &ret_val);
 COMMON_EXPORT ValuePtr ShallowCopyTensorValue(const ValuePtr &value);
 COMMON_EXPORT ValuePtr ConvertPyObjectToCTensor(const py::object &input_object);
 COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors,
                                             bool is_base_tensor = false);
+COMMON_EXPORT void ConvertPybindTupleGradToCValue(const py::tuple &input_tuple, std::vector<ValuePtr> *gradient_values,
+                                                  bool is_base_tensor = false);
 COMMON_EXPORT py::object ConvertCTensorToPyTensor(const py::object &input_arg);
 COMMON_EXPORT std::string ConvertPyObjToString(const py::object &obj);
 COMMON_EXPORT py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args,
                                       const std::string &bprop_cls_name);
 py::object ScalarPtrToPyData(const ScalarPtr &value);
-py::object CheckAndConvertToScalar(const tensor::BaseTensorPtr &tensor, const AbstractBasePtr &abs);
-bool IsStubTensor(const py::handle &obj);
-tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
-tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
+py::object CheckAndConvertToScalar(const tensor::TensorPtr &tensor, const AbstractBasePtr &abs);
+COMMON_EXPORT tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_PY_H_

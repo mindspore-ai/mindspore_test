@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint
+from mindspore import mint, ops
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -30,7 +30,13 @@ def histc_forward_func(x, bins, min_val, max_val):
     return mint.histc(x, bins, min_val, max_val)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@test_utils.run_with_cell
+def histc_backward_func(x):
+    # pylint: disable=E1102
+    return ops.grad(histc_forward_func, (0))(x, 4, 0, 3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_ops_histc_ext_normal(context_mode):
@@ -60,3 +66,23 @@ def test_histc_ext_dynamic_shape():
     x2 = generate_random_input((3, 4, 5, 6, 7), np.int32)
     TEST_OP(histc_forward_func, [[ms.Tensor(x1), 4, 0.0, 3.0], [ms.Tensor(x2), 5, 1.0, 8.0]],
             'histc_ext', disable_yaml_check=True, disable_grad=True, disable_mode=["GRAPH_MODE"])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+def test_ops_histc_backward(mode):
+    """
+    Feature: pyboost function.
+    Description: test histc backward.
+    Expectation: success.
+    """
+    ms.set_context(mode=mode)
+    test_cell = test_utils.to_cell_obj(histc_backward_func)
+    x = ms.Tensor([2., 3., 4., 5.], ms.float32)
+    expect_output = ms.Tensor([0., 0., 0., 0.], ms.float32)
+    output = test_cell(x)
+    error = np.array([1., 1., 1., 1.], np.float32) * 1.0e-6
+    diff = output[0].asnumpy() - expect_output
+    assert np.all(diff < error)
+    assert np.all(-diff < error)

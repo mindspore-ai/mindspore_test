@@ -1,0 +1,70 @@
+#operator moe_distribute_dispatch
+moe_distribute_dispatch:
+  args:
+    x:              #0
+      dtype: tensor
+    expert_ids:     #1
+      dtype: tensor
+    ep_world_size:  #2
+      dtype: int
+    ep_rank_id:     #3
+      dtype: int
+    moe_expert_num: #4
+      dtype: int
+    expert_scales:  #5
+      dtype: tensor
+      default: None
+    scales:         #6
+      dtype: tensor
+      default: None
+    x_active_mask:  #7
+      dtype: tensor
+      default: None
+    group_ep:       #8
+      dtype: str
+      default: None
+    group_tp:       #9
+      dtype: str
+      default: None
+    tp_world_size:  #10
+      dtype: int
+      default: 0
+    tp_rank_id:     #11
+      dtype: int
+      default: 0
+    expert_shard_type:  #12
+      dtype: int
+      default: 0
+    shared_expert_num:  #13
+      dtype: int
+      default: 0
+    shared_expert_rank_num: #14
+      dtype: int
+      default: 0
+    quant_mode:     #15
+      dtype: int
+      default: 0
+    global_bs:      #16
+      dtype: int
+      default: 0
+    expert_token_nums_type: #17
+      dtype: int
+      default: 0
+  returns:
+    expand_x:
+      dtype: tensor
+    dynamic_scales:
+      dtype: tensor
+    expand_idx:
+      dtype: tensor
+    expert_token_nums:
+      dtype: tensor
+    ep_recv_counts:
+      dtype: tensor
+    tp_recv_counts:
+      dtype: tensor
+    expand_scales:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: MoeDistributeDispatchAscend

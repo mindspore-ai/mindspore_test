@@ -19,11 +19,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tanh_grad {
 
 void TanhGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
@@ -38,5 +39,6 @@ bool TanhGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(TanhGrad, TanhGradAscend);
+}  // namespace tanh_grad
 }  // namespace kernel
 }  // namespace mindspore

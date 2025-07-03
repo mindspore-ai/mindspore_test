@@ -1,6 +1,6 @@
 median:
   description: |
-    median(axis=-1, keepdims=False) -> Tuple of Tensors
+    median(axis=-1, keepdims=False) -> tuple[Tensor]
 
     Computes the median and indices of input tensor.
 
@@ -49,7 +49,7 @@ median:
     Supported Platforms:
         ``Ascend``
 
-    .. method:: Tensor.median(dim=-1, keepdim=False) -> Tuple of Tensors
+    .. method:: Tensor.median(dim=-1, keepdim=False) -> tuple[Tensor]
         :noindex:
     
     Output the median on the specified dimension ``dim`` and its corresponding index.

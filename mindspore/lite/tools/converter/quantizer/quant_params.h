@@ -68,9 +68,7 @@ constexpr auto kMultiplierList = "multiplier_list";
 constexpr auto kChannelAxis = "channel_axis";
 constexpr float kBinarySearchStep = 2.0;
 
-const std::set<PrimitivePtr> kHasBiasOperator = {prim::kPrimConv2DFusion,    prim::kPrimConv2dTransposeFusion,
-                                                 prim::kPrimMatMulFusion,    prim::kPrimFullConnection,
-                                                 prim::kPrimLayerNormFusion, prim::kPrimMatMul};
+extern const std::set<PrimitivePtr> kHasBiasOperator;
 const std::set<PrimitivePtr> kUint8toFP32Operator = {prim::kPrimDetectionPostProcess};
 const std::set<TypeId> kFullQuantDType = {kNumberTypeInt8, kNumberTypeUInt8, kNumberTypeFloat32};
 

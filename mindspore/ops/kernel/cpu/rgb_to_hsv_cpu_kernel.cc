@@ -17,10 +17,11 @@
 #include "kernel/cpu/rgb_to_hsv_cpu_kernel.h"
 #include <algorithm>
 #include "Eigen/Core"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rgb_to_hsv_cpu {
 namespace {
 constexpr size_t kNumberOfRGB = 3;
 const size_t kInputNum = 1;
@@ -157,5 +158,6 @@ std::vector<KernelAttr> RGBToHSVCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RGBToHSV, RGBToHSVCpuKernelMod);
+}  // namespace rgb_to_hsv_cpu
 }  // namespace kernel
 }  // namespace mindspore

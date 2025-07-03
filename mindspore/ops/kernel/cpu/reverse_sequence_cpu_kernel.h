@@ -24,11 +24,12 @@
 #include <string>
 #include <tuple>
 #include <complex>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reverse_sequence_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -82,6 +83,7 @@ class ReverseSequenceCpuKernelMod : public NativeCpuKernelMod {
   ResizeFunc resize_func_;
   static std::vector<std::tuple<KernelAttr, KernelFunc, ResizeFunc>> func_list_;
 };
+}  // namespace reverse_sequence_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_REVERSE_SEQUENCE_CPU_KERNEL_H_

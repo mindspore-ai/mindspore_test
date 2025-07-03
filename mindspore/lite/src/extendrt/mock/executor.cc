@@ -124,7 +124,7 @@ void RunGraphTask::Run() {
     return;
   }
   graph->ResetGraphRunningStatus();
-  if (device::KernelRuntime::UseMemScheduler()) {
+  if (AnfUtils::UseMemScheduler()) {
     graph->SetOutputNodeToTensor(node_to_tensor_);
   }
   try {

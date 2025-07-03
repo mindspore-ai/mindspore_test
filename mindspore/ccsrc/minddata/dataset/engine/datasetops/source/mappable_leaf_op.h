@@ -28,11 +28,7 @@
 #include "minddata/dataset/engine/data_schema.h"
 #include "minddata/dataset/engine/datasetops/parallel_op.h"
 #include "minddata/dataset/engine/datasetops/source/sampler/sampler.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/image_utils.h"
-#else
-#include "minddata/dataset/kernels/image/lite_image_utils.h"
-#endif
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/services.h"
@@ -73,7 +69,7 @@ class MappableLeafOp : public ParallelOp<std::unique_ptr<IOBlock>, TensorRow>, p
   /// \param[out] tensor - Returned tensor.
   /// \return Status code.
   static Status ImageDecrypt(const std::string &path, std::shared_ptr<Tensor> *tensor,
-                             const py::function &decrypt = py::none());
+                             const py::function &decrypt = py::object());
 #endif
 
   /// \brief In pull mode, gets the next row

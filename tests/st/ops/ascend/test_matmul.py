@@ -106,13 +106,13 @@ def do_test_matmul_dtypes(valid_dtypes, is_ge_only=False):
     y_np.shape = k, n
     matmul = Net()
     if is_ge_only:
-        matmul.set_jit_config(JitConfig(jit_level="O2"))
+        matmul.set_jit_config(JitConfig(backend="GE"))
     else:
         matmul.set_jit_config(JitConfig(jit_level="O0"))
     all_dtypes = mstype.all_types
     for dtype in all_dtypes:
-        # bfloat16 is not supported yet
-        if dtype == mstype.bfloat16:
+        # bfloat16/float8 is not supported yet
+        if dtype in (mstype.bfloat16, mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8):
             continue
         x_ms = Tensor(x_np).astype(dtype)
         y_ms = Tensor(y_np).astype(dtype)
@@ -128,7 +128,7 @@ def do_test_matmul_dtypes(valid_dtypes, is_ge_only=False):
                 _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_matmul_dtypes():
     """
     Feature: Test matmul dtypes.

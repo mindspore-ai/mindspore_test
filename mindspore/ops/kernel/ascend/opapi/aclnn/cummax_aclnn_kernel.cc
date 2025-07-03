@@ -19,10 +19,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace cummax {
 
 void CummaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  axis_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
   axis_ = axis_ < 0 ? axis_ + SizeToLong(input_shape.size()) : axis_;
   GetWorkspaceForResize(inputs[kIndex0], axis_, outputs[kIndex0], outputs[kIndex1]);
@@ -36,5 +37,6 @@ bool CummaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Cummax, CummaxAscend);
+}  // namespace cummax
 }  // namespace kernel
 }  // namespace mindspore

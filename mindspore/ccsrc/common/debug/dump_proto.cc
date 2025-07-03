@@ -189,6 +189,7 @@ void ProtoExporter::SetNodeOutputType(const AnfNodePtr &node, irpb::TypeProto *t
 }
 
 void ProtoExporter::SetValueToProtoBasicTypes(const ValuePtr &val, irpb::ValueProto *const value_proto) const {
+  MS_EXCEPTION_IF_NULL(val);
   if (val->isa<StringImm>()) {
     const StringImmPtr &value = dyn_cast<StringImm>(val);
     value_proto->set_dtype(irpb::DT_STRING);
@@ -239,10 +240,11 @@ void ProtoExporter::SetValueToProto(const ValuePtr &val, irpb::ValueProto *value
     }
   } else if (val->isa<TensorType>()) {
     value_proto->set_dtype(irpb::DT_TYPE);
-
     irpb::TypeProto *type_proto = value_proto->mutable_type_val();
     type_proto->set_data_type(irpb::DT_TENSOR);
-    TypePtr elem_type = dyn_cast<TensorType>(val)->element();
+    auto tensor_type_val = dyn_cast<TensorType>(val);
+    MS_EXCEPTION_IF_NULL(tensor_type_val);
+    TypePtr elem_type = tensor_type_val->element();
     type_proto->mutable_tensor_type()->set_elem_type(GetNumberDataType(elem_type));
   } else if (val->isa<Monad>() || val->isa<MonadType>()) {
     value_proto->set_str_val(val->ToString());
@@ -366,6 +368,7 @@ void ProtoExporter::GetOpNodeTypeAndAttrs(const FuncGraphPtr & /* func_graph */,
   }
 
   const PrimitivePtr &prim = GetValueNode<PrimitivePtr>(op_node);
+  MS_EXCEPTION_IF_NULL(prim);
   node_proto->set_op_type(prim->name());
   for (const auto &attr : prim->attrs()) {
     irpb::AttributeProto *attr_proto = node_proto->add_attribute();
@@ -530,6 +533,7 @@ void ProtoExporter::ExportCNode(const FuncGraphPtr &func_graph, const CNodePtr &
 
     if (IsValueNode<Primitive>(op)) {
       PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
+      MS_EXCEPTION_IF_NULL(primitive);
       if (!primitive->instance_name().empty()) {
         node_proto->set_instance_name(primitive->instance_name());
       }

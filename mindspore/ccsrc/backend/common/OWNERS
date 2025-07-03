@@ -1,10 +1,15 @@
 approvers:
 - yuchaojie #
 - jjfeing
-- kisnwang
-- laiyongqiang
-- HulkTang
-- hwcaifubi
 - liujunzhu
 - reku1997
 - limingqi107
+- ZPaC
+- zyli2020
+- hbhu_bin
+- guoqi1024
+
+reviewers:
+
+options:
+    no_parent_owners: true

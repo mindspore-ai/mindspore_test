@@ -45,6 +45,6 @@ def test_get_parameter_redundancy():
     Description: get parameter for each rank
     Expectation: run success
     """
-    param_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
+    param_redundancy_dict = get_parameter_redundancy(parameter_layout_dict, initial_rank=0)
     single_parameter = remove_param_redundancy(param_redundancy_dict)
     print(len(single_parameter))

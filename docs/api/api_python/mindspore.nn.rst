@@ -48,10 +48,8 @@ MindSpore中 `mindspore.nn` 接口与上一版本相比，新增、删除和支�
     mindspore.nn.ForwardValueAndGrad
     mindspore.nn.GetNextSingleOp
     mindspore.nn.GradAccumulationCell
-    mindspore.nn.MicroBatchInterleaved
     mindspore.nn.ParameterUpdate
     mindspore.nn.PipelineCell
-    mindspore.nn.PipelineGradReducer
     mindspore.nn.TimeDistributed
     mindspore.nn.TrainOneStepCell
     mindspore.nn.TrainOneStepWithLossScaleCell
@@ -292,7 +290,6 @@ Dropout层
     mindspore.nn.Adagrad
     mindspore.nn.Adam
     mindspore.nn.AdaMax
-    mindspore.nn.AdamOffload
     mindspore.nn.AdamWeightDecay
     mindspore.nn.AdaSumByDeltaWeightWrapCell
     mindspore.nn.AdaSumByGradWrapCell
@@ -385,8 +382,8 @@ Dynamic LR函数
     mindspore.nn.PixelUnshuffle
     mindspore.nn.Upsample
 
-工具
------
+公共层
+-------
 
 .. mscnplatformautosummary::
     :toctree: nn
@@ -397,4 +394,13 @@ Dynamic LR函数
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+
+工具
+-----
+
+.. mscnautosummary::
+    :toctree: nn
+    :nosignatures:
+    :template: classtemplate.rst
+
     mindspore.nn.utils.no_init_parameters

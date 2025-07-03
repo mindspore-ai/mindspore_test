@@ -15,21 +15,20 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_while_tensor():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if_in_while():
         x = Tensor(1)
         y = Tensor(10)
@@ -47,16 +46,15 @@ def test_if_after_if_in_while_tensor():
     assert res == 54
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_while_numpy():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if_in_while():
         x = np.array([1, 2])
         y = np.array([3, 2])
@@ -73,16 +71,15 @@ def test_if_after_if_in_while_numpy():
     assert (res.asnumpy() == [1, 0]).all()
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_while_tensor_2():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_if_after_if_in_while():
         x = Tensor(5)
         y = Tensor(2)

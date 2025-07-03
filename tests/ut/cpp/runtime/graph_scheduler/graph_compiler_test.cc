@@ -16,9 +16,13 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
+#include "runtime/graph_scheduler/graph_compiler.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 namespace mindspore {
 namespace runtime {
 using namespace test;
@@ -33,7 +37,7 @@ class GraphCompilerTest : public UT::Common {
 TEST_F(GraphCompilerTest, CompileGraph) {
   std::vector<int64_t> shp{2, 2};
   abstract::AbstractTensorPtr abs;
-
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   // Func graph.
   auto func_graph = std::make_shared<FuncGraph>();
 
@@ -79,7 +83,7 @@ TEST_F(GraphCompilerTest, CompileGraph) {
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto graph_id = compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(),
-                                         device::RunMode::kKernelMode, false);
+                                         backend::BackendJitConfig(), false);
   const auto &kernel_graph = compiler->Fetch(graph_id);
   ASSERT_EQ(3, kernel_graph->execution_order().size());
 }

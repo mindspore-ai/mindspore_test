@@ -122,6 +122,8 @@ class PipelineTransformer {
   void HandleGraphInputs(const std::vector<AnfNodePtr> &recv_ops);
   bool GetStageByArgument(const CNodePtr &node, size_t index, const std::vector<AnfNodePtr> &parameters,
                           const NodeUsersMap &node_users_map, std::set<int64_t> *const parameter_stage);
+  void FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeSet *strided_slice_nodes) const;
+  size_t MicroSize(const AnfNodeIndexSet &input_node_users) const;
   size_t GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const;
   void UpdateParameterSharedInfo(const AnfNodePtr &node, const AnfNodePtr &communcate_op, bool is_send);
   void FillParameterStage(const CNodePtr &node, std::set<int64_t> *const parameter_stage);
@@ -163,7 +165,6 @@ class NodeStageInfo {
   int64_t stage_;
   int64_t chunk_;
 };
-size_t MicroSize(const AnfNodeIndexSet &input_node_users);
 }  // namespace parallel
 }  // namespace mindspore
 

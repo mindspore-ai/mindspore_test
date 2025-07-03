@@ -14,7 +14,7 @@
 # ============================================================================
 import numpy as np
 import pytest
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context, jit
 from mindspore import Tensor, nn
 from mindspore.common.parameter import Parameter
@@ -23,12 +23,12 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.common import dtype as mstype
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_01():
     """
     Feature: Control flow
@@ -73,9 +73,8 @@ def test_single_for_01():
     assert graph_backward_res == (Tensor([15], mstype.int32), Tensor([40], mstype.int32), Tensor([5], mstype.int32))
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_02():
     """
     Feature: Control flow
@@ -120,9 +119,8 @@ def test_single_for_02():
     assert graph_backward_res == (Tensor([25], mstype.int32), Tensor([64], mstype.int32), Tensor([5], mstype.int32))
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_03():
     """
     Feature: Control flow
@@ -176,9 +174,8 @@ def test_single_for_03():
     assert graph_backward_res == (Tensor([64], mstype.int32), Tensor([1], mstype.int32))
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_04():
     """
     Feature: Control flow
@@ -224,9 +221,8 @@ def test_single_for_04():
     assert graph_backward_res == (Tensor([0], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_single_for_05():
     """
     Feature: Control flow
@@ -272,8 +268,7 @@ def test_single_for_05():
     assert graph_backward_res == (Tensor([1], mstype.int32),)
 
 
-@case_register.level1
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_single_for():
     """
     Feature: The else branches of for loops aren't supported.
@@ -294,23 +289,3 @@ def test_single_for():
         input_y = Tensor([2], mstype.int32)
         res = control_flow_for(input_x, input_y)
         print("res:", res)
-
-
-@case_register.level0
-@case_register.target_gpu
-def test_single_for_with_not_iterable_object():
-    """
-    Feature: The else branches of for loops aren't supported.
-    Description: The else branches of for loops aren't supported.
-    Expectation: No exception.
-    """
-    @jit
-    def control_flow_for_with_not_iterable_object():
-        ret = 0
-        a = 1
-        for i in a:
-            ret = ret + i
-        return ret
-
-    with pytest.raises(TypeError, match="object is not iterable"):
-        control_flow_for_with_not_iterable_object()

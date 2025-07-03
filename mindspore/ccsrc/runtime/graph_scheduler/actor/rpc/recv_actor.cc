@@ -22,7 +22,7 @@
 #include <condition_variable>
 #include "proto/topology.pb.h"
 #include "kernel/framework_utils.h"
-#include "kernel/cpu/rpc/rpc_recv_kernel.h"
+#include "plugin/device/cpu/kernel/rpc/rpc_recv_kernel.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 
@@ -39,7 +39,7 @@ RecvActor::~RecvActor() {
   }
 }
 
-void RecvActor::SetOpcontext(OpContext<DeviceTensor> *const op_context) {
+void RecvActor::SetOpcontext(OpContext<KernelTensor> *const op_context) {
   std::unique_lock<std::mutex> lock(context_mtx_);
   MS_EXCEPTION_IF_NULL(op_context);
   op_context_ = op_context;
@@ -146,7 +146,7 @@ void RecvActor::StopRpcAtException() {
   }
 }
 
-void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<DeviceTensor> *const context) {
+void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<KernelTensor> *const context) {
   MS_ERROR_IF_NULL_WO_RET_VAL(msg);
   MS_ERROR_IF_NULL_WO_RET_VAL(op_context_);
   MS_ERROR_IF_NULL_WO_RET_VAL(context);
@@ -173,7 +173,7 @@ void RecvActor::RunOpInterProcessData(MessageBase *const msg, OpContext<DeviceTe
   return;
 }
 
-bool RecvActor::CheckRunningCondition(const OpContext<DeviceTensor> *context) const {
+bool RecvActor::CheckRunningCondition(const OpContext<KernelTensor> *context) const {
   MS_EXCEPTION_IF_NULL(context);
   // Step 1: Judge data and control inputs are satisfied.
   bool is_data_and_control_arrow_satisfied = AbstractActor::CheckRunningCondition(context);
@@ -200,7 +200,7 @@ bool RecvActor::CheckRunningCondition(const OpContext<DeviceTensor> *context) co
   return true;
 }
 
-void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
+void RecvActor::EraseInput(const OpContext<KernelTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   KernelActor::EraseInput(context);
 
@@ -209,7 +209,7 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
   }
   // Release data allocated by AllocateMessage.
   if (recv_data_ != nullptr) {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }
@@ -222,7 +222,7 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
 #ifdef ENABLE_RDMA
   // Release data of URPC by caller.
   if (common::GetEnv(kEnableRDMA) == "1" && rdma_buf_ != nullptr) {
-    if (!WaitRuntimePipelineFinish(context)) {
+    if (!WaitRuntimePipelineFinish(context, GetAID().Name())) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }
@@ -235,9 +235,10 @@ void RecvActor::EraseInput(const OpContext<DeviceTensor> *context) {
 #endif
 }
 
-void RecvActor::Run(OpContext<DeviceTensor> *const context) {
+void RecvActor::Run(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(kernel_info_);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Recv actor:" << GetAID() << " start run.";
   auto recv_kernel_mod = dynamic_cast<kernel::RpcKernelMod *>(kernel_info_->MutableKernelMod());
   MS_EXCEPTION_IF_NULL(recv_kernel_mod);
   auto remote_input = recv_kernel_mod->GetRemoteInput();
@@ -248,6 +249,7 @@ void RecvActor::Run(OpContext<DeviceTensor> *const context) {
     return;
   }
   KernelActor::Run(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Recv actor:" << GetAID() << " end run.";
 }
 
 void *RecvActor::AllocateMessage(size_t size) {
@@ -331,7 +333,7 @@ void RecvActor::AddArgSpecForInput(AbstractBasePtrList *args_spec_list, const Sh
   }
 
   // Update kernel tensor shape for dynamic shape case.
-  const auto &output_kernel_tensor = output_addr->kernel_tensor();
+  const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(real_input, real_input_index, false);
   MS_EXCEPTION_IF_NULL(output_kernel_tensor);
   const auto &new_shape = real_abs->GetShape();
   MS_EXCEPTION_IF_NULL(new_shape);

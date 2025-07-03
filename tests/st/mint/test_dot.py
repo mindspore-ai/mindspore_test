@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint, jit
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
@@ -42,7 +42,7 @@ def dot_backward_func(x, y):
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_dot_std(mode):
     """
@@ -59,8 +59,8 @@ def test_dot_std(mode):
         output_forward = dot_forward_func(ms.Tensor(x), ms.Tensor(y))
         output_grad = dot_backward_func(ms.Tensor(x), ms.Tensor(y))
     else:
-        output_forward = (jit(dot_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
-        output_grad = (jit(dot_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
+        output_forward = (jit(dot_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
+        output_grad = (jit(dot_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, 1e-5, 1e-5)
     np.testing.assert_allclose(output_grad[0].asnumpy(), expect_grad[0], 1e-5, 1e-5)

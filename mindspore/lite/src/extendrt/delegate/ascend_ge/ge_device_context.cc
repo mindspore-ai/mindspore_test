@@ -21,16 +21,17 @@
 #include "include/common/utils/scoped_long_running.h"
 #include "include/api/context.h"
 #include "include/api/status.h"
-#include "include/backend/device_type.h"
-#include "runtime/device/ms_device_shape_transfer.h"
-#include "include/transform/graph_ir/utils.h"
+#include "common/device_type.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 #include "ge/ge_api.h"
 #include "common/config_infos.h"
 #include "common/common.h"
 #include "extendrt/delegate/comm_group_info.h"
+#include "extendrt/delegate/ascend_ge/ge_utils.h"
 #include "backend/common/session/executor.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 constexpr auto kHcclPluginFileName = "libhccl.so";
@@ -193,7 +194,7 @@ std::shared_ptr<AscendDeviceInfo> GeDeviceContext::GetGeAscendDeviceInfo(const s
 Status GeDeviceContext::Initialize(const std::shared_ptr<Context> &context, const ConfigInfos &config_info) {
   MsContext::GetInstance()->set_backend_policy("ge");
   std::string overflow_mode = common::GetEnv("MS_ASCEND_CHECK_OVERFLOW_MODE");
-  transform::LoadAscendApiSymbols();
+  device::ascend::LoadAscendApiSymbols();
   if (overflow_mode == "INFNAN_MODE") {
     auto mode = aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_INFNAN;
     auto ret = CALL_ASCEND_API(aclrtSetDeviceSatMode, mode);
@@ -214,10 +215,15 @@ Status GeDeviceContext::Initialize(const std::shared_ptr<Context> &context, cons
     MS_LOG(ERROR) << "Failed to Init GE";
     return status;
   }
-  status = InitHccl(context, config_info);
-  if (status != kSuccess) {
-    MS_LOG(ERROR) << "Failed to Init HCCL";
-    return status;
+  auto ascend_soc_version = GetSocVersion();
+  if (ascend_soc_version != "Ascend310") {
+    status = InitHccl(context, config_info);
+    if (status != kSuccess) {
+      MS_LOG(ERROR) << "Failed to Init HCCL";
+      return status;
+    }
+  } else {
+    MS_LOG(INFO) << "Ascend310 does not support hccl now, no need to init.";
   }
   return kSuccess;
 }
@@ -407,7 +413,7 @@ bool GeDeviceContext::FinalizeGe(const std::shared_ptr<MsContext> &inst_context)
   if (inst_context->get_param<uint32_t>(MS_CTX_GE_REF) == 0) {
     inst_context->set_param<uint32_t>(MS_CTX_GE_REF, 0);
     try {
-      transform::ClearGeSessionAndRunner();
+      backend::ge_backend::ClearGeSessionAndRunner();
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Error occurred when deleting GE graph runner and session fail. Error: " << e.what();
     } catch (...) {

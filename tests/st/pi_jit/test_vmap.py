@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 ''' test context option '''
-import sys  
 import pytest 
 import numpy as np
 import mindspore.ops.functional as F
@@ -23,12 +22,6 @@ from mindspore.common.api import jit
 from mindspore import context
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
-@pytest.mark.skip(reason="pynative mode has an incorrect result")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_vmap_with_tuple_input():
     """
@@ -40,7 +33,7 @@ def test_vmap_with_tuple_input():
         return x * y
 
     def foo(fn):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def wrapped(*args):
             def fn2(x, y):
                 return F.jvp(fn, x, y)

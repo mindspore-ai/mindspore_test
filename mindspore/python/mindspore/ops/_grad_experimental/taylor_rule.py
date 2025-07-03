@@ -127,6 +127,35 @@ def taylor_realdiv(self):
     return taylor_fprop_realdiv
 
 
+def _taylor_fprop_div(input_x, input_y):
+    """The rule to generate `Div` taylor rule."""
+    if not input_y.shape:
+        return ops.div(input_x, input_y)
+    input_x, input_y = _trans_scalar_inputs(input_x, input_y)
+    primals = ops.div(input_x[0], input_y[0])
+    series_num = len(input_x) - 1
+    factorial = _factorial(series_num)
+    series = zeros_like(input_x)
+    series[0] = primals
+    for k in range(1, series_num + 1):
+        for i in range(0, k):
+            tmp = ops.div(series[i] * input_y[k - i], (factorial[k - i] * factorial[i]))
+            series[k] += tmp
+        series[k] = ops.div(input_x[k] - factorial[k] * series[k], input_y[0])
+    return series
+
+
+@taylor_fprop_getters.register(P.Div)
+def taylor_div(self):
+    """Higher order derivatives rule definition for `Div` operation."""
+
+    def taylor_fprop_div(input_x, input_y):
+        series = _taylor_fprop_div(input_x, input_y)
+        return series
+
+    return taylor_fprop_div
+
+
 @taylor_fprop_getters.register(P.Exp)
 def taylor_exp(self):
     """Higher order derivatives rule definition for `Exp` operation."""

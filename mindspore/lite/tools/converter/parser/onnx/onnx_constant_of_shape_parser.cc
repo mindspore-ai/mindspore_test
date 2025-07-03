@@ -26,7 +26,7 @@ namespace lite {
 PrimitiveCPtr OnnxConstantOfShapeParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
   auto prim = std::make_unique<ops::ConstantOfShape>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
-  int data_type = 0;
+  int data_type = kNumberTypeFloat32;
   std::vector<float> values;
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
     const auto &attribute_name = onnx_node_attr.name();

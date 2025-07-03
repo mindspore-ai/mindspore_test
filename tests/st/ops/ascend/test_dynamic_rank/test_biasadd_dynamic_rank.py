@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 import numpy as np
 import torch
 from mindspore import Tensor
@@ -88,6 +87,7 @@ def test_bias_add_dyn_rank():
     Description: test bias add dynamic rank with input tensor's type float32
     Expectation: none.
     """
+    context.set_context(jit_level='O0')
     in_shape = (16, 16, 16, 16, 16)
     indices_np = np.unique(np.random.randint(0, 2, size=3).astype(np.int32))
     factory = BiasAddOpFactory(in_shape=in_shape, indices=indices_np, dtype=np.float32, data_format="NCHW")

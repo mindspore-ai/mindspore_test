@@ -26,6 +26,7 @@
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "frontend/parallel/ops_info/activation_info.h"
 
 namespace mindspore {
 namespace parallel {
@@ -54,10 +55,35 @@ class ArithmeticBase : public OperatorInfo {
   Status CheckLayoutConfig() override;
   Shapes InferExpandShape();
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
-
- private:
-  TensorLayout InferOutputLayout();
+  virtual TensorLayout InferOutputLayout();
   TensorLayout output_infer_tensor_layout_;
+};
+
+class ArithmeticScalarBase : public Activation {
+ public:
+  ArithmeticScalarBase(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                       const PrimitiveAttrs &attrs, const OperatorCostPtr &cost)
+      : Activation(name, inputs_shape, outputs_shape, attrs, cost) {}
+  ~ArithmeticScalarBase() override = default;
+
+ protected:
+  Status GetAttrs() override { return SUCCESS; }
+};
+
+class FmodScalarInfo : public ArithmeticScalarBase {
+ public:
+  FmodScalarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<FmodScalarCost>()) {}
+  ~FmodScalarInfo() override = default;
+};
+
+class MulsInfo : public ArithmeticScalarBase {
+ public:
+  MulsInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+           const PrimitiveAttrs &attrs)
+      : ArithmeticScalarBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulsCost>()) {}
+  ~MulsInfo() override = default;
 };
 
 class SubInfo : public ArithmeticBase {
@@ -98,6 +124,31 @@ class MulInfo : public ArithmeticBase {
   MulInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape, const PrimitiveAttrs &attrs)
       : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<MulCost>()) {}
   ~MulInfo() override = default;
+};
+
+class AddcmulExtInfo : public ArithmeticBase {
+ public:
+  AddcmulExtInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, inputs_shape, outputs_shape, attrs, std::make_shared<AddcmulExtCost>()) {}
+  ~AddcmulExtInfo() override = default;
+  std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
+  void ReComputeBatchSplitFlagList() override;
+
+ protected:
+  Status GetAttrs() override;
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  Status InferOutputTensorMap() override;
+  Status CheckLayoutConfig() override;
+  Status CheckInputLayout() override;
+  TensorLayout InferOutputLayout() override;
+
+ private:
+  size_t inputs_size_ = 0;
+  Strategies expand_strategies_;
+  Dimensions broadcast_strategy_;
 };
 
 class DivInfo : public ArithmeticBase {
@@ -275,6 +326,22 @@ class XdivyInfo : public ArithmeticBase {
   ~XdivyInfo() = default;
 };
 
+class OuterInfo : public ArithmeticBase {
+ public:
+  OuterInfo(const std::string &name, const Shapes &input_shape, const Shapes &output_shape, const PrimitiveAttrs &attrs)
+      : ArithmeticBase(name, input_shape, output_shape, attrs, std::make_shared<OuterCost>()) {}
+  ~OuterInfo() = default;
+  ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+
+ protected:
+  Status CheckStrategy(const StrategyPtr &strategy) override;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  std::shared_ptr<Strategies> GenerateBatchStrategies() override;
+  Status CheckInputLayout() override;
+  Status InferOutputTensorInfo() override;
+};
+
 class HypotInfo : public XdivyInfo {
  public:
   HypotInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -392,6 +459,46 @@ class MaskedFillInfo : public ArithmeticBase {
 
  private:
   size_t input_size_ = 0;
+};
+
+class FmodTensorInfo : public XdivyInfo {
+ public:
+  FmodTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                 const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~FmodTensorInfo() override = default;
+};
+
+class InplaceCopyInfo : public XdivyInfo {
+ public:
+  InplaceCopyInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                  const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~InplaceCopyInfo() override = default;
+};
+
+class PolarInfo : public XdivyInfo {
+ public:
+  PolarInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+            const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~PolarInfo() override = default;
+};
+
+class IsCloseInfo : public XdivyInfo {
+ public:
+  IsCloseInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+              const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~IsCloseInfo() override = default;
+};
+
+class RemainderTensorTensorInfo : public XdivyInfo {
+ public:
+  RemainderTensorTensorInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                            const PrimitiveAttrs &attrs)
+      : XdivyInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~RemainderTensorTensorInfo() override = default;
 };
 }  // namespace parallel
 }  // namespace mindspore

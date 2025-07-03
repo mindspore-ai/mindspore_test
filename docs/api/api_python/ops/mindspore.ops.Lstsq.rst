@@ -6,7 +6,7 @@ mindspore.ops.Lstsq
     计算满秩矩阵 `x` :math:`(m \times n)` 与满秩矩阵 `a` :math:`(m \times k)` 的最小二乘问题或最小范数问题的解。
 
     若 :math:`m \geq n` ， `Lstsq` 解决最小二乘问题：
-    
+
     .. math::
 
        \begin{array}{ll}
@@ -23,12 +23,12 @@ mindspore.ops.Lstsq
 
     参数：
         - **fast** (bool，可选) - 使用的算法。默认值： ``True`` 。
-  
+
           - 如果 `fast` 为 ``True`` ，则使用Cholesky分解求解正态方程来计算解。
           - 如果 `fast` 为 ``False`` ，则使用基于数值稳定的完全正交分解算法。
-  
+
         - **l2_regularizer** (float，可选) - L2正则化系数。默认值： ``0.0`` 。
-  
+
     输入：
         - **x** (Tensor) - :math:`(m \times n)` 的矩阵 `x` 。输入Tensor的数据类型为float16、float32或float64。
         - **a** (Tensor) - :math:`(m \times k)` 的矩阵 `a` 。输入Tensor的数据类型为float16、float32或float64。

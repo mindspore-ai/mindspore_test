@@ -15,13 +15,13 @@
  */
 
 #include "kernel/gpu/pyboost/customize/contiguous.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr ContiguousGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr ContiguousGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   auto output_tensor = ContiguousTensorOpProcess(op, input_tensor);
   if (output_tensor != nullptr) {

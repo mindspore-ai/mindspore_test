@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace weight_quant_batch_matmul {
 
 class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
  public:
@@ -39,7 +40,9 @@ class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_x_;
   std::pair<KernelTensor *, bool> input_weight_;
   std::shared_ptr<KernelTensor> weight_;
+  int64_t antiquant_group_size_;
 };
+}  // namespace weight_quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore
 

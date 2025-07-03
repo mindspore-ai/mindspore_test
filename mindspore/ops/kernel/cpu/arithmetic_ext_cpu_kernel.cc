@@ -26,7 +26,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/arithmetic_fp32.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 #include "kernel/cpu/nnacl/fp32/power_fp32.h"
@@ -36,6 +36,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace arithmetic_ext_cpu {
 namespace {
 constexpr float kMaxSubSerialSize = 10000.0;
 constexpr float kMaxPowSerialSize = 700.0;
@@ -648,5 +649,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, AddExt,
                                  []() { return std::make_shared<ArithmeticExtCpuKernelMod>(kAddExt); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, SubExt,
                                  []() { return std::make_shared<ArithmeticExtCpuKernelMod>(kSubExt); });
+}  // namespace arithmetic_ext_cpu
 }  // namespace kernel
 }  // namespace mindspore

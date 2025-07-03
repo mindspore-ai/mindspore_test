@@ -46,7 +46,7 @@ def set_mode(mode):
 
 @arg_mark(
     plat_marks=["platform_ascend"],
-    level_mark="level0",
+    level_mark="level1",
     card_mark="onecard",
     essential_mark="essential",
 )
@@ -58,7 +58,7 @@ def test_mint_count_nonzero_normal(context_mode):
     Expectation: expect correct result.
     """
     set_mode(context_mode)
-    x = generate_random_input((2, 3, 4), np.bool)
+    x = generate_random_input((2, 3, 4), np.bool_)
     output = count_nonzero_forward_func(ms.Tensor(x), dim=(1))
     backward_output = count_nonzero_backward_func(ms.Tensor(x), dim=(1))
     assert output.asnumpy().dtype == "int64"

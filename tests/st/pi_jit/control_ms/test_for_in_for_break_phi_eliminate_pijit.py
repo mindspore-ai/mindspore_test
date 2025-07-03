@@ -1,5 +1,3 @@
-import sys  
-import pytest 
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype
 import mindspore.ops.operations as P
@@ -8,10 +6,6 @@ from mindspore import context, jit
 import numpy as np
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class IfInFor(Cell):
     def __init__(self):
@@ -19,7 +13,7 @@ class IfInFor(Cell):
         self.param = Parameter(Tensor(np.ones((1,), dtype=np.int32)), name="w1")
         self.shape = P.Shape()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         shape = self.shape(y)
         for _ in range(1):

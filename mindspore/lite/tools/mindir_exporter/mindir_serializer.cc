@@ -34,6 +34,8 @@
 #include "ir/quantization_param.h"
 #include "mindspore/lite/tools/converter/quantizer/quant_params.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "src/common/decrypt.h"
 
 namespace mindspore::lite {
 namespace {
@@ -266,6 +268,7 @@ int MindIRSerializer::ConvertQuantHolderToQuantizationParam(const FuncGraphPtr &
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
+      MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
       if (cnode->inputs().empty() || cnode->input(0) == nullptr) {
         MS_LOG(ERROR) << "the cnode is invalid.";
         return lite::RET_NULL_PTR;
@@ -322,12 +325,14 @@ int MindIRSerializer::ConvertParameterNode(const CNodePtr &cnode, const Paramete
   if (!quant_cluster.empty()) {
     QuantizationParam quantization(quant::kClusterQuant);
     quantization.AddAttr(quant::kClusterCentroidList, MakeValue(quant_cluster));
+    MS_CHECK_TRUE_MSG(tensor != nullptr, RET_NULL_PTR, "tensor is nullptr!");
     tensor->set_quant_param(std::vector<std::shared_ptr<mindspore::QuantizationParam>>{
       std::make_shared<mindspore::QuantizationParam>(quantization)});
     return RET_NO_CHANGE;
   }
   if (quant_params_holder->CheckInit(index, true)) {
     auto quantization_ptr = ConvertQuantParamTToQuantizationParam(input_quant_params[index]);
+    MS_CHECK_TRUE_MSG(tensor != nullptr, RET_NULL_PTR, "tensor is nullptr!");
     tensor->set_quant_param(std::vector<std::shared_ptr<mindspore::QuantizationParam>>{quantization_ptr});
   }
   return RET_OK;

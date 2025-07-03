@@ -16,11 +16,13 @@
  */
 
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
+#include <cstring>
 #include <string>
 #include <limits>
 #include <memory>
 #include <algorithm>
 #include "include/backend/distributed/collective/collective_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace opt {
@@ -34,6 +36,16 @@ void ConvertDataType(void *dst_data, void *ori_data, int64_t len, bool need_rank
     dst_data_t[i] = static_cast<DST_T>(ori_data_t[i]);
   }
 }
+float int32_to_float(std::int32_t int_value) {
+  union {
+    std::int32_t i;
+    float f;
+  } converter;
+  converter.i = int_value;
+  return converter.f;
+}
+
+}  // namespace
 
 std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tensor, const TensorTypePtr &tensor_type) {
   MS_EXCEPTION_IF_NULL(assist_tensor);
@@ -52,17 +64,6 @@ std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tenso
   AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), assist_const.get());
   return assist_const;
 }
-
-float int32_to_float(std::int32_t int_value) {
-  union {
-    std::int32_t i;
-    float f;
-  } converter;
-  converter.i = int_value;
-  return converter.f;
-}
-
-}  // namespace
 
 std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node) {
   auto w_param = GetParamFromLoad(weight_node->cast<CNodePtr>(), true);
@@ -133,10 +134,10 @@ bool CheckFusionValid(const CNodePtr &matmul, int64_t *k, const int trans_a_pos,
   MS_EXCEPTION_IF_NULL(trans_b_node);
   bool trans_a = GetValue<bool>(trans_a_node);
   bool trans_b = GetValue<bool>(trans_b_node);
-  if (trans_a != false) {
+  if (trans_a) {
     return false;
   }
-  if (trans_b != true) {
+  if (!trans_b) {
     return false;
   }
   auto weight_node = inputs[kIndex2]->cast<CNodePtr>();
@@ -294,5 +295,49 @@ std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const
   return CreateValueNode(assist_tensor, tensor_type);
 }
 
+std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_node) {
+  MS_EXCEPTION_IF_NULL(bias_node);
+  auto bias_param = GetParamFromLoad(bias_node->cast<CNodePtr>(), true);
+  MS_EXCEPTION_IF_NULL(bias_param);
+  void *bias_data = bias_param->data_c();
+  auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
+  auto group_map = distributed::collective::CollectiveManager::instance()->get_group_map();
+  const std::string tp_str = "tp-";
+  auto tp_itr = std::find_if(group_map.begin(), group_map.end(), [tp_str](auto &ele) {
+    return ele.first.length() >= tp_str.length() && ele.first.substr(0, tp_str.length()) == tp_str;
+  });
+  uint32_t global_rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
+  uint32_t tp_world_size = tp_itr == group_map.end() ? global_rank_size : tp_itr->second.size();
+  global_rank_id = global_rank_id % tp_world_size;
+  auto origin_shape = bias_param->shape();
+  auto shape = common::AnfAlgo::GetOutputInferShape(bias_node, kIndex0);
+  if (shape.size() != 1 || origin_shape.size() != 1) {
+    MS_LOG(EXCEPTION) << "shape.size():" << shape.size() << " origin_shape.size():" << origin_shape.size()
+                      << " not all == 1.";
+  }
+  bool need_rank_offset = false;
+  if (origin_shape[0] != shape[0]) {
+    need_rank_offset = true;
+  }
+
+  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, shape);
+  TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
+  auto len = shape[0];
+
+  auto rank_offset = need_rank_offset ? global_rank_id * len : 0;
+  if (rank_offset + len > origin_shape[0]) {
+    MS_LOG(EXCEPTION) << bias_node->fullname_with_scope() << " rank_offset:" << rank_offset << " + len:" << len
+                      << " > origin_shape[0]:" << origin_shape[0];
+  }
+  int32_t *bias_data_t = reinterpret_cast<int32_t *>(bias_data) + rank_offset;
+  int32_t *dst_data_t = reinterpret_cast<int32_t *>(assist_tensor->data_c());
+  if (global_rank_id == 0) {
+    memcpy_s(dst_data_t, len * sizeof(int32_t), bias_data_t, len * sizeof(int32_t));
+  } else {
+    memset_s(dst_data_t, len * sizeof(int32_t), 0, len * sizeof(int32_t));
+  }
+
+  return CreateValueNode(assist_tensor, tensor_type);
+}
 }  // namespace opt
 }  // namespace mindspore

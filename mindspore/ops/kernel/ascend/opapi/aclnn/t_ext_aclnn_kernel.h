@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace t_ext {
 
 class TExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class TExtAscend : public AclnnKernelMod {
 
   std::vector<int64_t> dims_{};
 };
+}  // namespace t_ext
 }  // namespace kernel
 }  // namespace mindspore
 

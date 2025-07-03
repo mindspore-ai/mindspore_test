@@ -23,7 +23,7 @@
 #include "backend/common/session/session_basic.h"
 #include "backend/common/session/executor_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 
 namespace mindspore {
 API_GRAPH_REG(kGPUDevice, GPUGraphImpl);
@@ -67,7 +67,7 @@ Status GPUGraphImpl::InitEnv() {
   ms_context->set_param<bool>(MS_CTX_ENABLE_INFER_OPT, true);
   ms_context->set_param<std::string>(MS_CTX_INFER_PRECISION_MODE, gpu_info->GetPrecisionMode());
 
-  backend_ = std::make_shared<compile::MindRTBackend>(kMsConvert, kGPUDevice, device_id_);
+  backend_ = std::make_shared<backend::ms_backend::MSBackend>();
   if (backend_ == nullptr) {
     MS_LOG(ERROR) << "DeviceContext create failed!, please make sure target device:" << kGpuInferenceDevice
                   << " is available.";
@@ -145,8 +145,9 @@ Status GPUGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_graph) 
     MS_EXCEPTION_IF_NULL(manager);
     manager->AddFuncGraph(func_graph);
     func_graph->set_manager(manager);
-    actor_info_ = backend_->CompileGraphs(func_graph);
-    kernel_graph_ = backend_->GetGraphById(GraphImpl::GetRootGraphIdFromActorInfo(actor_info_));
+    BackendJitConfig &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+    graph_id_ = backend_->Build(func_graph, backend_jit_config);
+    kernel_graph_ = backend_->GetGraphById(graph_id_);
     return kSuccess;
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "CompileGraph failed: " << e.what();
@@ -157,7 +158,7 @@ Status GPUGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_graph) 
 std::vector<tensor::TensorPtr> GPUGraphImpl::RunGraph(const std::vector<tensor::TensorPtr> &inputs) {
   try {
     VectorRef outputs;
-    backend_->RunGraph(actor_info_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
+    backend_->Run(graph_id_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
     return TransformVectorRefToMultiTensor(outputs);
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "RunGraph failed: " << e.what();

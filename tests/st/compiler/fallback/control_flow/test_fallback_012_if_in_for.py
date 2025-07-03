@@ -15,21 +15,20 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_in_for_tensor():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -41,16 +40,15 @@ def test_if_in_for_tensor():
     assert res == 14
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_in_for_tensor_2():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -64,16 +62,15 @@ def test_if_in_for_tensor_2():
     assert res == 19
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_in_for_tensor_3():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = Tensor(7)
         y = Tensor(0)
@@ -86,16 +83,15 @@ def test_if_in_for_tensor_3():
     assert res == 17
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_in_for_numpy_5():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for():
         x = np.array([1, 2, 3, 4])
         y = (Tensor(1), Tensor(3), Tensor(5))

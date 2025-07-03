@@ -40,6 +40,8 @@ class MINDRECORD_API ShardSample : public ShardOperator {
 
   ~ShardSample() override{};
 
+  std::string Name() override { return "ShardSample"; }
+
   Status Execute(ShardTaskList &tasks) override;
 
   Status UpdateTasks(ShardTaskList &tasks, int64_t taking);  // NOLINT
@@ -49,8 +51,21 @@ class MINDRECORD_API ShardSample : public ShardOperator {
   int64_t GetNumSamples(int64_t dataset_size, int64_t num_classes) override;
 
  private:
-  // Update the partition_shard_sample_count_ in tasks
+  // Update the partition_shard_sample_count_ in tasks when distributed by block
+  // Example: Assuming there are 12 samples divided into 4 cards
+  // rank0 rank1 rank2 rank3
+  //   0     3     6     9
+  //   1     4     7     10
+  //   2     5     8     11
   Status UpdatePartitionWhenSlowMode(ShardTaskList &tasks);  // NOLINT
+
+  // Update the partition_shard_sample_count_ in tasks when distributed by slice
+  // Example: Assuming there are 12 samples divided into 4 cards
+  // rank0 rank1 rank2 rank3
+  //   0     1     2     3
+  //   4     5     6     7
+  //   8     9     10    11
+  Status UpdatePartitionWhenSlowModeBySlice(ShardTaskList &tasks);  // NOLINT
 
  protected:
   int64_t numerator_;

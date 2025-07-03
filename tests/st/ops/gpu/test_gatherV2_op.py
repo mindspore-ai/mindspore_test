@@ -1344,9 +1344,9 @@ def test_gather1_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gather1_bool():
-    x = Tensor(np.array([[0, 1, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0]], dtype=np.bool))
+    x = Tensor(np.array([[0, 1, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0]], dtype=np.bool_))
     indices = Tensor(np.array(([1, 2]), dtype='i4'))
-    expect = np.array([[1, 1], [0, 0], [0, 1]]).astype(np.bool)
+    expect = np.array([[1, 1], [0, 0], [0, 1]]).astype(np.bool_)
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     gather = GatherNet1()
@@ -1363,7 +1363,7 @@ def test_gather_tensor(data_type):
     Expectation: the result match to numpy
     """
     x = np.array([1, 2, 3, 4, 5, 6, 7]).astype(data_type)
-    input_indices = Tensor(np.array([0, 2, 4, 2, 6], dtype=np.int))
+    input_indices = Tensor(np.array([0, 2, 4, 2, 6], dtype=np.int_))
     axis = 0
     y_expect = np.array([1, 3, 5, 3, 7]).astype(data_type)
 
@@ -1393,7 +1393,7 @@ def test_gather_tensor_outofbound(data_type):
     Expectation: raise runtime error
     """
     x = np.array([1, 2, 3, 4, 5, 6, 7]).astype(data_type)
-    input_indices = Tensor(np.array([0, 100, 4, 2, 6], dtype=np.int))
+    input_indices = Tensor(np.array([0, 100, 4, 2, 6], dtype=np.int_))
     axis = 0
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")

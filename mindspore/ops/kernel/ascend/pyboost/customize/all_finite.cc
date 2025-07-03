@@ -15,25 +15,26 @@
  */
 
 #include "kernel/ascend/pyboost/customize/all_finite.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 #include "acl/acl_rt.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel::pyboost {
 namespace {
 constexpr size_t kAlignSize = 512;
 }
 
-tensor::BaseTensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const ValueTuplePtr &tensors_tensor_list) {
+tensor::TensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                           const ValueTuplePtr &tensors_tensor_list) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(tensors_tensor_list);
   MS_LOG(DEBUG) << "Start AllFinite ascend customize";
   OpRunner::InferOpOutput(op, tensors_tensor_list);
   // ValueTuple to std::vector
-  std::vector<BaseTensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(tensors_tensor_list);
+  std::vector<TensorPtr> tensors_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(tensors_tensor_list);
   auto device_context = op->device_context();
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), tensors_tensor_list_vector);
   PyBoostUtils::PrepareOpOutputs(device_context, op->stream_id(), op->outputs());
@@ -51,7 +52,7 @@ tensor::BaseTensorPtr AllFiniteAscendCustomize(const std::shared_ptr<OpRunner> &
     MS_EXCEPTION_IF_NULL(stream_ptr);
     runtime::OpExecutor::DispatchLaunchTask(
       [output_device_ptr = outputs[0]->device_address()->GetMutablePtr(), stream_ptr]() {
-        auto ret = aclrtMemsetAsync(output_device_ptr, kAlignSize, 0, kAlignSize, stream_ptr);
+        auto ret = CALL_ASCEND_API(aclrtMemsetAsync, output_device_ptr, kAlignSize, 0, kAlignSize, stream_ptr);
         if (ret != ACL_SUCCESS) {
           MS_LOG(EXCEPTION) << "Call runtime aclrtMemsetAsync error, ret[" << ret << "]";
         }

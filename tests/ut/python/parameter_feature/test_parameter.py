@@ -990,3 +990,15 @@ def test_set_data_with_different_shape():
     """
     x = Parameter(Tensor(np.ones(shape=(2, 3), dtype=np.float32)), name="param")
     x.set_data(Tensor(np.ones(shape=(4, 5), dtype=np.float32)))
+
+
+def test_jit_default_args_before_vararg():
+    """
+    Feature: args parse match.
+    Description: Default param before *args is support.
+    Expectation: Success.
+    """
+    @jit
+    def func(a, b=1, *args, **kwargs):
+        return a, b, args, kwargs
+    func(1)

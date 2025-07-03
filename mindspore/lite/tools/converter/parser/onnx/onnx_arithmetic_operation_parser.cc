@@ -28,6 +28,7 @@
 #include "infer/eltwise.h"
 #include "infer/mod.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace lite {

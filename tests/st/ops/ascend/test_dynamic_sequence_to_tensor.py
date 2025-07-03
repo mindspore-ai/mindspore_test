@@ -40,6 +40,7 @@ def test_seq_to_tensor0():
     Description: inputs is dynamic sequence or scalar; DType=None
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     x0 = mutable((1, 2, 3), True)
     y0 = mutable(3)
     expect_x0 = np.array([1, 2, 3], dtype=np.int64)
@@ -50,13 +51,14 @@ def test_seq_to_tensor0():
     assert np.allclose(res_y.asnumpy(), expect_y0, 1.e-4, 1.e-4, equal_nan=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor1():
     """
     Feature: test xxToTensor.
     Description: inputs is dynamic sequence or scalar; DType=None
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     x0 = mutable((1.1, 2.1, 3.1), True)
     y0 = mutable(3.1)
     expect_x0 = np.array([1.1, 2.1, 3.1], dtype=np.float32)
@@ -84,6 +86,7 @@ def test_seq_to_tensor2():
     Description: inputs is dynamic sequence or scalar; DType=int64
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_level="O0")
     x0 = mutable((1, 2, 3), True)
     y0 = mutable(3)
     expect_x0 = np.array([1, 2, 3], dtype=np.int64)
@@ -111,6 +114,7 @@ def test_seq_to_tensor3():
     Description: inputs is dynamic sequence or scalar; DType=float32
     Expectation: the result match with numpy result
     """
+    context.set_context(jit_level='O0')
     x0 = mutable((1.1, 2.1, 3.1), True)
     y0 = mutable(3.1)
     expect_x0 = np.array([1.1, 2.1, 3.1], dtype=np.float32)

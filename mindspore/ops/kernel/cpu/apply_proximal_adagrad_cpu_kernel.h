@@ -22,11 +22,12 @@
 #include <functional>
 #include <map>
 #include "mindspore/ops/infer/apply_proximal_adagrad.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace apply_proximal_adagrad_cpu {
 class ApplyProximalAdagradCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyProximalAdagradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class ApplyProximalAdagradCpuKernelMod : public NativeCpuKernelMod {
   int unit_size_;
   size_t input_elements_;
 };
+}  // namespace apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

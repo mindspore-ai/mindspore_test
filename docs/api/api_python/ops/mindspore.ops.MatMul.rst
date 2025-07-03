@@ -12,13 +12,13 @@ mindspore.ops.MatMul
     其中， :math:`i,j` 表示输出的第i行和第j列元素。
 
     .. note::
-        - 对于 :math:`N * M` 不能被16整除的情况下，在Ascend环境上性能会比较差。
+        - 当 :math:`N * M` 不能被16整除时，算子在Ascend环境上的性能会比较差。
         - 输入Tensor的数据类型必须一致。
         - Ascend上，暂不支持float64类型。
 
     参数：
-        - **transpose_a** (bool) - 如果为 ``True`` ，则在相乘之前转置 `a`。默认值： ``False`` 。
-        - **transpose_b** (bool) - 如果为 ``True`` ，则在相乘之前转置 `b`。默认值： ``False`` 。
+        - **transpose_a** (bool，可选) - 如果为 ``True`` ，则在相乘之前转置 `a`。默认值： ``False`` 。
+        - **transpose_b** (bool，可选) - 如果为 ``True`` ，则在相乘之前转置 `b`。默认值： ``False`` 。
 
     输入：
         - **a** (Tensor) - 要相乘的第一个Tensor。如果 `transpose_a` 为 ``False`` ，则该Tensor的shape为 :math:`(N, C)` ；否则，该Tensor的shape为 :math:`(C, N)` 。

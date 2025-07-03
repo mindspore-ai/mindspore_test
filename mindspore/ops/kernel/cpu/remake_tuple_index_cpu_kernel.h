@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace remake_tuple_index_cpu {
 class RemakeTupleIndexCpuKernelMod : public NativeCpuKernelMod {
  public:
   RemakeTupleIndexCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class RemakeTupleIndexCpuKernelMod : public NativeCpuKernelMod {
   size_t valid_tensor_num_ = 0;
   std::vector<int64_t> tuple_index_types_;
 };
+}  // namespace remake_tuple_index_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_REMAKE_TUPLE_INDEX_CPU_KERNEL_H_

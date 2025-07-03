@@ -22,11 +22,12 @@
 #include <utility>
 #include <vector>
 #include "kernel/cpu/addcmul_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/mul_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace addcmul_cpu {
 namespace {
 #define F32 kNumberTypeFloat32
 #define F16 kNumberTypeFloat16
@@ -212,5 +213,6 @@ std::vector<KernelAttr> AddcmulCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Addcmul, AddcmulCpuKernelMod);
+}  // namespace addcmul_cpu
 }  // namespace kernel
 }  // namespace mindspore

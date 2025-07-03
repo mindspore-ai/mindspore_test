@@ -27,7 +27,7 @@
 #include <vector>
 #include <map>
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/curand_kernel.h"
 
 namespace mindspore {

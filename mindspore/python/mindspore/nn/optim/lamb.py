@@ -265,7 +265,7 @@ class Lamb(Optimizer):
         self.moments2 = self.params.clone(prefix="lamb_v", init='zeros')
         self.device_ascend = context.get_context("device_target") == "Ascend"
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         weight_decay = self.get_weight_decay()
         lr = self.get_lr()

@@ -17,17 +17,18 @@
 #include "kernel/ascend/pyboost/customize/incre_flash_attention.h"
 #include <memory>
 #include <string>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include <utility>
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-std::vector<int64_t> ConvertActualSeqLengthsToVector(const std::optional<tensor::BaseTensorPtr> &tensor_opt) {
+std::vector<int64_t> ConvertActualSeqLengthsToVector(const std::optional<tensor::TensorPtr> &tensor_opt) {
   if (!tensor_opt.has_value()) {
     return std::vector<int64_t>();
   }
@@ -55,17 +56,17 @@ std::vector<int64_t> ConvertActualSeqLengthsToVector(const std::optional<tensor:
   return converted_sequence;
 }
 
-tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
-  const ValueTuplePtr &value_tensor_list, const std::optional<BaseTensorPtr> &attn_mask_tensor,
-  const std::optional<BaseTensorPtr> &actual_seq_lengths_tensor, const std::optional<BaseTensorPtr> &pse_shift_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale1_tensor, const std::optional<BaseTensorPtr> &quant_scale1_tensor,
-  const std::optional<BaseTensorPtr> &dequant_scale2_tensor, const std::optional<BaseTensorPtr> &quant_scale2_tensor,
-  const std::optional<BaseTensorPtr> &quant_offset2_tensor, const std::optional<BaseTensorPtr> &antiquant_scale_tensor,
-  const std::optional<BaseTensorPtr> &antiquant_offset_tensor, const std::optional<BaseTensorPtr> &block_table_tensor,
-  const std::optional<BaseTensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads,
-  const Int64ImmPtr &input_layout, const FP32ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads,
-  const Int64ImmPtr &block_size, const Int64ImmPtr &inner_precise) {
+tensor::TensorPtr IncreFlashAttentionAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &query_tensor, const ValueTuplePtr &key_tensor_list,
+  const ValueTuplePtr &value_tensor_list, const std::optional<TensorPtr> &attn_mask_tensor,
+  const std::optional<TensorPtr> &actual_seq_lengths_tensor, const std::optional<TensorPtr> &pse_shift_tensor,
+  const std::optional<TensorPtr> &dequant_scale1_tensor, const std::optional<TensorPtr> &quant_scale1_tensor,
+  const std::optional<TensorPtr> &dequant_scale2_tensor, const std::optional<TensorPtr> &quant_scale2_tensor,
+  const std::optional<TensorPtr> &quant_offset2_tensor, const std::optional<TensorPtr> &antiquant_scale_tensor,
+  const std::optional<TensorPtr> &antiquant_offset_tensor, const std::optional<TensorPtr> &block_table_tensor,
+  const std::optional<TensorPtr> &kv_padding_size_tensor, const Int64ImmPtr &num_heads, const Int64ImmPtr &input_layout,
+  const FP32ImmPtr &scale_value, const Int64ImmPtr &num_key_value_heads, const Int64ImmPtr &block_size,
+  const Int64ImmPtr &inner_precise) {
   OpRunner::InferOpOutput(op, query_tensor, key_tensor_list, value_tensor_list, attn_mask_tensor,
                           actual_seq_lengths_tensor, pse_shift_tensor, dequant_scale1_tensor, quant_scale1_tensor,
                           dequant_scale2_tensor, quant_scale2_tensor, quant_offset2_tensor, antiquant_scale_tensor,
@@ -73,15 +74,15 @@ tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
                           scale_value, num_key_value_heads, block_size, inner_precise);
   // ValueTuple to std::vector
   // ValueTuple to std::vector
-  std::vector<BaseTensorPtr> key_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(key_tensor_list);
-  std::vector<BaseTensorPtr> value_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(value_tensor_list);
+  std::vector<TensorPtr> key_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(key_tensor_list);
+  std::vector<TensorPtr> value_tensor_list_vector = ConvertValueTupleToVector<TensorPtr>(value_tensor_list);
   auto actual_seq_lengths_vector = ConvertActualSeqLengthsToVector(actual_seq_lengths_tensor);
   auto actual_seq_lengths_vector_pair = std::make_pair(actual_seq_lengths_vector, true);
   // Convert ValuePtr to c++ scalar
   // Convert ValuePtr to c++ scalar
   auto num_heads_imm = GetValue<int64_t>(num_heads);
   auto input_layout_imm = GetValue<int64_t>(input_layout);
-  auto input_layout_str = transform::FASInputLayoutMode::ConvertEnumToString(input_layout_imm);
+  auto input_layout_str = device::ascend::FASInputLayoutMode::ConvertEnumToString(input_layout_imm);
   auto scale_value_imm = GetValue<float>(scale_value);
   double scale_value_imm_d = static_cast<double>(scale_value_imm);
   auto num_key_value_heads_imm = GetValue<int64_t>(num_key_value_heads);

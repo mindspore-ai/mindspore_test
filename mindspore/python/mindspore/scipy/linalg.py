@@ -34,7 +34,7 @@ def solve_triangular(a, b, trans=0, lower=False, unit_diagonal=False, overwrite_
 
     Note:
         - `solve_triangular` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `solve_triangular` is not supported on Windows platform yet.
 
     Args:
@@ -867,7 +867,7 @@ def lstsq(A, B, rcond=None, driver=None):
 
     Note:
         - `lstsq` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `lstsq` is not supported on Windows platform yet.
 
     Args:

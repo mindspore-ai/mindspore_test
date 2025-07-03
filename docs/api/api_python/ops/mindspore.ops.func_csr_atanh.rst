@@ -18,5 +18,5 @@ mindspore.ops.csr_atanh
         CSRTensor，数据类型与输入相同。
 
     异常：
-        - **TypeError** - 如果 `x` 不是CSRTensor。
-        - **TypeError** - 如果 `x` 的数据类型不是float16或float32。
+        - **TypeError** - `x` 不是CSRTensor。
+        - **TypeError** - `x` 的数据类型不是float16或float32。

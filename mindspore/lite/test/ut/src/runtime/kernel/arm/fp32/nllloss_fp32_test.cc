@@ -80,8 +80,9 @@ TEST_F(TestNLLLossFp32, ReductionNone) {
 
   auto *ctx = new lite::InnerContext;
   ctx->thread_num_ = 1;
-  ASSERT_EQ(lite::RET_OK, ctx->Init());
-  auto *param = new NLLLossParameter;
+  NLLLossParameter *param = reinterpret_cast<NLLLossParameter *>(malloc(sizeof(NLLLossParameter)));
+  ASSERT_NE(param, nullptr);
+  memset(param, 0, sizeof(NLLLossParameter));
   param->op_parameter_.thread_num_ = ctx->thread_num_;
   param->op_parameter_.type_ = schema::PrimitiveType_NLLLoss;
   param->reduction_type_ = Reduction_None;
@@ -109,7 +110,9 @@ TEST_F(TestNLLLossFp32, ReductionSum) {
   auto *ctx = new lite::InnerContext;
   ctx->thread_num_ = 1;
   ASSERT_EQ(lite::RET_OK, ctx->Init());
-  auto *param = new NLLLossParameter;
+  NLLLossParameter *param = reinterpret_cast<NLLLossParameter *>(malloc(sizeof(NLLLossParameter)));
+  ASSERT_NE(param, nullptr);
+  memset(param, 0, sizeof(NLLLossParameter));
   param->op_parameter_.thread_num_ = ctx->thread_num_;
   param->op_parameter_.type_ = schema::PrimitiveType_NLLLoss;
   param->reduction_type_ = Reduction_Sum;
@@ -137,7 +140,9 @@ TEST_F(TestNLLLossFp32, ReductionMean) {
   auto *ctx = new lite::InnerContext;
   ctx->thread_num_ = 1;
   ASSERT_EQ(lite::RET_OK, ctx->Init());
-  auto *param = new NLLLossParameter;
+  NLLLossParameter *param = reinterpret_cast<NLLLossParameter *>(malloc(sizeof(NLLLossParameter)));
+  ASSERT_NE(param, nullptr);
+  memset(param, 0, sizeof(NLLLossParameter));
   param->op_parameter_.thread_num_ = ctx->thread_num_;
   param->op_parameter_.type_ = schema::PrimitiveType_NLLLoss;
   param->reduction_type_ = Reduction_Mean;

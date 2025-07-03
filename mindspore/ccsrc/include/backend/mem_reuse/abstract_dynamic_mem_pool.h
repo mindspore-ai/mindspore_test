@@ -31,37 +31,12 @@
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/stream_util.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 constexpr size_t kDecimalPrecision = 3;
 
-class AbstractDynamicMemPool;
-
-class Lock {
- public:
-  inline void lock() {
-    while (locked.test_and_set(std::memory_order_acquire)) {
-    }
-  }
-
-  inline void unlock() { locked.clear(std::memory_order_release); }
-
- protected:
-  std::atomic_flag locked = ATOMIC_FLAG_INIT;
-};
-
-class BACKEND_EXPORT LockGuard {
- public:
-  explicit LockGuard(const Lock &lock);
-  ~LockGuard();
-
- private:
-  Lock *lock_;
-};
-
-struct MemBlock;
+struct BACKEND_EXPORT MemBlock;
 
 using MemBufStatus = DynamicMemBufStatus;
 struct BACKEND_EXPORT MemBuf : EventBase {
@@ -107,7 +82,7 @@ struct BACKEND_EXPORT MemBuf : EventBase {
     builder.Append("stream_id_", stream_id_);
     builder.Append("status_", DynamicMemBufStatusToString(status_));
     builder.Append("owner_name_", owner_name_);
-    builder.Append("alloc_type_", AllocatorTypeToString(alloc_type_));
+    builder.Append("alloc_type_", MemTypeToStr(alloc_type_));
     return builder.ToString();
   }
 
@@ -122,7 +97,7 @@ struct BACKEND_EXPORT MemBuf : EventBase {
   MemBufStatus status_;
 
   std::string owner_name_;
-  AllocatorType alloc_type_{AllocatorType::kOther};
+  memory::mem_pool::MemType alloc_type_{memory::mem_pool::MemType::kOther};
 };
 
 struct MemBufComparator {
@@ -131,7 +106,7 @@ struct MemBufComparator {
   }
 };
 
-struct MemBlock {
+struct BACKEND_EXPORT MemBlock {
   explicit MemBlock(size_t size, void *addr, uint32_t stream_id) : size_(size), addr_(addr), stream_id_(stream_id) {
     min_addr_ = nullptr;
     max_addr_ = nullptr;
@@ -178,7 +153,7 @@ struct MemBlock {
   void *max_addr_;
 };
 
-struct MemStat {
+struct BACKEND_EXPORT MemStat {
   MemStat() { Reset(); }
 
   MemStat(const MemStat &) = delete;
@@ -192,18 +167,19 @@ struct MemStat {
     used_by_event_size_ = 0;
     eager_free_size_ = 0;
 
-    temp_used_size_ = 0;
-    temp_used_by_event_size_ = 0;
-    temp_peak_size_ = 0;
-    temp_alloc_size_ = 0;
+    iter_used_peak_size_ = 0;
+    iter_alloc_peak_size_ = 0;
   }
 
   inline size_t IdleSize() const { return alloc_size_ - used_size_; }
 
-  inline void UpdatePeakSize() {
+  inline void UpdatePeakSize(const bool is_enable_vmm, size_t vmm_used_mem_size) {
     peak_size_ = std::max(peak_size_, used_size_);
-    if (used_size_ > temp_used_size_) {
-      temp_peak_size_ = std::max(temp_peak_size_, used_size_ - temp_used_size_);
+    iter_used_peak_size_ = std::max(iter_used_peak_size_, used_size_);
+    if (is_enable_vmm) {
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, vmm_used_mem_size);
+    } else {
+      iter_alloc_peak_size_ = std::max(iter_alloc_peak_size_, alloc_size_);
     }
   }
 
@@ -241,13 +217,13 @@ struct MemStat {
   size_t used_by_event_size_;
   size_t eager_free_size_;
 
-  size_t temp_used_size_;
-  size_t temp_used_by_event_size_;
-  size_t temp_peak_size_;
-  size_t temp_alloc_size_;
+  size_t iter_used_peak_size_;
+  size_t iter_alloc_peak_size_;
 };
 
-class MemBufAllocator {
+class AbstractDynamicMemPool;
+
+class BACKEND_EXPORT MemBufAllocator {
  public:
   explicit MemBufAllocator(std::function<MemBlock *(size_t)> mem_block_expander,
                            std::function<bool(MemBlock *)> mem_block_cleaner,
@@ -274,9 +250,12 @@ class MemBufAllocator {
   void ReleaseDeviceRes();
 
   MemBuf *Malloc(size_t size);
+  MemBuf *SearchAvaliableMemBuf(size_t size);
   bool Free(MemBuf *mem_buf, MemBufStatus target_status = MemBufStatus::kMemBufIdle);
   MemBuf *MallocExpandBlock(size_t size);
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree();
+
+  size_t ReleaseFreeBlocks();
 
   std::string DumpStateInfo() const;
   std::string DumpDebugInfo() const;
@@ -312,8 +291,9 @@ class MemBufAllocator {
   bool enable_eager_free_;
 
   std::list<MemBlock *> mem_blocks_;
-  std::set<MemBuf *, MemBufComparator> free_mem_bufs_;
-  std::set<MemBuf *, MemBufComparator> eager_free_mem_bufs_;
+  using MemAllocator = memory::mem_pool::PooledAllocator<MemBuf *>;
+  std::set<MemBuf *, MemBufComparator, MemAllocator> free_mem_bufs_;
+  std::set<MemBuf *, MemBufComparator, MemAllocator> eager_free_mem_bufs_;
 
  private:
   MemBuf *search_key_;
@@ -325,6 +305,8 @@ class MemBufAllocator {
 };
 using MemBufAllocatorPtr = std::shared_ptr<MemBufAllocator>;
 
+using Lock = memory::mem_pool::Lock;
+using LockGuard = memory::mem_pool::LockGuard;
 class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
  public:
   AbstractDynamicMemPool();
@@ -413,6 +395,8 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
 
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 
+  size_t ReleaseFreeBlocks() override;
+
   MemStat &mem_stat() { return mem_stat_; }
 
   Lock &lock() { return lock_; }
@@ -460,7 +444,9 @@ class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemP
 
   // Report memory pool stat info for enhanced processing.
   virtual void ReportMemoryPoolInfo();
-
+  // Report memory pool stat info for mstx
+  virtual void ReportMemoryPoolMallocInfoToMstx(void *ptr, size_t size);
+  virtual void ReportMemoryPoolFreeInfoToMstx(void *ptr);
   bool IsEnableTimeEvent() override { return enable_time_event_; }
 
   void SetEnableTimeEvent(bool enable_time_event) override { enable_time_event_ = enable_time_event; }

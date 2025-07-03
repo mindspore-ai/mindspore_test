@@ -23,6 +23,7 @@
 #include "infer/cxx_api/conv2d_fusion.h"
 #include "mindspore/lite/include/errorcode.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::opt {
 namespace {

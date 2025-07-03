@@ -15,13 +15,28 @@
 
 """Device manager interfaces."""
 
+__all__ = ['set_device', 'set_deterministic', 'get_current_device']
+
 import os
 from mindspore import log as logger
-from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext
+from mindspore._c_expression import DeviceManagerConf, DeviceContextManager, MSContext, CollectiveManager
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._ps_context import _need_reset_device_target_for_ps
 
-__all__ = ['set_device', 'set_deterministic']
+class DeviceInfo(tuple):
+    """
+    DeviceInfo class. Store the current device target and the corresponding device id.
+    """
+    def __new__(cls, device_target, device_id):
+        return super().__new__(cls, (device_target, device_id))
+
+    @property
+    def device_target(self):
+        return self[0]
+
+    @property
+    def device_id(self):
+        return self[1]
 
 
 @args_type_check(device_target=str, device_id=int)
@@ -31,16 +46,17 @@ def set_device(device_target, device_id=None):
 
     Note:
         - The `device_target` must be set in the ["CPU", "GPU", "Ascend"], there is no default value.
+        - Suggest setting `device_target` and `device_id` before calling :func:`mindspore.communication.init`.
 
     Args:
         device_target (str): The target device to run, only support "Ascend", "GPU", and "CPU".
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1].
+        device_id (int, optional): ID of the target device, the value must be in [0, device_num_per_host-1],
+            where device_num_per_host refers to the total number of devices on the host. Default: ``None`` .
             The frame will set different default behaviours according to the scenario:
             if it is a single-card scenario, the frame will be set to 0.
             In a distributed scenario where msrun is started, the framework will
             automatically negotiate the available device_id values.
             In a distributed scenario with other startup methods, the frame is set to 0.
-            "device_num_per_host" refers to the total number of devices on the host.
 
     Examples:
         >>> import mindspore as ms
@@ -72,9 +88,29 @@ def set_device(device_target, device_id=None):
 
     device_context = DeviceContextManager.get_instance().get_device_context(device_target)
     if device_context is not None and device_context.initialized():
-        raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed."
+        raise RuntimeError("The runtime has been initialized, please set it before the kernel is executed, "
+                           "or before calling 'mindspore.communication.init()'. "
                            "Suggest setting it as early as possible.")
     DeviceManagerConf.get_instance().set_device(device_target, device_id, is_default)
+
+
+def get_current_device():
+    """
+    Get device target and device id in the current running environment.
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.set_device("Ascend", 1)
+        >>> ms.get_current_device()
+        ('Ascend', 1)
+        >>> ms.get_current_device().device_target
+        'Ascend'
+        >>> ms.get_current_device().device_id
+        1
+    """
+    device_target = DeviceManagerConf.get_instance().get_device_target()
+    device_id = DeviceManagerConf.get_instance().get_device_id()
+    return DeviceInfo(device_target, device_id)
 
 
 @args_type_check(deterministic=bool)
@@ -82,10 +118,20 @@ def set_deterministic(deterministic):
     """
     Enables or disables deterministic computing.
 
-    When deterministic computing is enabled, the same output is generated if an operator is executed
-    for multiple times with the same hardware and input.This often slows down operator execution.
+    This configuration is a global configuration, and once enabled, subsequent calculation operations
+    will follow the configuration setting. When deterministic computing is enabled, the same output
+    is generated if an operator is executed for multiple times with the same hardware and input. This often
+    slows down operator execution.
 
     The framework not enabled deterministic computation by default.
+
+    Note:
+        - In distributed scenario, we suggest user to set deterministic computing before
+          calling :func:`mindspore.communication.init` to enable deterministic operation for
+          communication operators in the global communication group.
+        - The fixed method for deterministic calculation must be in the same main process as the network,
+          operator, etc. Only one deterministic state can be set in the same thread, and it is not recommended
+          to set deterministic state multiple times in one thread.
 
     Args:
         deterministic (bool): Whether to enable deterministic computing.
@@ -97,6 +143,10 @@ def set_deterministic(deterministic):
     # Check the configuration environment whether valid.
     if DeviceManagerConf.get_instance().is_deterministic_configured():
         raise RuntimeError("The 'mindspore.set_deterministic' can not be set repeatedly.")
+
+    # Must wait for all async created groups to be initialized so that
+    # deterministic feature could be consistent between all processes.
+    CollectiveManager.get_instance().wait_all_comm_init()
 
     # Check the hccl_deterministic and te_parallel_compiler.
     hccl_deterministic = os.getenv("HCCL_DETERMINISTIC")

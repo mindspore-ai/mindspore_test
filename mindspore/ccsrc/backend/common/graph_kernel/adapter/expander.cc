@@ -22,31 +22,33 @@
 #include <string>
 #include <memory>
 #include <utility>
-#include "backend/common/graph_kernel/convert_input_and_attr.h"
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/random_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/lite_ops.h"
-#include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/python_adapter.h"
-#include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "backend/common/graph_kernel/core/split_umonad.h"
 #include "backend/common/graph_kernel/substitute_dropout.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/callback_impl.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/pass/inplace_assign_for_custom_op.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/backend/optimizer/graph_optimizer.h"
 #include "ir/func_graph_cloner.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {
@@ -72,6 +74,8 @@ ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {
     {prim::kPrimAdam->name(), {OpUMonadExpanderDeco::GetCreator(kAdamInputIdx)}},
     {prim::kPrimAdamWeightDecay->name(), {OpUMonadExpanderDeco::GetCreator(kAdamWeightDecayInputIdx)}},
     {prim::kPrimApplyMomentum->name(), {OpUMonadExpanderDeco::GetCreator(kApplyMomentumInputIdx)}},
+    {"BatchNormGatherStatsWithCounts", {OpUMonadExpanderDeco::GetCreator(kIndex4)}},
+    {"BatchNormElemt", {OpUMonadExpanderDeco::GetCreator(kIndex2)}},
     {prim::kPrimDropout->name(), {DropoutExpanderDeco::Creator}},
     {prim::kPrimArgMaxWithValue->name(), {ArgWithValueDeco::Creator}},
     {prim::kPrimArgMinWithValue->name(), {ArgWithValueDeco::Creator}},

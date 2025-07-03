@@ -77,7 +77,7 @@ class TestMedianDimSimple : public TestOps, public testing::WithParamInterface<M
 
 TEST_P(TestMedianDimSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
   auto axis = param.axis;
   auto keep_dims = param.keep_dims;
 
@@ -141,7 +141,7 @@ class TestMedianExtSimple : public TestOps, public testing::WithParamInterface<M
 
 TEST_P(TestMedianExtSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto x = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
 
   auto expect_shape = ShapeArray{param.values_shape};
   auto expect_type = TypePtrList{param.values_type};

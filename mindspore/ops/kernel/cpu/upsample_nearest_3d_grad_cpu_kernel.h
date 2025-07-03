@@ -23,12 +23,13 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_nearest_3d_grad_cpu {
 class UpsampleNearest3DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpsampleNearest3DGradCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class UpsampleNearest3DGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> none_list_;
   std::vector<float> scales_;
 };
+}  // namespace upsample_nearest_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

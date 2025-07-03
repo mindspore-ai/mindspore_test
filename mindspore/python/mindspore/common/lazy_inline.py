@@ -28,7 +28,7 @@ def lazy_inline(fn=None, attrs=None, policy=None):
     will add the parameters of `__init__` according to the `attrs` as the attributes of this cell.
 
     For a detailed description of the function, see `Using the lazy_inline decorator
-    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph_syntax/
+    <https://www.mindspore.cn/tutorials/en/master/compile/
     static_graph_expert_programming.html#using-lazy-inline-decorator>`_ .
 
     .. warning::
@@ -39,7 +39,7 @@ def lazy_inline(fn=None, attrs=None, policy=None):
     Args:
         fn (function): `__init__` function of a cell.
         attrs (Union[list[string], string]): The attributes list to add for the cell.
-        policy (Union[None, "front"]): The policy of inline. Default is None.
+        policy (Union[None, "front"], optional): The policy of inline. Default is ``None``.
 
             - ``None``: The cell will be compiled to sub graph and will not be inline.
             - ``"front"``: The cell will be compiled to sub graph first and will be inline at front end.

@@ -334,7 +334,7 @@ std::vector<MSTensor> LiteRTGraphExecutor::GetLiteSessionOutputs() {
     return empty;
   }
   if (names.size() != outputs.size()) {
-    MS_LOG(ERROR) << "The size of outputs dose not match the size of names.";
+    MS_LOG(ERROR) << "The size of outputs does not match the size of names.";
     return empty;
   }
   res.resize(names.size());
@@ -462,8 +462,8 @@ bool LiteRTGraphExecutor::IsNeedExtractTensorData(mindspore::schema::MetaGraphT 
   return false;
 }
 
-static std::shared_ptr<device::GraphExecutor> LiteRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
-                                                                         const ConfigInfos &config_infos) {
+static std::shared_ptr<LiteGraphExecutor> LiteRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
+                                                                     const ConfigInfos &config_infos) {
   return std::make_shared<LiteRTGraphExecutor>(ctx, config_infos);
 }
 

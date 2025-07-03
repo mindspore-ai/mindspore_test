@@ -2,57 +2,71 @@ argmax:
   description: |
     argmax(axis=None, keepdims=False) -> Tensor
     
-    Return the indices of the maximum values of `self` across a dimension.
+    Return the indices of the maximum values along the given axis of the tensor.
     
     Args:
-        axis (Union[int, None], optional): The dimension to reduce. If `axis` is ``None`` , the indices of the maximum value 
-            within the flattened input will be returned. The value of `axis` cannot exceed the dimension of `self`. Default: ``None`` .
-        keepdims (bool, optional): Whether the output tensor retains the specified
-            dimension. Ignored if `axis` is None. Default: ``False`` .
+        axis (Union[int, None], optional): Specify the axis for computation. If ``None`` , compute all elements in the
+            tensor. Default ``None`` .
+        keepdims (bool, optional): Whether the output tensor has dim retained. Default ``False`` .
 
     Returns:
-        Tensor, indices of the maximum values of `self` across a dimension.
-
-    Raises:
-        TypeError: If `keepdims` is not bool.
-        ValueError: If `axis` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-        >>> output = Tensor.argmax(x, axis=-1) # x.argmax(axis=-1)
-        >>> print(output)
-        [1 0 0]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[9, 3, 4, 5],
+        ...                       [5, 2, 7, 4],
+        ...                       [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the maximum of all elements.
+        >>> x.argmax()
+        Tensor(shape=[], dtype=Int64, value= 0)
+        >>>
+        >>> # case 2: Compute the maximum along axis 1.
+        >>> x.argmax(axis=1)
+        Tensor(shape=[3], dtype=Int64, value= [0, 2, 0])
+        >>>
+        >>> # case 3: If keepdims=True, the output shape will be same of that of the input.
+        >>> x.argmax(axis=1, keepdims=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[0],
+         [2],
+         [0]])
 
     .. method:: Tensor.argmax(dim=None, keepdim=False) -> Tensor
         :noindex:
     
-    Return the indices of the maximum values of `self` across a dimension.
+    Return the maximum values along the given dimension of the tensor. 
 
     Args:
-        dim (Union[int, None], optional): The dimension to reduce. If `dim` is ``None`` , the indices of the maximum value 
-            within the flattened input will be returned. The value of `dim` cannot exceed the dimension of `self`. Default: ``None`` .
-        keepdim (bool, optional): Whether the output tensor retains the specified
-            dimension. Ignored if `dim` is None. Default: ``False`` .
+        dim (Union[int, None], optional): Specify the dim for computation. If ``None`` , compute all elements in the
+            tensor.
+        keepdim (bool, optional): Whether the output tensor has dim retained.
 
     Returns:
-        Tensor, indices of the maximum values of `self` across a dimension.
-
-    Raises:
-        TypeError: If `keepdim` is not bool.
-        ValueError: If `dim` is out of range.
+        Tensor
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-        >>> output = Tensor.argmax(x, dim=-1) # x.argmax(dim=-1)
-        >>> print(output)
-        [1 0 0]
+        >>> import mindspore
+        >>> x = mindspore.tensor([[9, 3, 4, 5],
+        ...                       [5, 2, 7, 4],
+        ...                       [8, 1, 3, 6]])
+        >>> # case 1: By default, compute the maximum of all elements.
+        >>> x.argmax()
+        Tensor(shape=[], dtype=Int64, value= 0)
+        >>>
+        >>> # case 2: Compute the maximum along dim 1.
+        >>> x.argmax(dim=1)
+        Tensor(shape=[3], dtype=Int64, value= [0, 2, 0])
+        >>>
+        >>> # case 3: If keepdim=True, the output shape will be same of that of the input.
+        >>> x.argmax(dim=1, keepdim=True)
+        Tensor(shape=[3, 1], dtype=Int64, value=
+        [[0],
+         [2],
+         [0]])

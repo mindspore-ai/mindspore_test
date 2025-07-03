@@ -25,13 +25,14 @@
 #include <unordered_map>
 #include "mindspore/ops/infer/grad/max_pool_grad_grad.h"
 #include "mindspore/ops/infer/grad/max_pool_3d_grad_grad.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "kernel/cpu/nnacl/pooling_parameter.h"
 #include "kernel/cpu/nnacl/kernel/pooling.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace maxpool_grad_grad_cpu {
 constexpr size_t kMaxPool2DGradGradDim = 2;
 constexpr size_t kMaxPool3DGradGradDim = 3;
 
@@ -90,6 +91,7 @@ class MaxPool3DGradGradCpuKernelMod : public MaxPoolGradGradCpuKernelMod {
   MaxPool3DGradGradCpuKernelMod() : MaxPoolGradGradCpuKernelMod(kMaxPool3DGradGradDim) {}
   ~MaxPool3DGradGradCpuKernelMod() = default;
 };
+}  // namespace maxpool_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

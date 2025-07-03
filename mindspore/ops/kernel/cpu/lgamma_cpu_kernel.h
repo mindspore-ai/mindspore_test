@@ -21,11 +21,12 @@
 #include <map>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lgamma_cpu {
 class LgammaCpuKernelMod : public NativeCpuKernelMod {
  public:
   LgammaCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class LgammaCpuKernelMod : public NativeCpuKernelMod {
   int64_t input_tensor_size_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace lgamma_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_LGAMMA_CPU_KERNEL_H_

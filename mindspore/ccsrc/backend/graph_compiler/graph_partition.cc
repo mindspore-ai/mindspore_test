@@ -21,16 +21,25 @@
 #include <set>
 #include <stack>
 #include <string>
-#include <utility>
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
 #include "utils/anf_utils.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 namespace mindspore {
 namespace compile {
 namespace {
@@ -241,37 +250,6 @@ std::vector<AnfNodePtr> SplitSort(const FuncGraphPtr &graph, const std::string &
   std::reverse(result.begin(), result.end());
   return result;
 }
-
-std::vector<AnfNodePtr> LazySort(const std::vector<AnfNodePtr> &nodes, const PrimitiveSet &primitive_set) {
-  std::vector<AnfNodePtr> result;
-  std::set<AnfNodePtr> visited;
-  std::vector<AnfNodePtr> lazy_sort_node;
-  for (auto &node : nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (IsOneOfPrimitiveCNode(node, primitive_set)) {
-      lazy_sort_node.emplace_back(node);
-    } else if (!node->isa<CNode>()) {
-      result.emplace_back(node);
-      visited.insert(node);
-    } else {
-      auto cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      auto node_inputs = cnode->inputs();
-      bool all_visited = std::all_of(node_inputs.begin(), node_inputs.end(), [&visited](const AnfNodePtr &input) {
-        return visited.find(input) != visited.end();
-      });
-      if (all_visited) {
-        result.emplace_back(node);
-        visited.insert(node);
-      } else {
-        lazy_sort_node.emplace_back(node);
-      }
-    }
-  }
-  result.insert(result.end(), lazy_sort_node.begin(), lazy_sort_node.end());
-  return result;
-}
-
 struct GraphNodesDependencyInfo {
   std::stack<AnfNodePtr> independent_nodes_;
   std::map<AnfNodePtr, size_t> input_num_;
@@ -533,6 +511,7 @@ bool IsSubGraph(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto &inputs = cnode->inputs();
     if (inputs.empty()) {
       MS_LOG(EXCEPTION) << "Inputs of apply node is empty";
@@ -543,6 +522,7 @@ bool IsSubGraph(const AnfNodePtr &node) {
       return false;
     }
     auto node_prim = GetValueNode<PrimitivePtr>(fn);
+    MS_EXCEPTION_IF_NULL(node_prim);
     if (node_prim->name() == prim::kPrimPartial->name()) {
       return true;
     }
@@ -775,13 +755,18 @@ bool IsNeedInline(const CNodePtr &cnode) {
       MS_EXCEPTION_IF_NULL(call_graph);
       auto graph_out = call_graph->output();
       MS_EXCEPTION_IF_NULL(graph_out);
-      auto partial = graph_out->cast<CNodePtr>()->input(idx + 1);
+      auto graph_out_cnode = graph_out->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(graph_out_cnode);
+      auto partial = graph_out_cnode->input(idx + 1);
       MS_EXCEPTION_IF_NULL(partial);
       if (!IsPrimitiveCNode(partial, prim::kPrimPartial)) {
         MS_LOG(EXCEPTION) << "There is no backward graph corresponding to the forward graph. Please remove the "
                              "@lazy_inline decorator and try again";
       }
-      auto partial_graph = GetValueNode<FuncGraphPtr>(partial->cast<CNodePtr>()->input(1));
+      auto partial_cnode = partial->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(partial_cnode);
+      auto partial_graph = GetValueNode<FuncGraphPtr>(partial_cnode->input(1));
+      MS_EXCEPTION_IF_NULL(partial_graph);
       partial_graph->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, true);
       return true;
     }
@@ -799,6 +784,7 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (node->isa<CNode>()) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto &inputs = cnode->inputs();
     if (inputs.empty()) {
       MS_LOG(EXCEPTION) << "Inputs of apply node is empty";
@@ -812,7 +798,8 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
       if (common::AnfAlgo::HasNodeAttr(kAttrJitCallNode, cnode)) {
         return false;
       }
-      if (IsPrimitiveCNode(fn, prim::kPrimSwitch) && fn->cast<CNodePtr>()->HasPrimalAttr(kAttrNotCut)) {
+      auto fn_cnode = fn->cast<CNodePtr>();
+      if (IsPrimitiveCNode(fn, prim::kPrimSwitch) && fn_cnode != nullptr && fn_cnode->HasPrimalAttr(kAttrNotCut)) {
         return false;
       }
       return true;
@@ -821,6 +808,7 @@ bool GraphPartition::IsCut(const AnfNodePtr &node) {
       return false;
     }
     auto node_prim = GetValueNode<PrimitivePtr>(fn);
+    MS_EXCEPTION_IF_NULL(node_prim);
     for (auto &prim : cut_list_) {
       MS_EXCEPTION_IF_NULL(prim);
       if (prim->name() == node_prim->name()) {
@@ -880,11 +868,6 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
       nodes = ParallelSort(graph, default_target, other_target);
     } else {
       nodes = SplitSort(graph, default_target);
-    }
-    // Keep the cutting position as far back as possible
-    auto disable_ge_kernel = IsDisableGeKernel();
-    if (!disable_ge_kernel) {
-      nodes = LazySort(nodes, {prim::kPrimPartial});
     }
     nodes = ReorderVirtualNode(nodes, prim::kPrimTupleGetItem);
     nodes = ReorderVirtualNode(nodes, prim::kPrimDepend);

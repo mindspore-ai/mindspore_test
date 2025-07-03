@@ -16,15 +16,15 @@
 #include <iostream>
 #include <memory>
 #include "common/common_test.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "frontend/operator/ops.h"
-#include "pipeline/pynative/pynative_execute.h"
-#include "pipeline/pynative/forward/do_infer.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/pynative_execute.h"
+#include "pynative/forward/do_infer.h"
+#include "pynative/base.h"
 #include "utils/ms_context.h"
 
 namespace py = pybind11;

@@ -3,13 +3,13 @@ mindspore.train.ConfusionMatrix
 
 .. py:class:: mindspore.train.ConfusionMatrix(num_classes, normalize="no_norm", threshold=0.5)
 
-    计算混淆矩阵(confusion matrix)，通常用于评估分类模型的性能，包括二分类和多分类场景。
+    计算混淆矩阵（Confusion Matrix），通常用于评估分类模型的性能，包括二分类和多分类场景。
 
     如果只想使用混淆矩阵，请使用该类。如果想计算"PPV"、"TPR"、"TNR"等，请使用 :class:`mindspore.train.ConfusionMatrixMetric` 类。
 
     参数：
         - **num_classes** (int) - 数据集中的类别数量。
-        - **normalize** (str) - 计算ConfusionMatrix的参数支持四种归一化模式，默认值： ``"no_norm"`` 。
+        - **normalize** (str) - 计算Confusion Matrix的参数支持四种归一化模式，默认值： ``"no_norm"`` 。
 
           - ``"no_norm"`` ：不使用标准化。
           - ``"target"`` ：基于目标值的标准化。
@@ -31,7 +31,7 @@ mindspore.train.ConfusionMatrix
 
     .. py:method:: update(*inputs)
 
-        使用y_pred和y更新内部评估结果。
+        使用 `y_pred` 和 `y` 更新内部评估结果。
 
         参数：
             - ***inputs** (tuple) - 输入 `y_pred` 和 `y` 。 `y_pred` 和 `y` 是 `Tensor` 、列表或数组。
@@ -39,4 +39,4 @@ mindspore.train.ConfusionMatrix
 
         异常：
             - **ValueError** - 输入参数的数量不等于2。
-            - **ValueError** - 如果预测值和标签的维度不一致。
+            - **ValueError** - 如果预测值 `y_pred` 和真实值 `y` 的维度不一致。

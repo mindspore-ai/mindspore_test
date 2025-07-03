@@ -18,9 +18,9 @@
 
 #include <algorithm>
 #include <memory>
-#include "transform/symbol/acl_op_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_op_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 bool ResourceManager::initFlag_ = true;
 std::shared_ptr<ResourceManager> ResourceManager::ptr_ = nullptr;
@@ -91,7 +91,7 @@ std::shared_ptr<ResourceManager> ResourceManager::GetInstance() {
     ResourceManager *temp = new ResourceManager();
     ptr_.reset(temp);
   }
-  mindspore::transform::LoadAscendApiSymbols();
+  mindspore::device::ascend::LoadAscendApiSymbols();
   return ptr_;
 }
 

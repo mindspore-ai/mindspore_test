@@ -16,16 +16,17 @@
 
 #include "kernel/cpu/pad_v3_cpu_kernel.h"
 #include <utility>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/pad_v3.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pad_v3_cpu {
 namespace {
 constexpr auto kPadV3 = "PadV3";
 constexpr const size_t kConstantInputsNum = 3;
@@ -389,5 +390,6 @@ const std::vector<std::pair<KernelAttr, PadV3CpuKernelMod::KernelRunFunc>> &PadV
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PadV3, PadV3CpuKernelMod);
+}  // namespace pad_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace isnan_cpu {
 class IsNanCpuKernelMod : public NativeCpuKernelMod {
  public:
   IsNanCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class IsNanCpuKernelMod : public NativeCpuKernelMod {
                                          {kNumberTypeUInt32, sizeof(uint32_t)}, {kNumberTypeUInt64, sizeof(uint64_t)}};
   TypeId input_dtype_{kTypeUnknown};
 };
+}  // namespace isnan_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

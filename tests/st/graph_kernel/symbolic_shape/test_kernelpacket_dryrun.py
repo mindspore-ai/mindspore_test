@@ -29,6 +29,7 @@ def test_dynamic_broadcast_to():
     """
     from mindspore.ops.operations._inner_ops import DynamicBroadcastTo
     ms.set_context(device_target="Ascend", mode=ms.GRAPH_MODE, jit_config={"jit_level": "O1"})
+    os.environ["GLOG_v"] = "1"
 
     class Net(nn.Cell):
         def __init__(self):
@@ -60,3 +61,4 @@ def test_dynamic_broadcast_to():
     output = net(x, y)
     assert output.shape == y.shape
     del os.environ["MS_SIMULATION_LEVEL"]
+    del os.environ["GLOG_v"]

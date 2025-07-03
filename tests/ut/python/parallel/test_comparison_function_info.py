@@ -403,7 +403,7 @@ def test_matmul_minimum_auto_parallel():
 
     context.set_auto_parallel_context(dataset_strategy="full_batch")
     context.set_auto_parallel_context(device_num=8, global_rank=0, parallel_mode="auto_parallel",
-                                      search_mode="dynamic_programming")
+                                      search_mode="sharding_propagation")
     net = GradWrap(NetWithLoss(Net()))
 
     x = Tensor(np.ones([64, 32]), dtype=ms.float32)

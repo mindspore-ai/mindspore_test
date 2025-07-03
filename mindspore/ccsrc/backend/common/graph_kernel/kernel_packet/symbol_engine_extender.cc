@@ -29,10 +29,11 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel::packet {
 using symshape::DependOn;
@@ -315,6 +316,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
   auto fuse_op_name = GkUtils::ExtractGraphKernelName(nodes, "", "packet");
   fg->set_attr(kAttrKernelPacketNode, MakeValue(fuse_op_name));
   fg->set_attr("only_depend_shape", FindOnlyDependShapeInputs(fg));
+  new_cnode->set_attrs(cnode->attrs());
   new_cnode->AddAttr(kAttrToPrim, MakeValue(AnfUtils::GetCNodeName(node) + "_packet"));
   MS_LOG(INFO) << "Replace " << node->fullname_with_scope() << " with " << new_cnode->fullname_with_scope();
   (void)main_fg->manager()->Replace(node, new_cnode);

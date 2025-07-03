@@ -17,10 +17,11 @@
 #include "common/graph_optimizer_test_framework.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/common_test.h"
-#include "plugin/device/ascend/optimizer/mindir/sparse_softmax_cross_entropy_with_logits_unify_mindir.h"
+#include "backend/common/pass/mindir/sparse_softmax_cross_entropy_with_logits_unify_mindir.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR : public UT::Common {

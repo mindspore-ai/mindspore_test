@@ -19,6 +19,7 @@
 
 #include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 #include <map>
 #include <set>
@@ -32,7 +33,7 @@ namespace kernel {
 using graphkernel::GraphKernelJsonGenerator;
 using JsonNodePair = std::pair<GraphKernelJsonGenerator, AnfNodePtr>;
 
-class BACKEND_EXPORT GraphKernelBuilder {
+class BACKEND_COMMON_EXPORT GraphKernelBuilder {
  public:
   GraphKernelBuilder() = default;
   virtual ~GraphKernelBuilder() = default;
@@ -47,6 +48,8 @@ class BACKEND_EXPORT GraphKernelBuilder {
   virtual void SaveJsonInfo(const string &kernel_name, const string &kernel_json) = 0;
   virtual bool SingleOpParallelBuild(const std::vector<AnfNodePtr> &anf_nodes) = 0;
   virtual bool ParallelBuild(const std::vector<JsonNodePair> &build_args) = 0;
+
+  static std::function<std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList>(const AnfNodePtrList &)> build_func_;
 
  protected:
   std::vector<std::string> GetKernelJsonsByHashId(const std::vector<JsonNodePair> &build_args,

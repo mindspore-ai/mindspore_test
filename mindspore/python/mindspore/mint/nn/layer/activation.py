@@ -45,6 +45,10 @@ class SiLU(Cell):
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
+    Args:
+        inplace (bool, optional): If it is ``True``, enable the in-place update function.
+            Default value: ``False``.
+
     Inputs:
         - **input** (Tensor) - `input` is :math:`x` in the preceding formula.
           Input with the data type float16 or float32. Tensor of any dimension.
@@ -63,18 +67,68 @@ class SiLU(Cell):
         >>> from mindspore import Tensor, mint
         >>> import numpy as np
         >>> input = Tensor(np.array([-1, 2, -3, 2, -1]), mindspore.float16)
-        >>> silu = mint.nn.SiLU()
+        >>> silu = mint.nn.SiLU(inplace=False)
         >>> output = silu(input)
         >>> print(output)
         [-0.269  1.762  -0.1423  1.762  -0.269]
     """
 
-    def __init__(self):
+    def __init__(self, inplace=False):
         """Initialize SiLU."""
         super(SiLU, self).__init__()
+        self.inplace = inplace
 
     def construct(self, x):
-        return mint.nn.functional.silu(x)
+        return mint.nn.functional.silu(x, self.inplace)
+
+
+class Sigmoid(Cell):
+    r"""
+    Applies sigmoid activation function element-wise.
+
+    Sigmoid function is defined as:
+
+    .. math::
+
+        \text{sigmoid}(x_i) = \frac{1}{1 + \exp(-x_i)},
+
+    where :math:`x_i` is the element of `x`.
+
+    Sigmoid Activation Function Graph:
+
+    .. image:: ../images/Sigmoid.png
+        :align: center
+
+    Inputs:
+        - **input** (Tensor) - `input` is :math:`x` in the preceding formula. Tensor of any dimension,
+          the data type is float16, float32, float64, complex64 or complex128.
+
+    Outputs:
+        Tensor, with the same type and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is not float16, float32, float64, complex64 or complex128.
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
+        >>> sigmoid = mint.nn.Sigmoid()
+        >>> output = sigmoid(input)
+        >>> print(output)
+        [0.2688  0.11914 0.5     0.881   0.7305 ]
+    """
+    def __init__(self):
+        """Initialize LogSigmoid."""
+        super(Sigmoid, self).__init__()
+
+    def construct(self, input):
+        return mint.nn.functional.sigmoid(input)
 
 
 class LogSigmoid(Cell):
@@ -140,7 +194,8 @@ class ELU(Cell):
         \alpha * (\exp(x_i) - 1), &\text{otherwise.}
         \end{cases}
 
-    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter.
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
 
     ELU Activation Function Graph:
 
@@ -151,16 +206,18 @@ class ELU(Cell):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0`` .
+        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0``.
+        inplace (bool, optional): Whether to use inplace mode, the data type is bool. Default: ``False``.
 
     Inputs:
         - **input** (Tensor) - The input of ELU is a Tensor of any dimension.
 
     Outputs:
-        Tensor, with the same type and shape as the `input`.
+        Tensor, with the same shape and type as the `input`.
 
     Raises:
-        TypeError: If `alpha` is not a float.
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
 
     Supported Platforms:
         ``Ascend``
@@ -176,13 +233,14 @@ class ELU(Cell):
         [-0.63212055  -0.86466473  0.  2.  1.]
     """
 
-    def __init__(self, alpha=1.0):
+    def __init__(self, alpha=1.0, inplace=False):
         """Initialize ELU."""
         super(ELU, self).__init__()
         self.alpha = alpha
+        self.inplace = inplace
 
     def construct(self, input):
-        return mint.nn.functional.elu(input, self.alpha)
+        return mint.nn.functional.elu(input, self.alpha, self.inplace)
 
 
 class GLU(Cell):
@@ -196,9 +254,6 @@ class GLU(Cell):
 
     Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
     See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ .
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
 
     Args:
         dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
@@ -224,10 +279,10 @@ class GLU(Cell):
         ``Ascend`` ``CPU``
 
     Examples:
-        >>> import mindspore as ms
-        >>> m = ms.mint.nn.GLU()
-        >>> input = ms.Tensor([[0.1,0.2,0.3,0.4],[0.5,0.6,0.7,0.8]])
-        >>> output = m(input)
+        >>> from mindspore import mint, Tensor
+        >>> glu = mint.nn.GLU()
+        >>> input = Tensor([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
+        >>> output = glu(input)
         >>> print(output)
         [[0.05744425 0.11973753]
          [0.33409387 0.41398472]]
@@ -292,10 +347,64 @@ class Tanh(Cell):
         return mint.nn.functional.tanh(input)
 
 
+class Threshold(Cell):
+    r"""
+    Compute the Threshold activation function element-wise.
+
+    The Threshold is defined as:
+
+    .. math::
+        y =
+        \begin{cases}
+        x, &\text{ if } x > \text{threshold} \\
+        \text{value}, &\text{ otherwise }
+        \end{cases}
+
+    Args:
+        threshold (Union[int, float]): The value of the threshold.
+        value (Union[int, float]): The value to replace with when element is less than threshold.
+        inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+    Inputs:
+        - **input** (Tensor) - The input Tensor.
+
+    Outputs:
+        Tensor, the same shape and data type as the input.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `threshold` is not a float or an int.
+        TypeError: If `value` is not a float or an int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> inputs = mindspore.Tensor([0.0, 2, 3], mindspore.float32)
+        >>> net = mint.nn.Threshold(1, 100)
+        >>> outputs = net(inputs)
+        >>> print(outputs)
+        [100.   2.   3.]
+    """
+
+    def __init__(self, threshold, value, inplace=False):
+        """Initialize Tanh."""
+        super(Threshold, self).__init__()
+        self.threshold = threshold
+        self.value = value
+        self.inplace = inplace
+
+    def construct(self, input):
+        return mint.nn.functional.threshold(input, self.threshold, self.value,
+                                            self.inplace)
+
 __all__ = [
     'LogSigmoid',
     'SiLU',
     'ELU',
     'GLU',
     'Tanh',
+    'Threshold',
 ]

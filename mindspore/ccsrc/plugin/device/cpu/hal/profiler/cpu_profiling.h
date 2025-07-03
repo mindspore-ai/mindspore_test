@@ -20,21 +20,24 @@
 #include <cstdio>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 #include <optional>
-#include "include/backend/debug/profiler/profiling.h"
-#include "include/backend/debug/profiler/data_saver.h"
+#include "debug/profiler/profiling.h"
+#include "debug/profiler/data_saver.h"
 #include "actor/actormgr.h"
-#include "include/backend/kernel_graph.h"
+#include "abstract/dshape.h"
+#include "ir/anf.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace profiler {
 namespace cpu {
 constexpr float kNanosecondToMillisecond = 1000000;
-class CPUProfiler : public Profiler {
+class PROFILER_EXPORT CPUProfiler : public Profiler {
  public:
   static std::shared_ptr<CPUProfiler> GetInstance();
 
@@ -77,6 +80,7 @@ class CPUProfiler : public Profiler {
   uint64_t op_time_stop_;
 
   std::optional<bool> is_gpu_hetero_ = {};
+  std::mutex mutex_;
 };
 }  // namespace cpu
 }  // namespace profiler

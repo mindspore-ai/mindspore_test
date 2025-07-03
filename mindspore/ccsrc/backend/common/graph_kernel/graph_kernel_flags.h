@@ -37,7 +37,7 @@ constexpr unsigned int OpLevel_2 = 2;
 constexpr unsigned int OpLevel_MAX = 3;
 constexpr unsigned int default_cpu_refer_tread_num = 8;
 
-class BACKEND_EXPORT GraphKernelFlags {
+class BACKEND_COMMON_EXPORT GraphKernelFlags {
  public:
   static const GraphKernelFlags &GetInstance();
   static void SaveJitConfig(const std::map<std::string, std::string> &jit_config);
@@ -159,6 +159,23 @@ class BACKEND_EXPORT GraphKernelFlags {
   bool disable_matmul_post_fusion{false};
 
   /**
+   * Enable AllReduce prologue fusion in graph kernel fusion strategy, default is true.
+   */
+  bool enable_allreduce_prologue_fusion{true};
+
+  /**
+   * Enable AllReduce epilogue fusion in graph kernel fusion strategy, default is true.
+   */
+  bool enable_allreduce_epilogue_fusion{true};
+
+  /**
+   * If this flag is set to false, then some optimizations that may cause precision loss will be enabled.
+   * For example, some algebraic transformations that are unsafe for low-precision floating-point computation will be
+   * allowed.
+   */
+  bool exact_precision_mode{true};
+
+  /**
    * Optimization level, value from 0 to 3.
    * 0: Disable GraphKernel
    * 1: Enable GraphKernel with basic features only.
@@ -268,11 +285,13 @@ class BACKEND_EXPORT GraphKernelFlags {
    * Arithmetic simplify expressions to be enabled (case sensitive).
    * The default list will be overwritten by this list.
    * Note that "disable_simplify_exprs" will be ignored if this flag is set.
+   * Usage Example: --enable_simplify_exprs_only=2.0
    */
   std::vector<std::string> enable_simplify_exprs_only;
 
   /**
    * Arithmetic simplify expressions to be disabled (case sensitive).
+   * Usage Example: --disable_simplify_exprs=1.0,1.2
    */
   std::vector<std::string> disable_simplify_exprs;
 
@@ -309,6 +328,16 @@ class BACKEND_EXPORT GraphKernelFlags {
    */
   std::vector<std::string> disable_packet_ops;
 
+  /**
+   * Fusion pattern to be enabled (case sensitive).
+   * Note that the "disable_fusion_pattern" will be ignored if this flag is set.
+   */
+  std::vector<std::string> enable_fusion_pattern_only;
+  /**
+   * Fusion pattern to be disabled (case sensitive).
+   */
+  std::vector<std::string> disable_fusion_pattern;
+
  private:
   GraphKernelFlags(const std::string &graph_kernel_flags, bool enable_graph_kernel)
       : flags_cache_(graph_kernel_flags), enable_graph_kernel_(enable_graph_kernel) {}
@@ -331,7 +360,7 @@ class BACKEND_EXPORT GraphKernelFlags {
   bool enable_graph_kernel_;
 };
 
-class BACKEND_EXPORT GraphKernelPassChecker {
+class BACKEND_COMMON_EXPORT GraphKernelPassChecker {
  public:
   static GraphKernelPassChecker &GetInstance();
   GraphKernelPassChecker(const GraphKernelPassChecker &flags) = delete;

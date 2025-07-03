@@ -42,6 +42,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace ops {
@@ -50,7 +51,6 @@ constexpr size_t kDimSize1 = 1;
 constexpr int64_t kDimSize2 = 2;
 constexpr size_t kDimSize3 = 3;
 constexpr size_t kDimSize4 = 4;
-constexpr size_t kDimSize5 = 5;
 constexpr size_t kInputsNum = 2;
 constexpr size_t kOutputshapeIndexD = 0;
 constexpr size_t kOutputshapeIndexH = 1;
@@ -97,6 +97,7 @@ void CheckInputParameter(const PrimitivePtr &primitive, const std::vector<Abstra
   }
   auto input_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
   auto random_samples_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[1]->GetShape())[kShape];
+  constexpr size_t kDimSize5 = 5;
   if (!IsDynamicRank(input_shape) && input_shape.size() != kDimSize4 && input_shape.size() != kDimSize5) {
     MS_EXCEPTION(TypeError) << "For '" << op_name << "', the dimension of 'x' must be equal to 4 or 5, but got "
                             << std::to_string(input_shape.size()) << ".";

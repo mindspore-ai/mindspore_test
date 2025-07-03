@@ -25,12 +25,119 @@ from mindspore.common.dtype import dtype_to_nptype
 from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.communication._comm_helper import _is_initialized
-from mindspore.parallel._auto_parallel_context import auto_parallel_context
+from mindspore.parallel.shard import Layout
+from mindspore.parallel._auto_parallel_context import auto_parallel_context, _set_auto_parallel_context, \
+    _reset_auto_parallel_context
 from mindspore.common.seed import get_seed
-from mindspore._c_expression import GraphExecutor_
+from mindspore._c_expression import GraphExecutor_, TensorPy as Tensor_
 from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
 
 SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom", "Index"]
+
+
+# disable pylint too broad Exception
+# pylint: disable=W0212
+def _init_auto_parallel_context(net):
+    """Parse the member variables of AutoParallel(cell) to the auto parallel context. """
+    if net is None or net.__class__.__name__ != "AutoParallel":
+        pass
+    else:
+        parallel_mode = "semi_auto_parallel"
+        search_mode = "recursive_programming"
+        if net._device_num == 1:
+            parallel_mode = "stand_alone"
+        elif net._parallel_mode in ["recursive_programming", "sharding_propagation"]:
+            search_mode = net._parallel_mode
+            parallel_mode = "auto_parallel"
+        params = {
+            "auto_parallel_new_interface": True,
+            "init_param_in_compile": net._init_param_in_compile,
+            "device_num": net._device_num,
+            "global_rank": net._global_rank,
+            "parallel_mode": parallel_mode,
+            "search_mode": search_mode,
+            "comm_fusion": net._comm_fusion_config,
+            "strategy_ckpt_load_file": net._load_strategy_file_path,
+            "strategy_ckpt_save_file": net._save_strategy_file_path,
+            "strategy_ckpt_config": {
+                "load_file": net._load_strategy_file_path,
+                "save_file": net._save_strategy_file_path,
+                "only_trainable_params": net._only_trainable_params
+            },
+            "dataset_strategy": net._dataset_strategy_config,
+            "full_batch": net._full_batch,
+            "force_fp32_communication": net._force_fp32_communication,
+            "enable_alltoall": net._enable_alltoall,
+            "parameter_broadcast": net._parameter_broadcast,
+            "group_ckpt_save_file": net._group_ckpt_save_file,
+            "dump_local_norm": net._dump_local_norm,
+            "dump_local_norm_path": net._dump_local_norm_path,
+            "dump_device_local_norm": net._dump_device_local_norm,
+            "gradients_mean": net._gradients_mean,
+            "gradient_fp32_sync": net._gradient_fp32_sync,
+            "loss_repeated_mean": net._loss_repeated_mean
+        }
+
+        # hsdp
+        params["enable_parallel_optimizer"] = net._enable_parallel_optimizer
+        if params["enable_parallel_optimizer"]:
+            parallel_optimizer_config = {}
+            if net._parallel_optimizer_threshold != -1:
+                parallel_optimizer_config["parallel_optimizer_threshold"] = net._parallel_optimizer_threshold
+            if net._optimizer_weight_shard_size != -1:
+                parallel_optimizer_config["optimizer_weight_shard_size"] = net._optimizer_weight_shard_size
+            parallel_optimizer_config["optimizer_level"] = net._optimizer_level
+            params['parallel_optimizer_config'] = parallel_optimizer_config
+
+        # pipeline
+        params["pipeline_stages"] = net._pipeline_stages
+        if params["pipeline_stages"] > 1:
+            params['pipeline_result_broadcast'] = net._pipeline_result_broadcast
+            params['pipeline_config'] = {
+                "pipeline_interleave": net._pipeline_interleave,
+                "pipeline_scheduler": net._pipeline_scheduler
+            }
+
+        # set_op_strategy_config
+        if parallel_mode == "auto_parallel" and search_mode == "sharding_propagation":
+            from mindspore.parallel.checkpoint_transform import set_op_strategy_config
+            if net._load_operator_strategy_file != "":
+                set_op_strategy_config(mode="LOAD", path=net._load_operator_strategy_file)
+            if net._save_operator_strategy_file != "":
+                set_op_strategy_config(mode="SAVE", path=net._save_operator_strategy_file)
+
+        _set_auto_parallel_context(**params)
+        net.transformer_opt(net._transformer_opt_config)
+
+
+def _clear_auto_parallel_context(net):
+    if net is None or net.__class__.__name__ != "AutoParallel":
+        pass
+    else:
+        _reset_auto_parallel_context()
+        net.transformer_opt(None)
+
+
+def _get_auto_parallel_net(net):
+    for _, cell in net.cells_and_names():
+        if type(cell).__name__ == 'AutoParallel':
+            return cell
+    return net
+
+
+def _parallel_mode_map(parallel_mode):
+    """Map parallel mode."""
+    parallel_mode_map = {
+        "sharding_propagation": "auto_parallel",
+        "recursive_programming": "auto_parallel",
+        "semi_auto": "semi_auto_parallel"
+    }
+    parallel_mode_res = parallel_mode_map.get(parallel_mode, 'Not Exits')
+    if parallel_mode_res == 'Not Exits':
+        raise ValueError("Invalid parallel_mode input, expect one of 'semi_auto', 'sharding_propagation', "
+                         "'recursive_programming', but got the value: {}.".format(parallel_mode))
+    return parallel_mode_res
+
 
 
 def _get_parallel_mode():
@@ -127,29 +234,56 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    if getattr(parameter, "init_param", False):
-        if layout is None:
-            parameter.sliced = True
-            return
-        if not parameter.sliced:
-            rank = get_rank()
-            new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
-            parameter.shape = new_tensor_shape
-            if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
-                parameter.init_mode.shape = new_tensor_shape
-            parameter.sliced = True
+    new_interface_flag = auto_parallel_context().get_auto_parallel_new_interface()
+    init_param_in_compile = auto_parallel_context().get_init_param_in_compile()
+    if not new_interface_flag:
+        if getattr(parameter, "init_param", False) and parameter.has_init:
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
+                parameter.shape = new_tensor_shape
+                if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                    parameter.init_mode.shape = new_tensor_shape
+                parameter.sliced = True
+        else:
+            graph_executor = GraphExecutor_.get_instance()
+            new_param = parameter.init_data(layout, set_sliced=True)
+            parameter = new_param
+            graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor = _load_tensor_by_layout(parameter, layout, rank)
+                parameter.set_data(new_tensor, True)
     else:
-        graph_executor = GraphExecutor_.get_instance()
-        new_param = parameter.init_data(layout, set_sliced=True)
-        parameter = new_param
-        graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
-        if layout is None:
-            parameter.sliced = True
-            return
-        if not parameter.sliced:
-            rank = get_rank()
-            new_tensor = _load_tensor_by_layout(parameter, layout, rank)
-            parameter.set_data(new_tensor, True)
+        if init_param_in_compile or parameter.has_init is False:
+            graph_executor = GraphExecutor_.get_instance()
+            new_param = parameter.init_data(layout, set_sliced=True)
+            parameter = new_param
+            graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor = _load_tensor_by_layout(parameter, layout, rank)
+                parameter.set_data(new_tensor, True)
+        else:
+            if layout is None:
+                parameter.sliced = True
+                return
+            if not parameter.sliced:
+                rank = get_rank()
+                new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
+                parameter.shape = new_tensor_shape
+                if hasattr(parameter.init_mode, "shape") and parameter.init_mode.shape != parameter.shape:
+                    parameter.init_mode.shape = new_tensor_shape
+                parameter.sliced = True
 
 
 def _slice_tensor(tensor, layout, rank_id):
@@ -168,6 +302,33 @@ def _init_optimizer_state(parameter, phase):
     graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
 
 
+def _to_full_shape_layout(shapes, dataset_strategy):
+    """to full shape for layout"""
+    new_shapes = []
+    for index, shape in enumerate(shapes):
+        layout = dataset_strategy[index]
+        layout_dict = layout.to_dict()
+        devmat = layout_dict["device_matrix"]
+        tensormap = layout_dict["tensor_map"]
+        new_shape = []
+        for i, item in enumerate(shape):
+            correspond_tensor_map = tensormap[i]
+            shard_size = 1
+            if isinstance(correspond_tensor_map, tuple):
+                for value in correspond_tensor_map:
+                    if value != -1:
+                        shard_size *= devmat[len(devmat) - value - 1]
+            else:
+                if correspond_tensor_map != -1:
+                    shard_size *= devmat[len(devmat) - correspond_tensor_map - 1]
+            if item > 0:
+                new_shape += (item * shard_size,)  # static shape
+            else:
+                new_shape += (item,)  # dynamic shape
+        new_shapes.append(new_shape)
+    return new_shapes
+
+
 def _to_full_shapes(shapes, device_num):
     """Expanding batch dimension according to device_num, adapt to mindspore minddata graph solution."""
     new_shapes = []
@@ -178,6 +339,8 @@ def _to_full_shapes(shapes, device_num):
         if len(shapes) != len(dataset_strategy):
             raise ValueError("The input shapes size {} is not equal to "
                              "dataset strategy size {}".format(len(shapes), len(dataset_strategy)))
+        if isinstance(dataset_strategy[0], Layout):
+            return _to_full_shape_layout(shapes, dataset_strategy)
         for index, shape in enumerate(shapes):
             if len(shape) != len(dataset_strategy[index]):
                 raise ValueError("The input shapes item size {} is not equal to "
@@ -618,7 +781,7 @@ def _grads_divided_by_device_num_if_recomputation(grads):
                 f"({context.ParallelMode.SEMI_AUTO_PARALLEL}, {context.ParallelMode.AUTO_PARALLEL}) and "
                 f"full_batch is Ture, the gradients will be automatically divided by device_num({device_num}).")
 
-    if not isinstance(grads, (tuple, Tensor)):
+    if not isinstance(grads, (tuple, Tensor, Tensor_)):
         raise ValueError(f"The type of grads must be either Tuple[Tensor] or Tensor, but got {type(grads)}.")
 
     if isinstance(grads, tuple):
@@ -631,3 +794,13 @@ def _grads_divided_by_device_num_if_recomputation(grads):
         device_num_tensor = Tensor(device_num, grads.dtype)
         new_grads = grads / device_num_tensor
     return new_grads
+
+
+def _check_rank(cur_rank, initial_rank, pipeline_stages):
+    """
+    Check parameter for parameter_broadcast.
+    """
+    if cur_rank != get_rank():
+        raise ValueError(f"For parameter broadcast, the cur_rank: {cur_rank} is wrong.")
+    if initial_rank % (get_group_size() / pipeline_stages) != 0:
+        raise ValueError(f"For parameter broadcast, the initial_rank: {initial_rank} is wrong.")

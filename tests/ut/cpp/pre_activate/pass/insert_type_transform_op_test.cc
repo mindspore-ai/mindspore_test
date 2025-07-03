@@ -26,11 +26,13 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/kernel_build_info.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 #define private public
 #define protected public
 #include "backend/common/pass/insert_type_transform_op.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #undef private
 #undef protected
 

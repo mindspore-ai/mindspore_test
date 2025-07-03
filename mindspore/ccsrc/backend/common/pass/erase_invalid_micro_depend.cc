@@ -23,7 +23,9 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace opt {
@@ -91,8 +93,9 @@ bool EraseMicroDepend(const FuncGraphPtr &graph) {
     sort(tuple_inputs.begin(), tuple_inputs.end(), [](const CNodePtr &a, const CNodePtr &b) {
       return GetValue<int64_t>(a->GetPrimalAttr(MICRO)) > GetValue<int64_t>(b->GetPrimalAttr(MICRO));
     });
-
-    manager->SetEdge(cnode, kIndex2, tuple_inputs[0]);
+    if (!tuple_inputs.empty()) {
+      manager->SetEdge(cnode, kIndex2, tuple_inputs[0]);
+    }
   }
   return true;
 }

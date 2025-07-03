@@ -26,10 +26,10 @@
 
 #include "include/api/types.h"
 #include "ir/tensor.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "common/utils.h"
 #include "common/mutable_tensor_impl.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "src/tensor.h"
 #include "infer/tensor.h"
 #ifdef ENABLE_CLOUD_INFERENCE
@@ -67,7 +67,8 @@ class LiteDeviceAddress : public device::DeviceAddress {
   LiteDeviceAddress(void *ptr, size_t size) : device::DeviceAddress(ptr, size) {}
   void SetData(void *data) { set_ptr(data); }
 
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override {
     return false;
   }
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,

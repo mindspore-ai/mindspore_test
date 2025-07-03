@@ -74,7 +74,7 @@ def test_repeat_interleave_forward_backward_int(mode, dim):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = repeat_interleave_forward(Tensor(x), repeats, dim)
     elif mode == 'KBK':
-        output = (jit(repeat_interleave_forward, jit_config=JitConfig(jit_level="O0")))(Tensor(x), repeats, dim)
+        output = (jit(repeat_interleave_forward, jit_level="O0"))(Tensor(x), repeats, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
     x = generate_random_input((5, 3), np.float32)
@@ -84,7 +84,7 @@ def test_repeat_interleave_forward_backward_int(mode, dim):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = repeat_interleave_backward(Tensor(x), repeats, dim)
     elif mode == 'KBK':
-        output = (jit(repeat_interleave_backward, jit_config=JitConfig(jit_level="O0")))(Tensor(x), repeats, dim)
+        output = (jit(repeat_interleave_backward, jit_level="O0"))(Tensor(x), repeats, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
@@ -108,8 +108,8 @@ def test_repeat_interleave_forward_backward_tensor(mode, dim):
         output = repeat_interleave_forward(Tensor(x), Tensor(repeats), dim)
         output2 = repeat_interleave_forward(Tensor(x), repeats, dim)
     elif mode == 'KBK':
-        output = (jit(repeat_interleave_forward, jit_config=JitConfig(jit_level="O0")))(Tensor(x), Tensor(repeats), dim)
-        output2 = (jit(repeat_interleave_forward, jit_config=JitConfig(jit_level="O0")))(Tensor(x), repeats, dim)
+        output = (jit(repeat_interleave_forward, jit_level="O0"))(Tensor(x), Tensor(repeats), dim)
+        output2 = (jit(repeat_interleave_forward, jit_level="O0"))(Tensor(x), repeats, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
     np.testing.assert_allclose(output2.asnumpy(), expect, rtol=1e-3)
 
@@ -124,9 +124,9 @@ def test_repeat_interleave_forward_backward_tensor(mode, dim):
         output = repeat_interleave_backward(Tensor(x), Tensor(repeats), dim)
         output2 = repeat_interleave_backward(Tensor(x), repeats, dim)
     elif mode == 'KBK':
-        output = (jit(repeat_interleave_backward, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(repeat_interleave_backward, jit_level="O0"))(
             Tensor(x), Tensor(repeats), dim)
-        output2 = (jit(repeat_interleave_backward, jit_config=JitConfig(jit_level="O0")))(
+        output2 = (jit(repeat_interleave_backward, jit_level="O0"))(
             Tensor(x), repeats, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
     np.testing.assert_allclose(output2.asnumpy(), expect, rtol=1e-3)
@@ -151,7 +151,7 @@ def test_repeat_interleave_bfloat16(mode, dim):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = repeat_interleave_forward(Tensor(x, dtype=ms.bfloat16), Tensor(repeats), dim)
     elif mode == 'KBK':
-        output = (jit(repeat_interleave_forward, jit_config=JitConfig(jit_level="O0")))(
+        output = (jit(repeat_interleave_forward, jit_level="O0"))(
             Tensor(x, dtype=ms.bfloat16), Tensor(repeats), dim)
     assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004)
 

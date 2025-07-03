@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace searchsorted_cpu {
 namespace {
 constexpr size_t kSearchSortedInputsNum = 5;
 constexpr size_t kSearchSortedOutputsNum = 1;
@@ -216,5 +217,6 @@ std::vector<KernelAttr> SearchSortedCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SearchSorted, SearchSortedCpuKernelMod);
+}  // namespace searchsorted_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,10 +18,11 @@
 #include <functional>
 #include <algorithm>
 #include <numeric>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lu_unpack_cpu {
 namespace {
 constexpr size_t kDimNum = 2;
 constexpr size_t kFirstDim = 1;
@@ -505,5 +506,6 @@ std::vector<KernelAttr> LuUnpackCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LuUnpack, LuUnpackCpuKernelMod);
+}  // namespace lu_unpack_cpu
 }  // namespace kernel
 }  // namespace mindspore

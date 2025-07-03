@@ -20,9 +20,10 @@ from enum import Enum
 from typing import Any, Dict, List
 from abc import ABC
 
-from mindspore.profiler.parser.ascend_analysis.tlv_decoder import TLVDecoder
+from mindspore.profiler.common.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.common.constant import ProfilerActivity, FileConstant
 
 
 class OpMemoryIndexEnum(Enum):
@@ -63,13 +64,11 @@ class OpMemoryEvent(BaseEvent):
     FIX_DATA_FORMAT = "<i11QI4B"
     FIX_DATA_SIZE = struct.calcsize(FIX_DATA_FORMAT)
     FREE_VALUE = 18446744073709551615  # 2^64 - 1
-    NAME_KEY = 3
+    NAME_KEY = 13
 
     def __init__(self, data: Dict):
         super().__init__(data)
-        self.fix_size_data = struct.unpack(
-            self.FIX_DATA_FORMAT, self._origin_data.get("fix_size_bytes")
-        )
+        self.fix_size_data = self._origin_data[FileConstant.FIX_SIZE_DATA]
 
     @property
     def device_id(self):
@@ -192,7 +191,7 @@ class AscendOpMemoryViewer:
         "Device Type",
     ]
     DEVICE_TYPE_FMT = "NPU:{}"
-    NS_TO_US = 1024
+    NS_TO_US = 1000
     BYTES_TO_KB = 1024
     BYTES_TO_MB = 1024 * 1024
     EMPTY_VALUE = "N/A"
@@ -203,6 +202,7 @@ class AscendOpMemoryViewer:
         self._framework_path = kwargs.get("framework_path")
         self._ascend_profiler_output_path = kwargs.get("ascend_profiler_output_path")
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        self._activities = kwargs.get("activities")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self._op_memory_events = None
@@ -214,7 +214,10 @@ class AscendOpMemoryViewer:
         Save step trace time data to csv file
         """
         self._logger.info("AscendOpMemoryViewer start")
-        if not self._enable_profile_memory:
+
+        # No frame work data is collected when no CPU is passed in activities
+        if ProfilerActivity.CPU.value not in self._activities or \
+                not self._enable_profile_memory:
             return
 
         try:
@@ -232,9 +235,10 @@ class AscendOpMemoryViewer:
         self._logger.info("Read fwk binary file start")
         op_name_file_path = os.path.join(self._framework_path, self.FWK_BINARY_FILE_NAME)
         raw_bin_data = FileManager.read_file_content(op_name_file_path, mode="rb")
-        self._op_memory_events = TLVDecoder.decode(
-            raw_bin_data, OpMemoryEvent, OpMemoryEvent.FIX_DATA_SIZE
+        op_memory_decode_data = TLVDecoder.decode(
+            raw_bin_data, OpMemoryEvent.FIX_DATA_FORMAT, OpMemoryEvent.FIX_DATA_SIZE
         )
+        self._op_memory_events = [OpMemoryEvent(data) for data in op_memory_decode_data]
         self._op_memory_events = sorted(self._op_memory_events, key=lambda x: x.create_at)
         self._logger.info("Read fwk binary file done, %d events", len(self._op_memory_events))
 
@@ -266,21 +270,42 @@ class AscendOpMemoryViewer:
             return []
 
         return [
-            alloc_event.owner, # "Name"
-            alloc_event.size / self.BYTES_TO_KB, # "Size(KB)"
-            alloc_event.create_at / self.NS_TO_US, # "Allocation Time(us)"
-            self.EMPTY_VALUE if free_event is None else free_event.create_at / self.NS_TO_US, # "Release Time(us)"
-            self.EMPTY_VALUE, # "Active Release Time(us)"
-            self.EMPTY_VALUE if free_event is None else (free_event.create_at - alloc_event.create_at) / self.NS_TO_US, # "Duration(us)"
-            self.EMPTY_VALUE, # "Active Duration(us)"
-            alloc_event.alloc_size / self.BYTES_TO_MB, # "Allocation Total Allocated(MB)"
-            alloc_event.used_size / self.BYTES_TO_MB, # "Allocation Total Reserved(MB)"
-            alloc_event.alloc_size / self.BYTES_TO_MB, # "Allocation Total Active(MB)"
-            self.EMPTY_VALUE if free_event is None else free_event.alloc_size / self.BYTES_TO_MB, # "Release Total Allocated(MB)"
-            self.EMPTY_VALUE if free_event is None else free_event.used_size / self.BYTES_TO_MB, # "Release Total Reserved(MB)"
-            self.EMPTY_VALUE if free_event is None else free_event.alloc_size / self.BYTES_TO_MB, # "Release Total Active(MB)"
-            alloc_event.stream_ptr, # "Stream Ptr"
-            self.DEVICE_TYPE_FMT.format(alloc_event.device_id), # "Device Type"
+            alloc_event.owner,  # "Name"
+            alloc_event.size / self.BYTES_TO_KB,  # "Size(KB)"
+            alloc_event.create_at / self.NS_TO_US,  # "Allocation Time(us)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else free_event.create_at / self.NS_TO_US
+            ),  # "Release Time(us)"
+            self.EMPTY_VALUE,  # "Active Release Time(us)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else (free_event.create_at - alloc_event.create_at) / self.NS_TO_US
+            ),  # "Duration(us)"
+            self.EMPTY_VALUE,  # "Active Duration(us)"
+            alloc_event.used_size
+            / self.BYTES_TO_MB,  # "Allocation Total Allocated(MB)"
+            alloc_event.alloc_size / self.BYTES_TO_MB,  # "Allocation Total Reserved(MB)"
+            alloc_event.used_size / self.BYTES_TO_MB,  # "Allocation Total Active(MB)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else free_event.used_size / self.BYTES_TO_MB
+            ),  # "Release Total Allocated(MB)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else free_event.alloc_size / self.BYTES_TO_MB
+            ),  # "Release Total Reserved(MB)"
+            (
+                self.EMPTY_VALUE
+                if free_event is None
+                else free_event.used_size / self.BYTES_TO_MB
+            ),  # "Release Total Active(MB)"
+            alloc_event.stream_ptr,  # "Stream Ptr"
+            self.DEVICE_TYPE_FMT.format(alloc_event.device_id),  # "Device Type"
         ]
 
     def _get_op_mem_row_data(self, event_list: List[OpMemoryEvent]):

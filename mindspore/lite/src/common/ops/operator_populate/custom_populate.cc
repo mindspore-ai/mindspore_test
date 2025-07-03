@@ -17,6 +17,7 @@
 #include "nnacl/custom_parameter.h"
 #include "nnacl/split_parameter.h"
 #include "infer/custom.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 using mindspore::ops::kNameCustom;
 using mindspore::schema::PrimitiveType_Custom;
 namespace mindspore {

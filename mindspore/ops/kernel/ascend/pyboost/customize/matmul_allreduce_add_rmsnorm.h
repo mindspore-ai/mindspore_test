@@ -20,14 +20,14 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
-                                              const BaseTensorPtr &x2_tensor, const BaseTensorPtr &bias_tensor,
-                                              const BaseTensorPtr &residual_tensor, const BaseTensorPtr &gamma_tensor,
+void MatmulAllReduceAddRmsNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
+                                              const TensorPtr &x2_tensor, const TensorPtr &bias_tensor,
+                                              const TensorPtr &residual_tensor, const TensorPtr &gamma_tensor,
                                               const FP32ImmPtr &epsilon, const StringImmPtr &group,
                                               const Int64ImmPtr &reduction, const Int64ImmPtr &comm_turn,
                                               const Int64ImmPtr &stream_mode);

@@ -1,46 +1,75 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: By defining data type for UNICODE string and including "input.inl",
+ *             this file generates real underlying function used by scanf family API.
+ * Create: 2014-02-25
  */
 
-/* if some platforms don't have wchar.h, dont't include it */
+/* If some platforms don't have wchar.h, don't include it */
 #if !(defined(SECUREC_VXWORKS_PLATFORM))
-/* This header file is placed below secinput.h, which will cause tool alarm,
- * but  If there is no macro above, it will cause vs2010 compiling alarm
- */
+/* If there is no macro below, it will cause vs2010 compiling alarm */
 #if defined(_MSC_VER) && (_MSC_VER >= 1400)
 #ifndef __STDC_WANT_SECURE_LIB__
 /* The order of adjustment is to eliminate alarm of Duplicate Block */
 #define __STDC_WANT_SECURE_LIB__ 0
 #endif
 #ifndef _CRTIMP_ALTERNATIVE
-#define _CRTIMP_ALTERNATIVE     /* comment microsoft *_s function */
+#define _CRTIMP_ALTERNATIVE     /* Comment microsoft *_s function */
 #endif
 #endif
 #include <wchar.h>
 #endif
+
+/* Disable wchar func to clear vs warning */
 #define SECUREC_ENABLE_WCHAR_FUNC       0
 #define SECUREC_FORMAT_OUTPUT_INPUT     1
+
 #ifndef SECUREC_FOR_WCHAR
 #define SECUREC_FOR_WCHAR
 #endif
 
 #include "secinput.h"
 
-#ifndef WEOF
-#define WEOF ((wchar_t)(-1))
-#endif
-
 #include "input.inl"
+
+SECUREC_INLINE unsigned int SecWcharHighBits(SecInt ch)
+{
+    /* Convert int to unsigned int clear 571 */
+    return ((unsigned int)(int)ch & (~0xffU));
+}
+
+SECUREC_INLINE unsigned char SecWcharLowByte(SecInt ch)
+{
+    /* Convert int to unsigned int clear 571 */
+    return (unsigned char)((unsigned int)(int)ch & 0xffU);
+}
+
+SECUREC_INLINE int SecIsDigit(SecInt ch)
+{
+    if (SecWcharHighBits(ch) != 0) {
+        return 0; /* Same as isdigit */
+    }
+    return isdigit((int)SecWcharLowByte(ch));
+}
+
+SECUREC_INLINE int SecIsXdigit(SecInt ch)
+{
+    if (SecWcharHighBits(ch) != 0) {
+        return 0; /* Same as isxdigit */
+    }
+    return isxdigit((int)SecWcharLowByte(ch));
+}
+
+SECUREC_INLINE int SecIsSpace(SecInt ch)
+{
+    return iswspace((wint_t)(int)(ch));
+}
 

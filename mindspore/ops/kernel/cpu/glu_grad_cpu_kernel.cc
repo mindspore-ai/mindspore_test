@@ -16,10 +16,11 @@
 #include "kernel/cpu/glu_grad_cpu_kernel.h"
 #include <functional>
 #include <vector>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace glu_grad_cpu {
 namespace {
 const int64_t kEvenNum = 2;
 }  // namespace
@@ -57,6 +58,7 @@ int GluGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
                          "/2,  but got axis="
                       << axis_value << ", x.shape=" << x_shape_ << " and grad.shape=" << grad_shape_ << ".";
   }
+  is_x_empty_ = std::any_of(x_shape_.begin(), x_shape_.end(), [](ShapeVector::value_type d) { return d == 0; });
   return KRET_OK;
 }
 
@@ -85,6 +87,9 @@ void GluGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
   MS_EXCEPTION_IF_NULL(input1);
   auto *output = static_cast<T *>(outputs[0]->device_ptr());
   MS_EXCEPTION_IF_NULL(output);
+  if (MS_UNLIKELY(is_x_empty_)) {
+    return;
+  }
   std::vector<int64_t> shape = x_shape_;
   int64_t dim = axis_;
   size_t lens = outputs[0]->size() > 0 ? outputs[0]->size() / sizeof(T) : 1;
@@ -146,5 +151,6 @@ std::vector<KernelAttr> GluGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GluGrad, GluGradCpuKernelMod);
+}  // namespace glu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,16 +20,17 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace randn {
 
 void RandnAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   GetWorkspaceForResize(outputs[kIndex0], mean_, std_, seed_, offset_);
 }
 
@@ -43,5 +44,6 @@ bool RandnAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::v
 
 MS_ACLNN_KERNEL_FACTORY_REG(Randn, RandnAscend);
 MS_ACLNN_KERNEL_FACTORY_REG(RandnLike, RandnAscend);
+}  // namespace randn
 }  // namespace kernel
 }  // namespace mindspore

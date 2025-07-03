@@ -105,7 +105,7 @@ def test_rms_norm_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=16,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16,
                                       global_rank=0)
     net = Net(_w)
     compile_net(net, _x, _b)
@@ -190,7 +190,7 @@ def test_rms_norm_auto_parallel_2d():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=16,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=16,
                                       global_rank=0)
     net = Net(_w_2d)
     compile_net(net, _x_2d, _b_2d)

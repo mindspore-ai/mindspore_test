@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_comm_grad_cpu {
 class EmbeddingLookUpCommGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   EmbeddingLookUpCommGradCpuKernelMod() : split_num_(1) {}
@@ -53,6 +54,7 @@ class EmbeddingLookUpCommGradCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_;
   TypeId split_type_{kNumberTypeInt64};
 };
+}  // namespace embedding_look_up_comm_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

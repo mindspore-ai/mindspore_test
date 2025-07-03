@@ -90,7 +90,7 @@ void GetRtKelInfo(const CNodePtr &kernel_node,
     kernel_info_list->push_back(kernel_build_info_builder->Build());
     return;
   }
-  MS_LOG(DEBUG) << "Rt dose not have op [" << opNameLower << "].";
+  MS_LOG(DEBUG) << "Rt does not have op [" << opNameLower << "].";
 }
 }  // namespace kernel
 }  // namespace mindspore

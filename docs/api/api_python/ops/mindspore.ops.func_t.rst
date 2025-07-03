@@ -3,10 +3,10 @@ mindspore.ops.t
 
 .. py:function:: mindspore.ops.t(input)
 
-    转置二维Tensor。一维Tensor按原样返回。
+    转置二维tensor，维度小于二的tensor按原样返回。
 
     参数：
-        - **input** (Tensor) - 输入Tensor。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，`input` 的转置。
+        Tensor

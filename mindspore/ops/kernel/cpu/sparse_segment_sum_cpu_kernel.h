@@ -21,11 +21,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_segment_sum_cpu {
 class SparseSegmentSumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseSegmentSumCpuKernelMod> {
  public:
   SparseSegmentSumCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseSegmentSumCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   ShapeVector x_shape_;
   ShapeVector segment_shape_;
 };
+}  // namespace sparse_segment_sum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SPARSE_SEGMENT_SUM_CPU_KERNEL_H_

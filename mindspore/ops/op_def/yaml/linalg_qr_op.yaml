@@ -1,0 +1,21 @@
+#operator linalg.qr
+linalg_qr:
+  args:
+    A:
+      dtype: tensor
+    mode:
+      dtype: int
+      default: "'reduced'"
+      arg_handler: str_to_enum
+  returns:
+      Q:
+        dtype: tensor
+      R:
+        dtype: tensor
+  class:
+    name: LinalgQr
+  function:
+      name: linalg_qr
+  dispatch:
+    enable: True
+    Ascend: LinalgQrAscend

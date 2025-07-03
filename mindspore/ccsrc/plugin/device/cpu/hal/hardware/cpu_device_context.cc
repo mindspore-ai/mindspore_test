@@ -19,18 +19,18 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "plugin/device/cpu/optimizer/reg_cpu_const_input_to_attr.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #include "plugin/device/cpu/hal/hardware/cpu_somas.h"
-#include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
+#include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
 #ifdef ENABLE_AKG
-#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
+#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
 #endif
-#include "include/common/factory/ms_factory.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/kernel_build_info.h"
+#include "common/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/kernel_build_info.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/trace_base.h"
@@ -38,24 +38,21 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "plugin/device/cpu/optimizer/insert_cast_cpu.h"
 #include "plugin/device/cpu/optimizer/insert_cast_to_pyexecute.h"
 #include "plugin/device/cpu/optimizer/insert_format_transform_op.h"
 #include "plugin/device/cpu/optimizer/softmax_grad_fusion.h"
-#include "plugin/device/cpu/optimizer/matmul_biasadd_fusion.h"
 #include "plugin/device/cpu/optimizer/matmul_biasadd_relu_fusion.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/flatten_value_sequence_in_pyexecute.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "backend/common/pass/replace_node_by_proxy.h"
 #include "backend/common/pass/erase_visit_attr.h"
 #include "backend/common/pass/add_training_attr.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/dynamic_sequence_ops_adaptation.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
-#include "backend/common/graph_kernel/value_graph_binder.h"
+#include "backend/common/pass/value_graph_binder.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
@@ -66,16 +63,19 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/anf_ir_dump.h"
 #endif
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
-#include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "kernel/oplib/oplib.h"
+#include "ops_utils/op_constants.h"
+#include "common/oplib/oplib.h"
 #include "runtime/device/move_to.h"
-#include "include/backend/debug/profiler/profiling.h"
-#include "runtime/device/tensor_array.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "debug/profiler/profiling.h"
+#include "runtime/device/res_manager/tensor_array.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "mindspore/ccsrc/plugin/device/cpu/kernel/contiguous_cpu_kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -84,6 +84,56 @@ namespace {
 const char kModelNameCPU[] = "CPU";
 const char kEventOptimizeGraph[] = "OptimizeGraph";
 const char kStageSetKernelInfo[] = "SetKernelInfo";
+
+std::pair<bool, size_t> MatchMultiDynamicKernelAttr(const kernel::KernelAttr &kernel_attr,
+                                                    const std::vector<int64_t> &dyn_input_sizes,
+                                                    const std::vector<kernel::KernelAttr> &kernel_attr_list) {
+  auto output_num = kernel_attr.GetOutputSize();
+  for (size_t index = 0; index < kernel_attr_list.size(); ++index) {
+    // support multi dynamic inputs.
+    const auto &cur_kernel_attr = kernel_attr_list[index];
+    auto cur_input_num = cur_kernel_attr.GetInputSize();
+    if (dyn_input_sizes.size() != cur_input_num) {
+      MS_LOG(EXCEPTION) << "Kernel attr's input num: " << cur_input_num
+                        << ", is not equal to dynamic input size: " << dyn_input_sizes.size();
+    }
+    bool mis_match = false;
+    size_t input_index = 0;
+    for (size_t i = 0; i < cur_input_num; ++i) {
+      int64_t dyn_input_size = dyn_input_sizes[i];
+      if (dyn_input_size < 0) {
+        dyn_input_size = 1;
+      }
+      auto dtype = cur_kernel_attr.GetInputAttr(i).dtype;
+      for (size_t j = 0; j < LongToSize(dyn_input_size); ++j) {
+        if (kernel_attr.GetInputAttr(input_index).dtype != dtype) {
+          mis_match = true;
+          break;
+        }
+        ++input_index;
+      }
+      if (mis_match) {
+        break;
+      }
+    }
+    if (mis_match) {
+      continue;
+    }
+
+    // only support one dynamic output. TODO: support multi dynamic output.
+    for (size_t i = 0; i < output_num; ++i) {
+      auto dtype = cur_kernel_attr.GetOutputAttr(i).dtype;
+      if (kernel_attr.GetInputAttr(i).dtype != dtype) {
+        mis_match = true;
+        break;
+      }
+    }
+    if (!mis_match) {
+      return std::make_pair(true, index);
+    }
+  }
+  return std::make_pair(false, 0);
+}
 
 runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_type,
                                          const std::shared_ptr<runtime::KernelTaskContext> &task_context) {
@@ -96,7 +146,64 @@ runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_typ
       MS_LOG(EXCEPTION) << "KernelTaskType is invalid, task_type:" << task_type;
   }
 }
+
+void MallocMemoryForDeviceAddress(device::DeviceAddress *device_address, const device::DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
+                                                 device_address->GetSize(), device_address);
+  if (device_address->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address)) {
+      MS_LOG(EXCEPTION) << "Allocate device memory failed!";
+    }
+  }
+}
+
 }  // namespace
+
+void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<kernel::KernelAttr> &apply_kernel_attrs) {
+  MS_EXCEPTION_IF_NULL(apply_kernel);
+  auto kernel_attrs = apply_kernel_attrs;
+  if (kernel_attrs.empty()) {
+    return;
+  }
+
+  auto build_info = AnfAlgo::GetSelectKernelBuildInfo(apply_kernel);
+  MS_EXCEPTION_IF_NULL(build_info);
+  auto kernel_attr = GetKernelAttrFromBuildInfo(build_info);
+  std::vector<int64_t> dyn_input_sizes = {};
+  if (common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, apply_kernel)) {
+    dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(apply_kernel, kAttrDynInputSizes);
+  }
+  std::pair<bool, int64_t> match_result;
+
+  if (kernel_attrs[0].GetSkipCheck()) {
+    // If kernel skips attr check, we need to synchronize the ref map in case it's discarded.
+    SyncOutInRef(kernel_attrs[0], &kernel_attr);
+    kernel_attrs[0] = kernel_attr;
+    match_result = {true, 0};
+  } else if (dyn_input_sizes.empty() || kernel_attrs[0].GetAllSame()) {
+    match_result = MatchKernelAttr(kernel_attr, kernel_attrs);
+  } else {
+    match_result = MatchMultiDynamicKernelAttr(kernel_attr, dyn_input_sizes, kernel_attrs);
+  }
+
+  auto [is_match, index] = match_result;
+  if (!is_match) {
+    constexpr auto recursive_level = 2;
+    MS_LOG_WITH_NODE(EXCEPTION, apply_kernel)
+      << apply_kernel->fullname_with_scope() << " does not support this kernel data type: " << build_info->ToString()
+      << ", node debug name: " << apply_kernel->DebugString(recursive_level);
+  }
+
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(apply_kernel->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  const auto &matched_kernel_attr = kernel_attrs[index];
+  if (!matched_kernel_attr.GetOutInRefMap().empty() || matched_kernel_attr.GetAllOutInRef()) {
+    kernel_info->set_ref_map(matched_kernel_attr.GetAllOutInRef(), matched_kernel_attr.GetOutInRefMap());
+  }
+}
+
 using mindspore::kernel::KernelBuildInfo;
 
 void CPUDeviceContext::Initialize() {
@@ -136,190 +243,85 @@ void CPUDeviceContext::Destroy() {
 }
 
 void CPUDeviceResManager::Initialize() {
-  mem_manager_ = std::make_shared<CPUMemoryManager>();
-  MS_EXCEPTION_IF_NULL(mem_manager_);
+  MS_EXCEPTION_IF_NULL(cpu_res_manager_);
+  cpu_res_manager_->Initialize();
 }
 
 void CPUDeviceResManager::Destroy() {
-  // Release memory.
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
+  if (cpu_res_manager_) {
+    cpu_res_manager_->Destroy();
   }
 }
 
 void *CPUDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+  return cpu_res_manager_->AllocateMemory(size, stream_id);
 }
 
-void CPUDeviceResManager::FreeMemory(void *ptr) const {
-  MS_EXCEPTION_IF_NULL(ptr);
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->FreeMemFromMemPool(ptr);
-}
+void CPUDeviceResManager::FreeMemory(void *ptr) const { cpu_res_manager_->FreeMemory(ptr); }
 
 void CPUDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                                           const std::vector<size_t> &keep_addr_sizes) const {
-  CPUMemoryPool::GetInstance().FreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
+  cpu_res_manager_->FreePartMemorys(free_addrs, keep_addrs, keep_addr_sizes);
 }
 
 std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                                   uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->MallocContinuousMemFromMemPool(size_list, stream_id);
+  return cpu_res_manager_->AllocateContinuousMemory(size_list, stream_id);
 }
 
-std::pair<vector<size_t>, vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
+std::pair<std::vector<size_t>, std::vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
-  std::vector<size_t> after_padding_sizes = before_padding_sizes;
-  auto stream_id = DefaultStream();
-  auto device_ptr_list = AllocateContinuousMemory(before_padding_sizes, stream_id);
-  for (size_t i = 0; i < after_padding_sizes.size(); ++i) {
-    errno_t ret = memset_s(device_ptr_list[i], after_padding_sizes[i], 0, after_padding_sizes[i]);
-    if (ret != EOK) {
-      MS_LOG(EXCEPTION) << "Memset failed.";
-    }
-    MS_LOG(DEBUG) << "Clear ptr:" << device_ptr_list[i] << ", size:" << after_padding_sizes[i];
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  // create device for all tensor in tensor list
-  for (size_t i = 0; i < tensor_list.size(); ++i) {
-    const auto &tensor = tensor_list[i];
-    const auto &ptr = device_ptr_list[i];
-    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), Format::DEFAULT_FORMAT,
-                                              tensor->data_type(), device_name, device_id, stream_id);
-    MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
-                  << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
-    MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
-    tensor->set_device_address(device_address);
-  }
-  return std::make_pair(before_padding_sizes, after_padding_sizes);
+  return cpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
 }
 
 tensor::TensorPtr CPUDeviceResManager::GetSliceByTensorListIndexHandle(
   const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
   const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
-  if (start >= tensor_list.size() || end > tensor_list.size()) {
-    MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
-  }
-  size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
-                                before_padding_size[end - 1]);
-  ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
-  MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
-  auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
-
-  auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address = CreateDeviceAddress(ptr, size, shape, Format::DEFAULT_FORMAT, tensor->data_type(), device_name,
-                                            device_id, stream_id);
-  tensor->set_device_address(device_address);
-  return tensor;
+  return cpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
+                                                           end);
 }
 
 tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
                                                                     size_t end) {
-  auto type_id = first_tensor->data_type();
-  auto type_size = UnitSizeInBytes(type_id);
-  size_t tensor_size = (end - start) * type_size;
-  ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
-  MS_EXCEPTION_IF_NULL(first_tensor->device_address());
-  auto ptr = first_tensor->device_address()->GetMutablePtr();
-  auto offset_size = start * type_size;
-
-  auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address = CreateDeviceAddress(reinterpret_cast<uint8_t *>(ptr) + offset_size, tensor_size, shape,
-                                            Format::DEFAULT_FORMAT, type_id, device_name, device_id, stream_id);
-  MS_LOG(DEBUG) << "Create DeviceAddress, offset size to ptr0:" << offset_size << ", tensor_size:" << tensor_size
-                << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
-  tensor->set_device_address(device_address);
-  return tensor;
+  return cpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
 }
 
-namespace {
-// Create user data content(such as CPU hash table) and set user data reference into device_address.
-void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
-  MS_EXCEPTION_IF_NULL(user_data);
-  MS_EXCEPTION_IF_NULL(device_address);
-
-  // Save reference of user data in device address.
-  device_address->set_user_data(user_data);
-
-  const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
-  if (user_data_type == nullptr) {
-    return;
-  }
-  if (*user_data_type == UserDataType::kUserTypeHashTable) {
-    auto key_type = user_data->get<TypeId>(kHashTableKeyType);
-    auto value_type = user_data->get<TypeId>(kHashTableValueType);
-    MS_EXCEPTION_IF_NULL(key_type);
-    MS_EXCEPTION_IF_NULL(value_type);
-    const auto &iter = cpu_hash_table_funcs.find({*key_type, *value_type});
-    if (iter != cpu_hash_table_funcs.end()) {
-      // Create CPU hash table and set into `user_data`.
-      return std::get<kCreateFuncIndex>(iter->second)(user_data);
-    } else {
-      MS_LOG(EXCEPTION) << "Unsupported hash table type, key type:" << TypeIdLabel(*key_type)
-                        << ", value type:" << TypeIdLabel(*value_type);
-    }
-  } else {
-    MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
-  }
-}
-}  // namespace
-
-DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (kernel_tensor->device_name().empty()) {
-    kernel_tensor->set_device_name(device_context_->device_context_key().device_name_);
-    kernel_tensor->set_device_id(device_context_->device_context_key().device_id_);
-  }
-  auto device_address = std::make_shared<CPUDeviceAddress>(kernel_tensor);
-  MS_EXCEPTION_IF_NULL(device_address);
-
-  const auto &user_data = kernel_tensor->user_data();
-  if (user_data != nullptr) {
-    FillUserData(user_data, device_address.get());
-  }
-  device_address->set_device_synchronizer(std::make_shared<CPUDeviceSynchronizer>());
-  return device_address;
-}
-
-void CPUDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                 const std::string &to, bool blocking, bool *return_self) {
-  device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
+DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress() const { return cpu_res_manager_->CreateDeviceAddress(); }
 
 DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                           const Format &format, TypeId type_id,
                                                           const std::string &device_name, uint32_t device_id,
-                                                          uint32_t stream_id) const {
-  return std::make_shared<CPUDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                            stream_id);
+                                                          uint32_t stream_id, const UserDataPtr &user_data) const {
+  return cpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
+                                               stream_id, user_data);
 }
+
+bool CPUDeviceResManager::LoadCollectiveCommLib() {
+  bool using_mpi = common::UseMPI();
+  if (using_mpi) {
+    std::string mpi_comm_lib_name = "libmpi_collective.so";
+    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
+    MS_EXCEPTION_IF_NULL(loader);
+    if (!loader->Initialize()) {
+      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
+    }
+
+    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
+
+    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
+    collective_comm_lib_ = instance_func();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+  } else {
+#if defined(__linux__) && defined(WITH_BACKEND)
+    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
+    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+#endif
+  }
+  return true;
+}
+
+CollectiveCommunicationLib *CPUDeviceResManager::collective_comm_lib() const { return collective_comm_lib_; }
 
 void CPUKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
@@ -521,7 +523,7 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
     }
   }
   if (do_expand) {
-    (void)graphkernel::BindValueToGraph().Run(graph);
+    (void)opt::BindValueToGraph().Run(graph);
     graph->SetExecOrderByDefault();
   }
   (void)profiler::CollectHostInfo(kModelNameCPU, kEventOptimizeGraph, kStageSetKernelInfo, start_time,
@@ -560,7 +562,7 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
     }
 
     auto kernel_attrs = cpu_kernel->GetOpSupport();
-    kernel::SetCpuRefMapToKernelInfo(node, kernel_attrs);
+    SetCpuRefMapToKernelInfo(node, kernel_attrs);
     auto thread_pool = kernel::GetActorMgrInnerThreadPool();
     cpu_kernel->SetThreadPool(thread_pool);
     std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(node);
@@ -613,7 +615,7 @@ void CPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
 bool CPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &workspace,
                                      const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
-                                     void * /* stream*/) const {
+                                     void * /* stream */) const {
   MS_EXCEPTION_IF_NULL(kernel);
 
   const auto &profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
@@ -642,28 +644,33 @@ bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   return ret;
 }
 
-bool CPUDeviceResManager::LoadCollectiveCommLib() {
-  bool using_mpi = common::UseMPI();
-  if (using_mpi) {
-    std::string mpi_comm_lib_name = "libmpi_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(mpi_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Failed to load mpi collective library.";
-    }
-
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  } else {
-#if defined(__linux__) && defined(WITH_BACKEND)
-    collective_comm_lib_ = &MsCollectiveCommLib::GetInstance();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-#endif
+bool CPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                          const std::vector<device::DeviceAddress *> &input_addr_list,
+                                          const std::vector<device::DeviceAddress *> &output_addr_list,
+                                          const size_t &stream_id) const {
+  if (task_type != runtime::KernelTaskType::kCONTIGUOUS_TASK) {
+    MS_LOG(EXCEPTION) << "KernelTaskType not supported, task_type:" << task_type;
   }
+  MS_LOG(DEBUG) << "Start Contiguous task";
+
+  const auto &input_address = input_addr_list[0];
+  const auto &output_address = output_addr_list[0];
+  const auto &input_storage_info = input_address->GetTensorStorageInfo();
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", input_address size:" << input_address->GetSize()
+                << ", output_address size:" << output_address->GetSize();
+
+  MallocMemoryForDeviceAddress(input_address, device_context_);
+  MallocMemoryForDeviceAddress(output_address, device_context_);
+
+  kernel::ContiguousCpuKernel contiguous_kernel;
+  auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
+                                                output_address->type_id(), output_address);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "CpuContiguous failed";
+  }
+
+  MS_LOG(DEBUG) << "End Contiguous task";
   return true;
 }
 

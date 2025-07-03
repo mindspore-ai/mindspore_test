@@ -16,8 +16,11 @@
 #include "kernel/cpu/adaptive_max_pool_3d_cpu_kernel.h"
 
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
+namespace mindspore {
+namespace kernel {
+namespace adaptive_max_pool_3d_cpu {
 namespace {
 #define ADAPTIVE_MAX_POOL_3D_COMPUTE_CASE(TYPENUM, DTYPE) \
   case (TYPENUM): {                                       \
@@ -25,9 +28,6 @@ namespace {
     break;                                                \
   }
 }  // namespace
-
-namespace mindspore {
-namespace kernel {
 constexpr size_t kInputNumDims5 = 5;
 constexpr size_t kInputShapeDims4 = 4;
 
@@ -59,6 +59,10 @@ int AdaptiveMaxPool3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return KRET_RESIZE_FAILED;
   }
   auto output_size_shape = inputs[kIndex1]->GetShapeVector();
+  if (CHECK_SHAPE_NULL(input_shape_, kernel_name_, "input") ||
+      CHECK_SHAPE_NULL(output_size_shape, kernel_name_, "output")) {
+    return KRET_RESIZE_FAILED;
+  }
   if (output_size_shape.size() != 1) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', output size dimensions should be equal to 1, but got "
                   << output_size_shape.size() << ".";
@@ -287,12 +291,13 @@ void AdaptiveMaxPool3DCpuKernelMod::AdaptiveMaxPool3DCompute(const std::vector<K
     ComputeKernel(input_data, output_data, indices_data, start, end);
   };
 
-  // The AdaptiveMaxPool3D will be reinit in graph mode, so the ParallelLaunchAutoSearch dose not work, use
+  // The AdaptiveMaxPool3D will be reinit in graph mode, so the ParallelLaunchAutoSearch does not work, use
   // ParallelLaunch instead.
   const float block_size = 1.0;
   ParallelLaunch(shard_adaptive_max_pool_3d, output_size_T_, block_size);
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool3D, AdaptiveMaxPool3DCpuKernelMod);
+}  // namespace adaptive_max_pool_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

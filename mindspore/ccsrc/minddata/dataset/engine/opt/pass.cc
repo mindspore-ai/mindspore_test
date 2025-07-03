@@ -17,15 +17,11 @@
 #include "minddata/dataset/engine/opt/pass.h"
 #include "minddata/dataset/engine/ir/datasetops/batch_node.h"
 #include "minddata/dataset/engine/ir/datasetops/bucket_batch_by_length_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/build_sentence_piece_vocab_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/build_vocab_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/cache_node.h"
 #include "minddata/dataset/engine/ir/datasetops/cache_merge_node.h"
 #include "minddata/dataset/engine/ir/datasetops/cache_lookup_node.h"
-#endif
 #include "minddata/dataset/engine/ir/datasetops/concat_node.h"
 #include "minddata/dataset/engine/ir/datasetops/epoch_ctrl_node.h"
 #include "minddata/dataset/engine/ir/datasetops/filter_node.h"
@@ -36,9 +32,7 @@
 #include "minddata/dataset/engine/ir/datasetops/root_node.h"
 #include "minddata/dataset/engine/ir/datasetops/shuffle_node.h"
 #include "minddata/dataset/engine/ir/datasetops/skip_node.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/ir/datasetops/source/minddata_node.h"
-#endif
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/engine/ir/datasetops/source/generator_node.h"
 #endif
@@ -147,7 +141,6 @@ Status IRNodePass::Visit(std::shared_ptr<ConcatNode> node, bool *const modified)
 Status IRNodePass::VisitAfter(std::shared_ptr<ConcatNode> node, bool *const modified) {
   return VisitAfter(std::static_pointer_cast<DatasetNode>(node), modified);
 }
-#ifndef ENABLE_ANDROID
 Status IRNodePass::Visit(std::shared_ptr<CacheLookupNode> node, bool *const modified) {
   return Visit(std::static_pointer_cast<DatasetNode>(node), modified);
 }
@@ -166,7 +159,6 @@ Status IRNodePass::Visit(std::shared_ptr<CacheNode> node, bool *const modified) 
 Status IRNodePass::VisitAfter(std::shared_ptr<CacheNode> node, bool *const modified) {
   return VisitAfter(std::static_pointer_cast<DatasetNode>(node), modified);
 }
-#endif
 Status IRNodePass::Visit(std::shared_ptr<EpochCtrlNode> node, bool *const modified) {
   return Visit(std::static_pointer_cast<DatasetNode>(node), modified);
 }
@@ -193,14 +185,12 @@ Status IRNodePass::Visit(std::shared_ptr<MapNode> node, bool *const modified) {
 Status IRNodePass::VisitAfter(std::shared_ptr<MapNode> node, bool *const modified) {
   return VisitAfter(std::static_pointer_cast<DatasetNode>(node), modified);
 }
-#ifndef ENABLE_ANDROID
 Status IRNodePass::Visit(std::shared_ptr<MindDataNode> node, bool *const modified) {
   return Visit(std::static_pointer_cast<MappableSourceNode>(node), modified);
 }
 Status IRNodePass::VisitAfter(std::shared_ptr<MindDataNode> node, bool *const modified) {
   return VisitAfter(std::static_pointer_cast<MappableSourceNode>(node), modified);
 }
-#endif
 Status IRNodePass::Visit(std::shared_ptr<ProjectNode> node, bool *const modified) {
   return Visit(std::static_pointer_cast<DatasetNode>(node), modified);
 }
@@ -275,14 +265,12 @@ Status IRNodePass::VisitAfter(std::shared_ptr<SyncWaitNode> node, bool *const mo
   return VisitAfter(std::static_pointer_cast<DatasetNode>(node), modified);
 }
 #endif
-#ifndef ENABLE_ANDROID
 Status IRNodePass::Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) {
   return Visit(std::static_pointer_cast<DatasetNode>(node), modified);
 }
 Status IRNodePass::VisitAfter(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) {
   return VisitAfter(std::static_pointer_cast<DatasetNode>(node), modified);
 }
-#endif
 
 // leaf-IR Node
 Status IRNodePass::Visit(std::shared_ptr<MappableSourceNode> node, bool *const modified) {

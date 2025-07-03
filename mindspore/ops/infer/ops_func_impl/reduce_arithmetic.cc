@@ -223,7 +223,7 @@ ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &i
   MS_EXCEPTION_IF_NULL(keep_dims_opt);
   const bool &keep_dims = keep_dims_opt->value();
 
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();
 
@@ -255,8 +255,62 @@ ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &i
   return {ReduceFuncCalShapeInferImpl(primitive, x_shape, real_axis_vec, keep_dims)};
 }
 
+ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
+  auto keep_dims_opt = input_infos[kIndex2]->GetScalarValue<bool>();
+  if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
+    return {ShapeVector({abstract::Shape::kShapeRankAny})};
+  }
+  bool keep_dims = keep_dims_opt.value();
+
+  auto axis_array_opt = input_infos[kIndex1]->GetArrayValue<int64_t>();
+  if (axis_array_opt.has_value() && axis_array_opt->size() == kIndex0 && !keep_dims) {
+    // If axis is empty tuple and keep_dims is False, return a zero-dimensional Tensor
+    return {ShapeVector({})};
+  }
+
+  const auto &x_shape = input_infos[kIndex0]->GetShape();
+  if (MS_UNLIKELY(input_infos[kIndex0]->IsDynamicRank())) {
+    return {x_shape};
+  }
+  if (MS_UNLIKELY(!axis_array_opt.has_value())) {
+    auto out_shape = keep_dims ? ShapeVector(x_shape.size(), abstract::Shape::kShapeDimAny)
+                               : ShapeVector({abstract::Shape::kShapeRankAny});
+    return {out_shape};
+  }
+
+  auto x_shape_size = x_shape.size();
+  const auto &axis_array = axis_array_opt.value();
+  // All values of the axis are known.
+  if (MS_LIKELY(!axis_array.HasUnknownValue())) {
+    const auto &axis_vec = axis_array.ToVector();
+    std::vector<int64_t> real_axis_vec;
+    (void)std::transform(
+      axis_vec.begin(), axis_vec.end(), std::back_inserter(real_axis_vec),
+      [&x_shape_size, &primitive](const int64_t &axis) { return CalRealAixs(axis, x_shape_size, primitive); });
+    auto out_shape = ReduceFuncCalShapeInferImpl(primitive, x_shape, real_axis_vec, keep_dims);
+    return {out_shape};
+  }
+
+  // If the axis has unknown value, the reduction position will be any of the input dimensions.
+  if (!keep_dims) {
+    MS_CHECK_VALUE(x_shape_size >= axis_array.size(),
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("axis size", axis_array.size(), kIncludeLeft,
+                                                               {0, x_shape_size}, primitive));
+    return {ShapeVector(x_shape_size - axis_array.size(), abstract::Shape::kShapeDimAny)};
+  }
+
+  auto out_shape = ShapeVector(x_shape.size(), abstract::Shape::kShapeDimAny);
+  for (size_t i = 0; i < axis_array.size(); ++i) {
+    if (!axis_array.IsValueUnknown(i)) {
+      auto axis = CalRealAixs(axis_array[i], x_shape_size, primitive);
+      out_shape[axis] = 1;
+    }
+  }
+  return {out_shape};
+}
+
 ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_shape = input->shape();
   const auto input_shape_size = input_shape.size();
@@ -290,7 +344,7 @@ ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const Val
 }
 
 ShapeArray ReduceGeneralInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
-  MS_LOG(DEBUG) << "Run ReduceExtandGeneralInferShape_" << primitive->name() << " start";
+  MS_LOG(DEBUG) << "Run ReduceGeneralInferShape" << primitive->name() << " start";
   const auto &input = input_infos[kInputIndex0];
   const auto input_shape = input->GetShape();
   const auto input_shape_size = input_shape.size();
@@ -351,7 +405,7 @@ ShapeArray ReduceGeneralInferShape(const PrimitivePtr &primitive, const InferInf
       out_shape[axis_i] = 1;
     }
   }
-  MS_LOG(DEBUG) << "Run ReduceExtandGeneralInferShape_" << primitive->name() << " end";
+  MS_LOG(DEBUG) << "Run ReduceGeneralInferShape" << primitive->name() << " end";
   return {out_shape};
 }
 

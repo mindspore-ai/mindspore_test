@@ -22,13 +22,15 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API MaxPoolWithIndicesFuncImpl : public OpFuncImpl {
+class OPS_API MaxPoolWithIndicesFuncImpl final : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_args) const override;
+
+  bool GeneralInferRegistered() const override { return true; }
 };
 }  // namespace ops
 }  // namespace mindspore

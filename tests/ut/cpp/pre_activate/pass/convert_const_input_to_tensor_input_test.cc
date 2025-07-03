@@ -25,6 +25,7 @@
 #include "backend/common/pass/convert_const_input_to_tensor_input.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

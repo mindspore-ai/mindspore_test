@@ -19,6 +19,10 @@
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "runtime/graph_scheduler/actor/any_type_kernel_actor.h"
+#include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 
 namespace mindspore {
 namespace runtime {
@@ -105,6 +109,7 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
   ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device_name);
   MS_REGISTER_DEVICE(device_name, TestDeviceContext);
+  MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
   DeviceContextKey device_context_key{device_name, device_id};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
 
@@ -121,22 +126,20 @@ TEST_F(AnyTypeKernelActorTest, RunOpData) {
   DataType input_1 = 2.0;
   ShapeVector shape = {1};
 
-  OpContext<DeviceAddress> op_context;
+  OpContext<kernel::KernelTensor> op_context;
   std::vector<Promise<int>> result(1);
   op_context.sequential_num_ = 140429;
   op_context.results_ = &result;
 
-  auto kernel_tensor0 = std::make_shared<kernel::KernelTensor>(
+  auto kernel_tensor0 = AnfAlgo::CreateKernelTensor(
     &input_0, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-  auto device_address0 = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor0);
-  auto op_data0 = std::make_shared<OpData<DeviceTensor>>(any_type_kernel_actor->GetAID(), device_address0.get(), 0);
+  auto op_data0 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor0, 0);
 
-  auto kernel_tensor1 = std::make_shared<kernel::KernelTensor>(
+  auto kernel_tensor1 = AnfAlgo::CreateKernelTensor(
     &input_1, sizeof(DataType), Format::DEFAULT_FORMAT, TypeId::kNumberTypeFloat32, shape,
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-  auto device_address1 = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor1);
-  auto op_data1 = std::make_shared<OpData<DeviceTensor>>(any_type_kernel_actor->GetAID(), device_address1.get(), 1);
+  auto op_data1 = std::make_shared<OpData<KernelTensor>>(any_type_kernel_actor->GetAID(), kernel_tensor1, 1);
 
   any_type_kernel_actor->input_datas_num_ = 2;
   any_type_kernel_actor->any_type_parameter_indexes_.emplace_back(1);

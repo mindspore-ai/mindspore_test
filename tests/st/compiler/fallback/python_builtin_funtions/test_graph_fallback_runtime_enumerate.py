@@ -30,7 +30,7 @@ def test_enumerate_asnumpy():
     Description: Test enumerate() in fallback runtime
     Expectation:No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         index_sum = 0
         value_sum = 0

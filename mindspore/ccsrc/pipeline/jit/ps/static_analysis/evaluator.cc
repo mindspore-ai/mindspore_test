@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
 
 #include <algorithm>
+#include <ostream>
 #include <utility>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -25,15 +26,27 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph_cloner.h"
 #include "abstract/utils.h"
+#include "include/common/fallback.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
 #include "pipeline/jit/ps/static_analysis/stack_frame.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/expander/bprop/bprop_meta_func_graph.h"
 #include "frontend/operator/composite/unpack_call.h"
+#include "frontend/optimizer/fallback_rewriter.h"
 #include "frontend/optimizer/ad/dfunctor.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace abstract {
@@ -168,15 +181,8 @@ AbstractBasePtrList EvaluateArguments(const ConfigPtrList &args_conf_list) {
     MS_EXCEPTION_IF_NULL(result);
     const auto &abs = result->abstract();
     // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
     MS_EXCEPTION_IF_NULL(abs);
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
-    } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
-    }
-    (void)args_abs_list.emplace_back(real_abs);
+    (void)args_abs_list.emplace_back(abs);
   }
   return args_abs_list;
 }
@@ -220,7 +226,7 @@ void BaseFuncGraphEvaluator::EnterStackFrame(const AnalysisEnginePtr &engine, co
   // Don't check it if the user set no_recursive flag.
   IncreaseFunctionCallDepth();
   IncreaseStackFrameDepth();
-  const auto &top_graph = parse::Parser::GetTopFuncGraph();
+  const auto &top_graph = engine->top_func_graph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
   const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
@@ -336,19 +342,15 @@ AbstractBasePtr BaseFuncGraphEvaluator::LaunchRecursiveEval(const AnalysisEngine
     } else {
       node_eval_result = ObtainEvalResultFromCache(node_conf);
       if (node_eval_result != nullptr) {
-        static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-        if (enable_eliminate_unused_element) {
-          const auto &cnode = node->cast<CNodePtr>();
-          MS_EXCEPTION_IF_NULL(cnode);
-          const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
-          if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
-            const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
-            SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
-          }
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &maybe_func = engine->GetCNodeOperatorAbstract(cnode, context, fg);
+        if (maybe_func->isa<MetaFuncGraphAbstractClosure>() || maybe_func->isa<FuncGraphAbstractClosure>()) {
+          const auto &abs_func_graph = maybe_func->cast<AbstractFunctionPtr>();
+          SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(engine, fg, cnode, abs_func_graph, context);
         }
+
         if (engine->check_side_effect() && node_eval_result->has_side_effect_node()) {
-          auto cnode = dyn_cast_ptr<CNode>(node);
-          MS_EXCEPTION_IF_NULL(cnode);
           MS_LOG(DEBUG) << "Found side-effect, cnode: " << cnode->DebugString() << ", func_graph: " << fg->ToString();
           cnode->set_has_side_effect_node(true);
           fg->set_has_side_effect_node(true);
@@ -383,7 +385,7 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
   // Increase & Check the func graph call depth.
   // Don't check it if the user set no_recursive flag.
   IncreaseFunctionCallDepth();
-  const auto &top_graph = parse::Parser::GetTopFuncGraph();
+  const auto &top_graph = engine->top_func_graph();
   bool no_recursive = (top_graph == nullptr ? false : top_graph->has_flag(FUNC_GRAPH_FLAG_NO_RECURSIVE));
   const uint32_t max_depth = GetMaxCallDepth();
   if (!no_recursive && FunctionCallDepth() > max_depth) {
@@ -578,8 +580,9 @@ FuncGraphPtr FuncGraphEvaluator::GetFuncGraph(AnalysisEnginePtr engine, const Ab
   }
 
   // For the top graph, if it is replaced by generated graph, update the top graph to the new one.
-  if (parse::Parser::GetTopFuncGraph() == func_graph()) {
+  if (engine->top_func_graph() == func_graph()) {
     if (res != func_graph()) {
+      engine->set_top_func_graph(res);
       parse::Parser::UpdateTopFuncGraph(res);
     }
   }
@@ -660,22 +663,11 @@ EvalResultPtr Evaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args
     MS_EXCEPTION_IF_NULL(eval_result->abstract());
     MS_LOG(DEBUG) << "[" << this << "/" << evaluator_name
                   << "] cache hit. result: " << eval_result->abstract()->ToString() << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
-    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-    if (enable_eliminate_unused_element) {
-      for (size_t i = 0; i < args_abs_list.size(); ++i) {
-        auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-        auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-        if (old_sequence != nullptr && new_sequence != nullptr) {
-          MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << "old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-          SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-          MS_LOG(DEBUG) << "After synchronize sequence nodes use flags for NodeConfig: "
-                        << (out_conf ? out_conf->ToString() : "NULL") << ", old_sequence: " << old_sequence->ToString()
-                        << ", new_sequence: " << new_sequence->ToString();
-        }
-      }
+    for (size_t i = 0; i < args_abs_list.size(); ++i) {
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
   }
   return eval_result;
@@ -725,6 +717,21 @@ EvalResultPtr TrivialPrimEvaluator::Run(AnalysisEnginePtr engine, const ConfigPt
     } catch (std::exception &e) {
       MS_LOG(ERROR) << "Primitive: <" << ToString() << "> infer failed, failed info: " << e.what();
       std::rethrow_exception(std::current_exception());
+    }
+    auto prim = standard_prim_eval != nullptr ? standard_prim_eval->prim() : nullptr;
+    if (prim != nullptr && fallback::GetJitSyntaxLevel() == kStrict) {
+      auto output_abs = res != nullptr ? res->abstract() : nullptr;
+      if (opt::ShouldRunWithJitFallback(prim, args_abs_list, output_abs)) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < args_abs_list.size(); ++i) {
+          oss << "Arg[" << i << "]: " << (args_abs_list[i] != nullptr ? args_abs_list[i]->ToString() : "NULL") << "\n";
+        }
+        MS_EXCEPTION(TypeError)
+          << "In JIT strict mode, the primitive '" << prim->name()
+          << "' does not support the following argument types. You can use os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2' "
+             "to enable the JIT lax mode to support the current syntax. Arguments are:\n"
+          << oss.str();
+      }
     }
   }
   return res;
@@ -845,6 +852,23 @@ EvalResultPtr TaylorEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList
 
 EvalResultPtr ShardEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
                                   const AnfNodeConfigPtr &) {
+  AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
+  MS_EXCEPTION_IF_NULL(evaluator_cache_mgr_);
+  auto eval_result = evaluator_cache_mgr_->GetValue(args_abs_list);
+  if (eval_result != nullptr) {
+    return eval_result;
+  }
+
+  // Call the original evaluator, get the result: y = f(x)
+  EvalResultPtr result = evaluator_->Run(engine, args_conf_list, nullptr);
+  MS_EXCEPTION_IF_NULL(result);
+  auto res = std::make_shared<EvalResult>(result->abstract(), std::make_shared<AttrValueMap>());
+  evaluator_cache_mgr_->SetValue(args_abs_list, res);
+  return res;
+}
+
+EvalResultPtr AddAttrEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
+                                    const AnfNodeConfigPtr &) {
   AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
   MS_EXCEPTION_IF_NULL(evaluator_cache_mgr_);
   auto eval_result = evaluator_cache_mgr_->GetValue(args_abs_list);
@@ -1005,10 +1029,9 @@ AbstractBasePtr GetPhysicalViewAbs(const AbstractBasePtr &logical_view_abs, cons
         MS_LOG(EXCEPTION) << "The axis in vmap's 'out_axes' should be a None or a scalar of type Int64Imm, but got a "
                           << sub_out_axes->ToString() << ".";
       });
-    if (logical_view_abs->isa<AbstractList>()) {
-      return std::make_shared<AbstractList>(physical_view_abs_list);
-    }
-    return std::make_shared<AbstractTuple>(physical_view_abs_list);
+    auto ret = logical_view_abs->Clone();
+    dyn_cast_ptr<AbstractSequence>(ret)->set_elements(physical_view_abs_list);
+    return ret;
   }
 
   // for the single output case, outputs: A, and out_axes: 1 or (1,).

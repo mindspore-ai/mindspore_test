@@ -39,6 +39,11 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "frontend/parallel/pass/assign_add_opt.h"
 #include "mindspore/ccsrc/frontend/parallel/device_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

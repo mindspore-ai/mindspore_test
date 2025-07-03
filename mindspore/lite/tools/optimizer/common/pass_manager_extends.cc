@@ -60,6 +60,8 @@ bool PassManager::Run(const FuncGraphPtr &func_graph) const {
   return false;
 }
 
+void PassManager::AddFusionPass(const PassPtr &pass, bool condition) { MS_LOG(ERROR) << "stub func"; }
+
 void LitePassManager::AddPass(const PassPtr &pass) {
   if (pass != nullptr) {
     passes_.push_back(pass);

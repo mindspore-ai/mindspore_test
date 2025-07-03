@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 #include "ops_utils/memory_overlap.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore {
-MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor) {
+MemOverlap IsInternalOverlap(const TensorPtr &variable_tensor) {
   // For tensor is not type of view, never has overlap in tensor.
   if (variable_tensor->storage_info() == nullptr) {
     return MemOverlap::No;
@@ -45,8 +45,7 @@ MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor) {
 // b = mint.broadcast_to(a, (3,2))
 // c = [[1, 2], [1, 2], [1, 2]]
 // d = b.copy_ext(c)
-//
-void ThrowExpectionWhenInternalOverlap(const BaseTensorPtr &variable_tensor) {
+void ThrowExpectionWhenInternalOverlap(const TensorPtr &variable_tensor) {
   if (IsInternalOverlap(variable_tensor) == MemOverlap::Yes) {
     MS_LOG(EXCEPTION) << "This tensor has multi element reference to the same memory address,"
                          "which is forbidden.You can clone it before execute the operation.";

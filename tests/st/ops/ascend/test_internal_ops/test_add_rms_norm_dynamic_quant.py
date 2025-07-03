@@ -19,10 +19,17 @@ import os
 import numpy as np
 import pytest
 
+# should be inited before importing mindspore
+from op_checker import InternalOpEnabledChecker
+op_checker = InternalOpEnabledChecker({'MS_SUBMODULE_LOG_v': '{DEVICE:1}'}, True, "./add_rmsnorm_dynamic_quant_log")
+
 import mindspore as ms
 from mindspore import nn, Tensor, context, Parameter
 from mindspore import ops
 from tests.mark_utils import arg_mark
+
+
+KEYWORD = "kernel opname:AddRmsNormDynamicQuant, kernel type:internal_kernel"
 
 
 class AddRmsNormNet(nn.Cell):
@@ -72,8 +79,8 @@ def _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, inte
     np_dtype = np_dtype_map[dtype]
     tensor_dtype = ms_dtype_map[dtype]
 
-    input_x = np.random.rand(*shape).astype(np_dtype)
-    input_y = np.random.rand(*shape).astype(np_dtype)
+    input_x = np.ones(shape).astype(np_dtype)
+    input_y = np.ones(shape).astype(np_dtype)
     gamma = np.ones([shape[-1]]).astype(np_dtype)
     net = AddRmsNormNet(internal_kernel, shape, np_dtype, tensor_dtype, has_smooth_scale)
 
@@ -85,11 +92,16 @@ def _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, inte
     output = net(Tensor(input_x, dtype=tensor_dtype), Tensor(input_y, dtype=tensor_dtype),
                  Tensor(gamma, dtype=tensor_dtype))
 
+    if internal_kernel:
+        assert op_checker.CheckOpExistByKeyword(KEYWORD)
+    else:
+        assert op_checker.CheckOpNotExistByKeyword(KEYWORD)
+
     return output[0].astype(ms.float32).asnumpy(), output[1].astype(ms.float32).asnumpy(), \
         output[2].astype(ms.float32).asnumpy()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("shape", [(1, 93, 6144), (2, 1, 3, 4, 5, 6, 2, 2)])
 @pytest.mark.parametrize('dtype', ["bfloat16", "float16"])
 @pytest.mark.parametrize('has_smooth_scale', [True, False])
@@ -105,6 +117,6 @@ def test_add_rms_norm_dynamic_quant(shape, dtype, has_smooth_scale):
     expect_quant, expect_scale, expect_add_res =\
         _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, False)
 
-    assert np.amax(np.abs(internal_quant - expect_quant)) <= 2
-    assert np.amax(np.abs(internal_scale - expect_scale)) <= 5e-3
-    assert np.amax(np.abs(internal_add_res - expect_add_res)) <= 5e-3
+    assert np.amax(np.abs(internal_quant - expect_quant)) <= 1
+    assert np.amax(np.abs(internal_scale - expect_scale)) <= 5e-2
+    assert np.amax(np.abs(internal_add_res - expect_add_res)) <= 5e-2

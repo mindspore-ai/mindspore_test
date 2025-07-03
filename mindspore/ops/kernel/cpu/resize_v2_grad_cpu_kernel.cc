@@ -22,11 +22,12 @@
 #include <unordered_map>
 #include <utility>
 #include "mindspore/ops/infer/grad/resize_v2_grad.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_v2_grad_cpu {
 namespace {
 constexpr size_t kTwice = 2;
 constexpr size_t kValueTwo = 2;
@@ -396,5 +397,6 @@ const std::vector<ResizeV2GradPair> &ResizeV2GradCpuKernelMod::GetFuncList() con
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeV2Grad, ResizeV2GradCpuKernelMod);
+}  // namespace resize_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

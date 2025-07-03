@@ -53,19 +53,26 @@ TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_
   return {new_storage_info};
 }
 
-TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
-    return {};
-  }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &x_shape = tensor->shape();
+TensorStorageInfoPtrList TransposeBasicTypeCalc(const PrimitivePtr &prim,
+                                                const mindspore::tensor::TensorPtr &input_tensor,
+                                                const std::vector<int64_t> &dims) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &x_shape = input_tensor->shape();
   auto x_rank = x_shape.size();
-  const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);
   MS_CHECK_VALUE(dims.size() == x_rank, CheckAndConvertUtils::FormatCommMsg(
                                           "For '", prim->name(), "', size of perm should equal to rank of x, but got ",
                                           dims.size(), " and ", x_rank, "!"));
-  auto old_tensor_info = GetOldTensorInfo(tensor);
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   return TransposeStridesCalc(old_tensor_info, dims);
+}
+
+TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (!inputs[kInputIndex0]->isa<tensor::Tensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
+    return {};
+  }
+  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);
+  return TransposeBasicTypeCalc(prim, tensor, dims);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Transpose, TransposeCalc);

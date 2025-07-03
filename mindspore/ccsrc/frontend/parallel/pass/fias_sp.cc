@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,14 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/fused_infer_attention_score_info.h"
 #include "frontend/parallel/pass/fias_sp.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
@@ -106,7 +114,9 @@ CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> concat_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimConcat->name())),
                                            input_node, NewValueNode(MakeValue(static_cast<int64_t>(concat_dim)))};
-  auto concat = input_node->func_graph()->NewCNode(concat_inputs);
+  auto func_graph = input_node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto concat = func_graph->NewCNode(concat_inputs);
   MS_EXCEPTION_IF_NULL(concat);
   concat->set_scope(input_node->scope());
   return concat;
@@ -132,7 +142,9 @@ CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t spl
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),
                                           input_node, NewValueNode<int64_t>(split_dim),
                                           NewValueNode<int64_t>(split_num)};
-  auto split = input_node->func_graph()->NewCNode(split_inputs);
+  auto func_graph = input_node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto split = func_graph->NewCNode(split_inputs);
   MS_EXCEPTION_IF_NULL(split);
   split->set_scope(input_node->scope());
   return split;
@@ -294,7 +306,9 @@ int64_t GetUDMaskIndex(int index, int64_t pos, int64_t split_num) {
 void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shape, int64_t *fa_b, int64_t *fa_s1,
                    int64_t *fa_h1, int64_t *fa_s2, int64_t *fa_n1, int64_t *input_layout) {
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
+  MS_EXCEPTION_IF_NULL(fias_info_ptr);
   *input_layout = fias_info_ptr->input_layout();
   *q_shape = operator_info->inputs_tensor_info_new()[kIndex0]->GetValue().tensor_layout().base_slice_shape().array();
   *kv_shape = operator_info->inputs_tensor_info_new()[kIndex1]
@@ -303,10 +317,12 @@ void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shap
                 .tensor_layout()
                 .base_slice_shape()
                 .array();
-  *fa_n1 = GetValue<int64_t>(
-    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputNumHeadsIndex + 1)
-      ->cast<ValueNodePtr>()
-      ->value());
+  auto fa_input =
+    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputNumHeadsIndex + 1);
+  MS_EXCEPTION_IF_NULL(fa_input);
+  auto fa_input_node = fa_input->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fa_input_node);
+  *fa_n1 = GetValue<int64_t>(fa_input_node->value());
   if (*input_layout == FASInputLayoutMode::BSH) {
     *fa_b = (*q_shape)[kIndex0];
     *fa_s1 = (*q_shape)[kIndex1];

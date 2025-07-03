@@ -20,11 +20,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inner_non_zero {
 
 void InnerNonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
@@ -34,15 +35,11 @@ void InnerNonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inp
 bool InnerNonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], outputs[kIndex0]);
-  UpdateWorkspace(res);
-  executor_ = std::get<kIndex1>(res);
-  auto &all_tensor = std::get<kIndex2>(res);
-  RunOpSync(stream_ptr, workspace);
+  const auto &all_tensor = RunOpSync(stream_ptr, workspace, inputs[kIndex0], outputs[kIndex0]);
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = transform::UpdateOutputShape(all_tensor.get<kIndex1>());
+  outputs_shape_[kIndex0] = all_tensor.at(kIndex1);
   return true;
 }
 void InnerNonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,
@@ -54,5 +51,6 @@ void InnerNonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor
   outputs[kIndex0]->set_size(update_size);
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InnerNonZero, InnerNonZeroAscend);
+}  // namespace inner_non_zero
 }  // namespace kernel
 }  // namespace mindspore

@@ -19,12 +19,13 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/fractional_max_pool3d_with_fixed_ksize.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fractional_max_pool3d_with_fixed_ksize_cpu {
 class FractionalMaxPool3DWithFixedKsizeCPUKernelMod : public NativeCpuKernelMod {
  public:
   FractionalMaxPool3DWithFixedKsizeCPUKernelMod() = default;
@@ -72,6 +73,7 @@ class FractionalMaxPool3DWithFixedKsizeCPUKernelMod : public NativeCpuKernelMod 
   int64_t kernelsizeH_;
   int64_t kernelsizeW_;
 };
+}  // namespace fractional_max_pool3d_with_fixed_ksize_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_FRACTIONAL_MAX_POOL3D_WITH_FIXED_KSIZE_CPU_KERNEL_H_

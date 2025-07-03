@@ -24,8 +24,7 @@
 namespace mindspore::ops {
 class OPS_API ZerosLikeExtFuncImpl : public EltwiseOpFuncImpl {
  public:
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 };
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_ZEROS_LIKE_EXT_H

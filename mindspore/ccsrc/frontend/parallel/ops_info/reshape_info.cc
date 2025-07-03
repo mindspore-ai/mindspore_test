@@ -31,7 +31,8 @@
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace parallel {
@@ -385,25 +386,37 @@ bool SkipTensorRedistribution(const TensorLayout &from_layout, const TensorLayou
   return false;
 }
 
+void ReportRedistributionError(const std::string &name, const bool &is_generating_costs, const std::string &error_msg) {
+  if (is_generating_costs) {
+    MS_LOG(DEBUG) << "For " << name << error_msg;
+  } else {
+    MS_LOG(ERROR) << "For " << name << error_msg;
+  }
+}
+
+void ReshapeInfo::SkipReshapeRedistribution() {
+  MS_LOG(DEBUG) << "Skip reshape redistribution for " << cnode_->fullname_with_scope() << std::endl;
+  if (DstShapeIsConstant(cnode_->input(kIndex2))) {
+    ConstructOperator constructor;
+    replace_op_ = constructor.SkipRedisReshapeOP(output_layout_.slice_shape().array());
+    replace_op_info_.clear();
+    MS_LOG(INFO) << "skip reshape redistribution and reshape slice_shape is "
+                 << ShapeToString(output_layout_.slice_shape().array());
+  } else {
+    replace_op_.clear();
+    replace_op_info_.clear();
+    MS_LOG(WARNING) << name_ << ": dst shape is dynamic, and skip redistribution";
+    // need to modify the dst shape
+    ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(kIndex2));
+  }
+}
+
 Status ReshapeInfo::ComputeReplaceOp() {
   MS_LOG(INFO) << "Infer reshape redistribution for " << this->cnode_->fullname_with_scope() << "." << std::endl
                << "input_layout_: " << this->input_layout_.ToString() << std::endl
                << "output_layout_: " << this->output_layout_.ToString();
   if (is_skip_) {
-    MS_LOG(DEBUG) << "Skip reshape redistribution for " << cnode_->fullname_with_scope() << std::endl;
-    if (DstShapeIsConstant(cnode_->input(2))) {
-      ConstructOperator constructor;
-      replace_op_ = constructor.SkipRedisReshapeOP(output_layout_.slice_shape().array());
-      replace_op_info_.clear();
-      MS_LOG(INFO) << "skip reshape redistribution and reshape slice_shape is "
-                   << ShapeToString(output_layout_.slice_shape().array());
-    } else {
-      replace_op_.clear();
-      replace_op_info_.clear();
-      MS_LOG(WARNING) << name_ << ": dst shape is dynamic, and skip redistribution";
-      // need to modify the dst shape
-      ChangeDynamicDstShapeForSkipRedistribution(cnode_->input(2));
-    }
+    SkipReshapeRedistribution();
   } else {
     if (AccumulateShape(input_layout_.shard_strategy()) == 1 && AccumulateShape(output_layout_.shard_strategy()) == 1) {
       // input and output have not shard
@@ -423,11 +436,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
 
     bool is_multi_dynamic_reshape = std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
     if (tensor_redistribution->Init(input_layout_, output_layout_, dev_list, is_multi_dynamic_reshape) == FAILED) {
-      if (is_generating_costs_) {
-        MS_LOG(DEBUG) << name_ << ": tensor_redistribution init failed.";
-      } else {
-        MS_LOG(ERROR) << name_ << ": tensor_redistribution init failed.";
-      }
+      ReportRedistributionError(name_, is_generating_costs_, ", tensor_redistribution init failed.");
       return FAILED;
     }
     MS_LOG(DEBUG) << name_ << ": input " << input_layout_.ToString();
@@ -463,11 +472,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
         redistribution_oplist_ptr, tensor_redistribution->input_shape());
     }
     if (redistribution_oplist_ptr == nullptr) {
-      if (is_generating_costs_) {
-        MS_LOG(DEBUG) << name_ << "InferTensorRedistribution failed.";
-      } else {
-        MS_LOG(ERROR) << name_ << "InferTensorRedistribution failed.";
-      }
+      ReportRedistributionError(name_, is_generating_costs_, ", InferTensorRedistribution failed.");
       return FAILED;
     }
     if (!redistribution_oplist_ptr->first.empty() && tensor_redistribution->original_reshape_shape() == nullptr &&
@@ -645,7 +650,9 @@ Status ReshapeInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_
       MS_LOG(ERROR) << name_ << ": skip_redistribution is not a bool.";
       return FAILED;
     }
-    is_skip_ = reshape_skip_redis_iter->second->cast<BoolImmPtr>()->value();
+    auto reshape_skip_redis_iter_ptr = reshape_skip_redis_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(reshape_skip_redis_iter_ptr);
+    is_skip_ = reshape_skip_redis_iter_ptr->value();
   }
 
   ResetQueueMember();
@@ -724,7 +731,6 @@ void ReshapeInfo::SetCostForReshapeWithParameter() {
 
 void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &strategy) {
   MS_EXCEPTION_IF_NULL(strategy);
-  int64_t stage_id = strategy->GetInputStage();
   TensorLayout from_ = inputs_tensor_info_[0].tensor_layout();
   TensorLayout to_ = outputs_tensor_info_[0].tensor_layout();
 
@@ -732,20 +738,7 @@ void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &stra
   if (entire_costgraph->FindReshapeCostInCache(from_, to_, &result)) {
     MS_LOG(INFO) << "Find the same cost in cache, skip calculation.";
   } else {
-    double computation_cost =
-      operator_cost()->GetForwardComputationCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    double communication_cost = operator_cost()->GetCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    const auto gamma = CostModelContext::GetInstance()->costmodel_gamma();
-    result = std::make_shared<Cost>(computation_cost, communication_cost);
-    result->communication_without_parameter_ =
-      operator_cost()->GetForwardCommCost(inputs_tensor_info_, outputs_tensor_info_, stage_id);
-    result->communication_with_partial_para_ = result->communication_without_parameter_ +
-                                               gamma * (communication_cost - result->communication_without_parameter_);
-
-    // Breaking ties for preferring data parallelization
-    BreakingTiesForPreferringDataParallel(strategy, result);
-    // refine communication cost calculation for practice
-    RefineForPracticalCost(result, false);
+    result = ComputeCost(strategy);
     entire_costgraph->SaveReshapeCostToCache(from_, to_, result);
   }
 

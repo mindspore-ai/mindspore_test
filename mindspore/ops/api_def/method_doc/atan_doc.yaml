@@ -2,25 +2,4 @@ atan:
   description: |
     atan() -> Tensor
   
-    Computes the trigonometric inverse tangent of `self` element-wise.
-
-    .. math::
-        out_i = \tan^{-1}(self_i)
-
-    Returns:
-        Tensor, has the same shape as `self`. The dtype of output is float32 when dtype of `self` is in bool, int8, uint8, int16, int32, int64. Otherwise output has the same dtype as `self`.
-
-    Raises:
-        TypeError: If `self` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1.0, 0.0]), mindspore.float32)
-        >>> output = Tensor.atan(x)  # x.atan()
-        >>> print(output)
-        [0.7853982 0.       ]
+    For details, please refer to :func:`mindspore.ops.atan`.

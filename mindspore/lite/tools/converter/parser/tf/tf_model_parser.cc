@@ -49,6 +49,10 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/parser/unused_node_remove_pass.h"
 #include "tools/converter/parser/einsum_adjust.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::converter::kFmkTypeTf;
 namespace mindspore {
@@ -829,10 +833,8 @@ STATUS TFModelParser::ConvertSubgraph() {
     CNodePtr cnode = nullptr;
     if (function_while_map_.count(sub_graph_name)) {
       cnode = function_while_map_[sub_graph_name]->cast<CNodePtr>();
-      if (cnode == nullptr || static_cast<int>(cnode->size()) != input_arg_size + 1) {
-        MS_LOG(ERROR) << "while cnode  not equal input arg size";
-        return RET_ERROR;
-      }
+      MS_CHECK_TRUE_MSG(cnode != nullptr && static_cast<int>(cnode->size()) == input_arg_size + 1, RET_ERROR,
+                        "while cnode  not equal input arg size!");
     } else if (function_if_map_.count(sub_graph_name)) {
       cnode = function_if_map_[sub_graph_name]->cast<CNodePtr>();
       if (cnode == nullptr || static_cast<int>(cnode->size()) != input_arg_size + 2) {

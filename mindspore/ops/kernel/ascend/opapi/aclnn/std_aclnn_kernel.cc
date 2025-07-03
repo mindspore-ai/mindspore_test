@@ -21,22 +21,24 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "kernel/include/common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
-
 void StdAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
   const auto dim_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (dim_opt.has_value()) {
     dim_ = dim_opt.value();
-  } else {
-    dim_ = std::vector<int64_t>{};
   }
-  correction_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
+  if (dim_.empty()) {
+    auto in_shape = inputs[kIndex0]->GetShapeVector();
+    dim_ = GetRealDims(in_shape);
+  }
+  correction_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  keepdim_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
   GetWorkspaceForResize(inputs[kIndex0], dim_, correction_, keepdim_, outputs[kIndex0]);
 }

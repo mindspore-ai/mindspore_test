@@ -56,6 +56,7 @@ const int64_t TWO_INPUT_SIZE = 2;
 
 constexpr int64_t DYNAMIC_DIM_VAL = -1;
 constexpr int64_t kFineGrainedInterleavedBlockIndexMax = 1000;
+constexpr int64_t TOTAL_OPS_MAX = 0x7fffffff;
 
 extern size_t TOTAL_OPS;
 extern std::map<AnfNodePtr, std::pair<AnfNodePtr, int64_t>> g_RefMap;
@@ -164,6 +165,7 @@ void FindPreNodeCrossFuncGraph(CNodePtr *cnode, int64_t out_index);
 bool CrossInterNode(CNodePtr *prev_cnode, ValueNodePtr *prev_prim_anf_node, PrimitivePtr *prev_prim);
 bool IsCarePrevCNode(const CNodePtr &prev_cnode, const PrimitivePtr &prev_prim);
 void SetSharedParameterFlag(const FuncGraphPtr &root, const AnfNodePtr &parameter);
+Shapes ConvertDatasetLayoutToStrategy();
 StrategyPtr GenerateStandAloneStrategy(const Shapes &inputs_shape);
 StrategyPtr GenerateStandAloneStrategyForNewShapes(const NewShapes &inputs_shape);
 StrategyPtr GenerateBatchParallelStrategy(const OperatorInfoPtr operator_, const PrimitivePtr prim);
@@ -176,6 +178,11 @@ size_t GetDeviceCapacity();
 bool IsIgnoreSplitTensor(const CNodePtr &node, int64_t index);
 bool MergeConcatSlice(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager);
 void UpdateMicroBatchInterleavedStatus(const std::vector<AnfNodePtr> &all_nodes);
+Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<std::string> *alias_name,
+                              std::vector<int64_t> *device_matrix_vector,
+                              std::vector<std::vector<int64_t>> *tensor_map_vector, bool *interleaved_parallel);
+Status ConvertValueTupleToTensorLayoutVector(const ValueTuplePtr &in_layout_value, const NewShapes &inputs_shape,
+                                             std::vector<TensorLayoutBasePtr> *out_tensor_layouts);
 Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &prim_attrs, const Shapes &inputs_shape,
                                const Shapes &outputs_shape,
                                std::vector<std::shared_ptr<TensorLayout>> *in_tensor_layouts,
@@ -216,6 +223,8 @@ TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info);
 LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph);
 void MarkForwardCNode(const FuncGraphPtr &root);
 void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes);
+int64_t LongAdd(int64_t base, int64_t shift);
+bool IsCommunicateNode(const AnfNodePtr &node);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -17,20 +17,17 @@
 #include "kernel/ascend/pyboost/customize/group_norm.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/contiguous.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-constexpr size_t kNumberTwo = 2;
-}  // namespace
-void GroupNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                              const Int64ImmPtr &num_groups, const std::optional<BaseTensorPtr> &gamma_opt_tensor,
-                              const std::optional<BaseTensorPtr> &beta_opt_tensor, const FP32ImmPtr &eps) {
+void GroupNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                              const Int64ImmPtr &num_groups, const std::optional<TensorPtr> &gamma_opt_tensor,
+                              const std::optional<TensorPtr> &beta_opt_tensor, const FP32ImmPtr &eps) {
   MS_LOG(DEBUG) << "Call start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, input_tensor, num_groups, gamma_opt_tensor, beta_opt_tensor, eps);
@@ -41,7 +38,7 @@ void GroupNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTen
   const int64_t N = shape[0];
   const int64_t C = shape[1];
   const int64_t HxW =
-    (shape.size() == kNumberTwo) ? 1 : std::accumulate(shape.begin() + 2, shape.end(), 1, std::multiplies<int64_t>());
+    (shape.size() == kDim2) ? 1 : std::accumulate(shape.begin() + 2, shape.end(), 1, std::multiplies<int64_t>());
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, gamma_opt_tensor, beta_opt_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   // Async

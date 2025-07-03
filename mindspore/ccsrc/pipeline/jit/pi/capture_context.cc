@@ -35,6 +35,10 @@ void CaptureContext::RegisterSkipCode(PyCodeObject *co) { SetJitCompileResults(c
 bool CaptureContext::IsSkip(const PyFrameWrapper &f) const {
   PyObject *globals = f.Globals().ptr();
   PyCodeObject *co = f.GetCode().ptr();
+  return IsSkip(co, globals);
+}
+
+bool CaptureContext::IsSkip(PyCodeObject *co, PyObject *globals) const {
   if (!PyDict_Check(globals)) {
     MS_LOG(DEBUG) << "skip because of unknown module dict";
     return true;
@@ -216,6 +220,12 @@ void CaptureContext::SetContext(const py::args &va, const py::kwargs &kw) {
   if (jcr == nullptr || jcr == JitCompileResults::get_skip_jcr()) {
     pi_jit_should_compile(args.fn_, py::dict(), args.input_signature_);
     jcr = GetJitCompileResults(args.fn_);
+  }
+  if (jcr == nullptr) {
+    MS_LOG(ERROR) << "mark compile failed. Thread is " << std::this_thread::get_id() << " function is "
+                  << std::string(py::str(PyFunction_GET_CODE(args.fn_)));
+    this->Disable();
+    return;
   }
   if (config_ == nullptr) {
     config_ = jcr->conf();

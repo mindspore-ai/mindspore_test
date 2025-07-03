@@ -23,9 +23,7 @@
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "include/api/status.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/mindrecord/include/shard_operator.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -34,8 +32,8 @@ class SamplerRT;
 
 class DistributedSamplerObj : public SamplerObj {
  public:
-  DistributedSamplerObj(int64_t num_shards, int64_t shard_id, bool shuffle, int64_t num_samples, uint32_t seed,
-                        int64_t offset, bool even_dist);
+  DistributedSamplerObj(int64_t num_shards, int64_t shard_id, dataset::ShuffleMode shuffle_mode, int64_t num_samples,
+                        uint32_t seed, int64_t offset, bool even_dist);
 
   ~DistributedSamplerObj() override;
 
@@ -43,23 +41,19 @@ class DistributedSamplerObj : public SamplerObj {
 
   std::shared_ptr<SamplerObj> SamplerCopy() override;
 
-#ifndef ENABLE_ANDROID
   std::shared_ptr<mindrecord::ShardOperator> BuildForMindDataset() override;
-#endif
 
   /// \brief Get the arguments of node
   /// \param[out] out_json JSON string of all attributes
   /// \return Status of the function
   Status to_json(nlohmann::json *const out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function for read sampler from JSON object
   /// \param[in] json_obj JSON object to be read
   /// \param[in] num_samples number of sample in the sampler
   /// \param[out] sampler Sampler constructed from parameters in JSON object
   /// \return Status of the function
   static Status from_json(nlohmann::json json_obj, int64_t num_samples, std::shared_ptr<SamplerObj> *sampler);
-#endif
 
   Status ValidateParams() override;
 
@@ -70,7 +64,7 @@ class DistributedSamplerObj : public SamplerObj {
  private:
   int64_t num_shards_;
   int64_t shard_id_;
-  bool shuffle_;
+  dataset::ShuffleMode shuffle_mode_;
   int64_t num_samples_;
   uint32_t seed_;
   int64_t offset_;

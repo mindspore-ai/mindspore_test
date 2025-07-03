@@ -22,8 +22,6 @@ import matplotlib.pyplot as plt
 import mindspore.dataset as ds
 from mindspore import log as logger
 
-pytestmark = pytest.mark.forked
-
 DATA_DIR_10 = "../data/dataset/testCifar10Data"
 DATA_DIR_100 = "../data/dataset/testCifar100Data"
 NO_BIN_DIR = "../data/dataset/testMnistData"

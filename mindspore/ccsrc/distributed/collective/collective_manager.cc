@@ -15,19 +15,28 @@
  */
 
 #include "include/backend/distributed/collective/collective_manager.h"
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <arpa/inet.h>
+#endif
 #include <algorithm>
 #include <string>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <numeric>
 #include <vector>
 #include <functional>
 #include <csignal>
 #include <future>
 #include <memory>
+#include <cstdint>
 #include "utils/ms_context.h"
 #include "utils/device_manager_conf.h"
+#include "utils/distributed_meta.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
+#include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
 #include "availability/silent_check/silent_check.h"
 
@@ -74,6 +83,8 @@ CollectiveManager::~CollectiveManager() {
   host_comm_lib_instance_ = nullptr;
   device_comm_lib_instance_ = nullptr;
   comm_lib_instance_ = nullptr;
+  group_infos_.clear();
+  inited_groups_.clear();
 }
 
 std::shared_ptr<CollectiveManager> CollectiveManager::instance() {
@@ -212,7 +223,7 @@ bool CollectiveManager::Initialize() {
     // Step 4: Create global communication group asynchronizely
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
     bool async = IsAsyncInitGlobalComm();
-    CreateGroupConfig config = {};
+    GroupOptions config = {};
     config.async = async;
     auto group_name = device_comm_lib_instance_->global_group_name();
     PROF_START(CreateGlobalCommunicationGroup);
@@ -228,6 +239,7 @@ bool CollectiveManager::Initialize() {
   inited_ = true;
   finalized_ = false;
   need_reinit_ = false;
+  SetDistributedMeta();
   return true;
 }
 
@@ -257,12 +269,13 @@ bool CollectiveManager::InitializeDummyCommLib() {
   MS_LOG(WARNING) << "Initializing dummy collective communication with rank size: " << global_rank_size_
                   << ", rank id: " << global_rank_id_ << ", local rank id: " << local_rank_id_
                   << ". Real rank size: 1.";
-
-  static auto use_simu = UseSimulationApi();
-  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto kbk = ms_context->IsKByKExecutorMode();
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize dummy ascend
   // collective lib.
-  if (!use_simu && device_type == kAscendDevice) {
+  if (!kbk && device_type == kAscendDevice) {
     MS_LOG(WARNING) << "Initialize dummy Ascend collective communication lib.";
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize dummy device communication library on Ascend.");
 
@@ -276,6 +289,7 @@ bool CollectiveManager::InitializeDummyCommLib() {
   inited_ = true;
   finalized_ = false;
   need_reinit_ = false;
+  SetDistributedMeta();
   return true;
 }
 
@@ -326,14 +340,16 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 }
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
-                                                 const std::vector<uint32_t> &group_ranks,
-                                                 const CreateGroupConfig &config) {
+                                                 const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
                   << ", async: " << config.async << ", submit_now: " << config.submit_now;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
+  }
+  if (group_map_.count(group_name) == 0) {
+    (void)group_infos_.emplace_back(std::make_pair(group_name, group_ranks));
   }
   group_map_[group_name] = group_ranks;
 
@@ -355,16 +371,16 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
   // Step 1: Create communication group on host side.
   PROF_START(CreateCommunicationGroupOnHostSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create host communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank,
+                                                                             local_group_size, config),
+                           "Failed to create host communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnHostSide);
 
   // Step 2: Create communication group on device side.
   PROF_START(CreateCommunicationGroupOnDeviceSide);
-  RETURN_IF_FALSE_WITH_LOG(
-    device_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
-    "Failed to create device communication group" + group_name);
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->CreateCommunicationGroup(
+                             group_name, group_ranks, local_group_rank, local_group_size, config),
+                           "Failed to create device communication group" + group_name);
   PROF_END(CreateCommunicationGroupOnDeviceSide);
 
   // save pipeline parallel local rank for silent check
@@ -399,6 +415,18 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   return true;
 }
 
+bool CollectiveManager::DestroyDeviceSideCommunicationGroup(const std::string &group_name) {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  if (!need_host_collective_ || !common::GetEnv(kSimulationLevel).empty()) {
+    RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyDeviceCommunicationGroup(group_name),
+                             "Failed to destroy device communication group " + group_name);
+    return true;
+  }
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->DestroyCommunicationGroup(group_name),
+                           "Failed to destroy device communication group " + group_name);
+  return true;
+}
+
 bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name) {
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   if (!need_host_collective_ || !common::GetEnv(kSimulationLevel).empty()) {
@@ -414,27 +442,55 @@ bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name)
   return true;
 }
 
+void CollectiveManager::RemoveGroupInfoForARF(const std::string &group_name) {
+  (void)group_infos_.erase(std::remove_if(group_infos_.begin(), group_infos_.end(),
+                                          [group_name](const auto &p) { return p.first == group_name; }),
+                           group_infos_.end());
+}
+
+std::string CollectiveManager::GetCommName(const std::string &group_name) {
+  WaitCommInitDone(group_name);
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    MS_EXCEPTION_IF_NULL(dummy_comm_lib_instance_);
+    return dummy_comm_lib_instance_->CommName(group_name);
+  }
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  return device_comm_lib_instance_->CommName(group_name);
+}
+
 uint32_t CollectiveManager::GetRankId(const std::string &group_name) {
   BY_PASS_SCHED_RANK_ID;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 0 as rank id.";
+    return kIndex0;
+  }
   return comm_lib_instance_->GetRankId(group_name);
 }
 
 uint32_t CollectiveManager::GetGroupSize(const std::string &group_name) {
   BY_PASS_SCHED_RANK_SIZE;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 1 as group size.";
+    return kSizeOne;
+  }
   return comm_lib_instance_->GetGroupSize(group_name);
 }
 
 uint32_t CollectiveManager::GetLocalRankId(const std::string &group_name) {
   BY_PASS_SCHED_RANK_ID;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 0 as local rank id.";
+    return kIndex0;
+  }
   return comm_lib_instance_->GetLocalRankId(group_name);
 }
 
 uint32_t CollectiveManager::GetLocalGroupSize(const std::string &group_name) {
   BY_PASS_SCHED_RANK_SIZE;
-  MS_EXCEPTION_IF_NULL(comm_lib_instance_);
+  if (comm_lib_instance_ == nullptr) {
+    MS_LOG(DEBUG) << "Distributed module is not initialized, return 1 as group size.";
+    return kSizeOne;
+  }
   return comm_lib_instance_->GetLocalGroupSize(group_name);
 }
 
@@ -589,6 +645,146 @@ bool CollectiveManager::InitDeviceCommLib() {
   return true;
 }
 
+std::map<int, std::vector<int>> ParseRangeString(const std::string &input) {
+  std::map<int, std::vector<int>> result;
+  std::string content = input.substr(1, input.size() - 2);
+  std::vector<std::string> parts;
+  std::stringstream ss(content);
+  std::string part;
+  while (std::getline(ss, part, '|')) {
+    part.erase(0, part.find_first_not_of(" \t"));
+    part.erase(part.find_last_not_of(" \t") + 1);
+    parts.push_back(part);
+  }
+
+  for (const auto &p : parts) {
+    size_t colon_pos = p.find(':');
+    int key = std::stoi(p.substr(0, colon_pos));
+
+    std::string range = p.substr(colon_pos + 1);
+    size_t tilde_pos = range.find('~');
+    int start = std::stoi(range.substr(0, tilde_pos));
+    int end = std::stoi(range.substr(tilde_pos + 1));
+
+    std::vector<int> numbers;
+    for (int i = start; i <= end; ++i) {
+      numbers.push_back(i);
+    }
+    result[key] = numbers;
+  }
+  return result;
+}
+
+std::map<std::string, std::vector<int>> ParseModuleString(const std::string &input) {
+  std::map<std::string, std::vector<int>> result;
+  std::string content = input.substr(1, input.size() - 2);
+  size_t pipe_pos = content.find('|');
+  std::vector<std::string> parts;
+  if (pipe_pos == std::string::npos) {
+    parts.push_back(content);
+  } else {
+    std::stringstream ss(content);
+    std::string part;
+    while (std::getline(ss, part, '|')) {
+      part.erase(0, part.find_first_not_of(" \t"));
+      part.erase(part.find_last_not_of(" \t") + 1);
+      parts.push_back(part);
+    }
+  }
+
+  for (const auto &p : parts) {
+    size_t colon_pos = p.find(':');
+    std::string key = p.substr(0, colon_pos);
+    std::string values_str = p.substr(colon_pos + 1);
+
+    std::vector<int> numbers;
+    std::stringstream values_ss(values_str);
+    std::string num_str;
+    while (std::getline(values_ss, num_str, '-')) {
+      numbers.push_back(std::stoi(num_str));
+    }
+    result[key] = numbers;
+  }
+  return result;
+}
+
+std::vector<int> GetSubList(const std::vector<int> &listA, const std::vector<int> &indexListB) {
+  std::vector<int> result;
+  for (int index : indexListB) {
+    if (index >= 0 && index < static_cast<int>(listA.size())) {
+      result.push_back(listA[index]);
+    }
+  }
+  return result;
+}
+
+std::string VectorToString(const std::vector<int> &vec) {
+  std::ostringstream oss;
+  for (size_t i = 0; i < vec.size(); ++i) {
+    oss << vec[i];
+    if (i != vec.size() - 1) {
+      oss << ", ";
+    }
+  }
+  return oss.str();
+}
+
+void ParseEnvCpuAffinity(const uint32_t &global_rank_id, const uint32_t &local_rank_id) {
+  const auto &cpu_affinity_list = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityList);
+  const auto &cpu_affinity_module = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeCpuAffinityMoudule);
+  const auto &actor_thread_fix_bind = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeActorThreadFixBind);
+  std::vector<int> rank_core_reserved;
+  if (cpu_affinity_list.empty()) {
+    return;
+  }
+
+  MS_LOG(INFO) << "Got cpu_affinity_list: " << cpu_affinity_list;
+  std::string env_visible_device = common::GetEnv("ASCEND_RT_VISIBLE_DEVICES");
+  uint32_t physical_device_id;
+  if (env_visible_device.empty()) {
+    physical_device_id = local_rank_id;
+  } else {
+    std::vector<uint32_t> list_visible_device;
+    std::stringstream ss(env_visible_device);
+    std::string item;
+    while (std::getline(ss, item, ',')) {
+      list_visible_device.push_back(std::stoi(item));
+    }
+    std::sort(list_visible_device.begin(), list_visible_device.end());
+    physical_device_id = list_visible_device[local_rank_id];
+  }
+
+  auto rangeMap = ParseRangeString(cpu_affinity_list);
+  rank_core_reserved = rangeMap[physical_device_id];
+
+  std::map<std::string, std::vector<int>> moduleMap;
+  if (!cpu_affinity_module.empty()) {
+    moduleMap = ParseModuleString(cpu_affinity_module);
+  } else {
+    moduleMap = {{"runtime", {0, 1, 2, 3, 4}}, {"minddata", {5, 6, 7, 8, 9, 10, 11, 12}}};
+  }
+
+  auto it = moduleMap.find("runtime");
+  if (it != moduleMap.end()) {
+    std::vector<int> runtime_idx_list = it->second;
+    std::vector<int> runtime_core_list = GetSubList(rank_core_reserved, runtime_idx_list);
+    common::SetEnv("CONFIG_BIND_RUNTIME_LIST", VectorToString(runtime_core_list).c_str());
+    common::SetEnv("ACTOR_THREAD_FIX_BIND", actor_thread_fix_bind.c_str());
+  }
+
+  it = moduleMap.find("minddata");
+  if (it != moduleMap.end()) {
+    std::vector<int> data_idx_list = it->second;
+    std::vector<int> data_core_list = GetSubList(rank_core_reserved, data_idx_list);
+    common::SetEnv("CONFIG_BIND_MINDDATA_LIST", VectorToString(data_core_list).c_str());
+  }
+
+  MS_LOG(WARNING) << "Core reserved for global rank[" << global_rank_id << "], local rank[" << local_rank_id << "] is "
+                  << rank_core_reserved << ", set env 'CONFIG_BIND_RUNTIME_LIST' to "
+                  << common::GetEnv("CONFIG_BIND_RUNTIME_LIST") << ", set env 'CONFIG_BIND_MINDDATA_LIST' to "
+                  << common::GetEnv("CONFIG_BIND_MINDDATA_LIST");
+}
+
 bool CollectiveManager::AssignLocalRank() {
   char host_name[MAX_HOSTNAME_LEN] = {0};
 #ifndef _WIN32
@@ -657,6 +853,7 @@ bool CollectiveManager::AssignLocalRank() {
     MS_LOG(INFO) << "The device_id of ms_context is set to local rank id [" << local_rank_id_ << "].";
   }
 
+  ParseEnvCpuAffinity(global_rank_id_, local_rank_id_);
   return true;
 }
 
@@ -670,11 +867,13 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
     dummy_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_rank, local_rank_size),
     "Failed to create dummy communication group " + group_name);
 
-  static auto use_simu = UseSimulationApi();
-  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  std::string device_type = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  auto kbk = ms_context->IsKByKExecutorMode();
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize real HCCL
   // communicator through dummy Ascend collective communication lib.
-  if (!use_simu && device_type == kAscendDevice) {
+  if (!kbk && device_type == kAscendDevice) {
     MS_LOG(WARNING) << "Create Ascend communication group with group name: " << group_name
                     << ", group ranks: " << group_ranks
                     << ". Real HCCL communicator will be initialized with group size 1.";
@@ -683,6 +882,7 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
       "Failed to create dummy device communication group " + group_name);
 
     CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+    MS_EXCEPTION_IF_NULL(group);
     size_t root_info_size = 0;
     void *root_info = group->GenerateRootInfo(&root_info_size);
     MS_EXCEPTION_IF_NULL(device_ctx_);
@@ -720,6 +920,50 @@ bool CollectiveManager::ResumeHcclComm() {
   return true;
 }
 
+void CollectiveManager::SetGlobalCommInfo(CommunicationGroupPtr group, const std::string &group_name) {
+#if !defined(_WIN32) && !defined(_WIN64)
+  // Only hccl_world_group will call SetGlobalCommInfo.
+  if (group_name != "hccl_world_group") {
+    return;
+  }
+
+  MS_LOG(INFO) << "Begin set global communication info: " << group_name;
+  std::string master_addr = common::GetEnv("MS_SCHED_HOST");
+  if (master_addr.empty()) {
+    MS_LOG(INFO) << "MS_SCHED_HOST is not set, will not call HcclSetGlobalCommInfo.";
+    return;
+  }
+  struct sockaddr_in sa;
+  inet_pton(AF_INET, master_addr.c_str(), &(sa.sin_addr));
+  uint32_t master_ip = ntohl(sa.sin_addr.s_addr);
+  if (common::GetEnv("MS_SCHED_PORT").empty()) {
+    MS_LOG(INFO) << "MS_SCHED_PORT is not set, will not call HcclSetGlobalCommInfo.";
+    return;
+  }
+  uint32_t master_port = static_cast<uint32_t>(std::stoi(common::GetEnv("MS_SCHED_PORT")));
+  uint32_t node_rank;
+  std::string env_node_rank = common::GetEnv("MS_NODE_RANK");
+  if (env_node_rank.empty() || std::stoi(env_node_rank) < 0) {
+    std::string worker_addr = common::GetEnv("MS_WORKER_IP");
+    if (worker_addr.empty()) {
+      MS_LOG(INFO) << "MS_WORKER_IP is not set while MS_NODE_RANK is not set to a non-negative integer, will not call "
+                      "HcclSetGlobalCommInfo.";
+      return;
+    }
+    struct sockaddr_in sa_worker;
+    inet_pton(AF_INET, worker_addr.c_str(), &(sa_worker.sin_addr));
+    node_rank = ntohl(sa_worker.sin_addr.s_addr);
+  } else {
+    node_rank = static_cast<uint32_t>(std::stoi(env_node_rank));
+  }
+  if (!group->SetGlobalCommInfo(master_ip, master_port, global_rank_size_, node_rank, local_rank_size_)) {
+    MS_LOG(WARNING) << "Failed to SetGlobalCommInfo " << group_name;
+    return;
+  }
+  MS_LOG(INFO) << "End set global communication info: " << group_name;
+#endif
+}
+
 bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, const int32_t buffsize) {
   MS_LOG(INFO) << "Create device communicator for " << group_name;
 
@@ -729,14 +973,18 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
     SetCommBuffSize(group_name, buffsize);
   }
 
-  // Step 1: Generate device information of the root node.
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
   if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0 &&
       MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
     group = host_comm_lib_instance_->GetGroup(group_name);
+    MS_LOG(INFO) << "Begin to Create mccl group " << group_name;
   }
   MS_EXCEPTION_IF_NULL(group);
+
+  SetGlobalCommInfo(group, group_name);
+
+  // Step 1: Generate device information of the root node.
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   bool ret = false;
   void *root_info;
@@ -787,6 +1035,23 @@ bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, 
   }
   MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
   return ret;
+}
+
+void CollectiveManager::ClearUniqueID(const std::string &group_name) {
+  if (!RecoveryContext::GetInstance()->enable_repeat_register()) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
+  MS_LOG(INFO) << "Delete unique id after build success.";
+  host_comm_lib_instance_->ClearUniqueID(group_name);
+  MS_LOG(INFO) << "Delete unique id end.";
+}
+
+bool CollectiveManager::CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup) {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  MS_LOG(INFO) << "Switch communication network interface card, the global ranks: " << global_ranks
+               << ", the use backup: " << use_backup;
+  return device_comm_lib_instance_->CommSwitchNic(global_ranks, use_backup);
 }
 
 bool CollectiveManager::IsAsyncInitGlobalComm() {
@@ -948,6 +1213,31 @@ void CollectiveManager::SetDeviceIDEnvByRuntimeConf() {
     local_rank_id_ = device_id;
     common::SetEnv("DEVICE_ID", std::to_string(device_id).c_str());
   }
+}
+
+void CollectiveManager::SetDistributedMeta() {
+  MS_LOG(DEBUG) << "Set distributed meta data to core module: global rank id: " << global_rank_id_
+                << ", global rank size: " << global_rank_size_ << ", local rank id: " << local_rank_id_
+                << ", local rank size: " << local_rank_size_;
+  DistributedMeta::GetInstance()->set_initialized();
+  DistributedMeta::GetInstance()->set_global_rank_id(global_rank_id_);
+  DistributedMeta::GetInstance()->set_global_rank_size(global_rank_size_);
+  DistributedMeta::GetInstance()->set_local_rank_id(local_rank_id_);
+  DistributedMeta::GetInstance()->set_local_rank_size(local_rank_size_);
+}
+
+void CollectiveManager::CacheInitedGroups(const std::string &name) {
+  MS_LOG(WARNING) << "Cache inited group: " << name;
+  std::unique_lock<std::mutex> result_lock(cache_mutes_);
+  (void)inited_groups_.emplace_back(name);
+  MS_LOG(WARNING) << "Cache inited group: " << name << " end.";
+}
+
+void CollectiveManager::ClearCacheInitedGroups() { inited_groups_.clear(); }
+
+size_t CollectiveManager::InitedGroupSize() {
+  std::unique_lock<std::mutex> result_lock(cache_mutes_);
+  return inited_groups_.size();
 }
 }  // namespace collective
 }  // namespace distributed

@@ -52,7 +52,8 @@ def _scalar_pow_tensor(x, y):
     return F.tensor_pow(x, y)
 
 
-@pow_.register_default()
+# pylint: disable=protected-access
+@pow_._register_default()
 def default_pow(x, y):
     """Default function for pow."""
     return x ** y

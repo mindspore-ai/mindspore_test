@@ -13,11 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """Profiler Schedule"""
+__all__ = ["ProfilerAction", "Schedule"]
+
 from enum import Enum
 
 from mindspore import log as logger
-
-__all__ = ["ProfilerAction", "Schedule"]
 
 
 class ProfilerAction(Enum):
@@ -74,10 +74,25 @@ class Schedule:
 
     Keyword Args:
         wait (int): The number of steps to wait before starting the warm-up phase.
+            must be greater than or equal to 0. If the wait parameter is not set externally,
+            it is set to ``0`` when the schedule class is initialized.
         active (int): The number of steps to record data during the active phase.
-        warmup (int, optional): The number of steps to perform the warm-up phase. Default: ``0``.
-        repeat (int, optional): The number of times to repeat the cycle. Default: ``0``.
-        skip_first (int, optional): The number of steps to skip at the beginning. Default: ``0``.
+            must be greater than or equal to 1. If the active parameter is not set externally,
+            it is set to ``1`` when the schedule class is initialized.
+        warmup (int, optional): The number of steps to perform the warm-up phase.
+            must be greater than or equal to 0. Default value: ``0``.
+        repeat (int, optional): The number of times to repeat the cycle.
+            If repeat is set to 0, the Profiler will determine the repeat value based on the number of times the model
+            is trained, for example, if the total training steps are 100, wait+active+warmup=10, skip_first=10,
+            Then repeat=(100-10)/10=9, indicating that the execution is repeated 9 timeswhich will
+            generate one more performance data with incomplete collection. The data in the last step is abnormal data
+            that users do not need to pay attention to. Suggest configuring integers greater than 0. When using
+            cluster analysis tools or MindStudio Insight to view, it is recommended to configure it as 1;
+            If the setting is greater than 1, the collected performance data folder needs to be divided into repeat and
+            other parts, placed in different folders for re-parsing, and classified according to the timestamp order in
+            the folder name. Default value: ``0``.
+        skip_first (int, optional): The number of steps to skip at the beginning. Must be greater than or equal to 0.
+            Default value: ``0``
 
     Raises:
         ValueError: When the parameter step is less than 0.
@@ -87,10 +102,10 @@ class Schedule:
 
     Examples:
         >>> import numpy as np
-        >>> import mindspore as ms
+        >>> import mindspore
         >>> import mindspore.dataset as ds
-        >>> from mindspore import context, nn, Profiler
-        >>> from mindspore.profiler import schedule, tensor_board_trace_handler
+        >>> from mindspore import context, nn
+        >>> from mindspore.profiler import ProfilerLevel, AicoreMetrics, ExportType, ProfilerActivity
         >>>
         >>> class Net(nn.Cell):
         ...     def __init__(self):
@@ -108,18 +123,34 @@ class Schedule:
         ...     optimizer = nn.Momentum(test_net.trainable_params(), 1, 0.9)
         ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
         ...     data = ds.GeneratorDataset(generator_net(), ["data", "label"])
-        ...     model = ms.train.Model(test_net, loss, optimizer)
+        ...     model = mindspore.train.Model(test_net, loss, optimizer)
         ...     model.train(1, data)
         >>>
         >>> if __name__ == '__main__':
-        ...     context.set_context(mode=ms.PYNATIVE_MODE, device_target="Ascend")
+        ...     # If the device_target is GPU, set the device_target to "GPU"
+        ...     context.set_context(mode=mindspore.GRAPH_MODE)
+        ...     mindspore.set_device("Ascend")
         ...
+        ...     # Init Profiler
+        ...     experimental_config = mindspore.profiler._ExperimentalConfig(
+        ...                                 profiler_level=ProfilerLevel.Level0,
+        ...                                 aic_metrics=AicoreMetrics.AiCoreNone,
+        ...                                 l2_cache=False,
+        ...                                 mstx=False,
+        ...                                 data_simplification=False,
+        ...                                 export_type=[ExportType.Text])
+        ...     steps = 10
         ...     net = Net()
-        ...     STEP_NUM = 15
+        ...     # Note that the Profiler should be initialized before model.train
+        ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+        ...                                     schedule=mindspore.profiler.schedule(wait=1, warmup=1, active=2,
+        ...                                           repeat=1, skip_first=2),
+        ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
+        ...                                     profile_memory=False,
+        ...                                     experimental_config=experimental_config) as prof:
         ...
-        ...     with Profiler(schedule=schedule(wait=1, warmup=1, active=2, repeat=1, skip_first=2),
-        ...                   on_trace_ready=tensor_board_trace_handler) as prof:
-        ...         for i in range(STEP_NUM):
+        ...         # Train Model
+        ...         for step in range(steps):
         ...             train(net)
         ...             prof.step()
     """
@@ -160,25 +191,35 @@ class Schedule:
             return ProfilerAction.WARM_UP
         return ProfilerAction.RECORD if mod_step < num_steps - 1 else ProfilerAction.RECORD_AND_SAVE
 
+    def __repr__(self):
+        return (f"Schedule(wait={self.wait!r}, active={self.active!r}, "
+                f"warmup={self.warmup!r}, repeat={self.repeat!r}, "
+                f"skip_first={self.skip_first!r})")
+
     def _check_params(self):
         """
         Verify all parameters in the schedule,
         and set them to default values if the parameters are not compliant.
         """
-        if not isinstance(self.wait, int) or self.wait < 0:
-            logger.warning("Invalid parameter wait, reset it to 0.")
+        if not isinstance(self.wait, int) or isinstance(self.wait, bool) or self.wait < 0:
+            logger.warning(f"Parameter 'wait' should be of type int, but got "
+                           f"{type(self.wait).__name__}. reset to int 0.")
             self.wait = 0
-        if not isinstance(self.warmup, int) or self.warmup < 0:
-            logger.warning("Invalid parameter warmup, reset it to 0.")
+        if not isinstance(self.warmup, int) or isinstance(self.warmup, bool) or self.warmup < 0:
+            logger.warning(f"Parameter 'warmup' should be of type int, but got "
+                           f"{type(self.warmup).__name__}. reset to int 0.")
             self.warmup = 0
-        if not isinstance(self.active, int) or self.active <= 0:
-            logger.warning("Invalid parameter active, reset it to 1.")
+        if not isinstance(self.active, int) or isinstance(self.active, bool) or self.active <= 0:
+            logger.warning(f"Parameter 'active' should be of type int, but got "
+                           f"{type(self.active).__name__}. reset to int 1.")
             self.active = 1
-        if not isinstance(self.repeat, int) or self.repeat < 0:
-            logger.warning("Invalid parameter repeat, reset it to 0.")
+        if not isinstance(self.repeat, int) or isinstance(self.repeat, bool) or self.repeat < 0:
+            logger.warning(f"Parameter 'repeat' should be of type int, but got "
+                           f"{type(self.repeat).__name__}. reset to int 0.")
             self.repeat = 0
-        if not isinstance(self.skip_first, int) or self.skip_first < 0:
-            logger.warning("Invalid parameter skip_first, reset it to 0.")
+        if not isinstance(self.skip_first, int) or isinstance(self.skip_first, bool) or self.skip_first < 0:
+            logger.warning(f"Parameter 'skip_first' should be of type int, but got "
+                           f"{type(self.skip_first).__name__}. reset to int 0.")
             self.skip_first = 0
         if self.warmup == 0:
             logger.warning("Profiler won't be using warmup, this can skew profiler results")

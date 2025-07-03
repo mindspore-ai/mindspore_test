@@ -16,16 +16,17 @@
 #include "kernel/ascend/opapi/aclnn/baddbmm_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace baddbmm {
 
 void BaddbmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  beta_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex3]);
-  alpha_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
+  beta_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex3]);
+  alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
   cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], beta_, alpha_, outputs[kIndex0],
                         cube_math_type_);
@@ -40,5 +41,6 @@ bool BaddbmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Baddbmm, BaddbmmAclnnKernelMod);
+}  // namespace baddbmm
 }  // namespace kernel
 }  // namespace mindspore

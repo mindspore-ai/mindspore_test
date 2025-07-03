@@ -7,7 +7,7 @@ mindspore.mint.dot
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
-    
+
     参数：
         - **input** (Tensor) - 点积的第一个输入, 须为1D。
         - **other** (Tensor) - 点积的第二个输入，须为1D。

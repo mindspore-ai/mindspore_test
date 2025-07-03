@@ -506,7 +506,7 @@ class CellInList(nn.Cell):
         return self.cell_list[index](x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_cell_in_list():
     """
@@ -514,6 +514,7 @@ def test_cell_in_list():
     Description: Test raise join in control flow(switch_layer).
     Expectation: No exception.
     """
+    context.set_context(jit_config={"jit_level": "O0"})
     net = CellInList()
     x = Tensor(np.ones((1, 1, 224, 224)), mstype.float32)
     idx = Tensor(0, mstype.int32)
@@ -616,7 +617,7 @@ def test_raise_in_sub_func_graph_with_isolate_node():
     Description: Test raise isolate node in sub graph.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def bool_index(data_input, index_input, x):
         tuple_index = (0, index_input)
         judge_tuple_index_dim(data_input, tuple_index, x)

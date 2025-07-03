@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_triangular_solve_cpu {
 using Eigen::ColMajor;
 using Eigen::Dynamic;
 using Eigen::Lower;
@@ -161,5 +162,6 @@ std::vector<KernelAttr> MatrixTriangularSolveCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixTriangularSolve, MatrixTriangularSolveCpuKernelMod);
+}  // namespace matrix_triangular_solve_cpu
 }  // namespace kernel
 }  // namespace mindspore

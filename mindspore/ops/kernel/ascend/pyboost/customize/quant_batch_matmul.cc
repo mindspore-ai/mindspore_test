@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/quant_batch_matmul.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -26,11 +26,10 @@ namespace kernel {
 namespace pyboost {
 namespace {
 void QuantMatmulV4AscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
-                             const BaseTensorPtr &x1_tensor, const BaseTensorPtr &x2_tensor,
-                             const BaseTensorPtr &scale_tensor, const std::optional<BaseTensorPtr> &offset_tensor,
-                             const std::optional<BaseTensorPtr> &bias_tensor,
-                             const std::optional<BaseTensorPtr> &pertokenScaleOptional_tensor, const bool &transpose_x1,
-                             const bool &transpose_x2, const std::vector<tensor::BaseTensorPtr> &outputs) {
+                             const TensorPtr &x1_tensor, const TensorPtr &x2_tensor, const TensorPtr &scale_tensor,
+                             const std::optional<TensorPtr> &offset_tensor, const std::optional<TensorPtr> &bias_tensor,
+                             const std::optional<TensorPtr> &pertokenScaleOptional_tensor, const bool &transpose_x1,
+                             const bool &transpose_x2, const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "QuantMatmulV4 call start";
   LAUNCH_ACLNN(aclnnQuantMatmulV4, device_context, op->stream_id(), x1_tensor, x2_tensor, scale_tensor, offset_tensor,
                pertokenScaleOptional_tensor, bias_tensor, transpose_x1, transpose_x2, outputs[0]);
@@ -38,13 +37,13 @@ void QuantMatmulV4AscendCall(const std::shared_ptr<OpRunner> &op, const device::
 }
 }  // namespace
 
-tensor::BaseTensorPtr QuantMatmulV4AscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
-                                                   const BaseTensorPtr &x2_tensor, const BaseTensorPtr &scale_tensor,
-                                                   const std::optional<BaseTensorPtr> &offset_tensor,
-                                                   const std::optional<BaseTensorPtr> &bias_tensor,
-                                                   const std::optional<BaseTensorPtr> &pertokenScaleOptional_tensor,
-                                                   const BoolImmPtr &transpose_x1, const BoolImmPtr &transpose_x2,
-                                                   const Int64ImmPtr &dtype) {
+tensor::TensorPtr QuantMatmulV4AscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x1_tensor,
+                                               const TensorPtr &x2_tensor, const TensorPtr &scale_tensor,
+                                               const std::optional<TensorPtr> &offset_tensor,
+                                               const std::optional<TensorPtr> &bias_tensor,
+                                               const std::optional<TensorPtr> &pertokenScaleOptional_tensor,
+                                               const BoolImmPtr &transpose_x1, const BoolImmPtr &transpose_x2,
+                                               const Int64ImmPtr &dtype) {
   OpRunner::InferOpOutput(op, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
                           pertokenScaleOptional_tensor, transpose_x1, transpose_x2, dtype);
 

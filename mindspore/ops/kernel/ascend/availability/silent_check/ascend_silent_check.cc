@@ -22,37 +22,42 @@
 #include <cstdint>
 #include <cmath>
 #include <ios>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <vector>
 #include <string>
 #include "availability/silent_check/silent_check.h"
 #include "include/common/utils/utils.h"
-#include "ir/base_tensor.h"
+#include "ir/tensor.h"
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/auto_generate/max.h"
-#include "kernel/common/pyboost/auto_generate/inplace_copy.h"
-#include "kernel/common/pyboost/auto_generate/norm.h"
-#include "kernel/common/pyboost/auto_generate/silent_check_v2.h"
-#include "kernel/common/pyboost/auto_generate/silent_check_v3.h"
-#include "kernel/common/pyboost/auto_generate/square.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/kernel.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/max.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/norm.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/silent_check_v2.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/silent_check_v3.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/square.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "common/kernel.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/op_name.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace silentcheck {
@@ -65,10 +70,10 @@ using mindspore::kernel::pyboost::PyBoostUtils;
 using mindspore::kernel::pyboost::SilentCheckV2;
 using mindspore::kernel::pyboost::Square;
 
-using transform::_aclCreateTensor;
-using transform::aclOpExecutor;
-using transform::aclTensor;
-using transform::GetOpApiFunc;
+using device::ascend::_aclCreateTensor;
+using device::ascend::aclOpExecutor;
+using device::ascend::aclTensor;
+using device::ascend::GetOpApiFunc;
 
 namespace {
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
@@ -164,7 +169,7 @@ int GetNpuAsdDetectValue() {
 
 bool HasApiSilentCheckV3() {
   static bool has_silent_check_v3 = []() {
-    auto silent_check_v3 = transform::GetOpApiFunc(kNameSilentCheckV3);
+    auto silent_check_v3 = device::ascend::GetOpApiFunc(kNameSilentCheckV3);
     bool has_v3_api = (silent_check_v3 != nullptr);
     if (!has_v3_api) {
       MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Do not has " << kNameSilentCheckV3 << " api, use " << kNameSilentCheckV2
@@ -191,23 +196,27 @@ bool IsAsdEnable() {
   }();
   return is_npu_asd_enable;
 }
+
+bool IsCheckTypeSupported(const TensorPtr &input_tensor) {
+  auto data_type = input_tensor->data_type();
+  return (data_type == kNumberTypeBFloat16) || (data_type == kNumberTypeFloat32) || (data_type == kNumberTypeFloat16);
+}
 }  // namespace
 
 bool DynamicSilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
 
 CheckObject::CheckObject() {
+  norm_op_ = CREATE_PYBOOST_OP(Norm, kAscendDevice);
   if (HasApiSilentCheckV3()) {
     square_op_ = CREATE_PYBOOST_OP(Square, kAscendDevice);
-    max_op_ = CREATE_PYBOOST_OP(Max, kAscendDevice);
     inplace_copy_op_ = CREATE_PYBOOST_OP(InplaceCopy, kAscendDevice);
     silent_check_v3_op_ = CREATE_PYBOOST_OP(SilentCheckV3, kAscendDevice);
   } else {
-    norm_op_ = CREATE_PYBOOST_OP(Norm, kAscendDevice);
     silent_check_op_ = CREATE_PYBOOST_OP(SilentCheckV2, kAscendDevice);
   }
 }
 
-void CheckObject::DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::DoSilentCheck(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   if (HasApiSilentCheckV3()) {
     DoSilentCheckV3(input_grad, state);
   } else {
@@ -215,14 +224,14 @@ void CheckObject::DoSilentCheck(const BaseTensorPtr &input_grad, const DynamicCh
   }
 }
 
-void CheckObject::DoSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::DoSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   LaunchNorm(input_grad);
   LaunchSilentCheckV2(input_grad, state);
 }
 
-void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
-  LaunchSquare(input_grad);
-  LaunchMax();
+void CheckObject::DoSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+  LaunchNorm(input_grad, false);
+  LaunchSquare();
   if (state->is_first_call) {
     state->is_first_call = false;
     LaunchInplaceCopy(state);
@@ -230,11 +239,11 @@ void CheckObject::DoSilentCheckV3(const BaseTensorPtr &input_grad, const Dynamic
   LaunchSilentCheckV3(input_grad, state);
 }
 
-void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad) {
+void CheckObject::LaunchNorm(const TensorPtr &input_grad, bool is_l2_norm) {
   auto &op = norm_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  auto p = std::make_shared<FP32Imm>(2.0);
+  auto p = std::make_shared<FP32Imm>(is_l2_norm ? 2.0 : std::numeric_limits<float>::infinity());
   auto dim = std::make_shared<ValueTuple>(std::vector<ValuePtr>{});
   auto keepdim = std::make_shared<BoolImm>(false);
   auto dtype = std::make_shared<Int64Imm>(input_grad->Dtype()->type_id());
@@ -261,7 +270,7 @@ void CheckObject::LaunchNorm(const BaseTensorPtr &input_grad) {
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::LaunchSilentCheckV2(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   auto &op = silent_check_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
@@ -301,14 +310,14 @@ void CheckObject::LaunchSilentCheckV2(const BaseTensorPtr &input_grad, const Dyn
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const DynamicCheckStatePtr &state) {
+void CheckObject::LaunchSilentCheckV3(const TensorPtr &input_grad, const DynamicCheckStatePtr &state) {
   auto &op = silent_check_v3_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  max_op_->outputs()[0]->set_shape(ShapeVector{1});
+  square_op_->outputs()[0]->set_shape(ShapeVector{1});
 
-  auto val = max_op_->outputs()[0];
-  auto max = max_op_->outputs()[0];
+  auto val = square_op_->outputs()[0];
+  auto max = square_op_->outputs()[0];
   auto avg = state->avg;
   auto step = state->step;
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kSigmaThreshDefaultVal, kThreshMinimalVal);
@@ -326,14 +335,13 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   auto npu_asd_detect = GetValue<int64_t>(npu_asd_detect_ptr);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), val, max, avg, input_grad, step);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(),
-                                 std::vector<BaseTensorPtr>{op->output(kIndex3)});
+  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), std::vector<TensorPtr>{op->output(kIndex3)});
 
   auto device_context = op->device_context();
   // Malloc for input tensors
   PyBoostUtils::MallocOpInputs(op->device_context(), val, max, avg, input_grad, step);
   // Malloc for output tensors
-  PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<BaseTensorPtr>{op->output(kIndex3)});
+  PyBoostUtils::MallocOpOutputs(op->device_context(), std::vector<TensorPtr>{op->output(kIndex3)});
   LAUNCH_ACLNN(aclnnSilentCheckV2, device_context, op->stream_id(), val, max, avg, input_grad, step,
                input_grad->shape_c(), input_grad->stride(), ShapeVector({input_grad->storage_offset()}), c_thresh_l1,
                c_thresh_l2, beta, npu_asd_detect, op->output(kIndex3));
@@ -341,9 +349,11 @@ void CheckObject::LaunchSilentCheckV3(const BaseTensorPtr &input_grad, const Dyn
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchSquare(const BaseTensorPtr &x_tensor) {
+void CheckObject::LaunchSquare() {
   auto &op = square_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
+
+  auto &x_tensor = norm_op_->outputs()[kIndex0];
 
   OpRunner::InferOpOutput(op, x_tensor);
   // No need to convert input
@@ -362,34 +372,11 @@ void CheckObject::LaunchSquare(const BaseTensorPtr &x_tensor) {
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
 }
 
-void CheckObject::LaunchMax() {
-  auto &op = max_op_;
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
-
-  auto &input_tensor = square_op_->outputs()[kIndex0];
-
-  OpRunner::InferOpOutput(op, input_tensor);
-
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-
-  auto device_context = op->device_context();
-  const auto &outputs = op->outputs();
-  // Malloc for input tensors
-  PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-  // Malloc for output tensors
-  PyBoostUtils::MallocOpOutputs(device_context, outputs);
-
-  LAUNCH_ACLNN(aclnnMax, device_context, op->stream_id(), input_tensor, outputs[0]);
-
-  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " end";
-}
-
 void CheckObject::LaunchInplaceCopy(const DynamicCheckStatePtr &state) {
   auto &op = inplace_copy_op_;
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
-  auto &src_tensor = max_op_->outputs()[kIndex0];
+  auto &src_tensor = square_op_->outputs()[kIndex0];
 
   OpRunner::InferOpOutput(op, state->avg, src_tensor);
 
@@ -409,7 +396,7 @@ void CheckObject::LaunchInplaceCopy(const DynamicCheckStatePtr &state) {
 }
 
 void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::string &comm_group,
-                                         const BaseTensorPtr &input_grad) {
+                                         const TensorPtr &input_grad) {
   static bool is_npu_asd_enable = IsAsdEnable();
   if (!is_npu_asd_enable) {
     return;
@@ -417,8 +404,11 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
   if (!is_back_prop_) {
     return;
   }
+  if (!IsCheckTypeSupported(input_grad)) {
+    return;
+  }
   // receive op just provide a buffer to store data, so no need to check the data in buffer
-  if (op_name == transform::kNameReceive) {
+  if (op_name == ops::kNameDistCommBarrier || op_name == ops::kNameDistCommIrecv) {
     return;
   }
   auto state_key = op_name + comm_group;
@@ -430,13 +420,13 @@ void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::
   check_obj->DoSilentCheck(input_grad, states_[state_key]);
 }
 
-DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const BaseTensorPtr &input_grad) {
+DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const TensorPtr &input_grad) {
   auto state = std::make_shared<DynamicCheckState>();
-  state->step = std::make_shared<BaseTensor>(kNumberTypeInt64, ShapeVector{1});
+  state->step = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1});
   if (HasApiSilentCheckV3()) {
-    state->avg = std::make_shared<BaseTensor>(input_grad->data_type(), ShapeVector{1});
+    state->avg = std::make_shared<tensor::Tensor>(input_grad->data_type(), ShapeVector{1});
   } else {
-    state->sfda = std::make_shared<BaseTensor>(kNumberTypeFloat32, ShapeVector{3});
+    state->sfda = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, ShapeVector{3});
   }
   return state;
 }
@@ -454,12 +444,12 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
   MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
 
   // create constants used by aclnnNorm
-  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
+  float p_value = HasApiSilentCheckV3() ? std::numeric_limits<float>::infinity() : 2.0;
+  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(p_value));
   dim_ = std::make_shared<KernelTensor>(std::make_shared<abstract::TensorShape>(std::vector<int64_t>{}), kInt64,
                                         MakeValue(std::vector<int64_t>{}));
 
   keep_dim_ = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
-  zero_ = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{1}, MakeValue<int8_t>(0), true);
 
   // create constants used by aclnnSilentCheck
   auto upper_thresh = parse_thresh(kVarNpuAsdUpperThresh, kUpperThreshDefaultVal, kThreshMinimalVal);
@@ -482,6 +472,8 @@ SilentChecker &SilentChecker::GetInstance() {
   return *inst_ptr;
 }
 
+bool SilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
+
 SilentChecker::~SilentChecker() {}
 
 void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout) {
@@ -493,8 +485,10 @@ void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const 
   if (HasApiSilentCheckV3()) {
     state->avg = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1}, nullptr, true);
     state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1});
-    state->square = GenerateKernelTensor(dout->dtype_id(), dout->GetShapeVector());
+    state->square = GenerateKernelTensor(dout->dtype_id(), ShapeVector{1});
     out_square_.max_size = std::max(out_square_.max_size, state->square->size());
+    // NOTE: Consider there are multiple graph instances, it is necessary to reset `out_square_.dev_addr` to nullptr.
+    out_square_.dev_addr = nullptr;
   } else {
     state->sfda = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{3}, nullptr, true);
     state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{});
@@ -505,21 +499,25 @@ void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod, const 
 
   // create kernel modules
   if (HasApiSilentCheckV3()) {
+    // InfinityNorm
+    state->val->SetShapeVector(ShapeVector{});
+    InitOpExecState(&state->kernel_norm, ops::kNameNorm,
+                    {const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()},
+                    {state->val.get()}, &out_val_);
     // square
-    InitOpExecState(&state->kernel_square, ops::kNameSquare, {const_cast<KernelTensor *>(dout)}, {state->square.get()},
-                    &out_square_);
-    // max
-    InitOpExecState(&state->kernel_max, ops::kNameMax, {state->square.get()}, {state->val.get()}, &out_val_);
+    state->val->SetShapeVector(ShapeVector{1});
+    InitOpExecState(&state->kernel_square, ops::kNameSquare, {const_cast<KernelTensor *>(state->val.get())},
+                    {state->square.get()}, &out_square_);
     // inplace copy
-    InitOpExecState(&state->kernel_copy, ops::kNameInplaceCopy, {state->avg.get(), state->val.get()}, {}, &out_val_);
+    InitOpExecState(&state->kernel_copy, ops::kNameInplaceCopy, {state->avg.get(), state->square.get()}, {}, nullptr);
     // silent check v3
     InitOpExecState(&state->kernel_silent_check, ops::kNameSilentCheckV3,
-                    {state->val.get(), state->val.get(), state->avg.get(), const_cast<KernelTensor *>(dout),
+                    {state->square.get(), state->square.get(), state->avg.get(), const_cast<KernelTensor *>(dout),
                      state->step.get(), c_thresh_l1_.get(), c_thresh_l2_.get(), beta1_.get(), npu_asd_detect_.get()},
-                    {state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(), state->result.get()},
+                    {state->square.get(), const_cast<KernelTensor *>(dout), state->step.get(), state->result.get()},
                     &out_result_);
   } else {
-    // norm
+    // L2Norm
     InitOpExecState(&state->kernel_norm, ops::kNameNorm,
                     {const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()},
                     {state->val.get()}, &out_val_);
@@ -536,7 +534,7 @@ void SilentChecker::InitOpExecState(OpExecState *op_exec_state, const std::strin
                                     const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs, DeviceAddrInfo *output) {
   MS_EXCEPTION_IF_NULL(op_exec_state);
-  auto kernel_mod = device_context_->GetKernelExecutor(false)->CreateKernelMod(op_name);
+  auto kernel_mod = device_context_->GetKernelExecutor()->CreateKernelMod(op_name);
   MS_EXCEPTION_IF_NULL(kernel_mod);
   op_exec_state->kernel = kernel_mod;
   op_exec_state->op_name = op_name;
@@ -551,6 +549,8 @@ void SilentChecker::InitOpExecState(OpExecState *op_exec_state, const std::strin
   auto work_space = kernel_mod->GetWorkspaceSizeList();
   if (!work_space.empty() && work_space[0] != 0) {
     workspace_.max_size = std::max(workspace_.max_size, work_space[0]);
+    // NOTE: Consider there are multiple graph instances, it is necessary to reset `workspace_.dev_addr` to nullptr.
+    workspace_.dev_addr = nullptr;
     op_exec_state->workspace = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{SizeToLong(work_space[0])});
   }
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Resize for op " << op_name << " finish.";
@@ -574,14 +574,16 @@ void SilentChecker::ExecuteCheck(const kernel::KernelMod *kernel_mod, const kern
   auto &state = iter->second;
 
   if (HasApiSilentCheckV3()) {
-    LaunchSquareAsync(dout, state, stream_ptr);
-    LaunchMaxAsync(dout, state, stream_ptr);
+    // InfinityNorm
+    LaunchNormAsync(dout, state, stream_ptr);
+    LaunchSquareAsync(state, stream_ptr);
     if (state->is_first_call) {
       state->is_first_call = false;
-      LaunchInplaceCopyAsync(dout, state, stream_ptr);
+      LaunchInplaceCopyAsync(state, stream_ptr);
     }
     LaunchSilentCheckV3Async(dout, state, stream_ptr);
   } else {
+    // L2Norm
     LaunchNormAsync(dout, state, stream_ptr);
     LaunchSilentCheckV2Async(dout, state, stream_ptr);
   }
@@ -592,21 +594,26 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
                                    void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(op_exec_state->kernel);
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Launch op " << op_exec_state->op_name << " start.";
-  vector<KernelTensor *> workspace;
+  std::vector<KernelTensor *> workspace;
 
-  if (op_exec_state->output->dev_addr == nullptr) {
-    op_exec_state->output->dev_addr = runtime::DeviceAddressUtils::CreateWorkspaceAddress(
-      device_context_, kDefaultStreamIndex, op_exec_state->output->max_size);
-  }
   if (output_tensor != nullptr) {
+    MS_EXCEPTION_IF_NULL(op_exec_state->output);
+    if (op_exec_state->output->dev_addr == nullptr) {
+      auto kernel_tensor = runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(
+        device_context_, kDefaultStreamIndex, op_exec_state->output->max_size);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      op_exec_state->output->dev_addr = kernel_tensor->device_address();
+    }
     output_tensor->set_device_ptr(op_exec_state->output->dev_addr->GetMutablePtr());
   }
 
   auto work_space = op_exec_state->kernel->GetWorkspaceSizeList();
   if (!work_space.empty() && work_space[0] != 0) {
     if (workspace_.dev_addr == nullptr) {
-      workspace_.dev_addr =
-        runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, workspace_.max_size);
+      auto kernel_tensor = runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(
+        device_context_, kDefaultStreamIndex, workspace_.max_size);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      workspace_.dev_addr = kernel_tensor->device_address();
     }
     op_exec_state->workspace->set_device_ptr(workspace_.dev_addr->GetMutablePtr());
     workspace.emplace_back(op_exec_state->workspace.get());
@@ -619,37 +626,33 @@ void SilentChecker::LaunchOperator(const OpExecState *op_exec_state, const std::
 }
 
 void SilentChecker::LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
-  vector<KernelTensor *> outputs{state->val.get()};
+  std::vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
+  state->val->SetShapeVector(ShapeVector{});
+  std::vector<KernelTensor *> outputs{state->val.get()};
   LaunchOperator(&state->kernel_norm, inputs, outputs, state->val.get(), stream_ptr);
 }
 
-void SilentChecker::LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout)};
-  vector<KernelTensor *> outputs{state->square.get()};
+void SilentChecker::LaunchSquareAsync(const CheckStatePtr &state, void *stream_ptr) {
+  state->val->SetShapeVector(ShapeVector{1});
+  std::vector<KernelTensor *> inputs{state->val.get()};
+  std::vector<KernelTensor *> outputs{state->square.get()};
   LaunchOperator(&state->kernel_square, inputs, outputs, state->square.get(), stream_ptr);
 }
 
-void SilentChecker::LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->square.get()};
-  vector<KernelTensor *> outputs{state->val.get()};
-  LaunchOperator(&state->kernel_max, inputs, outputs, state->val.get(), stream_ptr);
-}
-
-void SilentChecker::LaunchInplaceCopyAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->avg.get(), state->val.get()};
-  vector<KernelTensor *> outputs{};
+void SilentChecker::LaunchInplaceCopyAsync(const CheckStatePtr &state, void *stream_ptr) {
+  std::vector<KernelTensor *> inputs{state->avg.get(), state->square.get()};
+  std::vector<KernelTensor *> outputs{};
   LaunchOperator(&state->kernel_copy, inputs, outputs, nullptr, stream_ptr);
 }
 
 void SilentChecker::LaunchSilentCheckV2Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
-  vector<KernelTensor *> inputs{state->val.get(),   const_cast<KernelTensor *>(dout),
-                                state->sfda.get(),  state->step.get(),
-                                c_min_steps_.get(), c_thresh_l1_.get(),
-                                c_coeff_l1_.get(),  c_thresh_l2_.get(),
-                                c_coeff_l2_.get(),  npu_asd_detect_.get()};
-  vector<KernelTensor *> outputs{const_cast<KernelTensor *>(dout), state->sfda.get(), state->step.get(),
-                                 state->result.get()};
+  std::vector<KernelTensor *> inputs{state->val.get(),   const_cast<KernelTensor *>(dout),
+                                     state->sfda.get(),  state->step.get(),
+                                     c_min_steps_.get(), c_thresh_l1_.get(),
+                                     c_coeff_l1_.get(),  c_thresh_l2_.get(),
+                                     c_coeff_l2_.get(),  npu_asd_detect_.get()};
+  std::vector<KernelTensor *> outputs{const_cast<KernelTensor *>(dout), state->sfda.get(), state->step.get(),
+                                      state->result.get()};
   LaunchOperator(&state->kernel_silent_check, inputs, outputs, state->result.get(), stream_ptr);
 }
 
@@ -658,12 +661,12 @@ void SilentChecker::LaunchSilentCheckV3Async(const KernelTensor *dout, const Che
   // args_index: | 0   | 1   | 2   | 3          | 4    | 5           | 6           | 7     | 8              |
   // args_name : | val | max | avg | input_grad | step | c_thresh_l1 | c_thresh_l2 | beta1 | npu_asd_detect |
   // --------------------------------------------------------------------------------------------------------
-  vector<KernelTensor *> inputs{
-    state->val.get(),     state->val.get(),   state->avg.get(),   const_cast<KernelTensor *>(dout),
-    state->step.get(),    c_thresh_l1_.get(), c_thresh_l2_.get(), beta1_.get(),
+  std::vector<KernelTensor *> inputs{
+    state->square.get(),  state->square.get(), state->avg.get(),   const_cast<KernelTensor *>(dout),
+    state->step.get(),    c_thresh_l1_.get(),  c_thresh_l2_.get(), beta1_.get(),
     npu_asd_detect_.get()};
-  vector<KernelTensor *> outputs{state->val.get(), const_cast<KernelTensor *>(dout), state->step.get(),
-                                 state->result.get()};
+  std::vector<KernelTensor *> outputs{state->square.get(), const_cast<KernelTensor *>(dout), state->step.get(),
+                                      state->result.get()};
   LaunchOperator(&state->kernel_silent_check, inputs, outputs, state->result.get(), stream_ptr);
 }
 
@@ -673,14 +676,18 @@ KernelTensorPtr SilentChecker::GenerateKernelTensor(TypeId dtype_id, const Shape
   auto mem_size = UnitSizeInBytes(dtype_id) * num_elems;
   void *addr =
     alloc_dev ? device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex) : nullptr;
-  auto tensor = std::make_shared<kernel::KernelTensor>(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
-                                                       device_context_->device_context_key().device_name_,
-                                                       device_context_->device_context_key().device_id_);
+  auto tensor = AnfAlgo::CreateKernelTensor(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
+                                            device_context_->device_context_key().device_name_,
+                                            device_context_->device_context_key().device_id_);
   tensor->set_stream_id(kDefaultStreamIndex);
   tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
   tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
   if (value) {
     tensor->SetValue(value);
+    if (addr != nullptr && CALL_ASCEND_API(aclrtMemcpy, addr, mem_size, tensor->GetValuePtr(), mem_size,
+                                           ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Copy data from host to device failed.";
+    }
   }
   return tensor;
 }

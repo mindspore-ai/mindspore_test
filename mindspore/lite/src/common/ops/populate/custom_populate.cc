@@ -44,6 +44,7 @@ bool GetDataFromPrim(void *dst, size_t len, const schema::Custom *custom_prim, s
 }
 
 OpParameter *PopulateSplitReduceConcatFusionParam(const schema::Custom *value) {
+  MS_CHECK_TRUE_RET(value != nullptr && value->attr() != nullptr, nullptr);
   if (value->attr()->size() < 1) {
     return nullptr;
   }

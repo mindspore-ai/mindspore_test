@@ -25,6 +25,7 @@
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
+#include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/expander/mindir_adapter/mindir_emitter.h"
 
 namespace mindspore::graphkernel {
@@ -75,6 +76,14 @@ bool IsOutputInfoIdentical(const expander::NodePtrList &outputs, const CNodePtr 
     is_format_identical = true;
   }
   if (res_shape == ori_shape && res_dtype == ori_dtype && is_format_identical) {
+    auto out_node = outputs[res_idx]->as<AnfNodePtr>();
+    MS_EXCEPTION_IF_NULL(out_node);
+    auto ori_abs = node->abstract();
+    if (ori_abs->isa<abstract::AbstractTuple>()) {
+      ori_abs = ori_abs->cast<abstract::AbstractTuplePtr>()->elements()[ori_idx];
+    }
+    MS_EXCEPTION_IF_NULL(ori_abs);
+    out_node->set_abstract(ori_abs);
     return true;
   }
   return false;

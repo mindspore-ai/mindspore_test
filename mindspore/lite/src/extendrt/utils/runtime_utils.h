@@ -22,8 +22,8 @@
 #include <vector>
 #include <string>
 
-#include "include/backend/device_address.h"
-#include "kernel/kernel.h"
+#include "common/device_address.h"
+#include "common/kernel.h"
 #include "ir/tensor.h"
 
 namespace mindspore {

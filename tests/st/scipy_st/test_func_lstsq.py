@@ -18,7 +18,7 @@ import scipy
 from mindspore.scipy.linalg import lstsq
 
 import mindspore as ms
-from mindspore import Tensor, jit, JitConfig, context
+from mindspore import Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 
@@ -71,9 +71,6 @@ def lstsq_backward_func(A, B):
 
 @pytest.mark.level0
 @pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ops_lstsq_forward(mode):
@@ -89,10 +86,10 @@ def test_ops_lstsq_forward(mode):
         context.set_context(mode=ms.PYNATIVE_MODE)
         outs = lstsq_forward_func(Tensor(A), Tensor(B))
     elif mode == 'KBK':
-        outs = (jit(lstsq_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        outs = (jit(lstsq_forward_func, jit_level="O0"))(
             ms.Tensor(A), ms.Tensor(B))
     else:
-        outs = (jit(lstsq_forward_func, jit_config=JitConfig(jit_level="O2")))(
+        outs = (jit(lstsq_forward_func, backend="GE"))(
             ms.Tensor(A), ms.Tensor(B))
     for i in range(4):
         np.testing.assert_allclose(
@@ -101,9 +98,6 @@ def test_ops_lstsq_forward(mode):
 
 @pytest.mark.level0
 @pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ops_lstsq_backward(mode):
@@ -120,10 +114,10 @@ def test_ops_lstsq_backward(mode):
         context.set_context(mode=ms.PYNATIVE_MODE)
         grads = lstsq_backward_func(Tensor(A), Tensor(B))
     elif mode == 'KBK':
-        grads = (jit(lstsq_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        grads = (jit(lstsq_backward_func, jit_level="O0"))(
             Tensor(A), Tensor(B))
     else:
-        grads = (jit(lstsq_backward_func, jit_config=JitConfig(jit_level="O2")))(
+        grads = (jit(lstsq_backward_func, backend="GE"))(
             Tensor(A), Tensor(B))
     for i in range(2):
         np.testing.assert_allclose(
@@ -150,4 +144,4 @@ def test_ops_lstsq_dynamic():
     inputs2 = [Tensor(A2), Tensor(B2)]
 
     TEST_OP(lstsq_forward_func, [inputs1, inputs2],
-            'lstsq_v2', disable_yaml_check=True)
+            'lstsq_v2', disable_mode=["GRAPH_MODE"], disable_yaml_check=True)

@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from mindspore import context
 import mindspore.log as logger
 from mindspore.parallel._dp_allreduce_fusion import _set_fusion_strategy_by_idx, _set_fusion_strategy_by_size
 from mindspore.parallel._ps_context import _is_role_pserver
+from mindspore.parallel.shard import Layout
 from mindspore._c_expression import AutoParallelContext
 from mindspore._checkparam import args_type_check
 from mindspore import _checkparam as Validator
@@ -63,6 +64,7 @@ class _ParallelOptimizerConfig:
     GRADIENT_ACCUMULATION_SHARD = "gradient_accumulation_shard"
     PARALLEL_OPTIMIZER_THRESHOLD = "parallel_optimizer_threshold"
     OPTIMIZER_WEIGHT_SHARD_SIZE = "optimizer_weight_shard_size"
+    OPTIMIZER_LEVEL = "optimizer_level"
 
 
 class _PipelineConfig:
@@ -77,6 +79,8 @@ class _PipelineScheduler:
     PIPELINE_1F1B = "1f1b"
     PIPELINE_GPIPE = "gpipe"
     PIPELINE_SEQPIPE = "seqpipe"
+    PIPELINE_SEQVPP = "seqvpp"
+    PIPELINE_SEQSMARTVPP = "seqsmartvpp"
 
 
 class _AutoParallelContext:
@@ -100,6 +104,7 @@ class _AutoParallelContext:
     def __init__(self):
         self._context_handle = AutoParallelContext.get_instance()
         self._dataset_strategy_using_str = True
+        self._dataset_layout = None
 
     def check_context_handle(self):
         """
@@ -441,6 +446,9 @@ class _AutoParallelContext:
             raise ValueError("The context configuration parameter 'parallel_mode' only support 'stand_alone', "
                              "'data_parallel', 'hybrid_parallel', 'semi_auto_parallel' and 'auto_parallel', "
                              "but got the value : {}.".format(parallel_mode))
+        if run_mode == context.ParallelMode.DATA_PARALLEL and self.get_enable_parallel_optimizer():
+            logger.warning("'enable_parallel_optimizer' is not suggested in 'data_parallel' mode, "
+                           "consider using 'semi_auto_parallel' or 'auto_parallel' mode.")
 
     def get_parallel_mode(self):
         """Get parallel mode."""
@@ -585,6 +593,9 @@ class _AutoParallelContext:
         if not isinstance(dataset_strategy, tuple):
             raise TypeError("For 'set_auto_parallel_context', the argument 'dataset_strategy' "
                             "must be str or tuple type, but got the type : {}.".format(type(dataset_strategy)))
+        if dataset_strategy and isinstance(dataset_strategy[0], Layout):
+            self._set_dataset_strategy_layout(dataset_strategy)
+            return
         for ele in dataset_strategy:
             if not isinstance(ele, tuple):
                 raise TypeError("For 'set_auto_parallel_context', the element of argument "
@@ -599,8 +610,36 @@ class _AutoParallelContext:
         self._dataset_strategy_using_str = False
         self._context_handle.set_dataset_strategy(dataset_strategy)
 
+    def _set_dataset_strategy_layout(self, dataset_strategy):
+        """set dataset layout to c++ by using pybind."""
+        dataset_devmat = []
+        dataset_tensormap = []
+        dataset_alias_name = []
+        self._dataset_layout = dataset_strategy
+        for ele in dataset_strategy:
+            if not isinstance(ele, Layout):
+                raise TypeError(f"All the dataset_strategy elements should be Layout, but got {type(ele)}")
+            layout_to_dict = ele.to_dict()
+            dataset_devmat.append(layout_to_dict["device_matrix"])
+            dataset_alias_name.append(layout_to_dict["alias_name"])
+            if layout_to_dict["interleaved_parallel"]:
+                raise ValueError("For dataset_strategy, layout does not support interleaved_parallel")
+            tensor_map = []
+            for value in layout_to_dict["tensor_map"]:
+                if isinstance(value, tuple):
+                    tensor_map.append(value)
+                elif isinstance(value, int):
+                    tensor_map.append((value,))
+                else:
+                    raise TypeError(f"value in tensor map must be tuple or int, but got {type(value)}")
+            dataset_tensormap.append(tuple(tensor_map))
+        self._context_handle.set_dataset_layout(dataset_devmat, dataset_tensormap, dataset_alias_name)
+
+
     def get_dataset_strategy(self):
         """Get dataset sharding strategy."""
+        if self._dataset_layout is not None:
+            return self._dataset_layout
         self.check_context_handle()
         if self._dataset_strategy_using_str:
             if self._context_handle.get_full_batch():
@@ -888,6 +927,9 @@ class _AutoParallelContext:
                             "the argument 'enable_parallel_optimizer' must be bool, but got the type : {}."
                             .format(type(enable_parallel_optimizer)))
         self._context_handle.set_enable_parallel_optimizer(enable_parallel_optimizer)
+        if enable_parallel_optimizer and self.get_parallel_mode() == context.ParallelMode.DATA_PARALLEL:
+            logger.warning("'enable_parallel_optimizer' is not suggested in 'data_parallel' mode, "
+                           "consider using 'semi_auto_parallel' or 'auto_parallel' mode.")
 
     def set_force_fp32_communication(self, force_fp32_communication):
         """
@@ -918,7 +960,7 @@ class _AutoParallelContext:
 
             - pipeline_interleave(bool): Setting true enable interleave scheduler for pipeline parallelism. This
                                          scheduler requires more memory but less bubble.
-            - pipeline_scheduler(string): There are two choices, "1f1b" and "gpipe". default is "1f1b"
+            - pipeline_scheduler(str): There are two choices, "1f1b" and "gpipe". default is "1f1b"
 
               - 1f1b: It requires less memory and bubble ratio, for it run backward pass when corresponding forward pass
                       finished.
@@ -954,9 +996,13 @@ class _AutoParallelContext:
 
         Validator.check_string(pipeline_config[pp_scheduler], [_PipelineScheduler.PIPELINE_1F1B,
                                                                _PipelineScheduler.PIPELINE_GPIPE,
-                                                               _PipelineScheduler.PIPELINE_SEQPIPE])
-        if not pipeline_config[pp_interleave] and pipeline_config[pp_scheduler] != _PipelineScheduler.PIPELINE_1F1B:
-            raise ValueError(f"When pipeline_interleave is False, {pp_scheduler} is not supported")
+                                                               _PipelineScheduler.PIPELINE_SEQPIPE,
+                                                               _PipelineScheduler.PIPELINE_SEQVPP,
+                                                               _PipelineScheduler.PIPELINE_SEQSMARTVPP])
+        scheduler_val = pipeline_config[pp_scheduler]
+        if not pipeline_config[pp_interleave] and scheduler_val != _PipelineScheduler.PIPELINE_1F1B:
+            raise TypeError(f"When pipeline_interleave is False, {scheduler_val!r} is not supported, "
+                            "only '1f1b' is allowed.")
 
         self._context_handle.set_pipeline_scheduler(pipeline_config[pp_scheduler])
 
@@ -994,19 +1040,21 @@ class _AutoParallelContext:
                                                  shape[n] \* size(dtype). Non-negative. Unit: KB. Default: 64.
             - optimizer_weight_shard_size(int): Set the optimizer weight shard group size if you want to specific the
                                                 maximum group size across devices when the parallel optimizer is
-                                                enabled. The numerical range can be (0, device_num]. Default value
-                                                is -1, which means the optimizer weight shard group size will
-                                                the data parallel group of each parameter. Default -1.
-
+                                                enabled. The numerical range can be (0, device_num] or -1. If pipeline
+                                                parallelism is enabled, the numerical range is (0, device_num/stage]
+                                                or -1. Default value is -1, which means the optimizer weight shard
+                                                group size will be equal to the data parallel group of each parameter.
         """
         self.check_context_handle()
         grad_shard_name = _ParallelOptimizerConfig.GRADIENT_ACCUMULATION_SHARD
         threshold_name = _ParallelOptimizerConfig.PARALLEL_OPTIMIZER_THRESHOLD
         optimizer_weight_shard_size_name = _ParallelOptimizerConfig.OPTIMIZER_WEIGHT_SHARD_SIZE
+        optimizer_level_name = _ParallelOptimizerConfig.OPTIMIZER_LEVEL
 
         for config_name in parallel_optimizer_config:
             unknown_config = []
-            if config_name not in [grad_shard_name, threshold_name, optimizer_weight_shard_size_name]:
+            if config_name not in [grad_shard_name, threshold_name, optimizer_weight_shard_size_name,
+                                   optimizer_level_name]:
                 unknown_config.append(config_name)
 
             if unknown_config:
@@ -1017,6 +1065,10 @@ class _AutoParallelContext:
                 parallel_optimizer_config[grad_shard_name], grad_shard_name, grad_shard_name)
             self._context_handle.set_grad_accumulation_shard(
                 parallel_optimizer_config[grad_shard_name])
+            if optimizer_level_name in parallel_optimizer_config \
+                    and parallel_optimizer_config[optimizer_level_name] != "level2":
+                raise ValueError(f"The optimizer_level is set as {parallel_optimizer_config[optimizer_level_name]}, "
+                                 "thus cannot set grad_accumulation_shard as True.")
 
         if threshold_name in parallel_optimizer_config:
             Validator.check_non_negative_int(
@@ -1026,8 +1078,23 @@ class _AutoParallelContext:
 
         if optimizer_weight_shard_size_name in parallel_optimizer_config:
             value = parallel_optimizer_config[optimizer_weight_shard_size_name]
-            Validator.check_positive_int(value)
-            self.set_optimizer_weight_shard_size(value)
+            if value != -1:
+                Validator.check_positive_int(value, prim_name="optimizer_weight_shard_size")
+                self.set_optimizer_weight_shard_size(value)
+
+        if optimizer_level_name in parallel_optimizer_config:
+            optimizer_level = parallel_optimizer_config[optimizer_level_name]
+            if optimizer_level not in ["level1", "level2", "level3"]:
+                raise ValueError("Optimizer level should in ['level1', 'level2', 'level3'], but got {}"
+                                 .format(optimizer_level))
+
+            if self._context_handle.get_grad_accumulation_shard() and optimizer_level != "level2":
+                raise ValueError("The grad_accumulation shard is set, thus cannot set optimizer_level != 'level2'")
+            if optimizer_level == "level2":
+                self._context_handle.set_grad_accumulation_shard(True)
+            if optimizer_level == "level3":
+                self._context_handle.set_zero3(True)
+                self._context_handle.set_grad_accumulation_shard(False)
 
     def get_grad_accumulation_shard(self):
         """Get grad accumulation shard."""
@@ -1136,6 +1203,7 @@ class _AutoParallelContext:
         self.check_context_handle()
         self._context_handle.reset()
         _ParallelFusionConfig.reset()
+        self._dataset_layout = None
 
     def _check_and_default_group(self, group):
         """Validate the given group, if group is empty, returns a default fusion group"""
@@ -1245,6 +1313,36 @@ class _AutoParallelContext:
             self.set_enable_all_gather_fusion(openstate)
             self.set_enable_reduce_scatter_fusion(openstate)
 
+    def set_auto_parallel_new_interface(self, auto_parallel_new_interface):
+        """
+        Set AutoParallel(cell) new interface flag.
+
+        Args:
+            auto_parallel_new_interface (bool): Mark whether to use the new interface.
+        """
+        self.check_context_handle()
+        self._context_handle.set_auto_parallel_new_interface(auto_parallel_new_interface)
+
+    def get_auto_parallel_new_interface(self):
+        """Get auto_parallel_new_interface."""
+        self.check_context_handle()
+        return self._context_handle.get_auto_parallel_new_interface()
+
+    def set_init_param_in_compile(self, init_param_in_compile):
+        """
+        Set flag marking whether to init parameters in compiling process.
+
+        Args:
+            init_param_in_compile (bool): Mark whether to init parameters in compiling process.
+        """
+        self.check_context_handle()
+        self._context_handle.set_init_param_in_compile(init_param_in_compile)
+
+    def get_init_param_in_compile(self):
+        """Get init_param_in_compile."""
+        self.check_context_handle()
+        return self._context_handle.get_init_param_in_compile()
+
 _AUTO_PARALLEL_CONTEXT = None
 
 
@@ -1295,7 +1393,10 @@ _set_auto_parallel_context_func_map = {
     "comm_fusion": auto_parallel_context().set_comm_fusion,
     "dump_local_norm": auto_parallel_context().set_dump_local_norm,
     "dump_local_norm_path": auto_parallel_context().set_dump_local_norm_path,
-    "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm}
+    "dump_device_local_norm": auto_parallel_context().set_dump_device_local_norm,
+    "auto_parallel_new_interface": auto_parallel_context().set_auto_parallel_new_interface,
+    "init_param_in_compile": auto_parallel_context().set_init_param_in_compile}
+
 
 _get_auto_parallel_context_func_map = {
     "device_num": auto_parallel_context().get_device_num,
@@ -1330,7 +1431,9 @@ _get_auto_parallel_context_func_map = {
     "full_batch_is_set": auto_parallel_context().get_full_batch_is_set,
     "dump_local_norm": auto_parallel_context().get_dump_local_norm,
     "dump_local_norm_path": auto_parallel_context().get_dump_local_norm_path,
-    "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm}
+    "dump_device_local_norm": auto_parallel_context().get_dump_device_local_norm,
+    "auto_parallel_new_interface": auto_parallel_context().get_auto_parallel_new_interface,
+    "init_param_in_compile": auto_parallel_context().get_init_param_in_compile}
 
 
 @args_type_check(device_num=int, global_rank=int, gradients_mean=bool, gradient_fp32_sync=bool,
@@ -1470,6 +1573,33 @@ def _get_auto_parallel_context(attr_key):
         raise ValueError("Get context keyword %s is not recognized!" % attr_key)
     get_func = _get_auto_parallel_context_func_map[attr_key]
     return get_func()
+
+
+def _get_all_auto_parallel_context():
+    """get auto parallel context before reset"""
+    _auto_paralell_context_value_map = {}
+    _pipeline_config = {}
+    for key, value in _get_auto_parallel_context_func_map.items():
+        if key == "pipeline_interleave":
+            _pipeline_config[key] = value()
+        elif key == "pipeline_scheduler":
+            _pipeline_config[key] = value()
+        else:
+            _auto_paralell_context_value_map[key] = value()
+    return _auto_paralell_context_value_map, _pipeline_config
+
+
+def _recover_auto_parallel_context(context_value_map, pp_config):
+    """set auto parallel context after transformation"""
+    # set the same auto parallel context after transform
+    from mindspore.context import reset_auto_parallel_context
+    reset_auto_parallel_context()
+    for key, value in context_value_map.items():
+        # list is empty or full_batch_is_set is not needed to set
+        if (isinstance(value, list) and not value) or (key == "full_batch_is_set"):
+            continue
+        _set_auto_parallel_context_func_map[key](value)
+    _set_auto_parallel_context_func_map["pipeline_config"](pp_config)
 
 
 def _reset_auto_parallel_context():

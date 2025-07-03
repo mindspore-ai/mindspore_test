@@ -1,0 +1,27 @@
+#operator gmm_backward_fusion
+gmm_backward_fusion:
+    args:
+        grad:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        weight:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        group_list:
+            dtype: tuple[int]
+            type_cast: list[int]
+            default: None
+        group_list_type:
+            dtype: int
+            default: 0
+    returns:
+        output:
+            dtype: tuple[tensor]
+    bprop_expander: True
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: GmmBackwardFusionAscend
+        CPU: None
+        GPU: None

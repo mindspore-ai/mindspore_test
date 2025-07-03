@@ -25,6 +25,6 @@ from tests.mark_utils import arg_mark
 def test_ge_graph_mode_with_jit_level():
     """
     Description: Graph Mode jit_level with GE.
-    Expectation: Run by ge_device_context when jit_level.
+    Expectation: Run ge when jit_level.
     """
     run_testcase("ge_graph_mode_jit_level")

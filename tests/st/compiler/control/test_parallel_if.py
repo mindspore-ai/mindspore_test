@@ -26,7 +26,7 @@ def test_while_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -52,7 +52,7 @@ def test_if_return_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -81,7 +81,7 @@ def test_if_return_else_break_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -109,7 +109,7 @@ def test_if_return_else_return_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -137,7 +137,7 @@ def test_if_break_else_return_in_while_in_else_take_break():
     Expectation: take the break branch, success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -165,7 +165,7 @@ def test_if_break_else_return_in_while_in_else_take_return():
     Expectation: take the return branch, success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -193,7 +193,7 @@ def test_while_return_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -220,7 +220,7 @@ def test_if_return_in_while_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -250,7 +250,7 @@ def test_if_return_else_return_in_while_in_while_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -279,7 +279,7 @@ def test_while_return_after_if_else_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -310,7 +310,7 @@ def test_if_else_after_while_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -341,7 +341,7 @@ def test_if_return_after_if_else_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -372,7 +372,7 @@ def test_if_else_after_if_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -402,7 +402,7 @@ def test_while_return_in_else_after_if_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if x > y:
             x = x + y
@@ -433,7 +433,7 @@ def test_if_else_after_by_while_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -463,7 +463,7 @@ def test_if_return_in_else_after_if_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if x > y:
             x = x + y
@@ -494,7 +494,7 @@ def test_if_else_after_by_if_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -525,7 +525,7 @@ def test_if_else_in_if_while_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -555,7 +555,7 @@ def test_if_else_in_if_if_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -585,7 +585,7 @@ def test_for_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -611,7 +611,7 @@ def test_if_return_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -640,7 +640,7 @@ def test_if_return_else_break_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -668,7 +668,7 @@ def test_if_return_else_return_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -696,7 +696,7 @@ def test_for_return_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -723,7 +723,7 @@ def test_if_return_in_for_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -753,7 +753,7 @@ def test_if_return_else_return_in_for_in_for_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -782,7 +782,7 @@ def test_for_return_after_if_else_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -813,7 +813,7 @@ def test_if_else_after_for_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -844,7 +844,7 @@ def test_for_return_in_else_after_if_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if x > y:
             x = x + y
@@ -875,7 +875,7 @@ def test_if_else_after_by_for_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -905,7 +905,7 @@ def test_if_else_in_if_for_return_in_else():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, bias):
         if bias > y:
             y = x + y
@@ -935,7 +935,7 @@ def test_if_by_if_break_in_if_in_while():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         out = z
         while x < y:
@@ -965,7 +965,7 @@ def test_if_raise_raise():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         out = z
         if x >= y:
@@ -992,7 +992,7 @@ def test_if_raise_not_raise():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         out = z
         if x >= y:
@@ -1018,7 +1018,7 @@ def test_if_assert_success():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         out = z
         out = z
@@ -1046,7 +1046,7 @@ def test_if_assert_failure():
     Expectation: success
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x, y, z):
         out = z
         if x >= y:

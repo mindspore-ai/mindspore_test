@@ -20,7 +20,7 @@ import pytest
 import mindspore.common.dtype as mstype
 import mindspore as ms
 from mindspore.ops import where
-from mindspore import ops, Tensor, jit, JitConfig, context
+from mindspore import ops, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -82,7 +82,7 @@ def test_where_float32(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float32)
     y = np.array([[1, 2], [3, 4.0]]).astype(np.float32)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -104,7 +104,7 @@ def test_where_float16(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float16)
     y = np.array([[1, 2], [3, 4.0]]).astype(np.float16)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -126,7 +126,7 @@ def test_where_int32(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = np.array([[1, 2], [3, 4]]).astype(np.int32)
     output = where_forward_func(Tensor(cond), Tensor(x), Tensor(y))
@@ -147,7 +147,7 @@ def test_functional_where_scalar(mode):
     Expectation: Assert result.
     """
     context.set_context(mode=mode)
-    cond = np.array([[True, False], [True, False]]).astype(np.bool)
+    cond = np.array([[True, False], [True, False]]).astype(np.bool_)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
     y = 2
     output = where_forward_func(Tensor(cond), Tensor(x), y)
@@ -178,7 +178,7 @@ def test_functional_where_broadcast(mode):
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
+@pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_where_ext_normal(mode):
     """
     Feature: Test where with static shape in graph and pynative mode.
@@ -192,9 +192,9 @@ def test_where_ext_normal(mode):
     if mode == 'pynative':
         ms_out = where_forward_func(cond, x, y)
     elif mode == 'KBK':
-        ms_out = (jit(where_forward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
+        ms_out = (jit(where_forward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_out = (jit(where_forward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
+        ms_out = (jit(where_forward_func, backend="GE"))(cond, x, y)
 
     expect = generate_expect_forward_output(cond.asnumpy(), x.asnumpy(), y.asnumpy())
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
@@ -207,9 +207,9 @@ def test_where_ext_normal(mode):
     if mode == 'pynative':
         ms_cond, ms_x, ms_y = where_backward_func(cond, x, y)
     elif mode == 'KBK':
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, backend="GE"))(cond, x, y)
     expect_cond, expect_x, expect_y = generate_expect_backward_output(cond.asnumpy())
     assert np.allclose(ms_cond.asnumpy(), expect_cond, rtol=1e-4)
     assert np.allclose(ms_x.asnumpy(), expect_x, rtol=1e-4)

@@ -17,10 +17,11 @@
 #include "kernel/cpu/coalesce_cpu_kernel.h"
 
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace coalesce_cpu {
 namespace {
 constexpr size_t kCoalesceInputsNum = 3;
 constexpr size_t kCoalesceOutputsNum = 3;
@@ -186,5 +187,6 @@ std::vector<KernelAttr> CoalesceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Coalesce, CoalesceCpuKernelMod);
+}  // namespace coalesce_cpu
 }  // namespace kernel
 }  // namespace mindspore

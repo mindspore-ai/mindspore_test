@@ -22,12 +22,13 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindapi/base/types.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace smooth_l1_loss_cpu {
 class SmoothL1LossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SmoothL1LossCpuKernelMod> {
  public:
   SmoothL1LossCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class SmoothL1LossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   int64_t tensor_size_{1};
   Reduction reduction_{Reduction::MEAN};
 };
+}  // namespace smooth_l1_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICES_CPU_KERNEL_SMOOTH_L1_LOSS_CPU_KERNEL_H_

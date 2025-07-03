@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,22 +28,17 @@
 
 #include "pybind11/pybind11.h"
 
-#include "ir/anf.h"
-#include "ir/tensor.h"
+#include "base/base.h"
 #include "pipeline/jit/ps/action.h"
-#include "abstract/abstract_value.h"
-#include "backend/graph_compiler/segment_runner.h"
-#include "backend/graph_compiler/transform.h"
-#include "pipeline/jit/ps/base.h"
-#include "frontend/parallel/strategy.h"
 #include "include/common/visible.h"
-#include "include/fork_utils.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition
 namespace pipeline {
 
 namespace py = pybind11;
+
+constexpr auto kActualArgumentIndex = "argument_index";
 
 class Pipeline {
  public:
@@ -55,202 +50,94 @@ class Pipeline {
 
   ResourcePtr resource() { return resource_; }
 
-  bool NeedCreateBackend();
-
  private:
   ResourcePtr resource_;
   std::vector<ActionItem> actions_;
 };
 
-// A function pipeline.
-class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
+class JitCompilingScope {
  public:
-  static std::shared_ptr<GraphExecutorPy> GetInstance() {
-    std::lock_guard<std::mutex> i_lock(instance_lock_);
-    if (executor_ == nullptr) {
-      executor_ = std::shared_ptr<GraphExecutorPy>(new (std::nothrow) GraphExecutorPy());
-    }
-    executor_->set_process_id();
-    return executor_;
-  }
-
-  ~GraphExecutorPy();
-
-  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
-               bool use_vm);
-  bool CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs, const std::string &phase,
-                    bool use_vm, bool trace_flag = false);
-  py::object Run(const py::tuple &args, const py::object &phase);
-
-  const std::string &phase() const { return phase_; }
-  void SaveCompiledGraph(const std::string &phase);
-  void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
-                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
-  void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
-  void ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list);
-  ResourcePtr GetResource(const std::string &phase);
-  FuncGraphPtr GetFuncGraph(const std::string &phase);
-  void SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase);
-  FuncGraphPtr GetJitPrimalFuncGraph(const std::string &phase);
-  FuncGraphPtr GetJitGradGraph(const std::string &phase);
-  void SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase);
-  py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
-  py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
-                                       const int branch_control_input);
-  py::bytes GetOptimizeGraphProto(const std::string &phase);
-
-  void SetJitConfig(const py::dict &jit_config);
-  compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase, const std::string &kind = kOutput);
-  bool HasCompiled(const std::string &phase) const;
-
-  FuncGraphPtr BuildGraph(const py::dict &init_params, const std::string &phase) const;
-  void ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt = py::none(),
-                   char *key = nullptr);
-  py::dict GetParams(const std::string &phase);
-  py::bytes GetRandomStatus(const std::string &phase) const;
-  void UpdataParamNodeDefaultInput(const std::string &phase,
-                                   const std::unordered_map<std::string, tensor::TensorPtr> &params_value);
-  void PyExePath(const py::object &py_exe_path) const;
-  void KernelBuildServerDir(const py::object &kernel_build_server_dir) const;
-  py::dict GetParameterLayout(const std::string &phase);
-  py::tuple FlopsCollection(const std::string &phase);
-  // Get CNode name, input node name and attribute from each graph
-  py::dict GetParallelGraphInfo(const std::string &phase);
-  py::dict GetCNodeStrategy(const std::string &phase);
-  py::list GetParallelParameterNameList(const std::string &phase);
-  void SetCNodeStrategy(const std::string &name, const parallel::Strategies &strategy);
-  size_t GetNumOpsInfo(const std::string &phase);
-  void SetNumOpsInfo(size_t num_ops);
-  py::dict GetAllreduceFusion(const std::string &phase);
-  void DelNetRes(const py::object &source, const py::set &id);
-  void ReleaseResourceOnException(const py::object &phase);
-  void CleanCompileRes(const ResourcePtr &resource);
-  static void ClearRes();
-  void set_queue_name(const std::string &queue_name) { queue_name_ = queue_name; }
-  std::string get_queue_name(const std::string &dataset_phase);
-  void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
-  void set_compile_cache_dep_files(const py::list &compile_cache_dep_files) {
-    compile_cache_dep_files_ = compile_cache_dep_files;
-  }
-  void set_weights_values(const py::dict &weights) { weights_ = weights; }
-  int32_t max_call_depth() const { return max_call_depth_; }
-  void set_max_call_depth(int32_t max_call_depth) { max_call_depth_ = max_call_depth; }
-  void SetOptimizeConfig(const py::list &optimize_cfg);
-  std::string GetOptimizeConfig();
-  void SetConfigPasses(const py::list &passes);
-  py::list GetRunningPasses();
-#ifdef ENABLE_DEBUGGER
-  void TerminateDebugger();
-#endif
-
-  // Generate a key for mapping function graph
-  py::object GenerateArgumentsKey(const py::object &obj, const py::tuple &args, const py::dict &kwargs,
-                                  bool enable_tuple_broaden = false);
-  // Check consistency of two arguments for mapping function graph
-  void CheckArgumentsConsistency(const py::tuple &compile_args, const py::tuple &args_list, const py::object &target);
-  void ClearCompileArgumentsResource();
-
-  void ClearCurConvertInput();
-  void ParentBeforeFork();
-  void ParentAfterFork();
-  void ChildAfterFork();
-  void ClearInfo();
-  void set_process_id();
-
- private:
-  GraphExecutorPy() = default;
-  void ParallelPostProcess(const string &phase, bool use_compile_cache);
-  void GetGeBackendPolicy() const;
-  // filter some pipeline actions according to phase, e.g. when exporting onnx, it is no need to execute actions after
-  // 'validate' stage
-  static std::vector<ActionItem> FilterActions(const std::vector<ActionItem> &actions, const std::string &phase);
-
-  void DelOneNetRes(const py::handle &py_phase);
-  // If enable compile cache, get the compile cache resource.
-  void InitCompileCacheInfo(const ResourcePtr &resource, const std::string &phase);
-
-  bool CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
-                    bool use_vm);
-  py::object RunInner(const py::tuple &args, const py::object &phase);
-  void ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list);
-  void ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend, const py::dict &dict,
-                              std::map<std::string, std::shared_ptr<tensor::Tensor>> *const tensors,
-                              const FuncGraphPtr &anf_graph) const;
-
-  std::map<std::string, ExecutorInfoPtr> info_;
-  static std::shared_ptr<GraphExecutorPy> executor_;
-  static std::mutex instance_lock_;
-  std::map<std::string, py::dict> stra_dict_;
-  std::string phase_{""};
-  std::string source_{""};
-  std::string obj_desc_{""};
-  std::map<std::string, size_t> phase_to_num_op_info_;
-  std::string queue_name_;
-  bool enable_tuple_broaden_{false};
-  py::list compile_cache_dep_files_;
-  bool compile_cache_consistent_{true};
-  py::dict weights_;
-  std::map<PyObject *, std::pair<ValuePtr, AbstractBasePtr>> cur_convert_input_;
-  bool executor_running_{false};
-  int32_t max_call_depth_{-1};
-  bool need_recompile_{true};
-  pid_t process_id_;
+  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
+  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
 };
-using GraphExecutorPyPtr = std::shared_ptr<GraphExecutorPy>;
+
+class GraphCompilingScope {
+ public:
+  GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kGraphCompiling); }
+  ~GraphCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
+
+class JitRunningScope {
+ public:
+  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
+  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
 
 std::string GetJitLevel();
 
 std::string GetObjDesc(const py::object &source);
 bool IsPhaseLoadFromMindIR(const std::string &phase);
-void CheckArgsValid(const py::object &source, const py::tuple &args);
-py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple &inputs);
+FRONTEND_EXPORT void CheckArgsValid(const py::object &source, const py::tuple &args);
+FRONTEND_EXPORT py::bool_ VerifyInputSignature(const py::list &input_signature, const py::tuple &inputs);
 
 bool InitDistribute(const std::map<std::string, std::string> &options);
 
-void ResetOpId();
-void ResetOpIdWithOffset();
-void InitHccl();
-void FinalizeHccl();
-uint32_t GetHcclRankId();
-uint32_t GetHcclRankSize();
-void InitPipeline();
-void FinalizeBackend();
-void ME_EXPORT ClearResAtexit();
+FRONTEND_EXPORT void ResetOpId();
+FRONTEND_EXPORT void ResetOpIdWithOffset();
+FRONTEND_EXPORT void InitHccl();
+FRONTEND_EXPORT void FinalizeHccl();
+FRONTEND_EXPORT uint32_t GetHcclRankId();
+FRONTEND_EXPORT uint32_t GetHcclRankSize();
+FRONTEND_EXPORT void InitPipeline();
+
 void CloseTsd(bool force = false);
-void MemoryRecycle();
-void BindDeviceCtx();
+FRONTEND_EXPORT void BindDeviceCtx();
 
-FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
-                        const std::string &dec_mode, const py::object decrypt = py::none(),
-                        const bool obfuscated = false);
+FRONTEND_EXPORT FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
+                                        const std::string &dec_mode, const py::object decrypt = py::none());
 
-FuncGraphPtr SplitMindIR(const std::string &file_name);
+FRONTEND_EXPORT FuncGraphPtr SplitMindIR(const std::string &file_name);
 
-FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num, size_t rank_id, bool sapp);
+FRONTEND_EXPORT FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num, size_t rank_id,
+                                                bool sapp);
 
 // init and exec dataset sub graph
-bool ME_EXPORT InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
-                               const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
-                               const std::vector<int64_t> &input_indexes, const std::string &phase, bool need_run);
+bool FRONTEND_EXPORT InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
+                                     const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
+                                     const std::vector<int64_t> &input_indexes, const std::string &phase,
+                                     bool need_run);
 
 // Build and run dataset subgraph for ms backend
 bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batch_size,
                        const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
                        const std::vector<int64_t> &input_indexes, bool need_run);
 
-void ProcessVmArgInner(const py::tuple &args, const ResourcePtr &res, VectorRef *const arg_list);
+FRONTEND_EXPORT py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len,
+                                    const std::string &enc_mode);
+FRONTEND_EXPORT py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_len,
+                                    const std::string &dec_mode);
+FRONTEND_EXPORT py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len,
+                                        const std::string &dec_mode);
+FRONTEND_EXPORT bool PyIsCipherFile(const std::string &file_path);
+FRONTEND_EXPORT void FinalizeCluster();
+FRONTEND_EXPORT void SwapCache(const py::object &host_, const py::object &device_, const py::object &block_mapping_,
+                               const bool &type);
 
-py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len, const std::string &enc_mode);
-py::bytes PyDecrypt(const std::string &encrypt_data_path, char *key, size_t key_len, const std::string &dec_mode);
-py::bytes PyDecryptData(char *model_data, size_t data_size, char *key, size_t key_len, const std::string &dec_mode);
-bool PyIsCipherFile(const std::string &file_path);
-void FinalizeCluster();
-FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_ratio, int branch_control_input,
-                                    char *dec_key, const size_t key_len, const std::string &dec_mode);
-void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
-               const bool &type);
 bool IsPhaseExport(const std::string &phase);
 py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
+void SetLoopCount(const ResourcePtr &resource);
+void ResetId(const ResourcePtr &resource);
+#ifdef ENABLE_DUMP_IR
+std::string GetBaseNameForIR(int64_t stage_idx, const std::string &action_name);
+void RecordIR(const size_t action_index, const size_t action_size, const std::string &action_name,
+              const FuncGraphPtr &graph, FuncGraphPtr *user_graph);
+#endif
+AbstractBasePtr ArgsToAbstract(const py::object &arg, const ValuePtr &value, bool enable_tuple_broaden = false);
+void AddManagerForFuncGraphArgs(const ResourcePtr &resource, const ValuePtrList &arguments);
+void CheckInterpretNodeLineInfos();
+void SetHookForArgAbstract(const py::object &arg, abstract::AbstractBasePtr abs);
+FRONTEND_EXPORT bool RunJitPipeline();
+FRONTEND_EXPORT void PreJit(const py::object &args, const py::object &kwargs);
 }  // namespace pipeline
 }  // namespace mindspore
 

@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <string>
+#include <utility>
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/runtime.h"
 #include "utils/convert_utils_base.h"
@@ -29,28 +30,24 @@
 namespace mindspore {
 namespace pijit {
 using CallableGraph = std::function<PyObject *(PyObject *, PyObject *)>;
-// Compiler to parse python byte code
-class Compiler {
- public:
-  static CallableGraph Compile(const PyFunctionObject &func, const PyFrameWrapper &frame, const std::string &phase);
 
- private:
-  Compiler() = default;
-};
-
-class MindCompiler {
+class GraphCompiler {
  public:
   struct CompileInfo {
+    std::string co_filename_;
     std::string co_name_;
+    int co_firstlineno_;
     int co_argcount_;
     int co_kwonlyargcount_;
     int co_flags_;
+    size_t origin_top_input_num_;
   };
   static CallableGraph Compile(const FuncGraphPtr &func_graph, const py::tuple &args, const py::dict &kwargs,
                                const std::string &phase, const CompileInfo &compile_info);
+  static std::pair<std::string, CallableGraph> Compile(const FuncGraphPtr &func_graph, const CompileInfo &compile_info);
 
  private:
-  MindCompiler() = default;
+  GraphCompiler() = default;
 };
 }  // namespace pijit
 }  // namespace mindspore

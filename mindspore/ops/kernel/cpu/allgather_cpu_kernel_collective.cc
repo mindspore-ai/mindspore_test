@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 #if defined(__linux__) && defined(WITH_BACKEND)
 using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
@@ -81,5 +82,6 @@ bool AllGatherCPUKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AllGather, AllGatherCPUKernelMod);
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore

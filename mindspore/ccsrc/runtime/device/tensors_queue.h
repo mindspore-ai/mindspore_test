@@ -22,7 +22,7 @@
 #include <string>
 #include <memory>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore {

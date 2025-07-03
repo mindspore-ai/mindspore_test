@@ -37,6 +37,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {

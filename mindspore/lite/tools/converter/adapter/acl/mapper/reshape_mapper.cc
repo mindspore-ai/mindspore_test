@@ -24,6 +24,7 @@
 #include "nnacl/op_base.h"
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_r.h"
 
 namespace mindspore {
 namespace lite {
@@ -31,6 +32,9 @@ namespace {
 constexpr size_t kInputNum = 3;
 }  // namespace
 
+using mindspore::ops::kNameReshape;
+
+ReshapeMapper::ReshapeMapper() : PrimitiveMapper(kNameReshape) {}
 STATUS ReshapeMapper::Mapper(const CNodePtr &cnode) {
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;

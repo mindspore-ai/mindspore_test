@@ -17,15 +17,14 @@
 #include <memory>
 #include "kernel/ascend/pyboost/customize/inplace_scatter_src.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceScatterSrcAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                       const BaseTensorPtr &index_tensor,
-                                                       const BaseTensorPtr &src_tensor) {
+tensor::TensorPtr InplaceScatterSrcAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const Int64ImmPtr &dim, const TensorPtr &index_tensor,
+                                                   const TensorPtr &src_tensor) {
   MS_LOG(DEBUG) << "Call InplaceScatterSrc start";
   // No need to call infer
   // forbid complex support: grad backward use aclnnGather which not supports complex

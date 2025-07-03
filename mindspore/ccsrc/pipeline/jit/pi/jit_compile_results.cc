@@ -36,6 +36,7 @@ void JitCompileResults::FreeCallback(void *ptr) {
 
 Py_ssize_t JitCompileResults::InitIndex() {
   if (tss_ == nullptr) {
+    MS_LOG(INFO) << "Initialize jcr key. Thread is " << std::this_thread::get_id();
     tss_ = PyThread_tss_alloc();
     PyThread_tss_create(tss_);
   }
@@ -55,18 +56,12 @@ Py_ssize_t JitCompileResults::InitIndex() {
 }
 
 JitCompileResults::JitCompileResults(bool skip)
-    : stat_(JitCompileResults::NEVER_COMPILE), compile_count_(0), break_count_(0) {
+    : stat_(JitCompileResults::NEVER_COMPILE), cache_(this), compile_count_(0), break_count_(0) {
   if (skip) {
     return;
   }
-  this->codehub_ = std::make_shared<OptCodeHub>();
   this->tbs_ = std::make_shared<Traceback>();
   this->conf_ = std::make_shared<GraphJitConfig>();
-}
-
-JitCompileResults::~JitCompileResults() {
-  this->code_ = nullptr;
-  this->codehub_.reset();
 }
 
 void JitCompileResults::set_stat(JitCompileResults::State s) {

@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore import ops, mint, Tensor, jit, JitConfig, context
+from mindspore import ops, mint, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 
@@ -32,7 +32,7 @@ def full_like_backward_func(x, fill_value, dtype=None):
     return grad
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training
@@ -55,8 +55,8 @@ def test_full_like_normal(mode):
         grad = full_like_backward_func(x, fill_value, dtype)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(full_like_forward_func, jit_config=JitConfig(jit_level="O0")))(x, fill_value, dtype)
-        grad = (jit(full_like_backward_func, jit_config=JitConfig(jit_level="O0")))(x, fill_value, dtype)
+        output = (jit(full_like_forward_func, backend="ms_backend", jit_level="O0"))(x, fill_value, dtype)
+        grad = (jit(full_like_backward_func, backend="ms_backend", jit_level="O0"))(x, fill_value, dtype)
     np.testing.assert_allclose(output.asnumpy(), expect_out, rtol=1e-3)
     np.testing.assert_allclose(grad.asnumpy(), expect_grad, rtol=1e-3)
 

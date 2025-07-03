@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/llm_boost/atb_boost_builder.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "utils/ms_utils.h"
 #include "include/common/debug/common.h"
 

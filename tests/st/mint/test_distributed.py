@@ -230,9 +230,15 @@ def test_hccl_all_reduce_type():
     assert min_output_handle is None
     except_min_output = input_tensor
 
+    prod_input_tensor = input_tensor * 1
+    prod_output_handle = all_reduce(prod_input_tensor, op=ReduceOp.PROD)
+    assert prod_output_handle is None
+    except_prod_output = input_tensor ** size
+
     assert np.allclose(sum_input_tensor.asnumpy(), except_sum_output.asnumpy())
     assert np.allclose(max_input_tensor.asnumpy(), except_max_output.asnumpy())
     assert np.allclose(min_input_tensor.asnumpy(), except_min_output.asnumpy())
+    assert np.allclose(prod_input_tensor.asnumpy(), except_prod_output.asnumpy())
 
 
 def test_hccl_all_reduce():

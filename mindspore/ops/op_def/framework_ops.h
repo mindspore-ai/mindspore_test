@@ -131,6 +131,7 @@ GVAR_DEF(PrimitivePtr, kPrimWithExit, std::make_shared<Primitive>("with_exit"));
 
 // Other miscellaneous
 GVAR_DEF(PrimitivePtr, kPrimInsertGradientOf, std::make_shared<Primitive>("InsertGradientOf"));
+GVAR_DEF(PrimitivePtr, kPrimMorph, std::make_shared<Primitive>("Morph"));
 GVAR_DEF(PrimitivePtr, kPrimCheckBprop, std::make_shared<Primitive>("CheckBprop"));
 GVAR_DEF(PrimitivePtr, kPrimMixedPrecisionCast, std::make_shared<Primitive>("MixedPrecisionCast"));
 GVAR_DEF(PrimitivePtr, kPrimDoUnpackCall, std::make_shared<Primitive>("DoUnpackCall"));
@@ -159,6 +160,7 @@ GVAR_DEF(PrimitivePtr, kPrimStringLower, std::make_shared<Primitive>(kStringLowe
 GVAR_DEF(PrimitivePtr, kPrimFormat, std::make_shared<Primitive>(kFormatOpName));
 GVAR_DEF(PrimitivePtr, kPrimMoveTo, std::make_shared<Primitive>(kMoveToOpName));
 GVAR_DEF(PrimitivePtr, kPrimMoveAssign, std::make_shared<Primitive>(kMoveAssignOpName));
+GVAR_DEF(PrimitivePtr, kPrimTraceGraph, std::make_shared<Primitive>(kTraceGraphOpName));
 
 // Backend Inline
 GVAR_DEF(PrimitivePtr, kPrimCallInline, std::make_shared<Primitive>("CallInline"));

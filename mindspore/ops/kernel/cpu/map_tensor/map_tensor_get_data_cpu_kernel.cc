@@ -17,7 +17,7 @@
 #include "kernel/cpu/map_tensor/map_tensor_get_data_cpu_kernel.h"
 #include <algorithm>
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

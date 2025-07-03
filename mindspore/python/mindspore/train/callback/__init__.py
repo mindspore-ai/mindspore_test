@@ -15,6 +15,11 @@
 """Callback related classes and functions."""
 from __future__ import absolute_import
 
+__all__ = ["Callback", "LossMonitor", "TimeMonitor", "ModelCheckpoint", "FlopsUtilizationCollector",
+           "SummaryCollector", "CheckpointConfig", "RunContext", "LearningRateScheduler", "SummaryLandscape",
+           "History", "LambdaCallback", "ReduceLROnPlateau", "EarlyStopping", "OnRequestExit", "BackupAndRestore",
+           "TrainFaultTolerance"]
+
 from mindspore.train.callback._callback import Callback
 from mindspore.train.callback._callback import CallbackManager as _CallbackManager
 from mindspore.train.callback._callback import InternalCallbackParam as _InternalCallbackParam
@@ -36,9 +41,4 @@ from mindspore.train.callback._reduce_lr_on_plateau import ReduceLROnPlateau
 from mindspore.train.callback._on_request_exit import OnRequestExit
 from mindspore.train.callback._backup_and_restore import BackupAndRestore
 from mindspore.train.callback._flops_collector import FlopsUtilizationCollector
-from mindspore.train.callback._tft_register import TFTRegister
-
-__all__ = ["Callback", "LossMonitor", "TimeMonitor", "ModelCheckpoint", "FlopsUtilizationCollector",
-           "SummaryCollector", "CheckpointConfig", "RunContext", "LearningRateScheduler", "SummaryLandscape",
-           "History", "LambdaCallback", "ReduceLROnPlateau", "EarlyStopping", "OnRequestExit", "BackupAndRestore",
-           "TFTRegister"]
+from mindspore.train.callback._train_fault_tolerance import TrainFaultTolerance

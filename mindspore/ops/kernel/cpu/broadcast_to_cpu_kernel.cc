@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace broadcast_to_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -271,5 +272,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, BroadcastTo,
                                  []() { return std::make_shared<BroadcastToCpuKernelMod>(kBroadcastTo); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, DynamicBroadcastTo,
                                  []() { return std::make_shared<BroadcastToCpuKernelMod>(kDynamicBroadcastTo); });
+}  // namespace broadcast_to_cpu
 }  // namespace kernel
 }  // namespace mindspore

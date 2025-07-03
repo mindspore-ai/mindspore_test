@@ -16,13 +16,14 @@
 
 #include "kernel/cpu/resize_nearest_neighbor_v2_grad_cpu_kernel.h"
 #include <string>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_nearest_neighbor_v2_grad.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_nearest_neighbor_v2_grad_cpu {
 namespace {
 constexpr size_t kResizeNearestNeighborV2GradInputsNum = 4;
 constexpr size_t kResizeNearestNeighborV2GradOutputNum = 1;
@@ -148,5 +149,6 @@ std::vector<KernelAttr> ResizeNearestNeighborV2GradCpuKernelMod::GetOpSupport() 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeNearestNeighborV2Grad, ResizeNearestNeighborV2GradCpuKernelMod);
+}  // namespace resize_nearest_neighbor_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

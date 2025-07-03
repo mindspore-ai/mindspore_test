@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AUTO_MONAD_ELIMINATOR_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_AUTO_MONAD_ELIMINATOR_H_
 
-#include "ir/anf.h"
+#include "base/base.h"
 #include "ir/manager.h"
 #include "frontend/optimizer/optimizer.h"
 
@@ -27,17 +27,7 @@ class AutoMonadEliminator {
  public:
   AutoMonadEliminator() = default;
   virtual ~AutoMonadEliminator() = default;
-
-  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) const {
-    auto manager = optimizer->manager();
-    MS_EXCEPTION_IF_NULL(manager);
-    manager->AddFuncGraph(root);
-
-    // Never report change.
-    (void)ReplaceAutoMonadNode(manager);
-    (void)EliminateAutoMonadNode(manager);
-    return false;
-  }
+  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &optimizer) const;
 
  private:
   bool ReplaceAutoMonadNode(const FuncGraphManagerPtr &manager) const;

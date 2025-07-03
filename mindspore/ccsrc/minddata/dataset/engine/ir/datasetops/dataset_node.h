@@ -173,11 +173,12 @@ Status ValidateMapValue(const std::string &dataset_name, const std::string &str,
 ///     num_samples, num_shards, shard_id) and it DOES support sampling if somewhere above it in the pipeline contains
 ///     a cache. If there is no cache above it, then the sampler is not used.
 /// \param[in] num_samples The number of samples to be included in the dataset.
-/// \param[in] shuffle If true, the indices are shuffled.
+/// \param[in] shuffle If it is not kFalse, the indices are shuffled.
 /// \param[in] num_shards Number of shards to divide the dataset into.
 /// \param[in] shard_id Shard ID of the current shard within num_shards.
 /// \return Shared pointer to the current Sampler.
-std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, bool shuffle, int32_t num_shards, int32_t shard_id);
+std::shared_ptr<SamplerObj> SelectSampler(int64_t num_samples, dataset::ShuffleMode shuffle_mode, int32_t num_shards,
+                                          int32_t shard_id);
 
 // The base class of all IR nodes
 class DatasetNode : public std::enable_shared_from_this<DatasetNode> {

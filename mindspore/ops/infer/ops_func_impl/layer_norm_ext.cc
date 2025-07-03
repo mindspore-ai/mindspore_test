@@ -18,16 +18,15 @@
 #include <string>
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/op_infer.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore {
 namespace ops {
@@ -59,6 +58,10 @@ BaseShapePtr LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   const auto norm_dim = gamma_shape.size();
   const auto input_dim = x_shape.size();
+  MS_CHECK_VALUE(input_dim >= norm_dim,
+                 CheckAndConvertUtils::FormatCommMsg(
+                   "For 'LayerNorm', gamma or beta shape must match input shape, but got input shape: ", x_shape,
+                   ", gamma shape: ", gamma_shape, ", beta shape: ", beta_shape, "."));
   const auto begin_axis = input_dim - norm_dim;
   for (size_t i = begin_axis; i < input_dim; ++i) {
     size_t gamma_beta_shape_dim = i - begin_axis;
@@ -99,15 +102,15 @@ TypePtr LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype(), kFloat32, kFloat32};
 }
 
 ShapeArray LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-  const auto &beta_tensor = input_values[kInputIndex3]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
+  const auto &beta_tensor = input_values[kInputIndex3]->cast<tensor::TensorPtr>();
   const auto &normalized_shape_opt = GetArrayValue<int64_t>(input_values[kInputIndex1]);
   if (!normalized_shape_opt.has_value() || normalized_shape_opt.value().HasUnknownValue()) {
     ShapeVector dynamic_rank_shape{abstract::TensorShape::kShapeRankAny};
@@ -127,8 +130,11 @@ ShapeArray LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const
 
   const auto norm_dim = gamma_shape.size();
   const auto input_dim = x_shape.size();
+  MS_CHECK_VALUE(input_dim >= norm_dim,
+                 CheckAndConvertUtils::FormatCommMsg(
+                   "For 'LayerNorm', gamma or beta shape must match input shape, but got input shape: ", x_shape,
+                   ", gamma shape: ", gamma_shape, ", beta shape: ", beta_shape, "."));
   const auto begin_axis = input_dim - norm_dim;
-
   for (size_t i = begin_axis; i < input_dim; ++i) {
     size_t gamma_beta_shape_dim = i - begin_axis;
     MS_CHECK_VALUE(x_shape[i] <= 0 || ((gamma_shape[gamma_beta_shape_dim] == x_shape[i]) &&

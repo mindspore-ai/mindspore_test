@@ -18,12 +18,13 @@
 #include <functional>
 #include <map>
 #include "kernel/cpu/ps_roi_pooling_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 #include "kernel/cpu/atomic_add.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ps_roi_pooling_grad_cpu {
 namespace {
 constexpr int kDyOutputDimIndex = 1;
 constexpr int kDyHeightIndex = 2;
@@ -359,5 +360,6 @@ std::vector<KernelAttr> PSROIPoolingGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PSROIPoolingGrad, PSROIPoolingGradCpuKernelMod);
+}  // namespace ps_roi_pooling_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

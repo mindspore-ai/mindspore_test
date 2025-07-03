@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CCSRC_DISTRIBUTED_RPC_TCP_TCP_SOCKET_OPERATION_H_
 #define MINDSPORE_CCSRC_DISTRIBUTED_RPC_TCP_TCP_SOCKET_OPERATION_H_
 
-#include "distributed/rpc/tcp/connection.h"
 #include "distributed/rpc/tcp/socket_operation.h"
 
 namespace mindspore {

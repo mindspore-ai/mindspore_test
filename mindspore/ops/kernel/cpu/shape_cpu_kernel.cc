@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/shape_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace shape_cpu {
 bool ShapeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
@@ -87,5 +88,6 @@ const std::vector<std::pair<KernelAttr, ShapeCpuKernelMod::KernelRunFunc>> &Shap
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Shape, ShapeCpuKernelMod);
+}  // namespace shape_cpu
 }  // namespace kernel
 }  // namespace mindspore

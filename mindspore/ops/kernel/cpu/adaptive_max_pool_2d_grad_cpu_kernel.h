@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_2d_grad_cpu {
 class AdaptiveMaxPool2DGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdaptiveMaxPool2DGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class AdaptiveMaxPool2DGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t output_stride_{1};
   int64_t output_size_{1};
 };
+}  // namespace adaptive_max_pool_2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ADAPTIVE_MAX_POOL_2D_GRAD_CPU_KERNEL_H_

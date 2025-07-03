@@ -15,29 +15,27 @@
  */
 
 #include "kernel/ascend/pyboost/customize/upsample_nearest1d.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-tensor::BaseTensorPtr UpsampleNearest1dAscendCall(const std::shared_ptr<OpRunner> &op,
-                                                  const device::DeviceContext *device_context,
-                                                  const BaseTensorPtr &input_tensor,
-                                                  const std::vector<int64_t> &output_size,
-                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
+tensor::TensorPtr UpsampleNearest1dAscendCall(const std::shared_ptr<OpRunner> &op,
+                                              const device::DeviceContext *device_context,
+                                              const TensorPtr &input_tensor, const std::vector<int64_t> &output_size,
+                                              const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   LAUNCH_ACLNN(aclnnUpsampleNearest1d, device_context, op->stream_id(), input_tensor, output_size, outputs[0]);
   return outputs[0];
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const std::optional<ValueTuplePtr> &output_size,
-                                                       const std::optional<ValueTuplePtr> &scale_factors) {
+tensor::TensorPtr UpsampleNearest1DAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                   const std::optional<ValueTuplePtr> &output_size,
+                                                   const std::optional<ValueTuplePtr> &scale_factors) {
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);
 
   const ShapeVector &osize = op->output(kIndex0)->shape();

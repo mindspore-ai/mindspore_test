@@ -38,7 +38,6 @@ class CPUKernelRuntime : public KernelRuntime {
 
   bool Init();
   bool Run(const session::KernelGraph &graph, bool is_task_sink) override;
-  void AssignKernelGraphAddress(const session::KernelGraph *kernel_graph);
   void CreateOutputTensors(session::KernelGraph *kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                            VectorRef *outputs, std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node);
   void BindInputOutput(session::KernelGraph *kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
@@ -57,6 +56,7 @@ class CPUKernelRuntime : public KernelRuntime {
                                        const KernelWithIndex &node_index) const override;
 
  private:
+  void RunKernel(const CNodePtr &kernel, bool iter_dump_flag, uint32_t graph_id);
   tensor::TensorPtr CreateTensorForOutput(session::KernelGraph *kernel_graph, const CNodePtr &node, size_t index,
                                           std::set<DeviceAddressPtr> *bound_addresses);
   BaseRef GetOrCreateTensorForOutput(session::KernelGraph *kernel_graph,
@@ -69,7 +69,7 @@ class CPUKernelRuntime : public KernelRuntime {
   void AssignValueNodeAddress(const session::KernelGraph *kernel_graph);
   void AssignInputNodeAddress(const session::KernelGraph *kernel_graph) const;
   void AssignKernelOutputAddress(const session::KernelGraph *kernel_graph) const;
-  void AddRuntimeAddress(DeviceAddress *address, std::vector<kernel::KernelTensor *> *input_list);
+  void AddRuntimeAddress(KernelTensor *kernel_tensor, std::vector<kernel::KernelTensor *> *input_list);
   void GetRuntimeAddressFromNode(const AnfNodePtr &node, std::vector<kernel::KernelTensor *> *inputs,
                                  std::vector<kernel::KernelTensor *> *outputs,
                                  std::vector<kernel::KernelTensor *> *workspaces);

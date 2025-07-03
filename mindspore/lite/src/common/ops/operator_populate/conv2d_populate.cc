@@ -18,6 +18,7 @@
 #include "nnacl/conv_parameter.h"
 #include "infer/conv2d.h"
 #include "infer/cxx_api/conv2d_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kInChannel;
 using mindspore::ops::kNameConv2D;

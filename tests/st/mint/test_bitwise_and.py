@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from mindspore import ops, mint, Tensor, jit, JitConfig, context
+from mindspore import ops, mint, Tensor, jit, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
@@ -58,8 +58,8 @@ def test_bitwise_and_forward_backward(mode):
         output2 = bitwise_and_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(bitwise_and_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(bitwise_and_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(bitwise_and_forward_func, backend="ms_backend", jit_level="O0"))(x, y)
+        output2 = (jit(bitwise_and_forward_func, backend="ms_backend", jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = bitwise_and_forward_func(x, y)
@@ -78,8 +78,8 @@ def test_bitwise_and_forward_backward(mode):
         grad2 = bitwise_and_backward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(bitwise_and_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        grad2 = (jit(bitwise_and_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        grad = (jit(bitwise_and_backward_func, backend="ms_backend", jit_level="O0"))(x, y)
+        grad2 = (jit(bitwise_and_backward_func, backend="ms_backend", jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = bitwise_and_backward_func(x, y)
@@ -134,7 +134,7 @@ def mint_bitwise_and_binary_case1(input_binary_data=None, output_binary_data=Non
     mint_bitwise_and_binary_compare(input_binary_data, output_binary_data)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_bitwise_and_binary_cases(mode):
     """

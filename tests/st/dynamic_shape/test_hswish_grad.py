@@ -120,6 +120,8 @@ def test_hswish_grad_dynamic_rank(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
+    if mode == ms.context.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     set_device()
     if get_device() == "Ascend":
         ms.device_context.ascend.op_precision.precision_mode("force_fp32")

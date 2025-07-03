@@ -15,16 +15,13 @@
  */
 #include "minddata/dataset/kernels/ir/vision/mixup_batch_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/mixup_batch_op.h"
-#endif
 #include "minddata/dataset/kernels/ir/validators.h"
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // MixUpOperation
 MixUpBatchOperation::MixUpBatchOperation(float alpha) : alpha_(alpha) {}
 
@@ -52,7 +49,6 @@ Status MixUpBatchOperation::from_json(nlohmann::json op_params, std::shared_ptr<
   *operation = std::make_shared<vision::MixUpBatchOperation>(alpha);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

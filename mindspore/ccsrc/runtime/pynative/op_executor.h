@@ -30,7 +30,7 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "include/backend/visible.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/pipeline/async_rqueue.h"
 
 namespace mindspore::runtime {
@@ -41,8 +41,6 @@ class BACKEND_EXPORT OpExecutor {
   void PushOpRunTask(const std::shared_ptr<DeviceOpRunTask> &op_run_task);
 
   void PushOpRunTask(const std::shared_ptr<PyBoostDeviceTask> &op_run_task);
-
-  void PushOpRunTask(const std::shared_ptr<DvmDeviceTask> &op_run_task);
 
   void PushSimpleOpRunTask(const std::shared_ptr<AsyncTask> &op_run_task);
 

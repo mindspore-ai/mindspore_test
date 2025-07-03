@@ -21,11 +21,12 @@
 #include <complex>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace segment_mean_cpu {
 class SegmentMeanCPUKernelMod : public NativeCpuKernelMod {
  public:
   SegmentMeanCPUKernelMod() = default;
@@ -55,6 +56,7 @@ class SegmentMeanCPUKernelMod : public NativeCpuKernelMod {
   TypeId segment_ids_dtype_{kTypeUnknown};
   TypeId output_dtype_{kTypeUnknown};
 };
+}  // namespace segment_mean_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,9 @@
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace device {
@@ -70,6 +72,37 @@ void AddStreamIdForCommunicationOp(const AnfNodePtr &node) {
   common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
 }
 
+void AssignStreamForMoveTo(const AnfNodePtr &node) {
+  const auto &dst_str = common::AnfAlgo::GetMoveToDstStr(node);
+  if (dst_str == kToCpu) {
+    auto copy_out_stream = AscendStreamMng::GetInstance().GetCopyOutStream();
+    size_t copy_out_stream_id;
+    if (copy_out_stream == nullptr) {
+      AscendStreamMng::GetInstance().CreateStream(&copy_out_stream_id);
+      MS_LOG(INFO) << "Create ascend copy out stream, stream id: " << copy_out_stream_id;
+      copy_out_stream = AscendStreamMng::GetInstance().GetStream(copy_out_stream_id);
+      AscendStreamMng::GetInstance().SetCopyOutStream(copy_out_stream);
+    }
+    copy_out_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_out_stream);
+    AnfAlgo::SetStreamId(copy_out_stream_id, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_out_stream_id), node);
+  } else if (dst_str == kToNpu) {
+    auto copy_in_stream = AscendStreamMng::GetInstance().GetCopyInStream();
+    size_t copy_in_stream_id;
+    if (copy_in_stream == nullptr) {
+      AscendStreamMng::GetInstance().CreateStream(&copy_in_stream_id);
+      MS_LOG(INFO) << "Create ascend copy in stream, stream id: " << copy_in_stream_id;
+      copy_in_stream = AscendStreamMng::GetInstance().GetStream(copy_in_stream_id);
+      AscendStreamMng::GetInstance().SetCopyInStream(copy_in_stream);
+    }
+    copy_in_stream_id = AscendStreamMng::GetInstance().GetStreamId(copy_in_stream);
+    AnfAlgo::SetStreamId(copy_in_stream_id, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(copy_in_stream_id), node);
+  } else {
+    MS_LOG(EXCEPTION) << "Get error MoveTo dst string: " << dst_str;
+  }
+}
+
 void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_manager) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
@@ -77,8 +110,12 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
   }
   auto cnode = node->cast<CNodePtr>();
   if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
-    AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+      AssignStreamForMoveTo(node);
+    } else {
+      AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+    }
   } else {
     auto prim = GetCNodePrimitive(cnode);
     MS_EXCEPTION_IF_NULL(prim);
@@ -103,22 +140,19 @@ void AddStreamIdByGroup(const AnfNodePtr &node, DeviceResManager *device_res_man
 }
 }  // namespace
 
-void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
-                                   const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events,
-                                   DeviceResManager *device_res_manager) {
+void AclStreamAssign::AssignStream(
+  const NotNull<KernelGraphPtr> &kernel_graph,
+  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order,
+  DeviceResManager *device_res_manager) {
   auto kernels = kernel_graph->execution_order();
   if (kernels.empty()) {
     return;
   }
-  if (kernel_graph->is_from_single_op() || kernel_graph->has_flag(kFlagPyNativeRunInGraph)) {
+  if (kernel_graph->is_from_single_op()) {
     MS_LOG(INFO) << "Not stream assign when pynative forward.";
     return;
   }
-  std::set<uint32_t> stream_ids;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto ms_context_exec_order = ms_context->get_param<std::string>(MS_CTX_EXEC_ORDER);
-  const std::string kExecOrderGpto = "gpto";
+  uint32_t max_stream_id = kDefaultStreamIndex;
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -141,12 +175,13 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     }
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
-    // gpto not support multi_stream of communication group now.
-    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream) || ms_context_exec_order == kExecOrderGpto) {
+    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
       // multi_stream:true, all communication op use the same communication stream.
       MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
         AddStreamIdForCommunicationOp(node);
+      } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+        AssignStreamForMoveTo(node);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
         common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
@@ -156,9 +191,9 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
       MS_LOG(INFO) << "Set stream id by group for node " << node->fullname_with_scope();
       AddStreamIdByGroup(node, device_res_manager);
     }
-    stream_ids.insert(AnfAlgo::GetStreamId(node));
+    max_stream_id = std::max(max_stream_id, AnfAlgo::GetStreamId(node));
   }
-  kernel_graph->set_enable_multi_stream(stream_ids.size() > 1);
+  kernel_graph->set_enable_multi_stream(max_stream_id != kDefaultStreamIndex);
 
   for (size_t i = 1; i < kernels.size(); ++i) {
     if (common::AnfAlgo::GetCNodeName(kernels[i - 1]) == kMemSetOpName) {
@@ -167,7 +202,7 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(stream_id), kernels[i - 1]);
     }
   }
-  InsertEventForNonTaskSink(kernel_graph, sched_events);
+  InsertEventForNonTaskSink(kernel_graph, mock_exec_order);
 }
 
 void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {
@@ -268,6 +303,55 @@ void AclStreamAssign::AddBoundarySendRecvKernel(const NotNull<KernelGraphPtr> &k
   SetForSwitchInline(kernel_graph, send_node, recv_node, pre_cnode, next_cnode);
 }
 
+void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGraphPtr> &kernel_graph,
+                                               const CNodePtr &kernel, size_t exec_idx, uint32_t record_stream_id,
+                                               const std::vector<CNodePtr> &origin_exec_order,
+                                               std::vector<CNodePtr> *exec_order,
+                                               mindspore::HashMap<size_t, std::vector<CNodePtr>> *delayed_recv_nodes) {
+  constexpr int64_t kDefaultDelayNum = 1;
+  if (IsPrimitiveCNode(kernel, prim::kPrimMoveTo) && common::AnfAlgo::GetMoveToDstStr(kernel) == kToCpu) {
+    // Get pre_fetch size.
+    int64_t pre_fetch = kDefaultDelayNum;
+    const auto &prim = GetCNodePrimitive(kernel);
+    const auto &attrs = prim->attrs();
+    const auto &attr_iter = attrs.find(kAttrBackwardPrefetch);
+    if (attr_iter != attrs.end()) {
+      const auto &pre_fetch_value = attr_iter->second;
+      if (pre_fetch_value->isa<Int64Imm>()) {
+        pre_fetch = GetValue<int64_t>(pre_fetch_value);
+      }
+    }
+    // Create send and recv kernels.
+    auto &resource_manager = AscendStreamMng::GetInstance();
+    uint32_t event_id = resource_manager.ApplyNewEvent();
+    auto event = resource_manager.ApplyRtEvent();
+    auto event_generate_id = ++event_generate_id_;
+    auto send_node = CreateSendApplyKernel(kernel_graph, event_id, record_stream_id, event_generate_id);
+    common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), send_node);
+    auto recv_node =
+      CreateRecvApplyKernel(kernel_graph, event_id, record_stream_id, kDefaultStreamIndex, event_generate_id);
+    common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_node);
+    exec_order->push_back(send_node);
+
+    const auto max_exec_idx = origin_exec_order.size();
+    auto node_before_recv_index = exec_idx + pre_fetch >= max_exec_idx ? max_exec_idx - 1 : exec_idx + pre_fetch;
+    while (node_before_recv_index < max_exec_idx - 1) {
+      const auto &node_before_recv = origin_exec_order[node_before_recv_index];
+      if (AnfAlgo::GetStreamId(node_before_recv) == kDefaultStreamIndex) {
+        break;
+      }
+      node_before_recv_index += 1;
+    }
+    (*delayed_recv_nodes)[node_before_recv_index].emplace_back(recv_node);
+    MS_LOG(DEBUG) << "Add send and recv for MoveTo, send: " << exec_idx << ", recv: " << node_before_recv_index;
+  }
+  const auto &iter = delayed_recv_nodes->find(exec_idx);
+  if (iter != delayed_recv_nodes->end()) {
+    const auto &recv_nodes = iter->second;
+    std::copy(recv_nodes.begin(), recv_nodes.end(), std::back_inserter(*exec_order));
+  }
+}
+
 void AclStreamAssign::ProcessSideEffect(const NotNull<KernelGraphPtr> &kernel_graph, const CNodePtr kernel,
                                         size_t process_stream_id, const CNodePtr last_kernel,
                                         std::vector<AnfNodePtr> *real_inputs,
@@ -323,6 +407,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
   std::map<AnfNodePtr, std::set<size_t>> side_effect_map;
   std::map<size_t, std::set<size_t>> no_event_streams;  // wait_stream -> record_stream
   auto exec_kernels = kernel_graph->execution_order();
+  mindspore::HashMap<size_t, std::vector<CNodePtr>> delayed_recv_nodes;
   std::vector<CNodePtr> new_exec_orders;
 
   std::set<size_t> streams_set;
@@ -337,6 +422,7 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
     AddBoundarySendRecvKernel(kernel_graph, kDefaultStreamIndex, stream, &new_exec_orders, &no_event_streams);
   }
   CNodePtr last_kernel = nullptr;
+  size_t cur_idx = 0;
   for (auto &kernel : exec_kernels) {
     auto before_iter = recv_before_node.find(kernel);
     if (before_iter != recv_before_node.end()) {
@@ -357,6 +443,10 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
         }
       }
     }
+    if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
+      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
+                                &no_event_streams, last_kernel, kernel);
+    }
     std::vector<AnfNodePtr> real_inputs;
     ProcessSideEffect(kernel_graph, kernel, process_stream_id, last_kernel, &real_inputs, &side_effect_map,
                       &no_event_streams, &new_exec_orders);
@@ -369,16 +459,15 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
         kv.second.insert(process_stream_id);
       }
     }
-    if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
-      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
-                                &no_event_streams, last_kernel, kernel);
-    }
     new_exec_orders.push_back(kernel);
+    AddDelayedSendRecvKernel(kernel_graph, kernel, cur_idx, process_stream_id, exec_kernels, &new_exec_orders,
+                             &delayed_recv_nodes);
     last_kernel = kernel;
     auto after_iter = send_after_node.find(kernel);
     if (after_iter != send_after_node.end()) {
       (void)std::copy(after_iter->second.begin(), after_iter->second.end(), std::back_inserter(new_exec_orders));
     }
+    cur_idx += 1;
   }
   auto graph_output = kernel_graph->output();
   auto graph_output_iter = recv_before_node.find(graph_output);
@@ -567,9 +656,9 @@ std::pair<CNodePtr, CNodePtr> AclStreamAssign::CreateSendRecvEventsPair(const No
   return std::make_pair(send_cnode, recv_cnode);
 }
 
-void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(const NotNull<KernelGraphPtr> &kernel_graph,
-                                                       const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
-  std::unordered_map<CNodePtr, std::pair<std::vector<CNodePtr>, std::vector<CNodePtr>>> gpto_events;
+void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(
+  const NotNull<KernelGraphPtr> &kernel_graph,
+  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) {
   std::vector<CNodePtr> new_exec_order;
   auto exec_order_list = kernel_graph->execution_order();
 
@@ -589,40 +678,36 @@ void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(const NotNull<KernelGraph
     new_exec_order.push_back(send_recv_nodes.second);
   }
 
-  for (auto pair : sched_events) {
-    const auto &node_before_send = pair.first;
-    auto send_stream_id = AnfAlgo::GetStreamId(node_before_send);
-    const auto &node_after_recv = pair.second;
-    auto recv_stream_id = AnfAlgo::GetStreamId(node_after_recv);
+  // Materialize mock execution order
+  std::map<size_t, CNodePtr> recv_event;
+  for (auto pair : mock_exec_order) {
+    const auto &cnode_ptr = pair.first;
+    const auto &send_rcv = pair.second;
 
-    // Create necessary events computed by GPTO
-    std::pair<CNodePtr, CNodePtr> events_pair = CreateSendRecvEventsPair(kernel_graph, send_stream_id, recv_stream_id);
+    if (cnode_ptr != nullptr) {
+      if (common::AnfAlgo::GetCNodeName(cnode_ptr) == kSendOpName) {
+        std::pair<CNodePtr, CNodePtr> events_pair =
+          CreateSendRecvEventsPair(kernel_graph, AnfAlgo::GetStreamId(cnode_ptr), kDefaultStreamIndex);
+        new_exec_order.push_back(events_pair.first);
+        new_exec_order.push_back(events_pair.second);
+      }
+      new_exec_order.push_back(cnode_ptr);
+      continue;
+    }
 
-    if (gpto_events.find(node_before_send) == gpto_events.end()) {
-      gpto_events[node_before_send] = {{events_pair.first}, {}};
-    } else {
-      gpto_events[node_before_send].first.push_back(events_pair.first);
-    }
-    if (gpto_events.find(node_after_recv) == gpto_events.end()) {
-      gpto_events[node_after_recv] = {{}, {events_pair.second}};
-    } else {
-      gpto_events[node_after_recv].second.push_back(events_pair.second);
-    }
-  }
+    // Case of send/recv event
+    const auto &event_type = std::get<0>(send_rcv);
+    const auto &send_stream_id = std::get<1>(send_rcv);
+    const auto &recv_stream_id = std::get<2>(send_rcv);
+    const auto &event_id = std::get<3>(send_rcv);
 
-  // Compute the new execution order list for the current graph
-  for (auto &kernel : exec_order_list) {
-    bool has_events = gpto_events.find(kernel) != gpto_events.end();
-    auto &send_event_nodes = gpto_events[kernel].first;
-    auto &recv_event_nodes = gpto_events[kernel].second;
-    // Insert recv events nodes to the exec order list
-    if (has_events && recv_event_nodes.size() > 0) {
-      (void)std::copy(recv_event_nodes.begin(), recv_event_nodes.end(), std::back_inserter(new_exec_order));
-    }
-    new_exec_order.push_back(kernel);
-    // Insert send events nodes to the exec order list
-    if (has_events && send_event_nodes.size() > 0) {
-      (void)std::copy(send_event_nodes.begin(), send_event_nodes.end(), std::back_inserter(new_exec_order));
+    if (event_type == 's') {  // send case
+      std::pair<CNodePtr, CNodePtr> events_pair =
+        CreateSendRecvEventsPair(kernel_graph, send_stream_id, recv_stream_id);
+      new_exec_order.push_back(events_pair.first);
+      recv_event[event_id] = events_pair.second;
+    } else {  // recv case
+      new_exec_order.push_back(recv_event[event_id]);
     }
   }
 
@@ -636,18 +721,19 @@ void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(const NotNull<KernelGraph
   kernel_graph->set_execution_order(new_exec_order);
 }
 
-void AclStreamAssign::InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph,
-                                                const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
+void AclStreamAssign::InsertEventForNonTaskSink(
+  const NotNull<KernelGraphPtr> &kernel_graph,
+  const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) {
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_send;
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_recv;
   mindspore::HashMap<AnfNodePtr, std::set<size_t>> producer_streams;
   AnfAlgo::SetStreamId(kDefaultStreamIndex, kernel_graph->output().get());
 
-  if (sched_events.empty()) {
+  if (mock_exec_order.empty()) {
     GenEventsForParallelOp(kernel_graph, &kernel_send, &kernel_recv, &producer_streams);
     UpdateEventsToExecutionOrder(kernel_graph, kernel_send, kernel_recv, producer_streams);
   } else {
-    UpdateGPTOEventsToExecutionOrder(kernel_graph, sched_events);
+    UpdateGPTOEventsToExecutionOrder(kernel_graph, mock_exec_order);
   }
 }
 }  // namespace ascend

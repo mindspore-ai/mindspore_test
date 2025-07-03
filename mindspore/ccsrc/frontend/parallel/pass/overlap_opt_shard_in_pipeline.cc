@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <list>
 #include <algorithm>
 #include <string>
+#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -29,6 +30,12 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/comm_manager.h"
+#include "pipeline/jit/ps/graph_circle_handler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace parallel {
@@ -38,7 +45,12 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 
   for (const auto &prim : kAllGatherOpsPrim) {
     if (IsPrimitiveCNode(node, prim)) {
-      auto allgather_instance_name = GetCNodePrimitive(node->cast<CNodePtr>())->instance_name();
+      MS_EXCEPTION_IF_NULL(node);
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto cnode_primitive = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(cnode_primitive);
+      auto allgather_instance_name = cnode_primitive->instance_name();
       if (allgather_instance_name.find(parallel::PARALLEL_OPTIMIZER) == std::string::npos) {
         return false;
       }
@@ -51,6 +63,7 @@ bool is_allgather_comm_ops(const AnfNodePtr &node) {
 bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(recv_node);
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
     }
@@ -60,8 +73,12 @@ bool is_first_receive(const AnfNodePtr &node) {
         return false;
       }
     }
-    auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
-    if (micro != 0 || recv_node->HasPrimalAttr(parallel::PIPELINE_PARAM)) {
+    if (recv_node->HasPrimalAttr(parallel::MICRO)) {
+      auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
+      if (micro != 0) {
+        return false;
+      }
+    } else {
       return false;
     }
     return true;
@@ -72,7 +89,7 @@ bool is_first_receive(const AnfNodePtr &node) {
 void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  static const bool is_enable_ge = (context->backend_policy() == "ge");
+  static const bool is_enable_ge = common::AnfAlgo::IsBackendGe();
   if (is_enable_ge) {
     return;
   }
@@ -95,55 +112,37 @@ void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   if (parallel::ParallelContext::GetInstance()->enable_fold_pipeline()) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   std::list<CNodePtr> orders = graph->GetOrderedCnodes();
   std::vector<CNodePtr> origin_nodes_topological(orders.cbegin(), orders.cend());
-  CNodePtr first_receive_cnode = nullptr;
-  for (auto &node : origin_nodes_topological) {
-    if (is_first_receive((node))) {
-      first_receive_cnode = node->cast<CNodePtr>();
-      first_receive_cnode->AddAttr(parallel::FIRST_RECEIVE, MakeValue(True));
-    }
-  }
-  if (first_receive_cnode == nullptr) {
-    return;
-  }
-  auto recv_users = manager->node_users()[first_receive_cnode];
-  if (recv_users.empty()) {
-    return;
-  }
-
+  std::vector<CNodePtr> first_receive_cnode_list;
+  std::copy_if(origin_nodes_topological.begin(), origin_nodes_topological.end(),
+               std::back_inserter(first_receive_cnode_list), [](const auto &node) { return is_first_receive(node); });
   std::vector<CNodePtr> opt_shard_allgather_list;
-  for (auto &node : origin_nodes_topological) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (!is_allgather_comm_ops(node)) {
-      continue;
-    }
-    auto cnode_allgather = node->cast<CNodePtr>();
-    opt_shard_allgather_list.push_back(cnode_allgather);
-    auto allgather_prim = GetCNodePrimitive(cnode_allgather);
-    auto group_name = GetValue<std::string>(allgather_prim->GetAttr(parallel::GROUP));
-    if (group_name.find("parallel_optimizer") != std::string::npos) {
-      continue;
-    }
-    auto rank_ids = parallel::g_device_manager->FindRankListByHashName(group_name);
-    if (rank_ids.empty()) {
-      continue;
-    }
-    auto dev_list = parallel::g_device_manager->CreateDeviceListByRankList(rank_ids);
-    auto new_group_name = group_name + "_parallel_optimizer";
-    parallel::Group cur_device_list;
-    (void)parallel::g_device_manager->CreateGroup(new_group_name, dev_list, &cur_device_list);
-    (void)allgather_prim->AddAttr(parallel::GROUP, MakeValue<std::string>(new_group_name));
+  std::vector<AbstractBasePtr> maketuple_abs_inputs;
+  std::copy_if(origin_nodes_topological.begin(), origin_nodes_topological.end(),
+               std::back_inserter(opt_shard_allgather_list),
+               [](const auto &node) { return is_allgather_comm_ops(node); });
+  std::transform(opt_shard_allgather_list.begin(), opt_shard_allgather_list.end(),
+                 std::back_inserter(maketuple_abs_inputs),
+                 [](const auto &cnode_allgather) { return cnode_allgather->abstract(); });
+  if (opt_shard_allgather_list.empty() || first_receive_cnode_list.empty()) {
+    return;
   }
   std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   (void)std::copy(opt_shard_allgather_list.begin(), opt_shard_allgather_list.end(),
                   std::back_inserter(make_tuple_inputs));
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_receive_cnode,
-                                        graph->NewCNode(make_tuple_inputs)};
-  auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_receive_cnode->abstract()->Clone());
-  depend_node->AddAttr("RecAllGatherDepend", MakeValue(True));
-  (void)manager->Replace(first_receive_cnode, depend_node);
+  auto make_tuple_cnode = graph->NewCNode(make_tuple_inputs);
+  make_tuple_cnode->set_abstract(std::make_shared<abstract::AbstractTuple>(maketuple_abs_inputs));
+  for (const auto &first_receive_cnode : first_receive_cnode_list) {
+    std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_receive_cnode->input(kIndex1),
+                                          make_tuple_cnode};
+    auto depend_node = graph->NewCNode(depend_inputs);
+    depend_node->set_abstract(first_receive_cnode->input(kIndex1)->abstract()->Clone());
+    depend_node->AddAttr("RecAllGatherDepend", MakeValue(True));
+    (void)manager->SetEdge(first_receive_cnode, kIndex1, depend_node);
+  }
+  circle_handler::DetectAndRevertGraphCircle(graph, manager, "OverlapOptShardInPipeline");
 }
 
 static std::vector<CNodePtr> GetOptShardReduceScatter(const std::vector<AnfNodePtr> &all_nodes) {
@@ -167,6 +166,10 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kAutoParallel) {
     return;
   }
+  if (parallel::ParallelContext::GetInstance()->grad_accumulation_shard() ||
+      parallel::ParallelContext::GetInstance()->zero3()) {
+    return;
+  }
   if (parallel::g_device_manager == nullptr) {
     MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
     return;
@@ -180,6 +183,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
   if (stage_num <= 1) {
     return;
   }
+  circle_handler::SetAttrToDepend(graph);
   auto ret_after = graph->get_return();
   MS_EXCEPTION_IF_NULL(ret_after);
   auto all_nodes = TopoSort(ret_after, SuccDeeperSimple);
@@ -191,6 +195,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       continue;
     }
@@ -219,6 +224,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
       manager->SetEdge(rs, 1, depend);
     }
   }
+  circle_handler::DetectAndRevertGraphCircle(graph, graph->manager(), "OverlapOptShardGradInPipeline");
 }
 }  // namespace parallel
 }  // namespace mindspore

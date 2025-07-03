@@ -22,16 +22,16 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr AvgPool2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad,
-                                                   const BaseTensorPtr &image, const ValueTuplePtr &kernel_size,
-                                                   const ValueTuplePtr &stride, const ValueTuplePtr &padding,
-                                                   const BoolImmPtr &ceil_mode, const BoolImmPtr &count_include_pad,
-                                                   const std::optional<Int64ImmPtr> &divisor_override);
+tensor::TensorPtr AvgPool2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &grad,
+                                               const TensorPtr &image, const ValueTuplePtr &kernel_size,
+                                               const ValueTuplePtr &stride, const ValueTuplePtr &padding,
+                                               const BoolImmPtr &ceil_mode, const BoolImmPtr &count_include_pad,
+                                               const std::optional<Int64ImmPtr> &divisor_override);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

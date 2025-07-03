@@ -127,6 +127,16 @@ def before_test(case_name, device_num=4):
     x = Tensor(np.ones(shape=(32, 1, 28, 28)), dtype=ms.float32)
     return net, x, ir_graph_path
 
+def before_test_pynative(case_name, device_num=4):
+    context.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL, device_num=device_num,
+                                      global_rank=0, search_mode="sharding_propagation")
+    context.set_context(mode=ms.PYNATIVE_MODE)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "reshard_ir", case_name)
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    net = Net()
+    x = Tensor(np.ones(shape=(32, 1, 28, 28)), dtype=ms.float32)
+    return net, x, ir_graph_path
+
 def test_shard_with_in_strategy_4x1():
     """
     Feature: Test shard.
@@ -152,13 +162,13 @@ def test_parameter_plan_with_strategy_4x1():
     """
     net, x, ir_graph_path = before_test("test_parameter_plan_with_strategy_4x1")
     compile_net(net, x, layout1, layout2)
-    file1 = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
-    para1 = "PrimFunc_AShardIdentity(%28)"
+    file1 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    para1 = "PrimFunc_AShardIdentity(%6)"
     in_strategy1 = "in_strategy: ((4, 1))"
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para2 = "PrimFunc_MatMul(%25"
-    in_strategy2 = "in_strategy: ((1, 1), (4, 1))"
+    in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
 
@@ -171,14 +181,14 @@ def test_parameter_plan_with_layout_4x1():
     _, x, ir_graph_path = before_test("test_parameter_plan_with_layout_4x1")
     net = Net2()
     compile_net(net, x, layout1, layout2)
-    file1 = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+    file1 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%10)"
     in_strategy1 = ("in_layout: ({'device_matrix': (4, 1), 'tensor_map': (1, 0), "
                     "'interleaved_parallel': false, 'alias_name': (dp, mp)})")
     check_layout_config(para1, file1, in_strategy1)
     file2 = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para2 = "PrimFunc_MatMul(%7, %11"
-    in_strategy2 = "in_strategy: ((1, 1), (4, 1))"
+    in_strategy2 = "in_strategy: ((4, 1), (1, 1))"
     check_layout_config(para2, file2, in_strategy2)
 
 
@@ -223,7 +233,7 @@ def test_reshard_with_layout_propagation():
     compile_net(net, x, layout3, layout4)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
     para1 = "PrimFunc_MatMul(%87, %88"
-    matmul_strategy = "in_strategy: ((1, 2), (2, 1))"
+    matmul_strategy = "in_strategy: ((4, 2), (2, 1))"
     check_layout_config(para1, file, matmul_strategy)
 
 
@@ -231,9 +241,36 @@ def test_reshard_with_tuple_as_input():
     """
     Feature: Reshard input must be type Layout.
     Description: Test reshard with tuple as input.
-    Expectation: Throw exception includes "Reshard only support type mindspore.Layout".
+    Expectation: Throw exception includes "Reshard only support type mindspore.parallel.Layout".
     """
     net, x, _ = before_test("test_reshard_with_tuple_as_input")
     with pytest.raises(TypeError) as err:
         compile_net(net, x, ((2, 1),), layout2)
-    assert "Reshard only support type mindspore.Layout" in str(err.value)
+    assert "Reshard only support type mindspore.parallel.Layout" in str(err.value)
+
+
+def test_parameter_plan_with_strategy_4x1_pynative():
+    """
+    Feature: shard nested shard
+    Description: test usage of shard nested shard
+    Expectation: throw an exception indicating that shard nested shard is invalid usage
+    """
+    net, x, _ = before_test_pynative("test_parameter_plan_with_strategy_4x1_pynative")
+    error_msg = "Nested use of shard (e.g shard(shard(...), ...) is not supported in PyNative mode"
+    with pytest.raises(Exception) as err:
+        compile_net(net, x, layout1, layout2)
+    assert error_msg in str(err.value)
+
+
+def test_parameter_plan_with_layout_4x1_pynative():
+    """
+    Feature: shard nested shard
+    Description: test usage of shard nested shard
+    Expectation: throw an exception indicating that shard nested shard is invalid usage
+    """
+    _, x, _ = before_test_pynative("test_parameter_plan_with_layout_4x1_pynative")
+    error_msg = "Nested use of shard (e.g shard(shard(...), ...) is not supported in PyNative mode"
+    with pytest.raises(Exception) as err:
+        net = Net2()
+        compile_net(net, x, layout1, layout2)
+    assert error_msg in str(err.value)

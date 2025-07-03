@@ -59,6 +59,7 @@ Status SplitInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -73,6 +74,7 @@ Status SplitVInfo::GetAttrs() {
   if (axis_iter != attrs_.end()) {
     MS_EXCEPTION_IF_NULL(axis_iter->second);
     if (axis_iter->second->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(axis_iter->second->cast<Int64ImmPtr>());
       axis = axis_iter->second->cast<Int64ImmPtr>()->value();
     } else {
       MS_LOG(ERROR) << name_ << ": The value of axis is not int";
@@ -94,6 +96,7 @@ Status SplitVInfo::GetAttrs() {
   axis_ = LongToSize(axis);
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -122,6 +125,7 @@ Status SplitWithSizeInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -150,6 +154,7 @@ Status SplitTensorInfo::GetAttrs() {
   inputs_shape_ = Shapes{inputs_shape_[0]};  // Truncation for Strategy check.
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
@@ -320,25 +325,42 @@ Status SplitInfo::InferTensorMap() {
 
 Status SplitInfo::CheckInputLayout() {
   if (inputs_tensor_info_.size() != kSizeOne) {
-    MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
-                  << " rather than 1.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                   << " rather than 1.";
+    } else {
+      MS_LOG(ERROR) << "The size of input_tensor_layout for " << name_ << " is " << inputs_tensor_info_.size()
+                    << " rather than 1.";
+    }
     return FAILED;
   }
   auto stra = inputs_tensor_info_.front().InferStrategy();
   if (axis_ >= stra.size()) {
-    MS_LOG(ERROR) << name_ << ": The axis is out of range, the axis is " << axis_;
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << ": The axis is out of range, the axis is " << axis_;
+    } else {
+      MS_LOG(ERROR) << name_ << ": The axis is out of range, the axis is " << axis_;
+    }
     return FAILED;
   }
   auto input_layout = inputs_tensor_info_.front().tensor_layout();
   if (input_layout.IsInterleavedParallel()) {
     auto tensor_map_axis = input_layout.tensor_map_before()[axis_];
     if (std::find(tensor_map_axis.begin(), tensor_map_axis.end(), 0) != tensor_map_axis.end()) {
-      MS_LOG(ERROR) << name_ << ": The axis can not be split by interleaved_parallel.";
+      if (is_in_layout_propagation_) {
+        MS_LOG(INFO) << name_ << ": The axis can not be split by interleaved_parallel.";
+      } else {
+        MS_LOG(ERROR) << name_ << ": The axis can not be split by interleaved_parallel.";
+      }
       return FAILED;
     }
   }
   if (stra[axis_] != 1 && !skip_redistribution_) {
-    MS_LOG(ERROR) << name_ << ": The axis can not be split";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << name_ << ": The axis can not be split";
+    } else {
+      MS_LOG(ERROR) << name_ << ": The axis can not be split";
+    }
     return FAILED;
   }
   return SUCCESS;
@@ -346,7 +368,11 @@ Status SplitInfo::CheckInputLayout() {
 
 Status SplitInfo::CheckOutputLayout() {
   if (output_infer_tensor_layout_.tensor_shape_before().array().empty()) {
-    MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    if (is_in_layout_propagation_) {
+      MS_LOG(INFO) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    } else {
+      MS_LOG(ERROR) << "Parameter of output tensor layout for " << name_ << " is not allowed to be set by users.";
+    }
     return FAILED;
   }
   MS_LOG(INFO) << name_ << ": Using output tensor layout infer by input tensor layout.";

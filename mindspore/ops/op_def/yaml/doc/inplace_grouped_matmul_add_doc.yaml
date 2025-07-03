@@ -1,0 +1,41 @@
+inplace_grouped_matmul_add:
+    description: |
+        Fusion Operator of Transpose, GroupedMatmul, and InplaceAdd.
+
+        .. warning::
+            - This is an experimental API that is subject to change or deletion.
+            - This API is only supported in Atlas A2 training series for now.
+            - This API is only supported on KBK mode.
+
+        Args:
+            x (Tensor): Tensor with shape :math:`(m, k)`, whose type should be float16 or bfloat16.
+            weight (Tensor): Tensor with shape :math:`(m, n)`, whose type should be float16 or bfloat16.
+            group_list (Tensor): 1D Tensor, grouping positions for the m-axis of `x` and `weight`,
+                whose type should be int64. It must be a non-negative ascending sequence .
+            out (Tensor): A Tensor acting as both input and output, with type of float32.
+                It's shape should be :math:`group_list.shape[0], k, n` or :math:`group_list.shape[0] * k, n` .
+
+        Returns:
+            Tensor, has the same shape and data type as `out`.
+
+        Raises:
+            TypeError: If the dtype of `weight` is not the same as `x`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops, nn, context
+            >>> context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+            >>> class Net(nn.Cell):
+            ...     def construct(self, x, weight, group_list, out):
+            ...        return ops.auto_generate.grouped_matmul_add_(x, weight, group_list, out)
+            >>> x = Tensor(np.random.randn(10, 20), mindspore.float16)
+            >>> weight = Tensor(np.random.randn(10, 8), mindspore.float16)
+            >>> group_list = Tensor([2, 6, 8, 10], mindspore.int64)
+            >>> out = Tensor(np.random.randn(4, 20, 8), mindspore.float32)
+            >>> output = Net()(x, weight, group_list, out)
+            >>> print(output.shape)
+            [4, 20, 8]

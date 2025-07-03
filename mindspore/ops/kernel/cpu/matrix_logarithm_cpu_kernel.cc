@@ -19,12 +19,13 @@
 #include <complex>
 #include <cmath>
 #include <chrono>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Core"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_logarithm_cpu {
 namespace {
 constexpr size_t kInputSize = 1;
 constexpr size_t kOutputSize = 1;
@@ -122,5 +123,6 @@ void MatrixLogarithmCpuKernelMod::LaunchMatrixLogarithm(const std::vector<Kernel
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixLogarithm, MatrixLogarithmCpuKernelMod);
+}  // namespace matrix_logarithm_cpu
 }  // namespace kernel
 }  // namespace mindspore

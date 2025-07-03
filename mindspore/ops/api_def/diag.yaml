@@ -1,0 +1,14 @@
+diag:
+  - op_yaml: diag_ext_op.yaml
+    py_method: tensor_diag
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/diag_method.yaml
+    py_method: deprecated_tensor_diag
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

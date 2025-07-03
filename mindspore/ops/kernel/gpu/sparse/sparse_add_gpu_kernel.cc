@@ -21,7 +21,7 @@
 #include <algorithm>
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/sparse_add_impl.cuh"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

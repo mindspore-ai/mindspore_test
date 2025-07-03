@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace expandas {
 
 class ExpandAsAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class ExpandAsAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   ShapeVector other_shape;
 };
+}  // namespace expandas
 }  // namespace kernel
 }  // namespace mindspore
 

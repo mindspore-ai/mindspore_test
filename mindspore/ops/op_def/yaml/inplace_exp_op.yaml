@@ -1,0 +1,22 @@
+#operator inplace_exp
+inplace_exp:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceExp
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceExpAscend
+    CPU: None
+    GPU: None

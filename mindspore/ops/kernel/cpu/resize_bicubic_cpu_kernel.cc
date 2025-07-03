@@ -18,13 +18,14 @@
 #include <algorithm>
 #include <limits>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include <memory>
+#include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
-namespace {
+namespace resize_bicubic_cpu {
 constexpr size_t kIndex0 = 0;
 constexpr size_t kIndex1 = 1;
 constexpr size_t kIndex2 = 2;
@@ -82,7 +83,6 @@ struct LegacyScaler {
   LegacyScaler() {}
   inline float operator()(const int64_t x, const float scale) const { return static_cast<float>(x) * scale; }
 };
-}  // namespace
 
 struct WeightsAndIndices {
   float weight_0;
@@ -128,8 +128,8 @@ class CachedInterpolationCalculator {
 
 inline int64_t Bound(int64_t val, int64_t limit) { return std::min(limit - 1, std::max(int64_t{0}, val)); }
 
-std::shared_ptr<const float[]> InitCoeffsTable(const double a) {
-  auto coeffs_table = std::shared_ptr<float[]>(new float[(kTableSize + 1) * 2]);
+std::vector<float> InitCoeffsTable(const double a) {
+  std::vector<float> coeffs_table((kTableSize + 1) * calnum2, 0);
   for (int i = 0; i <= kTableSize; ++i) {
     float x = i * 1.0 / kTableSize;
     coeffs_table[i * calnum2] = ((a + calnum2) * x - (a + calnum3)) * x * x + 1;
@@ -139,7 +139,7 @@ std::shared_ptr<const float[]> InitCoeffsTable(const double a) {
   return coeffs_table;
 }
 
-std::shared_ptr<const float[]> GetCoeffsTable(const bool use_keys_cubic) {
+std::vector<float> GetCoeffsTable(const bool use_keys_cubic) {
   return use_keys_cubic ? InitCoeffsTable(-0.5f) : InitCoeffsTable(-0.75f);
 }
 
@@ -383,5 +383,6 @@ std::vector<KernelAttr> ResizeBicubicCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBicubic, ResizeBicubicCPUKernelMod);
+}  // namespace resize_bicubic_cpu
 }  // namespace kernel
 }  // namespace mindspore

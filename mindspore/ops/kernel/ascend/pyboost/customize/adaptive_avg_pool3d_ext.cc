@@ -16,11 +16,11 @@
 
 #include "kernel/ascend/pyboost/customize/adaptive_avg_pool3d_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/auto_generate/mean_ext.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/mean_ext.h"
 
 namespace mindspore {
 namespace kernel {
@@ -28,11 +28,9 @@ namespace pyboost {
 namespace {
 constexpr int kShapeDim1d = 1;
 constexpr int kShapeDim3d = 3;
-constexpr int kShapeDimNone = -1;
 }  // namespace
-tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                          const BaseTensorPtr &input_tensor,
-                                                          const ValueTuplePtr &output_size) {
+tensor::TensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                      const TensorPtr &input_tensor, const ValueTuplePtr &output_size) {
   OpRunner::InferOpOutput(op, input_tensor, output_size);
   std::vector<int64_t> output_size_vector = ConvertValueTupleToVector<int64_t>(output_size);
   std::vector<int64_t> axis_vector{-1, -2, -3};  // {-1, -2, -3}, fixed axis dims for aclnnMean
@@ -42,6 +40,7 @@ tensor::BaseTensorPtr AdaptiveAvgPool3DExtAscendCustomize(const std::shared_ptr<
   auto input_shape = input_tensor->shape();
   auto input_shape_size = input_shape.size();
   std::vector<int64_t> output_size_update;
+  constexpr int kShapeDimNone = -1;
   for (auto i = 0; i < kShapeDim3d; i++) {
     if (output_size_vector[i] != kShapeDimNone)
       output_size_update.emplace_back(output_size_vector[i]);

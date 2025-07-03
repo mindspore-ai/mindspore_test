@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore
 import mindspore.context as context
@@ -27,14 +26,14 @@ from mindspore.ops import composite as C
 
 def maskedselect():
     x = np.array([1, 2, 3, 4]).astype(np.int32)
-    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool)
+    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_)
     net = P.MaskedSelect()
     return net(Tensor(x), Tensor(mask))
 
 
 def maskedselect_dynamic_shape():
     x = np.array([1, 2, 3, 4, 1, 2, 3, 4]).astype(np.int32)
-    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool)
+    mask = np.array([[[0], [1], [0], [1]], [[0], [1], [0], [1]]]).astype(np.bool_)
     net = P.MaskedSelect()
     unique = P.Unique()
     unique_out, _ = unique(Tensor(x))
@@ -78,8 +77,8 @@ def test_maskedselect_bool_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    x = np.array([0, 0, 1, 1]).astype(np.bool)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    x = np.array([0, 0, 1, 1]).astype(np.bool_)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = [False, True]
     assert (y.asnumpy() == expect).all()
@@ -95,7 +94,7 @@ def test_maskedselect_complex64_type():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex64)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex64)
     assert (y.asnumpy() == expect).all()
@@ -111,7 +110,7 @@ def test_maskedselect_complex128_type():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex128)
-    mask = np.array([1, 0, 1, 0]).astype(np.bool)
+    mask = np.array([1, 0, 1, 0]).astype(np.bool_)
     y = maskedselect_for_type(x, mask)
     expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex128)
     assert (y.asnumpy() == expect).all()
@@ -139,7 +138,7 @@ class Net(nn.Cell):
 
 def masked_select_grad(data_type):
     x = np.array([1, 2, 3, 4]).astype(data_type)
-    mask = np.array([[0], [1], [0], [1]]).astype(np.bool)
+    mask = np.array([[0], [1], [0], [1]]).astype(np.bool_)
     dy = np.array([i for i in range(8)]).astype(data_type)
     grad = Grad(Net())
     return grad(Tensor(x), Tensor(mask), Tensor(dy))[0]
@@ -147,7 +146,7 @@ def masked_select_grad(data_type):
 
 def masked_select_grad_dynamic_shape():
     x = Tensor(np.array([1, 2, 3, 4]).astype(np.int32))
-    mask = Tensor(np.array([[0], [1], [0], [1]]).astype(np.bool))
+    mask = Tensor(np.array([[0], [1], [0], [1]]).astype(np.bool_))
     dy = Tensor(np.array([i for i in range(8)]).astype(np.int32))
     x_dynamic_shape = Tensor(shape=[None], dtype=mindspore.int32)
     grad = Grad(Net())

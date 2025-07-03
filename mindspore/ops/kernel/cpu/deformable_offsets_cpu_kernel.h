@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace deformable_offsets_cpu {
 class DeformableOffsetsCpuKernelMod : public NativeCpuKernelMod,
                                       public MatchKernelHelper<DeformableOffsetsCpuKernelMod> {
  public:
@@ -76,6 +77,7 @@ class DeformableOffsetsCpuKernelMod : public NativeCpuKernelMod,
   int64_t output_w_{0};
   int64_t position_grid_size_{0};
 };
+}  // namespace deformable_offsets_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_DEFORMABLE_OFFSETS_CPU_KERNEL_H_

@@ -23,10 +23,11 @@
 
 #include "include/common/utils/stub_tensor.h"
 #include "runtime/pipeline/task/task.h"
+#include "runtime/pipeline/visible.h"
 
 namespace mindspore {
 namespace runtime {
-class RunGraphTask : public AsyncTask {
+class RUNTIME_PIPELINE_EXPORT RunGraphTask : public AsyncTask {
  public:
   explicit RunGraphTask(std::function<void()> &&func, const stub::StubNodePtr &stub_output)
       : AsyncTask(kRunGraphTask), func_(std::move(func)), stub_output_(stub_output) {}

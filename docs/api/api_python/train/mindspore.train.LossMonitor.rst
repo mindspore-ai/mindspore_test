@@ -18,7 +18,7 @@ mindspore.train.LossMonitor
 
     .. py:method:: on_train_epoch_end(run_context)
 
-        LossMoniter用于 `model.fit`，即边训练边推理场景时，打印训练的loss和当前epoch推理的metrics。
+        LossMoniter用于 :func:`mindspore.train.Model.fit`，即边训练边推理场景时，打印训练的loss和当前epoch推理的metrics。
 
         参数：
             - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。

@@ -26,11 +26,13 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "utils/anf_utils.h"
-#include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "backend/common/graph_kernel/adapter/callback_impl.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::graphkernel {
 namespace {

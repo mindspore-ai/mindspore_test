@@ -2,7 +2,7 @@ mindspore.mint
 ===============
 
 mindspore.mint提供了大量的functional、nn、优化器接口，API用法及功能等与业界主流用法一致，方便用户参考使用。
-mint接口当前是实验性接口，在图编译模式为O0和PyNative模式下性能比ops更优。当前暂不支持图下沉模式及CPU、GPU后端，后续会逐步完善。
+mint接口当前是实验性接口，在图编译模式为O0和PyNative模式下性能比ops更优。当前暂不支持O2（图下沉模式）及CPU、GPU后端，后续会逐步完善。
 
 模块导入方法如下：
 
@@ -18,7 +18,7 @@ Tensor
 创建运算
 ^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -47,7 +47,7 @@ Tensor
 索引、切分、连接、突变运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -57,6 +57,7 @@ Tensor
     mindspore.mint.concat
     mindspore.mint.count_nonzero
     mindspore.mint.gather
+    mindspore.mint.index_add
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute
@@ -82,7 +83,7 @@ Tensor
 随机采样
 ------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -98,7 +99,7 @@ Tensor
 逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -140,6 +141,7 @@ Tensor
     mindspore.mint.fix
     mindspore.mint.float_power
     mindspore.mint.floor
+    mindspore.mint.floor_divide
     mindspore.mint.fmod
     mindspore.mint.frac
     mindspore.mint.lerp
@@ -148,6 +150,7 @@ Tensor
     mindspore.mint.log2
     mindspore.mint.log10
     mindspore.mint.logaddexp
+    mindspore.mint.logaddexp2
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
@@ -184,7 +187,7 @@ Tensor
 Reduction运算
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -193,6 +196,7 @@ Reduction运算
     mindspore.mint.amin
     mindspore.mint.argmax
     mindspore.mint.argmin
+    mindspore.mint.argsort
     mindspore.mint.all
     mindspore.mint.any
     mindspore.mint.cumprod
@@ -214,7 +218,7 @@ Reduction运算
 比较运算
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -244,7 +248,7 @@ Reduction运算
 BLAS和LAPACK运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -264,7 +268,7 @@ BLAS和LAPACK运算
 其他运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -274,28 +278,20 @@ BLAS和LAPACK运算
     mindspore.mint.cummax
     mindspore.mint.cummin
     mindspore.mint.cumsum
+    mindspore.mint.diag
     mindspore.mint.flatten
     mindspore.mint.flip
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
     mindspore.mint.tril
+    mindspore.mint.triangular_solve
 
 mindspore.mint.nn
 ------------------
 
-损失函数
-^^^^^^^^^^^^^^^^^^^
-
-.. mscnplatwarnautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.L1Loss
-
 卷积层
 ^^^^^^^^^^^^^^^^^^
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -308,7 +304,7 @@ mindspore.mint.nn
 
 归一化层
 ^^^^^^^^^^^^^^^^^^
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -323,13 +319,14 @@ mindspore.mint.nn
 非线性激活层 (加权和，非线性)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.ELU
     mindspore.mint.nn.GELU
+    mindspore.mint.nn.GLU
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
@@ -341,14 +338,16 @@ mindspore.mint.nn
     mindspore.mint.nn.ReLU6
     mindspore.mint.nn.SELU
     mindspore.mint.nn.SiLU
+    mindspore.mint.nn.Sigmoid
     mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
     mindspore.mint.nn.Tanh
+    mindspore.mint.nn.Threshold
 
 嵌入层
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -358,7 +357,7 @@ mindspore.mint.nn
 线性层
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -368,7 +367,7 @@ mindspore.mint.nn
 Dropout层
 ^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -379,7 +378,7 @@ Dropout层
 池化层
 ^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -387,13 +386,15 @@ Dropout层
     mindspore.mint.nn.AdaptiveAvgPool1d
     mindspore.mint.nn.AdaptiveAvgPool2d
     mindspore.mint.nn.AdaptiveAvgPool3d
+    mindspore.mint.nn.AdaptiveMaxPool1d
     mindspore.mint.nn.AvgPool2d
+    mindspore.mint.nn.AvgPool3d
     mindspore.mint.nn.MaxUnpool2d
 
 填充层
 ^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -414,7 +415,7 @@ Dropout层
 损失函数
 ^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -422,24 +423,27 @@ Dropout层
     mindspore.mint.nn.BCELoss
     mindspore.mint.nn.BCEWithLogitsLoss
     mindspore.mint.nn.CrossEntropyLoss
+    mindspore.mint.nn.KLDivLoss
+    mindspore.mint.nn.L1Loss
     mindspore.mint.nn.MSELoss
     mindspore.mint.nn.NLLLoss
     mindspore.mint.nn.SmoothL1Loss
 
-图像处理层
+Vision层
 ^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.PixelShuffle
     mindspore.mint.nn.Upsample
 
 工具
 ^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -452,7 +456,7 @@ mindspore.mint.nn.functional
 卷积函数
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -466,29 +470,34 @@ mindspore.mint.nn.functional
 池化函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.functional.adaptive_avg_pool1d
     mindspore.mint.nn.functional.adaptive_avg_pool2d
+    mindspore.mint.nn.functional.adaptive_avg_pool3d
+    mindspore.mint.nn.functional.adaptive_max_pool1d
     mindspore.mint.nn.functional.avg_pool1d
     mindspore.mint.nn.functional.avg_pool2d
+    mindspore.mint.nn.functional.avg_pool3d
     mindspore.mint.nn.functional.max_pool2d
     mindspore.mint.nn.functional.max_unpool2d
 
 非线性激活函数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.nn.functional.batch_norm
     mindspore.mint.nn.functional.elu
+    mindspore.mint.nn.functional.elu_
     mindspore.mint.nn.functional.gelu
+    mindspore.mint.nn.functional.glu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
     mindspore.mint.nn.functional.hardsigmoid
@@ -509,11 +518,13 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.softplus
     mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
+    mindspore.mint.nn.functional.threshold
+    mindspore.mint.nn.functional.threshold_
 
 归一化函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -523,7 +534,7 @@ mindspore.mint.nn.functional
 线性函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -533,7 +544,7 @@ mindspore.mint.nn.functional
 Dropout函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -544,7 +555,7 @@ Dropout函数
 稀疏函数
 ^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -555,13 +566,15 @@ Dropout函数
 损失函数
 ^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.kl_div
     mindspore.mint.nn.functional.l1_loss
     mindspore.mint.nn.functional.mse_loss
     mindspore.mint.nn.functional.nll_loss
@@ -570,7 +583,7 @@ Dropout函数
 Vision函数
 ^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -578,17 +591,19 @@ Vision函数
     mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.grid_sample
     mindspore.mint.nn.functional.pad
+    mindspore.mint.nn.functional.pixel_shuffle
 
 mindspore.mint.optim
 ---------------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
 
     mindspore.mint.optim.Adam
     mindspore.mint.optim.AdamW
+    mindspore.mint.optim.SGD
 
 mindspore.mint.linalg
 ----------------------
@@ -596,7 +611,7 @@ mindspore.mint.linalg
 逆数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -605,6 +620,7 @@ mindspore.mint.linalg
     mindspore.mint.linalg.matrix_norm
     mindspore.mint.linalg.norm
     mindspore.mint.linalg.vector_norm
+    mindspore.mint.linalg.qr
 
 mindspore.mint.special
 ----------------------
@@ -612,7 +628,7 @@ mindspore.mint.special
 逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -628,7 +644,7 @@ mindspore.mint.special
 mindspore.mint.distributed
 --------------------------------
 
-.. mscnplatwarnautosummary::
+.. mscnplatformautosummary::
     :toctree: mint
     :nosignatures:
     :template: classtemplate.rst
@@ -655,6 +671,8 @@ mindspore.mint.distributed
     mindspore.mint.distributed.init_process_group
     mindspore.mint.distributed.irecv
     mindspore.mint.distributed.isend
+    mindspore.mint.distributed.is_available
+    mindspore.mint.distributed.is_initialized
     mindspore.mint.distributed.new_group
     mindspore.mint.distributed.P2POp
     mindspore.mint.distributed.recv
@@ -664,3 +682,4 @@ mindspore.mint.distributed
     mindspore.mint.distributed.scatter
     mindspore.mint.distributed.scatter_object_list
     mindspore.mint.distributed.send
+    mindspore.mint.distributed.TCPStore

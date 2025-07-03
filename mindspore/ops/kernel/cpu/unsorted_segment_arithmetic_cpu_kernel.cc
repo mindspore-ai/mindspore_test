@@ -18,9 +18,11 @@
 #include <complex>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unsorted_segment_arithmetic_cpu {
 namespace {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -176,6 +178,11 @@ int UnsortedSegmentArithmeticCpuKernelMod::Resize(const std::vector<KernelTensor
   loop_size_ = 1;
   for (size_t i = batch_rank_; i < in_shape.size(); i++) {
     loop_size_ *= in_shape[i];
+    if (loop_size_ <= 0) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', loop_size_ should be greater than 0,"
+                        << "please check all dims in input shape are greater than 0.";
+      return KRET_RESIZE_FAILED;
+    }
   }
   loop_size_ /= comp_size_;
   return KRET_OK;
@@ -243,5 +250,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentMin, UnsortedSegmentAri
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentMax, UnsortedSegmentArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentSum, UnsortedSegmentArithmeticCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UnsortedSegmentProd, UnsortedSegmentArithmeticCpuKernelMod);
+}  // namespace unsorted_segment_arithmetic_cpu
 }  // namespace kernel
 }  // namespace mindspore

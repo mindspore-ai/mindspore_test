@@ -21,6 +21,9 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -56,7 +59,8 @@ bool IsValidInlinePartial(const AnfNodePtr &node, std::set<FuncGraphPtr> *checke
       return false;
     }
   } else if (outputs.size() == 1) {
-    const auto &real_output_node = outputs.begin()->first;
+    const auto &real_output_node =
+      common::AnfAlgo::VisitKernelWithReturnType(outputs.begin()->first, outputs.begin()->second, false).first;
     if (real_output_node == nullptr || real_output_node->isa<ValueNode>()) {
       return false;
     } else if (real_output_node->isa<Parameter>()) {
@@ -153,6 +157,7 @@ bool IsLazyInlineCall(const AnfNodePtr &node) {
     return false;
   }
   const auto &get_item_cnode = get_item_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(get_item_cnode);
   if (get_item_cnode->size() == 0 || (!IsValueNode<FuncGraph>(get_item_cnode->input(0)))) {
     return false;
   }

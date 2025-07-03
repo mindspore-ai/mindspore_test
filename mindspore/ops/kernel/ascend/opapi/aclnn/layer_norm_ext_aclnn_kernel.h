@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_ext {
 
 class LayerNormExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class LayerNormExtAscend : public AclnnKernelMod {
   TypeId eps_dtype_id_;
   double eps_ = 1e-5;
 };
+}  // namespace layer_norm_ext
 }  // namespace kernel
 }  // namespace mindspore
 

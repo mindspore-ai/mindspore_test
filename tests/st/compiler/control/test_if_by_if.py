@@ -1,7 +1,7 @@
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import mindspore.context as context
-from mindspore import Tensor
+from mindspore import Tensor, jit
 from mindspore.common.parameter import Parameter
 from mindspore.common import dtype
 from mindspore.nn import Cell
@@ -9,10 +9,10 @@ import mindspore.ops.operations as P
 import mindspore.ops.functional as F
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_basic():
     """
     Feature: Control flow
@@ -73,8 +73,12 @@ def test_if_by_if_basic():
     assert np.allclose(out_ms.asnumpy(), out_np)
 
 
-@case_register.level0
-@case_register.target_ascend
+@jit(backend="ms_backend")
+def grad_func(net, x, y):
+    return F.grad(net, grad_position=(0, 1))(x, y)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch_same_shape():
     """
     Feature: control flow function.
@@ -105,14 +109,12 @@ def test_branch_same_shape():
     x = np.array([-1], np.float32)
     y = np.array([2], np.float32)
     net = Net()
-    grad_net = F.grad(net, grad_position=(0, 1))
     context.set_context(mode=context.GRAPH_MODE)
-    fgrad = grad_net(Tensor(x), Tensor(y))
+    fgrad = grad_func(net, Tensor(x), Tensor(y))
     print(fgrad)
 
 
-@case_register.level0
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_parallel_if_add_by_zero():
     """
     Feature: AddByZero optimization in parallel if.

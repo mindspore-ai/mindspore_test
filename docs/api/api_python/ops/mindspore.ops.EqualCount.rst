@@ -4,7 +4,7 @@ mindspore.ops.EqualCount
 .. py:class:: mindspore.ops.EqualCount
 
     计算两个Tensor的相同元素的数量。
-    
+
     两个输入Tensor必须具有相同的数据类型和shape。
 
     输入：

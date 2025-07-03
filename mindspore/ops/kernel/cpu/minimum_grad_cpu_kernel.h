@@ -20,12 +20,13 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/convert_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_grad_cpu {
 class MinimumGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MinimumGradCpuKernelMod> {
  public:
   MinimumGradCpuKernelMod() = default;
@@ -70,6 +71,7 @@ class MinimumGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   ShapeVector dout_shape_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace minimum_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MINIMUMGRAD_CPU_KERNEL_H_

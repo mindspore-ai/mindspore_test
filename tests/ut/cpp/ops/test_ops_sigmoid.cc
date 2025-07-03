@@ -13,42 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "infer/ops_func_impl/sigmoid.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_dyn_cases.h"
-#include "ops/test_ops_cmp_utils.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-class TestSigmoid : public TestOps,
-                    public testing::WithParamInterface<std::tuple<EltwiseOpShapeParams, EltwiseOpTypeParams>> {};
-
-TEST_P(TestSigmoid, dyn_shape) {
-  const auto &shape_param = std::get<0>(GetParam());
-  const auto &dtype_param = std::get<1>(GetParam());
-  auto x = std::make_shared<abstract::AbstractTensor>(dtype_param.x_type, shape_param.x_shape);
-  ASSERT_NE(x, nullptr);
-  auto expect_shape = std::make_shared<abstract::Shape>(shape_param.out_shape);
-  auto expect_type = std::make_shared<TensorType>(dtype_param.out_type);
-  DoFuncImplInferAndCompare<SigmoidFuncImpl>("Sigmoid", {x}, expect_shape, expect_type);
-}
-
 namespace {
-auto SigmoidOpTypeCases = testing::ValuesIn({
-  EltwiseOpTypeParams{kFloat16, kFloat16},
-  EltwiseOpTypeParams{kFloat32, kFloat32},
-  EltwiseOpTypeParams{kFloat64, kFloat64},
-  EltwiseOpTypeParams{kComplex64, kComplex64},
-  EltwiseOpTypeParams{kComplex128, kComplex128},
-});
+std::vector <GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 6}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{2, 3, 6}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{6}, kNumberTypeFloat16}})
+      .FeedExpectedOutput({{6}}, {kNumberTypeFloat16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{1, 1, 1, 1, 1, 1, 1, 8}, kNumberTypeBFloat16}})
+      .FeedExpectedOutput({{1, 1, 1, 1, 1, 1, 1, 8}}, {kNumberTypeBFloat16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeComplex128}})
+      .FeedExpectedOutput({{2, -1}}, {kNumberTypeComplex128});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeComplex64}})
+      .FeedExpectedOutput({{-1, -1}}, {kNumberTypeComplex64});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  return generator.Generate();
+}
 }
 
-INSTANTIATE_TEST_CASE_P(TestSigmoidGroup, TestSigmoid, testing::Combine(EltwiseDynShapeTestCases, SigmoidOpTypeCases));
+INSTANTIATE_TEST_CASE_P(Sigmoid, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace ops
 }  // namespace mindspore

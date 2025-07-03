@@ -23,7 +23,7 @@
 #include <iostream>
 #include <vector>
 
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/gpu/nn/ctcgreedydecoder_gpu_kernel.h"
 #include "mindspore/ops/infer/ctc_greedy_decoder.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/ctcgreedydecoder_impl.cuh"

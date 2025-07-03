@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,7 +172,7 @@ std::shared_ptr<T> ParserAttr(const std::string &str, const mindspore::HashMap<s
 template <typename T>
 std::shared_ptr<T> ParserScalarAttrValue(const std::string &attr_name, const mindspore::HashMap<string, ValuePtr> &kv) {
   std::string str = attr_name;
-  auto replace = [&](const string &orgStr, const string &newStr) {
+  auto replace = [&str](const string &orgStr, const string &newStr) {
     std::string::size_type pos;
     while ((pos = str.find(orgStr)) != std::string::npos) {
       (void)str.replace(pos, orgStr.length(), newStr);
@@ -192,7 +192,7 @@ std::shared_ptr<T> ParserScalarAttrValue(const std::string &attr_name, const min
 std::shared_ptr<abstract::AbstractTuple> ParserAttrShape(
   const std::string &attr_name, const mindspore::HashMap<string, abstract::AbstractBasePtr> &kv) {
   std::string str = attr_name;
-  auto replace = [&](const string &orgStr, const string &newStr) {
+  auto replace = [&str](const string &orgStr, const string &newStr) {
     std::string::size_type pos;
     while ((pos = str.find(orgStr)) != std::string::npos) {
       (void)str.replace(pos, orgStr.length(), newStr);
@@ -1125,7 +1125,7 @@ bool MSANFModelParser::BuildInputForFuncGraph(const ParameterPtr &node, const mi
           auto ref_key_value = parameter_abs_value->cast<StringImmPtr>();
           if (ref_key_value != nullptr && ref_key_value->value() == tensor_proto.ref_key() &&
               parameter->cast<ParameterPtr>()->default_param() != nullptr) {
-            node->set_default_param(parameter->cast<ParameterPtr>()->default_param());
+            node->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
             break;
           }
         }
@@ -1765,6 +1765,7 @@ bool MSANFModelParser::GetAttrValueForValueNodeWithType(const std::string &value
   auto abstract = value->ToAbstract();
   MS_EXCEPTION_IF_NULL(abstract);
   ValueNodePtr new_value_node = NewValueNode(value);
+  MS_EXCEPTION_IF_NULL(new_value_node);
   new_value_node->set_abstract(abstract);
   anfnode_build_map_[value_node_name] = new_value_node;
   return true;
@@ -1790,6 +1791,7 @@ bool MSANFModelParser::GetAttrValueForValueNode(const std::string &value_node_na
         auto res = ObtainCNodeAttrInSingleScalarForm(attr_proto);
         MS_EXCEPTION_IF_NULL(res);
         new_value_node = NewValueNode(res);
+        MS_EXCEPTION_IF_NULL(new_value_node);
         new_value_node->set_abstract(res->ToAbstract());
         anfnode_build_map_[value_node_name] = new_value_node;
         break;
@@ -1798,6 +1800,7 @@ bool MSANFModelParser::GetAttrValueForValueNode(const std::string &value_node_na
         MS_LOG(INFO) << "Build Tuple() ValueNode for primitive.";
         ValuePtr res = MakeValue(std::vector<ValuePtr>{});
         new_value_node = NewValueNode(res);
+        MS_EXCEPTION_IF_NULL(new_value_node);
         new_value_node->set_abstract(res->ToAbstract());
         anfnode_build_map_[value_node_name] = new_value_node;
         break;
@@ -1923,9 +1926,13 @@ bool MSANFModelParser::SetEmptyTensorProtoCNodeAbstract(const AnfNodePtr &node_p
       node_ptr->set_abstract(kBool->ToAbstract());
     } else {
       auto cnode_ptr = node_ptr->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode_ptr);
       AbstractBasePtrList elem;
       for (size_t index = 1; index < cnode_ptr->size(); ++index) {
-        auto abs = cnode_ptr->input(index)->abstract();
+        MS_EXCEPTION_IF_NULL(cnode_ptr);
+        auto input = cnode_ptr->input(index);
+        MS_EXCEPTION_IF_NULL(input);
+        auto abs = input->abstract();
         if (abs != nullptr) {
           if (abs->GetValueTrack() == nullptr) {
             abs->set_value(kValueAny);
@@ -2475,6 +2482,12 @@ const LayoutMap MSANFModelParser::ParseLayout(const mind_ir::ModelProto &model_p
       cur_layout->set_peer_rank(peer_rank);
       cur_layout->set_sr_tag(sr_tag);
     }
+
+    std::vector<int64_t> opt_shard_slice_shape;
+    for (int num = 0; num < layout_proto.opt_shard_slice_shape_int_size(); ++num) {
+      (void)opt_shard_slice_shape.emplace_back(layout_proto.opt_shard_slice_shape_int(num));
+    }
+    cur_layout->set_opt_shard_slice_shape(opt_shard_slice_shape);
     ret[name] = cur_layout;
   }
   return ret;
@@ -2577,8 +2590,10 @@ abstract::AbstractBasePtr MSANFModelParser::BuildAbstractFunction(const mind_ir:
       auto &inputs = partial_node->inputs();
       const size_t kPartial_args_begin_pos = 2;
       const size_t kPartial_fn_pos = 1;
-      if (inputs.size() <= kPartial_args_begin_pos) {
-        MS_LOG(ERROR) << "Partial node input size is wrong.";
+      if (inputs.size() < kPartial_args_begin_pos) {
+        MS_LOG(ERROR) << "The input size of Partial node is expected to be greater or equal than "
+                      << kPartial_args_begin_pos << ", but got " << inputs.size()
+                      << ", node: " << partial_node->DebugString();
         return nullptr;
       }
       (void)std::transform(inputs.begin() + kPartial_args_begin_pos, inputs.end(), std::back_inserter(args_spec_list),
@@ -2858,7 +2873,7 @@ FuncGraphPtr MindIRLoader::LoadMindIR(const std::string &file_name,
     MS_LOG(EXCEPTION) << "The length of the file name exceeds the limit.";
   }
   char abs_path_buff[PATH_MAX];
-  vector<string> files;
+  std::vector<string> files;
 
 #ifdef _WIN32
   _fullpath(abs_path_buff, file_name.c_str(), PATH_MAX);

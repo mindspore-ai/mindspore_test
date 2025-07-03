@@ -15,21 +15,27 @@
  */
 
 #include "kernel/ascend/pyboost/customize/meshgrid.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/view.h"
 #include "kernel/ascend/pyboost/auto_generate/broadcast_to.h"
 #include "op_def/op_enum.h"
-#include "kernel/common/pyboost/customize/meshgrid.h"
+#include "mindspore/ccsrc/pyboost/customize/meshgrid.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::vector<tensor::BaseTensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const ValueTuplePtr &tensors_list,
-                                                           const Int64ImmPtr &indexing) {
+std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const ValueTuplePtr &tensors_list, const Int64ImmPtr &indexing) {
+  MS_LOG(DEBUG) << "Meshgrid call start";
+  auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, kAscendDevice);
+  return outputs_list;
+}
+
+std::vector<tensor::TensorPtr> MeshgridAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const ValueTuplePtr &tensors_list, const int64_t &indexing) {
   MS_LOG(DEBUG) << "Meshgrid call start";
   auto outputs_list = MeshgridCustomizeCall(op, tensors_list, indexing, kAscendDevice);
   return outputs_list;

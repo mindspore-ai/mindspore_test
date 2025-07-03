@@ -49,15 +49,16 @@ class DebugActor : public ActorBase {
   void ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk);
 
   // The debug of each node.
-  void DebugPreLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                      const std::vector<DeviceTensor *> &op_output_kernel_tensors, const DeviceContext *device_context,
-                      OpContext<DeviceTensor> *const op_context, const AID *from_aid);
-  void DebugPostLaunch(const AnfNodePtr &node, const std::vector<DeviceTensor *> &op_input_kernel_tensors,
-                       const std::vector<DeviceTensor *> &op_output_kernel_tensors, const DeviceContext *device_context,
-                       OpContext<DeviceTensor> *const op_context, const AID *from_aid);
+  void DebugPreLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &op_input_kernel_tensors,
+                      const std::vector<KernelTensorPtr> &op_output_kernel_tensors, const DeviceContext *device_context,
+                      OpContext<KernelTensor> *const op_context, const AID *from_aid);
+  void DebugPostLaunch(const AnfNodePtr &node, const std::vector<KernelTensorPtr> &op_input_kernel_tensors,
+                       const std::vector<KernelTensorPtr> &op_output_kernel_tensors,
+                       const DeviceContext *device_context, OpContext<KernelTensor> *const op_context,
+                       const AID *from_aid);
 #ifdef ENABLE_DEBUGGER
-  void AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTensor *> &input_kernel_tensors,
-                     const std::vector<DeviceTensor *> &output_kernel_tensors, const DeviceContext *device_context);
+  void AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTensor *> &input_kernel_tensors,
+                     const std::vector<KernelTensor *> &output_kernel_tensors, const DeviceContext *device_context);
 #endif
   void AscendStepStart(const std::vector<KernelGraphPtr> &graphs, std::vector<DeviceContext *> device_contexts);
 
@@ -66,11 +67,11 @@ class DebugActor : public ActorBase {
   // The debug on step begin.
   void DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                         const std::vector<AnfNodePtr> &origin_parameters_order,
-                        std::vector<DeviceContext *> device_contexts, OpContext<DeviceTensor> *const op_context,
+                        std::vector<DeviceContext *> device_contexts, OpContext<KernelTensor> *const op_context,
                         const AID *from_aid);
 
   // The debug on step end.
-  void DebugOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count_,
+  void DebugOnStepEnd(OpContext<KernelTensor> *const op_context, const AID *from_aid, int total_running_count_,
                       int sink_size_);
   static inline uint64_t current_step{1};
 

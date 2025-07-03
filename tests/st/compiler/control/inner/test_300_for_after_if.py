@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
@@ -21,11 +20,11 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 
 grad_all = C.GradOperation(get_all=True)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if():
     """
     Feature: Control flow
@@ -60,15 +59,12 @@ def test_for_after_if():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    with pytest.raises(RuntimeError) as info:
-        for_after_if_net = ForAfterIfNet()
-        net = GradNet(for_after_if_net)
+    for_after_if_net = ForAfterIfNet()
+    net = GradNet(for_after_if_net)
 
-        forward_net = ForAfterIfNet()
-        graph_forward_res = forward_net(x)
-        graph_backward_res = net(x)
+    forward_net = ForAfterIfNet()
+    graph_forward_res = forward_net(x)
+    graph_backward_res = net(x)
 
-        assert graph_forward_res == Tensor(150, mstype.int32)
-        assert graph_backward_res == (Tensor(5, mstype.int32),)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    assert graph_forward_res == Tensor(150, mstype.int32)
+    assert graph_backward_res == (Tensor(5, mstype.int32),)

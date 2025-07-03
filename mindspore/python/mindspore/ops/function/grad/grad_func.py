@@ -22,12 +22,13 @@ from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore.nn.grad.cell_grad import _LinearizeInner
-from mindspore.ops.operations.other_ops import stop_gradient_
+from mindspore.ops.operations.other_ops import stop_gradient_op
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.function.array_func import ones, expand_dims, size, reshape, broadcast_to, transpose, zeros
 from mindspore.ops.composite import _Vmap, _Grad, _TaylorOperation, GradOperation
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_stop_gradient_op
 
 cast = P.Cast()
 dtype = P.DType()
@@ -103,11 +104,13 @@ def grad(fn, grad_position=0, weights=None, has_aux=False, return_ids=False):
 
     Args:
         fn (Union[Cell, Function]): Function to do GradOperation.
-        grad_position (Union[NoneType, int, tuple[int]]): Index to specify which inputs to be differentiated.
-            If int, get the gradient with respect to single input.
-            If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
-            If None, none derivative of any input will be figured out, and in this case, `weights` is required.
-            Default: ``0`` .
+        grad_position (Union[NoneType, int, tuple[int]]):
+            Index to specify which inputs to be differentiated. Default: ``0`` .
+
+            - If int, get the gradient with respect to single input.
+            - If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
+            - If None, none derivative of any input will be figured out, and in this case, `weights` is required.
+
         weights (Union[ParameterTuple, Parameter, list[Parameter]]): The parameters of the training network that need to
             calculate the gradient. `weights` can be got through `weights = net.trainable_params()` .
             Default: ``None`` .
@@ -237,36 +240,43 @@ def value_and_grad(fn, grad_position=0, weights=None, has_aux=False, return_ids=
 
     As for gradient, three typical cases are included:
 
-    1. gradient with respect to inputs. In this case, `grad_position` is not None while `weights` is None.
-    2. gradient with respect to weights. In this case, `grad_position` is None while `weights` is not None.
-    3. gradient with respect to inputs and weights. In this case, `grad_position` and `weights` are not None.
+    1. gradient with respect to inputs. In this case, `grad_position` is not None while `weights` is ``None``.
+    2. gradient with respect to weights. In this case, `grad_position` is None while `weights` is not ``None``.
+    3. gradient with respect to inputs and weights. In this case, `grad_position` and `weights` are not ``None``.
 
     Args:
         fn (Union[Cell, Function]): Function to do GradOperation.
-        grad_position (Union[NoneType, int, tuple[int]]): Index to specify which inputs to be differentiated.
-            If int, get the gradient with respect to single input.
-            If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
-            If None, none derivative of any input will be solved, and in this case, `weights` is required.
-            Default: ``0`` .
-        weights (Union[ParameterTuple, Parameter, list[Parameter]]): The parameters of the training network that need to
+        grad_position (Union[NoneType, int, tuple[int]], optional): Index to specify which inputs
+            to be differentiated. Default: ``0`` .
+
+            - If int, get the gradient with respect to single input.
+            - If tuple, get the gradients with respect to selected inputs. `grad_position` begins with 0.
+            - If None, none derivative of any input will be solved, and in this case, `weights` is required.
+
+        weights (Union[ParameterTuple, Parameter, list[Parameter]], optional):
+            The parameters of the training network that need to
             calculate the gradient. `weights` can be got through `weights = net.trainable_params()` .
             Default: ``None`` .
-        has_aux (bool): If ``True`` , only the first output of `fn` contributes the gradient of `fn`, while the other
+        has_aux (bool, optional): If ``True`` , only the first output of `fn` contributes the gradient of `fn`,
+            while the other
             outputs will be returned straightly. It means the `fn` must return more than one outputs in this case.
             Default: ``False`` .
-        return_ids(bool): Whether return the tuple made by gradients and the index to specify which inputs
-            to be differentiated or the name of parameters of the training network that need to calculate the gradient.
-            If ``True`` , the output gradients will be replaced by the tuples made by gradients and the index to specify
-            which inputs to be differentiated or the name of parameters of the training network.
+        return_ids(bool, optional): Whether the returned derivation function contains
+            `grad_position` or `weights` information. If ``True``,
+            all gradient values in the returned derivation function will be replaced
+            with: [gradient, grad_position] or [gradient, weights].
             Default: ``False`` .
 
     Returns:
-        Function, returns the gradient function to calculate forward output and gradient for the input function or cell.
+        Function, the derivative function used to compute the gradient of a given function.
         For example, as for `out1, out2 = fn(*args)` , gradient function will return outputs like
-        `((out1, out2), gradient)` . When `has_aux` is set to ``True``, only `out1` contributes to the differentiation.
+        `((out1, out2), gradient)` . When `has_aux` is set to ``True``,
+        only `out1` contributes to the differentiation. If `return_ids` is ``True``,
+        all gradient values in the returned derivation function will be replaced
+        with: [gradient, grad_position] or [gradient, weights].
 
     Raises:
-        ValueError: If both `grad_position` and `weights` are None.
+        ValueError: If both `grad_position` and `weights` are ``None``.
         TypeError: If type of Args does not belong to required ones.
 
     Supported Platforms:
@@ -378,10 +388,10 @@ def get_grad(gradients, identifier):
             :func:`mindspore.grad`.
 
     Returns:
-        The gradient of the tensor on the position or in the parameter that specified by the `identifier`.
+        The Tensor gradient value corresponding to the `identifier`.
 
     Raises:
-        RuntimeError: If gradient is not found.
+        RuntimeError: If gradient value corresponding to the `identifier` is not found.
         TypeError: If type of Args does not belong to required ones.
 
     Supported Platforms:
@@ -457,49 +467,42 @@ def jet(fn, primals, series):
     while the other to 0, which is like the derivative of origin input with respect to itself.
 
     Note:
-        If `primals` is Tensor of int type, it will be converted to Tensor of float type.
+        If `primals` is tensor of int type, it will be converted to Tensor of float type.
 
     Args:
         fn (Union[Cell, function]): Function to do TaylorOperation.
         primals (Union[Tensor, tuple[Tensor]]): The inputs to `fn`.
-        series (Union[Tensor, tuple[Tensor]]): If tuple, the length and type of series should be the same as inputs.
-            For each Tensor, the length of first dimension `i` represents the `1` to `i+1`-th order of derivative of
-            output with respect to the inputs will be figured out.
+        series (Union[Tensor, tuple[Tensor]]): The original 1st to nth order derivatives of the input.
+            The index `i` of the zeroth dimension of the tensor corresponds to the `i+1` -th order derivative of the
+            output with respect to the input.
 
     Returns:
-        Tuple, tuple of out_primals and out_series.
+        Tuple(out_primals, out_series)
 
         - **out_primals** (Union[Tensor, list[Tensor]]) - The output of `fn(primals)`.
-        - **out_series** (Union[Tensor, list[Tensor]]) - The `1` to `i+1`-th order of derivative of output with respect
+        - **out_series** (Union[Tensor, list[Tensor]]) - The `1` to `i+1` -th order of derivative of output with respect
           to the inputs.
-
-    Raises:
-        TypeError: If `primals` is not a tensor or tuple of tensors.
-        TypeError: If type of `primals` is not the same as type of `series`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore.nn as nn
-        >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> import mindspore
+        >>> from mindspore import nn
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
-        ...         self.sin = ops.Sin()
-        ...         self.exp = ops.Exp()
+        ...         self.sin = mindspore.ops.Sin()
+        ...         self.exp = mindspore.ops.Exp()
         ...     def construct(self, x):
         ...         out1 = self.sin(x)
         ...         out2 = self.exp(out1)
         ...         return out2
-        >>> primals = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
-        >>> series = Tensor(np.array([[[1, 1], [1, 1]], [[0, 0], [0, 0]], [[0, 0], [0, 0]]]).astype(np.float32))
+        >>> primals = mindspore.tensor([[1, 2], [3, 4]], mindspore.float32)
+        >>> series = mindspore.tensor([[[1, 1], [1, 1]], [[0, 0], [0, 0]], [[0, 0], [0, 0]]], mindspore.float32)
         >>> net = Net()
-        >>> out_primals, out_series = ops.jet(net, primals, series)
+        >>> out_primals, out_series = mindspore.ops.jet(net, primals, series)
         >>> print(out_primals, out_series)
         [[2.319777  2.4825778]
          [1.1515628 0.4691642]] [[[ 1.2533808  -1.0331168 ]
@@ -567,49 +570,41 @@ def derivative(fn, primals, order):
     input first order derivative is set to 1, while the other to 0.
 
     Note:
-        If `primals` is Tensor of int type, it will be converted to Tensor of float type.
+        If `primals` is tensor of int type, it will be converted to tensor of float type.
 
     Args:
         fn (Union[Cell, function]): Function to do TaylorOperation.
         primals (Union[Tensor, tuple[Tensor]]): The inputs to `fn`.
-        order (int): For each Tensor, the `order`-th order of derivative of output with respect to the inputs will be
-            figured out.
+        order (int): The order of differentiation.
 
     Returns:
-        Tuple, tuple of out_primals and out_series.
+        Tuple(out_primals, out_series)
 
         - **out_primals** (Union[Tensor, list[Tensor]]) - The output of `fn(primals)`.
         - **out_series** (Union[Tensor, list[Tensor]]) - The `order`-th order of derivative of output with respect
           to the inputs.
 
-    Raises:
-        TypeError: If `primals` is not a tensor or tuple of tensors.
-        TypeError: If `order` is not int.
-        ValueError: If `order` is less than 1.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> import mindspore
+        >>> from mindspore import nn
+        >>> mindspore.set_context(mode=mindspore.GRAPH_MODE)
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super().__init__()
-        ...         self.sin = ops.Sin()
-        ...         self.exp = ops.Exp()
+        ...         self.sin = mindspore.ops.Sin()
+        ...         self.exp = mindspore.ops.Exp()
         ...     def construct(self, x):
         ...         out1 = self.sin(x)
         ...         out2 = self.exp(out1)
         ...         return out2
-        >>> primals = Tensor(np.array([[1, 2], [3, 4]]).astype(np.float32))
+        >>>
+        >>> primals = mindspore.tensor([[1, 2], [3, 4]], mindspore.float32)
         >>> order = 3
         >>> net = Net()
-        >>> out_primals, out_series = ops.derivative(net, primals, order)
+        >>> out_primals, out_series = mindspore.ops.derivative(net, primals, order)
         >>> print(out_primals, out_series)
         [[2.319777  2.4825778]
          [1.1515628 0.4691642]] [[-4.0515366   3.6724353 ]
@@ -677,7 +672,7 @@ def jvp(fn, inputs, v, has_aux=False):
         - **net_output** (Union[Tensor, tuple[Tensor]]) - The output of `fn(inputs)` . Specially, when `has_aux` is set
           ``True`` , `netout` is the first output of `fn(inputs)` .
         - **jvp** (Union[Tensor, tuple[Tensor]]) - The result of jacobian-vector-product.
-        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - When `has_aux` is ``True`` , `aux_value` will be
+        - **aux_value** (Union[Tensor, tuple[Tensor]], optional) - Only when `has_aux` is ``True`` , `aux_value` will be
           returned. It means the second to last outputs of `fn(inputs)` . Specially, `aux_value` does not contribute to
           gradient.
 
@@ -841,7 +836,7 @@ def linearize(fn, inputs):
     """
     linearize_inner = _LinearizeInner()
 
-    @jit(hash_args=fn)
+    @jit
     def _wrap_container(*arg):
         args = arg[1:-1]
         vectors = arg[-1]
@@ -882,10 +877,12 @@ def vjp(fn, *inputs, weights=None, has_aux=False):
         fn (Union[Function, Cell]): The function or net that takes Tensor inputs and returns single Tensor or tuple of
             Tensors.
         inputs (Union[Tensor, tuple[Tensor], list[Tensor]]): The inputs to `fn` .
-        weights (Union[ParameterTuple, Parameter, list[Parameter]]): The parameters of the training network that need to
+        weights (Union[ParameterTuple, Parameter, list[Parameter]], optional):
+            The parameters of the training network that need to
             calculate the gradient. `weights` can be got through `weights = net.trainable_params()` .
             Default: ``None`` .
-        has_aux (bool): If True, only the first output of `fn` contributes the gradient of `fn`, while the other outputs
+        has_aux (bool, optional): If True, only the first output of `fn` contributes the gradient of `fn`,
+            while the other outputs
             will be returned straightly. It means the `fn` must return more than one outputs in this case.
             Default: ``False``.
 
@@ -1389,13 +1386,48 @@ def stop_gradient(value):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
+        >>> import mindspore
+        >>> def f1(x):
+        ...     return x ** 2
+        >>> x = 3.0
+        >>> f1(x)
+        9.0
+        >>> mindspore.ops.grad(f1)(mindspore.tensor(x))
+        Tensor(shape=[], dtype=Float32, value= 6)
+        >>>
+        >>> # With stop_gradient, return a zero gradient because x is effectively treated as a constant.
+        >>> def f2(x):
+        ...     return mindspore.ops.stop_gradient(x) ** 2
+        >>> f2(x)
+        9.0
+        >>> mindspore.ops.grad(f2)(mindspore.tensor(x))
+        Tensor(shape=[], dtype=Float32, value= 0)
+    """
+    return stop_gradient_op(value)
+
+
+def stop_gradient_(input):
+    """
+    StopGradient inplace
+
+    Args:
+        input (Tensor): input tensor
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        RuntimeError: If `input` is a view tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
         >>> from mindspore import ops
         >>> from mindspore import Tensor
         >>> from mindspore import dtype as mstype
         >>> def net(x, y):
         ...     out1 = ops.MatMul()(x, y)
         ...     out2 = ops.MatMul()(x, y)
-        ...     out2 = ops.stop_gradient(out2)
+        ...     ops.stop_gradient_(out2)
         ...     return out1, out2
         ...
         >>> x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
@@ -1406,7 +1438,7 @@ def stop_gradient(value):
         [[1.4100001 1.6       6.5999994]
          [1.4100001 1.6       6.5999994]]
     """
-    return stop_gradient_(value)
+    inplace_stop_gradient_op(input)
 
 
 __all__ = [
@@ -1420,6 +1452,7 @@ __all__ = [
     'vjp',
     'linearize',
     'stop_gradient',
+    'stop_gradient_',
     'get_grad'
 ]
 __all__.sort()

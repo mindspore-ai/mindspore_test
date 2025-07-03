@@ -27,6 +27,8 @@
 #include "ir/graph_utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -68,6 +70,7 @@ bool MergeTransData::Run(const FuncGraphPtr &func_graph) {
     for (size_t i = kIndexOne; i < kv.second.size(); i++) {
       if (IsPrimitiveCNode(kv.second[i]->input(kIndexOne), prim::kPrimDepend)) {
         auto depend_node = kv.second[i]->input(kIndexOne)->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(depend_node);
         auto new_depend_node =
           func_graph->NewCNode({NewValueNode(prim::kPrimDepend), kv.second[kIndexZero], depend_node->input(kIndexTwo)});
         (void)manager->Replace(kv.second[i], new_depend_node);

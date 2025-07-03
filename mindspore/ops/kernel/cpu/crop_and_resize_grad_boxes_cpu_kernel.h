@@ -23,11 +23,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_grad_boxes_cpu {
 constexpr size_t kInputNums = 4;
 constexpr size_t kOutNum = 1;
 constexpr size_t kGrads = 0;
@@ -48,7 +49,7 @@ constexpr size_t kBoxesShapeLen = 2;
 constexpr size_t kCoordinateLen = 4;
 constexpr size_t kBoxIndex = 3;
 constexpr size_t kBoxIndexShapeLen = 1;
-constexpr size_t kOutputIndex = 0;
+constexpr size_t kOutputIdx = 0;
 constexpr size_t kOutputShapeLen = 2;
 constexpr float kNum = 0.5;
 class CropAndResizeGradBoxesCpuKernelMod : public NativeCpuKernelMod {
@@ -84,6 +85,7 @@ class CropAndResizeGradBoxesCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector box_in_shape_;
   ShapeVector output_shape_;
 };
+}  // namespace crop_and_resize_grad_boxes_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

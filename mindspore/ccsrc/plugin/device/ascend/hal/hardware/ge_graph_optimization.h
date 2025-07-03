@@ -19,18 +19,19 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <tuple>
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 namespace mindspore {
 namespace device {
 namespace ascend {
+// todo: delete BACKEND_EXPORT after mv GEMindIRPass
 class GEGraphOptimization {
  public:
   static GEGraphOptimization &GetInstance() {
     static GEGraphOptimization instance;
     return instance;
   }
-  void OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
   void OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
   void OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
   void OptimizeACLGraphAfterInline(const KernelGraphPtr &graph);

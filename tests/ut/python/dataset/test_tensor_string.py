@@ -209,27 +209,6 @@ def test_tfrecord3():
         np.testing.assert_array_equal(chinese[i], d["chinese"])
 
 
-def create_text_mindrecord():
-    # methood to create mindrecord with string data, used to generate testTextMindRecord/test.mindrecord
-    from mindspore.mindrecord import FileWriter
-
-    mindrecord_file_name = "test.mindrecord"
-    data = [{"english": "This is a text file.",
-             "chinese": "今天天气太好了我们一起去外面玩吧"},
-            {"english": "Be happy every day.",
-             "chinese": "男默女泪"},
-            {"english": "Good luck to everyone.",
-             "chinese": "江州市长江大桥参加了长江大桥的通车仪式"},
-            ]
-    writer = FileWriter(mindrecord_file_name)
-    schema = {"english": {"type": "string"},
-              "chinese": {"type": "string"},
-              }
-    writer.add_schema(schema)
-    writer.write_raw_data(data)
-    writer.commit()
-
-
 def test_mindrecord():
     """
     Feature: Tensor

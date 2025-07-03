@@ -93,7 +93,7 @@ TEST_F(MindDataTestDeserialize, TestDeserializeCelebA) {
   MS_LOG(INFO) << "Doing MindDataTestDeserialize-CelebA.";
   std::string data_dir = "./data/dataset/testCelebAData/";
   std::string usage = "all";
-  std::shared_ptr<SamplerObj> sampler = std::make_shared<DistributedSamplerObj>(1, 0, true, 2, 1, 1, true);
+  std::shared_ptr<SamplerObj> sampler = std::make_shared<DistributedSamplerObj>(1, 0, ShuffleMode::kGlobal, 2, 1, 1, true);
   bool decode = true;
   std::set<std::string> extensions = {};
   std::shared_ptr<DatasetCache> cache = nullptr;

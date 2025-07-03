@@ -30,6 +30,7 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "infer/cxx_api/bias_dropout_add_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace ops {

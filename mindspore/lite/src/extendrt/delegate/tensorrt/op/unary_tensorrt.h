@@ -27,8 +27,7 @@ namespace mindspore::lite {
 class UnaryTensorRT : public TensorRTOp {
  public:
   UnaryTensorRT(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,
-                const std::vector<TensorInfo> &out_tensors, std::string name)
-      : TensorRTOp(base_operator, in_tensors, out_tensors, name) {}
+                const std::vector<TensorInfo> &out_tensors, std::string name);
 
   ~UnaryTensorRT() override = default;
 
@@ -38,20 +37,7 @@ class UnaryTensorRT : public TensorRTOp {
                 const std::vector<TensorInfo> &out_tensors) override;
 
  private:
-  std::map<std::string, nvinfer1::UnaryOperation> unary_ops_ = {
-    {ops::kNameSqrt, nvinfer1::UnaryOperation::kSQRT},
-    {ops::kNameAbs, nvinfer1::UnaryOperation::kABS},
-    {ops::kNameNeg, nvinfer1::UnaryOperation::kNEG},
-    {ops::kNameLog, nvinfer1::UnaryOperation::kLOG},
-    {ops::kNameSin, nvinfer1::UnaryOperation::kSIN},
-    {ops::kNameCos, nvinfer1::UnaryOperation::kCOS},
-    {ops::kNameCeil, nvinfer1::UnaryOperation::kCEIL},
-    {ops::kNameFloor, nvinfer1::UnaryOperation::kFLOOR},
-    {ops::kNameExpFusion, nvinfer1::UnaryOperation::kEXP},
-#if TRT_VERSION_GE(7, 2)
-    {ops::kNameLogicalNot, nvinfer1::UnaryOperation::kNOT},
-#endif
-  };
+  std::map<std::string, nvinfer1::UnaryOperation> unary_ops_;
   nvinfer1::UnaryOperation unary_op_;
 };
 }  // namespace mindspore::lite

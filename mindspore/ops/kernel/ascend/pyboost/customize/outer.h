@@ -21,13 +21,13 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/scalar.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                           const BaseTensorPtr &vec2);
+tensor::TensorPtr OuterAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                       const TensorPtr &vec2);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

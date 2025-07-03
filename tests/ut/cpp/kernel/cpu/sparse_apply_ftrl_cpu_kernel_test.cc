@@ -27,7 +27,8 @@ namespace mindspore {
 namespace kernel {
 class FusedSparseFtrlCpuKernelTest : public UT::Common {
  public:
-  FusedSparseFtrlCpuKernelTest() : sparse_ftrl_(std::make_shared<FusedSparseFtrlCpuKernelMod>()) {}
+  FusedSparseFtrlCpuKernelTest() :
+    sparse_ftrl_(std::make_shared<sparse_apply_ftrl_cpu::FusedSparseFtrlCpuKernelMod>()) {}
 
   void SetUp() override {
     sparse_ftrl_->lr_ = 0.001;
@@ -106,7 +107,7 @@ class FusedSparseFtrlCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> outputs_;
   std::vector<KernelTensor *> kernel_tensor_inputs_;
   std::vector<KernelTensor *> kernel_tensor_outputs_;
-  std::shared_ptr<FusedSparseFtrlCpuKernelMod> sparse_ftrl_;
+  std::shared_ptr<sparse_apply_ftrl_cpu::FusedSparseFtrlCpuKernelMod> sparse_ftrl_;
 };
 
 /// Feature: FusedSparseFtrl

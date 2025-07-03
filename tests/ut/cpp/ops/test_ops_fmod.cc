@@ -13,94 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "ir/dtype/type.h"
-#include "abstract/dshape.h"
-#include "utils/tensor_construct_utils.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "include/backend/optimizer/helper.h"
-#include "ops/test_ops.h"
-#include "infer/ops_func_impl/fmod_scalar.h"
-#include "infer/ops_func_impl/fmod_tensor.h"
-#include "ops/test_value_utils.h"
+#include "ops/utils/general_infer_utils.h"
 
-namespace mindspore {
-namespace ops {
-struct FmodShapeParams {
-  ShapeVector x_shape;
-  TypePtr x_type;
-  ShapeVector y_shape;
-  TypePtr y_type;
-  ShapeVector out_shape;
-  TypePtr out_type;
-};
-
-class TestFmodTensor : public TestOps, public testing::WithParamInterface<FmodShapeParams> {};
-
-TEST_P(TestFmodTensor, fmod_dyn_shape) {
-  const auto &param = GetParam();
-  auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto y = std::make_shared<abstract::AbstractTensor>(param.y_type, param.y_shape);
-  ASSERT_NE(x, nullptr);
-  ASSERT_NE(y, nullptr);
-
-  auto expect_shape = std::make_shared<abstract::Shape>(param.x_shape);
-  auto expect_type = std::make_shared<TensorType>(param.x_type);
-
-  FmodTensorFuncImpl fmod_func_impl;
-  auto prim = std::make_shared<Primitive>("FmodTensor");
-
-  auto out_dtype = fmod_func_impl.InferType(prim, {x, y});
-  ASSERT_TRUE(*out_dtype == *expect_type);
-  auto out_shape = fmod_func_impl.InferShape(prim, {x, y});
-  ASSERT_TRUE(*out_shape == *expect_shape);
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> fmod_tensor_prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat16}})
+    .FeedExpectedOutput({{3, 4}}, {kNumberTypeFloat16});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{3, 4, 5}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4}, kNumberTypeInt32},
+                    InferInfoParam{ShapeVector{3, 4}, kNumberTypeInt32}})
+    .FeedExpectedOutput({{3, 4}}, {kNumberTypeInt32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeInt64},
+                    InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeInt64}})
+    .FeedExpectedOutput({{3, 4, 5}}, {kNumberTypeInt64});
+  return generator.Generate();
 }
-
-INSTANTIATE_TEST_CASE_P(
-  TestFmodTensor, TestFmodTensor,
-  testing::Values(FmodShapeParams{{3, 4, 5}, kInt32, {3, 4, 5}, kInt32, {3, 4, 5}, kInt32},
-                  FmodShapeParams{{3, 5}, kInt64, {3, 5}, kInt64, {3, 5}, kInt64},
-                  FmodShapeParams{{3, 4, 5}, kUInt8, {1}, kUInt8, {3, 4, 5}, kUInt8},
-                  FmodShapeParams{{3, 4}, kInt8, {3, 4}, kInt8, {3, 4}, kInt8},
-                  FmodShapeParams{{-1, -1}, kFloat16, {-1, -1}, kFloat16, {-1, -1}, kFloat16},
-                  FmodShapeParams{{-1, -1}, kFloat64, {-1, -1}, kFloat64, {-1, -1}, kFloat64},
-                  FmodShapeParams{{-1, -1}, kBFloat16, {-1, -1}, kBFloat16, {-1, -1}, kBFloat16},
-                  FmodShapeParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32}));
-
-
-class TestFmodScalar : public TestOps, public testing::WithParamInterface<FmodShapeParams> {};
-
-TEST_P(TestFmodScalar, fmod_dyn_shape) {
-  const auto &param = GetParam();
-  auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto y = std::make_shared<abstract::AbstractScalar>(kValueAny, param.y_type);
-  ASSERT_NE(x, nullptr);
-  ASSERT_NE(y, nullptr);
-
-  auto expect_shape = std::make_shared<abstract::Shape>(param.x_shape);
-  auto expect_type = std::make_shared<TensorType>(param.x_type);
-
-  FmodScalarFuncImpl fmod_func_impl;
-  auto prim = std::make_shared<Primitive>("FmodScalar");
-
-  auto out_dtype = fmod_func_impl.InferType(prim, {x, y});
-  ASSERT_TRUE(*out_dtype == *expect_type);
-  auto out_shape = fmod_func_impl.InferShape(prim, {x, y});
-  ASSERT_TRUE(*out_shape == *expect_shape);
+std::vector<GeneralInferParam> fmod_scalar_prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.0)}})
+    .FeedExpectedOutput({{3, 4}}, {kNumberTypeFloat16});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(2.0)}})
+    .FeedExpectedOutput({{3, 4, 5}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4}, kNumberTypeInt32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalar<int32_t>(2)}})
+    .FeedExpectedOutput({{3, 4}}, {kNumberTypeInt32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{3, 4, 5}, kNumberTypeInt32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{3, 4, 5}}, {kNumberTypeInt32});
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(
-  TestFmodScalar, TestFmodScalar,
-  testing::Values(FmodShapeParams{{3, 4, 5}, kInt32, {3, 4, 5}, kInt32, {3, 4, 5}, kInt32},
-                  FmodShapeParams{{3, 5}, kInt64, {3, 5}, kInt64, {3, 5}, kInt64},
-                  FmodShapeParams{{3, 4, 5}, kUInt8, {1}, kUInt8, {3, 4, 5}, kUInt8},
-                  FmodShapeParams{{3, 4}, kInt8, {3, 4}, kInt8, {3, 4}, kInt8},
-                  FmodShapeParams{{-1, -1}, kFloat16, {-1, -1}, kFloat16, {-1, -1}, kFloat16},
-                  FmodShapeParams{{-1, -1}, kFloat64, {-1, -1}, kFloat64, {-1, -1}, kFloat64},
-                  FmodShapeParams{{-1, -1}, kBFloat16, {-1, -1}, kBFloat16, {-1, -1}, kBFloat16},
-                  FmodShapeParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32}));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(FmodTensor, GeneralInferTest, testing::ValuesIn(fmod_tensor_prepare_params()));
+INSTANTIATE_TEST_CASE_P(FmodScalar, GeneralInferTest, testing::ValuesIn(fmod_scalar_prepare_params()));
+}  // namespace mindspore::ops

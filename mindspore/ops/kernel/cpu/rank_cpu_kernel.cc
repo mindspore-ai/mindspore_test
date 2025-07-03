@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rank_cpu {
 namespace {
 const size_t kRankInputsNum = 1;
 const size_t kRankOutputsNum = 1;
@@ -79,7 +80,6 @@ std::vector<KernelAttr> RankCpuKernelMod::GetOpSupport() {
     KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeBFloat16).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
-    KernelAttr().AddInputAttr(kNumberTypeComplex).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
     KernelAttr().AddInputAttr(kNumberTypeInt4).AddOutputAttr(kObjectTypeNumber, kNumberTypeInt64),
@@ -88,5 +88,6 @@ std::vector<KernelAttr> RankCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Rank, RankCpuKernelMod);
+}  // namespace rank_cpu
 }  // namespace kernel
 }  // namespace mindspore

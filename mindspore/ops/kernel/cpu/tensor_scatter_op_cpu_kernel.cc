@@ -22,14 +22,16 @@
 #include <utility>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 #include "utils/profile.h"
 #include "Eigen/Eigen"
 #include "unsupported/Eigen/CXX11/Tensor"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_scatter_op_cpu {
 namespace {
 template <typename T>
 using MatrixXd = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>;
@@ -262,5 +264,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMax, TensorScatterOpCpuKe
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMin, TensorScatterOpCpuKernelMode);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterDiv, TensorScatterOpCpuKernelMode);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorScatterMul, TensorScatterOpCpuKernelMode);
+}  // namespace tensor_scatter_op_cpu
 }  // namespace kernel
 }  // namespace mindspore

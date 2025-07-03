@@ -46,7 +46,7 @@ def test_kldiv_loss_mean_auto_parallel():
     Expectation: compile success
     """
     context.set_context(device_target="GPU")
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0, full_batch=True)
     reduction = 'mean'
     net = Net(reduction)
@@ -60,7 +60,7 @@ def test_kldiv_loss_none_auto_parallel():
     Expectation: compile success
     """
     context.set_context(device_target="GPU")
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0, full_batch=True)
     reduction = 'none'
     net = Net(reduction)
@@ -74,7 +74,7 @@ def test_kldiv_loss_sum_auto_parallel():
     Expectation: compile success
     """
     context.set_context(device_target="GPU")
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0, full_batch=True)
     reduction = 'sum'
     net = Net(reduction)

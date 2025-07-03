@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive {
 
 class UniqueConsecutiveAscend : public AclnnKernelMod {
  public:
@@ -40,7 +41,10 @@ class UniqueConsecutiveAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   std::vector<ShapeVector> output_shapes_;
   int64_t dim_{0};
+  bool return_inverse_;
+  bool return_counts_;
 };
+}  // namespace unique_consecutive
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <utility>
 #include "utils/check_convert_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat_offset_v1_cpu {
 namespace {
 constexpr size_t kConcatOffsetV1AxisNum = 1;
 constexpr int64_t kInputMinNumber = 2;
@@ -113,5 +114,6 @@ std::vector<KernelAttr> ConcatOffsetV1CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ConcatOffsetV1, ConcatOffsetV1CpuKernelMod);
+}  // namespace concat_offset_v1_cpu
 }  // namespace kernel
 }  // namespace mindspore

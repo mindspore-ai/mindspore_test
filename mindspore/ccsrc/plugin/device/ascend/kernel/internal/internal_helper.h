@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include "include/internal.h"
 #include "include/api/format.h"
+#include "ir/anf.h"
 #include "ir/dtype/type_id.h"
 #include "mindapi/base/shape_vector.h"
 
@@ -35,6 +36,10 @@ inline internal::ShapeInfo TransInternalShape(const ShapeVector &shape) {
 }
 
 std::string TransInternalOpName(const std::string &ms_op_name);
+
+bool CheckDefaultSupportFormat(const std::string &format);
+
+void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_format);
 
 internal::DataType TransInternalDataType(TypeId ms_type);
 

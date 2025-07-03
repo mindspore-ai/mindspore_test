@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,16 +42,14 @@
 #include "pipeline/jit/ps/compile_cache_manager.h"
 
 namespace mindspore {
-namespace compile {
-class Backend;
-using BackendPtr = std::shared_ptr<Backend>;
-}  // namespace compile
 namespace pipeline {
 namespace py = pybind11;
 
 const char kStepParallelGraph[] = "step_parallel";
 const char kOutput[] = "output";
-const char kCkptOutput[] = "checkpoint_output";
+const char kBuildBackendType[] = "backend_type";
+const char kBuildBackendOutput[] = "backend_output";
+const char kNoBackend[] = "no_backend";
 const char kPynativeGraphId[] = "graph_id";
 const char kActorInfo[] = "actor_info";
 const char kCompiler[] = "Compiler";
@@ -65,6 +63,7 @@ const char kPreCConv[] = "pre_cconv";
 const char kTypeInference[] = "type_inference";
 const char kAutoMonad[] = "auto_monad";
 const char kInline[] = "inline";
+const char kAddAttr[] = "add_attr";
 const char kPreAutoParallel[] = "pre_auto_parallel";
 const char kPipelineSplit[] = "pipeline_split";
 const char kPipelineParallelScheduler[] = "pipeline_parallel_scheduler";
@@ -72,8 +71,9 @@ const char kOptimize[] = "optimize";
 const char kAutoMonadReorder[] = "auto_monad_reorder";
 const char kGetJitBpropGraph[] = "get_jit_bprop_graph";
 const char kRewriterAfterJitBprop[] = "rewriter_after_jit_bprop_graph";
-const char kEliminateSpecialOpNode[] = "eliminate_special_op_node";
+const char kOptAfterJitGrad[] = "opt_after_jit_grad";
 const char kWaitDistCommInitDone[] = "wait_dist_comm_init_done";
+const char kUnusedParamsEliminate[] = "eliminate_unused_params";
 const char kValidate[] = "validate";
 const char kLoadMindir[] = "load_mindir";
 const char kInferMindir[] = "infer_mindir";
@@ -85,18 +85,50 @@ const char kAbstractAnalyze[] = "AbstractAnalyze";
 const char kProgramSpecialize[] = "ProgramSpecialize";
 const char kCreateBackend[] = "create_backend";
 const char kPipelineClean[] = "pipeline_clean";
+const char kPyInterpretToExecute[] = "py_interpret_to_execute";
+const char kRewriterBeforeOptA[] = "rewriter_before_opt_a";
+const char kAddAttrWithInline[] = "add_attr_with_inline";
+const char kExpandDumpFlag[] = "expand_dump_flag";
+const char kSwitchSimplifyFlag[] = "switch_simplify";
+const char kMetaFgExpandFlag[] = "meta_fg_expand";
+const char kSetForwardCommIdForCommNodePass[] = "set_forward_comm_id_for_comm_node_pass";
+const char kJitOptA[] = "jit_opt_a";
+const char kJitOptB[] = "jit_opt_b";
+const char kPyInterpretToExecuteAfterOptA[] = "py_interpret_to_execute_after_opt_a";
+const char kRewriterAfterOptA[] = "rewriter_after_opt_a";
+const char kConvertAfterRewriter[] = "convert_after_rewriter";
+const char kOrderPyExecuteAfterRewriter[] = "order_py_execute_after_rewriter";
+const char kCconv[] = "cconv";
+const char kLoopUnroll[] = "loop_unroll";
+const char kJitOptPassAfterCconv[] = "jit_opt_after_cconv";
+const char kRemoveDupValue[] = "remove_dup_value";
+const char kPartialUnusedArgsEliminate[] = "partial_unused_args_eliminate";
+const char kEnvironConv[] = "environ_conv";
+const char kTupleTransform[] = "tuple_transform";
+const char kAddRecomputation[] = "add_recomputation";
+const char kCseAfterRecomputation[] = "cse_after_recomputation";
+const char kBackendPass[] = "backend_pass";
 
 using BuiltInTypeMap = mindspore::HashMap<int64_t, mindspore::HashMap<std::string, Any>>;
 
-BuiltInTypeMap &GetMethodMap();
+FRONTEND_EXPORT BuiltInTypeMap &GetMethodMap();
 
-BuiltInTypeMap &GetAttrMap();
+FRONTEND_EXPORT BuiltInTypeMap &GetAttrMap();
+
+enum PiplineLevel : int {
+  // Not running in jit pipeline or graph pipeline.
+  kLevelNone = 0,
+  // Running in a simple pipeline which contains only the necessary passes and no parallel passes.
+  kLevelJit,
+  // Running in a whole pipeline which contains the necessary passes and all the parallel passes.
+  kLevelGraph,
+};
 
 class Resource : public ResourceBase {
  public:
-  explicit Resource(const py::object &obj = py::none());
+  FRONTEND_EXPORT explicit Resource(const py::object &obj = py::none());
 
-  ~Resource() override;
+  FRONTEND_EXPORT ~Resource() override;
 
   abstract::AnalysisEnginePtr engine() { return engine_; }
 
@@ -139,21 +171,20 @@ class Resource : public ResourceBase {
   bool EnableCompileCache() const { return compile_cache_manager_ != nullptr; }
 
   // Reclaim resource and clear the cache.
-  // GraphExecutorPy::Compile() can be called multiple times, so cache
+  // ExecutorPy::Compile() can be called multiple times, so cache
   // should be cleared.
-  void Clean();
-
-  // Get the backend object. if the backend is being initialized, wait until it completes.
-  compile::BackendPtr GetBackend() const;
-
-  void CleanBackend() { backend_ = nullptr; }
-
-  // Set backend asynchronously, the input function should return a Backend pointer,
-  // and it will be called in a background thread.
-  void SetBackendAsync(std::function<compile::BackendPtr()> func);
+  FRONTEND_EXPORT void Clean();
 
   // Get the mutex for backend initializing.
   static std::mutex &GetBackendInitMutex() { return backend_init_mutex_; }
+
+  void set_is_pynative_grad_view_inplace(bool is_pynative_grad_view_inplace) {
+    is_pynative_grad_view_inplace_ = is_pynative_grad_view_inplace;
+  }
+  bool is_pynative_grad_view_inplace() const { return is_pynative_grad_view_inplace_; }
+
+  PiplineLevel pipeline_level() const { return pipeline_level_; }
+  void set_pipeline_level(PiplineLevel pipeline_level) { pipeline_level_ = pipeline_level; }
 
  private:
   abstract::AnalysisEnginePtr engine_;
@@ -173,10 +204,9 @@ class Resource : public ResourceBase {
   LayoutMap layout_map_{};
   CompileCacheManagerPtr compile_cache_manager_{nullptr};
   // The backend related fields for async initializing.
-  mutable compile::BackendPtr backend_;
-  mutable std::future<compile::BackendPtr> backend_future_;
-  // Mutex to ensure backend creating task is running exclusively.
   static std::mutex backend_init_mutex_;
+  bool is_pynative_grad_view_inplace_{false};
+  PiplineLevel pipeline_level_{kLevelNone};
 };
 
 using ResourcePtr = std::shared_ptr<pipeline::Resource>;

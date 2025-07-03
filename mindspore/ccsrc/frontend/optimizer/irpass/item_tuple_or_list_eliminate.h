@@ -266,21 +266,7 @@ class TupleListSetitemEliminator : public AnfVisitor {
     auto fg = node->func_graph();
     if (fg != nullptr && z_ != nullptr) {
       args_[id_] = z_;
-      auto make_tuple = fg->NewCNode(args_);
-      // This pass runs after renormalize has finished in pynative mode, so output abstract should be set.
-      auto ms_context = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(ms_context);
-      auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-      if (execution_mode == kPynativeMode) {
-        AbstractBasePtrList abs_list;
-        for (size_t i = 1; i < args_.size(); ++i) {
-          auto abs = args_[i]->abstract();
-          MS_EXCEPTION_IF_NULL(abs);
-          (void)abs_list.emplace_back(abs->Broaden());
-        }
-        make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(abs_list));
-      }
-      return make_tuple;
+      return fg->NewCNode(args_);
     }
     return nullptr;
   }
@@ -454,6 +440,9 @@ class TupleListGetitemDependReorder : public AnfVisitor {
     auto depend = node->cast<CNodePtr>()->input(1);
     auto depend_cnode = depend->cast<CNodePtr>();
     auto fg = node->func_graph();
+    if (fg != depend_cnode->func_graph()) {
+      return nullptr;
+    }
     // Avoid generating redundant depend nodes.
     if (ExistUpdateStateUser(mgr, depend)) {
       auto inputs = node->cast<CNodePtr>()->inputs();

@@ -16,6 +16,7 @@
 #include "infer/ops_func_impl/hswish.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 
 namespace mindspore {
 namespace ops {
@@ -33,14 +34,14 @@ TypePtr HSwishFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
 }
 
 TypePtrList HSwishFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   return {input_type};
 }
 
 ShapeArray HSwishFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

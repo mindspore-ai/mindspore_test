@@ -17,15 +17,16 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACLNN_KERNEL_BUILD_H_
 #include <memory>
 #include <string>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
+#include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
-KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node);
-bool IsRegisteredAclnnOp(const std::string &op_name);
-bool IsEnabledAclnnDispatch(const std::string &op_name);
-bool IsViewOp(const std::string &op_name);
-bool IsAclnnViewOp(const std::string &op_name);
+OPS_ASCEND_API KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node);
+OPS_ASCEND_API bool IsRegisteredAclnnOp(const std::string &op_name);
+OPS_ASCEND_API bool IsEnabledAclnnDispatch(const std::string &op_name);
+OPS_ASCEND_API bool IsViewOp(const std::string &op_name);
+OPS_ASCEND_API bool IsAclnnViewOp(const std::string &op_name);
 }  // namespace kernel
 }  // namespace mindspore
 

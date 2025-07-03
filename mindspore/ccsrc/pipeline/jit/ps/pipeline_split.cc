@@ -38,6 +38,8 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/ps/ps_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 #endif
 
 namespace mindspore {
@@ -208,29 +210,12 @@ static bool PipelineInterleaved(const FuncGraphManagerPtr &mng, const FuncGraphP
   return true;
 }
 
-// Only auto_parallel and semi_auto_parallel support PipelineSplit
-bool PipelineSplit(const ResourcePtr &res) {
-#if defined(__linux__) && defined(WITH_BACKEND)
-  if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
-    return true;
-  }
-#endif
-  MS_EXCEPTION_IF_NULL(res);
-  auto parallel_context = parallel::ParallelContext::GetInstance();
+int64_t GetAndCheckDeviceNum() {
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
   MS_EXCEPTION_IF_NULL(parallel_context);
-  auto parallel_mode = parallel_context->parallel_mode();
-  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
-    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support pipeline split.";
-    return true;
-  }
-
-  auto manager = res->manager();
-  auto root = res->func_graph();
-
-  auto global_rank = parallel::GetRank();
+  int64_t device_num = 0;
   auto world_group = mindspore::parallel::GetWorldGroup();
   uint32_t world_rank_size = 0;
-  int64_t device_num = 0;
   if (!parallel_context->device_num_is_set()) {
     if (!CommManager::GetInstance().GetRankSize(world_group, &world_rank_size)) {
       MS_LOG(EXCEPTION) << "Get rank size failed";
@@ -240,38 +225,140 @@ bool PipelineSplit(const ResourcePtr &res) {
   } else {
     device_num = parallel_context->device_num();
   }
+  return device_num;
+}
+
+bool ValidateParallelContext(const ResourcePtr &res) {
+  MS_EXCEPTION_IF_NULL(res);
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  const auto parallel_mode = parallel_context->parallel_mode();
+  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
+    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support pipeline split.";
+    return false;
+  }
+
+  int64_t device_num = GetAndCheckDeviceNum();
   if (device_num < 1) {
     MS_LOG(ERROR) << "For 'PipelineSplit', the argument 'device_num' must be positive, "
                      "but got the value of device_num: "
                   << device_num;
+    return false;
   }
+
+  const auto global_rank = parallel::GetRank();
   if (global_rank < 0) {
     MS_LOG(ERROR) << "For 'PipelineSplit', the argument 'global_rank' must be nonnegative, "
                      "but got the value of global_rank: "
                   << global_rank;
+    return false;
   }
-  static const auto gen_mask_not_fusion = (common::GetEnv("GENMASK_NOT_FUSION") == "1");
-  auto stage_num = parallel_context->pipeline_stage_split_num();
-  if (stage_num <= 1) {
-    MS_LOG(INFO) << "The parameter 'stage_num' is: " << stage_num << ". No need Pipeline split.";
-    auto tmp_transformer = std::make_shared<parallel::PipelineTransformer>(manager, 0, root, global_rank, global_rank);
-    if (!tmp_transformer->MainGraph()) {
-      return true;
-    }
-    if (!gen_mask_not_fusion) {
-      tmp_transformer->LabelGenMaskFusion();
-    }
+  return true;
+}
+
+bool HandleStageNumLessEqualOne(const ResourcePtr &res) {
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto stage_num = parallel_context->pipeline_stage_split_num();
+  if (stage_num > 1) {
+    return false;
+  }
+  MS_LOG(INFO) << "The parameter 'stage_num' is: " << stage_num << ". No need Pipeline split.";
+  const auto manager = res->manager();
+  const auto root = res->func_graph();
+  const auto global_rank = parallel::GetRank();
+  auto tmp_transformer = std::make_shared<parallel::PipelineTransformer>(manager, 0, root, global_rank, global_rank);
+  if (!tmp_transformer->MainGraph()) {
     return true;
   }
-  auto stage = parallel::InferStage();
-  auto per_stage_rank_num = device_num / stage_num;
+
+  static const auto gen_mask_not_fusion = (common::GetEnv("GENMASK_NOT_FUSION") == "1");
+  if (!gen_mask_not_fusion) {
+    tmp_transformer->LabelGenMaskFusion();
+  }
+  return true;
+}
+
+void HandlePipellineShard(const ResourcePtr &res) {
+  // temp solution, PipelineSplit pass rely on virtualdataset, but virtualdataset won't be inserted until
+  // StepAutoParallel pass if ms.shard/ms.parallel.shard used
+  const auto root = res->func_graph();
+  MS_EXCEPTION_IF_NULL(root);
+  AnfNodePtr ret = root->get_return();
+  MS_EXCEPTION_IF_NULL(ret);
+  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  if (!HasVirtualDataset(all_nodes)) {
+    InsertVirtualDataset(root, all_nodes);
+  }
+}
+
+void SavePipelineConfigOrigin() {
+  // Temporary solution: PipelineInterleaved does not support predict. When refactoring predict, it should be removed.
+  // restore pp config set by users, and reset pp config at PipelineParallelScheduler.
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto is_pp_interleave = parallel_context->pipeline_interleave();
+  const auto pipeline_scheduler = parallel_context->pipeline_scheduler();
+  parallel_context->set_pipeline_interleave_temp(is_pp_interleave);
+  parallel_context->set_pipeline_scheduler_temp(pipeline_scheduler);
+}
+
+bool HandleInterleavedPipeline(const ResourcePtr &res) {
+  SavePipelineConfigOrigin();
+
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto is_pp_interleave = parallel_context->pipeline_interleave();
+  const auto manager = res->manager();
+  const auto root = res->func_graph();
+  const auto stage = parallel::InferStage();
+  static const auto gen_mask_not_fusion = (common::GetEnv("GENMASK_NOT_FUSION") == "1");
+  const auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  const auto cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
+  const auto no_interleave_train = (!is_pp_interleave && parallel::IsTraining(manager) && cell_reuse);
+  if (is_pp_interleave || no_interleave_train) {
+    if (no_interleave_train) {
+      parallel_context->set_pipeline_interleave(true);
+      parallel_context->set_pipeline_scheduler(parallel::kPipelineSeqpipe);
+    }
+    return PipelineInterleaved(manager, root, stage, gen_mask_not_fusion);
+  }
+  return false;
+}
+
+// Only auto_parallel and semi_auto_parallel support PipelineSplit
+bool PipelineSplit(const ResourcePtr &res) {
+#if defined(__linux__) && defined(WITH_BACKEND)
+  if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
+    return true;
+  }
+#endif
+  MS_EXCEPTION_IF_NULL(res);
+  if (!ValidateParallelContext(res)) {
+    return true;
+  }
+
+  if (HandleStageNumLessEqualOne(res)) {
+    return true;
+  }
+
   if (parallel::ParallelInit() != parallel::SUCCESS) {
     MS_LOG(EXCEPTION) << "parallel init failed.";
   }
-  auto is_pp_interleave = parallel_context->pipeline_interleave();
-  if (is_pp_interleave) {
-    return PipelineInterleaved(manager, root, stage, gen_mask_not_fusion);
+
+  HandlePipellineShard(res);
+  if (HandleInterleavedPipeline(res)) {
+    return true;
   }
+
+  // standard pp
+  const auto manager = res->manager();
+  const auto root = res->func_graph();
+  const auto stage = parallel::InferStage();
+  const auto parallel_context = parallel::ParallelContext::GetInstance();
+  const auto stage_num = parallel_context->pipeline_stage_split_num();
+  int64_t device_num = GetAndCheckDeviceNum();
+  const auto per_stage_rank_num = device_num / stage_num;
+  const auto global_rank = parallel::GetRank();
+  static const auto gen_mask_not_fusion = (common::GetEnv("GENMASK_NOT_FUSION") == "1");
   auto transformer =
     std::make_shared<parallel::PipelineTransformer>(manager, stage, root, global_rank, per_stage_rank_num);
   if (parallel_context->enable_fold_pipeline()) {
@@ -323,6 +410,11 @@ bool ParallelVirtualDataset(const ResourcePtr &res) {
   AnfNodePtr ret = root->get_return();
 
   MS_EXCEPTION_IF_NULL(ret);
+  if (root->has_flag(mindspore::parallel::kHasShard)) {
+    MS_LOG(INFO) << "There exists shard prim, insert virtual dataset in step auto parallel";
+    return true;
+  }
+
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
 
   if (!HasVirtualDataset(all_nodes)) {

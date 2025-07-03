@@ -33,6 +33,7 @@
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace ops {

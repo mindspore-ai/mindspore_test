@@ -22,9 +22,7 @@
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/samplers_ir.h"
 #include "include/api/status.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/mindrecord/include/shard_operator.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -35,17 +33,13 @@ class PreBuiltSamplerObj : public SamplerObj {
  public:
   explicit PreBuiltSamplerObj(std::shared_ptr<SamplerRT> sampler);
 
-#ifndef ENABLE_ANDROID
   explicit PreBuiltSamplerObj(std::shared_ptr<mindrecord::ShardOperator> sampler);
-#endif
 
   ~PreBuiltSamplerObj() override;
 
   Status SamplerBuild(std::shared_ptr<SamplerRT> *const sampler) override;
 
-#ifndef ENABLE_ANDROID
   std::shared_ptr<mindrecord::ShardOperator> BuildForMindDataset() override;
-#endif
 
   std::shared_ptr<SamplerObj> SamplerCopy() override;
 
@@ -55,9 +49,7 @@ class PreBuiltSamplerObj : public SamplerObj {
 
  private:
   std::shared_ptr<SamplerRT> sp_;
-#ifndef ENABLE_ANDROID
   std::shared_ptr<mindrecord::ShardOperator> sp_minddataset_;
-#endif
 };
 }  // namespace dataset
 }  // namespace mindspore

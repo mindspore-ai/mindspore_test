@@ -30,23 +30,15 @@
 
 #include "utils/hash_map.h"
 #include "ir/tensor.h"
-#include "ir/param_info.h"
 #include "ir/func_graph.h"
-#include "ir/quantization_param.h"
 #include "proto/mind_ir.pb.h"
 #include "utils/check_convert_utils.h"
-#include "include/common/debug/common.h"
 #include "include/common/visible.h"
-#include "utils/ms_utils.h"
-#include "include/common/utils/utils.h"
-#ifndef MINDIR_EXPORT_TENSOR_LAYOUT_CLIP
-#include "frontend/parallel/tensor_layout/tensor_layout.h"
-#endif
-#include "abstract/abstract_function.h"
-#include "utils/file_utils.h"
+#include "include/common/debug/common.h"
 #include "utils/system/env.h"
 #include "ir/functor.h"
 #include "ops/scalar_graph_holder.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 using FloatPtr = std::shared_ptr<Float>;

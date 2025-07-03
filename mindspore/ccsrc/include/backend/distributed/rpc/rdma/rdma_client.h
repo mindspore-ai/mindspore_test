@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace distributed {
 namespace rpc {
-class BACKEND_EXPORT RDMAClient : public RPCClientBase {
+class BACKEND_COMMON_EXPORT RDMAClient : public RPCClientBase {
  public:
   explicit RDMAClient(bool enable_ssl = false)
       : RPCClientBase(enable_ssl),

@@ -11,7 +11,7 @@ mindspore.dataset.text.ToVectors
         - **lower_case_backup** (bool, 可选) - 是否查找小写的token。如果为 ``False`` ，则将查找原始大小写中的每个token。
           如果为 ``True`` ，则将首先查找原始大小写中的每个token，如果在属性stoi（字符->索引映射）的键中找不到，则将查找小写中的token。默认值： ``False`` 。
 
-    异常：      
+    异常：
         - **TypeError** - 如果 `unk_init` 不是序列。
         - **TypeError** - 如果 `unk_init` 的元素不是float或int类型。
         - **TypeError** - 如果 `lower_case_backup` 不是bool类型。

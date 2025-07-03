@@ -20,6 +20,8 @@ from mindspore.ops import operations as P
 from mindspore.nn.optim.adam import _update_run_op
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class OriNet(nn.Cell):
     """Origin net uses _update_run_op"""

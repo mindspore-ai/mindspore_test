@@ -24,9 +24,14 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ccsrc/include/backend/kernel_info.h"
-#include "mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace session {
@@ -563,7 +568,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetOutputAddr) {
   int *addr = nullptr;
   auto device_address = std::make_shared<AscendDeviceAddress>(addr, 1);
   EXPECT_THROW(AnfAlgo::SetOutputAddr(device_address, 0, nullptr), std::runtime_error);
-  AnfAlgo::SetOutputAddr(device_address, 0, add.get());
+  AnfAlgo::SetOutputAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetOutputAddr(add, 0), device_address.get());
 }
 
@@ -590,7 +595,7 @@ TEST_F(AnfRuntimeAlgorithmTest, SetWorkspaceAddr) {
   int *addr = nullptr;
   auto device_address = std::make_shared<AscendDeviceAddress>(addr, 1);
   EXPECT_THROW(AnfAlgo::SetWorkspaceAddr(device_address, 0, nullptr), std::runtime_error);
-  AnfAlgo::SetWorkspaceAddr(device_address, 0, add.get());
+  AnfAlgo::SetWorkspaceAddr(device_address, 0, add);
   EXPECT_EQ(AnfAlgo::GetWorkspaceAddr(add, 0), device_address.get());
 }
 

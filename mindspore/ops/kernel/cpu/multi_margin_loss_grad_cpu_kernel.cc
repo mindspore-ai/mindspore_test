@@ -15,11 +15,12 @@
  */
 
 #include "kernel/cpu/multi_margin_loss_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/multi_margin_loss_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace multi_margin_loss_grad_cpu {
 namespace {
 constexpr size_t kMultiMarginLossGradInputNumWithWeight = 4;
 constexpr size_t kMultiMarginLossGradInputNumWithoutWeight = 3;
@@ -246,5 +247,6 @@ void MultiMarginLossGradCPUKernelMod::CheckParam(const CNodePtr &kernel_node) co
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MultiMarginLossGrad, MultiMarginLossGradCPUKernelMod);
+}  // namespace multi_margin_loss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

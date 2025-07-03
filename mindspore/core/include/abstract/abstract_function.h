@@ -144,7 +144,9 @@ class MS_CORE_API PrimitiveAbstractClosure final : public AbstractFuncAtom {
 
   // For internal usage only, make it public so that make_shared can work on it.
   PrimitiveAbstractClosure(const PrimitivePtr &prim, std::uintptr_t tracking_id)
-      : prim_(prim), tracking_id_(tracking_id) {}
+      : prim_(prim), tracking_id_(tracking_id) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of PrimitiveAbstractClosure
   ~PrimitiveAbstractClosure() override = default;
@@ -166,6 +168,8 @@ class MS_CORE_API PrimitiveAbstractClosure final : public AbstractFuncAtom {
   bool operator==(const AbstractFunction &other) const override;
 
   std::size_t hash() const override;
+
+  std::size_t GetHash() const;
 
   std::string ToString() const override { return "PrimitiveAbstractClosure: " + prim_->name(); }
 
@@ -191,7 +195,9 @@ class MS_CORE_API FuncGraphAbstractClosure final : public AbstractFuncAtom {
   /// \param[in] tracking_node A Node identifies different uses of the func_graph.
   FuncGraphAbstractClosure(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
                            const AnfNodePtr &tracking_node = nullptr, bool specialized = false)
-      : FuncGraphAbstractClosure(func_graph, context, ToTrackingId(tracking_node), specialized) {}
+      : FuncGraphAbstractClosure(func_graph, context, ToTrackingId(tracking_node), specialized) {
+    hash_value_ = GetHash();
+  }
 
   // For internal usage only, make it public so that make_shared can work on it.
   FuncGraphAbstractClosure(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
@@ -202,6 +208,7 @@ class MS_CORE_API FuncGraphAbstractClosure final : public AbstractFuncAtom {
         specialized_(specialized) {
     MS_EXCEPTION_IF_NULL(func_graph);
     MS_EXCEPTION_IF_NULL(context);
+    hash_value_ = GetHash();
   }
 
   /// \brief Destructor of FuncGraphAbstractClosure.
@@ -230,6 +237,8 @@ class MS_CORE_API FuncGraphAbstractClosure final : public AbstractFuncAtom {
   bool operator==(const AbstractFunction &other) const override;
 
   std::size_t hash() const override;
+
+  std::size_t GetHash() const;
 
   std::string ToString() const override;
 
@@ -266,12 +275,16 @@ class MS_CORE_API MetaFuncGraphAbstractClosure final : public AbstractFuncAtom {
   explicit MetaFuncGraphAbstractClosure(const MetaFuncGraphPtr &meta_func_graph,
                                         const AnfNodePtr &tracking_node = nullptr,
                                         const ScopePtr &scope = kDefaultScope)
-      : MetaFuncGraphAbstractClosure(meta_func_graph, ToTrackingId(tracking_node), scope) {}
+      : MetaFuncGraphAbstractClosure(meta_func_graph, ToTrackingId(tracking_node), scope) {
+    hash_value_ = GetHash();
+  }
 
   // For internal usage only, make it public so that make_shared can work on it.
   MetaFuncGraphAbstractClosure(const MetaFuncGraphPtr &meta_func_graph, std::uintptr_t tracking_id,
                                const ScopePtr &scope)
-      : meta_func_graph_(meta_func_graph), tracking_id_(tracking_id), scope_(scope) {}
+      : meta_func_graph_(meta_func_graph), tracking_id_(tracking_id), scope_(scope) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of MetaFuncGraphAbstractClosure.
   ~MetaFuncGraphAbstractClosure() override = default;
@@ -303,6 +316,8 @@ class MS_CORE_API MetaFuncGraphAbstractClosure final : public AbstractFuncAtom {
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override;
 
  private:
@@ -324,7 +339,9 @@ class MS_CORE_API PartialAbstractClosure final : public AbstractFuncAtom {
   /// \param[in] node The CNode which this PartialAbstractClosure evaluated from.
   PartialAbstractClosure(const AbstractFuncAtomPtr &fn, const AbstractBasePtrList &args_abs_list,
                          const AnfNodePtr &node = nullptr)
-      : fn_(fn), args_abs_list_(args_abs_list), node_(AnfNodePtr(node)) {}
+      : fn_(fn), args_abs_list_(args_abs_list), node_(AnfNodePtr(node)) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of PartialAbstractClosure.
   ~PartialAbstractClosure() override = default;
@@ -362,6 +379,8 @@ class MS_CORE_API PartialAbstractClosure final : public AbstractFuncAtom {
   bool operator==(const AbstractFunction &other) const override;
 
   std::size_t hash() const override;
+
+  std::size_t GetHash() const;
 
   std::string ToString() const override;
 
@@ -469,7 +488,7 @@ class MS_CORE_API JTransformedAbstractClosure final : public AbstractFuncAtom {
   /// \brief Constructor of JTransformedAbstractClosure
   ///
   /// \param[in] fn The AbstractFuncAtom transformed through the application of J.
-  explicit JTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) {}
+  explicit JTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) { hash_value_ = GetHash(); }
 
   /// \brief Destructor of JTransformedAbstractClosure
   ~JTransformedAbstractClosure() override = default;
@@ -486,6 +505,8 @@ class MS_CORE_API JTransformedAbstractClosure final : public AbstractFuncAtom {
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override { return "J(" + fn_->ToString() + ")"; }
 
  private:
@@ -499,7 +520,7 @@ class MS_CORE_API TaylorTransformedAbstractClosure final : public AbstractFuncAt
   /// \brief Constructor of TaylorTransformedAbstractClosure
   ///
   /// \param[in] fn The AbstractFuncAtom transformed through the application of Taylor.
-  explicit TaylorTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) {}
+  explicit TaylorTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) { hash_value_ = GetHash(); }
 
   /// \brief Destructor of TaylorTransformedAbstractClosure
   ~TaylorTransformedAbstractClosure() override = default;
@@ -516,6 +537,8 @@ class MS_CORE_API TaylorTransformedAbstractClosure final : public AbstractFuncAt
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override { return "Taylor(" + fn_->ToString() + ")"; }
 
  private:
@@ -529,7 +552,7 @@ class MS_CORE_API ShardTransformedAbstractClosure final : public AbstractFuncAto
   /// \brief Constructor of ShardTransformedAbstractClosure
   ///
   /// \param[in] fn The AbstractFuncAtom transformed through the application of Shard.
-  explicit ShardTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) {}
+  explicit ShardTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) { hash_value_ = GetHash(); }
 
   /// \brief Destructor of ShardTransformedAbstractClosure
   ~ShardTransformedAbstractClosure() override = default;
@@ -546,7 +569,41 @@ class MS_CORE_API ShardTransformedAbstractClosure final : public AbstractFuncAto
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override { return "Shard(" + fn_->ToString() + ")"; }
+
+ private:
+  AbstractFuncAtomPtr fn_;
+};
+
+/// \brief AddAttrTransformedAbstractClosure defines interface for abstract of Function
+/// transformed through the application of AddAttr.
+class MS_CORE_API AddAttrTransformedAbstractClosure final : public AbstractFuncAtom {
+ public:
+  /// \brief Constructor of AddAttrTransformedAbstractClosure
+  ///
+  /// \param[in] fn The AbstractFuncAtom transformed through the application of AddAttr.
+  explicit AddAttrTransformedAbstractClosure(const AbstractFuncAtomPtr &fn) : fn_(fn) { hash_value_ = GetHash(); }
+
+  /// \brief Destructor of AddAttrTransformedAbstractClosure
+  ~AddAttrTransformedAbstractClosure() override = default;
+  MS_DECLARE_PARENT(AddAttrTransformedAbstractClosure, AbstractFuncAtom)
+
+  /// \brief Get the AbstractFuncAtom AddAttrTransformedAbstractClosure corresponding to.
+  ///
+  /// \return The AbstractFuncAtom AddAttrTransformedAbstractClosure corresponding to.
+  const AbstractFuncAtomPtr &fn() const { return fn_; }
+
+  AbstractFunctionPtr Copy() const override { return std::make_shared<AddAttrTransformedAbstractClosure>(fn_); }
+
+  bool operator==(const AbstractFunction &other) const override;
+
+  std::size_t hash() const override;
+
+  std::size_t GetHash() const;
+
+  std::string ToString() const override { return "AddAttr(" + fn_->ToString() + ")"; }
 
  private:
   AbstractFuncAtomPtr fn_;
@@ -561,7 +618,9 @@ class MS_CORE_API VmapTransformedAbstractClosure final : public AbstractFuncAtom
   /// \param[in] fn The AbstractFuncAtom transformed through the application of Vmap.
   explicit VmapTransformedAbstractClosure(const AbstractFuncAtomPtr &fn, const ValuePtr &in_axes,
                                           const ValuePtr &out_axes, size_t cell_size)
-      : fn_(fn), in_axes_(in_axes), out_axes_(out_axes), cell_size_(cell_size) {}
+      : fn_(fn), in_axes_(in_axes), out_axes_(out_axes), cell_size_(cell_size) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of VmapTransformedAbstractClosure
   ~VmapTransformedAbstractClosure() override = default;
@@ -586,6 +645,8 @@ class MS_CORE_API VmapTransformedAbstractClosure final : public AbstractFuncAtom
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override { return "Vmap(" + fn_->ToString() + ")"; }
 
  private:
@@ -604,14 +665,18 @@ class MS_CORE_API VirtualAbstractClosure final : public AbstractFuncAtom {
   /// \param[in] args_abs_list The abstract values of the arguments to the function.
   /// \param[in] output_spec The abstract value of output.
   VirtualAbstractClosure(const AbstractBasePtrList &args_abs_list, const AbstractBasePtr &output_spec)
-      : args_abs_list_(args_abs_list), output_(output_spec) {}
+      : args_abs_list_(args_abs_list), output_(output_spec) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Constructor of VirtualAbstractClosure.
   ///
   /// \param[in] args_abs The abstract value of argument to the function.
   /// \param[in] output_spec The abstract value of output.
   VirtualAbstractClosure(const AbstractBasePtr &args_abs, const AbstractBasePtr &output_spec)
-      : args_abs_list_({args_abs}), output_(output_spec) {}
+      : args_abs_list_({args_abs}), output_(output_spec) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of VirtualAbstractClosure.
   ~VirtualAbstractClosure() override = default;
@@ -635,6 +700,8 @@ class MS_CORE_API VirtualAbstractClosure final : public AbstractFuncAtom {
 
   std::size_t hash() const override;
 
+  std::size_t GetHash() const;
+
   std::string ToString() const override;
 
  private:
@@ -654,7 +721,9 @@ class MS_CORE_API TypedPrimitiveAbstractClosure final : public AbstractFuncAtom 
   /// \param[in] output_spec The abstract value of output.
   TypedPrimitiveAbstractClosure(const PrimitivePtr prim, const AbstractBasePtrList &args_abs_list,
                                 const AbstractBasePtr &output_spec)
-      : prim_(prim), args_abs_list_(args_abs_list), output_(output_spec) {}
+      : prim_(prim), args_abs_list_(args_abs_list), output_(output_spec) {
+    hash_value_ = GetHash();
+  }
 
   /// \brief Destructor of TypedPrimitiveAbstractClosure.
   ~TypedPrimitiveAbstractClosure() override = default;
@@ -682,6 +751,8 @@ class MS_CORE_API TypedPrimitiveAbstractClosure final : public AbstractFuncAtom 
   bool operator==(const AbstractFunction &other) const override;
 
   std::size_t hash() const override;
+
+  std::size_t GetHash() const;
 
   std::string ToString() const override;
 

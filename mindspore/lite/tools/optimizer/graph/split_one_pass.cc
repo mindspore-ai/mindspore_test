@@ -23,6 +23,8 @@
 #include "tools/common/tensor_util.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

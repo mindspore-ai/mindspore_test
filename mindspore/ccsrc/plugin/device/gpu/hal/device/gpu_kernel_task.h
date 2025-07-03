@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "ir/tensor_storage_info.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/pipeline/task/kernel_task.h"

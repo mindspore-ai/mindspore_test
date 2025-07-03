@@ -54,7 +54,7 @@ static inline uint64_t HashLen0to16(const char *s, size_t len) {
     uint8_t c = s[len - 1];
     uint32_t y = static_cast<uint32_t>(a) + (static_cast<uint32_t>(b) << 8);
     uint32_t z = len + (static_cast<uint32_t>(c) << 2);
-    return ShiftMix(y * k2 ^ z * k0) * k2;
+    return ShiftMix(y * (k2 ^ z) * k0) * k2;
   }
   return k2;
 }

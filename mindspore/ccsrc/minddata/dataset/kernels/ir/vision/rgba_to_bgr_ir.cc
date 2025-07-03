@@ -15,14 +15,11 @@
  */
 #include "minddata/dataset/kernels/ir/vision/rgba_to_bgr_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/rgba_to_bgr_op.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RgbaToBgrOperation.
 RgbaToBgrOperation::RgbaToBgrOperation() = default;
 
@@ -42,7 +39,6 @@ Status RgbaToBgrOperation::from_json(nlohmann::json op_params, std::shared_ptr<T
   *operation = std::make_shared<vision::RgbaToBgrOperation>();
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

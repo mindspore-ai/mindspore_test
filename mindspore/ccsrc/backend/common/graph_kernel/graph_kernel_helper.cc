@@ -21,7 +21,6 @@
 #include <tuple>
 #include <utility>
 
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "base/base.h"
@@ -34,10 +33,10 @@
 #include "ir/func_graph_cloner.h"
 #include "kernel/framework_utils.h"
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "pipeline/jit/ps/action.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"
 
@@ -245,7 +244,7 @@ std::vector<int64_t> GetReduceAxis(const AnfNodePtr &node) {
     }
   } else if (v->isa<Int64Imm>()) {
     axis.push_back(GetValue<int64_t>(v));
-  } else if (v->isa<tensor::BaseTensor>()) {
+  } else if (v->isa<tensor::Tensor>()) {
     axis = CheckAndConvertUtils::CheckTensorIntValue("axis", v, "ReduceSum");
   } else {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Attribute 'axis' should be a list or tuple in node "

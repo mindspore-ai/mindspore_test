@@ -21,7 +21,7 @@
 #include <tuple>
 #include <map>
 #include <utility>
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 
 namespace mindspore {

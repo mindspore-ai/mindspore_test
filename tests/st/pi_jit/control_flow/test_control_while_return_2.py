@@ -5,13 +5,6 @@ import mindspore.ops.operations as P
 from mindspore import context, jit
 from ..share.utils import allclose_nparray
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlWhile2ElifReturnInIf(Cell):
@@ -47,10 +40,10 @@ def test_control_flow_while_2elif_return_in_if():
     x = [1, 2, 3]
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlWhile2ElifReturnInIf()
-    jit(fn=CtrlWhile2ElifReturnInIf.construct, mode="PSJit")(ps_net, Tensor(x, dtype.float32))
+    jit(function=CtrlWhile2ElifReturnInIf.construct, capture_mode="ast")(ps_net, Tensor(x, dtype.float32))
     ps_out = ps_net(Tensor(x, dtype.float32))
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlWhile2ElifReturnInIf()
-    jit(fn=CtrlWhile2ElifReturnInIf.construct, mode="PIJit")(pi_net, Tensor(x, dtype.float32))
+    jit(function=CtrlWhile2ElifReturnInIf.construct, capture_mode="bytecode")(pi_net, Tensor(x, dtype.float32))
     pi_out = pi_net(Tensor(x, dtype.float32))
     allclose_nparray(ps_out.asnumpy(), pi_out.asnumpy(), 0.001, 0.001)

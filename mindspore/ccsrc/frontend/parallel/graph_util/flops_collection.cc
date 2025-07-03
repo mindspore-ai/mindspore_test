@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/flash_attention_score.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
@@ -47,6 +51,8 @@ typedef struct {
   std::vector<ShapeVector> origin_output_shapes;
   std::vector<ShapeVector> shard_input_shapes;
   std::vector<ShapeVector> shard_output_shapes;
+  std::string op_type;
+  bool is_recompute;
 } OpInfo;
 
 using OpInfoPtr = std::shared_ptr<OpInfo>;
@@ -57,6 +63,37 @@ std::set<std::string> bp_primitive_set = {prim::kPrimMatMul->name(), prim::kPrim
                                           prim::kPrimBatchMatMul->name(), prim::kPrimConv2DBackpropInput->name(),
                                           prim::kPrimConv2DBackpropFilter->name()};
 constexpr size_t k_double_expand_ratio = 2;
+
+std::string DoubleToString(double d, int precision) {
+  std::ostringstream out;
+  out << std::fixed << std::setprecision(precision) << d;
+  return out.str();
+}
+
+std::string AddBigNums(const std::string &num1, double double_num2) {
+  string num2 = DoubleToString(double_num2, 0);
+  std::string result;
+  int carry = 0;
+  int i = SizeToInt(num1.size()) - 1;
+  int j = SizeToInt(num2.size()) - 1;
+
+  while (i >= 0 || j >= 0 || carry) {
+    int sum = carry;
+    if (i >= 0) {
+      sum += num1[i] - '0';
+      i--;
+    }
+    if (j >= 0) {
+      sum += num2[j] - '0';
+      j--;
+    }
+    const int carry_len = 10;
+    carry = sum / carry_len;
+    result.push_back((sum % carry_len) + '0');
+  }
+  std::reverse(result.begin(), result.end());
+  return result;
+}
 
 int64_t CalFAFlops(const std::vector<ShapeVector> &input_shapes, int64_t input_layout) {
   (void)CheckAndConvertUtils::CheckInteger("rank of 'flash attention inputs'", input_shapes.size(), kGreaterEqual,
@@ -270,6 +307,7 @@ OpInfoPtr GetBpNodeInfo(const CNodePtr &node, std::unordered_map<std::string, Op
 }
 
 void GetFwdNodeInfos(std::unordered_map<std::string, OpInfoPtr> *op_info_map_dx_dw_map, const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   for (const auto &each_graph : manager->func_graphs()) {
@@ -311,10 +349,9 @@ void GetBpNodeInfos(std::unordered_map<CNodePtr, OpInfoPtr> *op_info_map_dx_dw_m
   }
 }
 
-nlohmann::ordered_json ToJson(const CNodePtr &para_node,
-                              std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map,
-                              std::unordered_map<CNodePtr, OpInfoPtr> bprop_op_info_map_dx_dw_map) {
-  nlohmann::ordered_json args;
+void ToJson(const CNodePtr &para_node, std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map,
+            std::unordered_map<CNodePtr, OpInfoPtr> bprop_op_info_map_dx_dw_map,
+            std::unordered_map<std::string, OpInfoPtr> *all_op_info, std::string op_id) {
   MS_EXCEPTION_IF_NULL(para_node);
   auto prim = GetCNodePrimitive(para_node);
   MS_EXCEPTION_IF_NULL(prim);
@@ -327,19 +364,15 @@ nlohmann::ordered_json ToJson(const CNodePtr &para_node,
     op_info = op_info_map_dx_dw_map[para_node->UniqueId()];
   }
   MS_EXCEPTION_IF_NULL(op_info);
-  args["op_name"] = para_node->UniqueName();
-  args["op_type"] = prim->name();
-  args["intput_origin_shape"] = op_info->origin_input_shapes;
-  args["intput_shard_shape"] = op_info->shard_input_shapes;
-  args["origin_output_shape"] = op_info->origin_output_shapes;
-  args["output_shard_shape"] = op_info->shard_output_shapes;
-  args["is_recompute"] = common::AnfAlgo::IsRecompute(para_node);
-  args["shard_flops"] = op_info->shard_flops;
-  args["full_flops"] = op_info->full_flops;
-  return args;
+  OpInfoPtr new_op_info = std::make_shared<OpInfo>();
+  new_op_info->full_flops = op_info->full_flops;
+  new_op_info->shard_flops = op_info->shard_flops;
+  new_op_info->is_recompute = common::AnfAlgo::IsRecompute(para_node);
+  new_op_info->op_type = prim->name();
+  (*all_op_info)[op_id] = new_op_info;
 }
 
-void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json *args,
+void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, std::unordered_map<std::string, OpInfoPtr> *all_op_info,
                const std::unordered_map<std::string, OpInfoPtr> &op_info_map_dx_dw_map,
                const std::unordered_map<CNodePtr, OpInfoPtr> &bprop_op_info_map_dx_dw_map) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -347,26 +380,32 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json 
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
     if (IsValueNode<FuncGraph>(node->input(0))) {
+      MS_EXCEPTION_IF_NULL(node->input(0)->cast<ValueNodePtr>());
       FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
-      GetCalOps(sub_graph, op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+      GetCalOps(sub_graph, op_id, all_op_info, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
     } else if (GetCNodePrimitive(node) &&
                (fp_primitive_set.find(GetCNodePrimitive(node)->name()) != fp_primitive_set.end() ||
                 bp_primitive_set.find(GetCNodePrimitive(node)->name()) != bp_primitive_set.end())) {
-      (*args)[std::to_string(*op_id)] = ToJson(node, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+      ToJson(node, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map, all_op_info, std::to_string(*op_id));
       *op_id = *op_id + 1;
     } else if (node->input(0)->isa<CNode>() && node->input(0)->abstract() != nullptr) {
       auto abs = node->input(0)->abstract();
       if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
         const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_func_graph);
         MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
-        GetCalOps(abstract_func_graph->func_graph(), op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+        GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
+                  bprop_op_info_map_dx_dw_map);
       } else if (abs->isa<abstract::PartialAbstractClosure>()) {
         const auto &abstract_partial_func = abs->cast<abstract::PartialAbstractClosurePtr>();
+        MS_EXCEPTION_IF_NULL(abstract_partial_func);
         const auto &abstract_fn = abstract_partial_func->fn();
         if (abstract_fn->isa<abstract::FuncGraphAbstractClosure>()) {
           const auto &abstract_func_graph = abstract_fn->cast<abstract::FuncGraphAbstractClosurePtr>();
+          MS_EXCEPTION_IF_NULL(abstract_func_graph);
           MS_EXCEPTION_IF_NULL(abstract_func_graph->func_graph());
-          GetCalOps(abstract_func_graph->func_graph(), op_id, args, op_info_map_dx_dw_map, bprop_op_info_map_dx_dw_map);
+          GetCalOps(abstract_func_graph->func_graph(), op_id, all_op_info, op_info_map_dx_dw_map,
+                    bprop_op_info_map_dx_dw_map);
         }
       }
     }
@@ -377,44 +416,44 @@ void GetCalOps(const FuncGraphPtr &graph, size_t *op_id, nlohmann::ordered_json 
 py::tuple FlopsCollection(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "cal model flops.";
   size_t op_id = 0;
-  nlohmann::ordered_json args;
-  int64_t full_mfu = 0;
-  int64_t full_hfu = 0;
-  int64_t shard_mfu = 0;
-  int64_t shard_hfu = 0;
+  string full_mfu_s = "0";
+  string full_hfu_s = "0";
+  string shard_mfu_s = "0";
+  string shard_hfu_s = "0";
   bool is_dynamic_shape = false;
   std::unordered_map<std::string, OpInfoPtr> op_info_map_dx_dw_map;
   std::unordered_map<CNodePtr, OpInfoPtr> bprop_info_map_dx_dw_map;
+  std::unordered_map<std::string, OpInfoPtr> all_op_info;
   GetFwdNodeInfos(&op_info_map_dx_dw_map, graph);
   GetBpNodeInfos(&bprop_info_map_dx_dw_map, op_info_map_dx_dw_map, graph);
-  GetCalOps(graph, &op_id, &args, op_info_map_dx_dw_map, bprop_info_map_dx_dw_map);
-  constexpr size_t json_dump_mode = 2;
-  for (auto arg : args) {
-    auto full_op_flops = static_cast<int64_t>(arg["full_flops"]);
-    auto shard_op_flops = static_cast<int64_t>(arg["shard_flops"]);
-    if (arg["op_type"] == prim::kPrimFlashAttentionScoreGrad->name()) {
+  GetCalOps(graph, &op_id, &all_op_info, op_info_map_dx_dw_map, bprop_info_map_dx_dw_map);
+  for (auto &op_info_item : all_op_info) {
+    auto op_info = op_info_item.second;
+    auto full_op_flops = static_cast<double>(op_info->full_flops);
+    auto shard_op_flops = static_cast<double>(op_info->shard_flops);
+    if (op_info->op_type == prim::kPrimFlashAttentionScoreGrad->name()) {
       const double expand_ratio_fa_bp = 1.5;
       if (shard_op_flops < 0) {
         is_dynamic_shape = true;
         break;
       }
-      full_hfu += full_op_flops * expand_ratio_fa_bp;
-      shard_hfu += shard_op_flops * expand_ratio_fa_bp;
+      full_hfu_s = AddBigNums(full_hfu_s, full_op_flops * expand_ratio_fa_bp);
+      shard_hfu_s = AddBigNums(shard_hfu_s, shard_op_flops * expand_ratio_fa_bp);
     } else {
       if (shard_op_flops < 0) {
         is_dynamic_shape = true;
         break;
       }
-      full_hfu += full_op_flops;
-      shard_hfu += shard_op_flops;
+      full_hfu_s = AddBigNums(full_hfu_s, full_op_flops);
+      shard_hfu_s = AddBigNums(shard_hfu_s, shard_op_flops);
     }
-    if (!arg["is_recompute"]) {
-      full_mfu += full_op_flops;
-      shard_mfu += shard_op_flops;
+    if (!op_info->is_recompute) {
+      full_mfu_s = AddBigNums(full_mfu_s, full_op_flops);
+      shard_mfu_s = AddBigNums(shard_mfu_s, shard_op_flops);
     }
   }
-  MS_LOG(DEBUG) << args.dump(json_dump_mode);
-  return py::make_tuple(full_mfu, full_hfu, shard_mfu, shard_hfu, is_dynamic_shape);
+  return py::make_tuple(std::stod(full_mfu_s), std::stod(full_hfu_s), std::stod(shard_mfu_s), std::stod(shard_hfu_s),
+                        is_dynamic_shape);
 }
 }  // namespace parallel
 }  // namespace mindspore

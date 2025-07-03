@@ -18,7 +18,7 @@ import mindspore.ops as ops
 from mindspore import context
 from mindspore.common.dtype import pytype_to_dtype
 from mindspore.common.api import jit
-from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes
+from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, enable_data_broadcast
 from mindspore.train.dataset_helper import _has_dynamic_shape, _check_inputs
 import mindspore.dataset as ds
 from mindspore._c_expression import _set_dataset_mode_config
@@ -41,6 +41,15 @@ def _init_sink_dataset(dataset, sink_size, input_signature, create_info):
     is_info_queue = (create_info and sink_size == 1 and dataset_size != 1 and
                      input_signature is None and not dynamic_shape and
                      context.get_context('device_target') == 'Ascend')
+
+    # Don't enable dynamic shape(multi-subgraph) feature in pp/data_broadcast mode,
+    # otherwise get_data_info will stuck since some rank do not consume data.
+    use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    data_broadcast = enable_data_broadcast()
+
+    if use_pipeline_parallel or data_broadcast:
+        is_info_queue = False
+
     transfer_dataset = _exec_datagraph(dataset, sink_size, create_data_info_queue=is_info_queue)
     dataset.__transfer_dataset__ = transfer_dataset
 
@@ -98,6 +107,29 @@ def _get_next_op(dataset, ori_next_op, is_info_queue):
     return next_op, (key, dataset_shapes, dataset_types)
 
 
+def _get_jit_func(sink_fun, jit_config):
+    """
+    Get the jit function.
+    """
+    jit_config_dict = jit_config.jit_config_dict
+    jit_level = jit_config_dict['jit_level']
+    if jit_level == "":
+        jit_level = "O0"
+    backend = ""
+    if jit_level == "O2":
+        jit_level = "O0"
+        backend = "GE"
+    if "backend" in jit_config_dict:
+        backend = jit_config_dict["backend"]
+    fullgraph = False
+    if jit_config_dict['jit_syntax_level'] == "STRICT":
+        fullgraph = True
+    exc_mode = jit_config_dict['exc_mode']
+    infer_boost = jit_config_dict['infer_boost']
+    return jit(sink_fun, jit_level=jit_level, backend=backend, fullgraph=fullgraph, exc_mode=exc_mode,
+               infer_boost=infer_boost)
+
+
 def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
     """
     get the sink function.
@@ -107,7 +139,7 @@ def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
             if jit_config is None:
                 dst_sink_fun = sink_fun
             else:
-                dst_sink_fun = jit(sink_fun, jit_config=jit_config)
+                dst_sink_fun = _get_jit_func(sink_fun, jit_config)
             dataset.__sink_fun__ = dst_sink_fun
 
         return dataset.__sink_fun__
@@ -119,7 +151,7 @@ def _get_sink_fun(sink_fun, key_info, is_info_queue, dataset, jit_config):
         if jit_config is None:
             dst_sink_fun = sink_fun
         else:
-            dst_sink_fun = jit(sink_fun, jit_config=jit_config)
+            dst_sink_fun = _get_jit_func(sink_fun, jit_config)
         dataset.__sink_aux__.sink_funcs[key] = dst_sink_fun
 
     return dst_sink_fun
@@ -191,7 +223,7 @@ def data_sink(fn, dataset, sink_size=1, jit_config=None, input_signature=None):
     loop = sink_size
     create_info = True
     if jit_config is None:
-        create_info = (loop == 1)
+        create_info = loop == 1
         loop = 1
     ori_next_op, is_info_queue = _init_sink_dataset(dataset, loop, input_signature, create_info)
 

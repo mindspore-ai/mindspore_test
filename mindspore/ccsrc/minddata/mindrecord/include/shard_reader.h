@@ -45,7 +45,6 @@
 #include "minddata/mindrecord/include/shard_category.h"
 #include "minddata/mindrecord/include/shard_column.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
-#include "minddata/mindrecord/include/shard_error.h"
 #include "minddata/mindrecord/include/shard_index_generator.h"
 #include "minddata/mindrecord/include/shard_operator.h"
 #include "minddata/mindrecord/include/shard_pk_sample.h"
@@ -249,6 +248,9 @@ class MINDRECORD_API ShardReader {
 
   /// \brief initialize reader
   Status Init(const std::vector<std::string> &file_paths, bool load_dataset);
+
+  /// \brief update loading mode by operators's shuffle mode
+  void UpdateLoadModeByShuffleMode();
 
   /// \brief validate column list
   Status CheckColumnList(const std::vector<std::string> &selected_columns);

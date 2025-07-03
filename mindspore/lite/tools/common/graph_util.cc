@@ -33,6 +33,10 @@
 #include "tools/converter/converter_context.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/string_util.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace lite {
@@ -107,7 +111,7 @@ STATUS GetShapeVectorFromParameter(const mindspore::ParameterPtr &param_node, st
 
 STATUS GetShapeVectorAndIdxFromCNode(const CNodePtr &cnode, std::vector<int64_t> *shape_vector, size_t *idx) {
   MS_CHECK_TRUE_MSG(shape_vector != nullptr, lite::RET_ERROR, "shape is nullptr");
-
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "cnode is nullptr");
   AbstractBasePtr cnode_abstract = nullptr;
   if ((opt::CheckPrimitiveType(cnode, prim::kPrimTupleGetItem)) ||
       (opt::CheckPrimitiveType(cnode, prim::kPrimListGetItem))) {

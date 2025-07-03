@@ -150,7 +150,7 @@ def test_install_custom():
 
 
 class TestAscendCCompile():
-    def setup(self):
+    def setup_method(self):
         script_path, _ = os.path.split(__file__)
         self.dest_dir = script_path + "/../../../../mindspore/python/mindspore/custom_compiler"
         self.custom_project = os.path.join(self.dest_dir, 'CustomProject')
@@ -160,7 +160,7 @@ class TestAscendCCompile():
         os.makedirs(os.path.join(self.custom_project, "op_kernel"), exist_ok=True)
         shutil.copy(cmake_preset, self.custom_project)
 
-    def teardown(self):
+    def teardown_method(self):
         shutil.rmtree(self.custom_project)
 
     def test_compile_config(self):

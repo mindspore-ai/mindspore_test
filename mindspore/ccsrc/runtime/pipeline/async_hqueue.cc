@@ -20,8 +20,7 @@
 #include "include/common/utils/signal_util.h"
 #endif
 #include "utils/log_adapter.h"
-#include "utils/ms_exception.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore {
 namespace runtime {

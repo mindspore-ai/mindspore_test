@@ -19,6 +19,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace ops {
@@ -106,7 +107,7 @@ ShapeArray ProdExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   const auto &axis = input_values[kIndex1]->cast<Int64ImmPtr>();
   MS_EXCEPTION_IF_NULL(axis);
 
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_shape = input->shape();
 
@@ -117,7 +118,7 @@ ShapeArray ProdExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 
 TypePtrList ProdExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   if (input_values[kIndex3] == mindspore::kNone) {
-    const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+    const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(input);
     const auto &input_type = input->Dtype();
     const auto &input_type_id = input->Dtype()->type_id();

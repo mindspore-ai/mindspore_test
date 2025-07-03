@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,9 @@ using SeenNum = uint32_t;
 class Value;
 using ValuePtr = std::shared_ptr<Value>;
 using ValuePtrList = std::vector<ValuePtr>;
+
+class ValueTuple;
+using ValueTuplePtr = std::shared_ptr<ValueTuple>;
 
 class ValueNode;
 using ValueNodePtr = std::shared_ptr<ValueNode>;
@@ -690,13 +693,18 @@ class MS_CORE_API Parameter final : public ANode {
 
   /// \brief Set the default parameter.
   ///
-  /// \param[in] param The default parameter.
+  /// \param[in] param The default parameter. Maybe Tensor/Tensor/MetaTensor/TensorPy/MapTensor.
   void set_default_param(const ValuePtr &param);
+
+  /// \brief Get the default parameter ancestor.
+  ///
+  /// \return The default parameter. Maybe Tensor/Tensor/MetaTensor/TensorPy/MapTensor.
+  const ValuePtr &default_param_raw() const;
 
   /// \brief Get the default parameter.
   ///
-  /// \return The default parameter.
-  const ValuePtr &default_param() const;
+  /// \return The default parameter. Maybe Tensor/Tensor/MetaTensor/MapTensor.
+  ValuePtr default_param() const;
 
   /// \brief Get the parameter information.
   ///
@@ -1052,6 +1060,9 @@ MS_CORE_API bool HasAbstractUMonad(const AnfNodePtr &node);
 
 // Check whether the given node has IO monad abstract.
 MS_CORE_API bool HasAbstractIOMonad(const AnfNodePtr &node);
+
+// Check whether the given node is a monad node
+MS_CORE_API bool IsMonad(const AnfNodePtr &input);
 
 // Gets primitive attribute value as a bool flag.
 MS_CORE_API bool GetPrimitiveFlag(const PrimitivePtr &prim, const std::string &attr);

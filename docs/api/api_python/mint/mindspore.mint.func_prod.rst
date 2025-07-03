@@ -1,7 +1,7 @@
 mindspore.mint.prod
 ===================
 
-.. py:function:: mindspore.mint.prod(input, *, dtype=None)
+.. py:function:: mindspore.mint.prod(input, *, dtype=None) -> Tensor
 
     计算Tensor所有元素的乘积。
 
@@ -17,7 +17,7 @@ mindspore.mint.prod
     异常：
         - **TypeError** - `input` 不是Tensor。
 
-    .. py:function:: mindspore.mint.prod(input, dim, keepdim=False, *, dtype=None)
+    .. py:function:: mindspore.mint.prod(input, dim, keepdim=False, *, dtype=None) -> Tensor
         :noindex:
 
     默认情况下，使用指定维度的所有元素的乘积代替该维度的其他元素，以移除该维度。也可仅缩小该维度大小至1。 `keepdim` 控制输出和输入的维度是否相同。

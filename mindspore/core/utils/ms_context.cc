@@ -21,6 +21,7 @@
 #include <fstream>
 #include <algorithm>
 #include <utility>
+#include <nlohmann/json.hpp>
 #include "utils/ms_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/phase.h"
@@ -43,6 +44,8 @@ constexpr auto kAttrJitLevel = "jit_level";
 constexpr auto kAttrJitLevelO0 = "O0";
 constexpr auto kAttrJitLevelO1 = "O1";
 constexpr auto kAttrJitLevelO2 = "O2";
+constexpr auto kBackendMSBackend = "ms_backend";
+constexpr auto kBackendGE = "GE";
 }  // namespace
 std::atomic<bool> thread_1_must_end(false);
 
@@ -65,6 +68,7 @@ MsContext::MsContext(const std::string &policy, const std::string &target) {
   InitDigitalTypeDefaultValue();
   MsContext::SetDeviceId();
   string_params_[MS_CTX_DEVICE_TARGET - MS_CTX_TYPE_STRING_BEGIN] = target;
+  DeviceManagerConf::GetInstance()->SetDeviceType(target);
   set_param<bool>(MS_CTX_ENABLE_LOOP_SINK, target == kAscendDevice || target == kDavinciDevice);
 
   backend_policy_ = kPolicyMap[policy];
@@ -306,6 +310,7 @@ void MsContext::SetDeviceTargetFromInner(const std::string &device_target) {
     MS_LOG(INFO) << "Set memory_optimize_level to O0 as default on other device";
     int_params_[MS_CTX_MEMORY_OPTIMIZE_LEVEL - MS_CTX_TYPE_INT_BEGIN] = kOptimizeO0;
   }
+  DeviceManagerConf::GetInstance()->SetDeviceType(device_target);
   string_params_[MS_CTX_DEVICE_TARGET - MS_CTX_TYPE_STRING_BEGIN] = device_target;
 }
 
@@ -326,7 +331,13 @@ void MsContext::SetEnv(const std::string &device) {
 
   if (auto iter = PluginPathMap().find(device); iter != PluginPathMap().end()) {
     const auto &library_path = iter->second;
-    set_env_(device, library_path);
+    try {
+      set_env_(device, library_path);
+    } catch (const std::exception &e) {
+      set_env_ = nullptr;
+      check_env_ = nullptr;
+      MS_LOG(EXCEPTION) << e.what();
+    }
   }
 }
 
@@ -520,7 +531,8 @@ std::string MsContext::GetJitLevel() const {
   }
 
   // If use rank table startup method, set jit level to O2.
-  if (!common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() && jit_level != kAttrJitLevelO2) {
+  if (!common::UseDynamicCluster() && !common::GetEnv("RANK_TABLE_FILE").empty() && jit_level != kAttrJitLevelO2 &&
+      device_target == kAscendDevice) {
     if (first_call) {
       MS_LOG(WARNING) << "Set jit level to O2 for rank table startup method.";
     }
@@ -529,6 +541,21 @@ std::string MsContext::GetJitLevel() const {
   first_call = false;
 
   return jit_level;
+}
+
+std::string MsContext::GetBackend() {
+  const auto &jit_config = PhaseManager::GetInstance().jit_config();
+  std::string backend = "";
+  auto iter = jit_config.find("backend");
+  if (iter != jit_config.end()) {
+    backend = iter->second;
+  }
+
+  if (backend.empty()) {
+    backend = IsKByKExecutorMode() ? kBackendMSBackend : kBackendGE;
+  }
+
+  return backend;
 }
 
 bool MsContext::IsKByKExecutorMode() {
@@ -541,25 +568,17 @@ bool MsContext::IsKByKExecutorMode() {
     is_jit_level_changed = true;
     jit_level_log = jit_level;
     CheckHcclBufferSize(jit_level);
-    set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
+  }
+
+  const auto &jit_config = PhaseManager::GetInstance().jit_config();
+  if (jit_config.find("backend") != jit_config.end() && jit_config.at("backend") == kBackendGE) {
+    MS_LOG(INFO) << "Enable graph_sink executor for ge backend.";
+    return false;
   }
 
   if (get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor by mem offload.");
     return true;
-  }
-
-  static bool is_hybrid_mode = false;
-  if (get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
-    if (!is_hybrid_mode) {
-      is_hybrid_mode = true;
-      MS_LOG(INFO) << "Enable kernelbykernel executor by hybrid mode.";
-    }
-    return true;
-  }
-  if (is_hybrid_mode) {
-    MS_LOG(INFO) << "Disable hybrid mode.";
-    is_hybrid_mode = false;
   }
 
   if (mode == kPynativeMode) {
@@ -615,12 +634,10 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE, false);
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE, true);
   set_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD, false);
-  set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
   set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
   set_param<bool>(MS_CTX_ENABLE_RECOVERY, false);
   set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
   set_param<bool>(MS_CTX_DISABLE_FORMAT_TRANSFORM, false);
-  set_param<bool>(MS_CTX_RECOMPUTE_COMM_OVERLAP, false);
   set_param<bool>(MS_CTX_GRAD_COMM_OVERLAP, false);
   set_param<bool>(MS_CTX_ENABLE_OPT_SHARD_COMM_OPT, false);
   set_param<bool>(MS_CTX_ENABLE_TASK_OPT, false);
@@ -642,6 +659,7 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER, false);
   set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_SPLIT_CONCAT_BRANCH, false);
   set_param<bool>(MS_CTX_ENABLE_INTERLEAVE_PARALLEL_BRANCH, false);
+  set_param<bool>(MS_ENV_FLATTEN_WEIGHT, false);
 }
 
 void MsContext::InitStringTypeDefaultValue() {
@@ -653,7 +671,6 @@ void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_AOE_JOB_TYPE, "2");
   set_param<std::string>(MS_CTX_GRAPH_KERNEL_FLAGS, "");
   set_param<std::string>(MS_CTX_HOST_SCHEDULING_MAX_THRESHOLD, "");
-  set_param<std::string>(MS_CTX_ENABLE_EXCEPTION_DUMP, "2");
   set_param<std::string>(MS_CTX_GRAPH_MEMORY_MAX_SIZE, "0");
   set_param<std::string>(MS_CTX_VARIABLE_MEMORY_MAX_SIZE, "0");
   set_param<std::string>(MS_CTX_PROFILING_OPTIONS, "training_trace");
@@ -665,6 +682,8 @@ void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_INFER_BOOST, "off");
   set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, "");
   set_param<std::string>(MS_CTX_EXEC_ORDER, "bfs");
+  set_param<std::string>(MS_CTX_PP_1F1B_OVERLAP, "");
+  set_param<std::string>(MS_CTX_RECOMPUTE_COMM_OVERLAP, "");
 }
 
 void MsContext::InitDigitalTypeDefaultValue() {
@@ -695,16 +714,6 @@ void MsContext::InitDigitalTypeDefaultValue() {
   set_param<uint32_t>(MS_CTX_OP_TIMEOUT, kOpTimeout);
 }
 
-inline void SplitString(const std::string &str, char delim, std::set<std::string> *output_list) {
-  std::stringstream ss(str);
-  std::string item;
-  while (std::getline(ss, item, delim)) {
-    if (!item.empty()) {
-      output_list->emplace(item);
-    }
-  }
-}
-
 inline std::string SetToString(const std::set<std::string> &kernel_list) {
   std::string out = "";
   for (auto &name : kernel_list) {
@@ -714,10 +723,14 @@ inline std::string SetToString(const std::set<std::string> &kernel_list) {
 }
 
 void MsContext::SetMsInternalEnableCustomKernelList() {
+  if (!ms_internal_enable_custom_kernel_list_.empty()) {
+    return;
+  }
   const std::string kDefaultEnabledOpList =
     "MatMul,RmsNorm,Add,Sub,FlashAttentionScore,PagedAttention,PagedAttentionMask,AddRmsNorm,AddLayerNorm,"
     "MatMulAllReduce,InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd,"
-    "AddRmsNormDynamicQuant,MatMulElemwise";
+    "AddRmsNormDynamicQuant,MatMulElemwise,RmsNormQuant,MatMulSigmoidCastAdd,TransposeBatchMatmulTranspose,"
+    "FusedAddTopKDiv,SwiGLUDynamicQuant,SwiGLUReshapeDynamicQuant,QbmmAllReduceConvertBias";
   const std::string k310pDefaultEnabledOpList = "MatMul,QuantBatchMatmul,QuantLinearSparse,QbmmAllReduceAdd,QbmmAdd";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
@@ -729,21 +742,21 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 
   std::set<std::string> enable_fusion_list;
   if (is_enable_internal_op) {
-    SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
+    common::SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
   }
   if (is_310p) {
-    SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
+    common::SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
   }
 
   std::string env = common::GetEnv("MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST");
   if (!env.empty()) {
-    SplitString(env, ',', &enable_fusion_list);
+    common::SplitString(env, ',', &enable_fusion_list);
   }
 
   std::set<std::string> disable_fusion_list;
   env = common::GetEnv("MS_INTERNAL_DISABLE_CUSTOM_KERNEL_LIST");
   if (!env.empty()) {
-    SplitString(env, ',', &disable_fusion_list);
+    common::SplitString(env, ',', &disable_fusion_list);
   }
 
   ms_internal_enable_custom_kernel_list_.clear();
@@ -757,29 +770,26 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
 }
 
 bool MsContext::IsEnableInferBoost() {
+  enable_infer_boost_ = false;
   const auto &jit_config = PhaseManager::GetInstance().jit_config();
   auto iter = jit_config.find("infer_boost");
-  if (iter != jit_config.end() && iter->second == "on") {
+  if ((iter != jit_config.end() && iter->second == "on") || get_param<std::string>(MS_CTX_INFER_BOOST) == "on") {
     enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from JitConfig";
-    SetMsInternalEnableCustomKernelList();
-    return enable_infer_boost_.value();
+  } else if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
+    enable_infer_boost_ = true;
+    static bool print_warning_once = true;
+    if (print_warning_once) {
+      print_warning_once = false;
+      MS_LOG(WARNING) << "'MS_ENABLE_INTERNAL_KERNELS' will be deprecated in the next version. Please use "
+                         "`set_context(jit_config={'jit_level': 'O0', 'infer_boost': 'on'})` instead";
+    }
   }
 
-  auto global_infer_boost = get_param<std::string>(MS_CTX_INFER_BOOST);
-  if (global_infer_boost == "on") {
-    enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from Global Context JitConfig";
+  if (enable_infer_boost_) {
+    MS_LOG(INFO) << "MSContext enable ms infer boost";
     SetMsInternalEnableCustomKernelList();
-    return enable_infer_boost_.value();
-  }
-
-  if (common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on") {
-    enable_infer_boost_ = true;
-    MS_LOG(INFO) << "MSContext enable ms infer boost from Env";
-    SetMsInternalEnableCustomKernelList();
-  } else {
-    enable_infer_boost_ = false;
+    common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
+    common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
   }
 
   return enable_infer_boost_.value();

@@ -30,13 +30,14 @@
 #include <random>
 
 #include "mindspore/ops/infer/bernoulli.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "utils/ms_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bernoulli_cpu {
 namespace {
 const size_t kBernoulliInputsNum = 2;
 const size_t kBernoulliOutputsNum = 1;
@@ -200,5 +201,6 @@ std::vector<KernelAttr> BernoulliCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bernoulli, BernoulliCpuKernelMod);
+}  // namespace bernoulli_cpu
 }  // namespace kernel
 }  // namespace mindspore

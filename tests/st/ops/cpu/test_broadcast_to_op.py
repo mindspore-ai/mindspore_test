@@ -42,7 +42,7 @@ def test_broadcast():
     assert np.allclose(output.asnumpy(), expect)
 
     shape = (8, 5, 7, 4, 5, 6)
-    x_np = np.arange(24).reshape((1, 4, 1, 6)).astype(np.bool)
+    x_np = np.arange(24).reshape((1, 4, 1, 6)).astype(np.bool_)
     output = P.BroadcastTo(shape)(Tensor(x_np))
     expect = np.broadcast_to(x_np, shape)
     assert np.allclose(output.asnumpy(), expect)

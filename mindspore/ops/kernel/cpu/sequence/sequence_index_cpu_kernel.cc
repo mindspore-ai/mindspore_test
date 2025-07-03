@@ -18,8 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/thread_pool.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -66,10 +65,15 @@ bool SequenceIndexCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   constexpr size_t start_index = 2;
   constexpr size_t end_index = 3;
   T *seq_addr = GetDeviceAddress<T>(inputs, seq_index);
+  MS_EXCEPTION_IF_NULL(seq_addr);
   T *target_addr = GetDeviceAddress<T>(inputs, target_index);
+  MS_EXCEPTION_IF_NULL(target_addr);
   int64_t *start_addr = GetDeviceAddress<int64_t>(inputs, start_index);
+  MS_EXCEPTION_IF_NULL(start_addr);
   int64_t *end_addr = GetDeviceAddress<int64_t>(inputs, end_index);
+  MS_EXCEPTION_IF_NULL(end_addr);
   int64_t *output_addr = GetDeviceAddress<int64_t>(outputs, 0);
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto seq_size = inputs[0]->size();
 
   int64_t start_value = start_addr[0];

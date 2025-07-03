@@ -20,28 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-*@brief Returns the index with the largest value across axes of a tensor. \n
-
-*@par Inputs:
-* Two inputs, including:
-*@li x: A multi-dimensional Tensor of type float16, float32, or int16.
-*@li dimension: A Scalar of type int32, specifying the index with the largest value. \n
-
-*@par Attributes:
-*dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
-
-*@par Outputs:
-*y: A multi-dimensional Tensor of type int32 or int64, specifying the index with the largest value. The dimension is one
-less than that of "x". \n
-
-*@attention Constraints:
-*@li x: If there are multiple maximum values, the index of the first maximum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". \n
-
-*@par Third-party framework compatibility
-* Compatible with TensorFlow operator ArgMax.
-*/
 REG_CUST_OP(ArgMaxV2)
   .INPUT(x, TensorType::NumberType())
   .INPUT(dimension, TensorType::IndexNumberType())

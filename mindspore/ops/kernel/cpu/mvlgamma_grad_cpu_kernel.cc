@@ -19,11 +19,12 @@
 #include <string>
 #include <limits>
 #include "kernel/cpu/mvlgamma_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/mvlgamma_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mvlgamma_grad_cpu {
 namespace {
 /**
  * Coefficients for the Lanczos approximation of the gamma function. The
@@ -157,5 +158,6 @@ const std::vector<std::pair<KernelAttr, MvlgammaGradCpuKernelMod::KernelRunFunc>
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MvlgammaGrad, MvlgammaGradCpuKernelMod);
+}  // namespace mvlgamma_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

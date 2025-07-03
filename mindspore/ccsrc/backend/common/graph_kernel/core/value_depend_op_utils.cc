@@ -27,6 +27,15 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::graphkernel {
 const std::unordered_map<std::string, HashSet<size_t>> &ValueDependOpUtils::GetOpIndexInfo() {
@@ -76,7 +85,7 @@ bool ValueDependOpUtils::IsConstInput(const AnfNodePtr &node) {
           if (value->isa<ValueAny>()) {
             return false;
           }
-          auto tensor = value->cast<tensor::BaseTensorPtr>();
+          auto tensor = value->cast<tensor::TensorPtr>();
           if (tensor != nullptr && tensor->data().const_data() == nullptr) {
             return false;
           }
@@ -125,12 +134,12 @@ bool ValueDependOpUtils::AddConstInputToAttr(const CNodePtr &cnode, const HashSe
         MS_LOG(DEBUG) << input_vec[i].arg_name_ << "'s Value is ValueAny.";
         return false;
       }
-      if (!value->isa<tensor::BaseTensor>()) {
+      if (!value->isa<tensor::Tensor>()) {
         primitive->set_attr(input_vec[i].arg_name_, value);
         continue;
       }
       auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(input_vec[i].arg_name_, value, primitive->name());
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      auto tensor = value->cast<tensor::TensorPtr>();
       auto tensor_shape = tensor->shape_c();
       if (tensor_shape.empty()) {
         primitive->set_attr(input_vec[i].arg_name_, MakeValue(value_vector[0]));

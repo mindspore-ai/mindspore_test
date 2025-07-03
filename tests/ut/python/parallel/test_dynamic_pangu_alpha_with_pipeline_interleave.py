@@ -16,7 +16,8 @@
 
 import os
 import mindspore.common.dtype as mstype
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, _VirtualDatasetCell
+from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
+from mindspore.nn import PipelineCell
 from mindspore import context, Tensor
 from mindspore import Symbol
 from tests.ut.python.parallel.test_dynamic_pangu_alpha import PanguAlpha, PANGUALPHAConfig, CrossEntropyLoss, PanguAlphaWithLossLazyInline, compile_pipeline_net

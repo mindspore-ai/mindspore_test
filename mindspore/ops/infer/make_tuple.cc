@@ -29,6 +29,8 @@
 #include "infer/real_maketuple.h"
 #include "infer/cxx_api/make_tuple_v2.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace ops {

@@ -1,0 +1,14 @@
+mul_:
+  - op_yaml: inplace_mul_op.yaml
+    py_method: tensor_inplace_mul
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+  
+  - op_yaml: inplace_muls_op.yaml
+    py_method: tensor_inplace_mul
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

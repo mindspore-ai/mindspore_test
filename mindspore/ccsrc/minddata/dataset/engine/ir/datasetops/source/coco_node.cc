@@ -22,9 +22,7 @@
 #include <vector>
 
 #include "minddata/dataset/engine/datasetops/source/coco_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 #include "minddata/dataset/util/status.h"
 namespace mindspore {
@@ -34,15 +32,26 @@ namespace dataset {
 // Constructor for CocoNode
 CocoNode::CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
                    const bool &decode, const std::shared_ptr<SamplerObj> &sampler, std::shared_ptr<DatasetCache> cache,
-                   const bool &extra_metadata, py::function decrypt)
+                   const bool &extra_metadata, const py::function &decrypt)
     : MappableSourceNode(std::move(cache)),
       dataset_dir_(dataset_dir),
       annotation_file_(annotation_file),
       task_(task),
       decode_(decode),
       sampler_(sampler),
-      extra_metadata_(extra_metadata),
-      decrypt_(decrypt) {}
+      extra_metadata_(extra_metadata) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+CocoNode::~CocoNode() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 // Constructor for CocoNode
 CocoNode::CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
@@ -55,6 +64,8 @@ CocoNode::CocoNode(const std::string &dataset_dir, const std::string &annotation
       decode_(decode),
       sampler_(sampler),
       extra_metadata_(extra_metadata) {}
+
+CocoNode::~CocoNode() = default;
 #endif
 
 std::shared_ptr<DatasetNode> CocoNode::Copy() {
@@ -222,7 +233,6 @@ Status CocoNode::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status CocoNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_parallel_workers", kCocoNode));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "connector_queue_size", kCocoNode));
@@ -246,6 +256,5 @@ Status CocoNode::from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode>
   (void)(*ds)->SetConnectorQueueSize(json_obj["connector_queue_size"]);
   return Status::OK();
 }
-#endif
 }  // namespace dataset
 }  // namespace mindspore

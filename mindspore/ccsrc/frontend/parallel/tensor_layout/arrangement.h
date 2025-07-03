@@ -28,7 +28,7 @@
 
 namespace mindspore {
 namespace parallel {
-class Arrangement : public Array {
+class FRONTEND_EXPORT Arrangement : public Array {
  public:
   Arrangement() : size_(1) {}
   ~Arrangement() override = default;

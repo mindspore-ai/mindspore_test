@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,13 +73,15 @@ void FuncGraph::set_output(const AnfNodePtr &value, bool force_new_ret) {
   input0->set_abstract(f);
 }
 
-void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int variable_args_count,
-                                  int pos_args_input_count, AnfNodePtrList *specialized_parameter_list,
+void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int pos_params_count, int pos_args_input_count,
+                                  AnfNodePtrList *specialized_parameter_list,
                                   mindspore::HashMap<AnfNodePtr, AnfNodePtr> *repl_nodes) const {
   MS_EXCEPTION_IF_NULL(specialized_graph);
+  MS_EXCEPTION_IF_NULL(specialized_parameter_list);
   if (!specialized_graph->has_vararg()) {
-    if (variable_args_count > 0) {
-      MS_LOG(EXCEPTION) << "Function:" << this->ToString() << " takes " << GetPositionalArgsCount()
+    // No *args in parameter, varaible_args_count need to be 0
+    if (pos_args_input_count > pos_params_count) {
+      MS_LOG(EXCEPTION) << "Function:" << this->ToString() << " takes " << pos_params_count
                         << " positional arguments, but " << pos_args_input_count << " were given.";
     }
     // Only copy parameters other than default arguments.
@@ -91,13 +93,15 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
   }
 
   // If there is variable argument.
-  if (variable_args_count < 0) {
-    MS_LOG(EXCEPTION) << "For function:" << this->ToString() << ", its argument size: " << pos_args_input_count
-                      << " is less or equal to parameter size: " << GetPositionalArgsCount();
+  int max_pos_args_count = pos_args_input_count + SizeToInt(GetDefaultValueCount());
+  if (max_pos_args_count < pos_params_count) {
+    MS_LOG(EXCEPTION) << "For function:" << this->ToString() << ", its max argument size: " << max_pos_args_count
+                      << " is less than parameter size: " << pos_params_count
+                      << " , actual argument size from caller: " << pos_args_input_count;
   }
   // Copy other parameters than vararg's firstly.
-  size_t positional_args_count = IntToSize(GetPositionalArgsCount());
-  for (size_t i = 0; i < positional_args_count; ++i) {
+  int actual_args_count_num = pos_args_input_count < pos_params_count ? pos_args_input_count : pos_params_count;
+  for (size_t i = 0; i < IntToSize(actual_args_count_num); ++i) {
     specialized_parameter_list->push_back(specialized_graph->parameters()[i]);
   }
   MS_EXCEPTION_IF_NULL(specialized_graph->GetVariableArgParameter());
@@ -108,6 +112,7 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
 
   auto varg_name = specialized_graph->GetVariableArgName();
   // For python variable argument input, there is no upper limit.
+  int variable_args_count = pos_args_input_count < pos_params_count ? 0 : pos_args_input_count - pos_params_count;
   for (int i = 0; i < variable_args_count; ++i) {
     ParameterPtr para = std::make_shared<Parameter>(specialized_graph);
     std::string param_name = varg_name + std::to_string(i);
@@ -116,7 +121,6 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
       para->debug_info()->set_name(param_name);
     }
     var_param_tuple_nodes.push_back(para);
-    MS_EXCEPTION_IF_NULL(specialized_parameter_list);
     specialized_parameter_list->push_back(para);
   }
   auto var_tuple_param = specialized_graph->NewCNode(std::move(var_param_tuple_nodes));
@@ -199,6 +203,7 @@ void FuncGraph::GenerateKwargReplNode(const FuncGraphPtr &specialized_graph,
                                       mindspore::HashMap<AnfNodePtr, AnfNodePtr> *repl_nodes) const {
   if (has_kwarg() && !kwarg_keys_tuple_nodes.empty()) {
     MS_EXCEPTION_IF_NULL(specialized_graph);
+    MS_EXCEPTION_IF_NULL(specialized_graph->GetVariableKwargParameter());
     TraceGuard guard(MakeTraceInfo<TraceGenerateKwArg>(specialized_graph->GetVariableKwargParameter()->debug_info()));
     auto make_tuple_keys = specialized_graph->NewCNode(kwarg_keys_tuple_nodes);
     auto make_tuple_values = specialized_graph->NewCNode(kwarg_values_tuple_nodes);
@@ -248,30 +253,29 @@ void FuncGraph::GenerateDefaultValue(const FuncGraphPtr &specialized_graph,
 
 FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   if (has_attr(FUNC_GRAPH_FLAG_PROXY_GRAPH)) {
+    MS_LOG(DEBUG) << "proxy function graph: " << ToString();
     auto original_params_size = parameters().size();
     auto args_size = args_abs_list.size();
-    if (args_size == original_params_size) {
-      MS_LOG(DEBUG) << "proxy function graph: " << ToString();
-      return shared_from_base<FuncGraph>();
-    } else if (args_size < original_params_size) {
-      auto new_params = parameters();
-      new_params.resize(args_size);
+    MS_LOG(DEBUG) << "original_params_size:" << original_params_size << ", args_size:" << args_size;
+    if (args_size != original_params_size) {
+      std::vector<AnfNodePtr> new_params;
+      set_parameters(new_params);
+      MS_EXCEPTION_IF_NULL(output());
       auto call_node = output()->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(call_node);
-      auto new_inputs = call_node->inputs();
-      new_inputs.resize(new_inputs.size() + args_size - original_params_size);
-
+      std::vector<AnfNodePtr> new_inputs{call_node->input(0)};
+      for (size_t index = 0; index < args_size; ++index) {
+        auto new_param = add_parameter();
+        (void)new_params.emplace_back(new_param);
+        (void)new_inputs.emplace_back(new_param);
+      }
       set_parameters(new_params);
       auto new_out = NewCNodeInOrder(new_inputs);
       set_output(new_out);
-      MS_LOG(INFO) << "The proxy truncates the parameters to match the size. fg: " << ToString()
-                   << ", original args: " << original_params_size << ", call args: " << args_size
-                   << ", new args: " << parameters().size() << ", call inputs: " << new_out->inputs().size();
-      return shared_from_base<FuncGraph>();
+      MS_LOG(DEBUG) << "The proxy truncates the parameters to match the size. fg: " << ToString()
+                    << ", original args: " << original_params_size << ", call args: " << args_size
+                    << ", new args: " << parameters().size() << ", call inputs: " << new_out->inputs().size();
     }
-    MS_LOG(WARNING) << "The number of parameter is wrong. The number of the construct function's parameter is "
-                    << original_params_size << ", but the number of call parameter is " << args_size
-                    << ". graph:" << ToString();
     return shared_from_base<FuncGraph>();
   }
 
@@ -301,25 +305,30 @@ FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
     return iter->second;
   }
   FuncGraphPtr specialized_graph = BasicClone(shared_from_base<FuncGraph>());
+  MS_EXCEPTION_IF_NULL(specialized_graph);
   size_t kwarg_count = kwarg_list.size();
   // Get the variable args count from caller.
+  // Relationship between pos_args_input_count and pos_params_count
+  // Callee pos_params_count:  param number before *args, eg: [a, b, c=1, d=2, *args] = 4
+  // Caller pos_args_input_count :
+  //    Range from [pos_params_count - default_param_count, pos_params_count + varaible_args_count]
+  // Actual varaible_args_count: max(0, pos_args_input_count - pos_params_count)
   int pos_args_input_count = SizeToInt((arguments_count - kwarg_count) - fv_param_count_);
-  int variable_args_count = pos_args_input_count - GetPositionalArgsCount();
+  int pos_params_count = GetPositionalArgsCount();
+  int variable_args_count = pos_args_input_count < pos_params_count ? 0 : pos_args_input_count - pos_params_count;
   AnfNodePtrList specialized_parameter_list;
   mindspore::HashMap<AnfNodePtr, AnfNodePtr> repl_nodes;
   MS_LOG(DEBUG) << "specialized_graph: " << specialized_graph->ToString()
-                << ", variable_args_count: " << variable_args_count
-                << ", pos_args_input_count: " << pos_args_input_count
-                << ", GetPositionalArgsCount: " << GetPositionalArgsCount() << ", arguments_count: " << arguments_count
+                << ", variable_args_count: " << variable_args_count << ", pos_params_count: " << pos_params_count
+                << ", pos_args_input_count: " << pos_args_input_count << ", arguments_count: " << arguments_count
                 << ", kwarg_count: " << kwarg_count << ", fv_param_count_: " << fv_param_count_;
-  GenerateVarParams(specialized_graph, variable_args_count, pos_args_input_count, &specialized_parameter_list,
+  GenerateVarParams(specialized_graph, pos_params_count, pos_args_input_count, &specialized_parameter_list,
                     &repl_nodes);
   GenerateKwParams(specialized_graph, kwarg_list, pos_args_input_count, &specialized_parameter_list, &repl_nodes);
 
   GenerateDefaultValue(specialized_graph, specialized_parameter_list, &repl_nodes);
 
   // Append hyper parameter to specialized_parameter_list
-  MS_EXCEPTION_IF_NULL(specialized_graph);
   auto params = specialized_graph->parameters();
   (void)specialized_parameter_list.insert(specialized_parameter_list.end(), params.end() - SizeToInt(fv_param_count_),
                                           params.end());

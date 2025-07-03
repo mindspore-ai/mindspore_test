@@ -24,6 +24,10 @@
 #include "tools/common/tensor_util.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore {
 namespace lite {
@@ -265,6 +269,10 @@ int SetShapeTensorInfo(const tensor::Tensor *shape_tensor, tensor::TensorPtr ten
 STATUS UnifyFormatToNHWC::ConvertOnnxResizeForConstShape(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   MS_ASSERT(func_graph != nullptr && cnode != nullptr);
   auto resize_shape_node = cnode->input(kNumResizeInputShape)->cast<ParameterPtr>();
+  if (resize_shape_node == nullptr) {
+    MS_LOG(ERROR) << "resize_shape_node is nullptr.";
+    return RET_ERROR;
+  }
   auto shape_tensor = std::dynamic_pointer_cast<tensor::Tensor>(resize_shape_node->default_param());
   if (shape_tensor == nullptr) {
     MS_LOG(ERROR) << " shape tensor is nullptr.";
@@ -378,6 +386,7 @@ bool UnifyFormatToNHWC::ProcessResizeAndFormat(const FuncGraphPtr &func_graph) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_ASSERT(cnode != nullptr);
     if (opt::IsSpecialType(cnode)) {
       continue;
     }

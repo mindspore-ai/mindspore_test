@@ -21,11 +21,12 @@
 #include <memory>
 #include <unordered_map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_assign_cpu {
 class DynamicAssignCpuKernelMod : public NativeCpuKernelMod {
  public:
   DynamicAssignCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class DynamicAssignCpuKernelMod : public NativeCpuKernelMod {
   TypeId input_x_dtype_{kTypeUnknown};
   size_t input_x_dtype_size_{4};
 };
+}  // namespace dynamic_assign_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -21,14 +21,13 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                                const FP32ImmPtr &p, const BaseTensorPtr &seed,
-                                                const BaseTensorPtr &offset);
+tensor::TensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                            const FP32ImmPtr &p, const TensorPtr &seed, const TensorPtr &offset);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

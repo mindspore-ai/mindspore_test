@@ -17,12 +17,13 @@
 #include <memory>
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "nnacl/fp32/reduce_fp32.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reduce_std_cpu {
 constexpr size_t kReduceStdInputsNum = 1;
 constexpr size_t kReduceStdOutputsNum = 2;
 constexpr size_t kReduceSmallVectorSize = 200000;
@@ -184,5 +185,6 @@ std::vector<KernelAttr> ReduceStdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ReduceStd, ReduceStdCpuKernelMod);
+}  // namespace reduce_std_cpu
 }  // namespace kernel
 }  // namespace mindspore

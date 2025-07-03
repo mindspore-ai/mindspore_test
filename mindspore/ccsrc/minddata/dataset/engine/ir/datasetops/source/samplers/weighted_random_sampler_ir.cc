@@ -15,8 +15,10 @@
  */
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/weighted_random_sampler_ir.h"
-#include "minddata/dataset/engine/datasetops/source/sampler/weighted_random_sampler.h"
 
+#include <utility>
+
+#include "minddata/dataset/engine/datasetops/source/sampler/weighted_random_sampler.h"
 #include "minddata/dataset/core/config_manager.h"
 
 namespace mindspore {
@@ -65,7 +67,6 @@ Status WeightedRandomSamplerObj::to_json(nlohmann::json *const out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status WeightedRandomSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples,
                                            std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "weights", "WeightedRandomSampler"));
@@ -77,7 +78,6 @@ Status WeightedRandomSamplerObj::from_json(nlohmann::json json_obj, int64_t num_
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 Status WeightedRandomSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   *sampler = std::make_shared<dataset::WeightedRandomSamplerRT>(weights_, num_samples_, replacement_);

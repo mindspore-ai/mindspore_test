@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <complex>
 #include "mindspore/ops/infer/im2col.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace im2col_cpu {
 namespace {
 constexpr size_t kIm2ColInputsNum = 1;
 constexpr size_t kIm2ColOutputsNum = 1;
@@ -207,5 +208,6 @@ std::vector<KernelAttr> Im2ColCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Im2Col, Im2ColCpuKernelMod);
+}  // namespace im2col_cpu
 }  // namespace kernel
 }  // namespace mindspore

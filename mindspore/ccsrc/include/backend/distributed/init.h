@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_
 #define MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_
 
+#include <string>
+#include <utility>
 #include "include/backend/distributed/collective/collective_manager.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
@@ -30,20 +32,37 @@ namespace distributed {
 // The static methods of MindSpore distributed execution. They can be exported by Pybind.
 
 // Initialize and finalize distributed execution.
-BACKEND_EXPORT bool Initialize();
-BACKEND_EXPORT bool Finalize();
+BACKEND_COMMON_EXPORT bool Initialize();
+BACKEND_COMMON_EXPORT bool Finalize();
 
 // Initialize and finalize the cluster based on MindSpore communication framework.
-BACKEND_EXPORT bool InitializeCluster();
-BACKEND_EXPORT bool FinalizeCluster();
+BACKEND_COMMON_EXPORT bool InitializeCluster();
+BACKEND_COMMON_EXPORT bool FinalizeCluster();
 
 // Initialize and finalize collective communication for distributed execution.
-BACKEND_EXPORT bool InitializeCollective();
-BACKEND_EXPORT bool FinalizeCollective();
+BACKEND_COMMON_EXPORT bool InitializeCollective();
+BACKEND_COMMON_EXPORT bool FinalizeCollective();
 
 // Set and get whether this process in cluster exits with exception.
-BACKEND_EXPORT void set_cluster_exit_with_exception();
-BACKEND_EXPORT bool cluster_exit_with_exception();
+BACKEND_COMMON_EXPORT void set_cluster_exit_with_exception();
+BACKEND_COMMON_EXPORT bool cluster_exit_with_exception();
+
+BACKEND_COMMON_EXPORT void RegisterCallback(const std::string &name, const std::function<void()> &func);
 }  // namespace distributed
 }  // namespace mindspore
+
+template <typename Func>
+class DistributedCallbackRegister {
+ public:
+  DistributedCallbackRegister(const std::string &name, Func func) { register_impl(name, std::move(func)); }
+
+ private:
+  void register_impl(const std::string &name, std::function<void()> func) {
+    mindspore::distributed::RegisterCallback(name, std::move(func));
+  }
+};
+
+#define REGISTER_DISTRIBUTED_CALLBACK(func) \
+  static const DistributedCallbackRegister<std::function<decltype(func)>> g_##func##_callback_register(#func, func)
+
 #endif  // MINDSPORE_CCSRC_DISTRIBUTED_INIT_H_

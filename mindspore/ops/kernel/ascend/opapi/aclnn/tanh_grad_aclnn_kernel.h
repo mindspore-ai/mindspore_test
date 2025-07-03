@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tanh_grad {
 
 class TanhGradAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class TanhGradAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace tanh_grad
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -8,7 +8,7 @@ include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
 
 file(GLOB_RECURSE GRAPH_SCHEDULER_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
-
+list(REMOVE_ITEM GRAPH_SCHEDULER_SRC_LIST "device_tensor_store.cc")
 if(NOT ENABLE_CPU OR WIN32 OR APPLE)
   list(REMOVE_ITEM GRAPH_SCHEDULER_SRC_LIST "rpc_node_scheduler.cc")
   list(REMOVE_ITEM GRAPH_SCHEDULER_SRC_LIST "actor/rpc/recv_actor.cc")
@@ -28,3 +28,5 @@ set_property(SOURCE ${GRAPH_SCHEDULER_SRC_LIST}
   PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_RUNTIME_FRAMEWORK)
 
 add_library(_mindspore_runtime_graph_scheduler_obj OBJECT ${GRAPH_SCHEDULER_SRC_LIST})
+
+target_link_libraries(_mindspore_runtime_graph_scheduler_obj PRIVATE mindspore_backend_common)

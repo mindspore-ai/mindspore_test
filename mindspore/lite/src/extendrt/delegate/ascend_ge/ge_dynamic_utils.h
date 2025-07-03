@@ -22,7 +22,7 @@
 #include <utility>
 #include "include/api/context.h"
 #include "include/model.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "extendrt/session/lite_graph_executor.h"
 #include "common/config_infos.h"
 #include "mindspore/lite/src/common/utils.h"

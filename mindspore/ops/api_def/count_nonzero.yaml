@@ -1,0 +1,14 @@
+count_nonzero:
+  - op_yaml: count_nonzero_op.yaml
+    py_method: deprecated_tensor_count_nonzero
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/count_nonzero_method.yaml
+    py_method: deprecated_tensor_count_nonzero
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

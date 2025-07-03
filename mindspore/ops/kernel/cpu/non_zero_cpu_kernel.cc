@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <typeinfo>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace non_zero_cpu {
 namespace {
 constexpr size_t kInputNum = 1;
 constexpr size_t kOutputNum = 1;
@@ -168,5 +169,6 @@ std::vector<KernelAttr> NonZeroCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NonZero, NonZeroCpuKernelMod);
+}  // namespace non_zero_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,12 +23,13 @@
 #include <utility>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_dense_set_operation_cpu {
 enum SetOperation { A_MINUS_B = 0, B_MINUS_A = 1, INTERSECTION = 2, UNION = 3 };
 class DenseToDenseSetOperationCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -74,6 +75,7 @@ class DenseToDenseSetOperationCpuKernelMod : public NativeCpuKernelMod {
   DenseSetFunc kernel_func_;
   static std::vector<std::pair<KernelAttr, DenseSetFunc>> func_list_;
 };
+}  // namespace dense_to_dense_set_operation_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DENSETODENSE_SET_OPERATION_H_

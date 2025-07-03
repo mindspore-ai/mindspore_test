@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "kernel/ascend/opapi/aclnn/all_to_all_all_gather_batchmatmul_aclnn_kernel.h"
 #include <cstdint>
 #include <string>
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/ops_utils/op_constants.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "kernel/ascend/opapi/aclnn/all_to_all_all_gather_batchmatmul_aclnn_kernel.h"
-#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 namespace mindspore {
 namespace kernel {
+namespace all_to_all_all_gather_batchmatmul {
 void AlltoAllAllGatherBatchMatMulAscend::InitializeCommunicationAttributes() {
   group_ep_ = GetRequiredAttr<std::string>(kAttrGroupEp);
   group_tp_ = GetRequiredAttr<std::string>(kAttrGroupTp);
-  hccl_inner_comm_ep_name_ = mindspore::transform::OpApiUtil::GetCommName(group_ep_);
-  hccl_inner_comm_tp_name_ = mindspore::transform::OpApiUtil::GetCommName(group_tp_);
+  hccl_inner_comm_ep_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_ep_);
+  hccl_inner_comm_tp_name_ = mindspore::device::ascend::OpApiUtil::GetCommName(group_tp_);
   ep_world_size_ = GetRequiredAttr<int64_t>(kAttrEpWorldSize);
   tp_world_size_ = GetRequiredAttr<int64_t>(kAttrTpWorldSize);
   x_shard_type_ = GetRequiredAttr<int64_t>(kAttrXShardType);
@@ -104,6 +105,11 @@ bool AlltoAllAllGatherBatchMatMulAscend::Launch(const std::vector<KernelTensor *
                                                 const std::vector<KernelTensor *> &workspace,
                                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
+  if (mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_ep_, hccl_inner_comm_ep_name_) ||
+      mindspore::device::ascend::OpApiUtil::NeedRebuildWorkspaceSize(group_tp_, hccl_inner_comm_tp_name_)) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need rebuild workspace size";
+    GetWorkSpaceInfo(inputs, outputs);
+  }
 
   input_x_.first = inputs[kIndex0];
   input_weight_.first = inputs[kIndex1];
@@ -165,5 +171,6 @@ bool AlltoAllAllGatherBatchMatMulAscend::Launch(const std::vector<KernelTensor *
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AlltoAllAllGatherBatchMatMul, AlltoAllAllGatherBatchMatMulAscend);
+}  // namespace all_to_all_all_gather_batchmatmul
 }  // namespace kernel
 }  // namespace mindspore

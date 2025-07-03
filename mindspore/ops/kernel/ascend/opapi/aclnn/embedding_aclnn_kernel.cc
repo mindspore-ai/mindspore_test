@@ -20,11 +20,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding {
 
 void EmbeddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
@@ -33,7 +34,7 @@ void EmbeddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
   if (max_norm_opt.has_value()) {
     do_renorm_ = true;
     max_norm_ = static_cast<double>(max_norm_opt.value());
-    norm_type_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex4]));
+    norm_type_ = static_cast<double>(device::ascend::ConvertKernelTensor<float>(inputs[kIndex4]));
     GetWorkspaceForResizeEmbeddingRenorm(inputs[1], inputs[0], max_norm_, norm_type_);
   }
   GetWorkspaceForResizeEmbedding(inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);
@@ -50,5 +51,6 @@ bool EmbeddingAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Embedding, EmbeddingAscend);
+}  // namespace embedding
 }  // namespace kernel
 }  // namespace mindspore

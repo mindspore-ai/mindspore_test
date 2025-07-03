@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,10 +55,12 @@ void ProcessUnpackDict(const AbstractTuplePtr &key_tuple, const AbstractTuplePtr
 
   auto unpack_keys = key_elements[0];
   auto unpack_keys_tuple = unpack_keys->cast<AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(unpack_keys_tuple);
   const auto &unpack_keys_elements = unpack_keys_tuple->elements();
 
   auto unpack_values = value_elements[0];
   auto unpack_values_tuple = unpack_values->cast<AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(unpack_values_tuple);
   const auto &unpack_values_elements = unpack_values_tuple->elements();
 
   if (unpack_keys_elements.size() != unpack_values_elements.size()) {
@@ -447,6 +449,7 @@ AbstractBasePtr InferImplMutable(const AnalysisEnginePtr &, const PrimitivePtr &
 
 namespace {
 std::string GetRefKey(const AbstractRefPtr &ref_tensor) {
+  MS_EXCEPTION_IF_NULL(ref_tensor);
   const auto &ref_key_value = ref_tensor->ref_key_value();
   MS_EXCEPTION_IF_NULL(ref_key_value);
   auto ref_key = ref_key_value->cast_ptr<RefKey>();

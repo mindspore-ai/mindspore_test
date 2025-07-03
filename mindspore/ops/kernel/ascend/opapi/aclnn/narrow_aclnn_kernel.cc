@@ -20,18 +20,19 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace narrow {
 
 void NarrowAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  start_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  auto length = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  dim_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  start_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  auto length = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
 
   shape_ = inputs[0]->GetShapeVector();
   dim_ = dim_ < 0 ? dim_ + shape_.size() : dim_;
@@ -55,5 +56,6 @@ bool NarrowAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Narrow, NarrowAscend);
+}  // namespace narrow
 }  // namespace kernel
 }  // namespace mindspore

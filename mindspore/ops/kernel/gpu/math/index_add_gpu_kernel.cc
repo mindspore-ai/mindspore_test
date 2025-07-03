@@ -22,7 +22,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/index_add_impl.cuh"
 #include "mindspore/ops/infer/index_add.h"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

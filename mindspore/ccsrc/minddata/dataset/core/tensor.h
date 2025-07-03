@@ -26,10 +26,8 @@
 #undef HAVE_STDLIB_H
 #endif
 
-#include "./securec.h"
-#ifndef ENABLE_ANDROID
+#include "securec/include/securec.h"
 #include "proto/example.pb.h"
-#endif
 #ifdef ENABLE_PYTHON
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
@@ -132,10 +130,9 @@ class DATASET_API Tensor {
   /// \param[in] obj pybind11 wrapper for Python dictionary object
   /// \param[out] out Created Tensor
   /// \return Status
-  static Status CreateFromPythonObject(py::object obj, TensorPtr *out);
+  static Status CreateFromPythonObject(const py::object &obj, TensorPtr *out);
 #endif
 
-#ifndef ENABLE_ANDROID
   /// Create a tensor of type DE_STRING from a BytesList.
   /// \param[in] bytes_list protobuf's Bytelist
   /// \param[in] shape shape of the output tensor
@@ -153,7 +150,6 @@ class DATASET_API Tensor {
   /// \return Status Code
   static Status CreateFromByteList(const dataengine::BytesList &bytes_list, const TensorShape &shape,
                                    const DataType &type, dsize_t pad_size, TensorPtr *out);
-#endif
 
   /// Create a Tensor from a given list of values.
   /// \param[in] items elements of the tensor
@@ -317,7 +313,31 @@ class DATASET_API Tensor {
   /// \param[in] index vector<dsize_t>
   /// \return return the item specified at index
   template <typename T>
-  Status GetItemAt(T *o, const std::vector<dsize_t> &index) const;
+  Status GetItemAt(T *o, const std::vector<dsize_t> &index) const {
+    RETURN_UNEXPECTED_IF_NULL(o);
+    if (data_ == nullptr) {
+      RETURN_STATUS_UNEXPECTED("Data is not allocated yet");
+    }
+    if (!type_.IsLooselyCompatible<T>()) {
+      std::string err = "Template type and Tensor type are not compatible";
+      RETURN_STATUS_UNEXPECTED(err);
+    }
+    if (type_.IsUnsignedInt()) {
+      RETURN_IF_NOT_OK(GetUnsignedIntAt<T>(o, index));
+    } else if (type_.IsSignedInt()) {
+      RETURN_IF_NOT_OK(GetSignedIntAt<T>(o, index));
+    } else if (type_.IsFloat()) {
+      RETURN_IF_NOT_OK(GetFloatAt<T>(o, index));
+    } else if (type_.IsBool()) {
+      bool *ptr = nullptr;
+      RETURN_IF_NOT_OK(GetItemPtr<bool>(&ptr, index));
+      *o = static_cast<T>(*ptr);
+    } else {
+      std::string err = "Tensor Type is unknown";
+      RETURN_STATUS_UNEXPECTED(err);
+    }
+    return Status::OK();
+  }
 
   /// Get string located at `index`.
   /// \param[in] index vector<dsize_t>
@@ -365,7 +385,7 @@ class DATASET_API Tensor {
   Status Zero() {
     CHECK_FAIL_RETURN_UNEXPECTED(!type_.IsString(), "Can not fill zeros on tensor of type string or bytes.");
     dsize_t size = SizeInBytes();
-    CHECK_FAIL_RETURN_UNEXPECTED(memset_sp(GetMutableBuffer(), size, 0, size) == 0,
+    CHECK_FAIL_RETURN_UNEXPECTED(memset_s(GetMutableBuffer(), size, 0, size) == 0,
                                  "Failed to fill tensor with zeroes.");
     return Status::OK();
   }

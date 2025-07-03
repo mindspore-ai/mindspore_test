@@ -22,11 +22,12 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace non_zero_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -71,6 +72,7 @@ class NonZeroCpuKernelMod : public NativeCpuKernelMod {
   size_t index_size_{0};        // That is, sizeof(IndexType)
   size_t real_output_size_{0};  // Dynamic shape related.
 };
+}  // namespace non_zero_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -53,18 +53,20 @@ class OutputActor : public AbstractActor {
         current_outputs_num_(0) {
     outputs_.resize(outputs_num);
     output_nodes_.resize(outputs_num);
-    output_device_tensors_.resize(outputs_num);
+    output_kernel_tensors_.resize(outputs_num);
     device_contexts_.resize(outputs_num);
   }
   ~OutputActor() override = default;
 
   // The output actor collects loop count when receive the input control of loop count actor.
-  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) override;
 
   // The output actor collects output result when receive the data of actor.
-  void RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) override;
+  void RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) override;
 
-  void FetchParameterInput(OpContext<DeviceTensor> *const context);
+  void FetchParameterInput(OpContext<KernelTensor> *const context);
+
+  void HandleOutput();
 
   // The graph output need be set new device address every step or loop, to avoid that the device address
   // context of tensor be rewritten in the next step or next loop.
@@ -78,6 +80,8 @@ class OutputActor : public AbstractActor {
   size_t loop_count() const { return loop_count_; }
   size_t outputs_num() const { return outputs_num_; }
   const std::vector<TensorPtr> &outputs() const { return outputs_; }
+  const std::vector<KernelTensorPtr> &output_kernel_tensors() const { return output_kernel_tensors_; }
+  const std::vector<TypePtr> &output_types() const { return output_types_; }
 
   void ResetState() {
     current_outputs_num_ = 0;
@@ -95,7 +99,8 @@ class OutputActor : public AbstractActor {
   friend class ControlNodeScheduler;
 
   TensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index, size_t output_position,
-                               OpContext<DeviceTensor> *const context);
+                               OpContext<KernelTensor> *const context,
+                               const KernelTensorPtr &old_kernel_tensor = nullptr);
 
   // The output device memory will be taken over by tensor in the last loop, otherwise needs to free the memory.
   // 1.Avoid the memory leak when memory used by dynamic ref count in the control flow scene.
@@ -114,11 +119,12 @@ class OutputActor : public AbstractActor {
   std::vector<KernelWithIndex> summary_nodes_;
   std::vector<TensorPtr> outputs_;
   std::vector<KernelWithIndex> output_nodes_;
-  std::vector<DeviceTensor *> output_device_tensors_;
+  std::vector<KernelTensorPtr> output_kernel_tensors_;
+  std::vector<TypePtr> output_types_;
   size_t outputs_num_;
   size_t current_outputs_num_;
 
-  std::map<KernelWithIndex, DeviceTensorPtr> output_node_to_tensor_device_address_;
+  std::map<DeviceTensor *, DeviceTensorPtr> old_to_new_device_address_;
 
   // All flatten stub node(TensorNode, ScalarNode, StubString) by output position, used in graph pipeline case.
   std::vector<stub::StubNodePtr> flatten_stub_nodes_{};

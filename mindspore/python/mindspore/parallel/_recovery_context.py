@@ -33,18 +33,23 @@ def recovery_context():
         RECOVERY_CONTEXT = RecoveryContext.get_instance()
     return RECOVERY_CONTEXT
 
+
 _set_recovery_context_func_map = {
     "ckpt_path": recovery_context().set_ckpt_path,
-    "need_reset": recovery_context().set_need_reset
+    "need_reset": recovery_context().set_need_reset,
+    "is_reboot_node": recovery_context().set_is_reboot_node,
+    "is_arf": recovery_context().set_is_arf
 }
 
 _get_recovery_context_func_map = {
     "enable_recovery": recovery_context().enable_recovery,
+    "enable_repeat_register": recovery_context().enable_repeat_register,
     "latest_ckpt_file": recovery_context().latest_ckpt_file,
     "latest_ckpt_epoch": recovery_context().latest_ckpt_epoch,
     "latest_ckpt_step": recovery_context().latest_ckpt_step,
     "need_reset": recovery_context().need_reset,
     "recovery_path": recovery_context().recovery_path,
+    "is_arf": recovery_context().is_arf,
     "ckpt_path": recovery_context().ckpt_path
 }
 
@@ -64,7 +69,7 @@ def _set_recovery_context(**kwargs):
             MS_RECOVERY_INTERVAL  # The persistent interval for recovery
 
     Args:
-        ckpt_path (string): Set the recovery path used to save checkpoint. Default: ''.
+        ckpt_path (str): Set the recovery path used to save checkpoint. Default: ''.
         need_reset (bool): Set whether should call reset minddata and load ckpt for disaster recovery.
             Default: ``False``.
 

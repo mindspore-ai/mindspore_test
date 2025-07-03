@@ -1,7 +1,7 @@
 mindspore.mint.argmax
 =====================
 
-.. py:function:: mindspore.mint.argmax(input)
+.. py:function:: mindspore.mint.argmax(input) -> Tensor
 
     返回输入Tensor最大值索引。
 
@@ -11,7 +11,7 @@ mindspore.mint.argmax
     返回：
         Tensor。
 
-    .. py:function:: mindspore.mint.argmax(input, dim, keepdim=False)
+    .. py:function:: mindspore.mint.argmax(input, dim, keepdim=False) -> Tensor
         :noindex:
 
     返回输入Tensor在指定轴上的最大值索引。

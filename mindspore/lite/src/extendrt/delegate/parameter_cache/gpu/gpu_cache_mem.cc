@@ -18,7 +18,7 @@
 #include <cuda_runtime.h>
 #include <string>
 #include "src/extendrt/delegate/tensorrt/cuda_impl/hash.cuh"
-#include "plugin/device/gpu/hal/device/cuda_driver.h"
+#include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "src/common/log_adapter.h"
 #include "src/extendrt/delegate/parameter_cache/factory_mgr_base.h"
 namespace mindspore {

@@ -26,8 +26,8 @@
 #include "minddata/dataset/include/dataset/constants.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
 #include "minddata/dataset/util/status.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace {
 const int BUFFER_SIZE = 2048;

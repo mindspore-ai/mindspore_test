@@ -16,9 +16,9 @@ mindspore.dataset.Food101Dataset
         - **shuffle** (bool, 可选) - 是否混洗数据集。默认值： ``None`` ，下表中会展示不同参数配置的预期行为。
         - **decode** (bool, 可选) - 是否对读取的图片进行解码操作。默认值： ``False`` ，不解码。
         - **sampler** (Sampler, 可选) - 指定从数据集中选取样本的采样器。默认值： ``None`` ，下表中会展示不同配置的预期行为。
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - `dataset_dir` 路径下不包含数据文件。
@@ -40,7 +40,7 @@ mindspore.dataset.Food101Dataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于Food101数据集：**
-    
+
     Food101是一个包含101种食品类别的数据集，共101000张图片。每一个类别有250张测试图片和750张训练图片。所有图像都被重新缩放，最大边长为512像素。
 
     以下为原始Food101数据集的结构，您可以将数据集文件解压得到如下的文件结构，并通过MindSpore的API进行读取。

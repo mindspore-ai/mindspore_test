@@ -1,0 +1,24 @@
+#operator kl_div
+kl_div:
+  args:
+    input:
+      dtype: tensor
+    target:
+      dtype: tensor
+    reduction:
+      dtype: int
+      default: "'mean'"
+      arg_handler: str_to_enum
+    log_target:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: KLDiv
+  function:
+      disable: True
+  dispatch:
+    enable: True
+    Ascend: KLDivAscend

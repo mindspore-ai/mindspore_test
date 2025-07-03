@@ -26,6 +26,7 @@
 #include "op_def/op_name.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore::ops {
 BaseShapePtr InplaceZeroFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -40,13 +41,13 @@ TypePtr InplaceZeroFuncImpl::InferType(const PrimitivePtr &primitive,
   return input_type;
 }
 TypePtrList InplaceZeroFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(variable_tensor);
   const auto &input_type = variable_tensor->Dtype();
   return {input_type};
 }
 ShapeArray InplaceZeroFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &variable_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(variable_tensor);
   return {variable_tensor->shape()};
 }

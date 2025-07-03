@@ -19,7 +19,7 @@ from functools import wraps
 import math
 import numpy as np
 
-import mindspore.ops as P
+import mindspore.ops as ops
 import mindspore.common.dtype as mstype
 from mindspore import log as logger
 from mindspore.common.tensor import Tensor
@@ -40,17 +40,17 @@ def _check_input_dtype(input_dtype, param_name, allow_dtypes, cls_name):
 @constexpr(check=False)
 def _check_is_tensor(param_name, input_data, cls_name):
     """Internal function, used to check whether the input data is Tensor."""
-    if input_data is not None and not isinstance(P.typeof(input_data), mstype.TensorType):
+    if input_data is not None and not isinstance(ops.typeof(input_data), mstype.TensorType):
         raise TypeError(f"For '{cls_name}', the '{param_name}' must be '{mstype.TensorType}', "
-                        f"but got '{P.typeof(input_data)}'")
+                        f"but got '{ops.typeof(input_data)}'")
 
 
 @constexpr
 def _check_is_tuple(param_name, input_data, cls_name):
     """Internal function, used to check whether the input data is Tensor."""
-    if input_data is not None and not isinstance(P.typeof(input_data), mstype.Tuple):
+    if input_data is not None and not isinstance(ops.typeof(input_data), mstype.Tuple):
         raise TypeError(f"For '{cls_name}', the '{param_name}' must be '{mstype.Tuple}', "
-                        f"but got '{P.typeof(input_data)}'")
+                        f"but got '{ops.typeof(input_data)}'")
 
 
 @constexpr
@@ -75,62 +75,70 @@ def _check_lstmcell_init(func):
     return wrapper
 
 
+# The implementation of this function refers to the rnn_tanh_cell in the file
+# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _rnn_tanh_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """RNN cell function with tanh activation"""
     if b_ih is None:
-        igates = P.MatMul(False, True)(inputs, w_ih)
-        hgates = P.MatMul(False, True)(hidden, w_hh)
+        igates = ops.MatMul(False, True)(inputs, w_ih)
+        hgates = ops.MatMul(False, True)(hidden, w_hh)
     else:
-        igates = P.MatMul(False, True)(inputs, w_ih) + b_ih
-        hgates = P.MatMul(False, True)(hidden, w_hh) + b_hh
-    return P.Tanh()(igates + hgates)
+        igates = ops.MatMul(False, True)(inputs, w_ih) + b_ih
+        hgates = ops.MatMul(False, True)(hidden, w_hh) + b_hh
+    return ops.Tanh()(igates + hgates)
 
 
+# The implementation of this function refers to the rnn_relu_cell in the file
+# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _rnn_relu_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """RNN cell function with relu activation"""
     if b_ih is None:
-        igates = P.MatMul(False, True)(inputs, w_ih)
-        hgates = P.MatMul(False, True)(hidden, w_hh)
+        igates = ops.MatMul(False, True)(inputs, w_ih)
+        hgates = ops.MatMul(False, True)(hidden, w_hh)
     else:
-        igates = P.MatMul(False, True)(inputs, w_ih) + b_ih
-        hgates = P.MatMul(False, True)(hidden, w_hh) + b_hh
-    return P.ReLU()(igates + hgates)
+        igates = ops.MatMul(False, True)(inputs, w_ih) + b_ih
+        hgates = ops.MatMul(False, True)(hidden, w_hh) + b_hh
+    return ops.ReLU()(igates + hgates)
 
 
+# The implementation of this function refers to the lstm_cell in the file
+# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _lstm_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """LSTM cell function"""
     hx, cx = hidden
     if b_ih is None:
-        gates = P.MatMul(False, True)(inputs, w_ih) + P.MatMul(False, True)(hx, w_hh)
+        gates = ops.MatMul(False, True)(inputs, w_ih) + ops.MatMul(False, True)(hx, w_hh)
     else:
-        gates = P.MatMul(False, True)(inputs, w_ih) + P.MatMul(False, True)(hx, w_hh) + b_ih + b_hh
-    ingate, forgetgate, cellgate, outgate = P.Split(1, 4)(gates)
+        gates = ops.MatMul(False, True)(inputs, w_ih) + ops.MatMul(False, True)(hx, w_hh) + b_ih + b_hh
+    ingate, forgetgate, cellgate, outgate = ops.Split(1, 4)(gates)
 
-    ingate = P.Sigmoid()(ingate)
-    forgetgate = P.Sigmoid()(forgetgate)
-    cellgate = P.Tanh()(cellgate)
-    outgate = P.Sigmoid()(outgate)
+    ingate = ops.Sigmoid()(ingate)
+    forgetgate = ops.Sigmoid()(forgetgate)
+    cellgate = ops.Tanh()(cellgate)
+    outgate = ops.Sigmoid()(outgate)
 
     cy = (forgetgate * cx) + (ingate * cellgate)
-    hy = outgate * P.Tanh()(cy)
+    hy = outgate * ops.Tanh()(cy)
 
     return hy, cy
 
 
+# The implementation of this function refers to the gru_cell in the file
+# https://github.com/pytorch/pytorch/blob/v1.13.0/benchmarks/fastrnns/cells.py.
 def _gru_cell(inputs, hidden, w_ih, w_hh, b_ih, b_hh):
     """GRU cell function"""
     if b_ih is None:
-        gi = P.MatMul(False, True)(inputs, w_ih)
-        gh = P.MatMul(False, True)(hidden, w_hh)
+        gi = ops.MatMul(False, True)(inputs, w_ih)
+        gh = ops.MatMul(False, True)(hidden, w_hh)
     else:
-        gi = P.MatMul(False, True)(inputs, w_ih) + b_ih
-        gh = P.MatMul(False, True)(hidden, w_hh) + b_hh
-    i_r, i_i, i_n = P.Split(1, 3)(gi)
-    h_r, h_i, h_n = P.Split(1, 3)(gh)
+        gi = ops.MatMul(False, True)(inputs, w_ih) + b_ih
+        gh = ops.MatMul(False, True)(hidden, w_hh) + b_hh
+    i_r, i_i, i_n = ops.Split(1, 3)(gi)
+    h_r, h_i, h_n = ops.Split(1, 3)(gh)
 
-    resetgate = P.Sigmoid()(i_r + h_r)
-    inputgate = P.Sigmoid()(i_i + h_i)
-    newgate = P.Tanh()(i_n + resetgate * h_n)
+    resetgate = ops.Sigmoid()(i_r + h_r)
+    inputgate = ops.Sigmoid()(i_i + h_i)
+    newgate = ops.Tanh()(i_n + resetgate * h_n)
     hy = newgate + inputgate * (hidden - newgate)
 
     return hy

@@ -15,41 +15,41 @@
  */
 
 #include "kernel/ascend/pyboost/customize/dense.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include <algorithm>
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/auto_generate/transpose.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul_ext.h"
 #include "kernel/ascend/pyboost/auto_generate/matmul.h"
 #include "kernel/ascend/pyboost/auto_generate/addmm.h"
 #include "kernel/ascend/pyboost/auto_generate/add.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
-#include "kernel/common/pyboost/auto_generate/view.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/view.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-ValueTuplePtr GetTransposePerm(const BaseTensorPtr &weight_tensor) {
+namespace dense {
+std::vector<int64_t> GetTransposePerm(const TensorPtr &weight_tensor) {
   const auto &shape = weight_tensor->shape();
   size_t size = shape.size();
-  std::vector<ValuePtr> perm(size);
+  std::vector<int64_t> perm(size);
   if (size < kDim2) {
-    auto zero = std::make_shared<Int64Imm>(0);
-    perm[0] = MakeValue(zero);
-    return std::make_shared<ValueTuple>(perm);
+    perm[0] = 0;
+    return perm;
   }
-  perm[size - kDim1] = MakeValue(static_cast<int64_t>(size - kDim2));
-  perm[size - kDim2] = MakeValue(static_cast<int64_t>(size - kDim1));
+  perm[size - kDim1] = static_cast<int64_t>(size - kDim2);
+  perm[size - kDim2] = static_cast<int64_t>(size - kDim1);
   for (size_t i = 0; i < size - kDim2; ++i) {
-    perm[i] = MakeValue(static_cast<int64_t>(i));
+    perm[i] = static_cast<int64_t>(i);
   }
-  return std::make_shared<ValueTuple>(perm);
+  return perm;
 }
-}  // namespace
+}  // namespace dense
 
-void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                          const BaseTensorPtr &weight_tensor, const std::optional<BaseTensorPtr> &bias_tensor) {
+void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                          const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor) {
   MS_LOG(DEBUG) << "Dense Launch start";
   auto x_type = input_tensor->Dtype();
   auto w_type = weight_tensor->Dtype();
@@ -80,7 +80,7 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   auto device_context = op->device_context();
   const auto &device_name = device_context->device_context_key_.device_name_;
 
-  auto perm = GetTransposePerm(weight_tensor);
+  auto perm = dense::GetTransposePerm(weight_tensor);
   auto transpose_op = CREATE_PYBOOST_OP(Transpose, device_name);
   auto weight_transposed = transpose_op->Call(weight_tensor, perm);
 
@@ -103,12 +103,11 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorP
       flattened_dim = flattened_dim * input_tensor_shape[i];
     }
     int64_t flattened_vector_size = 2;
-    std::vector<ValuePtr> flattened_vector(flattened_vector_size);
-    flattened_vector[kIndex0] = MakeValue(static_cast<int64_t>(flattened_dim));
-    flattened_vector[kIndex1] = MakeValue(static_cast<int64_t>(input_tensor_shape[input_tensor_rank - 1]));
-    ValueTuplePtr flattened_size = std::make_shared<ValueTuple>(flattened_vector);
+    std::vector<int64_t> flattened_vector(flattened_vector_size);
+    flattened_vector[kIndex0] = static_cast<int64_t>(flattened_dim);
+    flattened_vector[kIndex1] = static_cast<int64_t>(input_tensor_shape[input_tensor_rank - 1]);
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, device_name);
-    auto inp_reshape = reshape_op->Call(input_tensor, flattened_size);
+    auto inp_reshape = reshape_op->Call(input_tensor, flattened_vector);
     // addmm
     auto bias_tensor_ = bias_tensor.value();
     auto addmm_op = CREATE_PYBOOST_OP(Addmm, device_name);
@@ -116,15 +115,14 @@ void DenseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     const auto alpha = std::make_shared<Int64Imm>(1);
     auto addmm_out = addmm_op->Call(bias_tensor_, inp_reshape, weight_transposed, beta, alpha);
     // view update shape
-    std::vector<ValuePtr> out_shape;
+    std::vector<int64_t> out_shape;
     std::transform(input_tensor_shape.begin(), input_tensor_shape.end(), std::back_inserter(out_shape),
-                   [](int64_t x) { return MakeValue(x); });
+                   [](int64_t x) { return x; });
     auto addmm_out_shape = addmm_out->shape();
-    out_shape[input_tensor_rank - 1] = MakeValue(static_cast<int64_t>(addmm_out_shape[kIndex1]));
-    auto new_shape = std::make_shared<ValueTuple>(out_shape);
+    out_shape[input_tensor_rank - 1] = static_cast<int64_t>(addmm_out_shape[kIndex1]);
 
     auto view_op = CREATE_PYBOOST_OP(View, device_name);
-    view_op->Call(addmm_out, new_shape);
+    view_op->Call(addmm_out, out_shape);
     op->set_outputs(view_op->outputs());
     MS_LOG(DEBUG) << "Dense Launch end";
     return;

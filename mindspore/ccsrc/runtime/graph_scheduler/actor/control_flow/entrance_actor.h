@@ -39,33 +39,33 @@ class EntranceActor : public ControlActor {
       : ControlActor(name, KernelTransformType::kEntranceActor, memory_manager_aid, parameters, node),
         call_nodes_(call_nodes) {
     device_contexts_.resize(parameters.size());
-    input_device_tensors_.resize(parameters.size());
+    input_kernel_tensors_.resize(parameters.size());
   }
   ~EntranceActor() override = default;
 
-  void RunOpControl(AID *const input_control, OpContext<DeviceTensor> *const context) override;
+  void RunOpControl(AID *const input_control, OpContext<KernelTensor> *const context) override;
+  void HandleWaitMessage(OpContext<KernelTensor> *const context, const AID &from_aid) override;
 
   void RunOpRealParameterWithBranchID(const OpRealParameterWithBranchID &real_parameter_with_branch_id,
-                                      OpContext<DeviceTensor> *const context);
+                                      OpContext<KernelTensor> *const context);
 
-  void SendMemoryFreeReq(OpContext<DeviceTensor> *const context) override;
+  void SendMemoryFreeReq(OpContext<KernelTensor> *const context) override;
 
   // Clear the data which are generated in the loop body execution.
-  void ClearDataOnStepEnd(AID *const input_control, OpContext<DeviceTensor> *const context);
+  void ClearDataOnStepEnd(const AID &input_control, OpContext<KernelTensor> *const context);
 
   const std::vector<AID> &loop_body_input_control_arrow_aids() const { return loop_body_input_control_arrow_aids_; }
 
   void ResetState() override;
 
  protected:
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void FetchInput(OpContext<DeviceTensor> *const context) override;
-  bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
-  void EraseInput(const OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context) override;
+  bool CheckRunningCondition(const OpContext<KernelTensor> *context) const override;
+  void EraseInput(const OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
-  friend class MemorySwapNodeScheduler;
   friend class SchedulerHelper;
 
   // Indicate whether the entrance actor is the execution of loop body. In the control flow, the subgraph can be

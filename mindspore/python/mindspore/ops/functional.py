@@ -20,8 +20,8 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_
-from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_, tanh_, bernoulli_ext
+from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_, exponential_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -33,13 +33,12 @@ from mindspore.ops.operations.nn_ops import AdaptiveMaxPool2D
 from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
-from mindspore.ops.function.array_func import new_empty
 from mindspore.ops import auto_generate
 from mindspore.ops.auto_generate import cast
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
+from mindspore.ops._utils.arg_dtype_cast import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
-    scalar_uadd, scalar_usub, flash_attention_score
+    scalar_uadd, scalar_usub, scalar_max, scalar_min
 
 typeof = Primitive('typeof')
 hastype = Primitive('hastype')
@@ -117,6 +116,7 @@ switch_layer = Primitive('switch_layer')
 reduced_shape = Primitive("reduced_shape")
 # shape_mul:input must be shape multiply elements in tuple(shape)
 shape_mul = _sequence_ops.shape_mul()
+put_ = auto_generate.put_
 
 setattr(tensor_operator_registry, 'tuple_to_tensor',
         _sequence_ops.TupleToTensor)
@@ -307,6 +307,7 @@ setattr(tensor_operator_registry, 'ormqr', ormqr)
 setattr(tensor_operator_registry, 'masked_scatter', array_ops.MaskedScatter)
 setattr(tensor_operator_registry, 'index_put', array_ops.IndexPut)
 setattr(tensor_operator_registry, 'index_put_', auto_generate.index_put_)
+setattr(tensor_operator_registry, 'put_', put_)
 setattr(tensor_operator_registry, 'quantile', quantile)
 setattr(tensor_operator_registry, 'nanquantile', nanquantile)
 setattr(tensor_operator_registry, 'orgqr', orgqr)
@@ -341,6 +342,7 @@ setattr(tensor_operator_registry, 'tensor_slice', tensor_slice)
 setattr(tensor_operator_registry, 'select', select)
 setattr(tensor_operator_registry, 'uniform', uniform_ext)
 setattr(tensor_operator_registry, 'uniform_', uniform_)
+setattr(tensor_operator_registry, 'exponential_', exponential_)
 setattr(tensor_operator_registry, 'gather', gather)
 setattr(tensor_operator_registry, 'gather_d', gather_d)
 setattr(tensor_operator_registry, 'gather_elements', gather_elements)
@@ -380,7 +382,6 @@ setattr(tensor_operator_registry, 'nanmedian', nanmedian)
 setattr(tensor_operator_registry, 'csr_to_coo', csr_to_coo)
 setattr(tensor_operator_registry, 'zeros', zeros)
 setattr(tensor_operator_registry, 'ones', ones)
-setattr(tensor_operator_registry, 'new_empty', new_empty)
 setattr(tensor_operator_registry, 'unsorted_segment_min', unsorted_segment_min)
 setattr(tensor_operator_registry, 'unsorted_segment_max', unsorted_segment_max)
 setattr(tensor_operator_registry, 'unsorted_segment_prod', unsorted_segment_prod)
@@ -395,7 +396,7 @@ setattr(tensor_operator_registry, 'tensor_scatter_add', tensor_scatter_add)
 setattr(tensor_operator_registry, 'inplace_scatter_add', auto_generate.inplace_scatter_add)
 setattr(tensor_operator_registry, 'slice_scatter', slice_scatter)
 setattr(tensor_operator_registry, 'select_scatter', select_scatter)
-setattr(tensor_operator_registry, 'bernoulli', bernoulli)
+setattr(tensor_operator_registry, 'bernoulli', bernoulli_ext)
 setattr(tensor_operator_registry, 'poisson', P.Poisson)
 setattr(tensor_operator_registry, 'randperm', P.Randperm)
 setattr(tensor_operator_registry, 'multinomial', multinomial)

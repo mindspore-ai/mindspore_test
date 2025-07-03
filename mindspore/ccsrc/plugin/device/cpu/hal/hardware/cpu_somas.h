@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "backend/common/somas/somas.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 
 namespace mindspore {
 namespace device {
@@ -38,7 +38,7 @@ class CPUSomas : public somas::Somas {
   bool InitDevSpecControlTensors(const session::KernelGraph &graph) override;
   bool DevSpecNodeProcess(const session::KernelGraph &graph) override;
 };
-REG_SOMAS(CPU, DeviceType::kCPU, CPUSomas)
+REG_SOMAS(CPU, DeviceType::kCPU, CPUSomas);
 }  // namespace cpu
 }  // namespace device
 }  // namespace mindspore

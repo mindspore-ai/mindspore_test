@@ -194,7 +194,6 @@ class ProfilingManager {
   // @return Status The status code returned
   Status ChangeFileMode(const std::string &dir_path, const std::string &rank_id);
 
-#ifndef ENABLE_ANDROID
   /// \brief API to get User CPU utilization for the system
   /// \param [in] epoch_num The epoch number for which results are requested
   /// \param [out] result A vector with the sampled User CPU Utilization for the entire system
@@ -352,7 +351,6 @@ class ProfilingManager {
   /// \return Status object with the error code
   Status GetSystemMemoryInfoByTime(SystemMemoryMetric metric, uint64_t start_ts, uint64_t end_ts,
                                    std::vector<float> *result);
-#endif
 
   /// \brief API to get the connector size of an MD operator
   /// \param [in] op_id The id of the operator

@@ -16,8 +16,7 @@
 from __future__ import absolute_import
 
 from mindspore.nn.cell import Cell
-from mindspore.ops import composite as C
-from mindspore.ops import operations as P
+from mindspore import ops
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.primitive import Primitive
 from mindspore.common import dtype as mstype
@@ -29,7 +28,7 @@ from mindspore.common import mutable
 class _FirstGrad(Cell):
     def __init__(self, fn):
         super(_FirstGrad, self).__init__()
-        self.first_grad_op = C.GradOperation(sens_param=True, get_all=True)
+        self.first_grad_op = ops.GradOperation(sens_param=True, get_all=True)
         self.fn = fn
 
     def construct(self, u, first_grad_input):
@@ -39,7 +38,7 @@ class _FirstGrad(Cell):
 class _JvpFirstGrad(Cell):
     def __init__(self):
         super(_JvpFirstGrad, self).__init__()
-        self.first_grad_op = C.GradOperation(sens_param=True, get_all=True)
+        self.first_grad_op = ops.GradOperation(sens_param=True, get_all=True)
 
     def construct(self, u, fn, first_grad_input):
         return self.first_grad_op(fn)(*first_grad_input, u)
@@ -48,7 +47,7 @@ class _JvpFirstGrad(Cell):
 class _FirstGradSingleValue(Cell):
     def __init__(self, fn):
         super(_FirstGradSingleValue, self).__init__()
-        self.first_grad_single_value_op = C.GradOperation(sens_param=True)
+        self.first_grad_single_value_op = ops.GradOperation(sens_param=True)
         self.fn = fn
 
     def construct(self, u, first_grad_single_value_input):
@@ -58,7 +57,7 @@ class _FirstGradSingleValue(Cell):
 class _JvpFirstGradSingleValue(Cell):
     def __init__(self):
         super(_JvpFirstGradSingleValue, self).__init__()
-        self.first_grad_single_value_op = C.GradOperation(sens_param=True)
+        self.first_grad_single_value_op = ops.GradOperation(sens_param=True)
 
     def construct(self, u, fn, first_grad_single_value_input):
         return self.first_grad_single_value_op(fn)(*first_grad_single_value_input, u)
@@ -76,12 +75,12 @@ class Jvp(Cell):
     def __init__(self, fn):
         super(Jvp, self).__init__()
         self.fn = fn
-        self.oneslike = P.OnesLike()
+        self.oneslike = ops.OnesLike()
         self.first_grad = _FirstGrad(fn)
         self.first_grad.add_flags(enable_tuple_grad_first=True)
         self.first_grad_single_value = _FirstGradSingleValue(fn)
         self.first_grad_single_value.add_flags(enable_tuple_grad_first=True)
-        self.second_grad_op = C.GradOperation(sens_param=True)
+        self.second_grad_op = ops.GradOperation(sens_param=True)
         self.issubclass_ = inner.IsSubClass()
         self.typeof = Primitive('typeof')
         self.make_tuple = Primitive('MakeTuple')
@@ -117,12 +116,12 @@ class _JvpInner(Cell):
 
     def __init__(self):
         super(_JvpInner, self).__init__()
-        self.oneslike = P.OnesLike()
+        self.oneslike = ops.OnesLike()
         self.first_grad = _JvpFirstGrad()
         self.first_grad.add_flags(enable_tuple_grad_first=True)
         self.first_grad_single_value = _JvpFirstGradSingleValue()
         self.first_grad_single_value.add_flags(enable_tuple_grad_first=True)
-        self.second_grad_op = C.GradOperation(sens_param=True)
+        self.second_grad_op = ops.GradOperation(sens_param=True)
         self.issubclass_ = inner.IsSubClass()
         self.typeof = Primitive('typeof')
         self.make_tuple = Primitive('MakeTuple')
@@ -180,8 +179,8 @@ class Vjp(Cell):
     def __init__(self, fn):
         super(Vjp, self).__init__()
         self.fn = fn
-        self.grad = C.GradOperation(get_all=True, sens_param=True)
-        self.grad_single_value = C.GradOperation(sens_param=True)
+        self.grad = ops.GradOperation(get_all=True, sens_param=True)
+        self.grad_single_value = ops.GradOperation(sens_param=True)
         self.issubclass_ = inner.IsSubClass()
         self.typeof = Primitive('typeof')
 

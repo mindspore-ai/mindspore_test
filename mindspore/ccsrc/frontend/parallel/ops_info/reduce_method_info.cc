@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,9 @@ Status ReduceMethod::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": Keep_dims is not a bool.";
       return FAILED;
     }
-    keepdims_ = keep_dims_iter->second->cast<BoolImmPtr>()->value();
+    auto keep_dims_iter_ptr = keep_dims_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(keep_dims_iter_ptr);
+    keepdims_ = keep_dims_iter_ptr->value();
   }
 
   auto cross_batch_iter = attrs_.find(CROSS_BATCH);
@@ -98,7 +100,9 @@ Status ReduceMethod::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto cross_batch_iter_ptr = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(cross_batch_iter_ptr);
+    cross_batch_ = cross_batch_iter_ptr->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {
@@ -244,7 +248,9 @@ Status ArgMaxWithValueInfo::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto bool_ptr = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(bool_ptr);
+    cross_batch_ = bool_ptr->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {
@@ -457,7 +463,9 @@ Status ArgmaxInfo::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto cross_batch_iter_ptr = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(cross_batch_iter_ptr);
+    cross_batch_ = cross_batch_iter_ptr->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {
@@ -522,7 +530,9 @@ Status SquareSumAllInfo::GetAttrs() {
       MS_LOG(ERROR) << name_ << ": cross_batch is not a bool.";
       return FAILED;
     }
-    cross_batch_ = cross_batch_iter->second->cast<BoolImmPtr>()->value();
+    auto cross_batch_iter_ptr = cross_batch_iter->second->cast<BoolImmPtr>();
+    MS_EXCEPTION_IF_NULL(cross_batch_iter_ptr);
+    cross_batch_ = cross_batch_iter_ptr->value();
   }
   auto reducemethodcost = std::dynamic_pointer_cast<ReduceMethodCost>(operator_cost());
   if (reducemethodcost == nullptr) {

@@ -43,13 +43,18 @@ static std::unordered_map<CNodePtr, std::string> name_map = {};
 // Extract the op name and the topology number of the same node in the graph
 // e.g, Default/Mul-op32 -> Mul-op0, Default/Mul-op35 -> Mul-op1
 std::string GetNodeNameWithCount(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (name_map.find(cnode) != name_map.end()) {
     return name_map[cnode];
   }
 
   std::string node_name;
   auto is_call_fullname_with_scope = [](const CNodePtr &cnode) {
-    auto value_ptr = cnode->input(0)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    auto cnode_input = cnode->input(0);
+    MS_EXCEPTION_IF_NULL(cnode_input);
+
+    auto value_ptr = cnode_input->cast<ValueNodePtr>();
     ValuePtr input_value = nullptr;
     if (value_ptr != nullptr) {
       input_value = value_ptr->value();
@@ -191,6 +196,7 @@ py::dict GetCNodeAttrs(const CNodePtr &cnode) {
   }
 
   PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
+  MS_EXCEPTION_IF_NULL(primitive);
   auto attrs = primitive->attrs();
   py::dict cnode_attrs_dict;
   for (const auto &attr : attrs) {
@@ -305,6 +311,7 @@ py::dict GetParameterLayoutFromResource(const pipeline::ResourcePtr &resource) {
     const auto &device_arrangement = layout->get_device_arrangement();
     const auto &tensor_map = layout->get_tensor_map();
     const auto &slice_shape = layout->get_slice_shape();
+    const auto &opt_shard_slice_shape = layout->opt_shard_slice_shape();
     int64_t field_size = layout->get_field_size();
     bool uniform_split = layout->get_uniform_split();
     std::vector<int64_t> before_full_shape;
@@ -314,9 +321,9 @@ py::dict GetParameterLayoutFromResource(const pipeline::ResourcePtr &resource) {
     bool is_send = layout->is_send();
     int64_t peer_rank = layout->peer_rank();
     int64_t sr_tag = layout->sr_tag();
-    py::tuple layout_tuple =
-      py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split, opt_shard_group,
-                     before_full_shape, after_slice_shape, is_pipeline_shared, is_send, peer_rank, sr_tag);
+    py::tuple layout_tuple = py::make_tuple(device_arrangement, tensor_map, slice_shape, field_size, uniform_split,
+                                            opt_shard_group, before_full_shape, after_slice_shape, is_pipeline_shared,
+                                            is_send, peer_rank, sr_tag, opt_shard_slice_shape);
     dict[py::str(name)] = layout_tuple;
   }
   return dict;
@@ -338,10 +345,12 @@ py::dict GetAllreduceFusion(const FuncGraphPtr &graph) {
     if (!name_ptr->isa<StringImm>()) {
       MS_LOG(EXCEPTION) << "name is not StringImm";
     }
+    MS_EXCEPTION_IF_NULL(name_ptr->cast<StringImmPtr>());
     auto name = name_ptr->cast<StringImmPtr>()->value();
     if (!fusion_ptr->isa<Int64Imm>()) {
       MS_LOG(EXCEPTION) << "fusion is not Int64Imm";
     }
+    MS_EXCEPTION_IF_NULL(fusion_ptr->cast<Int64ImmPtr>());
     int64_t fusion = fusion_ptr->cast<Int64ImmPtr>()->value();
     dict[py::str(name)] = fusion;
   }

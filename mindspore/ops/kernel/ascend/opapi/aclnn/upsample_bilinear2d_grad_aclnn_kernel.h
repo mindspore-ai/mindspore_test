@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_bilinear2d_grad {
 
 class UpsampleBilinear2DGradAscend final : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class UpsampleBilinear2DGradAscend final : public AclnnKernelMod {
   double scales_w_;
   bool align_corners_;
 };
+}  // namespace upsample_bilinear2d_grad
 }  // namespace kernel
 }  // namespace mindspore
 

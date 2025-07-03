@@ -45,8 +45,16 @@
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
 #include "frontend/operator/ops_front_infer_function.h"
+#include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 #include "frontend/operator/composite/composite.h"
 #include "ops/op_def.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace abstract {
@@ -179,6 +187,11 @@ AbstractBasePtr BuildAsyncAbstractRecursively(const AbstractBasePtr &orig_abs,
         new_elements, (enable_eliminate_unused_element ? sequence_abs->sequence_nodes() : nullptr));
     } else {
       MS_LOG(INTERNAL_EXCEPTION) << "FirstResult is not AbstractTuple or AbstractList, but: " << orig_abs->ToString();
+    }
+    if (sequence_abs->dynamic_len()) {
+      auto new_seq_abs = dyn_cast_ptr<AbstractSequence>(new_abs);
+      new_seq_abs->set_dynamic_len(true);
+      new_seq_abs->set_dynamic_len_element_abs(sequence_abs->dynamic_len_element_abs());
     }
     return new_abs;
   }
@@ -433,6 +446,7 @@ bool MatchMetaFg(const ValuePtr &prim) {
 }
 
 void RemoveSequenceFromOrderList(const CNodePtr &origin_cnode) {
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   constexpr size_t sequence_input_pos = 2;
   if (origin_cnode->size() <= sequence_input_pos) {
     return;
@@ -456,6 +470,7 @@ AbstractBasePtr GetEvalResult(const AnfNodePtr &node, const AnalysisEnginePtr &e
 
 bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEnginePtr &engine,
                               const AnfNodeConfigPtr &conf) {
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   auto possible_func = GetEvalResult(origin_cnode->input(1), engine, conf);
   if (possible_func == nullptr || !possible_func->isa<FuncGraphAbstractClosure>()) {
     return false;
@@ -474,11 +489,24 @@ bool IsFuncGraphAbstractInput(const CNodePtr &origin_cnode, const AnalysisEngine
   return !MatchMetaFg(value);
 }
 
-// {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
-// {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}
+/**
+ * \brief Insert `UnpackGraph` Primitive to `AnfNode`.
+ *
+ * \example
+ *     {{meta_fg, g, w}, Ys} => {{meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *     {UnpackCall, {meta_fg, g, w}, Ys} => {UnpackCall, {meta_fg, {UnpackGraph, g, Ys}, w}, Ys}.
+ *
+ * \param[in] origin_cnode Original Cnode.
+ * \param[in] value Primitive value.
+ * \param[in] conf Anfnode config.
+ * \param[in] engine Analysis engine.
+ *
+ * \return The `AnfNode` after `UnpackGraph` Primitive is inserted.
+ **/
 AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value, const AnfNodeConfigPtr &conf,
                              const AnalysisEnginePtr &engine) {
   // origin_cnode is {meta_fg, g, ...}
+  MS_EXCEPTION_IF_NULL(origin_cnode);
   const size_t inputs_x_minimum_size = 2;
   if (origin_cnode->size() < inputs_x_minimum_size) {
     return nullptr;
@@ -492,7 +520,9 @@ AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value
     return nullptr;
   }
 
-  auto manager = conf->engine()->func_graph_manager();
+  auto conf_engine = conf->engine();
+  MS_EXCEPTION_IF_NULL(conf_engine);
+  auto manager = conf_engine->func_graph_manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto node_users = manager->node_users()[origin_cnode];
   if (node_users.empty()) {
@@ -601,6 +631,9 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
     MS_EXCEPTION_IF_NULL(func_graph_manager_);
     func_graph_manager_->AddFuncGraph(func_graph);
     root_func_graph_ = func_graph;
+    if (top_func_graph_.lock() == nullptr) {
+      top_func_graph_ = func_graph;
+    }
 
     // Running the analyzer.
     ResetFunctionCallDepth();
@@ -690,21 +723,10 @@ void AnalysisEngine::SaveEvalResultInCache(const AnfNodeConfigPtr &conf, const E
     MS_EXCEPTION_IF_NULL(iter->second->abstract());
     MS_LOG(DEBUG) << "Found previous result for NodeConfig: " << conf->ToString()
                   << ", result: " << iter->second->abstract().get() << "/" << iter->second->abstract()->ToString();
-    // Update sequence nodes info, if matched in cache.
-    static const auto enable_eliminate_unused_element = (common::GetCompileConfig("ENABLE_DDE") != "0");
-    if (enable_eliminate_unused_element) {
-      auto new_sequence = dyn_cast<AbstractSequence>(result->abstract());
-      auto old_sequence = dyn_cast<AbstractSequence>(iter->second->abstract());
-      if (old_sequence != nullptr && new_sequence != nullptr) {
-        MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags for NodeConfig: " << conf->ToString()
-                      << ", old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-        SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-        MS_LOG(DEBUG) << "After synchronize sequence nodes use flags for NodeConfig: " << conf->ToString()
-                      << ", old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-      }
-    }
+    const auto &old_arg = iter->second->abstract();
+    const auto &new_arg = result->abstract();
+    // Update inputs abstract, if matched in cache.
+    SynchronizeSuccessiveInputs(old_arg, new_arg);
   }
   MS_EXCEPTION_IF_NULL(result->abstract());
   MS_LOG(DEBUG) << "Save result for NodeConfig: " << conf->ToString() << ", result: " << result->abstract().get() << "/"
@@ -719,6 +741,7 @@ void SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(const AnalysisEnginePtr
   // Get the evaluator for func graph.
   auto evaluator = engine->GetEvaluatorFor(base_func_graph_func);
   MS_EXCEPTION_IF_NULL(evaluator);
+  MS_EXCEPTION_IF_NULL(cnode);
 
   AbstractBasePtrList args_abs_list;
   for (std::size_t i = 1; i < cnode->size(); i++) {
@@ -737,17 +760,11 @@ void SynchronizeSequenceElementsUseFlagsForFuncGraphArgs(const AnalysisEnginePtr
     MS_EXCEPTION_IF_NULL(fg_context);
     MS_LOG(DEBUG) << "Eval before, current_node: " << cnode->DebugString() << ", context: " << fg_context->ToString()
                   << ", args: " << args_abs_list;
-    // Update inputs sequence nodes info, if matched in cache.
     for (std::size_t i = 0; i < args_abs_list.size(); ++i) {
-      auto new_sequence = dyn_cast<AbstractSequence>(args_abs_list[i]);
-      auto old_sequence = dyn_cast<AbstractSequence>(iter->first[i]);
-      if (old_sequence != nullptr && new_sequence != nullptr) {
-        MS_LOG(DEBUG) << "Before synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-        SynchronizeSequenceElementsUseFlagsRecursively(old_sequence, new_sequence);
-        MS_LOG(DEBUG) << "After synchronize sequence nodes use flags, old_sequence: " << old_sequence->ToString()
-                      << ", new_sequence: " << new_sequence->ToString();
-      }
+      const auto &old_arg = iter->first[i];
+      const auto &new_arg = args_abs_list[i];
+      // Update inputs abstract, if matched in cache.
+      SynchronizeSuccessiveInputs(old_arg, new_arg);
     }
   }
 }
@@ -1223,6 +1240,9 @@ EvaluatorPtr GetPrimEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr 
     if (prim->isa<PrimitivePy>()) {
       return std::make_shared<PrimitiveArgsToInputsEvaluator>(prim);
     }
+    if (prim::RegMetaImplFactory::GetInstance().IsMetaImpl(prim->name())) {
+      return std::make_shared<PrimitiveToMetaEvaluator>(prim);
+    }
     return std::make_shared<PrimitiveFunctionEvaluator>(prim);
   }
 
@@ -1358,6 +1378,13 @@ EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<ShardTransfo
   return std::make_shared<ShardEvaluator>(primal_evaluator, primal_func);
 }
 
+EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<AddAttrTransformedAbstractClosure> &func) {
+  MS_EXCEPTION_IF_NULL(func);
+  const auto &primal_func = func->fn();
+  auto primal_evaluator = GetEvaluatorFor(primal_func);
+  return std::make_shared<AddAttrEvaluator>(primal_evaluator, primal_func);
+}
+
 EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<VirtualAbstractClosure> &func) {
   MS_EXCEPTION_IF_NULL(func);
   return std::make_shared<VirtualEvaluator>(func->args_abs_list(), func->output());
@@ -1407,6 +1434,9 @@ EvaluatorPtr AnalysisEngine::GetEvaluatorFor(const AbstractFunctionPtr &func) {
   }
   if (func->isa<ShardTransformedAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<ShardTransformedAbstractClosure>(func));
+  }
+  if (func->isa<AddAttrTransformedAbstractClosure>()) {
+    return _GetEvaluatorFor(std::static_pointer_cast<AddAttrTransformedAbstractClosure>(func));
   }
   if (func->isa<VirtualAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<VirtualAbstractClosure>(func));
@@ -1585,7 +1615,9 @@ std::string JoinBranchesFailedInfo(const AbstractBasePtr &abs, const AbstractBas
     if (IsPrimitiveCNode(tuple_node, prim::kPrimMakeTuple)) {
       const auto &cnode = tuple_node->cast_ptr<CNode>();
       for (size_t i = 1; i < cnode->size(); i++) {
-        auto out_node = GetValueNode<FuncGraphPtr>(cnode->input(i))->get_return();
+        auto input = GetValueNode<FuncGraphPtr>(cnode->input(i));
+        MS_EXCEPTION_IF_NULL(input);
+        auto out_node = input->get_return();
         MS_EXCEPTION_IF_NULL(out_node);
         buffer << ", branch" << i << ": " << cnode->input(i)->ToString() << "\n"
                << trace::GetDebugInfoStr(out_node->debug_info());
@@ -1935,7 +1967,7 @@ AbstractBasePtr ToAbstract(const ValuePtr &value, const AnalysisContextPtr &cont
     return abs;
   }
   if (value->isa<ValueDictionary>() && anf_node != nullptr) {
-    auto abs = value->ToAbstract();
+    const auto &abs = value->ToAbstract();
     MS_EXCEPTION_IF_NULL(abs);
     // Attach corresponding python dictionary object to AbstractDictionary.
     py::object py_dict_obj =
@@ -1980,31 +2012,10 @@ EvalResultPtr EvalOnePrim(const PrimitivePtr &primitive, const AbstractBasePtrLi
   return nullptr;
 }
 
-AbstractBasePtr EvalFunctionValue(const ValuePtr &func, const AbstractBasePtrList &args_spec) {
-  auto func_abs = func->ToAbstract();
-  if (!func_abs->isa<AbstractFunction>()) {
-    MS_LOG(EXCEPTION) << "The value : " << func->ToString() << " is not a callable object.";
-  }
-  if (func->isa<Primitive>() && !func->isa<prim::DoSignaturePrimitive>()) {
-    return EvalOnePrim(func->cast<PrimitivePtr>(), args_spec)->abstract();
-  } else {
-    auto infer_graph = std::make_shared<FuncGraph>();
-    std::vector<AnfNodePtr> inputs = {std::make_shared<ValueNode>(func)};
-    (void)std::transform(args_spec.begin(), args_spec.end(), std::back_inserter(inputs),
-                         [infer_graph](const AbstractBasePtr &) -> AnfNodePtr { return infer_graph->add_parameter(); });
-    auto infer_node = infer_graph->NewCNode(inputs);
-    infer_graph->set_return(infer_node);
-    auto manager = Manage(infer_graph, true);
-    auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
-    auto res = engine->Run(infer_graph, args_spec);
-    return res.eval_result->abstract();
-  }
-}
-
 AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const FuncGraphPtr &fg,
                               const AbstractBasePtrList &args_abs_list) {
   MS_EXCEPTION_IF_NULL(fg);
-  auto new_context = current_context->NewContext(fg, args_abs_list);
+  const auto &new_context = current_context->NewContext(fg, args_abs_list);
   if (new_context == nullptr) {  // Not obtain context for fg->parent() during create context.
     if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
       MS_LOG(INFO) << "Failed to find parent context in current context, use dummy context instead.";

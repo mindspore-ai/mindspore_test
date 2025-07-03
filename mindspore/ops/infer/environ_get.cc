@@ -30,6 +30,7 @@
 #include "ops/base_operator.h"
 #include "utils/symbolic.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
 namespace mindspore {
 namespace ops {

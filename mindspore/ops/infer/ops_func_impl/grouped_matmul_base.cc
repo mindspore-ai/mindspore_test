@@ -20,12 +20,12 @@
 #include <set>
 #include <unordered_map>
 
-#include "include/common/utils/utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -64,12 +64,8 @@ std::pair<ShapeArray, ShapeArray> GroupedMatmulBaseFuncImpl::FetchInputAndWeight
 
 void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                         const ShapeVector &x_shape,
-                                                                        const ShapeVector &w_shape,
-                                                                        int64_t group_type) const {
-  if (MS_UNLIKELY(IsDynamicRank(x_shape) || IsDynamicRank(w_shape))) {
-    return;
-  }
-
+                                                                        const ShapeVector &w_shape, int64_t group_type,
+                                                                        bool transpose_b) const {
   const auto &op_name = primitive->name();
   static std::unordered_map<int64_t, std::pair<size_t, size_t>> expect_xw_ranks{
     {0, std::make_pair(2, 3)},  // group_type 0, split_item 3, x_rank = 2, w_rank = 3
@@ -88,17 +84,24 @@ void GroupedMatmulBaseFuncImpl::CheckInputAndWeightShapeForSingleOutput(const Pr
                              << "D Tensor. But got w[0]'s shape :" << w_shape;
   }
   auto x_k = x_shape.back();
-  auto w_k = w_shape[w_shape.size() - 2];
+  ShapeValueDType w_k = 0;
+  if (transpose_b) {
+    w_k = w_shape[w_shape.size() - kInputIndex1];
+  } else {
+    w_k = w_shape[w_shape.size() - kInputIndex2];
+  }
   if (MS_UNLIKELY(x_k != abstract::Shape::kShapeDimAny && w_k != abstract::Shape::kShapeDimAny && x_k != w_k)) {
-    MS_EXCEPTION(ValueError) << "For '" << op_name
-                             << "', x[0] shape should be (m, k), w[0] shape show be(e, k, n) or (k, n)."
-                             << "But got x[0]'s shape: " << x_shape << ", w[0]'s shape: " << w_shape;
+    auto expect_w_shape = group_type == 0 ? "(e, k, n)" : "(k, n)";
+    MS_EXCEPTION(ValueError) << "For '" << op_name << "', when group_type is " << group_type
+                             << ", x[0]'s shape should be (m, k), w[0]'s shape should be " << expect_w_shape
+                             << ", but got x[0]'s shape: " << x_shape << ", w[0]'s shape: " << w_shape;
   }
 }
 
 ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitivePtr &primitive,
                                                                 const ShapeArray &x_shapes, const ShapeArray &w_shapes,
-                                                                int64_t group_list_size, int64_t group_type) const {
+                                                                int64_t group_list_size, int64_t group_type,
+                                                                bool transpose_b, bool is_int4) const {
   if (MS_UNLIKELY(x_shapes.size() != kIndex1 || w_shapes.size() != kIndex1)) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name()
                              << "', when split_item is 3. the size of x and weight should both be 1, but got x's size "
@@ -107,9 +110,19 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForSingleOutput(const PrimitiveP
 
   const auto &x_shape = x_shapes[0];
   const auto &w_shape = w_shapes[0];
-  CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type);
-  auto m = IsDynamicRank(x_shape) ? abstract::Shape::kShapeDimAny : x_shape[x_shape.size() - 2];
-  auto n = IsDynamicRank(w_shape) ? abstract::Shape::kShapeDimAny : w_shape.back();
+  auto is_x_dyn_rank = IsDynamicRank(x_shape);
+  auto is_w_dyn_rank = IsDynamicRank(w_shape);
+  if (!is_x_dyn_rank && !is_w_dyn_rank) {
+    CheckInputAndWeightShapeForSingleOutput(primitive, x_shape, w_shape, group_type, transpose_b);
+  }
+  auto m = is_x_dyn_rank ? abstract::Shape::kShapeDimAny : x_shape[x_shape.size() - 2];
+  auto n = abstract::Shape::kShapeDimAny;
+  if (!is_w_dyn_rank) {
+    n = transpose_b ? w_shape[w_shape.size() - kInputIndex2] : w_shape.back();
+    if (is_int4) {
+      n = n << 1;
+    }
+  }
 
   std::vector<int64_t> res_shape;
   if (group_type == 0) {
@@ -175,28 +188,35 @@ ShapeArray GroupedMatmulBaseFuncImpl::InferShapeForMultiOutput(const PrimitivePt
 ShapeArray GroupedMatmulBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
   auto [x_shapes, w_shapes] = FetchInputAndWeightShapes(primitive, input_infos);
-  auto group_type_opt = input_infos[idxes_.group_type]->GetScalarValue<int64_t>();
+  const auto input_num = SizeToLong(input_infos.size());
+  const auto group_type_idx = input_num + idxes_.group_type_offset;
+  auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   MS_ASSERT(group_type_opt.has_value());
   auto group_type = group_type_opt.value();
   if (group_type == -1) {
     return InferShapeForMultiOutput(primitive, x_shapes, w_shapes);
   }
-  auto group_list_size = FetchGroupListSize(primitive, input_infos);
-  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type);
-}
 
-TypeIdList GroupedMatmulBaseFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                const InferInfoPtrList &input_infos) const {
-  const auto &x_tensors = input_infos[idxes_.x]->GetSequenceElements();
-  TypeIdList output_types;
-  std::transform(x_tensors.begin(), x_tensors.end(), std::back_inserter(output_types),
-                 [](const InferInfoPtr &info) { return info->GetType(); });
-  return output_types;
+  auto group_list_size = FetchGroupListSize(primitive, input_infos);
+  const auto transpose_b_idx = input_num + idxes_.transpose_b_offset;
+  auto transpose_b = GetTransposeValue(input_infos, transpose_b_idx);
+  bool is_int4 = false;
+  if (MS_LIKELY(input_infos[idxes_.weight]->IsSequence())) {
+    const auto &w_tensors = input_infos[idxes_.weight]->GetSequenceElements();
+    MS_ASSERT(w_tensors.size() > 0);
+    is_int4 = w_tensors[0]->GetType() == kNumberTypeInt4;
+  } else {
+    is_int4 = input_infos[idxes_.weight]->GetType() == kNumberTypeInt4;
+  }
+
+  return InferShapeForSingleOutput(primitive, x_shapes, w_shapes, group_list_size, group_type, transpose_b, is_int4);
 }
 
 std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
   const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto group_type_opt = input_infos[idxes_.group_type]->GetScalarValue<int64_t>();
+  const auto input_num = SizeToLong(input_infos.size());
+  const auto group_type_idx = input_num + idxes_.group_type_offset;
+  auto group_type_opt = input_infos[group_type_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!group_type_opt.has_value())) {
     MS_EXCEPTION(RuntimeError) << "For '" << primitive->name() << "', group_type should not be dynamic.";
   }
@@ -207,24 +227,8 @@ std::pair<int32_t, int64_t> GroupedMatmulBaseFuncImpl::CommonCheckValidation(
                              << group_type;
   }
 
-  const auto &group_list_info = input_infos[idxes_.group_list];
-  if (group_type != kMultiOutGroupType) {
-    if (MS_UNLIKELY(group_list_info->IsNone() ||
-                    (!group_list_info->IsSequence() && group_list_info->GetType() != kNumberTypeInt64))) {
-      MS_EXCEPTION(ValueError)
-        << "For '" << primitive->name()
-        << "', when group_type is not -1, group_list should be 1-D Tensor or List with int64 elements, but got "
-        << group_list_info->DebugInfo();
-    }
-  } else {
-    if (MS_UNLIKELY(!group_list_info->IsNone())) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                               << "', when group_type is -1, group_list should be None, but got "
-                               << group_list_info->DebugInfo();
-    }
-  }
-
-  auto split_item_opt = input_infos[idxes_.split_item]->GetScalarValue<int64_t>();
+  const auto split_item_idx = idxes_.split_item_offset + input_num;
+  auto split_item_opt = input_infos[split_item_idx]->GetScalarValue<int64_t>();
   if (MS_UNLIKELY(!split_item_opt.has_value())) {
     return std::make_pair(OP_CHECK_RETRY, group_type);
   }

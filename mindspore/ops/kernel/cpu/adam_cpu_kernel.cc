@@ -19,11 +19,12 @@
 #include "kernel/cpu/adam_cpu_kernel.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adam_cpu {
 namespace {
 constexpr size_t kAdamInputsNum = 10;
 constexpr size_t kAdamOutputsNum = 3;
@@ -232,5 +233,6 @@ std::vector<KernelAttr> AdamCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Adam, AdamCpuKernelMod);
+}  // namespace adam_cpu
 }  // namespace kernel
 }  // namespace mindspore

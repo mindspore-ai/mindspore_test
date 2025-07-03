@@ -50,7 +50,7 @@ def sort_1d(descending, nptype):
         expected_indices = expected_indices[::-1]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -98,7 +98,7 @@ def sort_3d(descending, nptype):
         expected_indices = expected_indices[:, :, ::-1]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -134,7 +134,7 @@ def sort_3d(descending, nptype):
         expected_indices = expected_indices[:, ::-1, :]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -170,7 +170,7 @@ def sort_3d(descending, nptype):
         expected_indices = expected_indices[::-1, :, :]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -227,7 +227,7 @@ def dynamic_sort_3d(descending, nptype):
         expected_indices = expected_indices[:, :, ::-1]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -266,7 +266,7 @@ def dynamic_sort_3d(descending, nptype):
         expected_indices = expected_indices[:, ::-1, :]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -305,7 +305,7 @@ def dynamic_sort_3d(descending, nptype):
         expected_indices = expected_indices[::-1, :, :]
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
-    if nptype is np.bool:
+    if nptype is np.bool_:
         if descending:
             np.testing.assert_array_equal(indices.asnumpy(), expected_indices_bool_descend)
         else:
@@ -316,7 +316,7 @@ def dynamic_sort_3d(descending, nptype):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("descending", [True, False])
-@pytest.mark.parametrize("nptype", [np.bool, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
+@pytest.mark.parametrize("nptype", [np.bool_, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
                                     np.float64])
 def test_sort1d(descending, nptype):
     """
@@ -329,7 +329,7 @@ def test_sort1d(descending, nptype):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("descending", [True, False])
-@pytest.mark.parametrize("nptype", [np.bool, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
+@pytest.mark.parametrize("nptype", [np.bool_, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
                                     np.float64])
 def test_sort3d(descending, nptype):
     """
@@ -342,7 +342,7 @@ def test_sort3d(descending, nptype):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("descending", [True, False])
-@pytest.mark.parametrize("nptype", [np.bool, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
+@pytest.mark.parametrize("nptype", [np.bool_, np.int8, np.int16, np.int32, np.int64, np.uint8, np.float16, np.float32,
                                     np.float64])
 def test_gpu_dynamic_sort3d(descending, nptype):
     """

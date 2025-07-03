@@ -4,7 +4,7 @@
 
 Distributed training involves communication operations such as `AllReduce`, `ReduceScatter`, `AllGather` and `Broadcast` for data transfer, and we will explain their meaning and sample code in the following sections.
 
-Examples of different communication operations by using 4 GPUs are given in each of the following sections. The output in the example comes from the results of the `rank0` program on card 0. The user needs to save each section code below as a separate communication.py. Because it involves a multi-card program, the user needs to go through the `mpirun` command to start communication.py. The `mpirun` commands requires the installation of OpenMPI as well as NCCL, and please refer to [here](https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html) for the corresponding installation.
+Examples of different communication operations by using 4 GPUs are given in each of the following sections. The output in the example comes from the results of the `rank0` program on card 0. The user needs to save each section code below as a separate communication.py. Because it involves a multi-card program, the user needs to go through the `mpirun` command to start communication.py. The `mpirun` commands requires the installation of OpenMPI as well as NCCL, and please refer to [here](https://www.mindspore.cn/tutorials/en/master/parallel/mpirun.html) for the corresponding installation.
 
 ```bash
 mpirun -output-filename log -merge-stderr-to-stdout -np 4 python communication.py
@@ -90,6 +90,44 @@ The result of the run is as follows, with the output log path `log/1/rank.0`:
  [3.]]
 ```
 
+## AllGatherV
+
+The `AllGatherV` operation, compared to `AllGather`, supports collecting non-uniform Tensors and concatenating the input Tensors of each card. Eventually, each card outputs the same value, and the `output_split_sizes` stores the amount of data input by each card.
+
+The sample code is as follows: We initialize the input values of the `AllGatherV` operator in each process based on the rank number (the communication ID to which each card belongs). For example, for card 0, we allocate an input of size 1×3 with values [0, 1, 2]; for card 1, we allocate an input of size 1×4 with values [0, 1, 2, 3]. The `output_split_sizes` is set to [3, 4]. Then we call the `AllGatherV` operator to perform communication in the communication domain of cards 0-1 (the communication scope of all cards, i.e., hccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore.ops.operations.comm_ops import AllGatherV
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.allgatherv = AllGatherV()
+
+    def construct(self, x, output_split_sizes):
+        return self.allgatherv(x, output_split_sizes)
+
+rank = get_rank()
+data = [i for i in range(rank + 3)]
+input_x = Tensor(data)
+output_split_sizes = [3, 4]
+net = Net()
+output = net(input_x, output_split_sizes)
+print(output)
+```
+
+The result of the run is as follows, with the output log path `log/1/rank.0`:
+
+```text
+[0 1 2 0 1 2 3]
+```
+
 ## ReduceScatter
 
 ![image](../../../api_python/samples/ops/images/reducescatter.png)
@@ -125,6 +163,93 @@ The running result is as follows, with the output log path `log/1/rank.0`:
 
 ```text
 [[0.]]
+```
+
+## ReduceScatterV
+
+The `ReduceScatterV` operation, compared to `ReduceScatter`, supports reducing and distributing non-uniform tensors. `ReduceScatterV` first sums the input of each card and then distributes the data to the corresponding cards according to the data volume distributed to each card defined in `input_split_sizes`.
+
+The sample code is as follows: We initialize the numerical values input to the `ReduceScatterV` operator in each process based on the rank number (the communication ID to which each card belongs). For example, for cards 0 and 1, we allocate an input of size 1×3 with values [0, 1, 2.0], and set `input_split_sizes` to [2, 1]. Then we call the `ReduceScatterV` operator to perform communication within the communication domain of cards 0-1 (the communication scope of all cards, i.e., the hccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore import Tensor
+from mindspore.communication import init, get_rank
+from mindspore.ops import ReduceOp
+import mindspore.nn as nn
+from mindspore.ops.operations.comm_ops import ReduceScatterV
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reducescatterv = ReduceScatterV(ReduceOp.SUM)
+
+    def construct(self, x, input_split_sizes):
+        return self.reducescatterv(x, input_split_sizes)
+
+rank = get_rank()
+input_x = Tensor([0, 1, 2.0])
+input_split_sizes = [2, 1]
+net = Net()
+output = net(input_x, input_split_sizes)
+print(output)
+```
+
+The output of the rank0 is:
+
+```text
+[0. 2]
+```
+
+The output of the rank1 is:
+
+```text
+[4.]
+```
+
+## Reduce
+
+![image](../../../api_python/samples/ops/images/reduce.png)
+
+The `Reduce` operation first performs the specified reduction operation on the input of each card, and then send the output results to the specified cards. Taking op = ReduceOp.SUM as an example: First, sum the input tensors of each card, and then distribute the results to the specified cards. As shown in the figure above, the input of each card is a 1x4 Tensor. `ReduceScatter` first sums the input to obtain a Tensor of [0, 4, 8, 12], and then sends the result to the specified card (for example, card 1). The output result corresponding to card 1 is [0., 4., 8., 12.], and the output results of the other cards are [0.].
+
+The sample code is as follows: We initialize the values of the input of the Reduce operator in each process. For each card, we apply for a 1x4-sized Tensor input with values [0, 1, 2, 3]. Then we call the Reduce operator to perform communication within the communication domain of cards `0-1-2-3` (the communication range of all cards, i.e., nccl_world_group), and print the output results.
+
+```python
+import mindspore as ms
+from mindspore.communication import init
+import mindspore.nn as nn
+import mindspore.ops as ops
+import numpy as np
+
+ms.set_context(mode=ms.GRAPH_MODE)
+init()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.reduce = ops.Reduce(1, ops.ReduceOp.SUM)
+
+    def construct(self, x):
+        return self.reduce(x)
+
+input_x = ms.Tensor(np.array([0, 1, 2, 3]).astype(np.float32))
+net = Net()
+output = net(input_x)
+print(output)
+```
+
+The running result is as follows, with the output log path `log/1/rank.1`:
+
+```text
+[0., 4., 8., 12.]
+```
+
+The output of the other cards is:
+
+```text
+[0.]
 ```
 
 ## Broadcast
@@ -385,6 +510,72 @@ The results of rank0 to rank7 are:
 [[[[0. 1. 2. 3. 4. 5. 6. 7.]]]]
 ```
 
+## AlltoAllV
+
+![image](../../../api_python/samples/ops/images/alltoallv.png)
+
+The `AlltoAllV` operation splits the input data according to specific dimensions and splits the specified data according to `send_numel_list` and sends it to other ranks in order, while receiving input of the specified size from other ranks according to `recv_numel_list` and cuts the data in specific dimensions in order. For example, in the above figure, the Tensor is sliced into 3 pieces in dimension 0, while receiving data from other ranks and stitching them in dimension 1, and finally outputting the stitched data.
+
+The sample code is as follows: we use `AlltoAllV` operator to exchange the data of 2 cards, segment each card in the 0th dimension according to `send_numel_list`, and send the segmented data to other cards in order. At the same time, we receive data from other cards according to `recv_numel_list` and then splice it. Finally, each card outputs the stitched data.
+
+```python
+from mindspore import ops
+import mindspore.nn as nn
+from mindspore.communication import init, get_rank
+from mindspore import Tensor
+init()
+rank = get_rank()
+class Net(nn.Cell):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.all_to_all = ops.AlltoAllV()
+    def construct(self, x, send_numel_list, recv_numel_list):
+        return self.all_to_all(x, send_numel_list, recv_numel_list)
+send_numel_list = []
+recv_numel_list = []
+if rank == 0:
+   send_tensor = Tensor([0, 1, 2.])
+   send_numel_list = [1, 2]
+   recv_numel_list = [1, 2]
+elif rank == 1:
+   send_tensor = Tensor([3, 4, 5.])
+   send_numel_list = [2, 1]
+   recv_numel_list = [2, 1]
+net = Net()
+output = net(send_tensor, send_numel_list, recv_numel_list)
+print(output)
+```
+
+To start the 2-card script by using a shell script, the `rank_table_file` file below can be generated by hccl_tools.py under [models](https://gitee.com/mindspore/models), which corresponds to the directory file `models/utils/ hccl_tools`. The sample shell script is as follows:
+
+```shell
+export MINDSPORE_HCCL_CONFIG_PATH=rank_table_file
+export DEVICE_NUM=2
+BASE_PATH=$(cd "$(dirname $0)"; pwd)
+for((i=0; i<$DEVICE_NUM; i++)); do
+    rm -rf ${BASE_PATH}/rank${i}
+    mkdir ${BASE_PATH}/rank${i}
+    cp -r ${BASE_PATH}/alltoallv.py ${BASE_PATH}/rank${i}/
+    cd ${BASE_PATH}/rank${i}
+    export RANK_ID=${i}
+    export DEVICE_ID=${i}
+    echo "start training for device $i"
+    python alltoallv.py > log.txt 2>&1 &
+done
+```
+
+The results of rank0 is:
+
+```text
+[0. 3. 4.]
+```
+
+The results of rank1 is:
+
+```text
+[1. 2. 5]
+```
+
 ## CollectiveScatter
 
 ![image](./images/collectscatter.png)
@@ -526,26 +717,47 @@ net()
 `Send` operation sends tensors to the specified dest_rank.
 
 ```python
+import os
 import numpy as np
 import mindspore.ops as ops
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore.communication import init
 from mindspore import Tensor
 
+ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
+
 class SendNet(nn.Cell):
     def __init__(self):
         super(SendNet, self).__init__()
         self.depend = ops.Depend()
-        self.send = ops.Send(st_tag=0, dest_rank=8, group="hccl_world_group")
+        self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
 
     def construct(self, x):
         out = self.depend(x, self.send(x))
         return out
 
-input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-net = Net()
-output = net(input_)
+class ReceiveNet(nn.Cell):
+    def __init__(self):
+        super(ReceiveNet, self).__init__()
+        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
+
+    def construct(self):
+        out = self.recv()
+        return out
+
+if __name__ == "__main__":
+    rank_id = os.environ["RANK_ID"]
+    rank_size = os.environ["RANK_SIZE"]
+    if rank_id == "0":
+        input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        send_net = SendNet()
+        output = send_net(input_)
+    else:
+        recv_net = ReceiveNet()
+        output = recv_net()
+        print(output.asnumpy())
 ```
 
 ## Receive
@@ -553,25 +765,47 @@ output = net(input_)
 `Receive` operation receives tensors from src_rank.
 
 ```python
+import os
 import numpy as np
 import mindspore.ops as ops
 import mindspore.nn as nn
+import mindspore as ms
 from mindspore.communication import init
 from mindspore import Tensor
 
+ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
+
+class SendNet(nn.Cell):
+    def __init__(self):
+        super(SendNet, self).__init__()
+        self.depend = ops.Depend()
+        self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
+
+    def construct(self, x):
+        out = self.depend(x, self.send(x))
+        return out
+
 class ReceiveNet(nn.Cell):
     def __init__(self):
         super(ReceiveNet, self).__init__()
-        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
-                              group="hccl_world_group")
+        self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
 
     def construct(self):
         out = self.recv()
         return out
 
-net = Net()
-output = net()
+if __name__ == "__main__":
+    rank_id = os.environ["RANK_ID"]
+    rank_size = os.environ["RANK_SIZE"]
+    if rank_id == "0":
+        input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        send_net = SendNet()
+        output = send_net(input_)
+    else:
+        recv_net = ReceiveNet()
+        output = recv_net()
+        print(output.asnumpy())
 ```
 
 ## Notes

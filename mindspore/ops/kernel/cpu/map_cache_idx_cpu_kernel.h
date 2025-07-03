@@ -23,11 +23,12 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace map_cache_idx_cpu {
 class MapCacheIdxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MapCacheIdxCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class MapCacheIdxCpuKernelMod : public NativeCpuKernelMod {
   size_t miss_count_{0};
   size_t outputs_size_{0};
 };
+}  // namespace map_cache_idx_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

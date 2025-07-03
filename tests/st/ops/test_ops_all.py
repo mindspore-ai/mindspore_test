@@ -61,7 +61,7 @@ def all_vmap_func(x, axis, keep_dims):
     return ops.vmap(all_forward_func, in_axes=(0, None, None), out_axes=0)(x, axis, keep_dims)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_all_forward(context_mode):
     """
@@ -138,7 +138,7 @@ def test_ops_all_vmap(context_mode):
     Expectation: expect correct result.
     """
     context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.bool)
+    x = generate_random_input((2, 3, 4, 5), np.bool_)
     axis = (1, 2)
     keep_dims = True
     output = all_vmap_func(ms.Tensor(x), axis, keep_dims)

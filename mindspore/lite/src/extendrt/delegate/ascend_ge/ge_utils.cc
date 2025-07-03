@@ -23,8 +23,8 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "src/common/common.h"
-#include "transform/symbol/acl_base_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 static std::string AdjustCnodeName(const PrimitivePtr &prim) {

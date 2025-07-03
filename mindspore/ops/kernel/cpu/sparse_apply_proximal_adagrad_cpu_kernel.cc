@@ -18,11 +18,13 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_proximal_adagrad_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kSparseApplyProximalAdagradInputsNum = 7;
 constexpr size_t kSparseApplyProximalAdagradWorkspaceSize = 4;
@@ -267,5 +269,6 @@ bool SparseApplyProximalAdagradCpuKernelMod::LaunchKernel(const std::vector<kern
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, FusedSparseProximalAdagrad, SparseApplyProximalAdagradCpuKernelMod);
+}  // namespace sparse_apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <vector>
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace hccl {
@@ -25,7 +25,7 @@ HcclAdapter &HcclAdapter::GetInstance() {
 bool HcclAdapter::InitHccl(uint32_t, std::string_view) { return true; }
 bool HcclAdapter::InitHccl(uint32_t, std::string_view, std::string_view, HcclMode) { return true; }
 bool HcclAdapter::FinalizeHccl() { return true; }
-bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info) { return true; }
+bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info, bool *disable) { return true; }
 HcclResult HcclAdapter::HcclCreateGroup(const std::string &, uint32_t, uint32_t *) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclDestroyGroup(const std::string &) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclGetRankId(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }
@@ -75,5 +75,9 @@ bool HcclAdapter::UseHcclCM() const { return false; }
 bool HcclAdapter::IsSameServer(const std::vector<uint32_t> &rank_ids) const { return false; }
 
 std::string HcclAdapter::GetHcomGroup(const CNodePtr &) const { return ""; }
+
+HcclResult HcclAdapter::HcclCommWorkingDevNicSet(HcclComm comm, uint32_t *ranks, bool *use_backup, uint32_t nRanks) {
+  return HCCL_SUCCESS;
+}
 }  // namespace hccl
 }  // namespace mindspore

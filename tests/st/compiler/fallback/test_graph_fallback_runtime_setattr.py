@@ -20,10 +20,11 @@ import numpy as np
 import mindspore as ms
 from mindspore import nn
 from mindspore import ops
-from mindspore import Tensor, Parameter, jit, jit_class
+from mindspore import Tensor, Parameter, jit, jit_class, context
 from tests.mark_utils import arg_mark
 
 ms.set_context(mode=ms.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -172,7 +173,7 @@ def test_setattr_self_non_param_not_used():
     assert test_net.data == 2
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_setattr_self_non_param_used_in_operator():
     """
@@ -189,6 +190,7 @@ def test_setattr_self_non_param_used_in_operator():
             self.data = Tensor([1, 2, 3, 4])
             return self.data + x
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     test_net = TestNet(1)
     ret = test_net(Tensor([1, 1, 1, 1]))
     assert np.all(ret.asnumpy() == np.array([2, 3, 4, 5]))
@@ -256,7 +258,7 @@ def test_setattr_global_obj_attr2():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr2():
         data_obj2.x = 101
         return data_obj2.x
@@ -277,7 +279,7 @@ def test_setattr_global_obj_attr3():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr3():
         data_obj3.shape = (2, 2)
         return data_obj3.shape, data_obj3
@@ -309,7 +311,7 @@ def test_setattr_global_obj_nested_attr1():
     data_obj1 = OuterAssignTarget()
     data_obj1.a.b.x = 100
 
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr1():
         data_obj1.a.b.x = 99
         return data_obj1.a.b.x
@@ -331,7 +333,7 @@ def test_setattr_global_obj_nested_attr2():
     Description: Support 'obj.attr = value'.
     Expectation: No exception.
     """
-    @ms.jit
+    @ms.jit(backend="ms_backend")
     def simple_assign_global_obj_attr2():
         nested_data_obj2.a.b.x = 101
         return nested_data_obj2.a.b.x
@@ -556,7 +558,7 @@ def test_global_getattr_after_setattr_1():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.x = obj.x + 1
 
@@ -586,7 +588,7 @@ def test_global_getattr_after_setattr_2():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj2.x = obj1.x + obj2.x
         obj1.x = obj1.x + obj2.x
@@ -616,7 +618,7 @@ def test_global_getattr_after_setattr_3():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.x = obj.x + 1
         y = obj.x
@@ -645,7 +647,7 @@ def test_global_getattr_before_setattr():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         y = obj.x
         obj.x = obj.x + 1
@@ -674,7 +676,7 @@ def test_global_setattr_in_control_flow():
             super(SetattrNet, self).__init__()
             self.x = 5
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         while obj.x > 0:
             obj.x = obj.x - 2
@@ -698,7 +700,7 @@ def test_global_setattr_in_control_flow_2():
             super(SetattrNet, self).__init__()
             self.x = 4
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         count = 0
         while obj.x:
@@ -743,7 +745,7 @@ def test_setattr_for_attribute_no_exist_2():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.y = obj.x + 1
 
@@ -765,7 +767,7 @@ def test_setattr_for_attribute_no_exist_3():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         obj.y = obj.x + 1
 
@@ -853,7 +855,7 @@ def test_setattr_in_loop():
         def __init__(self):
             self.x = 1
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         for _ in range(5):
             obj.x = obj.x + 1
@@ -888,6 +890,7 @@ def test_type_of_getattr_after_setattr():
             out = self.proxy_combination
             return out
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     net = Net()
     res = net()
     assert np.all(res.asnumpy() == np.array([[1, 2, 8, 4, 8]]))

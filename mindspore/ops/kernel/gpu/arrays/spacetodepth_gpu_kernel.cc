@@ -19,7 +19,7 @@
 #include <utility>
 #include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 namespace mindspore {
 namespace kernel {
 using KernelRunFunc = SpaceToDepthGpuKernelMod::KernelRunFunc;

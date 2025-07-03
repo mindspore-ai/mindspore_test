@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -40,7 +40,7 @@ def generate_expect_backward_output(input_x, mat2):
     grad = ops.grad(ops.matmul)(input_x, mat2)
     return grad
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 def test_ops(mode, dtype):
@@ -58,11 +58,11 @@ def test_ops(mode, dtype):
         res = mm_forward_func(ms.Tensor(input_x), ms.Tensor(mat2))
         res_grad = mm_backward_func(ms.Tensor(input_x), ms.Tensor(mat2))
     elif mode == 'KBK':
-        res = (jit(mm_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
     else:
-        res = (jit(mm_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, backend="GE"))(ms.Tensor(input_x), ms.Tensor(mat2))
     np.testing.assert_allclose(res.asnumpy(), expect_forward, rtol=1e-5)
     np.testing.assert_allclose(res_grad.asnumpy(), expect_grad.asnumpy(), rtol=1e-5)
 

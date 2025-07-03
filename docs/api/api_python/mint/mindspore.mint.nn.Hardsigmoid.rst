@@ -17,7 +17,7 @@ mindspore.mint.nn.Hardsigmoid
 
     HardSigmoid函数图：
 
-    .. image:: ../images/HardSigmoid.png
+    .. image:: ../images/Hardsigmoid.png
         :align: center
 
     输入：

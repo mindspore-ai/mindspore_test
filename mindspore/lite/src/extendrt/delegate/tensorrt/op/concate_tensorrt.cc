@@ -17,8 +17,20 @@
 #include "src/extendrt/delegate/tensorrt/op/concate_tensorrt.h"
 #include <experimental/optional>
 #include <algorithm>
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
+ConcateTensorRT::ConcateTensorRT(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,
+                                 const std::vector<TensorInfo> &out_tensors, const std::string &name)
+    : TensorRTOp(base_operator, in_tensors, out_tensors, name) {
+  if (type_ == ops::kNameConcat) {
+    axis_ = AsOps<ops::Concat>()->get_axis();
+  } else {
+    axis_ = AsOps<ops::Stack>()->get_axis();
+  }
+}
+
 int ConcateTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,
                                const std::vector<TensorInfo> &out_tensors) {
   if (type_ != ops::kNameStack && type_ != ops::kNameConcat) {

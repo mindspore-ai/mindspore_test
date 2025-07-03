@@ -20,11 +20,12 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/median_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace median_grad_cpu {
 namespace {
 constexpr size_t kMedianGradInputsNum = 4;
 constexpr size_t kMedianGradOutputsNum = 1;
@@ -185,7 +186,9 @@ bool MedianGradCpuKernelMod::GlobalMedianGradCompute(const std::vector<KernelTen
       *(x_grad + i) = is_equal ? static_cast<T2>(*y_grad / count_repeat) : 0;
     }
   };
-  CPUKernelUtils::ParallelFor(sharder_mediangrad, input1_num_elements_);
+  if (input1_num_elements_ > 0) {
+    CPUKernelUtils::ParallelFor(sharder_mediangrad, input1_num_elements_);
+  }
   return true;
 }
 
@@ -241,10 +244,13 @@ bool MedianGradCpuKernelMod::MedianGradCompute(const std::vector<KernelTensor *>
       *(x_grad + update_element_pos) = static_cast<T2>(*(y_grad + nth_element));
     }
   };
-  CPUKernelUtils::ParallelFor(sharder_mediangrad, input0_num_elements_);
+  if (input0_num_elements_ > 0) {
+    CPUKernelUtils::ParallelFor(sharder_mediangrad, input0_num_elements_);
+  }
   return true;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MedianGrad, MedianGradCpuKernelMod);
+}  // namespace median_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,12 +23,13 @@
 #include <set>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tensor_scatter_op_cpu {
 class TensorScatterOpCpuKernelMode : public NativeCpuKernelMod, public MatchKernelHelper<TensorScatterOpCpuKernelMode> {
  public:
   TensorScatterOpCpuKernelMode() = default;
@@ -61,6 +62,7 @@ class TensorScatterOpCpuKernelMode : public NativeCpuKernelMod, public MatchKern
   std::vector<size_t> batch_strides_;
   std::vector<size_t> input_shape_;
 };
+}  // namespace tensor_scatter_op_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

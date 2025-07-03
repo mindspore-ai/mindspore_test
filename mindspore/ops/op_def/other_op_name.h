@@ -54,11 +54,17 @@ constexpr auto kAlltoAllOpName = "AlltoAll";
 constexpr auto kAllToAllOpName = "AllToAll";
 constexpr auto kAllToAllvOpName = "AllToAllv";
 constexpr auto kAlltoAllVOpName = "AlltoAllV";
+constexpr auto kAllGatherVOpName = "AllGatherV";
+constexpr auto kReduceScatterVOpName = "ReduceScatterV";
 constexpr auto kAlltoAllVGEOpName = "AlltoAllVGE";
 constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomExtOpName = "CustomExt";
+constexpr auto kQbmmAllReduceAdd = "QbmmAllReduceAdd";
+constexpr auto kMatmulAllReduceAddRmsNorm = "MatmulAllReduceAddRmsNorm";
+constexpr auto kMoeDistributeCombine = "MoeDistributeCombine";
+constexpr auto kMoeDistributeDispatch = "MoeDistributeDispatch";
 // View op
 constexpr auto kBroadcastToViewOpName = "BroadcastToView";
 constexpr auto kTransposeExtViewOpName = "TransposeExtView";

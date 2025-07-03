@@ -26,7 +26,7 @@
 #include "utils/hash_map.h"
 #include "plugin/device/gpu/hal/hardware/gpu_session.h"
 #include "include/backend/kernel_graph.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "backend/common/session/session_factory.h"
 
 namespace mindspore {
@@ -43,9 +43,6 @@ class GpuInferenceSession : public gpu::GPUSession {
   template <typename T>
   std::string PrintInputShape(std::vector<T> shape) const;
   std::string InputsInfo(const std::vector<ParameterPtr> &paras, const std::vector<tensor::TensorPtr> &inputs) const;
-
- protected:
-  GraphId CompileGraphImpl(NotNull<FuncGraphPtr> func_graph) override;
 };
 MS_REG_SESSION(kGpuInferenceDevice, GpuInferenceSession);
 }  // namespace session

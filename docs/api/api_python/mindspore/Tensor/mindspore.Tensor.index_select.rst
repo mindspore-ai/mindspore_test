@@ -1,7 +1,7 @@
 mindspore.Tensor.index_select
 =============================
 
-.. py:method:: mindspore.Tensor.index_select(axis, index)
+.. py:method:: mindspore.Tensor.index_select(axis, index) -> Tensor
 
     返回一个新的Tensor，该Tensor沿维度 `axis` 按 `index` 中给定的索引对 `self` 进行选择。
     返回的Tensor和输入Tensor( `self` )的维度数量相同，其第 `axis` 维度的大小和 `index` 的长度相同；其他维度和 `self` 相同。
@@ -22,7 +22,7 @@ mindspore.Tensor.index_select
         - **ValueError** - `axis` 值超出范围[-input.ndim, input.ndim - 1]。
         - **ValueError** - `index` 不是一维Tensor。
 
-    .. py:method:: mindspore.Tensor.index_select(dim, index)
+    .. py:method:: mindspore.Tensor.index_select(dim, index) -> Tensor
         :noindex:
 
     返回一个新的Tensor，该Tensor沿维度 `dim` 按 `index` 中给定的索引对 `self` 进行选择。

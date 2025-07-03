@@ -20,11 +20,12 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ps_roi_pooling_v2_cpu {
 class PSROIPoolingCpuKernelMod : public NativeCpuKernelMod {
  public:
   PSROIPoolingCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class PSROIPoolingCpuKernelMod : public NativeCpuKernelMod {
 
   int ResizeCheckInputs(const std::vector<KernelTensor *> &inputs);
 };
+}  // namespace ps_roi_pooling_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PS_ROI_POOLING_CPU_KERNEL_H_

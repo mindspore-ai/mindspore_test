@@ -36,10 +36,10 @@ constexpr inline static int kBufferSize = 4096;
 constexpr inline static auto kEnv = "python";
 // The TAG as prefix of real command from remote.
 constexpr inline static auto kTag = "[~]";
-BACKEND_EXPORT std::string GetPyExe();
-BACKEND_EXPORT std::string GetCmdResult();
+BACKEND_COMMON_EXPORT std::string GetPyExe();
+BACKEND_COMMON_EXPORT std::string GetCmdResult();
 
-class BACKEND_EXPORT KernelBuildClient {
+class BACKEND_COMMON_EXPORT KernelBuildClient {
  public:
   // Send Finish request to server
   constexpr inline static auto kFinish = "FINISH";
@@ -200,7 +200,7 @@ static std::string GetScriptFilePath(const std::string &cmd_env, const std::stri
   return result;
 }
 
-class BACKEND_EXPORT AkgKernelBuildClient : public KernelBuildClient {
+class BACKEND_COMMON_EXPORT AkgKernelBuildClient : public KernelBuildClient {
  public:
   // Server configure
   constexpr inline static auto kGetPathScript =
@@ -237,7 +237,7 @@ class BACKEND_EXPORT AkgKernelBuildClient : public KernelBuildClient {
   AkgKernelBuildClient() { Open(); }
 };
 
-class BACKEND_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
+class BACKEND_COMMON_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
  public:
   // Server configure
   constexpr inline static auto kGetPathScript =

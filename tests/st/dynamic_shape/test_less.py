@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -64,7 +64,7 @@ def test_less_forward(mode):
     x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
     y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
     out = less_forward_func(x, y)
-    expect = np.array([False, False, True], dtype=np.bool)
+    expect = np.array([False, False, True], dtype=np.bool_)
     assert np.allclose(out.asnumpy(), expect)
 
 
@@ -104,7 +104,7 @@ def test_less_vmap(mode):
     less_vmap = ops.vmap(less_forward_func)
     out = less_vmap(x, y)
     expect = np.array([[False, False, True], [False, False, True]],
-                      dtype=np.bool)
+                      dtype=np.bool_)
     assert np.allclose(out.asnumpy(), expect, rtol=1e-4, atol=1e-4)
 
 
@@ -127,7 +127,7 @@ def test_less_dynamic_shape(mode):
     test_cell.set_inputs(x_dyn, y_dyn)
     out = test_cell(x, y)
     expect = np.array([[False, False, True], [False, False, True]],
-                      dtype=np.bool)
+                      dtype=np.bool_)
     assert np.allclose(out.asnumpy(), expect, rtol=1e-4, atol=1e-4)
 
     x_2 = ms.Tensor(np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]]), ms.int32)
@@ -135,7 +135,7 @@ def test_less_dynamic_shape(mode):
     out_2 = test_cell(x_2, y_2)
     expect_2 = np.array(
         [[False, False, True], [False, False, True], [False, False, True]],
-        dtype=np.bool)
+        dtype=np.bool_)
     assert np.allclose(out_2.asnumpy(), expect_2, rtol=1e-4, atol=1e-4)
 
 
@@ -158,7 +158,7 @@ def test_less_dynamic_rank(mode):
     test_cell.set_inputs(x_dyn, y_dyn)
     out = test_cell(x, y)
     expect = np.array([[False, False, True], [False, False, True]],
-                      dtype=np.bool)
+                      dtype=np.bool_)
     assert np.allclose(out.asnumpy(), expect, rtol=1e-4, atol=1e-4)
 
     x_2 = ms.Tensor(np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]]), ms.int32)
@@ -166,7 +166,7 @@ def test_less_dynamic_rank(mode):
     out_2 = test_cell(x_2, y_2)
     expect_2 = np.array(
         [[False, False, True], [False, False, True], [False, False, True]],
-        dtype=np.bool)
+        dtype=np.bool_)
     assert np.allclose(out_2.asnumpy(), expect_2, rtol=1e-4, atol=1e-4)
 
 
@@ -181,8 +181,8 @@ def test_less_op_infervalue(context_mode):
     """
     ms.context.set_context(mode=context_mode)
     out_1 = less_infervalue_func1()
-    expect_out_1 = np.array([False, False, True], dtype=np.bool)
+    expect_out_1 = np.array([False, False, True], dtype=np.bool_)
     assert np.allclose(out_1.asnumpy(), expect_out_1)
     out_2 = less_infervalue_func2()
-    expect_out_2 = np.array([True, False, False], dtype=np.bool)
+    expect_out_2 = np.array([True, False, False], dtype=np.bool_)
     assert np.allclose(out_2.asnumpy(), expect_out_2)

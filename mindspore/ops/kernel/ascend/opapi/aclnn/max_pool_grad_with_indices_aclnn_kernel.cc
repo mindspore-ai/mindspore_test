@@ -21,11 +21,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_grad_with_indices {
 
 void MaxPoolGradWithIndicesAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
@@ -51,5 +52,6 @@ bool MaxPoolGradWithIndicesAscend::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MaxPoolGradWithIndices, MaxPoolGradWithIndicesAscend);
+}  // namespace max_pool_grad_with_indices
 }  // namespace kernel
 }  // namespace mindspore

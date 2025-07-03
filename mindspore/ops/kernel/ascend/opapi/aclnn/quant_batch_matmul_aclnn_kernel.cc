@@ -19,10 +19,11 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul {
 void QuantMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   transpose_x1_ = inputs[kIndex6]->GetValueWithCheck<bool>();
@@ -40,5 +41,6 @@ bool QuantMatmulV4Ascend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(QuantBatchMatmul, QuantMatmulV4Ascend);
+}  // namespace quant_batch_matmul
 }  // namespace kernel
 }  // namespace mindspore

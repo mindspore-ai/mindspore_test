@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_matmul_split_fusion.h"
 #include <vector>
 #include <set>
-#include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "backend/common/pass/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"
@@ -24,6 +24,13 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -34,9 +41,6 @@ bool InferenceMatmulSplitFusion::Run(const FuncGraphPtr &graph) {
   bool changed = false;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return false;
-  }
   constexpr auto kInferenceMatmulSplitSiluName = "InferenceMatmulSplitSilu";
   constexpr auto kInferenceMatmulSplitName = "InferenceMatmulSplit";
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();

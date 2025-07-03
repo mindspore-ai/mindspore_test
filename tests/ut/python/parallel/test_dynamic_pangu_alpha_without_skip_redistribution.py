@@ -29,10 +29,10 @@ from mindspore.nn import TrainOneStepCell, Momentum
 from mindspore.ops import composite as C
 from mindspore.nn.wrap.loss_scale import TrainOneStepWithLossScaleCell
 from mindspore.context import ParallelMode
-from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.nn import DistributedGradReducer
 from mindspore.communication.management import get_group_size
 from mindspore.parallel._utils import _get_enable_parallel_optimizer
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell
 from mindspore import Symbol
 

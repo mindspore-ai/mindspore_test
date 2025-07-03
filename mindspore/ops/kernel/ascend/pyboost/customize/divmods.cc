@@ -16,28 +16,30 @@
 
 #include "kernel/ascend/pyboost/customize/divmods.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "pyboost/op_register.h"
+#include "pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr DivModsAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                                             const ScalarPtr &other, const std::optional<Int64ImmPtr> &rounding_mode) {
+tensor::TensorPtr DivModsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input,
+                                         const ScalarPtr &other, const std::optional<Int64ImmPtr> &rounding_mode) {
   OpRunner::InferOpOutput(op, input, other, rounding_mode);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
+  auto other_real = ops::FetchRealScalar(other);
   auto mode = 0;
   if (rounding_mode.has_value()) {
     mode = static_cast<int>(GetValue<int64_t>(rounding_mode.value()));
   }
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, other, mode]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, other_real, mode]() {
     MS_LOG(DEBUG) << "Run device task DivMods start";
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
@@ -46,7 +48,7 @@ tensor::BaseTensorPtr DivModsAscendCustomize(const std::shared_ptr<OpRunner> &op
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    LAUNCH_ACLNN(aclnnDivMods, device_context, op->stream_id(), input, other, mode, outputs[0]);
+    LAUNCH_ACLNN(aclnnDivMods, device_context, op->stream_id(), input, other_real, mode, outputs[0]);
     MS_LOG(DEBUG) << "Run device task DivMods end";
   }));
 

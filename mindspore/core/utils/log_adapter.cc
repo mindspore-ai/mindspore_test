@@ -34,6 +34,7 @@
 #include <vector>
 #include <limits>
 #include "utils/convert_utils_base.h"
+#include "utils/ms_utils.h"
 
 // namespace to support utils module definition
 namespace mindspore {
@@ -807,6 +808,11 @@ void DispVerboseLogTags() {
     {VL_DISTRIBUTED_FD, "log for cluster under layer socket operation"},
     {VL_DISTRIBUTED_TRACE, "log for cluster business message"},
     {VL_ASCEND_SILENT_CHECK, "verbose level for silent check."},
+    {VL_UCE, "verbose log for uce function."},
+    {VL_UCE_DEVICE_MEM, "verbose log for uce of type device memory error."},
+    {VL_UCE_HBM_MUTLI_BIT_ECC, "verbose log for uce of type hbm mutit bit ecc error."},
+    {VL_GE_EXECUTOR, "verbose log for ge graph executor"},
+    {VL_DUMP, "verbose log for O0/O1 device statistic dump"},
   };
 
   for (auto &[tag, desc] : used_tags) {
@@ -852,6 +858,9 @@ const std::string GetSubModuleName(SubModuleId module_id) {
     "SYMBOLIC_SHAPE",     // SM_SYMBOLIC_SHAPE
     "GRAPH_KERNEL",       // SM_GRAPH_KERNEL
     "LLM_BOOST",          // SM_LLM_BOOST
+    "TRACE",              // SM_TRACE
+    "INTERNAL_KERNEL",    // SM_INTERNAL_KERNEL
+    "EXTENSION",          // SM_EXTENSION
   };
   return sub_module_names[IntToSize(module_id % NUM_SUBMODUES)];
 }

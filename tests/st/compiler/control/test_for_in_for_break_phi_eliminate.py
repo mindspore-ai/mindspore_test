@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 
 from mindspore.nn import Cell
 from mindspore.common import Tensor, dtype
 import mindspore.ops.operations as P
-from mindspore import Parameter
+from mindspore import Parameter, context
 import numpy as np
 
+context.set_context(jit_config={"jit_level": "O0"})
 
 class IfInFor(Cell):
     def __init__(self):
@@ -41,9 +42,8 @@ class IfInFor(Cell):
         return x
 
 
-@case_register.level1
-@case_register.target_ascend
-@case_register.target_gpu
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_for_break_phi_node_eliminate():
     """
     Feature: Phi node eliminate.

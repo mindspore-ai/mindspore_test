@@ -21,11 +21,12 @@
 #include <memory>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace l2normalize_grad_cpu {
 class L2NormalizeGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   L2NormalizeGradCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class L2NormalizeGradCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::shared_ptr<CpuKernelFunc> func_obj_;
 };
+}  // namespace l2normalize_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_L2NORMALIZE_GRAD_CPU_KERNEL_H_

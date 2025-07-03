@@ -20,13 +20,19 @@
 #include <algorithm>
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "backend/graph_compiler/vmimpl.h"
-#include "backend/graph_compiler/backend.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "pybind_api/ir/base_ref_py.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/base_ref_py.h"
+#include "frontend/ir/primitive_py.h"
+#include "include/common/utils/convert_utils.h"
+#include "include/common/utils/scoped_long_running.h"
 
 namespace mindspore {
 namespace compile {
+
+enum class SwitchCondStatus {
+  kCondOk = 0,
+  kCondAlreadyRun,
+};
 
 // Initialize StructPartial.
 // Arguments:
@@ -68,7 +74,7 @@ std::ostream &operator<<(std::ostream &os, const SwitchCondStatus &other) {
 //   retp_: The call stack.
 //   pc_: program counter (next instruction)
 //   sp_: stack pointer (for the value stack)
-FinalVM::FinalVM(const InstSet &insts, const BackendPtr &backend) : insts_(insts), pc_(0), sp_(0), backend_(backend) {
+FinalVM::FinalVM(const InstSet &insts) : insts_(insts), pc_(0), sp_(0) {
   MS_LOG(DEBUG) << "InstSet size:" << insts_.size();
   insts_stack_.emplace_back(BaseRef());
   retp_.push(-1);
@@ -315,8 +321,7 @@ void FinalVM::InstRealSwitch(const VectorRef &args) {
   BaseRef c = Ref(cond);
   MS_LOG(DEBUG) << vtrue << " false:" << vfalse << " InstSwitch: " << c.ToString();
   bool bool_value = false;
-  MS_EXCEPTION_IF_NULL(backend_);
-  if (backend_->GetCond(c, &bool_value)) {
+  if (mindspore::ScopedLongRunning long_running; BaseRefToBool(c, &bool_value)) {
     MS_LOG(DEBUG) << "Cond:" << bool_value;
     if (bool_value) {
       Push(Ref(vtrue));
@@ -349,8 +354,7 @@ void FinalVM::InstSwitchLayer(const VectorRef &args) {
 
   BaseRef index = Ref(idx);
   int64_t idx_value = 0;
-  MS_EXCEPTION_IF_NULL(backend_);
-  if (!backend_->GetIndex(index, &idx_value)) {
+  if (!BaseRefToInt(utils::cast<ValuePtr>(index), &idx_value)) {
     MS_LOG(EXCEPTION) << "Not supported type to be casted to int64_t.";
   }
   auto ori_value = idx_value;

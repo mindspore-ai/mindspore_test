@@ -23,7 +23,7 @@
 #include <memory>
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -42,7 +42,7 @@ tensor::TensorPtr GetParamFromLoad(const CNodePtr &load, const bool unused);
 
 bool CheckFusionValid(const CNodePtr &matmul, int64_t *k, const int trans_a_pos, const int trans_b_pos,
                       const std::vector<TypeId> &valid_dtypes);
-
+std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tensor, const TensorTypePtr &tensor_type);
 std::shared_ptr<ValueNode> CreateWeightTensor(TypeId type_id, const std::vector<int64_t> &weight_shape,
                                               const std::vector<void *> &data_c_list,
                                               const std::vector<int64_t> &n_len_list, const int64_t &k_len,
@@ -55,6 +55,8 @@ std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node
 
 std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
                                               const bool &with_allreduce, const TypeId &dtype);
+
+std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_node);
 }  // namespace opt
 }  // namespace mindspore
 

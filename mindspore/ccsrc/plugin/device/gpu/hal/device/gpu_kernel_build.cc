@@ -17,7 +17,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #ifdef ENABLE_AKG
@@ -30,6 +30,10 @@
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/cuda_env_checker.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -40,7 +44,7 @@ void SetGpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<ke
     return;
   }
 
-  auto kernel_attr = kernel::GetKernelAttrFromNode(apply_kernel);
+  auto kernel_attr = AnfAlgo::GetKernelAttrFromNode(apply_kernel);
   auto [is_match, index] = kernel::MatchKernelAttr(kernel_attr, kernel_attrs);
   if (kernel_attrs[0].GetSkipCheck()) {
     is_match = true;

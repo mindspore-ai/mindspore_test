@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fill_diagonal_cpu {
 class FillDiagonalCpuKernelMod : public NativeCpuKernelMod {
  public:
   FillDiagonalCpuKernelMod() = default;
@@ -45,6 +46,7 @@ class FillDiagonalCpuKernelMod : public NativeCpuKernelMod {
   float fill_value_;
   bool wrap_;
 };
+}  // namespace fill_diagonal_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

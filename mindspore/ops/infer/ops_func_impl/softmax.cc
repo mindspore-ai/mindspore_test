@@ -22,6 +22,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -63,14 +64,14 @@ int32_t SoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 TypePtrList SoftmaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const std::set<TypePtr> valid_types{kBFloat16, kFloat16, kFloat32, kFloat64};
   (void)CheckAndConvertUtils::CheckTypeValid("x", x_tensor->Dtype(), valid_types, primitive->name());
   return {x_tensor->Dtype()};
 }
 ShapeArray SoftmaxFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto axis_value_opt = GetArrayValue<int64_t>(input_values[kInputIndex1]);
   auto x_shape = x_tensor->shape();

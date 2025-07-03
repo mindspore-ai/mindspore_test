@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -119,7 +118,7 @@ def test_stack_graph_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_stack_graph_bool():
-    stack(np.bool)
+    stack(np.bool_)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -149,4 +148,4 @@ def test_stack_pynative_uint8():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_stack_pynative_bool():
-    stack_pynative(np.bool)
+    stack_pynative(np.bool_)

@@ -24,6 +24,8 @@ import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 class GroupNormNet(nn.Cell):
     def __init__(self, num_groups, num_channels):
@@ -65,6 +67,7 @@ def group_norm_forward_func(x):
 
 @test_utils.run_with_cell
 def group_norm_backward_func(x):
+    # pylint: disable=E1102
     return ops.grad(group_norm_forward_func, (0))(x)
 
 

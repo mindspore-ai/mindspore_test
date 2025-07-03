@@ -1,6 +1,5 @@
 import numpy as np
-import sys  
-import pytest 
+import pytest
 from mindspore import dtype as ms
 from mindspore import Tensor
 from mindspore import context
@@ -10,10 +9,9 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    pytest.skip("Not Support Parameter in FuncGraph Outputs.")
 
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)
@@ -43,7 +41,7 @@ def test_while_with_const_param_grad():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 
@@ -83,7 +81,7 @@ def test_while_with_variable_grad():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 
@@ -113,7 +111,7 @@ def test_while_with_param_forward():
             self.param = Parameter(Tensor(np.arange(2 * 2 * 2).reshape((2, 2, 2)), ms.float32), name="weight")
             self.zero = Tensor(np.zeros(([2, 2, 2])), ms.float32)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, idx, end, x):
             out = self.zero
             while idx < end:
@@ -149,7 +147,7 @@ def test_while_endless_case():
             self.param = Parameter(Tensor(np.arange(2 * 2 * 2).reshape((2, 2, 2)), ms.float32), name="weight")
             self.zero = Tensor(np.zeros(([2, 2, 2])), ms.float32)
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, idx, end, x):
             out = self.zero
             while idx < end:
@@ -200,7 +198,7 @@ def test_while_with_param_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -230,7 +228,7 @@ def test_while_with_param_forward_with_const_branch():
             self.zero = Tensor(np.zeros(([2, 2, 2])), ms.float32)
             self.reduce = P.ReduceSum()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, idx, end, x):
             out = self.zero
             while idx < end:
@@ -286,7 +284,7 @@ def test_while_opt_endless():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 
@@ -323,7 +321,7 @@ def test_no_while_call():
             self.zero = Tensor(np.zeros(([2, 2, 2])), ms.float32)
             self.reduce = P.ReduceSum()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, idx, end, x):
             out = self.zero
             if 2 > 1:
@@ -377,7 +375,7 @@ def test_while_with_param_grad_with_const_branch():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -429,7 +427,7 @@ def test_for_while_with_param_grad_with_const_branch():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -478,7 +476,7 @@ def test_for_while_with_param_grad_basic():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -526,7 +524,7 @@ def test_for_while_with_param_grad_normal():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -571,7 +569,7 @@ def test_while_with_param_basic_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -616,7 +614,7 @@ def test_while_with_param_basic_grad_mul():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -662,7 +660,7 @@ def test_while_with_param_basic_grad_two():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -713,7 +711,7 @@ def test_while_with_param_basic_grad_three():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -763,7 +761,7 @@ def test_while_with_param_grad_not_enter_while():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, c):
             return grad_by_list(self.net, self.weights)(a, b, c)
 
@@ -806,7 +804,7 @@ def test_with_param_if_by_if_grad_inputs():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_all(self.net)(*inputs)
 
@@ -855,7 +853,7 @@ def test_with_param_if_by_if_grad_parameter():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_by_list(self.net, self.weights)(*inputs)
 
@@ -899,7 +897,7 @@ def test_with_param_if_by_if_grad_param_excute_null():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_by_list(self.net, self.weights)(*inputs)
 
@@ -945,7 +943,7 @@ def test_if_by_if_return_inside_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             return grad_by_list(self.net, self.weights)(*inputs)
 
@@ -1116,7 +1114,7 @@ def test_for_with_if_by_if_forward():
             self.add = P.Add()
             self.sub = P.Sub()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, x):
             for _ in range(0, 4):
                 if a < b:
@@ -1155,7 +1153,7 @@ def test_for_with_if_by_if_forward_namespace():
             self.mul = P.Mul()
             self.div = P.RealDiv()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, x):
             for _ in range(0, 6):
                 if a < b:
@@ -1244,7 +1242,7 @@ def test_if_by_if_forward_all_const_branch():
             self.mul = P.Mul()
             self.div = P.RealDiv()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, a, b, x):
             add = P.Add()
             sub = P.Sub()
@@ -1301,7 +1299,7 @@ def test_if_const_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             a = 1
             b = 2
@@ -1340,7 +1338,7 @@ def test_if_by_if_const_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             a = 1
             b = 2
@@ -1383,7 +1381,7 @@ def test_while_const_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             a = 1
             while a > 1:
@@ -1420,7 +1418,7 @@ def test_if_by_while_const_grad():
             self.net = net
             self.weights = ParameterTuple(net.trainable_params())
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, *inputs):
             a = 1
             b = 2

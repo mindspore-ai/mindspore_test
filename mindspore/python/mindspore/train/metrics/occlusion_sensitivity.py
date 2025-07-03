@@ -36,12 +36,14 @@ class OcclusionSensitivity(Metric):
     most important for a network's classification.
 
     Occlusion sensitivity refers to how the predicted probability changes with the change of the occluded
-    part of an image. The higher the value in the output image is, the greater the decline of certainty, indicating
+    part of an image. The higher the value in the output image is, the greater the certainty decline
+    of the category after masking, indicating
     that the occluded area is more important in the decision-making process.
 
     Args:
         pad_val (float): The padding value of the occluded part in an image. Default: ``0.0`` .
-        margin (Union[int, Sequence]): Create a cuboid / cube around the voxel you want to occlude. Default: ``2`` .
+        margin (Union[int, Sequence]): Create a cuboid / cube size of pixel points
+                                       around the voxel you want to occlude. Default: ``2`` .
         n_batch (int): number of images in a batch. Default: ``128`` .
         b_box (Sequence): Bounding box on which to perform the analysis. The output image will also match in size.
                           There should be a minimum and maximum for all dimensions except batch:

@@ -110,7 +110,7 @@ def test_ms_syntax_operator_logic_tensor_1_float_and_tensor_1_int():
     """
     with pytest.raises(TypeError, match="Cannot join the return values of different branches"):
         net = LogicAnd()
-        x = Tensor(np.ones([1], np.float))
+        x = Tensor(np.ones([1], np.float_))
         y = Tensor(np.zeros([1], np.int32))
         ret = net(x, y)
         print(ret)
@@ -196,6 +196,7 @@ def test_ms_syntax_operator_logic_list_int_and_list_int():
     Description: test logic and operator.
     Expectation: No exception
     """
+    context.set_context(jit_level='O0')
     net = LogicAnd()
     ret = net([1, 2, 3], [3, 2, 1])
     assert ret == [3, 2, 1]

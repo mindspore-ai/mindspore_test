@@ -16,11 +16,12 @@
 #include "kernel/ascend/opapi/aclnn/batch_matmul_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace batch_matmul {
 void BMMAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   bool trans_a = inputs[kIndex2]->GetValueWithCheck<bool>();
@@ -58,5 +59,6 @@ bool BMMExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 
 MS_ACLNN_KERNEL_FACTORY_REG(BatchMatMulExt, BMMExtAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(BatchMatMul, BMMAclnnKernelMod);
+}  // namespace batch_matmul
 }  // namespace kernel
 }  // namespace mindspore

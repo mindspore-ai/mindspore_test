@@ -17,8 +17,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
-  !defined(ANDROID)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
 Status MonitorSubprocess(int pid) {
   CHECK_FAIL_RETURN_UNEXPECTED(pid != -1, "[Internal ERROR] The subprocess id is -1.");
   // get the state changes in a child of the calling process

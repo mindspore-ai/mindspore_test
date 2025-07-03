@@ -14,8 +14,8 @@
 # ============================================================================
 import numpy as np
 import pytest
-import mindspore.nn as nn
-from mindspore import ops, Tensor, jit, context
+import mindspore as ms
+from mindspore import nn, ops, Tensor, jit, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from mindspore.common.api import _pynative_executor
@@ -500,3 +500,31 @@ def test_pynative_backward_hook_pack_and_unpack():
     input_x = ((Tensor(1.0),),)
     out = net(input_x)
     assert isinstance(out, tuple) and isinstance(out[0], tuple) and isinstance(out[0][0], Tensor)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_recompute():
+    """
+    Feature: PyNative backward hook function.
+    Description: Verify the correctness of backward hooks in recompute cell.
+    Expectation: The calculation result is correct.
+    """
+
+    class RecomputeNet(nn.Cell):
+        def construct(self, x):
+            return x * x
+
+    net = RecomputeNet()
+    net.recompute()
+
+    def double_hook(cell, grad_in, grad_out):
+        return grad_in[0] * 2
+
+    net.register_backward_hook(double_hook)
+    x = Tensor([1.0, 2.0], dtype=ms.float32)
+    grad_op = GradOperation(get_all=True)
+    grad_x = grad_op(net)(x)
+    assert np.allclose(grad_x[0].asnumpy(), np.array([4.0, 8.0], dtype=np.float32), 0.000001, 0.000001)

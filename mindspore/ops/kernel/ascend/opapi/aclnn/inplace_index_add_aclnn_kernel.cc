@@ -19,10 +19,11 @@
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_index_add {
 
 void InplaceIndexAddExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
-  alpha_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
+  alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
   axis_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   GetWorkspaceForResize(inputs[kIndex0], axis_, inputs[kIndex2], inputs[kIndex3], alpha_, inputs[kIndex0]);
 }
@@ -36,5 +37,6 @@ bool InplaceIndexAddExtAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceIndexAddExt, InplaceIndexAddExtAscend);
+}  // namespace inplace_index_add
 }  // namespace kernel
 }  // namespace mindspore

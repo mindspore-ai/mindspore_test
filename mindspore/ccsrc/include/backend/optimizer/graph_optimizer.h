@@ -23,7 +23,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT GraphOptimizer {
+class BACKEND_COMMON_EXPORT GraphOptimizer {
  public:
   explicit GraphOptimizer(const std::string &name = "graph_optimizer") : name_(name) {}
   virtual ~GraphOptimizer() = default;

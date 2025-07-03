@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+from tests.security_utils import security_off_wrap
 
 import numpy as np
 import pytest
@@ -23,7 +24,6 @@ import mindspore.numpy as ms_np
 from mindspore.ops import operations as P
 import mindspore.context as context
 import mindspore as ms
-from tests.security_utils import security_off_wrap
 
 
 class PrintNetOneInput(nn.Cell):
@@ -130,7 +130,7 @@ def test_print_multiple_types(mode):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64,
-                                   np.bool, np.float64, np.float32, np.float16, np.complex64, np.complex128])
+                                   np.bool_, np.float64, np.float32, np.float16, np.complex64, np.complex128])
 def test_print_dtype(mode, dtype):
     """
     Feature: GPU Print op.

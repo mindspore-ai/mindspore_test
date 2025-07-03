@@ -17,10 +17,12 @@
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 
 #include <memory>
-
+#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {

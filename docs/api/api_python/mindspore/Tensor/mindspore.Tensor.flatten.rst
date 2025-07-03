@@ -1,7 +1,7 @@
 mindspore.Tensor.flatten
 ========================
 
-.. py:method:: mindspore.Tensor.flatten(start_dim=0, end_dim=-1)
+.. py:method:: mindspore.Tensor.flatten(start_dim=0, end_dim=-1) -> Tensor
 
     沿着从 `start_dim` 到 `end_dim` 的维度，对输入Tensor进行展平。
 
@@ -17,7 +17,7 @@ mindspore.Tensor.flatten
         - **ValueError** - 规范化后， `start_dim` 大于 `end_dim` 。
         - **ValueError** - `start_dim` 或 `end_dim` 不在 [-self.dim, self.dim-1] 范围内。
 
-    .. py:method:: mindspore.Tensor.flatten(order='C', *, start_dim=0, end_dim=-1)
+    .. py:method:: mindspore.Tensor.flatten(order='C', *, start_dim=0, end_dim=-1) -> Tensor
         :noindex:
 
     沿着从 `start_dim` 到 `end_dim` 的维度，对输入Tensor进行展平。

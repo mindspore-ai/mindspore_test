@@ -23,11 +23,12 @@
 #include <map>
 #include <algorithm>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace in_top_k_cpu {
 class InTopKCpuKernelMod : public NativeCpuKernelMod {
  public:
   InTopKCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class InTopKCpuKernelMod : public NativeCpuKernelMod {
   size_t inner_size_{1};
   int64_t k_{1};
 };
+}  // namespace in_top_k_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_IN_TOP_K_CPU_KERNEL_H_

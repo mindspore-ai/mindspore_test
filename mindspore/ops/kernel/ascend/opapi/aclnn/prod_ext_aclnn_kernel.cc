@@ -20,18 +20,19 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace prod_ext {
 void ProdExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   const auto axis_opt = inputs[kIndex1]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (axis_opt.has_value() && axis_opt.value().size() == 1) {
     axis_ = axis_opt.value()[0];
-    keep_dims_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
+    keep_dims_ = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex2]);
     is_all_reduce_ = false;
   } else {
     is_all_reduce_ = true;
@@ -60,5 +61,6 @@ bool ProdExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ProdExt, ProdExtAscend);
+}  // namespace prod_ext
 }  // namespace kernel
 }  // namespace mindspore

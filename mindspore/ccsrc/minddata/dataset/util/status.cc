@@ -20,11 +20,7 @@
 #include <string>
 #include "./securec.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/task_manager.h"
-#else
-#include "minddata/dataset/util/log_adapter.h"
-#endif
 
 namespace mindspore {
 namespace dataset {

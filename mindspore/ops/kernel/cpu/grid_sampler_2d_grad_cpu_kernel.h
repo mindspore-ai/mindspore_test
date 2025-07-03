@@ -27,8 +27,8 @@
 #include <functional>
 #include <utility>
 #include <tuple>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/grid_sampler_2d_grad.h"
 
 namespace mindspore {
@@ -42,6 +42,7 @@ const int64_t hSix = 6;
 const int64_t hSeven = 7;
 const int64_t hEight = 8;
 namespace kernel {
+namespace grid_sampler_2d_grad_cpu {
 enum class GridSamplerInterpolation { Bilinear, Nearest };
 enum class GridSamplerPadding { Zeros, Border, Reflection };
 
@@ -978,6 +979,7 @@ static inline void GridSampler2DGridSliceIterator(const TensorAcc<T, 3> &GridSli
     }
   }
 }
+}  // namespace grid_sampler_2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

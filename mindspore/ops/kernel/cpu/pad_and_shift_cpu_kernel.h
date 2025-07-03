@@ -19,11 +19,12 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace pad_and_shift_cpu {
 class PadAndShiftCpuKernelMod : public NativeCpuKernelMod {
  public:
   PadAndShiftCpuKernelMod() = default;
@@ -66,6 +67,7 @@ class PadAndShiftCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector input_shape_;
   TypeId input_x_dtype_{kTypeUnknown};
 };
+}  // namespace pad_and_shift_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

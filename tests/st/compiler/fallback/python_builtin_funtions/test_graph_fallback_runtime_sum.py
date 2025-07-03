@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 import numpy as np
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
@@ -29,7 +28,7 @@ def test_fallback_runtime_sum():
     Description: Test sum() in fallback runtime
     Expectation: No exception
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         return sum(x.asnumpy())
 

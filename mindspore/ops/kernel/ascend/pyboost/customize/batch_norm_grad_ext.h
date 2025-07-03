@@ -22,17 +22,17 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
-                                     const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
-                                     const std::optional<BaseTensorPtr> &running_mean_tensor,
-                                     const std::optional<BaseTensorPtr> &runnning_var_tensor,
-                                     const std::optional<BaseTensorPtr> &saved_mean_tensor,
-                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor, const BoolImmPtr &training,
+void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &dout_tensor,
+                                     const TensorPtr &input_tensor, const std::optional<TensorPtr> &weight_tensor,
+                                     const std::optional<TensorPtr> &running_mean_tensor,
+                                     const std::optional<TensorPtr> &runnning_var_tensor,
+                                     const std::optional<TensorPtr> &saved_mean_tensor,
+                                     const std::optional<TensorPtr> &saved_rstd_tensor, const BoolImmPtr &training,
                                      const FP32ImmPtr &eps, const ValueTuplePtr &output_mask);
 }  // namespace pyboost
 }  // namespace kernel

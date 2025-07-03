@@ -15,19 +15,20 @@
  */
 #include <memory>
 #include <algorithm>
+#include <string>
 #include "kernel/ascend/pyboost/customize/conv3d_ext.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/auto_generate/convolution.h"
-#include "kernel/common/pyboost/auto_generate/reshape.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/convolution.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/reshape.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
+bool Conv3DBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
   const auto dim_count_no_batch = num_spatial_dims + 1;
   const auto dim_count_batch = dim_count_no_batch + 1;
   auto origin_shape_dim = SizeToLong(input_shape.size());
@@ -40,16 +41,15 @@ bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_di
 }
 }  // namespace
 
-tensor::BaseTensorPtr Conv3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                               const BaseTensorPtr &weight_tensor,
-                                               const std::optional<BaseTensorPtr> &bias_tensor,
-                                               const ValueTuplePtr &stride, const ValueTuplePtr &pad,
-                                               const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
+tensor::TensorPtr Conv3DExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                           const TensorPtr &weight_tensor, const std::optional<TensorPtr> &bias_tensor,
+                                           const ValueTuplePtr &stride, const ValueTuplePtr &pad,
+                                           const ValueTuplePtr &dilation, const Int64ImmPtr &group) {
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, group);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, weight_tensor, bias_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   auto input_shape = input_tensor->shape();
-  auto is_batchify = ConvNDBatchify(input_shape, 3, "conv3d");
+  auto is_batchify = Conv3DBatchify(input_shape, 3, "conv3d");
 
   BoolImmPtr transposed_imm = std::make_shared<BoolImm>(false);
   ValueTuplePtr output_padding_vector_imm = std::make_shared<ValueTuple>(std::vector<ValuePtr>(
@@ -62,23 +62,23 @@ tensor::BaseTensorPtr Conv3DExtAscendCustomize(const std::shared_ptr<OpRunner> &
     op->set_outputs(convolution_op->outputs());
     return output_imm;
   } else {
-    std::vector<ValuePtr> expand_input_shape;
-    expand_input_shape.insert(expand_input_shape.begin(), std::make_shared<Int64Imm>(1));
+    std::vector<int64_t> expand_input_shape;
+    expand_input_shape.insert(expand_input_shape.begin(), 1);
     std::transform(input_shape.begin(), input_shape.end(), std::back_inserter(expand_input_shape),
-                   [](int64_t e) { return std::make_shared<Int64Imm>(e); });
+                   [](int64_t e) { return e; });
 
     auto reshape_op = CREATE_PYBOOST_OP(Reshape, op->device_context()->device_context_key_.device_name_);
-    auto expand_input_x_imm = reshape_op->Call(input_tensor, std::make_shared<ValueTuple>(expand_input_shape));
+    auto expand_input_x_imm = reshape_op->Call(input_tensor, expand_input_shape);
 
     auto output_imm = convolution_op->Call(expand_input_x_imm, weight_tensor, bias_tensor, stride, pad, dilation,
                                            transposed_imm, output_padding_vector_imm, group);
 
     auto output_imm_shape = output_imm->shape();
-    std::vector<ValuePtr> squeeze_output_shape;
+    std::vector<int64_t> squeeze_output_shape;
     for (int64_t i = 1; i < SizeToLong(output_imm_shape.size()); i++) {
-      squeeze_output_shape.emplace_back(std::make_shared<Int64Imm>(output_imm_shape[i]));
+      squeeze_output_shape.emplace_back(output_imm_shape[i]);
     }
-    auto squeeze_output_tensor = reshape_op->Call(output_imm, std::make_shared<ValueTuple>(squeeze_output_shape));
+    auto squeeze_output_tensor = reshape_op->Call(output_imm, squeeze_output_shape);
     op->set_outputs(reshape_op->outputs());
     return squeeze_output_tensor;
   }

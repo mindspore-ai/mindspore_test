@@ -32,7 +32,7 @@ class VOCNode : public MappableSourceNode {
   /// \brief Constructor
   VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
           const std::map<std::string, int32_t> &class_indexing, bool decode, std::shared_ptr<SamplerObj> sampler,
-          std::shared_ptr<DatasetCache> cache, bool extra_metadata = false, py::function decrypt = py::none());
+          std::shared_ptr<DatasetCache> cache, bool extra_metadata = false, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor
   VOCNode(const std::string &dataset_dir, const std::string &task, const std::string &usage,
@@ -41,7 +41,7 @@ class VOCNode : public MappableSourceNode {
 #endif
 
   /// \brief Destructor
-  ~VOCNode() override = default;
+  ~VOCNode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node
@@ -89,13 +89,11 @@ class VOCNode : public MappableSourceNode {
   /// \return Status of the function
   Status to_json(nlohmann::json *out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json
   /// \param[in] json_obj The JSON object to be deserialized
   /// \param[out] ds Deserialized dataset
   /// \return Status The status code returned
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds);
-#endif
 
   /// \brief Sampler getter
   /// \return SamplerObj of the current node

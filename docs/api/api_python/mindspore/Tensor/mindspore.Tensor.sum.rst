@@ -1,7 +1,7 @@
 mindspore.Tensor.sum
 ====================
 
-.. py:method:: mindspore.Tensor.sum(dim=None, keepdim=False, *, dtype=None)
+.. py:method:: mindspore.Tensor.sum(dim=None, keepdim=False, *, dtype=None) -> Tensor
 
     计算指定维度上Tensor元素的总和。
 
@@ -23,7 +23,7 @@ mindspore.Tensor.sum
         - **ValueError** - 如果 `dim` 没有在 :math:`[-self.ndim, self.ndim)` 范围中。
         - **TypeError** - 如果 `keepdim` 不是bool。
 
-    .. py:method:: mindspore.Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None)
+    .. py:method:: mindspore.Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None) -> Tensor
         :noindex:
 
     返回指定维度上数组元素的总和。
@@ -45,5 +45,5 @@ mindspore.Tensor.sum
         - **TypeError** - input不是Tensor， `axis` 不是整数、整数元组、整数列表或Tensor， `keepdims` 不是整数，或者 `initial` 不是标量。
         - **ValueError** - 任意 `axis` 超出范围或存在重复的 `axis` 。
 
-    其他API参考：
+    .. seealso::
         - :func:`mindspore.Tensor.cumsum` ：返回沿给定 `axis` 的元素累加和。

@@ -15,32 +15,30 @@
  */
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "include/common/utils/utils.h"
-#include "frontend/expander/bprop/common_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "grad/grad_utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradImplementationsOps)
 REG_BPROP_BUILDER("Load").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto u_monad = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto u_monad = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {dout, ib->OutZeros(u_monad)};
 });
 
 REG_BPROP_BUILDER("UpdateState").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto u_monad = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex3);
+  auto u_monad = ib->GetInput(i0);
+  auto dout = ib->GetInput(i3);
   return {ib->OutZeros(u_monad), dout};
 });
 
 REG_BPROP_BUILDER("Depend").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
-  auto param = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
+  auto param = ib->GetInput(i1);
+  auto dout = ib->GetInput(i3);
   return {dout, ib->OutZeros(param)};
 });
 
 REG_BPROP_BUILDER("TensorMove").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto dout = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(i2);
   return {dout};
 });
 REG_BPROP_BUILDERS_END

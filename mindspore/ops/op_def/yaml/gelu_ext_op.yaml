@@ -1,0 +1,16 @@
+#operator gelu_ext
+gelu_ext:
+    args:
+        input:
+            dtype: tensor
+        approximate:
+            dtype: int
+            default: "'none'"
+            arg_handler: str_to_enum
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True

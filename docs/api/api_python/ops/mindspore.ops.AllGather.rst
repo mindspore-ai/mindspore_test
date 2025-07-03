@@ -1,4 +1,4 @@
-﻿mindspore.ops.AllGather
+mindspore.ops.AllGather
 ========================
 
 .. py:class:: mindspore.ops.AllGather(group=GlobalComm.WORLD_COMM_GROUP)
@@ -28,7 +28,7 @@
         .. include:: mindspore.ops.comm_note.rst
 
         该样例需要在2卡环境下运行。
-    
+
     教程样例：
         - `分布式集合通信原语 - AllGather
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/ops/communicate_ops.html#allgather>`_

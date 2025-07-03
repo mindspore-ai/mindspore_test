@@ -22,6 +22,7 @@
 #include <vector>
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
@@ -41,14 +42,14 @@ constexpr size_t DEFAULT_TENSOR_SLICE_ALIGNMENT_SIZE = 16;
 #define DEFAULT_ELEMENTWISE_OP_STRA_FOLLOW false
 #define DEFAULT_IS_MULTI_SUBGRAPHS false
 #define INFERENCE_PHASE 1
-#define DEFAULT_TRIANGLE_STAR_STRATEGY_OVERWRITE true;
+#define DEFAULT_TRIANGLE_STAR_STRATEGY_OVERWRITE true
 #define DEFAULT_DP_ALGO_ENABLE_APPROX false
 constexpr float DEFAULT_DP_ALGO_APPROX_EPSILON = 0.1;
 constexpr float DEFAULT_RP_MATMUL_MEM_COEF = 0.1;
 #define DEFAULT_DP_ALGO_SINGLE_LOOP false
 constexpr int64_t TRAINING_PHASE = 0;
 
-class CostModelContext {
+class FRONTEND_EXPORT CostModelContext {
  public:
   ~CostModelContext() = default;
   CostModelContext(const CostModelContext &) = delete;

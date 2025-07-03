@@ -16,27 +16,19 @@
 
 #include "kernel/ascend/pyboost/customize/identity.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/customize/identity.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/customize/identity.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl/acl_kernel_mod.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void FillHostInfoForAclOp(const tensor::BaseTensorPtr &tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  auto address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  if (!address->kernel_tensor()->host_info_exist()) {
-    address->kernel_tensor()->SetHostInfo(std::make_shared<abstract::TensorShape>(tensor->shape()),
-                                          std::make_shared<TensorType>(tensor->Dtype()), nullptr);
-  }
-}
-
-void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, x_tensor]() {
     MS_LOG(DEBUG) << "Run device task Identity start";
@@ -47,9 +39,12 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     // Malloc for input tensors
     PyBoostUtils::MallocOpInputs(device_context, x_tensor);
     // Malloc for output tensors
-    auto launch_device_address = runtime::DeviceAddressUtils::CreateDeviceAddress(
+    auto output_kernel_tensor = runtime::DeviceAddressUtils::CreateKernelTensor(
       op->device_context(), outputs[0], x_tensor->storage_info()->ori_shape, op->stream_id());
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto launch_device_address = output_kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(launch_device_address);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    launch_device_address->GetSize(), launch_device_address.get());
     if (!device_context->device_res_manager_->AllocateMemory(launch_device_address.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
@@ -57,16 +52,22 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
 
     auto identity_kernel = std::make_shared<kernel::AclKernelMod>();
     auto input_x_address = std::dynamic_pointer_cast<device::DeviceAddress>(x_tensor->device_address());
-    if (!input_x_address->kernel_tensor()->host_info_exist()) {
-      input_x_address->kernel_tensor()->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
-                                                    std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
+    auto abs = x_tensor->ToAbstract()->Broaden();
+    MS_EXCEPTION_IF_NULL(abs);
+    auto input_kernel_tensor = std::make_shared<KernelTensor>(abs->GetShape(), abs->GetType(), nullptr);
+    input_kernel_tensor->set_device_address(input_x_address);
+    input_kernel_tensor->set_host_shape(x_tensor->shape());
+    if (!input_kernel_tensor->host_info_exist()) {
+      input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
+                                       std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
     }
-    if (!launch_device_address->kernel_tensor()->host_info_exist()) {
-      launch_device_address->kernel_tensor()->SetHostInfo(std::make_shared<abstract::TensorShape>(output_shape),
-                                                          std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);
+
+    if (!output_kernel_tensor->host_info_exist()) {
+      output_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(output_shape),
+                                        std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);
     }
-    auto input_kernel_tensors = {input_x_address->kernel_tensor().get()};
-    auto output_kernel_tensors = {launch_device_address->kernel_tensor().get()};
+    auto input_kernel_tensors = {input_kernel_tensor.get()};
+    auto output_kernel_tensors = {output_kernel_tensor.get()};
     if (!std::static_pointer_cast<KernelMod>(identity_kernel)
            ->Init(prim::kPrimIdentity, input_kernel_tensors, output_kernel_tensors)) {
       MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#Initialize acl kernel op[Identity] failed.";
@@ -83,8 +84,9 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
     }
     auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
 
-    auto workspace_address = PyBoostUtils::CreateWorkSpaceDeviceAddress(identity_kernel, device_context, "Identity");
-    auto workspaces = PyBoostUtils::GetKernelTensorFromAddress(workspace_address);
+    auto workspace_kernel_tensors =
+      PyBoostUtils::CreateWorkSpaceKernelTensors(identity_kernel, device_context, "Identity");
+    auto workspaces = PyBoostUtils::GetRawKernelTensor(workspace_kernel_tensors);
     if (!identity_kernel->Launch(input_kernel_tensors, workspaces, output_kernel_tensors, stream_ptr)) {
       MS_LOG(EXCEPTION) << "Launch kernel identity failed";
     }
@@ -97,7 +99,7 @@ void IdentityCustomizeCallWithoutContigous(const std::shared_ptr<OpRunner> &op, 
   }));
 }
 
-void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, x_tensor]() {
     MS_LOG(DEBUG) << "Run device task Identity start";
@@ -113,8 +115,27 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensor
     auto identity_kernel = std::make_shared<kernel::AclKernelMod>();
     auto input_x_address = std::dynamic_pointer_cast<device::DeviceAddress>(x_tensor->device_address());
     auto output_address = std::dynamic_pointer_cast<device::DeviceAddress>(outputs[0]->device_address());
-    auto input_kernel_tensors = {input_x_address->kernel_tensor().get()};
-    auto output_kernel_tensors = {output_address->kernel_tensor().get()};
+    auto x_abs = x_tensor->ToAbstract()->Broaden();
+    MS_EXCEPTION_IF_NULL(x_abs);
+    auto input_kernel_tensor = std::make_shared<KernelTensor>(x_abs->GetShape(), x_abs->GetType(), nullptr);
+    input_kernel_tensor->set_device_address(input_x_address);
+    input_kernel_tensor->set_host_shape(x_tensor->shape());
+    if (!input_kernel_tensor->host_info_exist()) {
+      input_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(x_tensor->shape()),
+                                       std::make_shared<TensorType>(x_tensor->Dtype()), nullptr);
+    }
+    auto out_abs = outputs[0]->ToAbstract()->Broaden();
+    MS_EXCEPTION_IF_NULL(out_abs);
+    auto output_kernel_tensor = std::make_shared<KernelTensor>(out_abs->GetShape(), out_abs->GetType(), nullptr);
+    output_kernel_tensor->set_device_address(output_address);
+    output_kernel_tensor->set_host_shape(outputs[0]->shape());
+    if (!output_kernel_tensor->host_info_exist()) {
+      output_kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(outputs[0]->shape()),
+                                        std::make_shared<TensorType>(outputs[0]->Dtype()), nullptr);
+    }
+
+    auto input_kernel_tensors = {input_kernel_tensor.get()};
+    auto output_kernel_tensors = {output_kernel_tensor.get()};
     if (!std::static_pointer_cast<KernelMod>(identity_kernel)
            ->Init(prim::kPrimIdentity, input_kernel_tensors, output_kernel_tensors)) {
       MS_LOG(EXCEPTION) << "#dmsg#Kernel build failed:#dmsg#Initialize acl kernel op[Identity] failed.";
@@ -131,8 +152,9 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensor
     }
     auto stream_ptr = device_context->device_res_manager_->GetStream(op->stream_id());
 
-    auto workspace_address = PyBoostUtils::CreateWorkSpaceDeviceAddress(identity_kernel, device_context, "Identity");
-    auto workspaces = PyBoostUtils::GetKernelTensorFromAddress(workspace_address);
+    auto workspace_kernel_tensors =
+      PyBoostUtils::CreateWorkSpaceKernelTensors(identity_kernel, device_context, "Identity");
+    auto workspaces = PyBoostUtils::GetRawKernelTensor(workspace_kernel_tensors);
     if (!identity_kernel->Launch(input_kernel_tensors, workspaces, output_kernel_tensors, stream_ptr)) {
       MS_LOG(EXCEPTION) << "Launch kernel identity failed";
     }
@@ -142,12 +164,10 @@ void IdentityCustomizeCall(const std::shared_ptr<OpRunner> &op, const BaseTensor
   }));
 }
 
-tensor::BaseTensorPtr IdentityAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+tensor::TensorPtr IdentityAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   OpRunner::InferOpOutput(op, x_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  FillHostInfoForAclOp(x_tensor);
-  FillHostInfoForAclOp(op->output(0));
 
   IdentityCall(op, x_tensor);
   return op->output(0);

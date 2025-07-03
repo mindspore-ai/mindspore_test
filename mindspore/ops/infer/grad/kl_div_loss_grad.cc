@@ -40,6 +40,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_k.h"
 
 namespace mindspore {
 namespace ops {
@@ -70,7 +71,8 @@ abstract::ShapePtr KLDivLossGradInferShape(const PrimitivePtr &primitive,
     }
     return std::make_shared<abstract::Shape>(shape_out);
   }
-
+  MS_EXCEPTION_IF_NULL(x_shape_ptr);
+  MS_EXCEPTION_IF_NULL(target_shape_ptr);
   if (!x_shape_ptr->IsDynamic() && !target_shape_ptr->IsDynamic()) {
     if (*x_shape != *target_shape) {
       MS_EXCEPTION(ValueError)

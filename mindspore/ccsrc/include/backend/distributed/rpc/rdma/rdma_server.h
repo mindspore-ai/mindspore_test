@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace distributed {
 namespace rpc {
-class BACKEND_EXPORT RDMAServer : public RPCServerBase {
+class BACKEND_COMMON_EXPORT RDMAServer : public RPCServerBase {
  public:
   explicit RDMAServer(bool enable_ssl = false, const ServerPortRange &port_range = {})
       : RPCServerBase(enable_ssl, port_range),

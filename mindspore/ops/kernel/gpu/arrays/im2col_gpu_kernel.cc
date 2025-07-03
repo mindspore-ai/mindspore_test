@@ -19,7 +19,7 @@
 #include <complex>
 #include "mindspore/ops/infer/im2col.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -113,8 +113,8 @@ class Adagrad(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        accum (float): The starting value for :math:`h`, must be zero or positive values. Default: ``0.1`` .
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Default: ``0.001`` .
+        accum (float, optional): The starting value for :math:`h`, must be zero or positive values. Default: ``0.1`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Default: ``0.001`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -130,13 +130,14 @@ class Adagrad(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        update_slots (bool): Whether the :math:`h` will be updated. Default: ``True`` .
-        loss_scale (float): Value for the loss scale. It must be greater than 0.0. In general, use the default value.
+        update_slots (bool, optional): Whether the :math:`h` will be updated. Default: ``True`` .
+        loss_scale (float, optional): Value for the loss scale. It must be greater than 0.0. In general,
+            use the default value.
             Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to False, then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
             Default: ``1.0`` .
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 

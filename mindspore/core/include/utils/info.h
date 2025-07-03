@@ -75,6 +75,8 @@ class Location {
   bool operator<(const Location &other) const;
 
  private:
+  bool ReadSectionDebugInfoFromFile(SourceLineTip tip, int start_line, std::stringstream &section_debug_info_ss);
+
   std::string file_name_;
   int line_;
   int column_;
@@ -113,6 +115,11 @@ class MS_CORE_API TraceManager {
   ///
   /// \return The current trace context.
   static TraceContextPtr CurrentContextInfo();
+
+  /// \brief Get the call stack of all trace contexts.
+  ///
+  /// \return All trace contexts in the call stack, with the top-of-stack element at the end of the std::vector.
+  static const std::vector<TraceContext> &trace_context_stack();
 
   /// \brief Debug trace with the given location.
   ///

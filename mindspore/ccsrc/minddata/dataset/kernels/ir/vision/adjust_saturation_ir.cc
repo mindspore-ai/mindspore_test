@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/adjust_saturation_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/adjust_saturation_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_adjust_saturation_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // AdjustSaturationOperation
 AdjustSaturationOperation::AdjustSaturationOperation(float saturation_factor, const std::string &device_target)
     : saturation_factor_(saturation_factor), device_target_(device_target) {}
@@ -47,7 +44,7 @@ std::shared_ptr<TensorOp> AdjustSaturationOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<AdjustSaturationOp> tensor_op = std::make_shared<AdjustSaturationOp>(saturation_factor_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppAdjustSaturationOp>(saturation_factor_);
 #endif
@@ -86,7 +83,6 @@ MapTargetDevice AdjustSaturationOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

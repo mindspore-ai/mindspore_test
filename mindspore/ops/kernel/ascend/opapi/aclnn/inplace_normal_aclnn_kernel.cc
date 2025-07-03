@@ -16,11 +16,12 @@
 #include "kernel/ascend/opapi/aclnn/inplace_normal_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_normal {
 float GetInputValueToFloat(const std::vector<KernelTensor *> &inputs, const size_t kIndex) {
   float value = 0;
   auto dtype_id = inputs[kIndex]->dtype_id();
@@ -52,8 +53,8 @@ void InplaceNormalAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
                                            const std::vector<KernelTensor *> &outputs) {
   mean_ = GetInputValueToFloat(inputs, kIndex1);
   std_ = GetInputValueToFloat(inputs, kIndex2);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   GetWorkspaceForResize(inputs[kIndex0], mean_, std_, seed_, offset_);
 }
@@ -65,5 +66,6 @@ bool InplaceNormalAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceNormal, InplaceNormalAscend);
+}  // namespace inplace_normal
 }  // namespace kernel
 }  // namespace mindspore

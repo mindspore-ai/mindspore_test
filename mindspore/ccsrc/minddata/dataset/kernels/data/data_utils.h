@@ -21,9 +21,7 @@
 #include <unordered_map>
 #include <vector>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/core/cv_tensor.h"
-#endif
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/core/tensor_row.h"

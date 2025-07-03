@@ -85,10 +85,11 @@ void CheckFlashAttentionScoreGradAttnMaskShape(const AbstractBasePtr &attn_mask,
     CheckFlashAttentionScoreGradInputShape(
       attn_mask, {kInputFASGradAttnMaskCompressionDim, kInputFASGradAttnMaskCompressionDim}, op_name, "attn_mask");
   } else {
-    auto is_attn_mask_optional = sparse_mode == kFAGSparseDefaultMask;
+    auto is_attn_mask_optional = (sparse_mode == kFAGSparseDefaultMask || sparse_mode == kFAGSparseAllMask);
     CheckFlashAttentionScoreGradInputShape(attn_mask,
                                            {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                             {batch_size, 1, q_seq_len, kv_seq_len},
+                                            {1, 1, q_seq_len, kv_seq_len},
                                             {q_seq_len, kv_seq_len}},
                                            op_name, "attn_mask", is_attn_mask_optional);
   }
@@ -233,9 +234,6 @@ BaseShapePtr FlashAttentionScoreGradFuncImpl::InferShape(const PrimitivePtr &pri
     int64_t q_seq_len = shape_info[kIndex1];
     int64_t kv_seq_len = shape_info[kIndex2];
 
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputDyIndex], query_shape, op_name, "dy");
-    CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputAttentionInIndex], query_shape, op_name,
-                                           "attention_in");
     CheckFlashAttentionScoreGradInputShape(input_args[kFASGradInputPseShiftIndex],
                                            {{batch_size, q_head_num, q_seq_len, kv_seq_len},
                                             {1, q_head_num, q_seq_len, kv_seq_len},
@@ -299,7 +297,7 @@ TypePtr FlashAttentionScoreGradFuncImpl::InferType(const PrimitivePtr &prim,
     (void)types1.emplace("softmax_out", input_args[kFASGradInputSoftmaxOutIndex]->GetType());
   }
   (void)types1.emplace("dy", input_args[kFASGradInputDyIndex]->GetType());
-  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types1, {kFloat16, kBFloat16}, op_name);
+  auto type = CheckAndConvertUtils::CheckTensorTypeSame(types1, {kFloat16, kBFloat16, kFloat32}, op_name);
   if (!types2.empty()) {
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types2, {kFloat32}, op_name);
   }

@@ -25,6 +25,7 @@
 #include "src/common/utils.h"
 #include "tools/converter/quantizer/quantize_util.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore {
 namespace lite {

@@ -28,8 +28,8 @@
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/anf_utils.h"
-#include "utils/ms_context.h"
 #include "utils/hashing.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 bool ValueToBool(const ValuePtr &v, bool *value) {
@@ -444,8 +444,8 @@ KernelTensorValuePtr ConvertValueToKernelTensorValue(const ValuePtr &value) {
   } else if (value->isa<ValueSequence>()) {
     auto value_seq = value->cast<ValueSequencePtr>();
     return ConvertSequenceToKernelTensorValue(value_seq);
-  } else if (value->isa<tensor::BaseTensor>()) {
-    auto tensor_ptr = value->cast<tensor::BaseTensorPtr>();
+  } else if (value->isa<tensor::Tensor>()) {
+    auto tensor_ptr = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_ptr);
     return std::make_shared<KernelTensorValue>(tensor_ptr->data_ptr(), tensor_ptr->type());
   } else if (value->isa<StringImm>()) {
@@ -555,11 +555,11 @@ ValuePtr CreateValueFromTensor(const tensor::TensorPtr &tensor) {
   return ret;
 }
 
-void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::BaseTensorPtr> *tensors) {
+void TensorValueToTensor(const ValuePtr &value, std::vector<tensor::TensorPtr> *tensors) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(tensors);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     tensors->emplace_back(tensor);
   } else if (value->isa<Scalar>()) {
@@ -686,6 +686,7 @@ ShapeVector BaseShapeToShape(const abstract::BaseShapePtr &base_shape) {
 }
 
 ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &attr_data_type) {
+  MS_EXCEPTION_IF_NULL(value);
   static std::set<std::string> kListDataType = {"listInt", "listStr", "listBool", "listFloat"};
   auto iter = kListDataType.find(attr_data_type);
   ValuePtr ret = value;
@@ -698,6 +699,15 @@ ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const std::string &att
   }
   return ret;
 }
+
+ValueTuplePtr PackBasicTypeToValue(const std::vector<int64_t> &val) {
+  std::vector<ValuePtr> val_vec;
+  std::transform(val.begin(), val.end(), std::back_inserter(val_vec),
+                 [](int64_t e) { return std::make_shared<Int64Imm>(e); });
+  return std::make_shared<ValueTuple>(val_vec);
+}
+
+Int64ImmPtr PackBasicTypeToValue(const int64_t &val) { return std::make_shared<Int64Imm>(val); }
 
 namespace {
 size_t GetHashId(int a, int b) { return a < b ? hash_combine(a, b) : hash_combine(b, a); }

@@ -13,24 +13,19 @@
 # limitations under the License.
 # ============================================================================
 """run mutable test"""
-import sys  
 import pytest 
 from mindspore.common import mutable
 from mindspore.ops import functional as F
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def is_mutable():
     output = mutable((Tensor([1]), Tensor([2])), True)
     return F.is_sequence_value_unknown(output), F.is_sequence_shape_unknown(output)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def not_mutable():
     output = mutable((Tensor([1]), Tensor([2])), False)
     return F.is_sequence_value_unknown(output), F.is_sequence_shape_unknown(output)
@@ -51,7 +46,6 @@ def test_mutable_case1(fun):
     assert unknown_shape
 
 
-@pytest.mark.skip(reason="pynative mode and graph mode, results is not equal")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('fun', [not_mutable])
 def test_mutable_case2(fun):

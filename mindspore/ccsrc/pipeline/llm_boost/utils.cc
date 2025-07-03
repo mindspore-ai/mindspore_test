@@ -13,26 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <memory>
 
 #include "pipeline/llm_boost/utils.h"
 #include "mindapi/base/format.h"
 #include "include/common/utils/utils.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pipeline {
-tensor::TensorPtr SetFormat(const py::object &py_tensor, const std::string &format_name) {
-  auto tensor = IsStubTensor(py_tensor) ? ConvertStubTensor(py_tensor) : py_tensor.cast<tensor::TensorPtr>();
+py::object SetFormat(const py::object &py_tensor, const std::string &format_name) {
+  auto tensor = tensor::ConvertToTensor(py_tensor);
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto tensor_py = tensor::PackTensorToPyObject(tensor);
   if (format_name != kOpFormat_ND && format_name != kOpFormat_FRAC_NZ) {
     MS_LOG(ERROR) << "The format " << format_name
                   << " is not supported. The format only supports 'ND' and 'FRACTAL_NZ'";
-    return tensor;
+    return tensor_py;
   }
   if (tensor->DataDim() <= 1) {
     MS_LOG(DEBUG) << "The dimension of tensor is less than or equal to 1, and not need to convert the format";
-    return tensor;
+    return tensor_py;
   }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -46,7 +50,7 @@ tensor::TensorPtr SetFormat(const py::object &py_tensor, const std::string &form
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
   if (device_address != nullptr) {
     device_address->set_format(format_name);
-    return tensor;
+    return tensor_py;
   }
 
   mindspore::Format format = mindspore::Format::ND;
@@ -59,7 +63,7 @@ tensor::TensorPtr SetFormat(const py::object &py_tensor, const std::string &form
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_from_persistent_mem(tensor->is_parameter());
   tensor->set_device_address(device_address);
-  return tensor;
+  return tensor_py;
 }
 }  // namespace pipeline
 }  // namespace mindspore

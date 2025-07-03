@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/irpass/arithmetic_simplify.h"
+#include "frontend/optimizer/irpass/prim_eliminate.h"
 #include "frontend/optimizer/irpass/pynative_no_grad_eliminate.h"
 #include "pipeline/jit/ps/action.h"
 
@@ -38,6 +39,9 @@
 #include "frontend/operator/ops.h"
 #include "include/common/utils/cse.h"
 #include "include/common/utils/convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace opt {

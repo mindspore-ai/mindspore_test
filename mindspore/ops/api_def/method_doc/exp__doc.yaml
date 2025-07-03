@@ -1,0 +1,8 @@
+exp_:
+    description: |
+        exp_() -> Tensor
+
+        Inplace version of :func:`mindspore.Tensor.exp`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.

@@ -19,11 +19,12 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace nllloss_2d {
+using TensorParams = device::ascend::TensorParams;
 
 class NLLLoss2dAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class NLLLoss2dAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 
+}  // namespace nllloss_2d
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <string>
 
 #include "mindapi/base/types.h"
 #include "ops/ops_func_impl/op_func_impl.h"
@@ -30,22 +31,25 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-
   int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   bool GeneralInferRegistered() const override { return true; }
 
  protected:
   struct Indexes {
-    size_t x = 0;
-    size_t weight = 1;
-    size_t group_list = 8;
-    size_t split_item = 12;
-    size_t group_type = 13;
+    int64_t x = 0;
+    int64_t weight = 1;
+    int64_t split_item_offset = -4;
+    int64_t group_type_offset = -3;
+    int64_t transpose_a_offset = -2;
+    int64_t transpose_b_offset = -1;
   } idxes_;
 
   virtual void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+    MS_LOG(EXCEPTION) << "Not implement exception";
+  }
+
+  virtual int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
 
@@ -61,15 +65,18 @@ class OPS_API GroupedMatmulBaseFuncImpl : public OpFuncImpl {
     return OP_CHECK_SUCCESS;
   }
 
+  virtual bool GetTransposeValue(const InferInfoPtrList &input_infos, int64_t transpose_index) const { return false; }
+
  private:
   std::pair<ShapeArray, ShapeArray> FetchInputAndWeightShapes(const PrimitivePtr &primitive,
                                                               const InferInfoPtrList &input_infos) const;
 
   void CheckInputAndWeightShapeForSingleOutput(const PrimitivePtr &primitive, const ShapeVector &x_shape,
-                                               const ShapeVector &w_shape, int64_t group_type) const;
+                                               const ShapeVector &w_shape, int64_t group_type, bool transpose_b) const;
 
   ShapeArray InferShapeForSingleOutput(const PrimitivePtr &primitive, const ShapeArray &x_shapes,
-                                       const ShapeArray &w_shapes, int64_t group_list_size, int64_t group_type) const;
+                                       const ShapeArray &w_shapes, int64_t group_list_size, int64_t group_type,
+                                       bool transpose_b, bool is_int4 = false) const;
 
   void CheckInputAndWeightShapeForMultiOutput(const PrimitivePtr &primitive, const ShapeVector &x_shape,
                                               const ShapeVector &w_shape, size_t i) const;

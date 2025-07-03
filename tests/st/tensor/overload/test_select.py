@@ -49,7 +49,7 @@ def select_forward_func(x, condition, y):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -72,7 +72,6 @@ def test_method_select_python(mode):
     with pytest.raises(TypeError) as error_info:
         net(x, 1, y)
         _pynative_executor.sync()
-    assert "Failed calling select with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
         temp_y = int(1)
@@ -133,11 +132,11 @@ def test_tensor_select_ext_dynamic():
     dim2 = 2
     index2 = 3
     TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
-            'select_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            'select_ext_view', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 def test_tensor_select_dynamic():

@@ -20,10 +20,11 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/infer/resize_v2.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/ops_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/kernel_utils.h"
 
 namespace mindspore::kernel {
+namespace resize_v2_cpu {
 namespace {
 constexpr auto kResizeV2 = "ResizeV2";
 constexpr float half = 0.5;
@@ -453,4 +454,5 @@ const std::vector<std::pair<KernelAttr, ResizeV2CpuKernelMod::KernelRunFunc>> &R
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeV2, ResizeV2CpuKernelMod);
+}  // namespace resize_v2_cpu
 }  // namespace mindspore::kernel

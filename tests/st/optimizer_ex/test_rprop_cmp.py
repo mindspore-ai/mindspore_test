@@ -11,6 +11,8 @@ from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 
+mindspore.set_context(jit_level="O0")
+
 class Network(nn.Cell):
     def __init__(self, lin_weight, lin_bias):
         super().__init__()

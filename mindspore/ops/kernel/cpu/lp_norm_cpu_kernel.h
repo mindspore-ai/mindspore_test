@@ -22,11 +22,12 @@
 #include <map>
 #include <string>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lp_norm_cpu {
 class LpNormCpuKernelMod : public NativeCpuKernelMod {
  public:
   LpNormCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class LpNormCpuKernelMod : public NativeCpuKernelMod {
   std::vector<size_t> physical_indexes_;
   static std::vector<std::pair<KernelAttr, LpNromFunc>> func_list_;
 };
+}  // namespace lp_norm_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

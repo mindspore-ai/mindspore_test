@@ -21,12 +21,12 @@ from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get
     _get_world_rank_from_group_rank_helper, _get_group_rank_from_world_rank_helper, \
     _create_group_helper, _destroy_group_helper, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
     MCCL_WORLD_COMM_GROUP, DEVICE_TO_BACKEND, _get_local_rank_helper, _get_local_size_helper, GlobalComm, \
-    _check_mpi_envs, _set_elegant_exit_handle, _get_group_ranks
+    _check_mpi_envs, _set_elegant_exit_handle, _get_group_ranks, _get_comm_name_helper, _comm_switch_nic_helper
 from mindspore._c_expression import init_hccl, finalize_hccl, init_cluster, MSContext, ms_ctx_param
 from mindspore.hal.device import is_initialized
 
 __all__ = ["init", "release", "get_rank", "get_local_rank", "get_group_size",
-           "get_local_rank_size", "get_world_rank_from_group_rank",
+           "get_local_rank_size", "get_world_rank_from_group_rank", "get_comm_name",
            "get_group_rank_from_world_rank", "create_group", "destroy_group", "get_process_group_ranks",
            "HCCL_WORLD_COMM_GROUP", "NCCL_WORLD_COMM_GROUP", "MCCL_WORLD_COMM_GROUP"]
 
@@ -105,6 +105,20 @@ def _set_envs():
         os.environ["RANK_SIZE"] = str(get_group_size())
 
 
+def _check_hccl():
+    """Check hcll is installed needed."""
+    if not GlobalComm.CHECK_ENVS:
+        return
+    try:
+        from hccl import sys_version as hccl_version
+        v = '.'.join(hccl_version.__sys_version__.split('.')[0:2])
+        logger.debug(f"\"hccl\" wheel package version {v} is installed")
+    except Exception as e:
+        logger.error(f"Check hccl failed: {e}")
+        raise RuntimeError("\"hccl\" wheel was not installed correctly. For details, refer to the installation "
+                           "guidelines: https://www.mindspore.cn/install") from e
+
+
 def init(backend_name=None):
     """
     Initialize distributed backends required by communication services, e.g. ``"hccl"`` / ``"nccl"`` / ``"mccl"``.
@@ -140,7 +154,7 @@ def init(backend_name=None):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init
@@ -185,6 +199,7 @@ def init(backend_name=None):
         if not host_init:
             _check_parallel_envs()
         GlobalComm.BACKEND = Backend("hccl")
+        _check_hccl()
         init_hccl()
         GlobalComm.WORLD_COMM_GROUP = HCCL_WORLD_COMM_GROUP
     elif backend_name == "nccl":
@@ -226,7 +241,7 @@ def release():
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init, release
@@ -265,7 +280,7 @@ def get_rank(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> from mindspore.communication import init, get_rank
@@ -310,13 +325,12 @@ def get_local_rank(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_rank, get_local_rank
         >>> ms.set_device(device_target="Ascend")
-        >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> world_rank = get_rank()
         >>> local_rank = get_local_rank()
@@ -358,12 +372,11 @@ def get_group_size(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_group_size
-        >>> ms.set_auto_parallel_context(device_num=8)
         >>> init()
         >>> group_size = get_group_size()
         >>> print("group_size is: ", group_size)
@@ -405,13 +418,12 @@ def get_local_rank_size(group=GlobalComm.WORLD_COMM_GROUP):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
         >>> from mindspore.communication import init, get_local_rank_size
         >>> ms.set_device(device_target="Ascend")
-        >>> ms.set_auto_parallel_context(device_num=16) # 2 server, each server with 8 NPU.
         >>> init()
         >>> local_rank_size = get_local_rank_size()
         >>> print("local_rank_size is: ", local_rank_size)
@@ -455,7 +467,7 @@ def get_world_rank_from_group_rank(group, group_rank_id):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -510,7 +522,7 @@ def get_group_rank_from_world_rank(world_rank_id, group):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -533,7 +545,7 @@ def get_group_rank_from_world_rank(world_rank_id, group):
     return _get_group_rank_from_world_rank_helper(world_rank_id=world_rank_id, group=group)
 
 
-def create_group(group, rank_ids):
+def create_group(group, rank_ids, options=None):
     """
     Create a user collective communication group.
 
@@ -546,6 +558,18 @@ def create_group(group, rank_ids):
     Args:
         group (str): The name of the communication group to be created.
         rank_ids (list): A list of device IDs.
+        options (GroupOptions, optional): Additional communication group configuration parameters.
+            The backend will automatically select supported parameters and apply them during group
+            initialization. i.e. for the ``HCCL`` backend, ``hccl_config`` can be specified so that
+            group initialization configurations can be applied. Default is ``None``.
+
+            `GroupOptions` is defined as a class that can be instantiated as a python object.
+
+            .. code-block::
+
+                GroupOptions {
+                    hccl_config(dict)
+                }
 
     Raises:
         TypeError: If group is not a string or `rank_ids` is not a list.
@@ -562,26 +586,28 @@ def create_group(group, rank_ids):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
-        >>> from mindspore import set_context
-        >>> from mindspore import ops
+        >>> from mindspore import set_context, ops
+        >>> from mindspore._c_expression import GroupOptions
         >>> from mindspore.communication import init, create_group, get_rank
         >>> set_context(mode=ms.GRAPH_MODE)
         >>> ms.set_device(device_target="Ascend")
         >>> init()
         >>> group = "0-7"
         >>> rank_ids = [0,7]
+        >>> options = GroupOptions()
+        >>> options.hccl_config = {"hccl_buffer_size": 400}
         >>> if get_rank() in rank_ids:
-        ...     create_group(group, rank_ids)
+        ...     create_group(group, rank_ids, options)
         ...     allreduce = ops.AllReduce(group)
     """
     if not isinstance(group, str):
         raise TypeError("For 'create_group', the argument 'group' must be type of string, "
                         "but got 'group' type : {}.".format(type(group)))
-    _create_group_helper(group, rank_ids)
+    _create_group_helper(group, rank_ids, options)
 
 
 def destroy_group(group):
@@ -611,7 +637,7 @@ def destroy_group(group):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
         >>> import mindspore as ms
@@ -631,6 +657,60 @@ def destroy_group(group):
         raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "
                         "but got 'group' type : {}.".format(type(group)))
     _destroy_group_helper(group)
+
+
+def get_comm_name(group=GlobalComm.WORLD_COMM_GROUP):
+    """
+    Get the communicator name of the specified collective communication group.
+
+    Note:
+        This method isn't supported in GPU and CPU versions of MindSpore.
+        This method should be used after init().
+
+    Args:
+        group (str): The communication group to work on. Normally, the group should be created by create_group,
+                     otherwise, using the default group. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+
+    Returns:
+        string, the inner communicator name of the group.
+
+    Raises:
+        TypeError: If group is not a string.
+        ValueError: If backend is invalid.
+        RuntimeError: If HCCL is not available or MindSpore is GPU/CPU version.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> import mindspore as ms
+        >>> from mindspore.communication import init, create_group, get_rank, get_comm_name
+        >>> ms.set_device(device_target="Ascend")
+        >>> init()
+        >>> world_group_comm_name = get_comm_name()
+        >>> group = "0-7"
+        >>> rank_ids = [0,7]
+        >>> if get_rank() in rank_ids:
+        ...     create_group(group, rank_ids)
+        ...     customizd_group_comm_name = get_comm_name(group)
+        ...     print("comm_name of customizd group is ", customizd_group_comm_name)
+        >>> print("comm_name of world group is: ", world_group_comm_name)
+        comm_name of customizd group is: 11.22.33.44%eth0_60000_0_0123456789101112
+        comm_name of world group is: 11.22.33.44%eth0_60000_0_1211109876543210
+    """
+    if not isinstance(group, str):
+        raise TypeError("For 'get_comm_name', the argument 'group' must be type of string, "
+                        "but got 'group' type : {}.".format(type(group)))
+    return _get_comm_name_helper(group=_get_group(group))
 
 
 def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
@@ -659,7 +739,7 @@ def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -673,4 +753,62 @@ def get_process_group_ranks(group=GlobalComm.WORLD_COMM_GROUP):
         [0, 1, 2, 3]
 
     """
-    return _get_group_ranks(group)
+    return _get_group_ranks(group=_get_group(group))
+
+
+def _comm_switch_nic(global_ranks, use_backup):
+    """Switch network interface card between the primary and the secondary NIC.
+
+    Args:
+        global_ranks (list[int], tuple[int]): list of integers. The global rank ids that need switch network interface .
+        use_backup (list[bool], tuple[int]): list of bool. For each rank id in global_ranks, determine whether to use
+            the backup network interface card. True means use, False means not use.
+
+    Returns:
+        bool, whether the network card switch is successful.
+            If one fails, return False. If all are successful, return True.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 4 devices.
+
+        >>> import numpy as np
+        >>> from mindspore.communication import init, _comm_switch_nic
+        >>> from mindspore.communication.management import _comm_switch_nic
+        >>>
+        >>> init()
+        >>> ret = _comm_switch_nic([0, 1], [True, False])
+        >>> print(ret)
+        True
+
+    """
+    max_rank = get_group_size() - 1
+    if not all(isinstance(i, (list, tuple)) for i in (global_ranks, use_backup)):
+        raise ValueError(f"For _comm_switch_nic, the args 'global_ranks' and 'use_backup' should be list or tuple, "
+                         f"but got 'global_ranks' type {type(global_ranks)}, 'use_backup' type {type(use_backup)}")
+    if not all(isinstance(rank, int) and not isinstance(rank, bool) and rank <= max_rank for rank in global_ranks):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'global_ranks' should be int number, and less "
+                         f"than {get_group_size()}, but got 'global_ranks' : {global_ranks}.")
+    if not all(isinstance(ub, bool) for ub in use_backup):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'use_backup' should be bool, but got "
+                         f"'use_backup' : {use_backup}.")
+    if len(set(global_ranks)) != len(global_ranks):
+        raise ValueError(f"For _comm_switch_nic, the all elements  in 'global_ranks' should be different, but got "
+                         f"'global_ranks' : {global_ranks}.")
+    if len(global_ranks) != len(use_backup):
+        raise ValueError(f"For _comm_switch_nic, the elements number in 'global_ranks' should be equal to 'use_backup',"
+                         f" but got 'global_ranks' {len(global_ranks)} elements: {global_ranks},"
+                         f" 'use_backup' {len(use_backup)} elements:  {use_backup},.")
+    return _comm_switch_nic_helper(global_ranks, use_backup)

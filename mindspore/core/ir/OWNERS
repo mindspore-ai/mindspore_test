@@ -1,12 +1,12 @@
 approvers:
-- zh_qh #
-- ginfung
+- ginfung #
 - liangzhibo
+- huangbingjian
+- Margaret_wangrui
+- zh_qh
 
 reviewers:
 - lanzhineng
-- Margaret_wangrui
-- huangbingjian
 - Liangcan-Li
 
 options:
@@ -18,42 +18,52 @@ files:
     - chujinjin
     - hwcaifubi
     - zjun3021
-    - zh_qh
     - ginfung
     - liangzhibo
+    - huangbingjian
+    - Margaret_wangrui
+    - zh_qh
 
   "base_tensor.*":
     approvers:
     - chujinjin
     - hwcaifubi
     - zjun3021
-    - zh_qh
     - ginfung
     - liangzhibo
+    - huangbingjian
+    - Margaret_wangrui
+    - zh_qh
 
   "meta_tensor.*":
     approvers:
     - chujinjin
     - hwcaifubi
     - zjun3021
-    - zh_qh
     - ginfung
     - liangzhibo
+    - huangbingjian
+    - Margaret_wangrui
+    - zh_qh
 
   "meta_grad_data.h":
     approvers:
     - chujinjin
     - hwcaifubi
     - zjun3021
-    - zh_qh
     - ginfung
     - liangzhibo
+    - huangbingjian
+    - Margaret_wangrui
+    - zh_qh
 
   "tensor_storage_info.h":
     approvers:
     - chujinjin
     - hwcaifubi
     - zjun3021
-    - zh_qh
     - ginfung
     - liangzhibo
+    - huangbingjian
+    - Margaret_wangrui
+    - zh_qh

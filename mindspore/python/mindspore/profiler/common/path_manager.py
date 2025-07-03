@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import glob
+import stat
 
 from mindspore import log as logger
 from mindspore.profiler.common.constant import FileConstant
@@ -369,3 +370,26 @@ class PathManager:
             msg = f"Invalid input path is a soft link: {path}"
             raise ProfilerPathErrorException(msg)
         return os.path.realpath(expanded_path)
+
+    @classmethod
+    def check_cann_lib_valid(cls, path: str) -> bool:
+        """
+        Function Description:
+           check if cann lib path is valid
+        Parameter:
+            path: the cann lib path to check
+        Return:
+            bool: True if the path is valid, False otherwise
+        """
+        lib_path = os.path.realpath(path)
+        if not os.path.exists(lib_path):
+            return False
+        if os.path.isdir(lib_path) or os.path.islink(lib_path):
+            return False
+        if bool(os.stat(lib_path).st_mode & stat.S_IWOTH):
+            return False
+        if os.name == 'nt':
+            return False
+        if os.stat(path).st_uid == 0 or os.stat(path).st_uid == os.getuid():
+            return True
+        return False

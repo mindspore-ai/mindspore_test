@@ -20,6 +20,7 @@
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::ops {
 BaseShapePtr SincFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -42,7 +43,7 @@ TypePtr SincFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   return input_type;
 }
 TypePtrList SincFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   const auto &input_type_id = x_tensor->Dtype()->type_id();
@@ -57,7 +58,7 @@ TypePtrList SincFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePt
   return {input_type};
 }
 ShapeArray SincFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
 }

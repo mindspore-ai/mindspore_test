@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace rolling_cpu {
 namespace {
 using rolling::Method;
 
@@ -308,5 +309,6 @@ std::vector<KernelAttr> RollingCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Rolling, RollingCpuKernelMod);
+}  // namespace rolling_cpu
 }  // namespace kernel
 }  // namespace mindspore

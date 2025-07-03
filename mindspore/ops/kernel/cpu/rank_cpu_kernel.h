@@ -21,12 +21,13 @@
 #include <limits>
 #include <tuple>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/op_base.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rank_cpu {
 class RankCpuKernelMod : public NativeCpuKernelMod {
  public:
   RankCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class RankCpuKernelMod : public NativeCpuKernelMod {
  private:
   int64_t input_shape_size;
 };
+}  // namespace rank_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_RANK_CPU_KERNEL_H_

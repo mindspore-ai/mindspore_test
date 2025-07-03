@@ -21,10 +21,11 @@
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inner_index {
 namespace {
 constexpr size_t kInnerIndexMinNum = 2;
 constexpr size_t kInnerIndexEmptyShape = 9;
@@ -69,5 +70,6 @@ bool InnerIndexAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(InnerIndex, InnerIndexAscend);
+}  // namespace inner_index
 }  // namespace kernel
 }  // namespace mindspore

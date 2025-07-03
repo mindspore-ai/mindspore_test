@@ -20,7 +20,6 @@
 #include <string>
 #include <set>
 
-#include "include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"

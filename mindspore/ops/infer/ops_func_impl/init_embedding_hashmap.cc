@@ -23,6 +23,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore {
 namespace ops {

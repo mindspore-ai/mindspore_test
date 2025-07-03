@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "include/transform/graph_ir/utils.h"
+#include "backend/ge_backend/graph_ir/utils.h"
 
 #include <string>
 #include <utility>
@@ -23,13 +23,14 @@
 #include "securec/include/securec.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "transform/graph_ir/df_graph_manager.h"
-#include "transform/graph_ir/op_adapter_map.h"
-#include "transform/graph_ir/op_adapter.h"
-#include "transform/graph_ir/op_adapter_desc.h"
-#include "transform/graph_ir/op_adapter_util.h"
+#include "backend/ge_backend/graph_ir/df_graph_manager.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_desc.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "graph/operator.h"
 #include "graph/operator_factory.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace ge {
 void Operator::InputRegister(char const *, char const *) {}
@@ -50,8 +51,7 @@ bool OperatorFactory::IsExistOp(const std::string &operator_type) { return true;
 bool OperatorFactory::IsExistOp(const char_t *const operator_type) { return true; }
 }  // namespace ge
 
-namespace mindspore {
-namespace transform {
+namespace mindspore::device::ascend {
 namespace {
 const size_t kErrorSize = 0;
 static std::map<MeDataType, size_t> datatype_size_map = {
@@ -121,5 +121,4 @@ GeDataType TransformUtil::ConvertDataType(const MeDataType &type) { return GeDat
 bool ConvertCheck(const AnfNodePtr &node) { return true; }
 void AclnnFinalize() {}
 void AclnnInit() {}
-}  // namespace transform
-}  // namespace mindspore
+}  // namespace mindspore::device::ascend

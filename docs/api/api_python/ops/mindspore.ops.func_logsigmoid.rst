@@ -3,9 +3,9 @@ mindspore.ops.logsigmoid
 
 .. py:function:: mindspore.ops.logsigmoid(x)
 
-    按元素计算logsigmoid激活函数。输入是任意维度的Tensor。
+    按元素计算LogSigmoid激活函数。输入是任意维度的Tensor。
 
-    logsigmoid定义为：
+    LogSigmoid定义为：
 
     .. math::
         \text{logsigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
@@ -18,7 +18,7 @@ mindspore.ops.logsigmoid
         :align: center
 
     参数：
-        - **x** (Tensor) - logsigmoid的输入，数据类型为float16或float32。shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意的附加维度。
+        - **x** (Tensor) - LogSigmoid的输入，数据类型为float16或float32。shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意的附加维度。
 
     返回：
         Tensor，数据类型和shape与 `x` 的相同。

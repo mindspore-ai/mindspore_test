@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@
 #include "utils/ms_context.h"
 #include "actor/actormgr.h"
 #include "runtime/pynative/op_executor.h"
-#include "pipeline/pynative/pynative_execute.h"
+#include "pynative/pynative_execute.h"
+#include "pipeline/jit/ps/executor/graph_executor_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "include/common/thread_pool.h"
 #include "include/common/pybind_api/api_register.h"

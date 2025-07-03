@@ -22,6 +22,7 @@
 #include <string>
 
 #include "distributed/persistent/storage/local_file.h"
+#include "distributed/persistent/storage/constants.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

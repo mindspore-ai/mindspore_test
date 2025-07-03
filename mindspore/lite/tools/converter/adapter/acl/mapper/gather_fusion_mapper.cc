@@ -22,13 +22,16 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_g.h"
 
 namespace mindspore {
 namespace lite {
 namespace {
 constexpr size_t kNameGatherInputNum = 4;
 }  // namespace
+using mindspore::ops::kNameGather;
 
+GatherMapper::GatherMapper() : PrimitiveMapper(kNameGather) {}
 STATUS GatherMapper::Mapper(const CNodePtr &cnode) {
   MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "Cnode is nullptr.");
   if (cnode->size() != kNameGatherInputNum) {

@@ -20,7 +20,7 @@ mindspore.ops.TripletMarginLoss
     .. math::
         d(x_i, y_i) = \left\lVert {\bf x}_i - {\bf y}_i \right\rVert_p
 
-    参数：        
+    参数：
         - **p** (int，可选) - 成对距离的范数。默认值： ``2`` 。
         - **eps** (float，可选) - 默认值： ``1e-6`` 。
         - **swap** (bool，可选) - 距离交换。默认值： ``False`` 。
@@ -31,14 +31,14 @@ mindspore.ops.TripletMarginLoss
           - ``"sum"``：计算输出元素的总和。
 
     输入：
-        - **x** (Tensor) - 从训练集随机选取的样本。数据类型为BasicType。
-        - **positive** (Tensor) - 与 `x` 为同一类的样本，数据类型与shape与 `x` 一致。
-        - **negative** (Tensor) - 与 `x` 为异类的样本，数据类型与shape与 `x` 一致。
-        - **margin** (Tensor) - 拉进 `a` 和 `p` 之间的距离，拉远 `a` 和 `n` 之间的距离。
+        - **x** (Tensor) - 从训练集随机选取的样本，数据类型为BasicType。
+        - **positive** (Tensor) - 与 `x` 为同一类的样本，数据类型和shape与 `x` 一致。
+        - **negative** (Tensor) - 与 `x` 为异类的样本，数据类型和shape与 `x` 一致。
+        - **margin** (Tensor) - 拉近 `a` 和 `p` 之间的距离，拉远 `a` 和 `n` 之间的距离。
 
 
     输出：
-        Tensor或Scalar，如果 `reduction` 为"none"，其shape为 :math:`(N)`。否则，将返回Scalar。
+        Tensor或Scalar，如果 `reduction` 为 ``"none"``，将返回Tensor，其shape为 :math:`(N)`，否则，将返回Scalar。
 
     异常：
         - **TypeError** -  `x` 、 `positive` 、 `negative` 或者 `margin` 不是Tensor。

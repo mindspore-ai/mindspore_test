@@ -14,7 +14,7 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -32,7 +32,7 @@ def generate_expect_forward_output(n, d=1.0):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ops_fftfreq_forward(mode):
     """
@@ -45,9 +45,9 @@ def test_ops_fftfreq_forward(mode):
     if mode == 'pynative':
         output = fftfreq_forward_func(n, d)
     elif mode == 'KBK':
-        output = (jit(fftfreq_forward_func, jit_config=JitConfig(jit_level="O0")))(n, d)
+        output = (jit(fftfreq_forward_func, jit_level="O0"))(n, d)
     else:
-        output = (jit(fftfreq_forward_func, jit_config=JitConfig(jit_level="O2")))(n, d)
+        output = (jit(fftfreq_forward_func, backend="GE"))(n, d)
     expect = generate_expect_forward_output(n, d)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 

@@ -33,7 +33,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -261,7 +261,7 @@ class SomasRegister {
   ~SomasRegister() = default;
 };
 
-#define REG_SOMAS(S, T, C) static const somas::SomasRegister g_##S##_reg(T, []() { return std::make_shared<C>(); });
+#define REG_SOMAS(S, T, C) static const somas::SomasRegister g_##S##_reg(T, []() { return std::make_shared<C>(); })
 }  // namespace somas
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_SOMAS_SOMAS_H_

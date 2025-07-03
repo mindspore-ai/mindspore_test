@@ -261,8 +261,6 @@ def test_c_map_randomness_repeatability_with_shards(set_seed_to=312, set_num_par
     ds.config.set_num_parallel_workers(original_num_parallel_workers)
 
 
-# Run this test in separate process since this test updates config settings
-@pytest.mark.forked
 @pytest.mark.parametrize("num_parallel_workers", (2, 4, 6))
 @pytest.mark.parametrize("num_samples", (1, 2, 5, 6))
 def test_python_map_mp_repeatability(num_parallel_workers, num_samples, set_seed_to=1605):
@@ -296,8 +294,6 @@ def test_python_map_mp_repeatability(num_parallel_workers, num_samples, set_seed
     ds.config.set_enable_shared_mem(original_enable_shared_mem)
 
 
-# Run this test in separate process since this test updates config settings
-@pytest.mark.forked
 def test_python_map_mp_seed_repeatability(set_seed_to=1337, set_num_parallel_workers_to=4, num_repeat=5):
     """
     Feature: Map op
@@ -425,7 +421,6 @@ def test_map_just_exchange_columns():
 
     for item in dataset2.create_tuple_iterator(output_numpy=True, num_epochs=1):
         assert len(item) == 3
-        print(item[0].shape, item[1].shape, item[2].shape)
         assert item[0].shape == (250, 250, 3)
         assert item[1].shape == ()
         assert item[2].shape == (300, 300, 3)
@@ -466,7 +461,6 @@ def test_map_multiprocessing_without_thread():
 
     count = 1
     for item in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
-        print("count: {}, type: {}, shape: {}".format(count, item[0].dtype, item[0].shape))
         assert item[0].dtype == np.float64
         assert item[0].shape == (50, 3, 655, 655)
         assert len(item) == 2
@@ -497,7 +491,6 @@ def test_map_multiprocessing_with_fixed_handle():
     for i in range(5):
         count = 0
         for item in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
-            print("count: {}, type: {}, shape: {}".format(count, item[0].dtype, item[0].shape))
             assert item[0].dtype == np.float64
             assert item[0].shape == (3, 65, 65)
             assert len(item) == 2
@@ -594,7 +587,6 @@ def test_map_multiprocessing_with_in_out_rowsize():
     for _ in range(3):
         count = 0
         for item in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
-            print("count: {}, type: {}, shape: {}".format(count, item[0].dtype, item[0].shape))
             assert item[0].dtype == np.float64
             assert item[0].shape == (3, 65, 65)
             assert len(item) == 2

@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import Tensor, mint, jit, JitConfig
+from mindspore import Tensor, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -39,7 +39,7 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
     return Tensor(data)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative'])
 def test_ops_select_ext(mode):
@@ -70,12 +70,12 @@ def test_ops_select_ext(mode):
             out_grad = select_ext_backward_func(ms.Tensor(x), dim, index)
         elif mode == 'KBK':
             ms.context.set_context(mode=ms.GRAPH_MODE)
-            output = (jit(select_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, index)
-            out_grad = (jit(select_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, index)
+            output = (jit(select_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, index)
+            out_grad = (jit(select_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, index)
         else:
             ms.context.set_context(mode=ms.GRAPH_MODE)
-            output = (jit(select_ext_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, index)
-            out_grad = (jit(select_ext_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, index)
+            output = (jit(select_ext_forward_func, backend="GE"))(ms.Tensor(x), dim, index)
+            out_grad = (jit(select_ext_backward_func, backend="GE"))(ms.Tensor(x), dim, index)
         expect = expect_list[i]
         expect_grad = expect_grad_list[i]
         np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
@@ -98,4 +98,4 @@ def test_select_ext_dynamic_shape():
     dim2 = 1
     index2 = 1
     TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
-            'select_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            'select_ext_view', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

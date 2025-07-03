@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace bincount_cpu {
 bool BincountCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
   constexpr size_t output_num = 1;
@@ -57,7 +58,8 @@ void BincountTask(const std::vector<KernelTensor *> &inputs, const std::vector<K
   for (int32_t i = 0; i < num_bins; i++) {
     output_data[i] = 0;
   }
-  if (input_weights_sizes.size() != 0 && input_weights_sizes[0] == 0) {
+  if (input_weights_sizes.size() != 0 &&
+      std::find(input_weights_sizes.begin(), input_weights_sizes.end(), 0) != input_weights_sizes.end()) {
     for (size_t i = 0; i < data_num; i++) {
       T_in value = bin_array[i];
       if (value < num_bins) {
@@ -142,5 +144,6 @@ std::vector<KernelAttr> BincountCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Bincount, BincountCpuKernelMod);
+}  // namespace bincount_cpu
 }  // namespace kernel
 }  // namespace mindspore

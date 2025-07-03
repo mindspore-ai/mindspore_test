@@ -15,15 +15,18 @@
  */
 
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
-#include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "infer/renorm.h"
 #include "infer/scatter_update.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace expander {
@@ -855,10 +858,10 @@ REG_FALLBACK_BUILDER("Index").SetBody(BODYFUNC(ib) {
       }
       // The InnerNonZero(input) output shape is (rank) * (non zero number)
       auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
-      auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
-      // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
+      auto dim = ib->Value<int64_t>(0);
       for (int64_t j = 0; j < rank; j++) {
-        new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+        auto select_tensor = ib->Emit("SelectExtView", {nonzero_tensor, dim, ib->Value<int64_t>(j)});
+        new_indices.emplace_back(select_tensor);
       }
     } else {
       new_indices.emplace_back(tensor);
@@ -945,12 +948,17 @@ REG_FALLBACK_BUILDER("InplaceIndexPut").SetBody(BODYFUNC(ib) {
                                    << srcIdx;
         }
       }
-      // The InnerNonZero(input) output shape is (rank) * (non zero number)
-      auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
-      auto unstack_tensor = ib->Emit("Unstack", {nonzero_tensor}, {{"axis", MakeValue<int64_t>(0LL)}});
-      // The nonzero and unstack will generation tuple[tensor], the tuple size is input's rank
-      for (int64_t j = 0; j < rank; j++) {
-        new_indices.emplace_back(ib->TupleGetItem(unstack_tensor, j));
+      // For aclnnIndexPutImpl op, the indices element dtype supports bool.
+      if (type_id == kNumberTypeUInt8) {
+        // The InnerNonZero(input) output shape is (rank) * (non zero number)
+        auto nonzero_tensor = ib->Emit("InnerNonZero", {tensor});
+        auto dim = ib->Value<int64_t>(0);
+        for (int64_t j = 0; j < rank; j++) {
+          auto select_tensor = ib->Emit("SelectExtView", {nonzero_tensor, dim, ib->Value<int64_t>(j)});
+          new_indices.emplace_back(select_tensor);
+        }
+      } else {
+        new_indices.emplace_back(tensor);
       }
     } else {
       new_indices.emplace_back(tensor);

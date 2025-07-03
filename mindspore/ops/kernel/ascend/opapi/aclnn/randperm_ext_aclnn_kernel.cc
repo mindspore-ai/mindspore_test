@@ -20,17 +20,18 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace randperm_ext {
 
 void RandpermExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
-  n_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex0]);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  n_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex0]);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   GetWorkspaceForResize(n_, seed_, offset_, outputs[kIndex0]);
 }
 
@@ -42,5 +43,6 @@ bool RandpermExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RandpermExt, RandpermExtAscend);
+}  // namespace randperm_ext
 }  // namespace kernel
 }  // namespace mindspore

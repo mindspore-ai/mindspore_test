@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace parallel {
@@ -49,6 +53,7 @@ bool IsAddNodeValid(const CNodePtr &add_node, const AnfNodePtr &comm_node) {
   auto node_add_rank_list = node_add_tensor_layout.InferRepeatedGroup();
 
   auto comm_prim = GetCNodePrimitive(comm_node);
+  MS_EXCEPTION_IF_NULL(comm_prim);
   if (!comm_prim->HasAttr(GROUP)) {
     return false;
   }
@@ -217,11 +222,13 @@ void HandleNodePullDown(const AnfNodePtr &comm_node, const CNodePtr &add_node) {
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-
-  AnfNodePtrList new_comm_node_inputs = {comm_node->cast<CNodePtr>()->input(kIndex0), add_node};
+  auto comm_cnode = comm_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(comm_cnode);
+  AnfNodePtrList new_comm_node_inputs = {comm_cnode->input(kIndex0), add_node};
   auto new_comm_node = graph->NewCNode(new_comm_node_inputs);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);
+  MS_EXCEPTION_IF_NULL(prim);
   (void)prim->AddAttr(BIAS_ADD_COMM_SWAP, MakeValue(true));
   (void)manager->Replace(add_node, new_comm_node);
 }

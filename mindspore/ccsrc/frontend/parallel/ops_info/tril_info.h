@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ class TrilInfo : public ActivationBase {
   Status InferForwardCommunication() override { return SUCCESS; }
   Status GetAttrs() override;
   void ReplaceNodeInputOrAttrs() override;
+  Status CheckInputLayout() override;
 
   int64_t GetDiag();
   int64_t diagonal_ = 0;

@@ -18,11 +18,12 @@
 #include <string>
 #include <algorithm>
 #include "kernel/cpu/blackman_window_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/blackman_window.h"
 
 namespace mindspore {
 namespace kernel {
+namespace blackman_window_cpu {
 namespace {
 constexpr size_t kBlackmanWindowInputsNum = 1;
 constexpr size_t kBlackmanWindowOutputsNum = 1;
@@ -98,5 +99,6 @@ std::vector<KernelAttr> BlackmanWindowCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BlackmanWindow, BlackmanWindowCpuKernelMod);
+}  // namespace blackman_window_cpu
 }  // namespace kernel
 }  // namespace mindspore

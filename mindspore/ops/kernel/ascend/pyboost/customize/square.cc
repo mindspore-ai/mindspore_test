@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/square.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -26,14 +26,14 @@ namespace kernel {
 namespace pyboost {
 namespace {
 void SquareAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
-                      const tensor::BaseTensorPtr &input_tensor, const std::vector<tensor::BaseTensorPtr> &outputs) {
+                      const tensor::TensorPtr &input_tensor, const std::vector<tensor::TensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
   LAUNCH_ACLNN(aclnnMul, device_context, op->stream_id(), input_tensor, input_tensor, outputs[0]);
   MS_LOG(DEBUG) << "Launch end";
 }
 }  // namespace
 
-tensor::BaseTensorPtr SquareAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+tensor::TensorPtr SquareAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   OpRunner::InferOpOutput(op, x_tensor);
   // No need to convert input
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor);

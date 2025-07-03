@@ -62,7 +62,7 @@ class ConstInputToAttrInfoRegistry {
   mindspore::HashMap<std::string, ConstInputToAttrInfoRegister> op_input_to_attr_map_;
 };
 
-BACKEND_EXPORT CNodePtr ConstInputToAttr(const CNodePtr &cnode, const mindspore::HashSet<size_t> &input_attrs);
+BACKEND_COMMON_EXPORT CNodePtr ConstInputToAttr(const CNodePtr &cnode, const mindspore::HashSet<size_t> &input_attrs);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_COMMON_CONST_INPUT_TO_ATTR_H_

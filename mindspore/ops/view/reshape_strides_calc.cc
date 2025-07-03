@@ -141,7 +141,7 @@ TensorStorageInfoPtrList ReshapeCalcImpl(const mindspore::ops::OldTensorInfoPtr 
 }
 
 TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_type = input_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
@@ -160,6 +160,12 @@ TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector
   }
 
   return ReshapeCalcImpl(old_tensor_info, shape);
+}
+
+TensorStorageInfoPtrList ReshapeBasicTypeCalc(const tensor::TensorPtr &input_tensor,
+                                              const std::vector<int64_t> &shape) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return ReshapeUncontiguousCalcImpl(old_tensor_info, shape);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Reshape, ReshapeCalc);

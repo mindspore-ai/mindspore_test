@@ -17,6 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/convolution_tensorrt.h"
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 constexpr int BIAS_INDEX = 2;

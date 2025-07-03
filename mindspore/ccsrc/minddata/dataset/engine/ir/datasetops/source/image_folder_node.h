@@ -36,7 +36,7 @@ class ImageFolderNode : public MappableSourceNode {
   /// \brief Constructor
   ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler, bool recursive,
                   std::set<std::string> extensions, std::map<std::string, int32_t> class_indexing,
-                  std::shared_ptr<DatasetCache> cache, py::function decrypt = py::none());
+                  std::shared_ptr<DatasetCache> cache, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor
   ImageFolderNode(std::string dataset_dir, bool decode, std::shared_ptr<SamplerObj> sampler, bool recursive,
@@ -44,7 +44,7 @@ class ImageFolderNode : public MappableSourceNode {
                   std::shared_ptr<DatasetCache> cache);
 #endif
   /// \brief Destructor
-  ~ImageFolderNode() override = default;
+  ~ImageFolderNode() override;
 
   /// \brief Node name getter
   /// \return Name of the current node
@@ -92,13 +92,11 @@ class ImageFolderNode : public MappableSourceNode {
   /// \return Status of the function
   Status to_json(nlohmann::json *out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json
   /// \param[in] json_obj The JSON object to be deserialized
   /// \param[out] ds Deserialized dataset
   /// \return Status The status code returned
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds);
-#endif
 
   /// \brief Sampler getter
   /// \return SamplerObj of the current node

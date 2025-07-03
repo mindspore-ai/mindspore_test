@@ -1,6 +1,5 @@
 import numpy as np
 import mindspore.ops.operations as ops
-from mindspore import ms_function
 from mindspore.common.tensor import Tensor
 from mindspore.nn import Cell
 from mindspore.common import dtype_to_nptype
@@ -74,22 +73,22 @@ class MaxPoolMock():
 
     def forward_cmp(self):
         ps_net = MaxPool(pad_mode=self.pad_mode, kernel_size=self.kernel_size, strides=self.strides)
-        jit(ps_net.construct, mode="PSJit")(self.input_x[0])
+        jit(ps_net.construct, capture_mode="ast")(self.input_x[0])
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = ps_net(self.input_x[0]).asnumpy()
         pi_net = MaxPool(pad_mode=self.pad_mode, kernel_size=self.kernel_size, strides=self.strides)
-        jit(pi_net.construct, mode="PIJit")(self.input_x[0])
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_x[0])
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = ps_net(self.input_x[0]).asnumpy()
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
 
     def grad_cmp(self):
         ps_net = MaxPool(pad_mode=self.pad_mode, kernel_size=self.kernel_size, strides=self.strides)
-        jit(ps_net.construct, mode="PSJit")(self.input_x[0])
+        jit(ps_net.construct, capture_mode="ast")(self.input_x[0])
         context.set_context(mode=context.GRAPH_MODE)
         input_grad_psjit = self.grad_mindspore_impl(ps_net)
         pi_net = MaxPool(pad_mode=self.pad_mode, kernel_size=self.kernel_size, strides=self.strides)
-        jit(pi_net.construct, mode="PIJit")(self.input_x[0])
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_x[0])
         context.set_context(mode=context.PYNATIVE_MODE)
         input_grad_pijit = self.grad_mindspore_impl(pi_net)
         for index in range(0, len(input_grad_pijit)):

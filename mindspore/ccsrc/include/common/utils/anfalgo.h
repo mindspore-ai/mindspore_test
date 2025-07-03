@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,8 @@ class COMMON_EXPORT AnfAlgo {
   static AnfNodePtr GetInputNode(const CNodePtr &node, size_t index);
   static bool IsCommunicationOp(const std::string &prim_name);
   static bool IsCommunicationOp(const AnfNodePtr &node);
+  static bool IsCommFusionOp(const std::string &kernel_name);
+  static bool IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name);
   static bool IsLcclCommunicationOp(const AnfNodePtr &node);
   static bool IsDtypeFormatSensitiveOp(const AnfNodePtr &node);
   static bool IsFusedCommunicationOp(const AnfNodePtr &node);
@@ -188,11 +190,13 @@ class COMMON_EXPORT AnfAlgo {
   static TypeId GetCNodeOutputPrecision(const AnfNodePtr &node);
   // get fix output precision from prev node, input_idx is the input index of current node related to prev node.
   static TypeId GetPrevNodeOutputPrecision(const AnfNodePtr &node, size_t input_idx);
+  static std::string GetMoveToDstStr(const AnfNodePtr &node);
   static bool IsNodeInputDynamicShape(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicShape(const AnfNodePtr &node);
   static bool IsDynamicShape(const AnfNodePtr &node);
   static bool IsDynamicRankNode(const AnfNodePtr &node);
   static bool IsDynamicValue(const AnfNodePtr &node);
+  static bool IsDynamic(const AnfNodePtr &node);
   static bool IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph);
   static bool IsNodeInputDynamicRank(const CNodePtr &anf_node_ptr);
   static bool IsNodeOutputDynamicRank(const AnfNodePtr &node);
@@ -302,6 +306,7 @@ class COMMON_EXPORT AnfAlgo {
   // Get the real output node and indexes of get item, make tuple, depend, load.
   static AnfNodePtr GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> *const index_stack);
   static bool IsNopNode(const AnfNodePtr &node);
+  static bool IsViewNode(const AnfNodePtr &node);
   static bool CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode);
   template <typename T>
   static bool CheckAbsType(const AnfNodePtr &node);
@@ -309,11 +314,8 @@ class COMMON_EXPORT AnfAlgo {
   static bool CheckAbsSparseTensor(const abstract::AbstractBasePtr &abs);
   static TypeId GetSparseTypeIdAt(const AnfNodePtr &node, size_t idx);
 
-  static std::string GetTensorValueString(const tensor::BaseTensorPtr &tensor);
+  static std::string GetTensorValueString(const tensor::TensorPtr &tensor);
   static abstract::AbstractBasePtr FrontendGetNodeAbstractByIndex(const AnfNodePtr &node, size_t index);
-
-  // Get jit level from func_graph
-  static std::string GetJitLevel(const FuncGraphPtr &func_graph);
 
   static bool IsNodeMutableScalar(const AnfNodePtr &node);
   static bool IsDynamicSequence(const AnfNodePtr &node);
@@ -334,7 +336,19 @@ class COMMON_EXPORT AnfAlgo {
   static std::vector<ValuePtr> TransformVectorRefToMultiValue(const VectorRef &base_ref);
   static bool HasIncorporateCallNode(const CNodePtr &cnode);
   static bool IsDynamicGraph(const FuncGraphPtr &func_graph);
+  static CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrList &tuple_inputs);
+  static void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node,
+                           const FuncGraphManagerPtr &manager, const FuncGraphPtr &root,
+                           const std::string &attr_tag = "", const size_t post_node_input_index = 1);
+  static bool IsNeededOverlapComm(const CNodePtr &cnode, const std::string &pp_1f1b_value);
+  static AnfNodePtr GetInputNode(const AnfNodePtr &node,
+                                 std::function<std::pair<bool, size_t>(const CNodePtr &)> check_filter);
+  static bool IsNeededShape(const CNodePtr &cnode);
   static bool IsMonadType(const TypeId &type_id);
+  // check if is GE backend
+  static bool IsBackendGe();
+  // check if is ms_backend backend
+  static bool IsBackendMs();
 };
 }  // namespace common
 }  // namespace mindspore

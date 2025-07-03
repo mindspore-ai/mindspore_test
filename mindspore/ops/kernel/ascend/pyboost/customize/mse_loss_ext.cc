@@ -17,11 +17,11 @@
 #include "kernel/ascend/pyboost/customize/mse_loss_ext.h"
 #include <memory>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/auto_generate/broadcast_to.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
@@ -29,8 +29,8 @@ namespace kernel {
 // namespace
 
 namespace pyboost {
-tensor::BaseTensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const BaseTensorPtr &target_tensor, const Int64ImmPtr &reduction) {
+tensor::TensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "MSELossExt call start";
   OpRunner::InferOpOutput(op, input_tensor, target_tensor, reduction);
 
@@ -47,21 +47,20 @@ tensor::BaseTensorPtr MSELossExtAscendCustomize(const std::shared_ptr<OpRunner> 
     expand_shape = ops::CalBroadCastShapeV3(input_shape, target_shape);
   }
 
-  const ValueTuplePtr &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
-  MS_EXCEPTION_IF_NULL(expand_shape_ptr);
+  const auto &expand_shape_vec = expand_shape;
 
-  BaseTensorPtr input_tensor_bd = input_tensor;
-  BaseTensorPtr target_tensor_bd = target_tensor;
+  TensorPtr input_tensor_bd = input_tensor;
+  TensorPtr target_tensor_bd = target_tensor;
 
   if (input_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape_ptr);
+    input_tensor_bd = broadcast_to_op->Call(input_tensor, expand_shape_vec);
   }
   if (target_shape != expand_shape) {
     const auto &broadcast_to_op =
       CREATE_PYBOOST_OP(BroadcastTo, op->device_context()->device_context_key_.device_name_);
-    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape_ptr);
+    target_tensor_bd = broadcast_to_op->Call(target_tensor, expand_shape_vec);
   }
 
   // No need to convert input

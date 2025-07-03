@@ -21,14 +21,13 @@
 #include <memory>
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr LogSoftmaxGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &logits_tensor,
-                                                    const BaseTensorPtr &grad_tensor, const Int64ImmPtr &axis);
+tensor::TensorPtr LogSoftmaxGradAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &logits_tensor,
+                                                const TensorPtr &grad_tensor, const Int64ImmPtr &axis);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

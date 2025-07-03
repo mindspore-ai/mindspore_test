@@ -13,19 +13,12 @@
 # limitations under the License.
 # ============================================================================
 
-import sys  
-import pytest 
 import numpy as np
 import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.nn import Cell
 from mindspore._extends.parse import compile_config
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_for_half_unroll_basic():
@@ -39,7 +32,7 @@ def test_for_half_unroll_basic():
             super().__init__()
             self.array = (Tensor(np.array(10).astype(np.int32)), Tensor(np.array(5).astype(np.int32)))
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             output = x
             for i in self.array:
@@ -68,7 +61,7 @@ def test_for_half_unroll_if():
             super().__init__()
             self.array = (Tensor(np.array(10).astype(np.int32)), Tensor(np.array(5).astype(np.int32)))
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             output = x
             for i in self.array:

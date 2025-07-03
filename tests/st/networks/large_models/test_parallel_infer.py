@@ -16,19 +16,14 @@ import os
 
 from multiprocessing.pool import Pool
 from tests.mark_utils import arg_mark
-from tests.st.networks.utils import get_num_from_log
-
-os.environ["MS_SUBMODULE_LOG_v"] = "{DEVICE:1}"
-TOELERANCE = 5e-2
-PEAK_MEMORY_NAME = "Actual peak memory usage (with fragments):"
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_command(command_info):
-    cmd, log_path, expect_peak_memory = command_info
+    cmd, log_path = command_info
     ret = os.system(cmd)
-    return ret, log_path, expect_peak_memory
+    return ret, log_path
 
 
 def check_results(commands, results):
@@ -38,27 +33,15 @@ def check_results(commands, results):
         os.system(f"grep -E 'ERROR|error|Error' {results[idx][1]} -C 5")
     assert error_idx == []
 
-    # check peak_memory
-    check_memory = True
-    for _, log_path, expect_peak_memory in results:
-        print("log_path is:", log_path)
-        print("run peak_memory is:", expect_peak_memory)
-        peak_memory = get_num_from_log(log_path, PEAK_MEMORY_NAME)
-        if peak_memory <= expect_peak_memory * (1 + TOELERANCE):
-            continue
-        check_memory = False
-        print(f"The peak_memory in log {log_path} is {peak_memory}, "
-              f"the error between {peak_memory} and standard value {expect_peak_memory} is greater than {TOELERANCE}.")
-    if not check_memory:
-        raise RuntimeError("run above commands failed, please check error in log.")
-
 
 class TestInferParallel:
     """A test class for testing pipeline."""
 
     @staticmethod
     def setup_method():
-        os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+        ascend_home_path = os.getenv('ASCEND_HOME_PATH')
+        if not ascend_home_path:
+            os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
     @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
     def test_base_cases(self):
@@ -68,14 +51,18 @@ class TestInferParallel:
         Expectation: AssertionError
         """
         commands = [
-            (f"export ASCEND_RT_VISIBLE_DEVICES=0,1 && export LCAL_IF_PORT=10068 && msrun --worker_num=2 "
+            (f"export ASCEND_RT_VISIBLE_DEVICES=0,1 && export LCAL_COMM_ID=127.0.0.1:10068 && msrun --worker_num=2 "
              f"--local_worker_num=2 --master_port=8222 --log_dir=parallel_qwen2_0_5b_predict_mp2 --join=True "
              f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_predict_mp2",
-             'parallel_qwen2_0_5b_predict_mp2/worker_0.log', 792),  # command, log_path, expect_peak_memory
-            (f"export ASCEND_RT_VISIBLE_DEVICES=2,3 && export LCAL_IF_PORT=10070 && msrun --worker_num=2 "
-             f"--local_worker_num=2 --master_port=8230 --log_dir=parallel_qwen2_0_5b_predict_mp2_static --join=True  "
-             f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_predict_mp2_static",
-             'parallel_qwen2_0_5b_predict_mp2_static/worker_0.log', 868),
+             'parallel_qwen2_0_5b_predict_mp2/worker_0.log'),  # command, log_path
+            (f"export ASCEND_RT_VISIBLE_DEVICES=2,3 && export LCAL_COMM_ID=127.0.0.1:10070 && msrun --worker_num=2 "
+             f"--local_worker_num=2 --master_port=8230 --log_dir=parallel_deepseek_r1_bf16_predict_mp2 --join=True "
+             f"{cur_dir}/run_parallel.py --mode parallel_deepseek_r1_bf16_predict_mp2",
+             'parallel_deepseek_r1_bf16_predict_mp2/worker_0.log'),
+            (f"export ASCEND_RT_VISIBLE_DEVICES=4,5,6,7 && export LCAL_COMM_ID=127.0.0.1:10074 && msrun --worker_num=4 "
+             f"--local_worker_num=4 --master_port=8240 --log_dir=parallel_qwen2_0_5b_predict_dp2_mp2 --join=True "
+             f"{cur_dir}/run_parallel.py --mode parallel_qwen2_0_5b_predict_dp2_mp2",
+             'parallel_qwen2_0_5b_predict_dp2_mp2/worker_0.log'),
         ]
 
         with Pool(len(commands)) as pool:

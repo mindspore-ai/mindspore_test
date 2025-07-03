@@ -21,11 +21,12 @@
 #include <complex>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fftshift_cpu {
 class FFTShiftCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTShiftCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class FFTShiftCpuKernelMod : public NativeCpuKernelMod {
   int64_t element_nums_;
   bool forward_;
 };
+}  // namespace fftshift_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTSHIFT_CPU_KERNEL_H_

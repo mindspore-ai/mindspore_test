@@ -33,6 +33,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore::graphkernel {
 struct StitchInfo {
@@ -97,8 +98,7 @@ class SplitNodesDecoder {
       users[inputs[i]].insert(std::make_pair(cp_node, i));
     }
     func_graph->AddNode(cp_node);
-    ScopePtr scope = (orig_node->scope() != kDefaultScope) ? orig_node->scope() : kDefaultScope;
-    cp_node->set_scope(scope);
+    cp_node->set_scope(orig_node->scope());
     cp_node->CloneCNodeInfo(cnode);
     (*node_map)[orig_node] = cp_node;
     return cp_node->cast<CNodePtr>();

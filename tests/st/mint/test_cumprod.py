@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.mint import cumprod
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
@@ -65,7 +65,7 @@ def generate_random_input_backward(shape, dim):
     return x, cumprod_grad(x, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_cumprod_normal(mode):
     """
@@ -84,8 +84,8 @@ def test_cumprod_normal(mode):
         output = cumprod_forward_func(ms.Tensor(x), dim1)
         output1 = cumprod_backward_func(ms.Tensor(x), dim2)
     else:
-        output = (jit(cumprod_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim1)
-        output1 = (jit(cumprod_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim2)
+        output = (jit(cumprod_forward_func, jit_level="O0"))(ms.Tensor(x), dim1)
+        output1 = (jit(cumprod_backward_func, jit_level="O0"))(ms.Tensor(x), dim2)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
     np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
 
@@ -105,7 +105,7 @@ def test_cumprod_bfloat16(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cumprod_forward_func(ms.Tensor(x), dim1)
     else:
-        output = (jit(cumprod_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim1)
+        output = (jit(cumprod_forward_func, jit_level="O0"))(ms.Tensor(x), dim1)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=5e-3, atol=5e-3)
 
 

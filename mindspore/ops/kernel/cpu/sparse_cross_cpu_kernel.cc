@@ -21,10 +21,11 @@
 #include <map>
 #include <vector>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_cross_cpu {
 namespace {
 constexpr int64_t kInputsNum = 4;
 constexpr int64_t kOutputsNum = 3;
@@ -467,5 +468,6 @@ const std::vector<std::pair<KernelAttr, SparseCrossCpuKernelMod::KernelRunFunc>>
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseCross, SparseCrossCpuKernelMod);
+}  // namespace sparse_cross_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <utility>
+#include <map>
 #include <memory>
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -47,9 +48,19 @@ struct GraphInputInfo {
   ValueNode *vargs = nullptr;
   ValueNode *kwargs = nullptr;
 };
+using InstructionList = std::vector<std::unique_ptr<Instr>>;
 
 class CodeGenerator {
  public:
+  struct ExceptionCodeItem {
+    // [begin, end]
+    Instr *begin_;
+    Instr *end_;
+    Instr *jump_;
+    int stack_;
+    bool lasti_;
+  };
+
   struct Code {
     int co_argcount;
     int co_kwonlyargcount;
@@ -62,23 +73,26 @@ class CodeGenerator {
     std::vector<std::string> co_freevars;
     std::string co_name;
     py::object co_filename;
+    std::string co_qualname;
+    std::vector<ExceptionCodeItem> co_exceptiontable;
   };
 
-  explicit CodeGenerator(const NodeSet *nodes) : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_() {}
+  explicit CodeGenerator(const NodeSet *nodes, bool vm_mode = false)
+      : nodes_(nodes),
+        globals_(),
+        code_(),
+        nodes_alive_(),
+        locals_map_(),
+        missing_value_to_undefine_(false),
+        vm_mode_(vm_mode) {}
+  explicit CodeGenerator(Code &&ccode) : code_(std::move(ccode)) {}
+
+  void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
 
   void SetGlobals(const py::dict &dict) { globals_ = dict; }
-  std::vector<std::unique_ptr<Instr>> MoveCode() { return std::move(code_.co_code); }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
-  bool EarseLocal(ValueNode *item) {
-    auto it = GetLocalsMap().find(item);
-    if (it != GetLocalsMap().end()) {
-      locals_map_.erase(it);
-    } else {
-      return false;
-    }
-    return true;
-  }
+  std::unordered_map<ValueNode *, int> &GetLocalsMap() { return locals_map_; }
   const Code &GetCode() const { return code_; }
   void SetArgsInfo(int argcount, int kwonlyargcount) {
     code_.co_argcount = argcount;
@@ -91,14 +105,22 @@ class CodeGenerator {
   void SetCellVariableNames(const std::vector<std::string> &names) { code_.co_cellvars = names; }
   void SetFreeVariableNames(const std::vector<std::string> &names) { code_.co_freevars = names; }
   void SetCodeName(const std::string &name) { code_.co_name = name; }
+  void SetQualName(const std::string &qualname) { code_.co_qualname = qualname; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
 
-  void MarkAlive(ValueNode *node) { nodes_alive_[node] = INT_MAX; }
+  void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
+  void ClearAlive() { nodes_alive_.clear(); }
+  void MarkAlive(ValueNode *node) { MarkAlive(node, INT_MAX); }
   void MarkAlive();
+  // make the node same as other node, use same local index, if the node not in locals, try to load it
+  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node, bool clear = false);
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
+  void AddInstructionWithExceptionTable(const CFG *cfg, int start, int end);
+  void CollectExceptionTableItem(const CFG *cfg, int start, int end);
   void AddInstr(std::unique_ptr<Instr> &&instr);
-  void EraseUnusedInstr();
+  void AddCallInstr(size_t load_args_offset, int oparg);
+  py::object NewCode();
 
   // initialize local map of parameters
   void Init();
@@ -120,35 +142,6 @@ class CodeGenerator {
   // add node to locals map
   int AllocLocal(ValueNode *node, int index = INT_MAX);
 
-  std::string PrintAlive() const;
-
-  /**
-   * Transform code info to PyCodeObject
-   *
-   * \param ccode code info
-   * \return PyCodeObject
-   */
-  static py::object Transform(const Code &ccode);
-
-  /**
-   * Calculate max stack size
-   *
-   * \param list instruct nodes list
-   * \param sp start of stack depth
-   * \return max depth of stack, or -1 if stack out of bound
-   */
-  static int CalculateStackSize(const std::vector<std::unique_ptr<Instr>> &list, int sp = 0);
-
-  /**
-   * Convert instruction list to bytes object. generate line table.
-   *
-   * \param list instruct nodes list
-   * \param first_line first line
-   * \return first is co_code, second is co_lnotab
-   */
-  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const std::vector<std::unique_ptr<Instr>> &list,
-                                                            int first_line);
-
   /**
    * Copy instruction list at range [start, end).
    * NOTE: reset opcode:
@@ -161,14 +154,23 @@ class CodeGenerator {
    * \return instruction list
    */
   static std::vector<std::unique_ptr<Instr>> CopyInstr(const std::vector<std::unique_ptr<Instr>> &list, size_t start,
-                                                       size_t end = -1);
+                                                       size_t end = -1, bool erase_invalid_jump = false,
+                                                       bool is_loop_body = false);
 
   /**
-   * Erase unused instr
-   *
-   * \param list instruction list
+   * Function to copy and replace instructions in a specified bytecode range.
+   * This function copies the instructions from the original list and replaces the instructions
+   * in the range between start_bci and end_bci with the provided replacement instructions.
+   * (Only for Loop Encapsulation)
+   * @param list The original list of instructions.
+   * @param start_bci The starting bytecode index where replacement begins.
+   * @param end_bci The ending bytecode index where replacement ends.
+   * @param replacement The list of instructions that will replace the original instructions in the specified range.
+   * @return A new vector containing the modified instructions with the specified replacements applied.
    */
-  static void EraseUnusedInstr(std::vector<std::unique_ptr<Instr>> *list);
+  static std::vector<std::unique_ptr<Instr>> CopyAndReplaceInstr(
+    const std::vector<std::unique_ptr<Instr>> &list, size_t start_bci, size_t end_bci,
+    const std::vector<std::unique_ptr<Instr>> &replacement);
 
   /**
    * generate rot instructions
@@ -176,56 +178,111 @@ class CodeGenerator {
   static std::vector<std::unique_ptr<Instr>> RotStack(int stack);
 
  private:
-  const NodeSet *nodes_;
+  void MarkAlive(ValueNode *node, int order);
+  void EraseUnusedInstr();
+  void ResetExceptionCodeItem(InstructionList::const_iterator erased);
+
+  static py::object Transform(const Code &ccode);
+  static std::pair<py::bytes, py::bytes> ConvertToCodeBytes(const Code &ccode);
+  static int CalculateStackSize(const Code &ccode, int sp = 0);
+
+  // python3.11+ only
+  std::vector<std::unique_ptr<Instr>> ByteCodePrefix() const;
+  void FixOffset();
+  void FixLocalOffset(int invalid_index);
+  void FixFreeOffset(const std::vector<std::string> &other_closure_names);
+  static int ExceptionStackRequired(const Code &ccode);
+
+  const NodeSet *nodes_{nullptr};
   py::dict globals_;
   Code code_;
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
+  bool missing_value_to_undefine_{false};
+  bool vm_mode_{false};
+};
+
+class LoopBodyReCaptureCodeGenerator {
+ public:
+  explicit LoopBodyReCaptureCodeGenerator(Graph *graph) : graph_(graph), co_(graph->GetCodeObj()) {}
+  bool Prepare();
+  py::object Build();
+
+ protected:
+  std::vector<std::string> GetClosureNames() const;
+
+  std::string makeLoopBodyFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+    const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+    auto name =
+      co_name + ".wrapped_loop_body_func." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+    return name;
+  }
+
+  std::string makeFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+    const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+    auto name =
+      co_name + ".loop_body_recaptured." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+    return name;
+  }
+
+  py::object MakeLoopBodyCode(int loopBodyStartBci, int loopBodyEndBci, const std::vector<int> &inputLocals,
+                              const std::vector<int> &outputLocals, bool ifForLoop) const;
+  Graph *graph_;
+  PyCodeObject *co_;
+  bool is_for_loop_ = false;
+  int loopBodyStartBci_{0};
+  int loopBodyEndBci_{0};
 };
 
 class CodeBreakGenerator;
-class MindCodeBreakGenerator;
 using CodeBreakGeneratorPtr = std::shared_ptr<CodeBreakGenerator>;
-using MindCodeBreakGeneratorPtr = std::shared_ptr<MindCodeBreakGenerator>;
+
 class CodeBreakGenerator {
  public:
-  explicit CodeBreakGenerator(PyCodeObject *co) : co_(co), cfg_(nullptr), break_bci_(-1), extra_local_(-1) {}
-  static CodeBreakGeneratorPtr Creator(const GraphBuilderPtr &builder, PyCodeObject *co) {
-    return builder->trace_flag()
-             ? std::static_pointer_cast<CodeBreakGenerator>(std::make_shared<MindCodeBreakGenerator>(builder, co))
-             : std::make_shared<CodeBreakGenerator>(co);
-  }
-
-  void SetGlobals(const py::dict &dict) { globals_ = dict; }
-  const py::dict &GetGlobals() const { return globals_; }
+  CodeBreakGenerator(const GraphBuilderPtr &graph_builder, const py::dict &globals, PyCodeObject *co)
+      : fg_builder_(graph_builder->GetGraph()->func_graph_builder()),
+        co_(co),
+        cfg_(nullptr),
+        globals_(globals),
+        break_bci_(-1),
+        extra_local_(-1),
+        no_graph_(false) {}
 
   // collect nodes inputs and outputs at graph analyze
-  void Init(const Graph *, const GraphAnalyzer &);
+  void Init(const GraphAnalyzer &, Graph *);
 
   // generate a code to call graph, unsupported operations, and untracked operations that will be compiled
   py::object MakeDispatchCode();
 
   // used to replace origin code, extend attribute from origin code.
-  virtual py::object MakeCapturedCode() const;
+  py::object MakeCapturedCode() const;
 
-  const CFG *GetCFG() const;
+ private:
+  const CFG *GetCFG() const { return cfg_; }
 
- protected:
+  // for python3.11+ copy origin instruction need pop the null pointer (which is only consume by call instruction)
+  // from stack. here generate code from node avoid pop null
+  bool IsCopyCapturedInstructions() const { return !IS_PYTHON_3_11_PLUS && no_graph_ && !NeedHandleBreakAtCall(); }
+
   void ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) const;
 
   // rebuild parameters of graph, identify parameters that graph only support as constant
   void BuildGraphParameters(const std::unordered_map<ValueNode *, int> &locals, GraphParameterBuilder *);
 
+  py::object MakeInterpretCapturedCode() const;
+
   // rebuild captured nodes to bytecode, build parameters load operations
-  virtual py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&sort, int argc, unsigned flag) const;
+  py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&sort, int argc, unsigned flag) const;
 
   // make call operations of graph, build parameters load operations
   void CallCapturedCode(CodeGenerator *code_gen);
 
   void FixInterpretOuput(CodeGenerator *code_gen);
 
+  void HandleOutputOpt(CodeGenerator *code_gen);
+
   // make function of untracked bytecode, build restore frame operations of untracked bytecode
-  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect) const;
+  py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect, int *argc) const;
 
   void ReconstructStack(CodeGenerator *code_gen, int untracked_bci, int untracked_stack_effect) const;
 
@@ -240,12 +297,25 @@ class CodeBreakGenerator {
   // make call operations of untracked bytecode for each branch
   void BreakAtIf(CodeGenerator *code_gen) const;
 
+  // generate specialize code if break point is call
+  void BreakAtCall(CodeGenerator *code_gen) const;
+  bool NeedHandleBreakAtCall() const;
+  // Similar to BreakAtIf(), but it breaks at conditional-statement of a callee function (or we say a subgraph).
+  void BreakAtCalleeIfCondition(CodeGenerator *code_gen) const;
+  py::object MakeUntrackedCodeForNestedCalls(const std::vector<Graph *> &call_stack, int top_argc, int untracked_bci,
+                                             int stack_effect) const;
+
   void RestoreStack(CodeGenerator *code_gen) const;
 
   void RestoreLocals(CodeGenerator *code_gen, bool load) const;
 
-  // return co_cellvars and co_freevars
-  std::vector<std::string> GetClosureNames() const;
+  FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
+
+  void Compile(const std::string &name, int argc, int kw_only, int flags, const py::object &stub) const;
+
+ private:
+  // The FuncGraphBuilder of top-graph
+  FuncGraphBuilderPtr fg_builder_;
 
   // root function
   PyCodeObject *const co_;
@@ -269,38 +339,25 @@ class CodeBreakGenerator {
   // interpret execute node after graph
   NodeSet outputs_optimize_;
 
-  GraphInputInfo graph_inputs_info_;
+  // used to record the value nodes and the nodes that replaced them
+  std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
   // break bci alive locals
   std::vector<int> alive_locals_;
-
-  std::shared_ptr<SideEffect> side_effect_handler_;
 
   // break bci
   int break_bci_;
 
   // used to store graph outputs
   int extra_local_;
+
+  bool no_graph_;
+
+  bool is_break_at_call_ = false;
+  // The top-graph is at the beginning of the vector and the bottommost subgraph at the end.
+  std::vector<Graph *> call_stack_{};
 };
 
-class MindCodeBreakGenerator : public CodeBreakGenerator {
- public:
-  MindCodeBreakGenerator(const GraphBuilderPtr &builder, PyCodeObject *co)
-      : CodeBreakGenerator(co), builder_(builder) {}
-
-  mindspore::FuncGraphBuilderPtr FGBuilder() const {
-    return std::dynamic_pointer_cast<MindGraphBuilder>(builder_)->FGBuilder();
-  }
-
-  py::object MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&, int argc, unsigned code_flag) const override;
-
-  py::object MakeCapturedCode() const override;
-
- private:
-  void Compile(const std::string &name, int argc, int kw_only, int flags, const py::object &stub) const;
-
-  GraphBuilderPtr builder_;
-};
 // add a key and value to py::dict, check key conflict or rename the key
 void MapAdd(const py::dict &dict, const std::string &key, const py::object &value, std::string *rename = nullptr);
 

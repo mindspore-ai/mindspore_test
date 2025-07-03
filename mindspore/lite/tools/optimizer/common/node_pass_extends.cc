@@ -63,6 +63,7 @@ bool LiteNodePass::Run(const FuncGraphPtr &func_graph) {
     } else if (new_node == nullptr) {
       new_node = node;
     }
+    MS_CHECK_TRUE_MSG(new_node != nullptr, false, "new_node is nullptr!");
     if (IsValueNode<FuncGraph>(new_node)) {
       auto const_func_graph = GetValueNode<FuncGraphPtr>(new_node);
       if (const_func_graph == nullptr) {

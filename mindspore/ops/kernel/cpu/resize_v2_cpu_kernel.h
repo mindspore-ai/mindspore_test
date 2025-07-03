@@ -22,11 +22,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_v2_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class ResizeV2CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ResizeV2CpuKernelMod> {
@@ -86,6 +87,7 @@ class ResizeV2CpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   float height_scale_;
   float width_scale_;
 };
+}  // namespace resize_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_RESIZE_CPU_KERNEL_H_

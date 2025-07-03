@@ -1,0 +1,8 @@
+gelu:
+  op_yaml: gelu_ext_op.yaml
+  py_method: tensor_gelu
+  kwonlyargs: approximate
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: function

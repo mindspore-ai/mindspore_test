@@ -27,6 +27,8 @@ import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 
 
+ms.context.set_context(jit_level="O0")
+
 # idct functional api test cases
 
 class IDCTNet(nn.Cell):

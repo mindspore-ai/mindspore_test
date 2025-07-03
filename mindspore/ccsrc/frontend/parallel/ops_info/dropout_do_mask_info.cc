@@ -261,6 +261,7 @@ std::vector<Operator> DropoutDoMaskInfo::GetDropoutGenMaskReplaceOp(const CNodeP
 }
 
 static void ReplaceOneOp(const Operator &replace_op, const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   FuncGraphPtr func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
@@ -282,6 +283,7 @@ static void ReplaceOneOp(const Operator &replace_op, const CNodePtr &node) {
   replace_input[0]->set_scope(scope);
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(replace_node->input(0));
   PrimitivePtr origin_prim = GetValueNode<PrimitivePtr>(node->input(0));
+  MS_EXCEPTION_IF_NULL(origin_prim);
   SetUserAttrs(origin_prim->attrs(), prim);
   (void)manager->Replace(node, replace_node);
 }

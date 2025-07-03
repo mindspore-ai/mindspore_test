@@ -22,7 +22,7 @@
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT SplitInputsForReduceScatter : public PatternProcessPass {
+class BACKEND_COMMON_EXPORT SplitInputsForReduceScatter : public PatternProcessPass {
  public:
   explicit SplitInputsForReduceScatter(bool multigraph = true)
       : PatternProcessPass("split_inputs_for_reduce_scatter", multigraph) {}

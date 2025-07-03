@@ -6,7 +6,7 @@ mindspore.numpy.histogramdd
     计算数据的多维直方图。
 
     .. note::
-        不支持已弃用的NumPy参数 `normed` 。 
+        不支持已弃用的NumPy参数 `normed` 。
 
     参数：
         - **sample** (Union[list, tuple, Tensor]) - 要进行直方图统计的数据，可以是 `(N, D)` 数组，或者 `(D, N)` 的类数组。 注意当使用类数组为样本的非常规解释：当样本数组时，每行是D维空间中的一个坐标，例如 ``histogramdd(np.array([p1, p2, p3]))`` 。 当样本为类数组时，每个元素是单一坐标系的值列表，如 ``histogramdd((X, Y, Z))`` 。 应优先考虑第一种形式。

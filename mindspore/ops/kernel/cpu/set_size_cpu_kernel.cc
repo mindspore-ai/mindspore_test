@@ -17,11 +17,12 @@
 #include "kernel/cpu/set_size_cpu_kernel.h"
 #include <algorithm>
 #include <unordered_set>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/set_size.h"
 
 namespace mindspore {
 namespace kernel {
+namespace set_size_cpu {
 bool SetSizeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 3;
   constexpr size_t output_num = 1;
@@ -178,5 +179,6 @@ const std::vector<std::pair<KernelAttr, SetSizeCpuKernelMod::KernelRunFunc>> &Se
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SetSize, SetSizeCpuKernelMod);
+}  // namespace set_size_cpu
 }  // namespace kernel
 }  // namespace mindspore

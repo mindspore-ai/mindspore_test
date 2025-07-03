@@ -17,17 +17,16 @@
 #include "kernel/gpu/pyboost/customize/searchsorted.h"
 #include <memory>
 #include <utility>
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "runtime/runtime_conf/runtime_conf.h"
-#include "mindspore/ops/kernel/common/pyboost/customize/searchsorted.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SearchSortedGPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const BaseTensorPtr &sorted_sequence, const BaseTensorPtr &values,
-                                               const std::optional<BaseTensorPtr> &sorter, const Int64ImmPtr &dtype,
-                                               const BoolImmPtr &right) {
+tensor::TensorPtr SearchSortedGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &sorted_sequence,
+                                           const TensorPtr &values, const std::optional<TensorPtr> &sorter,
+                                           const Int64ImmPtr &dtype, const BoolImmPtr &right) {
   MS_LOG(DEBUG) << "SearchSorted call start";
   (void)SearchSortedCustomizeCall(op, sorted_sequence, values, sorter, dtype, right);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();

@@ -17,9 +17,9 @@
 #include "src/litert/kernel/ascend/src/model_infer.h"
 #include "common/log_adapter.h"
 #include "src/litert/kernel/ascend/src/acl_mem_manager.h"
-#include "transform/symbol/acl_mdl_symbol.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_mdl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore::kernel {
 namespace acl {
@@ -54,14 +54,14 @@ STATUS ModelInfer::Init() {
   }
   device_id_ = options_.device_id;
   aclError ret = CALL_ASCEND_API(aclrtSetDevice, device_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl open device " << device_id_ << " failed, ret " << ret;
     return lite::RET_ERROR;
   }
   MS_LOG(INFO) << "Open device " << device_id_ << " success.";
 
   ret = CALL_ASCEND_API(aclrtCreateContext, &context_, device_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl create context failed, ret " << ret;
     return lite::RET_ERROR;
   }
@@ -69,7 +69,7 @@ STATUS ModelInfer::Init() {
 
   aclrtRunMode run_mode;
   ret = CALL_ASCEND_API(aclrtGetRunMode, &run_mode);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl get run mode failed, ret " << ret;
     return lite::RET_ERROR;
   }
@@ -89,7 +89,7 @@ STATUS ModelInfer::Finalize() {
   }
 
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret " << rt_ret;
     return lite::RET_ERROR;
   }
@@ -102,7 +102,7 @@ STATUS ModelInfer::Finalize() {
   }
   if (context_ != nullptr) {
     rt_ret = CALL_ASCEND_API(aclrtDestroyContext, context_);
-    if (rt_ret != ACL_ERROR_NONE) {
+    if (rt_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Destroy context failed, ret " << rt_ret;
     }
     context_ = nullptr;
@@ -110,7 +110,7 @@ STATUS ModelInfer::Finalize() {
   MS_LOG(INFO) << "End to destroy context.";
 
   rt_ret = CALL_ASCEND_API(aclrtResetDevice, options_.device_id);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Reset device " << options_.device_id << " failed, ret " << rt_ret;
   }
   MS_LOG(INFO) << "End to reset device " << options_.device_id;
@@ -144,7 +144,7 @@ STATUS ModelInfer::Load() {
   }
 
   aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
     return lite::RET_ERROR;
   }
@@ -161,7 +161,7 @@ STATUS ModelInfer::LoadAclModel(const Buffer &om_data) {
 
   if (IsEnableMultiModelSharingMemPrepare()) {
     auto acl_ret = aclmdlQuerySizeFromMem(om_data.Data(), om_data.DataSize(), &work_size, &weight_size);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclmdlQuerySizeFromMem failed, ret = " << acl_ret;
       return lite::RET_ERROR;
     }
@@ -185,14 +185,14 @@ STATUS ModelInfer::LoadAclModel(const Buffer &om_data) {
     auto acl_ret =
       aclmdlLoadFromMemWithMem(om_data.Data(), om_data.DataSize(), &acl_model_id, acl_work_mem_info.mem_addr,
                                acl_work_mem_info.mem_size, acl_weight_mem_info.mem_addr, acl_weight_mem_info.mem_size);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclmdlLoadFromMemWithMem failed, ret = " << acl_ret;
       return lite::RET_ERROR;
     }
     model_process_.SetSharingWorkspaceFlag(true);
   } else {
     auto acl_ret = CALL_ASCEND_API(aclmdlLoadFromMem, om_data.Data(), om_data.DataSize(), &acl_model_id);
-    if (acl_ret != ACL_ERROR_NONE) {
+    if (acl_ret != ACL_SUCCESS) {
       MS_LOG(ERROR) << "Call aclmdlLoadFromMem failed, ret = " << acl_ret;
       return lite::RET_ERROR;
     }

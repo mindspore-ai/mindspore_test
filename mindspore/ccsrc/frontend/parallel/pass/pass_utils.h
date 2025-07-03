@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ void ExtractBackwardMatMul(const std::vector<CNodePtr> &origin_nodes_topological
 std::string AnfNodeInfo(const AnfNodePtr &anf_node);
 void ExtendDxDwMap(const std::vector<CNodePtr> &origin_nodes_topological,
                    std::unordered_map<CNodePtr, CNodePtr> *backward_matmul_dx_dw_map);
+void ExtractForwardBackwardGraph(const FuncGraphPtr &graph, std::vector<FuncGraphPtr> *forward_graphs,
+                                 std::vector<FuncGraphPtr> *backward_graphs);
 }  // namespace parallel
 }  // namespace mindspore
 

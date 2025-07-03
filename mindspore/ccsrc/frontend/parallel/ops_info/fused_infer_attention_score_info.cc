@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@
 #include <tuple>
 
 #include "frontend/parallel/ops_info/fused_infer_attention_score_info.h"
-#include "ir/value.h"
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "ir/core_ops_primitive.h"
+#include "ir/value.h"
 #include "mindspore/ops/infer/ops_func_impl/fused_infer_attention_score.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_enum.h"
@@ -484,7 +485,10 @@ Status FusedInferAttentionScoreInfo::InferTensorMap() {
       MS_LOG(ERROR) << "For" << name_ << ": The input layout" << input_layout_ << "is not supported.";
       return FAILED;
   }
-  Shape lse_tensor_map = Shape{dev_matrix_batch_dim_, dev_matrix_n1_dim_, is_ifa_ ? -1 : dev_matrix_s1_dim_, -1};
+  Shape lse_tensor_map{-1};
+  if (softmax_lse_flag_) {
+    lse_tensor_map = Shape{dev_matrix_batch_dim_, dev_matrix_n1_dim_, is_ifa_ ? -1 : dev_matrix_s1_dim_, -1};
+  }
   std::vector<ShapeBasePtr> key_value_tensorist_map_idx;
   for (size_t i = 0; i < inputs_shape_new_[ops::kFusedInferAttentionScoreInputKeyIndex]->size(); i++) {
     key_value_tensorist_map_idx.emplace_back(std::make_shared<ShapeValue>(valid_kv_map));
@@ -593,8 +597,8 @@ void FusedInferAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
 
 void FusedInferAttentionScoreInfo::SplitKVSequenceGraph(const Group &group, GenerateGraph *gen_g,
                                                         AnfNodePtr *fused_attention_score, AnfNodePtr *output) {
-  vector<AnfNodePtr> fias_op_inputs = {gen_g->NewOpInst(FUSED_INFER_ATTENTION_SCORE)};
-  for (size_t i = 0; i < kIndex28; ++i) {
+  std::vector<AnfNodePtr> fias_op_inputs = {gen_g->NewOpInst(FUSED_INFER_ATTENTION_SCORE)};
+  for (size_t i = 0; i < ops::kFusedInferAttentionScoreInputsNum; ++i) {
     fias_op_inputs.emplace_back(gen_g->virtual_input_node());
   }
   *fused_attention_score = gen_g->PushBack(fias_op_inputs);
@@ -680,7 +684,7 @@ Status FusedInferAttentionScoreInfo::ComputeReplaceGraphForSplitKVSeq(const CNod
   SplitKVSequenceGraph(group, &gen_g, &fused_attention_score, &output_maketuple);
 
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes;
-  for (int i = 0; i < static_cast<int>(kIndex28); ++i) {
+  for (int i = 0; i < static_cast<int>(ops::kFusedInferAttentionScoreInputsNum); ++i) {
     input_nodes.emplace_back(std::make_pair(fused_attention_score, i + 1));
   }
 

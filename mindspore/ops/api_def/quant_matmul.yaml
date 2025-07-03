@@ -1,0 +1,8 @@
+quant_matmul:
+  op_yaml: quant_matmul_op.yaml
+  py_method: tensor_quant_matmul
+  kwonlyargs: offset, pertoken_scale, bias, output_dtype, x1_dtype, x2_dtype, pertoken_scale_dtype, scale_dtype, group_sizes
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
+  interface: function

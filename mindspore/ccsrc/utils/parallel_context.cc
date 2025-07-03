@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,12 @@ void ParallelContext::Reset() {
   dump_device_local_norm_ = false;
   is_dynamic_shape_parallel_ = false;
   dynamic_shape_parallel_flag_is_set_ = false;
+  init_param_in_compile_ = true;
+  auto_parallel_new_interface_ = false;
+  dataset_strategy_devmat_.clear();
+  dataset_strategy_tensormap_.clear();
+  dataset_strategy_alias_name_.clear();
+  zero3_ = false;
 }
 
 void ParallelContext::set_device_num(int64_t device_num) {
@@ -156,6 +162,15 @@ void ParallelContext::set_dataset_strategy(const std::vector<std::vector<int64_t
   dataset_strategy_ = dataset_strategy;
 }
 
+void ParallelContext::set_dataset_layout(
+  const std::vector<std::vector<int64_t>> &dataset_strategy_devmat,
+  const std::vector<std::vector<std::vector<int64_t>>> &dataset_strategy_tensormap,
+  const std::vector<std::vector<std::string>> &dataset_strategy_alias_name) {
+  dataset_strategy_devmat_ = dataset_strategy_devmat;
+  dataset_strategy_tensormap_ = dataset_strategy_tensormap;
+  dataset_strategy_alias_name_ = dataset_strategy_alias_name;
+}
+
 void ParallelContext::set_grad_accumulation_step(int64_t grad_accumulation_step) {
   grad_accumulation_step_ = grad_accumulation_step;
 }
@@ -170,8 +185,16 @@ void ParallelContext::set_pipeline_interleave(const bool pipeline_interleave) {
   pipeline_interleave_ = pipeline_interleave;
 }
 
+void ParallelContext::set_pipeline_interleave_temp(const bool pipeline_interleave_temp) {
+  pipeline_interleave_temp_ = pipeline_interleave_temp;
+}
+
 void ParallelContext::set_pipeline_scheduler(const std::string &pipeline_scheduler) {
   pipeline_scheduler_ = pipeline_scheduler;
+}
+
+void ParallelContext::set_pipeline_scheduler_temp(const std::string &pipeline_scheduler_temp) {
+  pipeline_scheduler_temp_ = pipeline_scheduler_temp;
 }
 
 void ParallelContext::set_pipeline_segment_split_num(const int64_t segment_num) {
@@ -340,6 +363,7 @@ void ParallelContext::set_do_transform(const bool do_transform) { do_transform_ 
 void ParallelContext::set_stra_file_only_trainable_params(const bool stra_file_only_trainable_params) {
   stra_file_only_trainable_params_ = stra_file_only_trainable_params;
 }
+void ParallelContext::set_zero3(const bool zero3) { zero3_ = zero3; }
 
 void ParallelContext::set_sharding_propagation(const bool stra_pto) { sharding_propagation_ = stra_pto; }
 
@@ -351,6 +375,14 @@ void ParallelContext::set_dump_local_norm_path(const std::string &dump_local_nor
 
 void ParallelContext::set_dump_device_local_norm(const bool dump_device_local_norm) {
   dump_device_local_norm_ = dump_device_local_norm;
+}
+
+void ParallelContext::set_init_param_in_compile(const bool init_param_in_compile) {
+  init_param_in_compile_ = init_param_in_compile;
+}
+
+void ParallelContext::set_auto_parallel_new_interface(const bool auto_parallel_new_interface) {
+  auto_parallel_new_interface_ = auto_parallel_new_interface;
 }
 
 }  // namespace mindspore::parallel

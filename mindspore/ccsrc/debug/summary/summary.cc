@@ -18,9 +18,12 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::debug {
 constexpr int kSummaryGetItem = 2;
@@ -98,7 +101,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     auto node = output_item.second.first;
     size_t index = IntToSize(output_item.second.second);
     auto address = AnfAlgo::GetOutputAddr(node, index, false);
-    auto kt = AnfAlgo::GetOutputKernelTensor(node, index);
+    auto kt = AnfAlgo::GetOutputKernelTensor(node, index, false);
     auto shape = kt->GetShapeVector();
     TypeId type_id = kt->dtype_id();
     tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
@@ -106,7 +109,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
     if (!address->GetPtr()) {
       continue;
     }
-    if (!address->SyncDeviceToHost(trans::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
+    if (!address->SyncDeviceToHost(AnfAlgo::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
                                    tensor->data_type(), tensor->data_c())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }

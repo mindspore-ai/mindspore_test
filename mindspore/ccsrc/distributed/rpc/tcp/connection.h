@@ -24,7 +24,6 @@
 
 #include "actor/msg.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
-#include "distributed/rpc/tcp/event_loop.h"
 #include "distributed/rpc/tcp/event_loop_group.h"
 #include "distributed/rpc/tcp/socket_operation.h"
 

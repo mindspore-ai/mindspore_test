@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_grad_ext {
 
 class DropoutGradExtAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class DropoutGradExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   double p_value_;
 };
+}  // namespace dropout_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

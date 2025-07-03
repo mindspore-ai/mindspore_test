@@ -24,7 +24,7 @@ namespace mindspore {
 namespace kernel {
 using graphkernel::GraphKernelJsonGenerator;
 
-class BACKEND_EXPORT DynamicAkgKernelBuilder : public GraphKernelBuilder {
+class BACKEND_COMMON_EXPORT DynamicAkgKernelBuilder : public GraphKernelBuilder {
  public:
   DynamicAkgKernelBuilder() = default;
   virtual ~DynamicAkgKernelBuilder() = default;

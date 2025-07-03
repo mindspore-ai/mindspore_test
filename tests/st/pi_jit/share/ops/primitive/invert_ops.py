@@ -45,11 +45,11 @@ class InvertFactory():
 
     def forward_cmp(self):
         ps_net = Invert()
-        jit(ps_net.construct, mode="PSJit")(self.input_me)
+        jit(ps_net.construct, capture_mode="ast")(self.input_me)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Invert()
-        jit(pi_net.construct, mode="PIJit")(self.input_me)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_me)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
 
@@ -57,22 +57,22 @@ class InvertFactory():
 
     def forward_function_cmp(self):
         ps_net = InvertFunction()
-        jit(ps_net.construct, mode="PSJit")(self.input_me)
+        jit(ps_net.construct, capture_mode="ast")(self.input_me)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = ps_net(self.input_me)
         pi_net = InvertFunction()
-        jit(pi_net.construct, mode="PIJit")(self.input_me)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_me)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = pi_net(self.input_me)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
 
     def forward_tensor_cmp(self):
         ps_net = InvertFunction()
-        jit(ps_net.construct, mode="PSJit")(self.input_me)
+        jit(ps_net.construct, capture_mode="ast")(self.input_me)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = ps_net(self.input_me)
         pi_net = InvertFunction()
-        jit(pi_net.construct, mode="PIJit")(self.input_me)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_me)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = pi_net(self.input_me)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 #include "kernel/ascend/pyboost/customize/isclose.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IsCloseAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const BaseTensorPtr &other_tensor, const FP32ImmPtr &rtol,
-                                             const FP32ImmPtr &atol, const BoolImmPtr &equal_nan) {
+tensor::TensorPtr IsCloseAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const TensorPtr &other_tensor, const FP32ImmPtr &rtol, const FP32ImmPtr &atol,
+                                         const BoolImmPtr &equal_nan) {
   MS_LOG(DEBUG) << "IsCloseCustomize start";
   OpRunner::InferOpOutput(op, input_tensor, other_tensor, rtol, atol, equal_nan);
 

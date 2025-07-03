@@ -512,8 +512,8 @@ def set_enable_autotune(enable, filepath_prefix=None):
         RuntimeError: If `filepath_prefix` does not have write permission.
 
     Note:
-        - Saved parameter profiles can be loaded via the `mindspore.dataset.deserialize` interface to
-          directly obtain a data processing pipeline object configured with optimal parameters.
+        - Saved parameter profiles can be loaded via the :func:`mindspore.dataset.deserialize` interface to
+          return a data processing pipeline object of optimal parameters.
         - The parameter tuning process can be viewed by turning on INFO level logging.
 
     An example of the generated configuration file is as follows, the "remark" field describes whether or not data
@@ -757,8 +757,8 @@ def get_auto_offload():
 
 def set_enable_watchdog(enable):
     """
-    Set the default state of watchdog Python thread as enabled, the default state of watchdog Python thread is enabled.
-    Watchdog is a thread which cleans up hanging subprocesses.
+    Set the default state of watchdog Python thread as enabled. The watchdog Python thread
+    is responsible for cleaning up stuck or hanging subprocesses, and is enabled by default.
 
     Args:
         enable (bool): Whether to launch a watchdog Python thread.
@@ -1097,12 +1097,12 @@ def get_error_samples_mode():
     return _CDE_TO_PYTHON_ERROR_SAMPLES_MODE.get(_config.get_error_samples_mode())
 
 
-def set_iterator_mode(do_copy=True, parallel_convert=False):
+def set_iterator_mode(do_copy=False, parallel_convert=False):
     """
     Select dataset iterator optimization strategy.
 
     Args:
-        do_copy (bool): Whether dataset iterator creates a Tensor from numpy.ndarray without copy. Default: "True".
+        do_copy (bool): Whether dataset iterator creates a Tensor from numpy.ndarray without copy. Default: "False".
         parallel_convert (bool): Whether dataset iterator starts a thread to organize Tensors to output.
             Default: "False".
 
@@ -1122,7 +1122,7 @@ def set_iterator_mode(do_copy=True, parallel_convert=False):
 def get_iterator_mode():
     """
     Get dataset iterator mode indicate iterator optimization strategy.
-    If `set_iterator_mode` is never called before, `do_copy` default to "True", `parallel_convert` default to "False".
+    If `set_iterator_mode` is never called before, `do_copy` default to "False", `parallel_convert` default to "False".
 
     Returns:
         dict, iterator mode dictionary contains the value of `do_copy` and `parallel_convert`.

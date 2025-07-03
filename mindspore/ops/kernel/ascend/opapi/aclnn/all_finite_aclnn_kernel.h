@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace all_finite {
 
 class AllFiniteAscend : public AclnnKernelMod {
  public:
@@ -35,6 +36,7 @@ class AllFiniteAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace all_finite
 }  // namespace kernel
 }  // namespace mindspore
 

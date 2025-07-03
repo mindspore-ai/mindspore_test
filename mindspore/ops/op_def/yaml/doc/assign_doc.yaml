@@ -1,33 +1,23 @@
 assign:
     description: |
-        Assigns `Parameter` or `Tensor` with a value.
+        Assigns a parameter or tensor with a value.
 
-        Args of `variable` and `value` comply with the implicit type conversion rules to make the data types consistent.
-        If they have different data types, the lower priority data type will be converted to
-        the relatively highest priority data type.
-    
+        Support implicit type conversion and type promotion.
+
         Args:
-            variable (Union[Parameter, Tensor]): The `Parameter` or `Tensor`. :math:`(N,*)` where :math:`*` means,
-                any number of additional dimensions.
-            value (Tensor): The value to be assigned, has the same shape with `variable`.
+            variable (Union[Parameter, Tensor]): The input parameter or tensor.
+            value (Tensor): The value to be assigned.
     
         Returns:
-            Tensor, has the same data type and shape as original `variable`.
-    
-        Raises:
-            TypeError: If `variable` is neither a Parameter nor a Tensor.
-            TypeError: If `value` is not a Tensor.
-            RuntimeError: If the data type of `variable` and `value` conversion of Parameter or Tensor
-                          is required when data type conversion of Parameter is not supported.
+            Tensor
     
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import mindspore
-            >>> from mindspore import Tensor, ops
-            >>> value = Tensor([2.0], mindspore.float32)
-            >>> variable = mindspore.Parameter(Tensor([1.0], mindspore.float32), name="variable")
-            >>> ops.assign(variable, value)
+            >>> value = mindspore.tensor([2.0], mindspore.float32)
+            >>> variable = mindspore.Parameter(mindspore.tensor([1.0], mindspore.float32), name="variable")
+            >>> mindspore.ops.assign(variable, value)
             >>> print(variable.asnumpy())
             [2.]

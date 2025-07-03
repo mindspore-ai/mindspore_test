@@ -14,7 +14,7 @@ mindspore.ops.Dropout2D
         - **keep_prob** (float，可选) - 输入通道保留率，数值范围在0到1之间，例如 `keep_prob` = 0.8，意味着过滤20%的通道。默认值： ``0.5`` 。
 
     输入：
-        - **x** (Tensor) - shape为 :math:`(N, C, H, W)` 的四维张量，其中N是批处理，C是通道数，H是特征高度，W是特征宽度。
+        - **x** (Tensor) - shape为 :math:`(N, C, H, W)` 的四维张量，其中N是批次大小，C是通道数，H是特征高度，W是特征宽度。
 
     输出：
         - **output** (Tensor) - shape和数据类型与 `x` 相同。

@@ -210,7 +210,6 @@ Status DataQueueOp::CheckExceptions(const TensorRow &row) const {
   for (const auto &item : row) {
     CHECK_FAIL_RETURN_UNEXPECTED(item->type().IsNumeric(),
                                  "Invalid datatype, cannot send string, or Python dict to device.");
-    CHECK_FAIL_RETURN_UNEXPECTED(item->HasData(), "Invalid data, the data send to device is null.");
   }
   return Status::OK();
 }

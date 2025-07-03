@@ -14,20 +14,28 @@
 # ============================================================================
 
 """Memory interfaces."""
-
+import os
 from mindspore._c_expression import RuntimeConf, DeviceManagerConf, _memory_stats, \
-    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager
+    _reset_max_mem_reserved, _reset_max_mem_allocated, DeviceContextManager, _empty_cache, _memory_replay
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore import log as logger
 import mindspore as ms
 
 _MEMORY_PATTERN = r'[1-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
+_RESERVE_PATTERN = r'[0-9][0-9]*(\.)?[0-9]*GB|0\.[0-9]*GB'
 _device_context_mgr = DeviceContextManager.get_instance()
 
 
-@args_type_check(init_size=str, increase_size=str, max_size=str, optimize_level=str)
-def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize_level="O0"):
+@args_type_check(
+    init_size=str,
+    increase_size=str,
+    max_size=str,
+    optimize_level=str,
+    huge_page_reserve_size=str,
+)
+def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize_level="O0",
+               huge_page_reserve_size="0GB"):
     """
     Set the memory parameters of runtime device memory management that is implemented using a memory pool.
 
@@ -41,6 +49,7 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
             The actual used memory size is the minimum of the available memory of the device and max_device_memory.
             The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024GB``.
         optimize_level (str): The memory optimize level. The value must be in ['O0', 'O1']. Default: ``O0`` .
+        huge_page_reserve_size (str): The reserved size of huge page memory. The format is "xxGB". Default: ``0GB``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -48,7 +57,7 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     Examples:
         >>> import mindspore as ms
         >>> ms.set_device("Ascend", 1)
-        >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1")
+        >>> ms.runtime.set_memory("10GB", "2GB", "60GB", "O1", "0GB")
     """
     if RuntimeConf.get_instance().is_memory_configured():
         raise RuntimeError("The 'set_memory' can not be set repeatedly.")
@@ -56,9 +65,11 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     _check_memory_conf_valid(init_size)
     _check_memory_conf_valid(increase_size)
     _check_memory_conf_valid(max_size)
+    Validator.check_str_by_regular(huge_page_reserve_size, _RESERVE_PATTERN)
     init_value = float(init_size[:-2])
     increase_value = float(increase_size[:-2])
     max_value = float(max_size[:-2])
+    huge_page_reserve_value = float(huge_page_reserve_size[:-2])
 
     memory_optimize_levels = ["O0", "O1"]
     if optimize_level not in memory_optimize_levels:
@@ -68,36 +79,33 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
     if optimize_level == "O1":
         optimize_value = 1
 
-    return RuntimeConf.get_instance().set_memory(init_value, increase_value, max_value, optimize_value)
+    return RuntimeConf.get_instance().set_memory(
+        init_value,
+        increase_value,
+        max_value,
+        optimize_value,
+        huge_page_reserve_value,
+    )
 
 
 def _check_memory_conf_valid(memory_size):
     """
-    Check whether the configuration memory value format is "xxGB" and can not be "0G".
+    Check whether the configuration memory value format is "xxGB" and can not be "0GB".
     """
     if not Validator.check_str_by_regular(memory_size, _MEMORY_PATTERN):
         raise ValueError("The memory value should be in correct format!"
                          "It must be a string ending with 'GB', in addition to that, it must contain "
                          "only numbers or decimal points, such as \"5GB\" or \"3.5GB\", but got {}."
                          .format(memory_size))
-    if memory_size == "0G" or memory_size == "0.0G":
+    if memory_size in ["0GB", "0.0GB"]:
         raise ValueError("The memory value should not be \"0GB\".")
-
-def _is_initialized(device_target):
-    """
-    Returns whether specified backend is initialized.
-    """
-    _device_context = _device_context_mgr.get_device_context(device_target)
-    if _device_context is None:
-        return False
-    return _device_context.initialized()
 
 def memory_stats():
     """
     Returns status information queried from the memory pool.
 
     Note:
-        - For the `CPU` backend, a dictionary with empty data is always returned.
+        For the `CPU` backend, a dictionary with empty data is always returned.
 
     Returns:
         dict, the queried memory information.
@@ -121,9 +129,6 @@ def memory_stats():
         'persistent_mem_pool_stats': {'block_unit_size': 1073741824, 'block_counts': 0, 'blocks_info': {}}}
     """
     device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return empty dict.")
-        return {}
     return _memory_stats(device_target)
 
 
@@ -152,9 +157,6 @@ def memory_reserved():
         1073741824
     """
     device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
     return _memory_stats(device_target).get("total_reserved_memory", 0)
 
 
@@ -183,22 +185,23 @@ def max_memory_reserved():
         1073741824
     """
     device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
     return _memory_stats(device_target).get("max_reserved_memory", 0)
 
 
 def empty_cache():
     """
-    Release all memory fragments in the memory pool, so that memory arrangement
-    will be optimized.
+    Empty cache in the memory pool.
 
     Note:
-        Currently, the MindSpore memory pool does not have the function of releasing memory fragments.
-        This interface is reserved but implemented as an empty method and prompted in log mode.
+        - Empty cache help reduce the fragmentation of device memory.
+        - Support Atlas A2 series products.
+
+    Supported Platforms:
+        ``Ascend``
     """
-    logger.warning(f"The empty_cache operation is currently not supported.")
+    device_target = ms.context.get_context("device_target")
+    release_size = _empty_cache(device_target)
+    logger.info(f"The empty_cache operation is executed successfully, release size: {release_size}.")
 
 
 def reset_peak_memory_stats():
@@ -305,9 +308,6 @@ def memory_allocated():
         1024
     """
     device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
     return _memory_stats(device_target).get("total_allocated_memory", 0)
 
 
@@ -336,9 +336,6 @@ def max_memory_allocated():
         1536
     """
     device_target = ms.context.get_context("device_target")
-    if not _is_initialized(device_target):
-        logger.warning(f"Backend {device_target} is not initialized yet. Return 0.")
-        return 0
     return _memory_stats(device_target).get("max_allocated_memory", 0)
 
 
@@ -390,3 +387,21 @@ def reset_max_memory_allocated():
     """
     device_target = ms.context.get_context("device_target")
     _reset_max_mem_allocated(device_target)
+
+
+def memory_replay(file_path):
+    """
+    Replay the memory operation based on the application and release order of
+    memory_block.csv.
+
+    Args:
+        file_path (str): The path of memory_block.csv.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.runtime.memory_replay("/data/memory_block.csv")
+    """
+    _memory_replay(os.path.realpath(file_path))

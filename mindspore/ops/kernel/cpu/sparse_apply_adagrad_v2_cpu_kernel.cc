@@ -19,13 +19,15 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "infer/sparse_apply_adagrad_v2.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_adagrad_v2_cpu {
+using namespace sparse_optimizer_cpu;
 namespace {
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccumIndex = 1;
@@ -188,7 +190,7 @@ bool SparseApplyAdagradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
   for (int64_t index = 0; index < batch_size_; index++) {
     SparseGradient<T> input_sparse_grad({grad, indices, indices_size_});
     const auto lr = lr_;
-    const auto epsilon = lr_;
+    const auto epsilon = epsilon_;
     const auto update_slots = update_slots_;
     const auto unique_sparse_grad = input_sparse_grad;
     const auto var_first_dim_size = var_first_dim_size_;
@@ -224,5 +226,6 @@ bool SparseApplyAdagradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseApplyAdagradV2, SparseApplyAdagradV2CpuKernelMod);
+}  // namespace sparse_apply_adagrad_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

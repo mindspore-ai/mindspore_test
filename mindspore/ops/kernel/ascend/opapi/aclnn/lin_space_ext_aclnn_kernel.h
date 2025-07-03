@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lin_space_ext {
 
 class LinSpaceExtAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class LinSpaceExtAscend : public AclnnKernelMod {
   ScalarPtr start_;
   ScalarPtr end_;
 };
+}  // namespace lin_space_ext
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -25,10 +25,11 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/matrix_diag_part_v3.h"
 #include "utils/check_convert_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_diag_part_v3_cpu {
 namespace {
 constexpr size_t kMatrixDiagPartV3InputsNum = 3;
 constexpr size_t kMatrixDiagPartV3OutputsNum = 1;
@@ -314,5 +315,6 @@ std::vector<KernelAttr> MatrixDiagPartV3CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixDiagPartV3, MatrixDiagPartV3CpuKernelMod);
+}  // namespace matrix_diag_part_v3_cpu
 }  // namespace kernel
 }  // namespace mindspore

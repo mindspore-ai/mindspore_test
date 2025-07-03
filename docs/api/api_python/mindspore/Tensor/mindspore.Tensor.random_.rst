@@ -3,7 +3,7 @@ mindspore.Tensor.random\_
 
 .. py:method:: mindspore.Tensor.random_(from_=0, to=None, *, generator=None)
 
-    在区间 :math:`[from\_, to-1]` 内生成服从均匀分布的离散均匀分布随机数，原地更新输入tensor。
+    在区间 :math:`[from\_, to-1]` 内生成服从均匀分布的离散均匀分布随机数，原地更新输入Tensor。
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。

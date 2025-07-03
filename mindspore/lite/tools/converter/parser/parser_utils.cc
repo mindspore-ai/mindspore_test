@@ -43,6 +43,11 @@
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
 #include "tools/converter/parser/einsum_adjust.h"
 #include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::lite {
 namespace {
@@ -202,6 +207,7 @@ AnfNodePtr GetRealConvWeightNode(const FuncGraphPtr &graph, const CNodePtr &cnod
       return nullptr;
     }
     auto weight_cnode = weight_node->cast<CNodePtr>();
+    MS_CHECK_TRUE_MSG(weight_cnode != nullptr, nullptr, "weight_cnode is nullptr.");
     weight_node = weight_cnode->input(1);
     MS_CHECK_TRUE_MSG(weight_node != nullptr, nullptr, "weight_node is nullptr.");
     is_real_weight = !opt::CheckPrimitiveType(weight_node, opt::kPrimIdentity) &&

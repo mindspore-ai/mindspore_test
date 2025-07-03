@@ -56,40 +56,41 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             ${CCSRC_DIR}/backend/operator/ops_backend_infer_function.cc
             ${CCSRC_DIR}/backend/graph_compiler/graph_partition.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/segment_runner.cc
-            ${CCSRC_DIR}/runtime/device/ms_device_shape_transfer.cc
-            ${CCSRC_DIR}/runtime/device/kernel_info.cc
-            ${CCSRC_DIR}/runtime/device/convert_tensor_utils.cc
+            ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
+            ${CCSRC_DIR}/kernel/kernel_info.cc
             ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc
             ${CCSRC_DIR}/runtime/device/kernel_runtime.cc
             ${CCSRC_DIR}/runtime/device/memory_scheduler.cc
             ${CCSRC_DIR}/runtime/device/memory_offload_strategy.cc
-            ${CCSRC_DIR}/runtime/device/memory_manager.cc
-            ${CCSRC_DIR}/runtime/device/auto_mem_offload.cc
+            ${CCSRC_DIR}/runtime/device/res_manager/memory_manager.cc
+            ${CCSRC_DIR}/runtime/device/res_manager/auto_mem_offload.cc
             ${CCSRC_DIR}/runtime/device/gsm/mem_usage_analyzer.cc
             ${CCSRC_DIR}/runtime/device/gsm/swap_strategy_builder.cc
             ${CCSRC_DIR}/runtime/device/common_somas_allocator.cc
             ${CCSRC_DIR}/runtime/pynative/op_runtime_info.cc
-            ${CCSRC_DIR}/runtime/hardware/device_type.cc
-            ${CCSRC_DIR}/runtime/runtime_conf/runtime_conf.cc
-            ${CCSRC_DIR}/kernel/kernel_build_info.cc
-            ${CCSRC_DIR}/kernel/ops_utils.cc
-            ${CCSRC_DIR}/kernel/common_utils.cc
-            ${CCSRC_DIR}/kernel/format_utils.cc
+            ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
+            ${OPS_DIR}/kernel/common/kernel_build_info.cc
+            ${OPS_DIR}/kernel/common/kernel_utils.cc
+            ${OPS_DIR}/kernel/common/common_utils.cc
+            ${OPS_DIR}/kernel/common/format_utils.cc
             ${CCSRC_DIR}/kernel/framework_utils.cc
             ${CCSRC_DIR}/kernel/philox_random.cc
-            ${CCSRC_DIR}/kernel/kernel_factory.cc
-            ${CCSRC_DIR}/kernel/kernel.cc
+            ${OPS_DIR}/kernel/common/kernel_factory.cc
+            ${OPS_DIR}/kernel/common/kernel.cc
             ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
-            ${CCSRC_DIR}/kernel/oplib/oplib.cc
+            ${OPS_DIR}/kernel/common/oplib/oplib.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/mock/anf_ir_dump.cc
             ${CCSRC_DIR}/common/debug/common.cc
             ${CCSRC_DIR}/common/debug/env_config_parser.cc
-            ${CCSRC_DIR}/backend/common/mem_reuse/dynamic_mem_pool.cc
-            ${CCSRC_DIR}/backend/common/mem_reuse/abstract_dynamic_mem_pool.cc
-            ${CCSRC_DIR}/backend/common/mem_reuse/mem_dynamic_allocator.cc
-            ${CCSRC_DIR}/backend/common/mem_reuse/mem_tracker.cc
+            ${CCSRC_DIR}/memory/mem_pool/mem_pool_util.cc
+            ${CCSRC_DIR}/memory/mem_pool/dynamic_mem_pool.cc
+            ${CCSRC_DIR}/memory/mem_pool/abstract_dynamic_mem_pool.cc
+            ${CCSRC_DIR}/memory/mem_pool/mem_dynamic_allocator.cc
+            ${CCSRC_DIR}/memory/mem_pool/mem_tracker.cc
+            ${CCSRC_DIR}/memory/mem_pool/tracker_graph.cc
+            ${CCSRC_DIR}/memory/mem_pool/race_checker.cc
             ${CCSRC_DIR}/common/thread_pool.cc
-            ${CCSRC_DIR}/common/profiler.cc
+            ${CCSRC_DIR}/debug/profiler/profiler.cc
             ${CCSRC_DIR}/common/pynative/abstract_converter.cc
             ${CCSRC_DIR}/utils/scoped_long_running.cc
             ${CCSRC_DIR}/utils/cse.cc
@@ -107,10 +108,10 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
                 ${CCSRC_DIR}/kernel/environ_manager.cc
                 ${CCSRC_DIR}/utils/python_fallback_running.cc
                 ${CCSRC_DIR}/runtime/device/tensors_queue.cc
-                ${CCSRC_DIR}/runtime/device/tensor_array.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/tensor_array.cc
                 ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
                 ${CCSRC_DIR}/plugin/device/cpu/hal/device/cpu_tensor_array.cc
-                ${CCSRC_DIR}/plugin/device/cpu/hal/hardware/cpu_memory_pool.cc
+                ${CCSRC_DIR}/plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_pool.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_cache_utils.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_hash_map.cc
                 ${CCSRC_DIR}/distributed/embedding_cache/embedding_storage/dense_embedding_storage.cc

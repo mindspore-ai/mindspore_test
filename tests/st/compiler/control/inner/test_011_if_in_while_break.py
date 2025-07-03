@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore.common import dtype as mstype
 from mindspore import nn
 from mindspore import Tensor
@@ -21,6 +21,7 @@ from mindspore.ops import composite as C
 from mindspore import context
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_config={"jit_level": "O0"})
 
 
 class ForwardNet(nn.Cell):
@@ -79,9 +80,8 @@ class BackwardNetReplaceBreak(nn.Cell):
         return grads
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_forward():
     """
     Feature: Control flow
@@ -98,8 +98,7 @@ def test_forward():
 
 
 # Problem: Exceed function call depth limit 1000.
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_backward():
     """
     Feature: Control flow
@@ -116,9 +115,8 @@ def test_backward():
     assert graph_grads == Tensor(np.array(21), mstype.int32)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_forward_replace_break():
     """
     Feature: Control flow
@@ -135,9 +133,8 @@ def test_forward_replace_break():
 
 
 # Problem: Exceed function call depth limit 1000.
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_backward_replace_break():
     """
     Feature: Control flow
@@ -154,9 +151,8 @@ def test_backward_replace_break():
     assert graph_grads == Tensor(np.array(21), mstype.int32)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_forward_if_elif_elif_else_break():
     """
     Feature: Parallel if transformation with break
@@ -197,9 +193,8 @@ def test_forward_if_elif_elif_else_break():
     assert graph_mode_out == Tensor(np.array(80), mstype.int32)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_forward_if_elif_elif_break_else():
     """
     Feature: Parallel if transformation with break
@@ -240,9 +235,8 @@ def test_forward_if_elif_elif_break_else():
     assert graph_mode_out == Tensor(np.array(100), mstype.int32)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_forward_if_elif_elif_else_continue():
     """
     Feature: Parallel if transformation with continue
@@ -283,9 +277,8 @@ def test_forward_if_elif_elif_else_continue():
     assert graph_mode_out == Tensor(np.array(100), mstype.int32)
 
 
-@case_register.level0
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
 def test_forward_if_elif_elif_continue_else():
     """
     Feature: Parallel if transformation with continue

@@ -17,13 +17,14 @@
 #include "kernel/cpu/max_pool_with_argmax_cpu_kernel.h"
 #include <algorithm>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/max_pool_with_argmax.h"
-#include "mindspore/ccsrc/kernel/common_utils.h"
-#include "mindspore/ccsrc/kernel/format_utils.h"
+#include "common/common_utils.h"
+#include "common/format_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_argmax_cpu {
 namespace {
 constexpr size_t kMaxPoolWithArgmaxInputsNum = 1;
 constexpr size_t kMaxPoolWithArgmaxOutputsNum = 2;
@@ -220,5 +221,6 @@ std::vector<KernelAttr> MaxPoolWithArgmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxPoolWithArgmax, MaxPoolWithArgmaxCpuKernelMod);
+}  // namespace max_pool_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

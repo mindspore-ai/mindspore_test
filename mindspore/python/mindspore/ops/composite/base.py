@@ -24,6 +24,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import context
 from mindspore.common.parameter import Parameter, ParameterTuple
+from mindspore.common.tensor import Tensor
 from mindspore.parallel._utils import _grads_divided_by_device_num_if_recomputation
 from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFuncGraph_, Tail_, \
     TupleAdd_, UnpackCall_, ZipOperation_, ListAppend_, TupleGetItemTensor_, ListInsert_, \
@@ -35,7 +36,6 @@ from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFu
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit, _pynative_executor, _wrap_func
 from mindspore.common.api import _add_flags, _core
-from mindspore.ops.primitive import Primitive
 from mindspore.ops import signature as sig
 
 __all__ = [TupleAdd_, ListAdd_, UnpackCall_, TupleGetItemTensor_, SequenceSliceGetItem_,
@@ -358,16 +358,14 @@ class GradOperation(GradOperation_):
         #   In PYNATIVE_MODE calling Grad from functions decorated with 'jit', use the out layer after_grad do
         #   grad in GRAPH_MODE.
         if context.get_context("mode") == context.GRAPH_MODE:
-            dynamic_shape_inputs = None
             if isinstance(fn, ms.nn.Cell):
-                dynamic_shape_inputs = fn.get_inputs()
                 fn.grad_ops_label = True
             if self.get_by_list:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args, **kwargs):
                     return grad_(fn, weights)(*args, **kwargs)
             else:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args, **kwargs):
                     return grad_(fn)(*args, **kwargs)
         elif self.pynative_:
@@ -414,14 +412,16 @@ class GradOperation(GradOperation_):
 
         # check run exclude sens
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args,
+                                                create_graph=True):
                 _pynative_executor.set_grad_flag(True)
                 _pynative_executor.new_graph(fn, *args, **kwargs)
                 output = fn(*args, **kwargs)
                 _pynative_executor.end_graph(fn, output, *args, **kwargs)
         else:
             # Check if fn has run already
-            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args,
+                                                create_graph=True):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
                 fn(*args, **kwargs)
@@ -578,11 +578,7 @@ class _Grad(GradOperation_):
             outputs = fn(*args, **kwargs)
             if not isinstance(outputs, tuple) or len(outputs) < 2:
                 raise ValueError("When has_aux is True, origin fn requires more than one outputs.")
-            res = (outputs[0],)
-            stop_gradient = Primitive("StopGradient")
-            for item in outputs[1:]:
-                res += (stop_gradient(item),)
-            return res
+            return outputs
 
         grad_ = _Grad(self.get_all, self.get_by_list, self.sens_param, self.get_by_position, self.has_aux,
                       self.get_value, self.return_ids, self.merge_forward)
@@ -592,20 +588,17 @@ class _Grad(GradOperation_):
         #   In PYNATIVE_MODE calling Grad from functions decorated with 'jit', use the out layer after_grad do
         #   grad in GRAPH_MODE.
         if context.get_context("mode") == context.GRAPH_MODE:
-            dynamic_shape_inputs = None
-            if isinstance(fn, ms.nn.Cell):
-                dynamic_shape_inputs = fn.get_inputs()
             if self.get_by_position:
-                @jit(input_signature=dynamic_shape_inputs)
+                @jit
                 def after_grad(*args):
                     return grad_(fn, weights, grad_position)(*args)
             else:
                 if self.get_by_list:
-                    @jit(input_signature=dynamic_shape_inputs)
+                    @jit
                     def after_grad(*args):
                         return grad_(fn, weights)(*args)
                 else:
-                    @jit(input_signature=dynamic_shape_inputs)
+                    @jit
                     def after_grad(*args):
                         return grad_(fn)(*args)
         elif self.pynative_:
@@ -615,9 +608,12 @@ class _Grad(GradOperation_):
             @_wrap_func
             def after_grad(*args, **kwargs):
                 run_args, res = self._pynative_forward_run(fn, grad_, weights, *args, **kwargs)
-                out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
+                if self.has_aux:
+                    out = _pynative_executor.grad_aux(fn, grad_, weights, grad_position, *run_args)
+                else:
+                    out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
                 out = _grads_divided_by_device_num_if_recomputation(out)
-                if self.return_ids and out:
+                if self.return_ids and (isinstance(out, Tensor) or out) and out is not None:
                     out = _combine_with_ids(grad_position, weights, out)
                 if self.get_value:
                     return res, out
@@ -668,7 +664,8 @@ class _Grad(GradOperation_):
         outputs = ()
         run_forward = False
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args,
+                                                create_graph=True):
                 _pynative_executor.set_grad_flag(True)
                 _pynative_executor.new_graph(fn, *args, **kwargs)
                 outputs = fn(*args, **kwargs)
@@ -676,7 +673,8 @@ class _Grad(GradOperation_):
                 run_forward = True
         else:
             # Check if fn has run already.
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args,
+                                                create_graph=True):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
                 outputs = fn(*args, **kwargs)
@@ -820,14 +818,15 @@ class MultitypeFuncGraph(MultitypeFuncGraph_):
             self.register_fn(type_names, fn)
             self.entries.append((types, fn))
             return fn
-
         return deco
 
-    def register_default(self):
+    def _register_default(self, convert_to_interpret=True):
         def deco(fn):
-            self.default_func = fn
+            if not convert_to_interpret:
+                self.register_default_fn(fn)
+            else:
+                self.default_func = fn
             return fn
-
         return deco
 
     # pylint: disable=missing-docstring
@@ -843,7 +842,7 @@ class HyperMap(HyperMap_):
     HyperMap will apply the set operation to input sequences.
 
     Apply the operations to every element of the sequence or nested sequence. Different
-    from `mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure. The
+    from :class:`mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure. The
     `HyperMap` also supports dynamic sequences as input, but it does not extend this
     support to nested dynamic sequences.
 
@@ -928,9 +927,9 @@ class Map(Map_):
     Apply the operations to every element of the sequence.
 
     Args:
-        ops (Union[MultitypeFuncGraph, None]): `ops` is the operation to apply. If `ops` is `None`,
+        ops (Union[MultitypeFuncGraph, None], optional): `ops` is the operation to apply. If `ops` is `None`,
             the operations should be put in the first input of the instance. Default: ``None`` .
-        reverse (bool): The optimizer needs to be inverted in some scenarios to improve parallel performance,
+        reverse (bool, optional): The optimizer needs to be inverted in some scenarios to improve parallel performance,
             general users please ignore. `Reverse` is the flag to decide if apply the operation reversely.
             Only supported in graph mode. Default is ``False`` .
 

@@ -23,10 +23,11 @@
 #include <set>
 #include <map>
 #include <utility>
+#include <tuple>
 #include "runtime/hardware/device_context.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/hal/device/ascend_device_address.h"
+#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
 namespace mindspore {
 namespace device {
@@ -60,8 +61,10 @@ class GeKernelExecutor : public KernelExecutor {
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                     KernelMod *kernel_mod, void *stream) const override;
-  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block = false) const;
-
+  // This is a high performance version of 'LaunchKernel', which will be called in performance-critical scenario.
+  bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                      const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
+                      KernelMod *kernel_mod, void *stream) const override;
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   void UnifyMindIR(const KernelGraphPtr &graph) const override;
   void AddMindIRPass(const KernelGraphPtr &graph) const override;
@@ -72,6 +75,11 @@ class GeKernelExecutor : public KernelExecutor {
 
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
+
+  bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                         const size_t &stream_id) const override;
 
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
     MS_EXCEPTION_IF_NULL(node);
@@ -91,12 +99,16 @@ class GeKernelExecutor : public KernelExecutor {
 
  private:
   static void DoSomas(const FuncGraphPtr &graph);
-  void DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const;
+  void DoStreamAssign(
+    const KernelGraphPtr &kernel_graph,
+    const std::vector<std::pair<CNodePtr, std::tuple<char, size_t, size_t, size_t>>> &mock_exec_order) const;
   // launch
-  bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
-                       const vector<KernelTensor *> &outputs) const;
+  bool MemoryCopyAsync(const CNodePtr &node, const std::vector<KernelTensor *> &inputs,
+                       const std::vector<KernelTensor *> &outputs, void *stream) const;
   void DoAsyncCkpt(const CNodePtr &kernel) const;
+  void SetArfError() const;
+  void SetUceError() const;
+  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const;
 
   mutable std::set<CNodePtr> nop_op_to_memcpy_;
   // Maybe AscendDeviceResManager and GEDeviceResManager now

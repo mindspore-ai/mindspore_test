@@ -34,6 +34,18 @@
 #include "infer/tuple_get_item.h"
 #include "tools/common/tensor_util.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -1071,11 +1083,9 @@ CNodePtr EncoderLayerFusion::CreateMaskedEncoderLayerFusionNode(const FuncGraphP
   AnfNodePtr input_mask = mask ? utils::cast<AnfNodePtr>((*equiv)[mask_]) : nullptr;
   int ffn_hidden_size, expert_num = 1, expert_offset = 0;
   float capacity_factor = 0;
-  if (InitAttributes(k_past, begin_expert_ids, weight_m, expert_capacity_node, &ffn_hidden_size, &expert_num,
-                     &expert_offset, &capacity_factor)) {
-    MS_LOG(ERROR) << "Init Attributes failed.";
-    return nullptr;
-  }
+  MS_CHECK_TRUE_MSG(InitAttributes(k_past, begin_expert_ids, weight_m, expert_capacity_node, &ffn_hidden_size,
+                                   &expert_num, &expert_offset, &capacity_factor) == RET_OK,
+                    nullptr, "Init Attributes failed!");
   auto encoder_layer_prim = CreatePrim(func_graph, equiv, ffn_hidden_size, expert_num, expert_offset, capacity_factor);
   auto encoder_layer_prim_c = encoder_layer_prim->GetPrim();
   auto value_node = NewValueNode(encoder_layer_prim_c);

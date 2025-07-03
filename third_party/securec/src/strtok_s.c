@@ -1,37 +1,42 @@
-/**
- * Copyright 2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2014-2021. All rights reserved.
+ * Licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *          http://license.coscl.org.cn/MulanPSL2
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * Description: strtok_s  function
+ * Create: 2014-02-25
  */
 
-#include "securec.h"
+#include "securecutil.h"
+
+SECUREC_INLINE int SecIsInDelimit(char ch, const char *strDelimit)
+{
+    const char *ctl = strDelimit;
+    while (*ctl != '\0' && *ctl != ch) {
+        ++ctl;
+    }
+    return (int)(*ctl != '\0');
+}
 
 /*
- * Find beginning of token (skip over leading delimiters).Note that
- * there is no token if this loop sets string to point to the terminal null.
+ * Find beginning of token (skip over leading delimiters).
+ * Note that there is no token if this loop sets string to point to the terminal null.
  */
-static char *SecFindBegin(char *strToken, const char *strDelimit)
+SECUREC_INLINE char *SecFindBegin(char *strToken, const char *strDelimit)
 {
     char *token = strToken;
     while (*token != '\0') {
-        const char *ctl = strDelimit;
-        while (*ctl != '\0' && *ctl != *token) {
-            ++ctl;
+        if (SecIsInDelimit(*token, strDelimit) != 0) {
+            ++token;
+            continue;
         }
-        if (*ctl == '\0') { /* don't find any delimiter in string header, break the loop */
-            break;
-        }
-        ++token;
+        /* Don't find any delimiter in string header, break the loop */
+        break;
     }
     return token;
 }
@@ -39,19 +44,15 @@ static char *SecFindBegin(char *strToken, const char *strDelimit)
 /*
  * Find rest of token
  */
-static char *SecFindRest(char *strToken, const char *strDelimit)
+SECUREC_INLINE char *SecFindRest(char *strToken, const char *strDelimit)
 {
-    /* Find the rest of the token. If it is not the end of the string,
-     * put a null there.
-     */
+    /* Find the rest of the token. If it is not the end of the string, put a null there */
     char *token = strToken;
     while (*token != '\0') {
-        const char *ctl = strDelimit;
-        while (*ctl != '\0' && *ctl != *token) {
-            ++ctl;
-        }
-        if (*ctl != '\0') {        /* find a delimiter */
-            *token++ = '\0';       /* set string termintor */
+        if (SecIsInDelimit(*token, strDelimit) != 0) {
+            /* Find a delimiter, set string terminator */
+            *token = '\0';
+            ++token;
             break;
         }
         ++token;
@@ -62,14 +63,12 @@ static char *SecFindRest(char *strToken, const char *strDelimit)
 /*
  * Find the final position pointer
  */
-static char *SecUpdateToken(char *strToken, const char *strDelimit, char **context)
+SECUREC_INLINE char *SecUpdateToken(char *strToken, const char *strDelimit, char **context)
 {
-    /* point to updated position */
-    char *token = SecFindRest(strToken, strDelimit);
-    /* record string position for next search in the context */
-    *context = token;
+    /* Point to updated position. Record string position for next search in the context */
+    *context = SecFindRest(strToken, strDelimit);
     /* Determine if a token has been found. */
-    if (token == strToken) {
+    if (*context == strToken) {
         return NULL;
     }
     return strToken;
@@ -96,12 +95,12 @@ static char *SecUpdateToken(char *strToken, const char *strDelimit, char **conte
 char *strtok_s(char *strToken, const char *strDelimit, char **context)
 {
     char *orgToken = strToken;
-    /* validate delimiter and string context */
+    /* Validate delimiter and string context */
     if (context == NULL || strDelimit == NULL) {
         return NULL;
     }
-    /* valid input string and string pointer from where to search */
-    if (orgToken == NULL && (*context) == NULL) {
+    /* Valid input string and string pointer from where to search */
+    if (orgToken == NULL && *context == NULL) {
         return NULL;
     }
     /* If string is null, continue searching from previous string position stored in context */
@@ -111,7 +110,7 @@ char *strtok_s(char *strToken, const char *strDelimit, char **context)
     orgToken = SecFindBegin(orgToken, strDelimit);
     return SecUpdateToken(orgToken, strDelimit, context);
 }
-#if SECUREC_IN_KERNEL
+#if SECUREC_EXPORT_KERNEL_SYMBOL
 EXPORT_SYMBOL(strtok_s);
 #endif
 

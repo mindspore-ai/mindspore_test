@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 import os
-import pytest
 import re
 import shutil
 import numpy as np
@@ -199,27 +198,24 @@ def test_load_convert_tensormove():
     """
 
     if ms.context.get_context('mode') == 0:
-        with pytest.raises(RuntimeError) as info:
-            # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
-            os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
-            save_path = "./test_load_convert_tensormove"
-            context.set_context(save_graphs=True, save_graphs_path=save_path)
-            x = Tensor(np.array(1), ms.int32)
-            graph_forword_net = ForwardNet()
-            graph_backword_net = BackwardNet(graph_forword_net)
-            output_except = (Tensor(np.array(3), ms.int32),)
-            graph_mode_grads = graph_backword_net(x)
-            content2 = read_file(save_path)
-            tensormove_set = re.findall('= TensorMove', content2)
-            context.set_context(save_graphs=False)
-            try:
-                shutil.rmtree(save_path)
-            except FileNotFoundError:
-                pass
-            assert len(tensormove_set) == 3
-            assert np.all(graph_mode_grads == output_except)
-        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-                in str(info.value))
+        # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
+        os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
+        save_path = "./test_load_convert_tensormove"
+        context.set_context(save_graphs=True, save_graphs_path=save_path)
+        x = Tensor(np.array(1), ms.int32)
+        graph_forword_net = ForwardNet()
+        graph_backword_net = BackwardNet(graph_forword_net)
+        output_except = (Tensor(np.array(3), ms.int32),)
+        graph_mode_grads = graph_backword_net(x)
+        content2 = read_file(save_path)
+        tensormove_set = re.findall('= TensorMove', content2)
+        context.set_context(save_graphs=False)
+        try:
+            shutil.rmtree(save_path)
+        except FileNotFoundError:
+            pass
+        assert len(tensormove_set) == 3
+        assert np.all(graph_mode_grads == output_except)
 
 
 class ForwardNet2(Cell):
@@ -265,6 +261,7 @@ def test_load_eliminate():
     Description: test load eliminate.
     Expectation: No exception.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -293,6 +290,7 @@ def test_parameter_tuple_assign():
     Description: Parameter tuple assign.
     Expectation: No exception.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -320,6 +318,7 @@ def test_parameter_tuple_assign_addn():
     Description: Parameter tuple assign and addn.
     Expectation: No exception.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -353,6 +352,7 @@ def test_parameter_tuple_assign_addn_inner_net():
     Description: Parameter tuple assign and addn.
     Expectation: No exception.
     """
+
     class InnerNet(Cell):
         def __init__(self):
             super().__init__()
@@ -400,6 +400,7 @@ def test_parameter_tuple_assign_addn_inner_net_control_flow():
     Description: Parameter tuple assign and addn.
     Expectation: No exception.
     """
+
     class InnerNet(Cell):
         def __init__(self):
             super().__init__()
@@ -426,6 +427,7 @@ def test_parameter_tuple_assign_addn_inner_net_control_flow():
             self.assign(inner_params[0], 2 * y)
             return out_res1 + out_res2, inner_params[0] + inner_params[1]
 
+    context.set_context(jit_config={"jit_level": "O0"})
     input_x = Tensor(3)
     input_y = Tensor(5)
     net = Net()
@@ -441,6 +443,7 @@ def test_parameter_value_control_flow_ascend():
     Description: Test param.value() on Ascend platform.
     Expectation: No exception.
     """
+
     class InnerNet(Cell):
         def __init__(self):
             super().__init__()
@@ -484,6 +487,7 @@ def test_control_while_for_if_break_parameter():
     Description: UpdateState grad with multi inputs.
     Expectation: No exception.
     """
+
     class Net30(Cell):
         def __init__(self):
             super().__init__()
@@ -492,7 +496,7 @@ def test_control_while_for_if_break_parameter():
             add_np = np.full((4, 4, 4), 0.5, dtype=np.float32)
             self.add_weight = Parameter(Tensor(add_np), name="add_weight")
 
-        @jit
+        @jit(backend="ms_backend")
         def construct(self, x, y, z):
             out = z
             while x < y:
@@ -514,7 +518,7 @@ def test_control_while_for_if_break_parameter():
     ms_grad(net)(Tensor(2), Tensor(20), Tensor(np.random.rand(4, 4, 4), dtype=ms.float32))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_parameter_shape_in_auto_monad():
     """
@@ -522,6 +526,7 @@ def test_parameter_shape_in_auto_monad():
     Description: reshape is not a real operator and needs to use its user as input to updatestate.
     Expectation: No exception.
     """
+
     class DoubleConcatNet(Cell):
         def __init__(self, div_np, concat_np, mul_np, axis=1):
             super().__init__()
@@ -613,6 +618,7 @@ class ControlMixedWhileIf(nn.Cell):
         out = out + x
         return out
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_mixed_while_if():
     """
@@ -631,3 +637,50 @@ def test_mixed_while_if():
     expect = np.array(3318).astype(np.int32)
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
     context.set_context(mode=context.GRAPH_MODE)
+
+
+class SideEffectSoftmaxGradExt1(Cell):
+    def __init__(self):
+        super().__init__()
+        # MetaFactory.__init__(self)
+        np.random.seed(5)
+        inputs1 = np.random.randn(5, 5)
+        inputs2 = np.random.randn(5, 5)
+        inputs3 = np.random.randn(5, 5)
+        self.parameter1 = Parameter(Tensor(inputs1, ms.float32), name="parameter1")
+        self.parameter2 = Parameter(Tensor(inputs2, ms.float32), name="parameter2")
+        self.parameter3 = Parameter(Tensor(inputs3, ms.float32), name="parameter3")
+        self.mul = P.Mul()
+        self.reducesum = P.ReduceSum(True)
+        self.sub = P.Sub()
+        self.assign = P.Assign()
+
+    def construct(self, h, z, w):
+        x = self.mul(self.parameter2, self.parameter1)
+        x = self.reducesum(x, (-1,))
+        self.assign(self.parameter1, h)
+        x = self.sub(self.parameter1, x)
+        self.assign(self.parameter2, z)
+        self.assign(self.parameter3, w)
+        y = self.mul(self.parameter3, self.parameter2)
+        x = self.mul(y, x)
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_softmaxgradext1():
+    """
+    Feature: Auto monad feature: record the value of load.
+    Description: record the value of load.
+    Expectation: No exception.
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    net = SideEffectSoftmaxGradExt1()
+    inputs1 = np.random.randn(5, 5)
+    inputs2 = np.random.randn(5, 5)
+    inputs3 = np.random.randn(5, 5)
+    out1 = net(Tensor(inputs1, ms.float32), Tensor(inputs2, ms.float32), Tensor(inputs3, ms.float32))
+    net = SideEffectSoftmaxGradExt1()
+    context.set_context(mode=context.PYNATIVE_MODE)
+    out2 = net(Tensor(inputs1, ms.float32), Tensor(inputs2, ms.float32), Tensor(inputs3, ms.float32))
+    allclose_nparray(out1.asnumpy(), out2.asnumpy(), 0.001, 0.001)

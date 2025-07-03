@@ -22,11 +22,12 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_v2_grad_cpu {
 class CTCLossV2GradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<CTCLossV2GradCpuKernelMod> {
  public:
   CTCLossV2GradCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class CTCLossV2GradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelH
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs) const;
 };
+}  // namespace ctcloss_v2_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CTCLOSS_V2_GRAD_CPU_KERNEL_H_

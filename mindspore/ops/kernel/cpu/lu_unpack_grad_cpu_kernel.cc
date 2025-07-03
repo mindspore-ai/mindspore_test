@@ -17,10 +17,11 @@
 #include <utility>
 #include <functional>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace lu_unpack_grad_cpu {
 namespace {
 const size_t kInputNum = 3;
 const size_t kOutputNum = 2;
@@ -189,5 +190,6 @@ std::vector<KernelAttr> LuUnpackGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LuUnpackGrad, LuUnpackGradCpuKernelMod);
+}  // namespace lu_unpack_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

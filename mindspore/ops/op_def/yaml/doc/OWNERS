@@ -3,6 +3,7 @@ approvers:
 - Hanshize
 - tjulyj33
 - liangchenghui
+- xuzhenyoumi
 
 options:
     no_parent_owners: true

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
-#include "common/common_test.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "infer/ops_func_impl/atanh.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_INFER_TEST_DECLARE(Atanh, EltwiseOpParams);
+namespace {
+std::vector <GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeBool}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeUInt8}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt8}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt16}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt32}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeInt64}})
+      .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 6}, kNumberTypeFloat32}})
+      .FeedExpectedOutput({{2, 3, 6}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{6}, kNumberTypeFloat16}})
+      .FeedExpectedOutput({{6}}, {kNumberTypeFloat16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{1, 1, 1, 1, 1, 1, 1, 8}, kNumberTypeUInt8}})
+      .FeedExpectedOutput({{1, 1, 1, 1, 1, 1, 1, 8}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeComplex128}})
+      .FeedExpectedOutput({{2, -1}}, {kNumberTypeComplex128});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt64}})
+      .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeInt32}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  return generator.Generate();
+}
+}
 
-OP_FUNC_IMPL_INFER_TEST_CASES(Atanh, testing::Values(EltwiseOpParams{{2, 3}, kBool, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kUInt8, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kInt8, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kInt16, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kInt32, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kInt64, {2, 3}, kFloat32},
-                                                     EltwiseOpParams{{2, 3}, kFloat16, {2, 3}, kFloat16},
-                                                     EltwiseOpParams{{-1, 3}, kFloat32, {-1, 3}, kFloat32},
-                                                     EltwiseOpParams{{-1, -1}, kFloat64, {-1, -1}, kFloat64},
-                                                     EltwiseOpParams{{-2}, kComplex64, {-2}, kComplex64},
-                                                     EltwiseOpParams{{-2}, kComplex128, {-2}, kComplex128}));
+INSTANTIATE_TEST_CASE_P(Atanh, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace ops
 }  // namespace mindspore

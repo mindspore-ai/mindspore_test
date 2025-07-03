@@ -102,7 +102,6 @@
           if (bias != NULL) {                                                                                       \
             bias = bias_data + oc * oc_tile_;                                                                       \
           }                                                                                                         \
-          /* nhwc dst_w = dst_oh + oc * oc_tile_;  nc8hw8 dst_w = dst_oh * oc * ow * oh * oc_tile_; */              \
           float *dst_oc = dst_oh + oc * out_c_step;                                                                 \
           const SWConvKernel kernel_border = kernel[oc_block - 1][0];                                               \
           if (oh < top || oh >= bottom) { /* oh in up or down border */                                             \

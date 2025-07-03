@@ -16,7 +16,7 @@
 import pytest
 import mindspore as ms
 from mindspore.utils import stress_detect
-
+import time
 
 def test_stress_detect():
     """
@@ -28,7 +28,10 @@ def test_stress_detect():
     a = ms.Tensor(1.0)
     b = ms.Tensor(2.0)
     _ = a * b
+    start = time.time()
     ret = stress_detect()
+    end = time.time()
+    assert (end-start) <= 300
     assert ret == 0
 
 

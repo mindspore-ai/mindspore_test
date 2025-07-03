@@ -13,10 +13,9 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, jit
 from mindspore.common import mutable
 from mindspore.ops.composite import GradOperation
 from mindspore.ops.operations import _sequence_ops as seq
@@ -98,7 +97,7 @@ def test_seq_greater_than_grad():
     y = mutable((1, 2, 3), True)
     dout = mutable(1)
     net = GreaterThanNet()
-    grad_func = GradOperation(get_all=True, sens_param=True)(net)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net), backend="ms_backend")
     expect = ((0, 0, 0), (0, 0, 0))
     assert grad_func(x, y, dout) == expect
 
@@ -115,6 +114,6 @@ def test_seq_greater_equal_grad():
     y = mutable((1, 2, 3), True)
     dout = mutable(0)
     net = GreaterEqualNet()
-    grad_func = GradOperation(get_all=True, sens_param=True)(net)
+    grad_func = jit(GradOperation(get_all=True, sens_param=True)(net), backend="ms_backend")
     expect = ((0, 0, 0), (0, 0, 0))
     assert grad_func(x, y, dout) == expect

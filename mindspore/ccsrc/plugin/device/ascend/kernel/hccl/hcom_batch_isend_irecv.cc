@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/kernel/hccl/hcom_batch_isend_irecv.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {
 namespace kernel {
@@ -97,6 +97,10 @@ bool HcomBatchISendIRecvKernel::Launch(const std::vector<KernelTensor *> &inputs
     info[i] = HcclSendRecvItem{hccl_type, buf, numel, hccl_dtype, rank};
   }
 
+  if (NeedReGetHcom()) {
+    MS_LOG(WARNING) << "Hccl inner name had changed, need re-get hcom";
+    comm_ = AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_);
+  }
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBatchISendIRecv(info, kItem, comm_, stream_ptr);
   if (hccl_result != HCCL_SUCCESS) {
     MS_LOG(ERROR) << "HcclBatchISendIRecv failed, ret:" << hccl_result;

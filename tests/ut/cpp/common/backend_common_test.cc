@@ -20,18 +20,19 @@
 #include <memory>
 
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "backend/graph_compiler/backend.h"
 #include "backend/graph_compiler/transform.h"
 #include "common/device_common_test.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
 #include "frontend/operator/ops.h"
 #include "include/common/debug/anf_ir_dump.h"
-//#include "plugin/device/ascend/optimizer/mindir/ascend_vm_op_adapter.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/action.h"
 #include "ir/anf.h"
 #include "ir/manager.h"
+#include "backend/common/session/session_factory.h"
+#include "runtime/graph_scheduler/graph_compiler.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace {
@@ -133,9 +134,9 @@ std::shared_ptr<session::KernelGraph> BackendCommon::Compile(const FuncGraphPtr 
   runtime::test::DeviceContextKey device_context_key{kDefaultDeviceName, 0};
   auto device_context = std::make_shared<runtime::test::TestDeviceContext>(device_context_key);
 
-  auto compiler = std::make_shared<compile::GraphCompiler>();
+  auto compiler = std::make_shared<runtime::GraphCompiler>();
   auto graph_id = compiler->CompileGraph(segment, std::make_pair(inputs, outputs), device_context.get(),
-                                         device::RunMode::kKernelMode, false);
+                                         backend::BackendJitConfig(), false);
   return compiler->Fetch(graph_id);
 }
 }  // namespace mindspore

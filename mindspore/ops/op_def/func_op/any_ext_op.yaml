@@ -1,0 +1,22 @@
+#operator AnyExt
+any_ext:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+    keepdim:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  bprop_expander: False
+  dispatch:
+    enable: True
+    Ascend: AnyExtAscend
+    CPU: AnyExtCPU
+    GPU: AnyExtGPU
+  

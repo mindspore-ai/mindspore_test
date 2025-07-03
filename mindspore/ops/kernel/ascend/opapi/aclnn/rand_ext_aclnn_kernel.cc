@@ -20,18 +20,19 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace rand_ext {
 
 void RandExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   constexpr double from_ = 0.0;
   constexpr double to_ = 1.0;
-  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]));
-  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
+  seed_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]));
+  offset_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
   GetWorkspaceForResize(outputs[kIndex0], from_, to_, seed_, offset_);
 }
 
@@ -46,5 +47,6 @@ bool RandExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 
 MS_ACLNN_KERNEL_FACTORY_REG(RandExt, RandExtAscend);
 MS_ACLNN_KERNEL_FACTORY_REG(RandLikeExt, RandExtAscend);
+}  // namespace rand_ext
 }  // namespace kernel
 }  // namespace mindspore

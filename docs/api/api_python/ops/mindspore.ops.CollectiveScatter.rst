@@ -3,7 +3,7 @@ mindspore.ops.CollectiveScatter
 
 .. py:class:: mindspore.ops.CollectiveScatter(src_rank=0, group=GlobalComm.WORLD_COMM_GROUP)
 
-    对输入数据的数据进行均匀散射到通信域的卡上。
+    将输入数据均匀散射到通信域的卡上。
 
     .. note::
         该接口只支持Tensor输入，且只支持均匀切分。
@@ -31,7 +31,7 @@ mindspore.ops.CollectiveScatter
         .. include:: mindspore.ops.comm_note.rst
 
         该样例需要在2卡环境下运行。
-    
+
     教程样例：
         - `分布式集合通信原语 - CollectiveScatter
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/ops/communicate_ops.html#collectivescatter>`_

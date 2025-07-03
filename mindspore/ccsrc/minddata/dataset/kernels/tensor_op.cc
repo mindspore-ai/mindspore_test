@@ -53,7 +53,7 @@ Status TensorOp::Compute(const std::shared_ptr<DeviceTensor> &input, std::shared
     " Ascend310 device. If so, please implement it in the derived class.");
 }
 
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 Status TensorOp::Compute(const std::vector<std::shared_ptr<DeviceTensorAscend910B>> &input,
                          std::vector<std::shared_ptr<DeviceTensorAscend910B>> *output) {
   IO_CHECK_VECTOR(input, output);

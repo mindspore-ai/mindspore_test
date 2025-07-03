@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -219,24 +219,6 @@ Status PromptFlashAttentionInfo::CheckAttenMaskStrategy(const StrategyPtr &strat
     return FAILED;
   }
   return SUCCESS;
-}
-
-int64_t LongAdd(int64_t base, int64_t shift) {
-  int64_t result;
-  if (shift > 0) {
-    if (base > INT_MAX - shift) {
-      result = INT_MAX;
-    } else {
-      result = base + shift;
-    }
-  } else {
-    if (base < INT_MIN - shift) {
-      result = INT_MIN;
-    } else {
-      result = base + shift;
-    }
-  }
-  return result;
 }
 
 int64_t PromptFlashAttentionInfo::GetSplitIdAndRank() {

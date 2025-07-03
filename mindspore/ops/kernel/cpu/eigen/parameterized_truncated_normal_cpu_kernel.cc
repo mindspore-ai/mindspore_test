@@ -23,8 +23,8 @@
 #include "Eigen/Core"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "kernel/cpu/eigen/eigen_common_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "kernel/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/common_utils.h"
 #include "kernel/philox_random.h"
 #include "mindspore/ops/infer/parameterized_truncated_normal.h"
 
@@ -87,6 +87,7 @@ bool ParameterizedTruncatedNormalCpuKernelMod::LaunchKernel(const std::vector<Ke
   auto output_shape = GetDeviceAddress<T_shape>(inputs, 0);
   size_t input_shape_num = inputs[0]->size() / sizeof(T_shape);
   // check shape
+  MS_EXCEPTION_IF_NULL(output_shape);
   auto batch_size = output_shape[0];
   int sample_size = 1;
   for (size_t i = 1; i < input_shape_num; i++) {

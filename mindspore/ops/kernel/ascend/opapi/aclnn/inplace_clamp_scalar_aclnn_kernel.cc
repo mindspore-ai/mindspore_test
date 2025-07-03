@@ -16,24 +16,28 @@
 #include "kernel/ascend/opapi/aclnn/inplace_clamp_scalar_aclnn_kernel.h"
 #include <vector>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inplace_clamp_scalar {
 
 void InplaceClampScalarAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                         const std::vector<KernelTensor *> &outputs) {
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex0]);
+  min_scalar_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  max_scalar_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex2]);
+  GetWorkspaceForResize(inputs[kIndex0], min_scalar_, max_scalar_, inputs[kIndex0]);
 }
 
 bool InplaceClampScalarAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &workspace,
                                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], min_scalar_, max_scalar_, inputs[kIndex0]);
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceClampScalar, InplaceClampScalarAclnnKernelMod);
+}  // namespace inplace_clamp_scalar
 }  // namespace kernel
 }  // namespace mindspore

@@ -29,13 +29,17 @@ ones_like_leaf = base.MultitypeFuncGraph('ones_like', True)
 using ".register" decorator.
 """
 
+_ones_like_leaf_for_grad = base.MultitypeFuncGraph('_ones_like_for_grad', True)
 
+
+@_ones_like_leaf_for_grad.register("TypeType")
 @ones_like_leaf.register("TypeType")
 def _ones_like_type_type(x):
     """Returns x because x is a type. This is usually used in backprop progress."""
     return x
 
 
+@_ones_like_leaf_for_grad.register("Number")
 @ones_like_leaf.register("Number")
 def _ones_like_scalar(x):
     """Returns 1 which has the same dtype as x where x is a scalar."""
@@ -43,12 +47,14 @@ def _ones_like_scalar(x):
     return F.scalar_cast(1.0, t)
 
 
+@_ones_like_leaf_for_grad.register("Tensor")
 @ones_like_leaf.register("Tensor")
 def _ones_like_tensor(x):
     """Returns a tensor with the same shape and dtype as x and all elements are 1."""
     return P.OnesLike()(x)
 
 
+@_ones_like_leaf_for_grad.register("COOTensor")
 @ones_like_leaf.register("COOTensor")
 def _ones_like_coo_tensor(x):
     """Returns a tensor with the same shape and dtype as x and all elements are 1."""
@@ -57,12 +63,14 @@ def _ones_like_coo_tensor(x):
     return F.make_coo_tensor(F.coo_tensor_get_indices(x), values, F.coo_tensor_get_dense_shape(x))
 
 
+@_ones_like_leaf_for_grad.register("CSRTensor")
 @ones_like_leaf.register("CSRTensor")
 def _ones_like_csr_tensor(x):
     """Returns a tensor with the same shape and dtype as x and all elements are 1."""
     return F.make_csr_tensor(x.indptr, x.indices, ones_like(x.values), x.shape)
 
 
+@_ones_like_leaf_for_grad.register("Function")
 @ones_like_leaf.register("Function")
 def _ones_like_func(x):
     """
@@ -78,10 +86,18 @@ def _ones_like_func(x):
     return F.environ_create()
 
 
+@_ones_like_leaf_for_grad.register("None")
 @ones_like_leaf.register("None")
 def _ones_like_none(x):
     """Returns none"""
     return None
+
+
+# pylint: disable=protected-access
+@_ones_like_leaf_for_grad._register_default(False)
+def default_ones_like_leaf_for_grad(x):
+    """Default function for _ones_like_leaf_for_grad."""
+    return x
 
 
 ones_like = base.HyperMap(ones_like_leaf)
@@ -94,3 +110,5 @@ Example:
     >>> input = Tensor([2, 3], mindspore.float16)
     >>> ones = ones_like(input) # The dtype of ones is mindspore.float16
 """
+
+_ones_like_for_grad = base.HyperMap(_ones_like_leaf_for_grad)

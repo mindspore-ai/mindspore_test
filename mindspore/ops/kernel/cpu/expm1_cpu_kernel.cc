@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/expm1_cpu_kernel.h"
 #include <cmath>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace expm1_cpu {
 namespace {
 constexpr size_t kExpm1InputsNum = 1;
 constexpr size_t kExpm1OutputsNum = 1;
@@ -72,5 +73,6 @@ void Expm1CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Expm1, Expm1CpuKernelMod);
+}  // namespace expm1_cpu
 }  // namespace kernel
 }  // namespace mindspore

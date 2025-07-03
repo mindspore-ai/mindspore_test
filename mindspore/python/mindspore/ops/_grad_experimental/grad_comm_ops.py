@@ -16,6 +16,7 @@
 """Generate bprop for comm ops"""
 from __future__ import division
 from __future__ import absolute_import
+import os
 from mindspore import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
@@ -27,7 +28,8 @@ from mindspore.ops.operations._inner_ops import issubclass_
 from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
 from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _HostAllGather, AllReduce,
-                                               NeighborExchange, AlltoAll, NeighborExchangeV2, Broadcast,
+                                               NeighborExchange, AlltoAll, AlltoAllV, NeighborExchangeV2,
+                                               Broadcast, AllGatherV, ReduceScatterV,
                                                _GetTensorSlice, _MirrorOperator, _MirrorMiniStepOperator, ReduceOp,
                                                ReduceScatter, _HostReduceScatter, _VirtualDiv, _VirtualAdd, _AllSwap,
                                                _VirtualAssignAdd, _VirtualAccuGrad, _MirrorMicroStepOperator,
@@ -192,7 +194,7 @@ def get_bprop_virtual_assign_add(self):
 
     def bprop(x, y, out, dout):
         if reduce_scatter:
-            dout = reduce_scatter(dout)
+            dout = reduce_scatter(cast(dout, dtype(y)))
         return F.depend((cast(out_tensor, dtype(x)), cast(out_tensor, dtype(y))), assign_add(y, dout))
 
     return bprop
@@ -236,7 +238,6 @@ def get_bprop_mirror_micro_step_operator(self):
     allgather for sparse feature.
     """
     group = self.group
-    global_rank = get_rank()
     dev_num = self.dev_num
     mean_flag = self.mean_flag
     param_name = " "
@@ -270,6 +271,9 @@ def get_bprop_mirror_micro_step_operator(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -279,8 +283,7 @@ def get_bprop_mirror_micro_step_operator(self):
             squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                    z = F.depend(z, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -336,13 +339,15 @@ def get_bprop_all_gather(self):
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
     if param_name and (dump_local_norm or dump_device_local_norm):
-        global_rank = get_rank()
         cast = P.Cast()
         ln_print = P.Print()
         tensor_dump = P.TensorDump()
         reduce_sum = P.ReduceSum(keep_dims=False)
         square = P.Square()
         sqrt = P.Sqrt()
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -352,8 +357,7 @@ def get_bprop_all_gather(self):
             squared_norm = reduce_sum(square((dout)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                    dout = F.depend(dout, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -430,7 +434,6 @@ def get_bprop_micro_step_all_gather(self):
         if self.instance_name:
             instance_name = "grad_" + self.instance_name
             reduce_scatter.set_prim_instance_name(instance_name)
-    global_rank = get_rank()
     cast = P.Cast()
     dtype = P.DType()
     out_tensor = Tensor(1.0, mstype.float16)
@@ -443,6 +446,9 @@ def get_bprop_micro_step_all_gather(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
@@ -451,7 +457,7 @@ def get_bprop_micro_step_all_gather(self):
         if with_mirror_operator:
             if not do_mirror:
                 return (dout, cast(out_tensor, dtype(z)))
-            real_grad = reduce_scatter(dout)
+            real_grad = reduce_scatter(cast(dout, dtype(z)))
             if mean_flag:
                 real_grad = F.tensor_mul(real_grad, scale)
             return (real_grad, cast(out_tensor, dtype(z)))
@@ -460,8 +466,7 @@ def get_bprop_micro_step_all_gather(self):
             squared_norm = reduce_sum(square((z)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    z = F.depend(z, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                "/local_norm__" + param_name, sqrt(squared_norm)))
+                    z = F.depend(z, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     z = F.depend(z, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:
@@ -635,6 +640,53 @@ def get_bprop_all_to_all(self):
     return bprop
 
 
+@bprop_getters.register(AlltoAllV)
+def get_bprop_all_to_all_v(self):
+    """Generate bprop for AlltoAll."""
+    all_to_all_v_grad = AlltoAllV(self.group, self.block_size)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        all_to_all_v_grad.set_prim_instance_name(instance_name)
+
+    def bprop(x, send_numel_list, recv_numel_list, out, dout):
+        dx = all_to_all_v_grad(dout, recv_numel_list, send_numel_list)
+        return (dx, zeros_like(send_numel_list), zeros_like(recv_numel_list))
+
+    return bprop
+
+
+@bprop_getters.register(AllGatherV)
+def get_bprop_all_gather_v(self):
+    """Generate bprop for AllGatherV."""
+    all_gather_v_grad = ReduceScatterV(ReduceOp.SUM, self.group)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        all_gather_v_grad.set_prim_instance_name(instance_name)
+
+    def bprop(x, output_split_sizes, out, dout):
+        dx = all_gather_v_grad(dout, output_split_sizes)
+        return (dx, zeros_like(output_split_sizes))
+
+    return bprop
+
+
+@bprop_getters.register(ReduceScatterV)
+def get_bprop_reduce_scatter_v(self):
+    """Generate bprop for ReduceScatterV."""
+    reduce_scatter_v_grad = AllGatherV(self.group)
+    if hasattr(self, "instance_name") and self.instance_name:
+        instance_name = "grad" + self.instance_name
+        reduce_scatter_v_grad.set_prim_instance_name(instance_name)
+    if self.op != ReduceOp.SUM:
+        raise RuntimeError("The reducescatter bprop only support ReduceOp.SUM until now.")
+
+    def bprop(x, input_split_sizes, out, dout):
+        dx = reduce_scatter_v_grad(dout, input_split_sizes)
+        return (dx, zeros_like(input_split_sizes))
+
+    return bprop
+
+
 @bprop_getters.register(NeighborExchangeV2)
 def get_bprop_neighborexchangev2(self):
     """Generate bprop for NeighborExchangeV2."""
@@ -670,11 +722,13 @@ def get_bprop_mirror_operator(self):
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     dump_local_norm_path = ms.get_auto_parallel_context("dump_local_norm_path")
     dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
+    if dump_local_norm_path:
+        global_rank = get_rank()
+        file = os.path.join(dump_local_norm_path, "rank_" + str(global_rank), "local_norm__" + param_name)
     if dump_device_local_norm:
         # init _squared _squared_device_local_norm
         squared_device_local_norm = get_squared_device_local_norm_param()
     if dev_num > 1:
-        global_rank = get_rank()
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
         all_gather = AllGather(group=group)
@@ -702,8 +756,7 @@ def get_bprop_mirror_operator(self):
             squared_norm = reduce_sum(square((dout)))
             if dump_local_norm:
                 if dump_local_norm_path:
-                    dout = F.depend(dout, tensor_dump(dump_local_norm_path + "/rank_" + str(global_rank) +
-                                                      "/local_norm__" + param_name, sqrt(squared_norm)))
+                    dout = F.depend(dout, tensor_dump(file, sqrt(squared_norm)))
                 else:
                     dout = F.depend(dout, ln_print("dump local norm: ", param_name, sqrt(squared_norm)))
             if dump_device_local_norm:

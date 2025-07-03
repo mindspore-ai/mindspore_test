@@ -17,10 +17,11 @@
 #include "kernel/cpu/gathernd_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace gathernd_cpu {
 namespace {
 #define MAX_INT ((static_cast<unsigned int>(-1)) >> 1)
 
@@ -190,5 +191,6 @@ std::vector<KernelAttr> GatherNdCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, GatherNd, GatherNdCpuKernelMod);
+}  // namespace gathernd_cpu
 }  // namespace kernel
 }  // namespace mindspore

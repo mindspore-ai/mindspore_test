@@ -23,7 +23,7 @@
 #include <queue>
 #include <utility>
 #include "runtime/device/memory_offload_strategy.h"
-#include "runtime/device/auto_mem_offload.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 
 namespace mindspore {
 namespace device {

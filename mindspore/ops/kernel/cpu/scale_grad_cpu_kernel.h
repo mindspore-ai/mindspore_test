@@ -22,10 +22,11 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace scale_grad_cpu {
 class ScaleGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   ScaleGradCpuKernelMod() = default;
@@ -42,6 +43,7 @@ class ScaleGradCpuKernelMod : public NativeCpuKernelMod {
                               const float16 *scale_addr_half, const float *scale_addr_float, size_t index);
   std::vector<TypeId> input_info_;
 };
+}  // namespace scale_grad_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SCALE_GRAD_CPU_KERNEL_H_

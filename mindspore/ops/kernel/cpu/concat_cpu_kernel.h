@@ -22,11 +22,12 @@
 #include <complex>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace concat_cpu {
 class ConcatCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ConcatCpuKernelMod> {
  public:
   ConcatCpuKernelMod() = default;
@@ -56,6 +57,7 @@ class ConcatCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<C
   std::vector<ShapeVector> inputs_shape_;
   std::vector<ShapeVector> input_flat_shape_list_;
 };
+}  // namespace concat_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -26,6 +26,7 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::opt {
 const BaseRef AddActivationFusion::DefinePattern() const {
@@ -77,9 +78,11 @@ const AnfNodePtr AddActivationFusion::Process(const FuncGraphPtr &func_graph, co
       auto add_quant_params_valueptr = add_primitive->GetAttr("quant_params");
       if (add_quant_params_valueptr != nullptr) {
         auto add_quant_params_holder = add_quant_params_valueptr->cast<lite::QuantParamHolderPtr>();
+        MS_CHECK_TRUE_MSG(add_quant_params_holder != nullptr, nullptr, "add_quant is nullptr!");
         add_quant_params_holder->set_output_quant_param(0, quant_params[0]);
       } else {
         auto add_quant_params_holder = std::make_shared<lite::QuantParamHolder>(0, 0);
+        MS_CHECK_TRUE_MSG(add_quant_params_holder != nullptr, nullptr, "add_quant is nullptr!");
         add_quant_params_holder->set_output_quant_param(0, quant_params[0]);
         add_primitive->AddAttr("quant_params", add_quant_params_holder);
       }

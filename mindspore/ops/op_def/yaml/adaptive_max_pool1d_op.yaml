@@ -1,0 +1,21 @@
+#operator adaptive_max_pool1d
+adaptive_max_pool1d:
+  args:
+    input:
+      dtype: tensor
+    output_size:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+  returns:
+    output:
+      dtype: tensor
+    indices:
+      dtype: tensor
+  function:
+      disable: True
+  class:
+      name: AdaptiveMaxPool1D
+  dispatch:
+    enable: True
+    Ascend: AdaptiveMaxPool1DAscend
+

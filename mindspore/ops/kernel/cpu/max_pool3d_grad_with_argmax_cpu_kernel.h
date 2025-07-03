@@ -26,11 +26,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool3d_grad_with_argmax_cpu {
 class MaxPool3DGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
  public:
   MaxPool3DGradWithArgmaxCpuKernelMod() = default;
@@ -87,6 +88,7 @@ class MaxPool3DGradWithArgmaxCpuKernelMod : public NativeCpuKernelMod {
   TypeId x_dtype_{kTypeUnknown};
   TypeId argmax_dtype_{kTypeUnknown};
 };
+}  // namespace max_pool3d_grad_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_MAX_POOL3D_GRAD_WITH_ARGMAX_CPU_KERNEL_H_

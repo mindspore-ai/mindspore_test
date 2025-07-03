@@ -16,8 +16,8 @@
 
 #include "extendrt/delegate/ascend_ge/ge_context_manager.h"
 #include "src/common/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 GeContextManager::GeContextManager() {}
@@ -82,12 +82,12 @@ bool GeContextManager::CreateDefaultStream() {
   auto priority = 0;
   auto ret = CALL_ASCEND_API(aclrtCreateStreamWithConfig, &default_stream_, priority,
                              (ACL_STREAM_FAST_LAUNCH | ACL_STREAM_FAST_SYNC));
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Create stream failed, ret:" << ret;
     return false;
   }
   ret = CALL_ASCEND_API(aclrtSetStreamFailureMode, default_stream_, ACL_STOP_ON_FAILURE);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "aclrtSetStreamFailureMode failed, ret:" << ret;
     return false;
   }
@@ -97,7 +97,7 @@ bool GeContextManager::CreateDefaultStream() {
 bool GeContextManager::SyncStream(aclrtStream stream) const {
   MS_EXCEPTION_IF_NULL(stream);
   auto RET = CALL_ASCEND_API(aclrtSynchronizeStream, stream);
-  if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
+  if (RET != ACL_SUCCESS && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
     MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStream error.";
     return false;
   }
@@ -112,7 +112,7 @@ void GeContextManager::DestroyDefaultStream() {
     return;
   }
   const auto ret = CALL_ASCEND_API(aclrtDestroyStream, default_stream_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Call aclrtDestroyStream, ret[" << ret << "]";
     return;
   }

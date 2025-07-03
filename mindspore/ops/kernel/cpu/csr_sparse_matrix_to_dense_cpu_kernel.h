@@ -23,11 +23,12 @@
 #include <string>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace csr_sparse_matrix_to_dense_cpu {
 class CSRSparseMatrixToDenseCpuKernelMod : public NativeCpuKernelMod {
  public:
   CSRSparseMatrixToDenseCpuKernelMod() = default;
@@ -57,6 +58,7 @@ class CSRSparseMatrixToDenseCpuKernelMod : public NativeCpuKernelMod {
   TypeId indices_type{kTypeUnknown};
   std::vector<int64_t> y_dims_;
 };
+}  // namespace csr_sparse_matrix_to_dense_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_CSR_SPARSE_MATRIX_TO_DENSE_KERNEL_H_

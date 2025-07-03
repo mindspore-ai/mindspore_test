@@ -22,6 +22,7 @@ from mindspore.common import dtype as mstype
 from mindspore.train.serialization import export, load
 from mindspore.ops import functional as F
 from mindspore.ops.operations import _csr_ops
+import mindspore as ms
 
 from .sparse_utils import get_platform, compare_res, compare_csr
 from tests.mark_utils import arg_mark
@@ -155,6 +156,7 @@ def test_csr_tensor_in_while():
                 b = b + 1
             return x
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     a = Tensor(3, mstype.int32)
     b = Tensor(0, mstype.int32)
     indptr = Tensor([0, 1, 2])

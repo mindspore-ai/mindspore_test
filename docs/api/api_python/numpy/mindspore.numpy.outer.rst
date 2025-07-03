@@ -16,7 +16,7 @@ mindspore.numpy.outer
     ``[aM*b0            aM*bN ]]``
 
     .. note::
-        不支持NumPy参数 `out` 。 
+        不支持NumPy参数 `out` 。
         在 GPU 上，支持的数据类型为 np.float16 。
         在 CPU 上，支持的数据类型为 np.float32 和 np.float64。
 

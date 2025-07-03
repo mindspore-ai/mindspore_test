@@ -24,11 +24,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_3d_grad_cpu {
 class AdaptiveMaxPool3DGradCpuKernelMod : public NativeCpuKernelMod,
                                           public MatchKernelHelper<AdaptiveMaxPool3DGradCpuKernelMod> {
  public:
@@ -67,6 +68,7 @@ class AdaptiveMaxPool3DGradCpuKernelMod : public NativeCpuKernelMod,
                         const std::vector<kernel::KernelTensor *> &workspace,
                         const std::vector<kernel::KernelTensor *> &outputs);
 };
+}  // namespace adaptive_max_pool_3d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

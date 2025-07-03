@@ -16,17 +16,19 @@
 
 #include "kernel/ascend/pyboost/customize/embedding_dense_backward.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr EmbeddingDenseBackwardAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad_tensor, const BaseTensorPtr &indices_tensor,
-  const Int64ImmPtr &num_weights, const std::optional<Int64ImmPtr> &padding_idx, const BoolImmPtr &scale_grad_by_freq) {
+tensor::TensorPtr EmbeddingDenseBackwardAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                        const TensorPtr &grad_tensor, const TensorPtr &indices_tensor,
+                                                        const Int64ImmPtr &num_weights,
+                                                        const std::optional<Int64ImmPtr> &padding_idx,
+                                                        const BoolImmPtr &scale_grad_by_freq) {
   MS_EXCEPTION_IF_NULL(op);
 
   OpRunner::InferOpOutput(op, grad_tensor, indices_tensor, num_weights, padding_idx, scale_grad_by_freq);

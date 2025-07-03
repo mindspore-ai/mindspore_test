@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/dist_comm_broadcast.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/dist_comm_broadcast.h"
 #include <memory>
 #include <utility>
 #include <string>
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
@@ -31,15 +31,20 @@ using device::cpu::kMCCLGlobalGroupName;
 using device::cpu::MsCollectiveCommLib;
 #endif
 namespace pyboost {
-void DistCommBroadcastCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor,
-                                   const Int64ImmPtr &src, const StringImmPtr &group) {
+void DistCommBroadcastCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor, const Int64ImmPtr &src,
+                                   const Int64ImmPtr &rank_id, const StringImmPtr &group) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, tensor);
   op->set_outputs({tensor});
   auto src_rank = GetValue<int64_t>(src);
-  auto run_func = [op, tensor, src_rank, group]() {
+  auto local_rank = GetValue<int64_t>(rank_id);
+  auto run_func = [op, tensor, src_rank, local_rank, group]() {
     auto device_context = op->device_context();
-    PyBoostUtils::MallocOpInputs(device_context, tensor);
+    if (local_rank == src_rank) {
+      PyBoostUtils::MallocOpInputs(device_context, tensor);
+    } else {
+      PyBoostUtils::MallocOpOutputs(device_context, {tensor});
+    }
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), tensor);
     auto in_addr = input_address_info.first;

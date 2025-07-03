@@ -24,7 +24,6 @@
 
 namespace mindspore {
 namespace ops {
-const std::set<TypeId> valid_types = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
 
 ShapeArray BernoulliExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return {input_infos[kIndex0]->GetShape()};
@@ -34,6 +33,8 @@ std::vector<TypeId> BernoulliExtFuncImpl::InferType(const PrimitivePtr &primitiv
                                                     const InferInfoPtrList &input_infos) const {
   auto input_type = input_infos[kInputIndex0]->GetType();
   auto prim_name = primitive->name();
+  const std::set<TypeId> valid_types = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64,
+                                        kNumberTypeBFloat16};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", input_type, valid_types, prim_name);
   return {input_type};
 }

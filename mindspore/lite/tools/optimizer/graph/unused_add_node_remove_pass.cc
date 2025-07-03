@@ -25,6 +25,9 @@
 #include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {
@@ -48,6 +51,7 @@ bool RemoveUnusedAddNodePass::Run(const FuncGraphPtr &func_graph) {
       MS_LOG(DEBUG) << "node is not AddFusion.";
       continue;
     }
+    MS_CHECK_TRUE_RET(node->cast<CNodePtr>() != nullptr, false);
     auto add_inputs = node->cast<CNodePtr>()->inputs();
     if (add_inputs.size() != kAddInputSize) {
       MS_LOG(DEBUG) << "node input size is wrong.";
@@ -75,6 +79,7 @@ bool RemoveUnusedAddNodePass::Run(const FuncGraphPtr &func_graph) {
           continue;
         }
         auto const_of_shape_cnode = mul_input->cast<CNodePtr>();
+        MS_CHECK_TRUE_RET(const_of_shape_cnode != nullptr, false);
         if (const_of_shape_cnode->inputs().empty()) {
           MS_LOG(ERROR) << "inputs is empty.";
           return false;
@@ -92,6 +97,7 @@ bool RemoveUnusedAddNodePass::Run(const FuncGraphPtr &func_graph) {
         auto node_index = i == 1 ? kAddInputIndex2 : 1;
         MS_LOG(INFO) << "remove node name: " << node->fullname_with_scope()
                      << "remove node input index: " << node_index;
+        MS_CHECK_TRUE_RET(node->cast<CNodePtr>() != nullptr, false);
         manager->Replace(node, node->cast<CNodePtr>()->input(node_index));
         MS_LOG(INFO) << "RemoveUnusedAddNodePass success, node name: " << node->fullname_with_scope();
       }

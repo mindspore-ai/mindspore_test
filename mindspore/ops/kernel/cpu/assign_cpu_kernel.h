@@ -22,11 +22,12 @@
 #include <map>
 #include <string>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace assign_cpu {
 class AssignCpuKernelMod : public NativeCpuKernelMod {
  public:
   AssignCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class AssignCpuKernelMod : public NativeCpuKernelMod {
   size_t input_x_dtype_size_{4};
   TypeId input_x_dtype_{kTypeUnknown};
 };
+}  // namespace assign_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

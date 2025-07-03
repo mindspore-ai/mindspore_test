@@ -22,15 +22,15 @@
 #include <map>
 #include <utility>
 #include <unordered_set>
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 #include "ir/tensor.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "kernel/kernel.h"
-#include "runtime/device/memory_manager.h"
+#include "common/kernel.h"
+#include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/device/memory_scheduler.h"
 #include "include/backend/visible.h"
 
@@ -40,6 +40,7 @@ using TensorPtr = std::shared_ptr<Tensor>;
 using mindspore::kernel::AddressPtr;
 using mindspore::kernel::AddressPtrList;
 using mindspore::kernel::KernelLaunchInfo;
+using mindspore::kernel::KernelTensor;
 
 namespace mindspore {
 #ifndef ENABLE_DEBUGGER
@@ -51,7 +52,6 @@ class BACKEND_EXPORT KernelRuntime {
   KernelRuntime() = default;
   virtual ~KernelRuntime();
   virtual bool Init() = 0;
-  virtual void AssignMemory(const session::KernelGraph &graph);
   void RunOpAssignMemory(const std::vector<tensor::TensorPtr> &input_tensors, const session::KernelGraph &graph,
                          bool is_gradient_out,
                          const std::map<tensor::TensorPtr, session::KernelWithIndex> &tensor_to_node = {});
@@ -59,7 +59,7 @@ class BACKEND_EXPORT KernelRuntime {
   void AssignCommunicationInputFromMemoryPool(const AnfNodePtr &node) const;
   void RunOpClearMemory(const session::KernelGraph &graph) const;
   using TbeLaunchKernelModCallBack =
-    std::function<void(const AnfNodePtr &, const kernel::KernelMod *kernel_mod, std::vector<KernelTensor *> *)>;
+    std::function<void(const AnfNodePtr &, const kernel::KernelMod *kernel_mod, std::vector<kernel::KernelTensor *> *)>;
   static void tbe_call_setter(const TbeLaunchKernelModCallBack &call) { tbe_call_ = call; }
 #ifdef ENABLE_DEBUGGER
   BACKEND_EXPORT static bool DumpDataEnabled();
@@ -78,10 +78,9 @@ class BACKEND_EXPORT KernelRuntime {
   virtual bool MemcpyAsync(void *dst, const void *src, uint64_t size, int32_t kind, void *stream) = 0;
   virtual void ClearGlobalIdleMem() {}
   virtual void CreateContext() {}
-  virtual void SetContext() {}
-  virtual void SetContextForce() {}
+  // virtual void SetContext() {}
+  // virtual void SetContextForce() {}
   virtual void ResetStreamAndCtx() {}
-  virtual const void *context() const { return nullptr; }
   uint8_t *MallocMem(MemType type, size_t size, const DeviceAddressPtr &address) {
     return mem_manager_->MallocMem(type, size, address);
   }
@@ -96,7 +95,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual void ReleaseDeviceRes() {}
   void set_device_id(uint32_t device_id) { device_id_ = device_id; }
   uint32_t device_id() const { return device_id_; }
-  static bool UseMemScheduler();
   void SyncParameter(const session::KernelGraph &graph, const std::shared_ptr<MemScheduler> &mem_scheduler) const;
 
 #ifdef ENABLE_DEBUGGER
@@ -131,7 +129,6 @@ class BACKEND_EXPORT KernelRuntime {
   // add for MindRT
   std::shared_ptr<MemoryManager> GetMemoryManager() { return mem_manager_; }
   void AssignStaticMemoryOutput(const session::KernelGraph &graph);
-  void AssignDynamicMemory(const session::KernelGraph &graph);
 
   // lock runtime
   static std::lock_guard<std::mutex> LockRuntime(const void *stream);
@@ -142,7 +139,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,
                                                TypeId type_id, const KernelWithIndex &node_index) const = 0;
   virtual bool NodeOutputDeviceAddressExist(const AnfNodePtr &node, size_t index);
-  virtual bool KernelMemNotReuse(const AnfNodePtr &node);
 
   void AssignStaticMemory(const session::KernelGraph &graph);
   void AssignNodeOutputMem(MemType type, const AnfNodePtr &node, int index);

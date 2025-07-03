@@ -21,14 +21,12 @@
 #include "ir/anf.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "ir/primitive.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {
 
 // linalg
 GVAR_DEF(PrimitivePtr, kPrimLU, std::make_shared<Primitive>("LU"));
-GVAR_DEF(PrimitivePtr, kPrimSvd, std::make_shared<Primitive>("Svd"));
 
 // Maths
 GVAR_DEF(PrimitivePtr, kPrimBesselI0e, std::make_shared<Primitive>("BesselI0e"));

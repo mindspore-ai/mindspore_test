@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include "plugin/device/ascend/optimizer/enhancer/insert_depend_for_all_gather_output.h"
+#include <algorithm>
 #include "include/common/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -23,6 +23,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {

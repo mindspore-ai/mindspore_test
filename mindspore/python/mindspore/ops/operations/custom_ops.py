@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Huawei Technologies Co., Ltd
+# Copyright 2021-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import re
 import ast
 import hashlib
 import stat
+import copy
 import inspect
 import importlib
 import platform
@@ -29,7 +30,6 @@ import numpy as np
 import mindspore as ms
 from mindspore._c_expression import Oplib, typing
 from mindspore._c_expression import pyboost_custom_ext
-from mindspore.common._stub_tensor import _convert_stub
 from mindspore import context
 from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
@@ -40,6 +40,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
+from ._custom_ops_utils import ExtensionBuilder, CustomCodeGenerator, CustomInfoGenerator
 
 if platform.system() != "Windows":
     import fcntl
@@ -72,11 +73,16 @@ def _get_cache_path():
     """
     cache_path = os.getenv('MS_COMPILER_CACHE_PATH')
     if cache_path is None:
-        cache_path = "./akg_kernel_meta/"
+        cache_path = "./custom_kernel_meta/"
     elif cache_path[-1] != "/":
         cache_path = cache_path + "/"
 
     if not os.path.exists(cache_path):
+        os.makedirs(cache_path, exist_ok=True)
+
+    # for distributed case, we create folders separately to avoid conflict
+    if GlobalComm.INITED:
+        cache_path = os.path.join(cache_path, "rank_" + str(get_rank()), "")
         os.makedirs(cache_path, exist_ok=True)
 
     return cache_path
@@ -93,10 +99,6 @@ def _compile_aot(file):
         str, the path to the compiled library.
     """
     cache_path = _get_cache_path()
-    # for distributed case, we create folders separately to avoid conflict
-    if GlobalComm.INITED:
-        cache_path = os.path.join(cache_path, "rank_" + str(get_rank()), "")
-        os.makedirs(cache_path, exist_ok=True)
 
     res_path = importlib.util.find_spec("mindspore").origin
     find_pos = res_path.find("__init__.py")
@@ -109,12 +111,19 @@ def _compile_aot(file):
     func_path = cache_path + file_name + ".so"
     include_file = "{} -I{}".format(include_file, file[:file.rindex('/')])
 
+    if context.get_context("device_target") == "Ascend":
+        ascend_cann_path = os.getenv("ASCEND_OPP_PATH").split('opp')[0]
+        ascend_include = os.path.join(ascend_cann_path, "include")
+        include_file = "{} -I{}".format(include_file, ascend_include)
+
+    include_file = include_file.split(" ")
     if func_path not in Custom.compiled_bin:
         Custom.compiled_bin.append(func_path)
 
         if file.endswith("cpp") or file.endswith("cc"):
             cmd = ["g++", "-std=c++17", "--shared", "-fPIC", "-D_GLIBCXX_USE_CXX11_ABI=0"]
-            cmd += [include_file, "-o", func_path, file]
+            cmd += include_file
+            cmd += ["-o", func_path, file]
         elif file.endswith("cu"):
             cmd = ["nvcc"]
             cmd += ["--shared", "-Xcompiler", "-fPIC", "-O3", "-gencode", "arch=compute_70, code=sm_70"]
@@ -141,12 +150,13 @@ def _compile_aot(file):
                 logger.warning("The current version of nvcc, V{}.{}.{},  might have unfixed issues with std string, "
                                "which will lead to errors in aot custom op with attrs."
                                "The version higher than V10.1.168 is recommended".format(v_major, v_mid, v_minor))
-            cmd += [include_file, "-o", func_path, file]
+            cmd += include_file
+            cmd += ["-o", func_path, file]
         else:
             raise ValueError("The source file must be a cc/cpp/cu file, but get: {}".format(file))
 
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
 
         (out, _) = proc.communicate(timeout=30)
 
@@ -183,10 +193,16 @@ class _CustomExt(ops.PrimitiveWithInfer):
 
         infer_value = None
         if infer_shape is None:
-            logger.warning("'out_shape' is None. Add a placeholder instead. "
-                           "A CPP version of infer shape function is required "
-                           "in this case.")
+            logger.debug("'out_shape' is None. Add a placeholder instead. "
+                         "A CPP version of infer shape function is required "
+                         "in this case.")
             infer_shape = (1,)
+        if infer_dtype is None:
+            logger.debug("'out_dtype' is None. Add a placeholder instead. "
+                         "A CPP version of infer type function is required "
+                         "in this case.")
+            infer_dtype = ms.float16
+
         # after all automatic infer information fulfillment, throw error if infer_shape/infer_dtype is still None
         if not isinstance(infer_shape, (tuple, list)):
             raise TypeError("'out_shape' must be one of [tuple, list, function], but got {}".format(type(infer_shape)))
@@ -215,10 +231,10 @@ class Custom(ops.PrimitiveWithInfer):
     function if needed. Then these `Custom` objects can be directly used in neural networks.
     Detailed description and introduction of user-defined operators, including correct writing of parameters,
     please refer to `Custom Operators Tutorial
-    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/op_custom.html>`_ .
+    <https://www.mindspore.cn/tutorials/en/master/custom_program/op_custom.html>`_ .
 
     .. warning::
-        - This is an experimental API that is subject to change.
+        This is an experimental API that is subject to change.
 
     .. note::
         The supported platforms are determined by the input `func_type`. The supported platforms are as follows:
@@ -297,14 +313,17 @@ class Custom(ops.PrimitiveWithInfer):
                  b) Ascend platform.
                  Before using Custom operators on the Ascend platform, users must first develop custom operators
                  based on Ascend C and compile them. The complete development and usage process can refer to the
-                 tutorial `AOT-Type Custom Operators(Ascend) <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom_ascendc.html>`_.
+                 tutorial `AOT-Type Custom Operators(Ascend)
+                 <https://www.mindspore.cn/tutorials/en/master/custom_program/operation/op_custom_ascendc.html>`_.
                  By passing the name of the operator through the input parameter `func`, there are two usage methods
-                 based on the implementation of the infer shape function:
+                 based on the implementation of the infer function:
 
-                 - Python infer: If the operator's infer shape is implemented in Python, that is, the infer shape
-                   function is passed through the `out_shape` parameter, specify `func="CustomName"` .
-                 - C++ infer: If the operator's infer shape is implemented through C++, then pass the path of the
-                   infer shape implementation file in `func` and separate the operator name with `:`,
+                 - Python infer: If the operator's infer function is implemented in Python, that is, the infer shape
+                   function is passed through the `out_shape` parameter, and the infer type is passed throuht the
+                   `out_dtype`, then the `func` should be specified as the operator name, for example,
+                   `func="CustomName"`.
+                 - C++ infer: If the operator's infer function is implemented through C++, then pass the path of the
+                   infer function implementation file in `func` and separate the operator name with `:`,
                    for example: `func="add_custom_infer.cc:AddCustom"` .
 
               2. for "julia":
@@ -324,8 +343,8 @@ class Custom(ops.PrimitiveWithInfer):
                        Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
                        (ex. Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia"))
 
-        out_shape (Union[function, list, tuple]): The output shape infer function or the value of output shape of
-            `func`. Default: ``None`` .
+        out_shape (Union[function, list, tuple], optional): The output shape infer function or the value of output
+            shape of `func`. Default: ``None`` .
 
             If func has single output, then the value of output shape is a list or tuple of int.
 
@@ -335,8 +354,8 @@ class Custom(ops.PrimitiveWithInfer):
             The input can be None only when the func_type input is "hybrid". In this case, the automatic infer
             shape mechanic will be enabled.
 
-        out_dtype (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]): The output data type
-            infer function or the value of output data type of `func`. Default: ``None`` .
+        out_dtype (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]], optional): The output
+            data type infer function or the value of output data type of `func`. Default: ``None`` .
 
             If func has single output, then the value of output shape is a `mindspore.dtype`.
 
@@ -346,13 +365,12 @@ class Custom(ops.PrimitiveWithInfer):
             The input can be None only when the func_type input is "hybrid". In this case, the automatic infer
             value mechanic will be enabled.
 
-        func_type (str): The implementation type of `func`, should be one of
+        func_type (str, optional): The implementation type of `func`, should be one of
+            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ]. Default: ``"pyfunc"``.
 
-            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ].
-
-        bprop (function): The back propagation function of `func`. Default: ``None`` .
-        reg_info (Union[str, dict, list, tuple]): Represents the registration information(reg info) of `func` with
-            json format of type str or dict. The reg info specifies supported data types and formats of inputs and
+        bprop (function, optional): The back propagation function of `func`. Default: ``None`` .
+        reg_info (Union[str, dict, list, tuple], optional): Represents the registration information(reg info) of `func`
+            with json format of type str or dict. The reg info specifies supported data types and formats of inputs and
             outputs, attributes and target of `func`. Default: ``None`` .
 
             If reg info is a list or tuple, then each item should be with json format of type str or dict, which
@@ -410,7 +428,7 @@ class Custom(ops.PrimitiveWithInfer):
     op_path_in_cache = []  # Save paths for op functions created in the cached.
     custom_aot_warning = True  # Flag to enable warnings about custom aot path white list
 
-    def __init__(self, func, out_shape=None, out_dtype=None, func_type="hybrid", bprop=None, reg_info=None):
+    def __init__(self, func, out_shape=None, out_dtype=None, func_type="pyfunc", bprop=None, reg_info=None):
         super().__init__("Custom")
 
         self.supported_targets = [ASCEND, GPU, CPU]
@@ -425,10 +443,14 @@ class Custom(ops.PrimitiveWithInfer):
         self._func_compile_attrs = {}
         self._is_ms_kernel = False
         self.out_shape = out_shape
+        self.out_dtype = out_dtype
+        self.reg_info = reg_info
+        self.is_ascend_c = (context.get_context("device_target") == "Ascend" and self.func_type == "aot")
 
         self._check_platform()
         self._check_func()
-        self._update_func_info(reg_info)
+        self._generate_reg_info()
+        self._update_func_info(self.reg_info)
         self.add_prim_attr("func_name", self.func_name)
         self.add_prim_attr("uniq_name", self.uniq_name)
         if self.func_type == HYBRID_TYPE:
@@ -440,21 +462,22 @@ class Custom(ops.PrimitiveWithInfer):
             add_pyfunc(func_id, self.func)
             self.add_prim_attr("fn_id", func_id)
 
-        if self.out_shape is None and self.func_type == "aot":
-            self.add_prim_attr("cpp_infer_shape", True)
-        self.out_dtype = out_dtype
+        self._set_infer_flag()
+        self._set_multi_output_flag()
+
         self.bprop = bprop
         self.fake_output = False
         self.single_scalar_output = False
-        if not self.out_dtype:
-            self.fake_output = True
-        elif not self.out_shape:
-            self.single_scalar_output = True
-        self.add_prim_attr("fake_output", self.fake_output)
-        self.add_prim_attr("single_scalar_output", self.single_scalar_output)
+        if self.func_type == "pyfunc":
+            if not self.out_dtype:
+                self.fake_output = True
+            elif not self.out_shape:
+                self.single_scalar_output = True
+            self.add_prim_attr("fake_output", self.fake_output)
+            self.add_prim_attr("single_scalar_output", self.single_scalar_output)
 
         # Register info
-        self._register_info(reg_info)
+        self._register_info(self.reg_info)
 
         if func_type == "akg":
             self._set_akg_kernel_type()
@@ -464,12 +487,24 @@ class Custom(ops.PrimitiveWithInfer):
 
         self.add_prim_attr("func_type", self.func_type)
         self._update_attr()
-        self.enable_pyboost = False
-        self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
-        if context.get_context("device_target") == "Ascend" and self.func_type == "aot":
-            self.enable_pyboost = True
+
+        if self.is_ascend_c:
+            self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
             for key, value in super().get_attr_dict().items():
                 self.custom_pyboost.add_prim_attr(key, value)
+        self._generate_get_workspace_size_func()
+
+    def _set_infer_flag(self):
+        """set cpp infer attr"""
+        if self.out_shape is None and self.func_type == "aot":
+            self.add_prim_attr("cpp_infer_shape", True)
+        if self.out_dtype is None and self.func_type == "aot":
+            self.add_prim_attr("cpp_infer_type", True)
+
+    def _set_multi_output_flag(self):
+        outputs = self.reg_info.get("outputs", []) if self.reg_info else []
+        self.multi_output = len(outputs) > 1 or (len(outputs) == 1 and outputs[0].get("paramType") == "dynamic")
+        self.add_prim_attr("multi_output", self.multi_output)
 
     def __infer__(self, *args):
         if callable(self.out_shape):
@@ -510,10 +545,15 @@ class Custom(ops.PrimitiveWithInfer):
                 infer_dtype = mstype.int32
         if self.func_type == "aot":
             if infer_shape is None:
-                logger.warning("{}, 'out_shape' is None. Add a placeholder instead. "
-                               "A CPP version of infer shape function is required "
-                               "in this case.".format(self.log_prefix))
+                logger.debug("{}, 'out_shape' is None. Add a placeholder instead. "
+                             "A CPP version of infer shape function is required "
+                             "in this case.".format(self.log_prefix))
                 infer_shape = (1,)
+            if infer_dtype is None:
+                logger.debug("{}, 'out_dtype' is None. Add a placeholder instead. "
+                             "A CPP version of infer type function is required "
+                             "in this case.".format(self.log_prefix))
+                infer_dtype = ms.float16
         # after all automatic infer information fulfillment, throw error if infer_shape/infer_dtype is still None
         if not isinstance(infer_shape, (tuple, list)):
             raise TypeError("{}, 'out_shape' must be one of [tuple, list, function], but got {}"
@@ -757,6 +797,26 @@ class Custom(ops.PrimitiveWithInfer):
                     if isinstance(item, dict) and item.get("value") is not None:
                         self.add_prim_attr(item[KEY_NAME], item["value"])
 
+    def _convert_attr_to_input(self, ori_reg_info):
+        """convert attr to input"""
+        if not self.is_ascend_c or not ori_reg_info.get("attr"):
+            return ori_reg_info
+
+        reg_info = copy.deepcopy(ori_reg_info)
+        start_index = len(reg_info.get("inputs", []))
+        for i, attr_item in enumerate(reg_info.get("attr", [])):
+            new_input = {
+                'index': start_index + i,
+                'name': attr_item['name'],
+                'paramType': attr_item['paramType']}
+            reg_info['inputs'].append(new_input)
+            for dtype_format_item in reg_info.get("dtype_format", []):
+                new_dtype_format_item = list(dtype_format_item)
+                new_dtype_format_item.insert(start_index + i, DataType.None_None)
+                reg_info['dtype_format'][reg_info['dtype_format'].index(dtype_format_item)] = new_dtype_format_item
+        reg_info['attr'] = []
+        return reg_info
+
     def _register_info(self, info):
         """Register reg_info."""
         reg_info = info
@@ -787,14 +847,15 @@ class Custom(ops.PrimitiveWithInfer):
                 continue
             # Register
             reg_info = self._reformat_reg_info(reg_info, target)
-            reg_info_str = json.dumps(reg_info)
+            new_reg_info = self._convert_attr_to_input(reg_info)
+            reg_info_str = json.dumps(new_reg_info)
             op_lib = Oplib()
             if not op_lib.reg_op(reg_info_str, self.imply_path):
                 raise ValueError("{}, the registration information is registered failed. Use 'CustomRegOp' to "
                                  "generate the registration information, then pass it to 'reg_info' or use "
                                  "'custom_info_register' to bind it to 'func' if 'func' is a function."
                                  .format(self.log_prefix))
-            self._save_attr(reg_info)
+            self._save_attr(new_reg_info)
             self._save_register_status(target)
 
     def _get_expanded_list(self, data):
@@ -1077,11 +1138,314 @@ class Custom(ops.PrimitiveWithInfer):
 
         return infer_shape, infer_dtype, infer_value
 
+    def _generate_reg_info(self):
+        if not self.is_ascend_c:
+            return
+        if self.reg_info is None:
+            func_name, _ = self._split_func()
+            if func_name.startswith("aclnn"):
+                func_name = func_name[len("aclnn"):]
+            reg_info_generator = CustomInfoGenerator(func_name)
+            self.reg_info = reg_info_generator.generate_custom_reg_op()
+
+    def _split_func(self):
+        func_list = self.func.split(":")
+        func_path = ""
+        if len(func_list) == 2:
+            func_path = func_list[0]
+            func_name = func_list[1]
+        else:
+            func_name = self.func
+        return func_name, func_path
+
+    def _generate_get_worspace_size_func_by_types(self, aclnn_api_types):
+        """generate custom GetWorkSpaceSize func by aclnn api types"""
+        if not self.is_ascend_c:
+            return
+
+        input_output_types = []
+        if isinstance(aclnn_api_types, str):
+            params = re.split(r',\s*', aclnn_api_types)
+            for param in params:
+                param = param.replace('const ', '')
+                type_part = re.search(r'^\s*(\w+\s*\*+|\w+)', param).group(1)
+                type_part = type_part.replace(' ', '')
+                input_output_types.append(type_part)
+        elif isinstance(aclnn_api_types, list):
+            input_output_types = aclnn_api_types
+        else:
+            raise RuntimeError(f"Unsupported type: {type(aclnn_api_types)}, support type is list or string.")
+
+        func_name, _ = self._split_func()
+        file_path = os.path.join(_get_cache_path(), func_name, func_name + "_callback.cc")
+
+        file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        custom_builder = CustomCodeGenerator()
+        callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, input_output_types)
+
+        with open(file_path, 'w') as f:
+            f.write(callback_func)
+
+        custom_callback_func_path = _compile_aot(file_path)
+        custom_callback_func = custom_callback_func_path + ":" + func_name
+        self.add_prim_attr("custom_callback_func", custom_callback_func)
+        self.add_prim_attr("custom_inputs_type", input_output_types[:-2])
+
+    def _generate_get_workspace_size_func(self):
+        """generate custom GetWorkSpaceSize func"""
+        if not self.is_ascend_c:
+            return
+        func_name, _ = self._split_func()
+        file_path = os.path.join(_get_cache_path(), func_name, func_name + "_callback.cc")
+
+        file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        custom_info_generator = CustomInfoGenerator(func_name)
+        api_types = custom_info_generator.get_aclnn_api_types()
+        custom_builder = CustomCodeGenerator()
+        if api_types == []:
+            api_types = custom_builder.get_api_types_by_reg_info(self.reg_info)
+
+        callback_func = custom_builder.generate_callback_by_types(func_name, self.reg_info, api_types)
+        with open(file_path, 'w') as f:
+            f.write(callback_func)
+
+        custom_callback_func_path = _compile_aot(file_path)
+        custom_callback_func = custom_callback_func_path + ":" + func_name
+        self.add_prim_attr("custom_callback_func", custom_callback_func)
+        self.add_prim_attr("custom_inputs_type", api_types[:-2])
+
     def __call__(self, *args):
-        if self.enable_pyboost:
-            return _convert_stub(pyboost_custom_ext(self.custom_pyboost, [args]))
+        if self.is_ascend_c:
+            res = pyboost_custom_ext(self.custom_pyboost, [args])
+            return res if self.multi_output else res[0]
         should_elim, output = self.check_elim(*args)
         if should_elim:
             return output
         # pylint: disable=protected-access
         return ops.primitive._run_op(self, self.name, args)
+
+
+class CustomOpBuilder:
+    r"""
+    CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
+    Users can define and load custom operator modules through this class and apply them to the network.
+
+    In most cases, users only need to provide the source files and additional compilation options in the constructor
+    and call the `load` method to complete the compilation and loading of the operator.
+    If users have specific customization requirements, they can inherit this class and override certain methods.
+    It is important to note that if methods are overridden, some parameters passed to the constructor may be ignored.
+
+    .. warning::
+        This is an experimental API that is subject to change.
+
+    Args:
+        name (str): The unique name of the custom operator module, used to identify the operator.
+        sources (Union[str, list[str]]): The source file(s) of the custom operator. It can be a single file path or
+                                    a list of file paths.
+        backend (str, optional): The target backend for the operator, such as "CPU" or "Ascend". Default: ``None``.
+        include_paths (list[str], optional): Additionally included paths needed during compilation. Default: ``None``.
+        cflags (str, optional): Extra C++ compiler flags to be used during compilation. Default: ``None``.
+        ldflags (str, optional): Extra linker flags to be used during linking. Default: ``None``.
+        kwargs (dict, optional): Additional keyword arguments for future extensions or specific custom requirements.
+
+            - build_dir (str, optional): The directory used to generate the operator build files.
+              If this argument is set, the provided path will be used directly.
+              If not set, a subdirectory named after the operator's name will be created under the path specified by
+              the environment variable `MS_COMPILER_CACHE_PATH` (defaulting to "./kernel_meta"), and the files will
+              be placed in this subdirectory. Default: ``None``.
+
+            - enable_atb (bool, optional): Whether to call ATB (Ascend Transformer Boost) operator. If set to ``True``,
+              the `backend` must be ``Ascend`` or left empty. Default: ``False``.
+
+    .. note::
+        - If the `backend` argument is provided, additional default flags will be automatically added to
+          the compilation and linking steps to support the operator's target backend. The default options
+          can be referenced in the implementation of the `get_cflags` and `get_ldflags` methods in the `CustomOpBuilder
+          <https://gitee.com/mindspore/mindspore/blob/master/mindspore/python/mindspore/ops/operations/custom_ops.py>`_.
+        - The `sources` argument must point to valid source files for the custom operator.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> builder = ops.CustomOpBuilder(
+        ...     name="custom_op_cpu",
+        ...     sources="custom_ops_impl/pybind_op_cpu.cpp",
+        ...     backend="CPU"
+        ... )
+        >>> my_ops = builder.load()
+    """
+    _loaded_ops = {}
+
+    def __init__(self, name, sources, backend=None, include_paths=None, cflags=None, ldflags=None, **kwargs):
+        self.name = name
+        self.source = sources
+        self.backend = backend
+        self.include_paths = include_paths
+        self.cflags = cflags
+        self.ldflags = ldflags
+        self.build_dir = kwargs.get("build_dir")
+        self.enable_atb = kwargs.get("enable_atb", False)
+        self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
+        if self.enable_atb:
+            if backend is not None and backend != "Ascend":
+                raise ValueError("For 'CustomOpBuilder', when 'enable_atb' is set to True, the 'backend' must be "
+                                 f"'Ascend' (or left implicit), but got '{backend}'")
+            self.backend = "Ascend"
+        if self.backend == "Ascend":
+            ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
+            if not ascend_opp_path:
+                raise ValueError("Environment variable 'ASCEND_OPP_PATH' must be set for Ascend backend.")
+            self.ascend_cann_path = ascend_opp_path.split('opp')[0]
+
+            if self.enable_atb:
+                self.atb_home_path = os.getenv("ATB_HOME_PATH")
+                if not self.atb_home_path:
+                    raise ValueError("Environment variable 'ATB_HOME_PATH' must be set when 'enable_atb' is True.")
+
+    def get_sources(self):
+        """
+        Get the source files for the custom operator.
+
+        Returns:
+            str or list[str], The source file(s) for the operator.
+        """
+        return self.source
+
+    def get_include_paths(self):
+        """
+        Get the include paths required for compiling the custom operator.
+
+        Returns:
+            list[str], A list of include paths.
+        """
+        include_list = self.include_paths if self.include_paths is not None else []
+        include_list.append(self._ms_path)
+        include_list.append(os.path.join(self._ms_path, "include"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party", "robin_hood_hashing"))
+        include_list.append(os.path.join(self._ms_path, "include", "third_party", "securec", "include"))
+
+        if self.backend == "Ascend":
+            include_list.append(os.path.join(self.ascend_cann_path, "include"))
+            if self.enable_atb:
+                include_list.append(os.path.join(self.atb_home_path, "include"))
+        include_list += self._get_ms_inner_includes()
+        return include_list
+
+    def _get_ms_inner_includes(self):
+        """include paths for inner module interface."""
+        ms_inner_path = os.path.join(self._ms_path, "include", "mindspore")
+        include_list = []
+        include_list.append(os.path.join(ms_inner_path, "core", "include"))
+        include_list.append(os.path.join(ms_inner_path, "core", "mindrt", "include"))
+        include_list.append(os.path.join(ms_inner_path, "core", "mindrt"))
+        include_list.append(os.path.join(ms_inner_path, "ops"))
+        include_list.append(os.path.join(ms_inner_path, "ops", "kernel", "include"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc", "include"))
+        include_list.append(os.path.join(ms_inner_path, "ccsrc", "minddata", "mindrecord", "include"))
+        return include_list
+
+    def get_cflags(self):
+        """
+        Get the C++ compiler flags for building the custom operator.
+
+        Returns:
+            list[str], A list of C++ compiler flags.
+        """
+        flags = ['-fstack-protector-all', '-fPIC', '-pie']
+        flags += ['-DENABLE_FAST_HASH_TABLE=1']
+        if self.backend == "Ascend":
+            flags.append('-DCUSTOM_ASCEND_OP')
+            if self.enable_atb:
+                flags.append('-DCUSTOM_ENABLE_ATB')
+        if self.cflags is not None:
+            flags.append(self.cflags)
+        return flags
+
+    def get_ldflags(self):
+        """
+        Get the linker flags for building the custom operator.
+
+        Returns:
+            list[str], A list of linker flags.
+        """
+        flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
+        flags += [
+            f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib'))}",
+            '-lmindspore_core',
+            '-lmindspore_ms_backend',
+            '-lmindspore_pynative',
+            '-lmindspore_extension'
+        ]
+        if self.backend == "Ascend":
+            flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin'))}")
+            flags.append(f"-L{os.path.abspath(os.path.join(self.ascend_cann_path, 'lib64'))}")
+            flags.append('-lascendcl')
+            flags.append('-l:libmindspore_ascend.so.2')
+            if self.enable_atb:
+                flags.append(f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib', 'plugin', 'ascend'))}")
+                flags.append('-lmindspore_extension_ascend_atb')
+                flags.append(f"-L{os.path.abspath(os.path.join(self.atb_home_path, 'lib'))}")
+                flags.append('-latb')
+        if self.ldflags is not None:
+            flags.append(self.ldflags)
+        return flags
+
+    def build(self):
+        """
+        Build the custom operator module.
+
+        This method generates a dynamic library file for the custom operator based on the provided source files,
+        include paths, compilation flags, and link flags.
+
+        Returns:
+            str, The path to the compiled module.
+        """
+        return ExtensionBuilder(self._get_build_directory()).build(
+            module_name=self.name,
+            sources=self.get_sources(),
+            extra_include_paths=self.get_include_paths(),
+            extra_cflags=self.get_cflags(),
+            extra_ldflags=self.get_ldflags())
+
+    def load(self):
+        """
+        Build and load the custom operator module.
+
+        Returns:
+            Module, The loaded custom operator module.
+        """
+        if self.name in CustomOpBuilder._loaded_ops:
+            return CustomOpBuilder._loaded_ops[self.name]
+        module_path = self.build()
+        mod = self._import_module(module_path)
+        CustomOpBuilder._loaded_ops[self.name] = mod
+        return mod
+
+    def _import_module(self, module_path):
+        """Import module from library."""
+        spec = importlib.util.spec_from_file_location(self.name, module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def _get_build_directory(self):
+        """Get build directory."""
+        if self.build_dir is None:
+            build_root = os.path.realpath(os.getenv('MS_COMPILER_CACHE_PATH', "./kernel_meta"))
+            self.build_dir = os.path.join(build_root, self.name)
+        else:
+            self.build_dir = os.path.realpath(self.build_dir)
+        logger.info(f'Build {self.name} in directory {self.build_dir}')
+        if not os.path.exists(self.build_dir):
+            os.makedirs(self.build_dir, exist_ok=True)
+        return self.build_dir

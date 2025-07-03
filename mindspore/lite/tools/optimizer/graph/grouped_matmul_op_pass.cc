@@ -18,7 +18,6 @@
 #include <vector>
 #include <string>
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/tuple_get_item.h"
@@ -32,6 +31,9 @@
 #include "ops/op_def.h"
 #include "extendrt/utils/func_graph_utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 #if !defined(_WIN32) && !defined(_WIN64)

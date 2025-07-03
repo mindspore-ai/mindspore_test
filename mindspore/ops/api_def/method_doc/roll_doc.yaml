@@ -1,0 +1,5 @@
+roll:
+  description: |
+    roll(shifts, dims) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.roll`.

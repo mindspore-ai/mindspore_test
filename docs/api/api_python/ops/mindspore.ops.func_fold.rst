@@ -27,9 +27,9 @@ mindspore.ops.fold
         - **input** (Tensor) - 三维Tensor，支持的数据类型： float16、float32、float64、complex64和complex128。
         - **output_size** (Tensor) - 包含两个int元素的一维Tensor。
         - **kernel_size** (Union[int, tuple[int], list[int]]) - 滑动窗口的大小。如果类型为tuple或者list，则存在两个int元素分别对应kernel的高度与宽度；如果类型为int，则kernel的高度与宽度均为该值。
-        - **dilation** (Union[int, tuple[int], list[int]]，可选) - 窗口的空洞卷积的扩充率。如果类型为tuple或者list，则存在两个int元素分别作用于滑窗的高度和宽度；如果类型为int，则这个值作用于滑窗的高度和宽度。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], list[int]]，可选) - 滑窗的隐式零填充量。如果类型为tuple或者list，则存在的两个int元素分别为滑窗的高度和宽度方向的填充量；如果类型为int，则高度和宽度方向的填充量均为这个int值。默认值： ``0`` 。
-        - **stride** (Union[int, tuple[int], list[int]]，可选) - 空间维度上滑动的步长。如果类型为tuple或者list，则存在的两个int元素分别为滑窗的高度和宽度方向上的步长；如果类型为，则高度和宽度方向上的步长均为这个int值。默认值： ``1`` 。
+        - **dilation** (Union[int, tuple[int], list[int]]，可选) - 窗口的空洞卷积的扩充率。如果类型为tuple或者list，则存在两个int元素分别作用于滑窗的高度和宽度；如果类型为int，则这个值作用于滑窗的高度和宽度。默认 ``1`` 。
+        - **padding** (Union[int, tuple[int], list[int]]，可选) - 滑窗的隐式零填充量。如果类型为tuple或者list，则存在的两个int元素分别为滑窗的高度和宽度方向的填充量；如果类型为int，则高度和宽度方向的填充量均为这个int值。默认 ``0`` 。
+        - **stride** (Union[int, tuple[int], list[int]]，可选) - 空间维度上滑动的步长。如果类型为tuple或者list，则存在的两个int元素分别为滑窗的高度和宽度方向上的步长；如果类型为，则高度和宽度方向上的步长均为这个int值。默认 ``1`` 。
 
     返回：
         Tensor，数据类型与 `input` 相同。

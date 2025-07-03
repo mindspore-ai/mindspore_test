@@ -6,7 +6,7 @@ mindspore.numpy.histogram
     计算数据集的直方图。
 
     .. note::
-        不支持 `bins` 为string类型。 不支持已弃用的NumPy参数 `normed` 。 
+        不支持 `bins` 为string类型。 不支持已弃用的NumPy参数 `normed` 。
 
     参数：
         - **a** (Union[int, float, bool, list, tuple, Tensor]) - 输入数据。直方图在展平的数组上计算。

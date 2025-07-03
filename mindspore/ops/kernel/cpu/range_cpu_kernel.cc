@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/range_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace range_cpu {
 namespace {
 constexpr size_t kRangeInputsNum = 4;
 constexpr size_t kRangeOutputsNum = 1;
@@ -100,5 +101,6 @@ const std::vector<std::pair<KernelAttr, RangeCpuKernelMod::KernelRunFunc>> &Rang
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Range, RangeCpuKernelMod);
+}  // namespace range_cpu
 }  // namespace kernel
 }  // namespace mindspore

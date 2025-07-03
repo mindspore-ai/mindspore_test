@@ -27,7 +27,6 @@ import time
 import numpy as np
 
 import mindspore
-import mindspore.dataset as ds
 from mindspore import log as logger
 from mindspore.train.serialization import save_checkpoint, load_checkpoint
 from mindspore.train.callback._checkpoint import ModelCheckpoint, _chg_ckpt_file_name_if_same_exist
@@ -36,7 +35,7 @@ from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
 from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
-    TFTRegister
+    TrainFaultTolerance
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
@@ -57,7 +56,11 @@ from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
+from mindspore._c_expression import _get_optimzer_timestamps
+from mindspore._c_expression import clean_tdt_channel, _clean_rootinfo
 
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
+from .serialization import load_param_into_net
 
 def _transfer_tensor_to_tuple(inputs):
     """
@@ -91,6 +94,7 @@ def _save_final_ckpt(func):
     """
     Decorator function, which saves the current checkpoint when an exception occurs during training.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         obj = None
@@ -107,7 +111,7 @@ def _save_final_ckpt(func):
                 # pylint: disable=W0212
                 prefix = _chg_ckpt_file_name_if_same_exist(obj._directory, obj._exception_prefix, True)
                 cur_ckpoint_file = prefix + "-" + str(self._current_epoch_num) + "_" \
-                    + str(self._current_step_num) + "_breakpoint.ckpt"
+                                   + str(self._current_step_num) + "_breakpoint.ckpt"
                 cur_file = os.path.join(obj._directory, cur_ckpoint_file)
                 if "epoch_num" in obj._append_dict:
                     obj._append_dict["epoch_num"] = obj._append_epoch_num + self._current_epoch_num
@@ -118,88 +122,175 @@ def _save_final_ckpt(func):
                 raise e
         else:
             func(self, *args, **kwargs)
+
     return wrapper
+
+
+def _handle_exception_info(obj, uce_env, tft, e):
+    """handle exception info"""
+    logger.info("uce wrapper caught RuntimeError")
+    if not uce_env:
+        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
+                     exc_info=True)
+        if tft:
+            tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+        raise e
+    e_str = str(e)
+    logger.warning("uce wrapper caught RuntimeError e_str:{}".format(e_str))
+    if "UCEError" in e_str:
+        logger.info("uce wrapper report UCEError")
+        obj.is_uce_rank = True
+        # if error is HBM_MULTI_BIT_ECC_ERROR
+        if "error_code=507054" in e_str:
+            hbm_error_time, optimize_start, optimizer_end = _get_optimzer_timestamps()
+            can_repair = tft.tft_can_do_uce_repair(hbm_error_time, optimize_start, optimizer_end)
+            logger.info(f"UCEError of type HBM_MULTI_BIT_ECC_ERROR occurs, \
+                        hbm_error_time={hbm_error_time}, optimize_start={optimize_start}, \
+                        optimizer_end={optimizer_end}, can_repair={can_repair}")
+            if not can_repair:
+                logger.error(f"Caught UCEError of type HBM_MULTI_BIT_ECC_ERROR but can not repair, "
+                             f"hbm_error_time={hbm_error_time}, optimize_start={optimize_start}, "
+                             f"optimizer_end={optimizer_end}", exc_info=True)
+                tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                raise e
+        tft.tft_report_error(tft.ReportState.RS_UCE.value)
+    elif "HCCEError" in e_str:
+        logger.warning("uce wrapper caught HCCEError")
+        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
+    elif "ForceStopError" in e_str:
+        logger.warning("uce wrapper caught RuntimeError ForceStopError")
+        force_stop_err = tft.ReportState.RS_NORMAL.value
+        tft.tft_report_error(force_stop_err)
+    elif "ARF FINISH" in e_str:
+        logger.warning(f"ARF FINISH")
+        _set_recovery_context(is_arf=True)
+        tft.tft_report_error(tft.ReportState.RS_PREREPAIR_FINISH.value)
+    else:
+        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
+        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+        raise e
+
+
+def _handle_training_result_error(model, tft_obj):
+    """
+    Handle training result error for resuming training.
+    """
+    ckpt_load_fn = tft_obj.ckpt_load_func
+    train_network = tft_obj.cb_params.train_network
+    logger.warning("Process training result error start.")
+    # 1. Clear tdt channel
+    logger.warning("Clean tdt channel.")
+    clean_tdt_channel()
+
+    # 2. Load checkpoint
+    logger.warning("Load checkpoint.")
+    new_param_dict, remove_redundancy = ckpt_load_fn()
+    param_not_load, ckpt_not_load = load_param_into_net(train_network, new_param_dict, True, remove_redundancy)
+    logger.warning(f"param_not_load: {param_not_load}")
+    logger.warning(f"ckpt_not_load: {ckpt_not_load}")
+    resume_epoch = new_param_dict.get('epoch_num')
+    resume_step = new_param_dict.get('step_num')
+    model._initial_step = int(resume_step.asnumpy())
+    logger.warning("Process training result error end.")
+    return (resume_epoch, resume_step)
+
+
+def _calc_cb_initial_step(org_epoch, org_step, *args, **kwargs):
+    """calculate initial step for callback"""
+    train_dataset = args[1]
+    dataset_sink_mode = args[3] if len(args) > 3 else kwargs.get('dataset_sink_mode', True)
+    sink_size = args[4] if len(args) > 4 else kwargs.get('sink_size', -1)
+
+    cb_initial_step = 0
+    if dataset_sink_mode:
+        train_dataset.set_init_step(org_epoch)
+        dataset_size = train_dataset.get_dataset_size()
+        if sink_size != -1:
+            cb_initial_step = org_epoch * sink_size + org_step
+        else:
+            cb_initial_step = org_epoch * dataset_size + org_step
+    else:
+        train_dataset.set_init_step(org_step)
+        cb_initial_step = org_step
+    if hasattr(train_dataset, '_dataset_helper'):
+        dataset_helper = train_dataset._dataset_helper
+        _reset_training_dataset(cb_initial_step, dataset_helper.iter.dataset.get_dataset_size())
+    return cb_initial_step
+
+
+def _update_ckpt_callback_info(resume_train_step, **kwargs):
+    """
+    Update checkpoint callback internal state
+    """
+    ckpt_obj = None
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), ModelCheckpoint):
+        ckpt_obj = kwargs.get('callbacks')
+    if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
+        for item in kwargs.get('callbacks'):
+            if isinstance(item, ModelCheckpoint):
+                ckpt_obj = item
+    if ckpt_obj is not None:
+        ckpt_obj._last_triggered_step = 0
+        ckpt_obj._append_step_num = resume_train_step
+
 
 def _handle_tft(func):
     """
     Decorator function, which starts uce handle process when an exception occurs during training.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         obj = None
-        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TFTRegister):
+        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TrainFaultTolerance):
             obj = kwargs.get('callbacks')
         if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
             for item in kwargs.get('callbacks'):
-                if isinstance(item, TFTRegister):
+                if isinstance(item, TrainFaultTolerance):
                     obj = item
         if obj:
-            tft = obj.tft
             tft_env = os.getenv("MS_ENABLE_TFT", "")
-            uce_env = "UCE:1" in tft_env
+            uce_env = "UCE:1" in tft_env or "ARF:1" in tft_env or "HCCE:1" in tft_env
+            tre_env = "TRE:1" in tft_env
             while True:
                 try:
                     return func(self, *args, **kwargs)
                 except RuntimeError as e:
-                    logger.info("uce wrapper caught RuntimeError")
-                    if not uce_env:
-                        logger.error("uce wrapper caught RuntimeError but uce not enable, enter MindIO TTP process.",
-                                     exc_info=True)
-                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
-                        raise e
-                    e_str = str(e)
-                    logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
-                    if "UCEError" in e_str:
-                        logger.info("uce wrapper report UCEError")
-                        obj.is_uce_rank = True
-                        tft.tft_report_error(tft.ReportState.RS_UCE.value)
-                    elif "ForceStopError" in e_str:
-                        logger.info("uce wrapper caught RuntimeError ForceStopError")
-                        force_stop_err = tft.ReportState.RS_NORMAL.value
-                        tft.tft_report_error(force_stop_err)
+                    if tre_env and 'TREError' in str(e):
+                        _, resume_step = _handle_training_result_error(self, obj)
+                        repair_step = int(resume_step.asnumpy())
+                        _update_ckpt_callback_info(repair_step, **kwargs)
+                        logger.warning(f'Resume training after TREError from step {repair_step}.')
                     else:
-                        logger.error("uce wrapper caught other RuntimeError, enter MindIO TTP process.", exc_info=True)
-                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
-                        raise e
-                    ret = tft.tft_wait_next_action()
-                    if ret == tft.Action.EXIT.value:
-                        raise e
-                    repair_step = tft.tft_get_repair_step()
-                    logger.info("uce wrapper caught repair finish REPAIR STEP: {} batch_num: \
-{}".format(repair_step, self.batch_num))
-                    initial_epoch = int(repair_step/self.batch_num)
+                        _handle_exception_info(obj, uce_env, obj.tft, e)
+                        ret = obj.tft.tft_wait_next_action()
+                        if ret == obj.tft.Action.EXIT.value:
+                            raise e
+                        repair_step = obj.tft.tft_get_repair_step()
+                        logger.warning(
+                            "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
+                                                                                                   self.batch_num))
+                    initial_epoch = int(repair_step / self.batch_num)
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
-
-                    train_dataset = args[1]
-                    dataset_sink_mode = args[3] if len(args) > 3 else kwargs.get('dataset_sink_mode', True)
-                    sink_size = args[4] if len(args) > 4 else kwargs.get('sink_size', -1)
-
-                    cb_initial_step = 0
-                    if dataset_sink_mode:
-                        train_dataset.set_init_step(initial_epoch)
-                        dataset_size = train_dataset.get_dataset_size()
-                        if sink_size != -1:
-                            cb_initial_step = initial_epoch * sink_size + initial_step
-                        else:
-                            cb_initial_step = initial_epoch * dataset_size + initial_step
-                    else:
-                        train_dataset.set_init_step(initial_step)
-                        cb_initial_step = initial_step
-
-                    kwargs["initial_step"] = cb_initial_step
+                    cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
+                    if not self.enable_tre and not self.enable_hcce:
+                        kwargs["initial_step"] = cb_initial_step
+                        self._initial_step = 0
                     # reset all accu grads to zero
                     obj._reset_acc_grads()
-
-                    logger.info("uce wrapper repair complete  \
-initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
+                    logger.warning(
+                        "uce wrapper repair complete initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch,
+                                                                                                     cb_initial_step))
                     continue
                 except BaseException as e:
-                    logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
-                    tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                    if obj.tft:
+                        logger.error("uce wrapper caught BaseException error, enter MindIO TTP process.", exc_info=True)
+                        obj.tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
             return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -216,7 +307,7 @@ def _check_tft():
         if ms_mode != mindspore.GRAPH_MODE:
             raise ValueError("TFT is only supported in GRAPH_MODE")
         jit_level = context.get_context("jit_level")
-        if jit_level == "O2" and "UCE:1" in tft_env:
+        if jit_level == "O2" and ("UCE:1" in tft_env or "ARF:1" in tft_env):
             raise ValueError("TFT is not supported when using jit_level == O2")
 
 
@@ -355,6 +446,11 @@ def _set_with_processed_inputs(network, inputs):
             "Reset inputs from a process inputs, should be a list/tuple or a dict, but got %s!" % str(inputs))
 
 
+def _check_tft_reset_dataset():
+    env_tft = os.getenv("MS_ENABLE_TFT", "")
+    return any([v in env_tft for v in ["TRE:1", "UCE:1", "HCCE:1", "ARF:1"]])
+
+
 class Model:
     """
     High-Level API for training or inference.
@@ -406,12 +502,13 @@ class Model:
               the accuracy is reduced by less than 3%.
 
             If you want to config boost mode by yourself, you can set boost_config_dict as `boost.py`.
-            In order for this function to work, you need to set the optimizer, eval_network or metric parameters
-            at the same time.
+            In order for this function to work, you need to set the parameter `optimizer`, along with
+            at least one of the parameter `eval_network` or performance `metrics`.
 
             Notice: The current optimization enabled by default only applies to some networks, and not all networks
             can obtain the same benefits.  It is recommended to enable this function on
-            the Graph mode + Ascend platform, and for better acceleration, refer to the documentation to configure
+            the Graph mode + Ascend platform, and for better acceleration,
+            refer to :class:`mindspore.boost.AutoBoost` to configure
             boost_config_dict.
 
     Examples:
@@ -436,6 +533,7 @@ class Model:
     def __init__(self, network, loss_fn=None, optimizer=None, metrics=None, eval_network=None, eval_indexes=None,
                  amp_level="O0", boost_level="O0", **kwargs):
         self._network = network
+        _init_auto_parallel_context(self._network)
         self._loss_fn = loss_fn
         self._optimizer = optimizer
         self._loss_scale_manager = None
@@ -470,6 +568,11 @@ class Model:
         self._lite_infer = True  # if backend lite infer fails, set False
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
         self.batch_num = -1
+        self.enable_tre = "TRE:1" in os.getenv("MS_ENABLE_TFT", "")
+        self.enable_hcce = "HCCE:1" in os.getenv("MS_ENABLE_TFT", "")
+        self._initial_step = None
+        self._need_reset_data = _check_tft_reset_dataset()
+        _clear_auto_parallel_context(self._network)
 
     def _check_for_graph_cell(self, kwargs):
         """Check for graph cell"""
@@ -668,7 +771,7 @@ class Model:
             logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
-        if _get_recovery_context("enable_recovery") and is_train:
+        if (_get_recovery_context("enable_recovery") or self._need_reset_data) and is_train:
             _set_training_dataset(dataset_helper)
 
         network.set_train(is_train)
@@ -765,7 +868,7 @@ class Model:
                 break
             logger.warning(f"Waiting for the dataset warmup, current device queue size: {mbuf_size}")
 
-    def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1):
+    def _init(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
         Initialize compute graphs and data graphs with the sink mode.
 
@@ -794,7 +897,6 @@ class Model:
             if not isinstance(train_dataset, mindspore.dataset.Dataset):
                 raise TypeError("The type of 'train_dataset' must be `Dataset`, "
                                 "but got {}.".format(type(train_dataset)))
-
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                        "Begin to check parameter broadcast in model.build().")
             logger.info("Begin to check parameter broadcast in model.build() procedure.")
@@ -807,23 +909,24 @@ class Model:
             train_dataset.__no_send__ = True
             train_dataset_helper, train_network = self._exec_preprocess(is_train=True,
                                                                         dataset=train_dataset,
-                                                                        dataset_sink_mode=True,
+                                                                        dataset_sink_mode=sink_mode,
                                                                         sink_size=sink_size)
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to warmup dataset in model.build().")
-            logger.info("Begin to warmup dataset in model.build() procedure.")
-            self._warmup_dataset(epoch, train_dataset, sink_size)
+            if sink_mode:
+                logger.info("Begin to warmup dataset in model.build() procedure.")
+                self._warmup_dataset(epoch, train_dataset, sink_size)
 
-            # Since dataset pipeline has been triggered, delete flag
-            delattr(train_dataset, "__no_send__")
+                # Since dataset pipeline has been triggered, delete flag
+                delattr(train_dataset, "__no_send__")
 
-            # Waiting for the dataset warmup ready
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
-                       "Begin waiting for dataset warmup in model.build().")
-            logger.info("Begin waiting for dataset warmup in model.build() procedure.")
-            self._waiting_for_dataset_warmup_ready(train_dataset)
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
-                       "The dataset warmup was successful in model.build().")
-            logger.info("The dataset warmup was successful in model.build() procedure.")
+                # Waiting for the dataset warmup ready
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "Begin waiting for dataset warmup in model.build().")
+                logger.info("Begin waiting for dataset warmup in model.build() procedure.")
+                self._waiting_for_dataset_warmup_ready(train_dataset)
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "The dataset warmup was successful in model.build().")
+                logger.info("The dataset warmup was successful in model.build() procedure.")
 
             if context.get_auto_parallel_context("pipeline_stages") > 1 and valid_dataset:
                 train_network.add_flags_recursive(is_first_iteration=True)
@@ -833,6 +936,7 @@ class Model:
                 logger.info("Begin to compile train network in model.build() procedure.")
                 train_network.compile(*inputs)
                 self._train_network.parameter_layout_dict = train_network.parameter_layout_dict
+                train_dataset.reset()
                 break
 
         if valid_dataset:
@@ -846,7 +950,7 @@ class Model:
             valid_dataset.__no_send__ = True
             valid_dataset_helper, eval_network = self._exec_preprocess(is_train=False,
                                                                        dataset=valid_dataset,
-                                                                       dataset_sink_mode=True)
+                                                                       dataset_sink_mode=sink_mode)
             if context.get_auto_parallel_context("pipeline_stages") > 1:
                 eval_network.add_flags_recursive(is_first_iteration=False)
             for inputs in valid_dataset_helper:
@@ -854,6 +958,7 @@ class Model:
                            "Begin to compile eval network in model.build().")
                 logger.info("Begin to compile eval network in model.build() procedure.")
                 eval_network.compile(*inputs)
+                valid_dataset.reset()
                 break
 
     @staticmethod
@@ -922,6 +1027,8 @@ class Model:
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
         cb_params.loss_scale_mananger = self._loss_scale_manager
+        cb_params.is_arf = _get_recovery_context("is_arf")
+        cb_params.initial_step = self._initial_step
 
         # build callback list
         with _CallbackManager(callbacks) as list_callback:
@@ -960,7 +1067,7 @@ class Model:
             initial_epoch (int): Epoch at which to start train, it used for resuming a previous training run.
                                  Default: 0.
         """
-        is_graph = (context.get_context("mode") == context.GRAPH_MODE)
+        is_graph = context.get_context("mode") == context.GRAPH_MODE
         dataset_size = train_dataset.get_dataset_size()
         if dataset_size % sink_size != 0:
             logger.info("In dataset_sink mode (dataset_size % sink_size) should equal to 0, "
@@ -1026,6 +1133,10 @@ class Model:
                 need_exec_callback_step_end = not (self.enable_recovery and _get_recovery_context("need_reset"))
                 if need_exec_callback_step_end:
                     list_callback.on_train_step_end(run_context)
+                if cb_params.is_arf:
+                    cb_params.is_arf = False
+                    _set_recovery_context(is_arf=False)
+                _clean_rootinfo()
 
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
@@ -1056,7 +1167,7 @@ class Model:
             if should_stop:
                 break
 
-            need_reset_to_beginning = self.enable_recovery and _get_recovery_context("need_reset")\
+            need_reset_to_beginning = self.enable_recovery and _get_recovery_context("need_reset") \
                                       and not _get_recovery_context("latest_ckpt_file")
             self.epoch_iter += 1
             if need_reset_to_beginning:
@@ -1100,7 +1211,7 @@ class Model:
         Check whether enable recovery and execution mode consistency.
         """
 
-        enable_recovery = _get_recovery_context("enable_recovery")
+        enable_recovery = _get_recovery_context("enable_recovery") and context.get_context("device_target") == "GPU"
         if not enable_recovery:
             self.enable_recovery = False
         else:
@@ -1117,6 +1228,8 @@ class Model:
             dataset_size (int): The number of batches in a dataset.
             sink_size (int): Control the amount of data in each sink. Default: -1.
         """
+        if context.get_context("device_target") != "GPU":
+            return
         if not self.enable_recovery:
             self.need_load_ckpt = False
 
@@ -1145,7 +1258,7 @@ class Model:
                 load_checkpoint(cb_params.latest_ckpt_file, cb_params.train_network)
             except BaseException as e:
                 os.remove(cb_params.latest_ckpt_file)
-                raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: "\
+                raise RuntimeError(e.__str__() + ", load ckpt failed and remove the ckpt: " \
                                    + cb_params.latest_ckpt_file) from e
             _reset_training_dataset(cb_params.cur_step_num, dataset_helper.iter.dataset.get_dataset_size())
             self.need_load_ckpt = False
@@ -1235,6 +1348,10 @@ class Model:
                     self._loss_scale_manager.update_loss_scale(overflow)
 
                 list_callback.on_train_step_end(run_context)
+                if cb_params.is_arf:
+                    cb_params.is_arf = False
+                    _set_recovery_context(is_arf=False)
+                _clean_rootinfo()
                 # Embedding cache server only run one step.
                 if is_embedding_cache_server:
                     break
@@ -1332,10 +1449,9 @@ class Model:
             ...                  loss_scale_manager=loss_scale_manager)
             >>> model.train(2, dataset)
         """
+        _init_auto_parallel_context(self._network)
         _check_tft()
         device_target = context.get_context("device_target")
-        # prepare dataset for obfuscated model
-        train_dataset = self._prepare_obf_dataset(train_dataset)
         if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
             logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
             dataset_sink_mode = False
@@ -1390,6 +1506,8 @@ class Model:
         # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
         if _enable_distributed_mindrt():
             _reset_op_id_with_offset()
+
+        _clear_auto_parallel_context(self._network)
 
     @staticmethod
     def _check_sink_mode_for_ds_debug_mode(dataset_sink_mode):
@@ -1484,11 +1602,8 @@ class Model:
             >>> optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
             >>> model = Model(net, loss_fn=loss, optimizer=optim, metrics={"accuracy"})
             >>> model.fit(2, train_dataset, valid_dataset)
-
-        Tutorial Examples:
-            - `Advanced Encapsulation: Model - Train and Save Model
-              <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
+        _init_auto_parallel_context(self._network)
         device_target = context.get_context("device_target")
         if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
             logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
@@ -1540,8 +1655,9 @@ class Model:
                     valid_dataset=valid_dataset,
                     valid_frequency=valid_frequency,
                     valid_dataset_sink_mode=valid_dataset_sink_mode)
+        _clear_auto_parallel_context(self._network)
 
-    def build(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1):
+    def build(self, train_dataset=None, valid_dataset=None, sink_size=-1, epoch=1, sink_mode=True):
         """
         Build computational graphs and data graphs with the sink mode.
 
@@ -1560,6 +1676,7 @@ class Model:
                                      will be built, and `metrics` in `Model` can not be None. Default: ``None`` .
             sink_size (int): Control the number of steps for each sinking. Default: ``-1`` .
             epoch (int): Control the training epochs. Default: ``1`` .
+            sink_mode (bool): Determines whether to pass the data through dataset channel. Default: ``True`` .
 
         Examples:
             >>> from mindspore import nn
@@ -1580,20 +1697,22 @@ class Model:
             >>> model.build(dataset, epoch=2)
             >>> model.train(2, dataset)
         """
+        _init_auto_parallel_context(self._network)
         epoch = Validator.check_positive_int(epoch)
         if hasattr(self._train_network, '_is_check_and_refresh') and not self._train_network._is_check_and_refresh:
             self._train_network.check_names_and_refresh_name()
             self._train_network._is_check_and_refresh = True
         vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to init dataset in model.build().")
         logger.info("Begin to init dataset in model.build() procedure.")
-        self._init(train_dataset, valid_dataset, sink_size, epoch)
+        self._init(train_dataset, valid_dataset, sink_size, epoch, sink_mode)
         vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
                    "The model.build() which contains dataset warmup and network compile is success.")
         logger.info("The model.build() which contains dataset warmup and network compile is success.")
+        _clear_auto_parallel_context(self._network)
 
     def _eval_in_fit(self, valid_dataset, callbacks=None, dataset_sink_mode=True, cb_params=None):
         """
-        Evaluation process in `mindspore.train.Model.fit`.
+        Evaluation process in :func:`mindspore.train.Model.fit`.
 
         Args:
             valid_dataset (Dataset): Dataset to evaluate the model. If `valid_dataset` is provided, evaluation process
@@ -1759,12 +1878,8 @@ class Model:
             >>> loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
             >>> model = Model(net, loss_fn=loss, optimizer=None, metrics={'acc'})
             >>> acc = model.eval(dataset, dataset_sink_mode=False)
-
-        Tutorial Examples:
-            - `Advanced Encapsulation: Model - Train and Save Model
-              <https://www.mindspore.cn/docs/en/master/model_train/train_process/model.html#training-and-saving-model>`_
         """
-        valid_dataset = self._prepare_obf_dataset(valid_dataset)
+        _init_auto_parallel_context(self._network)
         dataset_sink_mode = Validator.check_bool(dataset_sink_mode)
 
         _device_number_check(self._parallel_mode, self._device_number)
@@ -1809,6 +1924,7 @@ class Model:
         # This is to avoid the timeout when finding the actor route tables in 'train' and 'eval' case(or 'fit').
         if _enable_distributed_mindrt():
             _reset_op_id_with_offset()
+        _clear_auto_parallel_context(self._network)
 
         return eval_result
 
@@ -1821,7 +1937,8 @@ class Model:
                 The predict data, can be a single tensor,
                 a list of tensor, or a tuple of tensor.
 
-            config (dict, optional) - The config parameter is enabled when the backend is ‘lite’.
+            config (dict, optional): The config parameter is enabled when the backend is ‘lite’.
+
                 The config includes two parts: config_path (configPath, str) and config_item (str, dict).
                 When the config_item is set, its priority is higher than the config_path. Set the ranking
                 table file for inference. The content of the configuration file is as follows:
@@ -1831,6 +1948,16 @@ class Model:
                     For example: "/home/user/config.ini". Default value: ``"" `` , here is the content of the
                     config.ini file:
 
+                The config has 3 forms：
+                1. configPath defines the path of the configuration file, which is used to pass user-defined
+                options during model building. Default value: ``"" ``.
+
+                .. code-block::
+
+                    config = {"configPath" : "/home/user/config.ini"}
+
+                Here is the content of the config.ini file:
+
                 .. code-block::
 
                     [ascend_context]
@@ -1839,20 +1966,15 @@ class Model:
                     [op_name1] = data_type:float16 (operator named op_name1 is set to data type float16)
                     [op_name2] = data_type:float32 (operator named op_name2 is set to data type float32)
 
-                When only the config_path is configured, it is done as follows:
-
-                .. code-block::
-
-                    config = {"configPath" : "/home/user/config.ini"}
-
-                When only the config_dict is configured, it is done as follows:
+                2. Set the user-defined options in parameter dictionary, it is done as follows:
 
                 .. code-block::
 
                     config = {"ascend_context" : {"rank_table_file" : "path_b"},
                               "execution_plan" : {"op_name1" : "data_type:float16", "op_name2" : "data_type:float32"}}
 
-                When both the `config_path` and the `config_dict` are configured, it is done as follows:
+                3. Both the `configPath` and the `parameter dictionary` are configured, The priority of the parameter
+                dictionary is higher than that of the content in the configuration file. It is done as follows:
 
                 .. code-block::
 
@@ -1860,12 +1982,13 @@ class Model:
                               "ascend_context" : {"rank_table_file" : "path_b"},
                               "execution_plan" : {"op_name3" : "data_type:float16", "op_name4" : "data_type:float32"}}
 
-                Note that both the "configPath" is configured in the config_dict and the config_item,
-                    in this case, the path_b in the config_dict takes precedence.
+                Note that in the "configPath" the parameter is set as "rank_table_file = [path_a]", but in dict is set
+                as "ascend_context" : {"rank_table_file" : "path_b"}, in this case, the path_b takes precedence.
 
         Returns:
             Tensor, array(s) of predictions.
         """
+
         def _get_lite_context(lite_context_input):
             # use default lite context parameters for now
             device_target = context.get_context("device_target").lower()
@@ -1899,7 +2022,7 @@ class Model:
         if not self._mindspore_lite:
             self._mindspore_lite = importlib.import_module('mindspore_lite')
 
-        use_past = False    # default execute full model inference
+        use_past = False  # default execute full model inference
         model_group_id = None
         if self._predict_network.get_flags().__contains__("is_first_iteration"):
             is_first_iteration = self._predict_network.get_flags()['is_first_iteration']
@@ -2012,6 +2135,7 @@ class Model:
             >>> model = Model(LeNet5())
             >>> result = model.predict(input_data)
         """
+        _init_auto_parallel_context(self._network)
         if backend not in ['lite', None]:
             raise ValueError(f"For Model.predict, `backend` should be 'lite' or None, but got {backend}")
         if backend == "lite" and self._lite_infer:
@@ -2027,6 +2151,7 @@ class Model:
             except BaseException as e:
                 self._lite_infer = False
                 logger.warning(f"Lite inference failed, {e.__str__()}, fallback to original inference!")
+        _clear_auto_parallel_context(self._network)
 
         def _check_input_data():
             """Input data check."""
@@ -2092,7 +2217,9 @@ class Model:
 
     def infer_train_layout(self, train_dataset, dataset_sink_mode=True, sink_size=-1):
         """
-        Generate parameter layout for the train network in 'AUTO_PARALLEL' or 'SEMI_AUTO_PARALLEL' mode.
+        Generate parameter layout for the train network when using `AutoParallel(cell)`
+        to enable parallel mode.
+
         Only dataset sink mode is supported for now.
 
         .. warning::
@@ -2111,9 +2238,9 @@ class Model:
                                       Configure pynative mode or CPU, the training process will be performed with
                                       dataset not sink. Default: ``True`` .
             sink_size (int): Control the number of steps for each sinking.
+                             If dataset_sink_mode is False, set sink_size as invalid.
                              If sink_size = -1, sink the complete dataset for each epoch.
                              If sink_size > 0, sink sink_size data for each epoch.
-                             If dataset_sink_mode is False, set sink_size as invalid.
                              Default: ``-1`` .
 
         Returns:
@@ -2127,10 +2254,10 @@ class Model:
             >>> from mindspore import Tensor, nn
             >>> from mindspore.train import Model
             >>> from mindspore.communication import init
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
             >>>
             >>> ms.set_context(mode=ms.GRAPH_MODE)
             >>> init()
-            >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
             >>>
             >>> # Create the dataset taking MNIST as an example. Refer to
             >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/mnist.py
@@ -2138,13 +2265,15 @@ class Model:
             >>> # Define the network structure of LeNet5. Refer to
             >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
             >>> net = LeNet5()
+            >>> parallel_net = AutoParallel(net)
             >>> loss = nn.SoftmaxCrossEntropyWithLogits()
             >>> loss_scale_manager = ms.FixedLossScaleManager()
             >>> optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
-            >>> model = Model(net, loss_fn=loss, optimizer=optim, metrics=None,
+            >>> model = Model(parallel_net, loss_fn=loss, optimizer=optim, metrics=None,
             ...                  loss_scale_manager=loss_scale_manager)
             >>> layout_dict = model.infer_train_layout(dataset)
         """
+        _init_auto_parallel_context(self._network)
         self._infer_train_check(train_dataset, dataset_sink_mode, sink_size)
 
         train_dataset.__no_send__ = True
@@ -2156,11 +2285,13 @@ class Model:
             train_network.compile(*inputs)
             break
         train_dataset.__model_hash__ = hash(self)
+        _clear_auto_parallel_context(self._network)
         return train_network.parameter_layout_dict
 
     def infer_predict_layout(self, *predict_data, skip_backend_compile=False):
         """
-        Generate parameter layout for the predict network in 'AUTO_PARALLEL' or 'SEMI_AUTO_PARALLEL' mode.
+        Generate parameter layout for the predict network when using `AutoParallel(cell)`
+        to enable parallel mode.
 
         Data could be a single tensor or multiple tensors.
 
@@ -2183,21 +2314,48 @@ class Model:
             RuntimeError: If not in GRAPH_MODE.
 
         Examples:
-            >>> # This example should be run with multiple devices. Refer to the tutorial > Distributed Training on
-            >>> # mindspore.cn.
             >>> import numpy as np
             >>> import mindspore as ms
+            >>> import mindspore.nn as nn
             >>> from mindspore import Tensor
             >>> from mindspore.train import Model
+            >>> from mindspore.ops import operations as P
+            >>> from mindspore import context
             >>> from mindspore.communication import init
+            >>> from mindspore.parallel.auto_parallel import AutoParallel
             >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc1 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc2 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc3 = nn.Dense(128, 768, activation='relu')
+            ...         self.fc4 = nn.Dense(768, 768, activation='relu')
+            ...         self.relu4 = nn.ReLU()
+            ...         self.relu5 = nn.ReLU()
+            ...         self.transpose = P.Transpose()
+            ...         self.matmul1 = P.MatMul()
+            ...         self.matmul2 = P.MatMul()
+            ...
+            ...     def construct(self, x):
+            ...         q = self.fc1(x)
+            ...         k = self.fc2(x)
+            ...         v = self.fc3(x)
+            ...         k = self.transpose(k, (1, 0))
+            ...         c = self.relu4(self.matmul1(q, k))
+            ...         s = self.relu5(self.matmul2(c, v))
+            ...         s = self.fc4(s)
+            ...         return s
+            ...
             >>> ms.set_context(mode=ms.GRAPH_MODE)
             >>> init()
-            >>> ms.set_auto_parallel_context(full_batch=True, parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL)
-            >>> input_data = Tensor(np.random.randint(0, 255, [1, 1, 32, 32]), ms.float32)
-            >>> model = Model(Net())
-            >>> predict_map = model.infer_predict_layout(input_data)
+            >>> inputs = Tensor(np.ones([32, 128]).astype(np.float32))
+            >>> net = Net()
+            >>> parallel_net = AutoParallel(net, parallel_mode='semi_auto')
+            >>> model = Model(parallel_net)
+            >>> predict_map = model.infer_predict_layout(inputs)
         """
+        _init_auto_parallel_context(self._network)
         if context.get_context("mode") != context.GRAPH_MODE:
             raise RuntimeError("Pre-compile process that generate parameter layout for the predict network "
                                "only supports GRAPH MODE and Ascend target currently.")
@@ -2217,6 +2375,7 @@ class Model:
             predict_net.phase = origin_phase
         else:
             predict_net.compile(*predict_data)
+        _clear_auto_parallel_context(self._network)
         return predict_net.parameter_layout_dict
 
     def _flush_from_cache(self, cb_params):
@@ -2255,17 +2414,6 @@ class Model:
             Object, the instance of evaluate network.
         """
         return self._eval_network
-
-    def _prepare_obf_dataset(self, dataset):
-        if not hasattr(self._network, 'obf_ratios'):
-            return dataset
-        data_size = dataset.get_dataset_size()
-        obf_ratio_dataset = []
-        for _ in range(data_size):
-            obf_ratio_dataset.append(self._network.obf_ratios)
-        obf_ratio_dataset = ds.NumpySlicesDataset(data=obf_ratio_dataset, column_names=["y_obf"])
-        dataset = ds.zip((dataset, obf_ratio_dataset))
-        return dataset
 
 
 __all__ = ["Model"]

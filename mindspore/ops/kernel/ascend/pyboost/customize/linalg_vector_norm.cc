@@ -17,14 +17,14 @@
 #include "kernel/ascend/pyboost/customize/linalg_vector_norm.h"
 #include <memory>
 #include <functional>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor,
+void LinalgVectorNormAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
                                      const FP32ImmPtr &ord, const std::optional<ValueTuplePtr> &dim,
                                      const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call LinalgVectorNorm start";

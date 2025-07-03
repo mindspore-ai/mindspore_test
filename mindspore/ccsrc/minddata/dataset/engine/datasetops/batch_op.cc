@@ -25,20 +25,34 @@
 
 #include "minddata/dataset/kernels/data/data_utils.h"
 #include "minddata/dataset/util/status.h"
+#include "minddata/utils.h"
 
 namespace mindspore {
 namespace dataset {
 #ifdef ENABLE_PYTHON
 BatchOp::BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size, int32_t num_workers,
                  const std::vector<std::string> &in_col, const std::vector<std::string> &out_col,
-                 py::function batch_size_func, py::function batch_map_func, PadInfo pad_map)
+                 const py::function &batch_size_func, const py::function &batch_map_func, PadInfo pad_map)
     : BatchOp(batch_size, drop, pad, op_queue_size, num_workers, in_col, std::move(pad_map)) {
-  batch_size_func_ = std::move(batch_size_func);
-  batch_map_func_ = std::move(batch_map_func);
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    batch_size_func_ = batch_size_func;
+    batch_map_func_ = batch_map_func;
+  }
   out_col_names_ = out_col;
 }
-// if PYTHON is disabled. per_batch_map can't be used
+
+BatchOp::~BatchOp() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    batch_size_func_ = py::object();
+    batch_map_func_ = py::object();
+  }
+}
+#else
+BatchOp::~BatchOp() = default;
 #endif
+// if PYTHON is disabled. per_batch_map can't be used
 BatchOp::BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size, int32_t num_workers,
                  std::vector<std::string> cols_to_map, PadInfo pad_map)
     : ParallelOp(num_workers, op_queue_size),
@@ -998,6 +1012,10 @@ Status BatchOp::Launch() {
   if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for BatchOp:" << id();
     python_multiprocessing_runtime_->launch(id());
+    std::vector<int32_t> worker_ids = python_multiprocessing_runtime_->get_pids();
+    for (int i = 0; i < worker_ids.size(); i++) {
+      BindThreadCoreForMindDataOp("dataset::BatchOp", worker_ids[i], false);
+    }
   }
   return DatasetOp::Launch();
 }

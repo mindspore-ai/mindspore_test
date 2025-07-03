@@ -53,19 +53,19 @@ enum class NodeState {
 // Record the state of the compute graph node.
 struct NodeInfo {
   explicit NodeInfo(const std::string &id) { node_id = id; }
-  std::string node_id;
+  std::string node_id{""};
 
   // The local host name of this cluster node.
-  std::string host_name;
+  std::string host_name{""};
 
   // The host ip of this node in the cluster. Nodes use this address to create network communication with each other.
-  std::string host_ip;
+  std::string host_ip{""};
 
   // The role name of this cluster node.
-  std::string role;
+  std::string role{""};
 
   // The device id of this cluster node.
-  uint32_t device_id;
+  uint32_t device_id{0};
 
   // The rank id of this cluster node(only for compute graph node).
   uint32_t rank_id{0};

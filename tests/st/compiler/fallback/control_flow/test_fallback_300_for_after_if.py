@@ -15,14 +15,13 @@
 """ test graph fallback control flow."""
 import numpy as np
 from mindspore import Tensor, jit, context
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_2():
     """
     Feature: JIT Fallback
@@ -30,7 +29,7 @@ def test_for_after_if_2():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func():
         x = Tensor([2])
         y = Tensor([2])
@@ -50,9 +49,8 @@ def test_for_after_if_2():
     assert res_y == 5
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_after_if_3():
     """
     Feature: JIT Fallback
@@ -60,7 +58,7 @@ def test_for_after_if_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func():
         x = np.array([1, 2, 3])
         y = np.array([5, 6, 7])
@@ -79,8 +77,7 @@ def test_for_after_if_3():
     assert res == 12
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_for_after_if_4():
     """
     Feature: JIT Fallback
@@ -88,7 +85,7 @@ def test_for_after_if_4():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def func():
         x = Tensor([1])
         y = Tensor([2])

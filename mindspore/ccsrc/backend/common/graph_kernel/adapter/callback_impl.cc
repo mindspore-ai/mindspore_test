@@ -23,17 +23,53 @@
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
+#include "kernel/graph_kernel/fake_abstract_shape.h"
 #include "kernel/framework_utils.h"
-#include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "kernel/graph_kernel_info.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::graphkernel {
 namespace {
 constexpr auto kPatternOpaque = "Opaque";
+
+std::string GetProcessorStr(const AnfNodePtr &anf_node) {
+  MS_EXCEPTION_IF_NULL(anf_node);
+  std::string processor = kernel::kProcessorUnknown;
+  auto kernel_info = dynamic_cast<device::KernelInfo *>(anf_node->kernel_info());
+  MS_EXCEPTION_IF_NULL(kernel_info);
+  auto build_info = kernel_info->select_kernel_build_info();
+  // we may call this before kernel select.
+  if (build_info == nullptr) {
+    return processor;
+  }
+  switch (build_info->processor()) {
+    case kernel::Processor::AICORE:
+      processor = kernel::kProcessorAiCore;
+      break;
+
+    case kernel::Processor::AICPU:
+      processor = kernel::kProcessorAiCpu;
+      break;
+
+    case kernel::Processor::CUDA:
+      processor = kernel::kProcessorCuda;
+      break;
+
+    case kernel::Processor::CPU:
+      processor = kernel::kProcessorCpu;
+      break;
+
+    default:
+      MS_LOG(DEBUG) << "Unknown processor type.";
+      break;
+  }
+
+  return processor;
+}
 
 TypeId GetTypeIdForValueSequence(const ValueSequencePtr &value_sequence) {
   MS_EXCEPTION_IF_NULL(value_sequence);
@@ -56,8 +92,8 @@ void GetTypeAndFormats(const device::KernelWithIndex &kernel_with_index, std::ve
   MS_EXCEPTION_IF_NULL(value_node);
   auto value = value_node->value();
   MS_EXCEPTION_IF_NULL(value);
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+  if (value->isa<tensor::Tensor>()) {
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     (void)input_types->emplace_back(tensor->data_type());
   } else if (value->isa<ValueSequence>()) {
@@ -113,7 +149,7 @@ std::string CallbackImpl::GetOutputFormat(const AnfNodePtr &node, size_t i) {
 }
 
 std::string CallbackImpl::GetProcessor(const AnfNodePtr &node) {
-  auto processor = kernel::GetProcessorStr(node);
+  auto processor = GetProcessorStr(node);
   if (processor == kernel::kProcessorUnknown) {
     // the processor will not be set during the Ascend kernel select, so it should be updated from context
     processor = kernel::GetStrProcessorFromContext();

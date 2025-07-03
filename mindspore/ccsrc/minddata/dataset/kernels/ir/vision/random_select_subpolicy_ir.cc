@@ -18,16 +18,13 @@
 
 #include <algorithm>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
 #include "minddata/dataset/kernels/image/random_select_subpolicy_op.h"
-#endif
 #include "minddata/dataset/util/validators.h"
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // RandomSelectSubpolicyOperation.
 RandomSelectSubpolicyOperation::RandomSelectSubpolicyOperation(
   const std::vector<std::vector<std::pair<std::shared_ptr<TensorOperation>, double>>> &policy)
@@ -126,7 +123,6 @@ Status RandomSelectSubpolicyOperation::from_json(nlohmann::json op_params,
   *operation = std::make_shared<vision::RandomSelectSubpolicyOperation>(policy);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

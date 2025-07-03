@@ -14,8 +14,10 @@
 # ============================================================================
 import numpy as np
 import mindspore as ms
+from mindspore import context
 
 ms.set_context(mode=ms.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 
 class ConstNet(ms.nn.Cell):

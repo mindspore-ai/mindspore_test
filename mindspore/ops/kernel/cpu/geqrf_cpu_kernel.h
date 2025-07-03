@@ -22,11 +22,12 @@
 #include <utility>
 #include <algorithm>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace geqrf_cpu {
 class GeqrfCpuKernelMod : public NativeCpuKernelMod {
  public:
   GeqrfCpuKernelMod() = default;
@@ -67,6 +68,7 @@ class GeqrfCpuKernelMod : public NativeCpuKernelMod {
   size_t elem_num;
   size_t batch_num;
 };
+}  // namespace geqrf_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

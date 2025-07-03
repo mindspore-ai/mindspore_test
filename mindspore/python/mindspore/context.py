@@ -26,7 +26,7 @@ from collections import namedtuple
 from types import FunctionType
 
 from mindspore import log as logger
-from mindspore._c_expression import MSContext, ms_ctx_param
+from mindspore._c_expression import MSContext, ms_ctx_param, CollectiveManager
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import args_type_check
 from mindspore.parallel._auto_parallel_context import _set_auto_parallel_context, _get_auto_parallel_context, \
@@ -207,7 +207,7 @@ class _Context:
             parallel_mode = _get_auto_parallel_context("parallel_mode")
             if parallel_mode not in (ParallelMode.DATA_PARALLEL, ParallelMode.STAND_ALONE, ParallelMode.AUTO_PARALLEL):
                 raise ValueError(f"Got {parallel_mode}, when the user enabled SEMI_AUTO_PARALELL, "
-                                 f"pynative mode dose not support, you should set either "
+                                 f"pynative mode does not support, you should set either "
                                  f"context.set_auto_parallel_context(parallel_mode='data_parallel'), "
                                  f"context.set_auto_parallel_context(parallel_mode='stand_alone') "
                                  f"or context.set_auto_parallel_context(parallel_mode='auto_parallel').")
@@ -254,9 +254,9 @@ class _Context:
 
     def set_exec_order(self, exec_order):
         """
-        The execution order mode, support "bfs", "dfs", "gpto".
+        The execution order mode, support "bfs", "dfs".
         """
-        exec_order_modes = ["bfs", "dfs", "gpto"]
+        exec_order_modes = ["bfs", "dfs"]
         if exec_order not in exec_order_modes:
             raise ValueError(f"For 'context.set_context', the argument 'exec_order' must be one of "
                              f"{exec_order_modes}, but got {exec_order}.")
@@ -289,6 +289,11 @@ class _Context:
         if deterministic not in deterministic_options:
             raise ValueError(f"For 'context.set_context', the argument 'deterministic' must be one of "
                              f"{deterministic_options}, but got {deterministic}.")
+
+        # Must wait for all async created groups to be initialized so that
+        # deterministic feature could be consistent between all processes.
+        CollectiveManager.get_instance().wait_all_comm_init()
+
         self.set_param(ms_ctx_param.deterministic, deterministic)
 
         hccl_deterministic = os.getenv("HCCL_DETERMINISTIC")
@@ -330,8 +335,8 @@ class _Context:
                   default not enabled, only supports ``"oom"`` currently.
                   ``"oom"``: Detect memory out of bounds.
                 - ge_options (dict): Global or session CANN options.
-                - exception_dump (str): Enable exception dump for Ascend operators. ``"0"`` , ``"1"`` and ``"2"``.
-                  Default: ``"2"`` .
+                - exception_dump (str): Has been deprecated since MindSpore 2.6. Please use
+                  api :func:`mindspore.device_context.ascend.op_debug.aclinit_config` instead.
                 - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file.
                   If its value is None or '', it does not take effect. Default None.
                 - host_scheduling_max_threshold(int): The host scheduling max threshold.
@@ -365,7 +370,7 @@ class _Context:
             'atomic_clean_policy': self._get_ascend_config_setter('atomic_clean_policy', str),
             'matmul_allow_hf32': self._get_ascend_config_setter('matmul_allow_hf32', lambda v: "1" if v else "0"),
             'conv_allow_hf32': self._get_ascend_config_setter('conv_allow_hf32', lambda v: "1" if v else "0"),
-            'exception_dump': self._get_ascend_config_setter('exception_dump'),
+            'exception_dump': lambda x: x,
             'op_debug_option': self._set_op_debug_option,
             'op_precision_mode': self._set_op_precision_mode,
             'ge_options': self._set_ge_options,
@@ -378,11 +383,24 @@ class _Context:
             'hccl_watchdog': self._set_hccl_watchdog,
             'topo_order': self._set_topo_order
         }
+        invalid_context_dict = {
+            'exception_dump': {'version': '2.6', 'interface': 'device_context.ascend.op_debug.aclinit_config()'}
+        }
         ascend_cfg_set = tuple(ascend_cfg_modes.keys())
         for ascend_key, ascend_value in ascend_config.items():
             if ascend_key not in ascend_cfg_set:
                 raise ValueError(f"For 'context.set_context', the key of argument 'ascend_config' must be one of "
                                  f"{ascend_cfg_set}, but got {ascend_key}.")
+            if ascend_key in invalid_context_dict:
+                key = invalid_context_dict.get(ascend_key)
+                deprecated_version, new_interface = key.get('version'), key.get('interface')
+                log = (
+                    f"For 'ascend_config', the parameter '{ascend_key}' has been removed"
+                    f" since MindSpore {deprecated_version} version."
+                )
+                if new_interface:
+                    log += f" Please use the {new_interface} instead."
+                raise ValueError(log)
             supported_modes = ascend_cfg_modes.get(ascend_key)
             if isinstance(supported_modes, list) and ascend_value not in supported_modes:
                 raise ValueError(f"For 'ascend_config', the value of argument {ascend_key} must be one of "
@@ -820,6 +838,25 @@ class _Context:
             raise TypeError(f"For step num, the value type should be int, but got {type(step)}, {step}")
         self.set_param(ms_ctx_param.last_triggered_step, step)
 
+    @staticmethod
+    def _check_speedup_config_str_value(key, value):
+        """check speedup config str value"""
+        if key in ["pp_1f1b_overlap", "recompute_comm_overlap", "recomputation_communication_overlap"]:
+            if isinstance(value, str):
+                values = value.split(",")
+                for v in values:
+                    if v not in ['AlltoAll', 'AlltoAllV', 'MorphAllGather', 'AllReduce',
+                                 'AllGather', 'ReduceScatter', 'MorphReduceScatter', '']:
+                        raise ValueError("{} 's value should be subset of ['AlltoAll', 'AlltoAllV',"
+                                         " 'MorphAllGather', 'AllGather', 'ReduceScatter',"
+                                         " 'MorphReduceScatter', 'AllReduce'].".format(key))
+                return value
+            if value:
+                return "AlltoAll,AlltoAllV,AllGather,ReduceScatter,AllReduce"
+            return ""
+
+        return value
+
     def _set_speedup_config_path(self, speedup_config_path):
         """"Check and set speedup config for auto parallel."""
         if speedup_config_path is None or speedup_config_path == "":
@@ -830,15 +867,23 @@ class _Context:
                              f"{speedup_config_real_path} does not exist, please check whether the "
                              f"'parallel_speed_up_json_path' is correct.")
         try:
-            valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, bool),
+            valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, str),
+                            "recomputation_communication_overlap": (ms_ctx_param.recompute_comm_overlap, str),
                             "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
+                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
                             "enable_task_opt": (ms_ctx_param.enable_task_opt, bool),
+                            "enable_communication_fusion": (ms_ctx_param.enable_task_opt, bool),
                             "enable_grad_comm_opt": (ms_ctx_param.enable_grad_comm_opt, bool),
+                            "grad_computation_allreduce_overlap": (ms_ctx_param.enable_grad_comm_opt, bool),
                             "recompute_allgather_overlap_fagrad":
+                                (ms_ctx_param.recompute_allgather_overlap_fagrad, bool),
+                            "grad_fa_allgather_overlap":
                                 (ms_ctx_param.recompute_allgather_overlap_fagrad, bool),
                             "interleaved_matmul_comm": (ms_ctx_param.interleaved_matmul_comm, bool),
                             "bias_add_comm_swap": (ms_ctx_param.bias_add_comm_swap, bool),
+                            "allreduce_and_biasadd_swap": (ms_ctx_param.bias_add_comm_swap, bool),
                             "enable_opt_shard_comm_opt": (ms_ctx_param.enable_opt_shard_comm_opt, bool),
+                            "computation_allgather_overlap": (ms_ctx_param.enable_opt_shard_comm_opt, bool),
                             "enable_begin_end_inline_opt": (ms_ctx_param.enable_begin_end_inline_opt, bool),
                             "enable_concat_eliminate_opt": (ms_ctx_param.enable_concat_eliminate_opt, bool),
                             "interleaved_layernorm_comm": (ms_ctx_param.interleaved_layernorm_comm, bool),
@@ -851,10 +896,24 @@ class _Context:
                             "enable_offloading_packed_experts": (ms_ctx_param.enable_offloading_packed_experts, bool),
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
+                            "computation_communication_fusion_level":
+                                (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":
                                 (ms_ctx_param.enable_flash_attention_load_balance, bool),
+                            "pp_1f1b_overlap":
+                                (ms_ctx_param.pp_1f1b_overlap, str),
                             "dataset_broadcast_opt_level":
                                 (ms_ctx_param.dataset_broadcast_opt_level, int)}
+            name_replace = {
+                "recompute_comm_overlap": "recomputation_communication_overlap",
+                "matmul_grad_comm_overlap": "grad_matmul_communication_overlap",
+                "recompute_allgather_overlap_fagrad": "grad_fa_allgather_overlap",
+                "enable_task_opt": "enable_communication_fusion",
+                "enable_grad_comm_opt": "grad_computation_allreduce_overlap",
+                "enable_opt_shard_comm_opt": "computation_allgather_overlap",
+                "compute_communicate_fusion_level": "computation_communication_fusion_level",
+                "dataset_broadcast_opt_level": "dataset_broadcast_opt_level",
+                "bias_add_comm_swap": "allreduce_and_biasadd_swap"}
             with open(speedup_config_real_path, 'r') as f:
                 speedup_config = json.load(f)
                 for key, value in speedup_config.items():
@@ -862,11 +921,18 @@ class _Context:
                         raise TypeError("key {} is not a str".format(key))
                     if key not in valid_option:
                         raise ValueError("key {} should be one of {}.".format(key, valid_option.keys()))
+                    if key in name_replace:
+                        logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
+                                       "and will be removed in the next version, "
+                                       f"Please use '{name_replace.get(key)}' instead.")
                     set_func, valid_type = valid_option.get(key)
                     if not isinstance(value, valid_type):
-                        raise TypeError(f"The value type of {key} must be {valid_type}, "
-                                        f"but got value is {value} and type is {type(value)}.")
-                    self.set_param(set_func, value)
+                        if not ((key == "recompute_comm_overlap" or key == "recomputation_communication_overlap")
+                                and isinstance(value, bool)):
+                            raise TypeError(f"The value type of {key} must be {valid_type}, "
+                                            f"but got value is {value} and type is {type(value)}.")
+                    value_new = self._check_speedup_config_str_value(key, value)
+                    self.set_param(set_func, value_new)
         except (TypeError, ValueError) as exo:
             raise ValueError(str(exo) + "\nFor 'context.set_context', "
                                         "open or load the 'speedup_config_path' file {} "
@@ -908,15 +974,11 @@ def _context():
                  comm_fusion=dict, strategy_ckpt_config=dict, force_fp32_communication=bool)
 def set_auto_parallel_context(**kwargs):
     r"""
-    Set auto parallel context, only data parallel supported on CPU.
+    Set auto parallel context, this api will be deprecated and removed in future versions, please use the api
+    :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     Note:
-        Attribute name is required for setting attributes.
-        If a program has tasks on different parallel modes, before setting a new parallel mode for the
-        next task, interface :func:`mindspore.reset_auto_parallel_context` should be called to reset
-        the configuration.
-        Setting or changing parallel modes must be called before creating any Initializer, otherwise,
-        it may have RuntimeError when compiling the network.
+        CPU only support data parallel.
 
     Some configurations are parallel mode specific, see the below table for details:
 
@@ -966,13 +1028,15 @@ def set_auto_parallel_context(**kwargs):
                      - auto_parallel: Achieving parallelism automatically.
         search_mode (str): There are three kinds of shard strategy search modes: ``"recursive_programming"`` ,
                      ``"sharding_propagation"`` and ``"dynamic_programming"`` (Not recommended).
+                     Only works in ``"auto_parallel"`` mode.
                      Default: ``"recursive_programming"`` .
 
                      - recursive_programming: Recursive programming search mode. In order to obtain optimal performance,
                        it is recommended that users set the batch size to be greater than or equal to the product of
                        the number of devices and the number of multi-copy parallelism.
 
-                     - sharding_propagation: Propagate shardings from configured ops to non-configured ops.
+                     - sharding_propagation: Propagate shardings from configured ops to non-configured ops. Dynamic
+                       shapes are not supported currently.
 
                      - dynamic_programming: Dynamic programming search mode.
         auto_parallel_search_mode (str): This is the old version of 'search_mode'. Here, remaining this attribute is
@@ -995,7 +1059,9 @@ def set_auto_parallel_context(**kwargs):
                        dataset_strategy="data_parallel" is equal to full_batch=False, dataset_strategy="full_batch" is
                        equal to full_batch=True. For execution mode is 'GRAPH_MODE' and dataset load into net by model
                        parallel strategy likes ds_stra ((1, 8), (1, 8)), it requires using
-                       set_auto_parallel_context(dataset_strategy=ds_stra).
+                       set_auto_parallel_context(dataset_strategy=ds_stra). The dataset sharding strategy is not
+                       affected by the currently configured parallel mode. parallel strategy also supports tuple of
+                       Layout.
         enable_parallel_optimizer (bool): This is a developing feature, which shards the weight update computation for
                        data parallel training in the benefit of time and memory saving. Currently, auto and semi auto
                        parallel mode support all optimizers in both Ascend and GPU. Data parallel mode only supports
@@ -1019,14 +1085,17 @@ def set_auto_parallel_context(**kwargs):
 
                         - pipeline_interleave(bool): Indicates whether to enable the interleaved execution mode.
                         - pipeline_scheduler(str): Indicates the scheduling mode for pipeline parallelism. Only support
-                          ``gpipe/1f1b/seqpipe``.
+                          ``gpipe/1f1b/seqpipe/seqvpp/seqsmartvpp``. When applying seqsmartvpp, the pipeline parallel
+                          must be an even number.
         parallel_optimizer_config (dict): A dict contains the keys and values for setting the parallel optimizer
                         configure. The configure provides more detailed behavior control about parallel training
                         when parallel optimizer is enabled. The configure will be effective when we use
                         mindspore.set_auto_parallel_context(enable_parallel_optimizer=True).
                         It supports the following keys.
 
-                        - gradient_accumulation_shard(bool): If ``true`` , the accumulation gradient parameters will be
+                        - gradient_accumulation_shard(bool): Please using optimizer_level: ``level2`` to replace
+                          this config.
+                          If ``true`` , the accumulation gradient parameters will be
                           sharded across the data parallel devices. This will
                           introduce additional communication(ReduceScatter) at
                           each step when accumulate the gradients, but saves a
@@ -1037,7 +1106,8 @@ def set_auto_parallel_context(**kwargs):
 
                         - parallel_optimizer_threshold(int): Set the threshold of parallel optimizer. When parallel
                           optimizer is enabled, parameters with size smaller than this threshold will not be sharded
-                          across the devices. Parameter size = shape[0] \* ... \* shape[n] \* size(dtype). Non-negative.
+                          across the devices. Parameter size is calculated as:
+                          shape[0] \* ... \* shape[n] \* size(dtype). Non-negative.
                           Unit: KB. Default: ``64`` .
 
                         - optimizer_weight_shard_size(int): Set the optimizer weight shard group size, if you want to
@@ -1047,6 +1117,17 @@ def set_auto_parallel_context(**kwargs):
                           of the parameter cannot be divided by `optimizer_weight_shard_size`, then the specified
                           communication group size will not take effect. Default value is ``-1`` , which means the
                           optimizer weight shard group size will be the size of data parallel group of each parameter.
+
+                        - optimizer_level(str, optional): optimizer_level configuration is used to specify
+                          the splitting level for optimizer sharding. It is important to note that the implementation
+                          of optimizer sharding in static graph is inconsistent with dynamic graph like megatron,
+                          but the memory optimization effect is the same. When optimizer_level= ``level1`` ,
+                          splitting is performed on weights and optimizer state. When optimizer_level= ``level2`` ,
+                          splitting is performed on weights, optimizer state, and gradients.
+                          When optimizer_level= ``level3`` , splitting is performed on weights, optimizer state,
+                          gradients, additionally, before the backward pass, the weights are further applied with
+                          allgather communication to release the memory used by the forward pass allgather.
+                          It must be one of [``level1``, ``level2``, ``level3``]. Default: ``level1``.
 
         comm_fusion (dict): A dict contains the types and configurations for setting the communication fusion. each
                         communication fusion config has two keys: "mode" and "config".
@@ -1122,7 +1203,7 @@ def set_auto_parallel_context(**kwargs):
         >>> ms.set_auto_parallel_context(pipeline_stages=2)
         >>> ms.set_auto_parallel_context(pipeline_stages=2, pipeline_result_broadcast=True)
         >>> parallel_config = {"gradient_accumulation_shard": True, "parallel_optimizer_threshold": 24,
-        ...                    "optimizer_weight_shard_size": 2}
+        ...                    "optimizer_weight_shard_size": 2, "optimizer_level": "level3"}
         >>> ms.set_auto_parallel_context(parallel_optimizer_config=parallel_config, enable_parallel_optimizer=True)
         >>> config = {"allreduce": {"mode": "size", "config": 32}, "allgather": {"mode": "size", "config": 32}}
         >>> ms.set_auto_parallel_context(comm_fusion=config)
@@ -1134,7 +1215,8 @@ def set_auto_parallel_context(**kwargs):
 
 def get_auto_parallel_context(attr_key):
     """
-    Get auto parallel context attribute value according to the key.
+    Get auto parallel context attribute value according to the key, this api will be deprecated and removed in future
+    versions.
 
     Args:
         attr_key (str): The key of the attribute.
@@ -1155,7 +1237,8 @@ def get_auto_parallel_context(attr_key):
 
 def reset_auto_parallel_context():
     """
-    Reset auto parallel context attributes to the default values.
+    Reset auto parallel context attributes to the default values, this api will be deprecated and removed in future
+    versions, please use the api :class:`mindspore.parallel.auto_parallel.AutoParallel` instead.
 
     - device_num: 1.
     - global_rank: 0.
@@ -1190,7 +1273,8 @@ def reset_auto_parallel_context():
 @args_type_check(offload_config=dict)
 def set_offload_context(offload_config):
     r"""
-    Configure heterogeneous training detailed parameters to adjust the offload strategy.
+    Configure heterogeneous training detailed parameters to adjust the offload strategy, this api will be deprecated
+    and removed in future versions.
 
     Note:
         The offload configuration is only used if the memory offload feature is enabled
@@ -1230,8 +1314,10 @@ def set_offload_context(offload_config):
 
 def get_offload_context():
     """
-    Gets the offload configuration parameters. Configure through interface mindspore.set_offload_context().
-    If the user is not set, the default configuration is obtained.
+    Gets the offload configuration parameters, this api will be deprecated and removed in future versions.
+
+    Configure through interface mindspore.set_offload_context(). If the user is not set, the default configuration is
+    obtained.
 
     Returns:
         Dict, heterogeneous training offload detailed configuration parameters.
@@ -1270,7 +1356,7 @@ def _check_target_specific_cfgs(device, arg_key):
 def _check_ascend_device_context_initialized(device_target, settings):
     if device_target == 'Ascend' and is_initialized(device_target):
         for key, _ in settings.items():
-            if key in ('ascend_config', 'deterministic', 'jit_compile', 'exception_dump', 'device_id'):
+            if key in ('ascend_config', 'deterministic', 'jit_compile', 'device_id'):
                 logger.warning(f"For 'context.set_context' in Ascend backend, the backend is already initialized, "
                                "please set it before the definition of any Tensor and Parameter, and the "
                                "instantiation and execution of any operation and net, otherwise the settings may not "
@@ -1318,13 +1404,26 @@ def _check_context_deprecated(key):
                                                      mindspore.device_context.gpu.op_precision.conv_fprop_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_wgrad_algo(),
                                                      mindspore.device_context.gpu.op_precision.conv_dgrad_algo()''',
-                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()'}
+                               'runtime_num_threads': 'api mindspore.device_context.cpu.op_tuning.threads_num()',
+                               'memory_offload': "`device` parameter of `mindspore.Parameter`"}
+    invalid_context_dict = {
+        'exception_dump': {'version': '2.6', 'interface': 'device_context.ascend.op_debug.aclinit_config()'}
+    }
     if key in deprecated_context_dict:
         log = f"For 'context.set_context', the parameter '{key}' will be deprecated and removed in a future version."
         if deprecated_context_dict.get(key) != '':
             log += f" Please use the {deprecated_context_dict.get(key)} instead."
         logger.warning(log)
-
+    if key in invalid_context_dict:
+        info = invalid_context_dict.get(key)
+        deprecated_version, new_interface = info.get('version'), info.get('interface')
+        log = (
+            f"For 'context.set_context', the parameter '{key}' has been removed"
+            f" since MindSpore {deprecated_version} version."
+        )
+        if new_interface:
+            log += f" Please use the {new_interface} instead."
+        raise ValueError(log)
 
 @args_type_check(mode=int, precompile_only=bool, device_target=str, device_id=int, save_graphs=(bool, int),
                  save_graphs_path=str, aoe_tune_mode=str, aoe_config=dict,
@@ -1338,560 +1437,142 @@ def _check_context_deprecated(key):
                  jit_enable_inplace_ops=bool, gpu_config=dict, jit_config=dict, enable_compile_cache=bool)
 def set_context(**kwargs):
     r"""
-    Set context for running environment.
-
-    Context should be configured before running your program. If there is no configuration,
-    it will be automatically set according to the device target by default.
-
-    Note:
-        Attribute name is required for setting attributes.
-        The mode is not recommended to be changed after net was initialized because the implementations of some
-        operations are different in graph mode and pynative mode. Default: ``PYNATIVE_MODE`` .
-
-    Some configurations are device specific, and some parameters will be deprecated and removed in the future version
-    (marked ``D`` in the second column), please use the replacement in the fourth column.
-    see the below table for details:
-
-    +-------------------------+------------------------------+---------------------------+----------------------------+
-    | Function Classification |   Configuration Parameters   |  Hardware Platform Support|   Replacement              |
-    +=========================+==============================+===========================+============================+
-    | System Configuration    |   device_id (D)              |  CPU/GPU/Ascend           |   :func:`~.set_device`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |   device_target (D)          |  CPU/GPU/Ascend           |   :func:`~.set_device`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  max_device_memory(D)        | GPU/Ascend                |   :func:`~.set_memory`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         | variable_memory_max_size (D) | Ascend                    |   :func:`~.set_memory`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  mempool_block_size (D)      | GPU/Ascend                |   :func:`~.set_memory`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  op_timeout (D)              | Ascend                    | :func:`~.execute_timeout`  |
-    +-------------------------+------------------------------+---------------------------+----------------------------+
-    | Debug Configuration     |  save_graphs (D)             | CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  save_graphs_path (D)        | CPU/GPU/Ascend            |  MS_DEV_SAVE_GRAPHS_PATH   |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  deterministic (D)           | Ascend                    |:func:`~.set_deterministic` |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  print_file_path             | Ascend                    |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  env_config_path             | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  precompile_only (D)         | CPU/GPU/Ascend            |  MS_DEV_PRECOMPILE_ONLY    |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  reserve_class_name_in_scope | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  pynative_synchronize (D)    | CPU/GPU/Ascend            | :func:`~.launch_blocking`  |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  debug_level (D)             | CPU/GPU/Ascend            |  NA                        |
-    +-------------------------+------------------------------+---------------------------+----------------------------+
-    | Executive Control       |   mode                       |  CPU/GPU/Ascend           |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  enable_reduce_precision     | Ascend                    |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  aoe_tune_mode (D)           | Ascend                    | :func:`~.aoe_tune_mode`    |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  aoe_config (D)              | Ascend                    | :func:`~.aoe_job_type`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  check_bprop (D)             | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  max_call_depth (D)          | CPU/GPU/Ascend            | :func:`~.set_recur\        |
-    |                         |                              |                           | sion_limit`                |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  grad_for_scalar (D)         | CPU/GPU/Ascend            |  derivative                |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  enable_compile_cache (D)    | CPU/GPU/Ascend            |  MS_COMPILER_CACHE_ENABLE  |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  inter_op_parallel_num (D)   | CPU/GPU/Ascend            | :func:`~.dispatch\         |
-    |                         |                              |                           | _threads_num`              |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |runtime_num_threads (D)       | CPU/GPU/Ascend            | :func:`~.threads_num`      |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  compile_cache_path          | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  disable_format_transform    | GPU                       |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  support_binary              | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  memory_optimize_level (D)   | CPU/GPU/Ascend            | :func:`~.set_memory`       |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  memory_offload              | GPU/Ascend                |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  ascend_config (D)           | Ascend                    | :func:`~.precision_mode`   |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.op_precision_mode`|
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.matmul_allow_hf32`|
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.conv_allow_hf32`  |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.op_compile`       |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.debug_option`     |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  jit_syntax_level            | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  gpu_config (D)              | GPU                       | :func:`~.conv_allow_tf32`  |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.matmul_allow_tf32`|
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.conv_fprop_algo`  |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.conv_wgrad_algo`  |
-    |                         |                              |                           |                            |
-    |                         |                              |                           | :func:`~.conv_dgrad_algo`  |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  jit_config                  | CPU/GPU/Ascend            |  NA                        |
-    |                         +------------------------------+---------------------------+----------------------------+
-    |                         |  exec_order                  | Ascend                    |  NA                        |
-    +-------------------------+------------------------------+---------------------------+----------------------------+
+    Set context for running environment, this interface will be deprecated in future versions, and its
+    parameter-related functionalities will be provided through new APIs.
 
     Args:
-        device_id (int): ID of the target device, the value must be in [0, device_num_per_host-1],
-            while device_num_per_host should be no more than 4096. Default: ``0`` . This parameter will be deprecated
-            and will be removed in future versions.Please use api :func:`mindspore.set_device`
-            with 'device_target' instead.
-        device_target (str): The target device to run, support "Ascend", "GPU", and "CPU".
-            If device target is not set, the version of MindSpore package is used. This parameter will be deprecated
-            and will be removed in future versions.Please use api :func:`mindspore.set_device`
-            with 'device_id' instead.
-        max_device_memory (str): Set the maximum memory available for devices. The format is "xxGB".
-            Default: ``" 1024GB"`` . The actual used memory size is the minimum of the available memory of the device
-            and max_device_memory. 'max_device_memory' should be set before the program runs. When virtual memory is
-            enabled, a too small 'max_device_memory' will cause frequent defragmentation, affecting performance.
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.runtime.set_memory` instead.
-        variable_memory_max_size (str): This parameter will be deprecated and will be removed in future versions. Please
-            use the api :func:`mindspore.runtime.set_memory` instead.
-        mempool_block_size (str): It takes effect when virtual memory is turned off, set the size of the memory pool
-            block for devices. The format is "xxGB". Default: ``"1GB"`` . Minimum size is "1G". The actual used memory
-            block size is the minimum of the available memory of the device and mempool_block_size. When there is
-            enough memory, the memory will be expanded by this value.
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.runtime.set_memory` instead.
-        op_timeout (int): Set the maximum duration of executing an operator in seconds.
-            If the execution time exceeds this value, system will terminate the task.
-            0 means endless wait. The defaults for AI Core and AICPU operators vary on different hardware.
-            For more information,
-            please refer to `Ascend Community document about aclrtSetOpExecuteTimeOut
-            <https://www.hiascend.com/document/detail/en/CANNCommunityEdition/600alphaX/infacldevg/aclcppdevg/aclcppdevg_03_0069.html>`_.
-            Default: ``900`` .
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.device_context.ascend.op_debug.execute_timeout` instead.
-        save_graphs (bool or int): Whether to save intermediate compilation graphs. Default: ``0`` .
-            Available values are:
-
-            - False or 0: disable saving of intermediate compilation graphs.
-            - 1: some intermediate files will be generated during graph compilation.
-            - True or 2: Generate more ir files related to backend process.
-            - 3: Generate visualization computing graphs and detailed frontend ir graphs.
-
-            When the network structure is complex, setting `save_graphs` attribute to ``2`` or ``3`` may take too long.
-            If you need quick problem locating, you can switch to ``1`` first.
-
-            When the `save_graphs` attribute is set as ``True`` , ``1`` , ``2`` or ``3`` , attribute of
-            `save_graphs_path` is used to set the intermediate compilation graph storage path. By default, the graphs
-            are saved in the current directory.
-            This parameter will be deprecated and removed in a future version. Please use the environment variable
-            `MS_DEV_SAVE_GRAPHS` instead.
-        save_graphs_path (str): Path to save graphs. Default: ``"."``.
-            If the specified directory does not exist, the system will automatically create the directory.
-            During distributed training, graphs will be saved to the directory of
-            `save_graphs_path/rank_${rank_id}/`. `rank_id` is the ID of the current device in the cluster.
-            This parameter will be deprecated and removed in a future version. Please use the environment variable
-            `MS_DEV_SAVE_GRAPHS_PATH` instead.
-        deterministic (str): Whether to enable op run in deterministic mode. The value must be in the
-            range of ['ON', 'OFF'], and the default value is ``'OFF'`` .
-
-            - "ON": Enable operator deterministic running mode.
-            - "OFF": Disable operator deterministic running mode.
-
-            When deterministic mode is on, model ops will be deterministic in Ascend. This means that if op run
-            multiple times with the same inputs on the same hardware, it will have the exact same outputs each time.
-            This is useful for debugging models. This parameter will be deprecated and will be removed in
-            future versions. Please use the api :func:`mindspore.set_deterministic` instead.
-        print_file_path (str): This parameter will be deprecated and will be removed in future versions.
-        env_config_path (str): This parameter will be deprecated and will be removed in future versions.
-
-        precompile_only (bool): Whether to only precompile the network. Default: ``False`` .
-            If set to ``True`` , the network will only be compiled, not executed.
-            This parameter will be deprecated and removed in a future version. Please use the environment variable
-            `MS_DEV_PRECOMPILE_ONLY` instead.
-        reserve_class_name_in_scope (bool): This parameter will be deprecated and will be removed in future versions.
-        pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
-            Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
-            device. When an error occurs in the execution of the operator, the specific error script code location
-            cannot be located, when the value is set to ``True`` , the operator is executed synchronously on the
-            device. It will reduce the execution performance of the program. At this time, when an error occurs in the
-            execution of the operator, the location of the error script code can be located according to the call stack
-            of the error. This parameter will be deprecated and will be removed in future versions.Please use
-            the api :func:`mindspore.runtime.launch_blocking` instead.
-        mode (int): Running in GRAPH_MODE(0) or PYNATIVE_MODE(1).
-            Both modes support all backends. Default: ``PYNATIVE_MODE`` .
-        enable_reduce_precision (bool): Whether to enable precision reduction.
-            If the operator does not support the user-specified precision, the precision will
-            be changed automatically. Default: ``True`` .
-        aoe_tune_mode (str): AOE tuning mode setting, which is not set by default.
-            When set to ``"online"`` , the tuning in online function is turned on.
-            When set to ``"offline"`` , ge graph will be save for offline tuning.
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.device_context.ascend.op_tuning.aoe_tune_mode` instead.
-        aoe_config (dict): Set the parameters specific to Ascend Optimization Engine. It is not set by default.
-
-            - job_type (str): Mode type setting, default value is ``"2"``.
-
-              - ``"1"``: subgraph tuning;
-              - ``"2"``: operator tuning.
-
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` instead.
-
-        check_bprop (bool): Whether to check back propagation nodes. The checking ensures that the shape and dtype
-            of back propagation node outputs is the same as input parameters. Default: ``False`` .
-            This parameter will be deprecated and removed in a future version.
-        max_call_depth (int): Specify the maximum depth of function call. Must be positive integer. Default: ``1000`` .
-            The max_call_depth parameter needs to be set when the nested call is too deep or the number
-            of subgraphs is too large. If max_call_depth is set larger than before, the system max stack depth should be
-            set larger too, otherwise a `core dumped` exception may be raised because of system stack overflow.
+        mode (int): GRAPH_MODE(0) or PYNATIVE_MODE(1). Default ``PYNATIVE_MODE`` .
+        device_id (int): ID of the target device. Default ``0`` . This parameter will be deprecated
+            and removed in future versions. Please use the api :func:`mindspore.set_device` instead.
+        device_target (str): The target device to run, support ``"Ascend"``, ``"GPU"``, and ``"CPU"``. This parameter
+            will be deprecated and removed in future versions. Please use the api :func:`mindspore.set_device` instead.
+        deterministic (str): Deterministic computation of operators. Default ``"OFF"`` .
+            This parameter will be deprecated and removed in future versions. Please use the api
+            :func:`mindspore.set_deterministic` instead.
+        max_call_depth (int): The maximum depth of function call. Default ``1000`` .
             This parameter will be deprecated and removed in a future version. Please use the api
             :func:`mindspore.set_recursion_limit` instead.
-        grad_for_scalar (bool):  Whether to get gradient for scalar. Default: ``False`` .
-            When grad_for_scalar is set to ``True`` , the function's scalar input can be derived.
-            The default value is ``False`` . Because the back-end does not support scaling operations currently,
-            this interface only supports simple operations that can be deduced by the front-end.
-            This parameter will be deprecated and removed in a future version. Please take the tensor derivative.
-        enable_compile_cache (bool): Whether to save or load the compiled cache of the graph.
-            After enable_compile_cache is set to ``True`` , during the first execution, a compilation cache is
-            generated and exported to a MINDIR file. When the network is executed again, if enable_compile_cache is
-            still set to ``True`` and the network scripts are not changed, the compile cache is loaded.
-            Note that only limited automatic detection for the changes of python scripts is supported by now,
-            which means that there is a correctness risk. Default: ``False`` .
-            Currently, do not support the graph which is larger than 2G after compiled.
-            This is an experimental prototype that is subject to change and/or deletion.
-            This parameter will be deprecated and removed in a future version. Please use the environment variable
-            `MS_COMPILER_CACHE_ENABLE` instead.
-        compile_cache_path (str): Path to save the compile cache. Default: ``"."``.
-            If the specified directory does not exist, the system will automatically create the directory.
-            The cache will be saved to the directory of `compile_cache_path/rank_${rank_id}/`. The `rank_id` is
-            the ID of the current device in the cluster.
+        variable_memory_max_size (str): This parameter will be deprecated and removed in future versions.
+            Please use the api :func:`mindspore.runtime.set_memory` instead.
+        mempool_block_size (str): Set the size of the memory pool block for devices. Default ``"1GB"`` .
+            This parameter will be deprecated and removed in future versions. Please use
+            the api :func:`mindspore.runtime.set_memory` instead.
+        memory_optimize_level (str): The memory optimize level. Default ``"O0"``.
+            This parameter will be deprecated and removed in future versions. Please use
+            the api :func:`mindspore.runtime.set_memory` instead.
+        max_device_memory (str): Set the maximum memory available for devices.
+            Default ``"1024GB"`` . This parameter will be deprecated and removed in future versions. Please use
+            the api :func:`mindspore.runtime.set_memory` instead.
+        pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
+            Default ``False`` . This parameter will be deprecated and removed in future versions.Please use
+            the api :func:`mindspore.runtime.launch_blocking` instead.
+        compile_cache_path (str): Path to save the compile cache. Default ``"."``.
             This parameter will be deprecated and removed in a future version. Please use the environment variable
             `MS_COMPILER_CACHE_PATH` instead.
-        inter_op_parallel_num(int): The thread number of op parallel at the same time. Default value is ``0`` ,
-            which means use the default num. This parameter will be deprecated and will be removed in future versions.
+        inter_op_parallel_num(int): The thread number of op parallel at the same time.
+            Default ``0`` . This parameter will be deprecated and removed in future versions.
             Please use the api :func:`mindspore.runtime.dispatch_threads_num` instead.
-        runtime_num_threads(int): The thread pool number of cpu kernel used in runtime,
-            which must bigger than or equal to 0. Default value is ``30`` , if you run many processes at
-            the same time, you should set the value smaller to avoid thread contention. If set runtime_num_threads to 1,
-            the runtime asynchronous pipeline capability cannot be enabled, which may affect performance.
-            This parameter will be deprecated and will be removed in future versions. Please use the
+        memory_offload (str): Whether to enable the memory offload function. Default ``"OFF"`` .
+            This parameter will be deprecated and removed in future versions. Please use the api
+            :func:`mindspore.nn.Cell.offload` instead.
+        disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW
+            to NHWC. Default ``False`` . This parameter will be deprecated and removed in future versions. Please
+            use the related parameter of :func:`mindspore.jit` instead.
+        jit_syntax_level (int): Set JIT syntax support level. Default ``LAX`` . This parameter is deprecated
+            and removed in future versions. Please use the related parameter of :func:`mindspore.jit` instead.
+        jit_config (dict): Set the global jit config for compile. This parameter is deprecated
+            and removed in future versions. Please use the related parameter of :func:`mindspore.jit` instead.
+        exec_order (str): The sorting method for operator execution. This parameter is deprecated
+            and removed in future versions. Please use the related parameter of :func:`mindspore.jit` instead.
+        op_timeout (int): Set the maximum duration of executing an operator in seconds. Default ``900`` .
+            This parameter will be deprecated and removed in future versions. Please use the
+            api :func:`mindspore.device_context.ascend.op_debug.execute_timeout` instead.
+        aoe_tune_mode (str): AOE tuning mode.
+            This parameter will be deprecated and removed in future versions. Please use the
+            api :func:`mindspore.device_context.ascend.op_tuning.aoe_tune_mode` instead.
+        aoe_config (dict): AOE-specific parameters. This parameter will be deprecated and removed in future
+            versions. Please use the api :func:`mindspore.device_context.ascend.op_tuning.aoe_job_type` instead.
+        runtime_num_threads(int): The thread pool number of cpu kernel used in runtime. Default ``30`` .
+            This parameter will be deprecated and removed in future versions. Please use the
             api :func:`mindspore.device_context.cpu.op_tuning.threads_num` instead.
-        disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to NHWC.
-            When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be set to
-            ``True`` to try to improve training performance. Default: ``False`` .
-        support_binary (bool): Whether to support run .pyc or .so in graph mode. If want to support run .so or .pyc
-            in graph mode, coulde set 'support_binary' to be ``True`` , and run once .py file. It would save the source
-            of the interfaces would be compiled by MindSpore to the interfaces definition .py file that should be
-            guaranteed to be writable. Then compile the .py file to the .pyc or .so file, and could run in Graph mode.
-            Currently, this config option only support stand_alone.
-        memory_optimize_level (str): The memory optimize level.
-            On Ascend hardware platform, default: ``O1``, on other hardware platforms, default: ``O0``.
-            The value must be in ['O0', 'O1'].
+        save_graphs (bool or int): Whether to save intermediate compilation graphs. Default ``0`` .
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_SAVE_GRAPHS` instead.
+        save_graphs_path (str): Path to save graphs. Default ``"."``.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_SAVE_GRAPHS_PATH` instead.
+        precompile_only (bool): Whether to only precompile the network. Default ``False`` .
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_DEV_PRECOMPILE_ONLY` instead.
+        enable_compile_cache (bool): Whether to save or load the compiled cache of the graph.
+            Default ``False`` . This is an experimental prototype that is subject to change and/or deletion.
+            This parameter will be deprecated and removed in a future version. Please use the environment variable
+            `MS_COMPILER_CACHE_ENABLE` instead.
+        ascend_config (dict): Set the parameters specific to Ascend hardware platform.
 
-            - O0: priority performance option, disable SOMAS (Safe Optimized Memory Allocation Solver)
-              and some other memory optimizations.
-            - O1: priority memory option, enable SOMAS and some other memory optimizations.
-
-            This parameter will be deprecated and will be removed in future versions. Please use the
-            api :func:`mindspore.runtime.set_memory` instead.
-
-        memory_offload (str): Whether to enable the memory offload function. When it is enabled, the idle data will be
-            temporarily copied to the host side in the case of insufficient device memory. The value must be in the
-            range of ['ON', 'OFF'], and the default value is ``'OFF'`` .
-
-            - ON: Enable the memory Offload function. On Ascend hardware platform, this parameter does not take effect
-              when the graph compilation level is not 'O0'; This parameter does not take effect when
-              memory_optimize_level is set 'O1'.
-            - OFF: Turn off the memory Offload function.
-        ascend_config (dict): Set the parameters specific to Ascend hardware platform. It is not set by default.
-            The default value of `precision_mode`, `jit_compile` and
-            `atomic_clean_policy` are experimental parameters, may change in the future.
-
-            - precision_mode (str): Mixed precision mode setting, and the default value of inference network
-              is ``force_fp16`` . The value range is as follows:
-
-              - force_fp16: When the operator supports both float16 and float32, select float16 directly.
-              - allow_fp32_to_fp16: For cube operators, use the float16. For vector operators,
-                prefer to keep the origin dtype, if the operator in model can support float32,
-                it will keep original dtype, otherwise it will reduce to float16.
-              - allow_mix_precision: Automatic mixing precision, facing the whole network operator, according
-                to the built-in optimization strategy, automatically reduces the precision of some operators
-                to float16 or bfloat16.
-              - must_keep_origin_dtype: Keep the accuracy of the original drawing.
-              - force_fp32: When the input of the matrix calculation operator is float16 and the output supports
-                float16 and float32, output is forced to float32.
-              - allow_fp32_to_bf16: For cube operators, use the bfloat16. For vector operators,
-                prefer to keep the origin dtype, if the operator in model can support float32,
-                it will keep original dtype, otherwise it will reduce to bfloat16.
-              - allow_mix_precision_fp16: Automatic mixing precision, facing the whole network operator, automatically
-                reduces the precision of some operators to float16 according to the built-in optimization strategy.
-              - allow_mix_precision_bf16: Automatic mixing precision, facing the whole network operator, according to
-                the built-in optimization strategy, automatically reduces the precision of some operators to bfloat16.
-
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - precision_mode (str): Mixed precision mode setting. Default ``"force_fp16"`` .
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_precision.precision_mode` instead.
-
-            - jit_compile (bool): Whether to select online compilation. When set to 'True', online compilation is
-              prioritized. When set to 'False', compiled operator binary files are prioritized to improve compilation
-              performance. The default settings are online compilation for static shape, and compiled operator binary
-              files for dynamic shape.
-              This parameter will be deprecated and will be removed in future versions. Please use the
-              api :func:`mindspore.device_context.ascend.op_tuning.op_compile` instead.
-            - atomic_clean_policy (int): The policy for cleaning memory occupied by atomic operators in the network.
-              Default: ``1`` .
-
-              - 0: The memory occupied by all atomic operators in the network is cleaned centrally.
-              - 1: Memory is not cleaned centrally and each atomic operator in the network is cleaned separately.
-                When the memory of the network exceeds the limit, you may try this cleaning policy, but it may cause
-                performance loss.
-            - matmul_allow_hf32 (bool): Whether to convert FP32 to HF32 for Matmul operators. Default value: ``False``.
-              This is an experimental prototype that is subject to change and/or deletion.
-              For detailed information, please refer to `Ascend community <https://www.hiascend.com/>`_ .
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - jit_compile (bool): Whether to select online compilation. This parameter will be deprecated and removed
+              in future versions. Please use the api :func:`mindspore.device_context.ascend.op_tuning.op_compile`
+              instead.
+            - matmul_allow_hf32 (bool): Whether to convert FP32 to HF32 for Matmul operators. Default ``False``.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_precision.matmul_allow_hf32` instead.
-            - conv_allow_hf32 (bool): Whether to convert FP32 to HF32 for Conv operators. Default value: ``True``.
-              This is an experimental prototype that is subject to change and/or deletion.
-              For detailed information, please refer to `Ascend community <https://www.hiascend.com/>`_ .
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - conv_allow_hf32 (bool): Whether to convert FP32 to HF32 for Conv operators. Default ``True``.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_precision.conv_allow_hf32` instead.
-            - exception_dump (str): Enable exception dump for Ascend operators, providing the input and output data for
-              failing Ascend operators. The value can be ``"0"`` , ``"1"`` and ``"2"``. For ``"0"`` , exception dump is
-              turned off; for ``"1"``, all inputs and outputs will be dumped for AICore exception operators;
-              for ``"2"``, inputs will be dumped for AICore exception operators, reducing the saved information
-              but improving performance. Default: ``"2"`` .
-            - op_precision_mode (str): Path to config file of op precision mode. For detailed information, please refer
-              to `Ascend community <https://www.hiascend.com/>`_ .
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - op_precision_mode (str): Path to config file of op precision mode.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_precision.op_precision_mode` instead.
-            - op_debug_option (str): Enable debugging options for Ascend operators, default not enabled.
-              The value currently only supports being set to ``"oom"``.
-
-              - ``"oom"``: When there is a memory out of bounds during the execution of an operator,
-                AscendCL will return an error code of ``EZ9999``.
-
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - op_debug_option (str): Enable debugging options for Ascend operators.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.ascend.op_debug.debug_option` instead.
-
-            - ge_options (dict): Set options for CANN. The options are divided into two categories: global and session.
-              This is an experimental prototype that is subject to change and/or deletion.
-              For detailed information, please refer to `Ascend community <https://www.hiascend.com/document/detail/zh/canncommercial/80RC3/apiref/ascendgraphapi/atlasgeapi_07_0146.html>`_ .
-              The configuration options in `ge_options` may be duplicated with the options in `ascend_config`. If the
-              same configuration options are set in both `ascend_config` and `ge_options`, the one set in `ge_options`
-              shall prevail.
-
-              - global (dict): Set global options.
-              - session (dict): Set session options.
-
-            - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file, configuration
-              can refer to `parallel_speed_up.json
-              <https://gitee.com/mindspore/mindspore/blob/master/config/parallel_speed_up.json>`_ .
-              If its value is None or '', it does not take effect. Default None.
-
-              - recompute_comm_overlap (bool): Enable overlap between recompute ops and communication ops if True.
-                Default: False.
-              - matmul_grad_comm_overlap (bool): Enable overlap between dw matmul and
-                tensor parallel communication ops if True. Default: False.
-              - recompute_allgather_overlap_fagrad (bool): Enable overlap between duplicated allgather by recomputing
-                in sequence parallel and flashattentionscoregrad ops if True. Default: False.
-              - enable_task_opt (bool): Enable communication fusion to optimize the number of communication operator
-                tasks if True.
-                Default: False.
-              - enable_grad_comm_opt (bool): Enable overlap between dx ops and data parallel communication ops if True.
-                Currently, do not support
-                `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
-              - enable_opt_shard_comm_opt (bool): Enable overlap between forward ops
-                and optimizer parallel allgather communication if True. Currently, do not support
-                `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
-                Default: False.
-              - compute_communicate_fusion_level (int): Enable the fusion between compute and communicate.
-                Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
-
-                - 0: Disable fusion.
-
-                - 1: Apply fusion to forward nodes.
-
-                - 2: Apply fusion to backward nodes.
-
-                - 3: Apply fusion to all nodes.
-              - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
-                support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
-
-                - 0: Disable this optimize.
-
-                - 1: Optimize dataset reader between pipeline stage.
-
-                - 2: Optimize dataset reader within pipeline stage.
-
-                - 3: Optimize dataset reader with all scenes.
-              - bias_add_comm_swap (bool): Enable node execution order swap communication operators and add operators
-                if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
-              - enable_allreduce_slice_to_reducescatter (bool): Enable allreduce optimization. In the scenario where
-                the batchmatmul model introduces allreduce in parallel, if the subsequent nodes are stridedslice
-                operator with model parallel, allreduce will be optimized as reducescatter according to the identified
-                patterns. Typical used in MoE module with groupwise alltoall. Default: ``False``.
-              - enable_interleave_split_concat_branch (bool): Enable communication computation parallel optimization
-                for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
-                used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
-                MoE module, and then the branch results are concatenated. When the optimization is enable,
-                communication and computation will be executed in parallel between branches. Default: ``False``.
-              - enable_interleave_parallel_branch (bool): Enable communication computation parallel optimization
-                for parallel branches with ``parallel_branch`` attribute in branches merge node. It is typical
-                used in MoE parallel scenario with routed and shared expert. When the optimization is enable,
-                communication and computation will be executed in parallel between branches. Default: ``False``.
+            - ge_options (dict): Set options for CANN. This parameter will be deprecated and removed in future versions.
+              Please use the related parameter of :func:`mindspore.jit` instead.
+            - atomic_clean_policy (int): The policy for cleaning memory occupied by atomic operators in the network.
+              Default ``1`` represents that memory is not cleaned centrally, ``0`` represents that memory is cleaned
+              centrally. This parameter will be deprecated and removed in future versions. Please
+              use the related parameter of :func:`mindspore.jit` instead.
+            - exception_dump (str): Enable Ascend operator exception dump. Default ``"2"`` . This parameter has been
+              deprecated and removed. Please use the api
+              :func:`mindspore.device_context.ascend.op_debug.aclinit_config` instead.
             - host_scheduling_max_threshold(int): The max threshold to control whether the dynamic shape process is
-              used when run the static graph, the default value is 0. When the number of operations in the static graph
-              is less than the max threshold, this graph will be executed in dynamic shape process. In large model
-              scenarios, this approach can save stream resources. If the number of operations in the static graph is
-              greater than the maximum threshold, this graph will be executed in original static process.
-
-        jit_syntax_level (int): Set JIT syntax level for graph compiling, triggered by GRAPH_MODE and @jit decorator.
-            The value must be ``STRICT`` or ``LAX`` . Default: ``LAX`` . All levels support all backends.
-
-            - ``STRICT`` : Only basic syntax is supported, and execution performance is optimal. Can be used for MindIR
-              load and export.
-            - ``LAX`` : Compatible with all Python syntax as much as possible. However, execution performance may be
-              affected and not optimal. Cannot be used for MindIR load and export due to some syntax that may not be
-              able to be exported.
-
-        debug_level (int): Set config for debugging. Default value: ``RELEASE``.
-
-            - ``RELEASE``: Used for normally running, and some debug information will be discard to get a better
-              compiling performance.
-            - ``DEBUG``: Used for debugging when errors occur, more information will be record in compiling process.
-
-            This parameter will be deprecated and removed in a future version.
+              used when run the static graph. Default ``0`` . This parameter will be deprecated and removed in future
+              versions. Please use the related parameter of :func:`mindspore.jit` instead.
+            - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file.
+              This parameter will be deprecated and removed in future versions. Please use the
+              api :func:`mindspore.parallel.auto_parallel.AutoParallel.transformer_opt` instead.
+            - hccl_watchdog (bool): Enable a thread to monitor the failure of collective communication.
+              Default ``True`` .
         gpu_config (dict): Set the parameters specific to gpu hardware platform. It is not set by default.
-            Currently, only setting `conv_fprop_algo` and `conv_dgrad_algo` and `conv_wgrad_algo` and `conv_allow_tf32`
-            and `matmul_allow_tf32` are supported on GPU hardware platform.
 
-            - conv_fprop_algo (str): Specifies convolution forward algorithm and the default value is 'normal',
-              The value range is as follows:
-
-              - normal: Use the heuristic search algorithm.
-              - performance: Use the trial search algorithm.
-              - implicit_gemm: This algorithm expresses the convolution as a matrix product without actually explicitly
-                forming the matrix that holds the input tensor data.
-              - implicit_precomp_gemm: This algorithm expresses convolution as a matrix product without actually
-                explicitly forming the matrix that holds the input tensor data, but still needs some memory workspace to
-                precompute some indices in order to facilitate the implicit construction of the matrix that holds the
-                input tensor data.
-              - gemm: This algorithm expresses the convolution as an explicit matrix product. A significant memory
-                workspace is needed to store the matrix that holds the input tensor data.
-              - direct: This algorithm expresses the convolution as a direct convolution (for example, without
-                implicitly or explicitly doing a matrix multiplication).
-              - fft: This algorithm uses the Fast-Fourier Transform approach to compute the convolution. A significant
-                memory workspace is needed to store intermediate results.
-              - fft_tiling: This algorithm uses the Fast-Fourier Transform approach but splits the inputs into tiles.
-                A significant memory workspace is needed to store intermediate results but less than fft algorithm for
-                large size images.
-              - winograd: This algorithm uses the Winograd Transform approach to compute the convolution. A reasonably
-                sized workspace is needed to store intermediate results.
-              - winograd_nonfused: This algorithm uses the Winograd Transform approach to compute the convolution. A
-                significant workspace may be needed to store intermediate results.
-
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - conv_fprop_algo (str): Specifies convolution forward algorithm. Default ``"normal"`` .
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.gpu.op_tuning.conv_fprop_algo` instead.
-
-            - conv_dgrad_algo (str): Specifies convolution data grad algorithm and the default value is 'normal',
-              The value range is as follows:
-
-              - normal: Use the heuristic search algorithm.
-              - performance: Use the trial search algorithm.
-              - algo_0: This algorithm expresses the convolution as a sum of matrix products without actually explicitly
-                forming the matrix that holds the input tensor data. The sum is done using the atomic add operation,
-                thus the results are non-deterministic.
-              - algo_1: This algorithm expresses the convolution as a matrix product without actually explicitly forming
-                the matrix that holds the input tensor data. The results are deterministic.
-              - fft: This algorithm uses a Fast-Fourier Transform approach to compute the convolution. A significant
-                memory workspace is needed to store intermediate results. The results are deterministic.
-              - fft_tiling: This algorithm uses the Fast-Fourier Transform approach but splits the inputs into tiles.
-                A significant memory workspace is needed to store intermediate results but less than fft for large size
-                images. The results are deterministic.
-              - winograd: This algorithm uses the Winograd Transform approach to compute the convolution. A reasonably
-                sized workspace is needed to store intermediate results. The results are deterministic.
-              - winograd_nonfused: This algorithm uses the Winograd Transform approach to compute the convolution.
-                A significant workspace may be needed to store intermediate results. The results are deterministic.
-
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - conv_dgrad_algo (str): Specifies convolution data grad algorithm. Default ``"normal"`` .
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.gpu.op_tuning.conv_dgrad_algo` instead.
-
-            - conv_wgrad_algo (str): Specifies convolution filter grad algorithm and the default value is 'normal',
-              The value range is as follows:
-
-              - normal: Use the heuristic search algorithm.
-              - performance: Use the trial search algorithm.
-              - algo_0: This algorithm expresses the convolution as a sum of matrix products without actually explicitly
-                forming the matrix that holds the input tensor data. The sum is done using the atomic add operation,
-                thus the results are non-deterministic.
-              - algo_1: This algorithm expresses the convolution as a matrix product without actually explicitly forming
-                the matrix that holds the input tensor data. The results are deterministic.
-              - fft: This algorithm uses a Fast-Fourier Transform approach to compute the convolution. A significant
-                memory workspace is needed to store intermediate results. The results are deterministic.
-              - algo_3: This algorithm is similar to algo_0 but uses some small workspace to precompute some indices.
-                The results are also non-deterministic.
-              - winograd_nonfused: This algorithm uses the Winograd Transform approach to compute the convolution.
-                A significant workspace may be needed to store intermediate results. The results are deterministic.
-              - fft_tiling: This algorithm uses the Fast-Fourier Transform approach but splits the inputs into tiles.
-                A significant memory workspace is needed to store intermediate results but less than fft for large size
-                images. The results are deterministic.
-
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - conv_wgrad_algo (str): Specifies convolution filter grad algorithm. Default ``"normal"`` .
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.gpu.op_tuning.conv_wgrad_algo` instead.
-
-            - conv_allow_tf32 (bool): The flag below controls to allow Tensor core TF32 computation on CUDNN and the
-              default value is ``True``.
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - conv_allow_tf32 (bool): Controls to allow Tensor core TF32 computation on CUDNN.
+              Default ``True``.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.gpu.op_precision.conv_allow_tf32` instead.
-            - matmul_allow_tf32 (bool): The flag below controls to allow Tensor core TF32 computation on CUBLAS and the
-              default value is ``False``.
-              This parameter will be deprecated and will be removed in future versions. Please use the
+            - matmul_allow_tf32 (bool): Controls to allow Tensor core TF32 computation on CUBLAS.
+              Default ``False``.
+              This parameter will be deprecated and removed in future versions. Please use the
               api :func:`mindspore.device_context.gpu.op_precision.matmul_allow_tf32` instead.
-
-        jit_config (dict): Set the global jit config for compile, take effect in network defined in Cell or jit
-            decorators. It is not set by default.
-            The setting in context is the global jit config, while JitConfig is the local network's jit config.
-            When both exist simultaneously, the global jit config will not overwrite the local network's jit config.
-
-            - jit_level (str): Used to control the compilation optimization level. Default: ``""`` , The framework
-              automatically selects the execution method based on product, Atlas training product is O2, and all other
-              products are O0. In addition, The option of the dynamic shape must be O0 or O1, O2 is not supported.
-              The value range is as follows:
-
-              - ``"O0"``: Except for optimizations that may affect functionality, all other optimizations are turned
-                off, adopt KernelByKernel execution mode.
-              - ``"O1"``: Using commonly used optimizations and automatic operator fusion optimizations,
-                adopt KernelByKernel execution mode. This optimization level is experimental and is being improved.
-              - ``"O2"``: Ultimate performance optimization, adopt Sink execution mode.
-
-            - infer_boost (str): Used to control the infer mode. Default: ``"off"`` . The value range is as follows:
-
-              - ``"on"``: Enable infer mode, get better infer performance.
-              - ``"off"``: Disable infer mode, use forward to infer, performance is not good.
-
-        exec_order (str): Set the sorting method for operator execution in GRAPH_MODE Currently, only three sorting
-            methods are supported: bfs and gpto, and the default method is bfs.
-
-            - ``"bfs"``: The default sorting method, breadth priority, good communication masking, relatively good
-              performance.
-            - ``"dfs"``: An optional sorting method, depth-first sorting. The performance is relatively worse than that
-              of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where other
-              execution orders run out of memory (OOM).
-            - ``"gpto"``: An optional sorting method. This method combines multiple execution orders and selects a
-              method with relatively good performance. There may be some performance gains in scenarios with multiple
-              replicas running in parallel.
-
-    Raises:
-        ValueError: If input key is not an attribute in context.
+        print_file_path (str): This parameter will be deprecated and removed in future versions.
+        env_config_path (str): This parameter will be deprecated and removed in future versions.
+        debug_level (int): This parameter will be deprecated and removed in future versions.
+        reserve_class_name_in_scope (bool): This parameter will be deprecated and removed in future versions.
+        check_bprop (bool): This parameter will be deprecated and removed in future versions.
+        enable_reduce_precision (bool): This parameter will be deprecated and removed in a future versions.
+        grad_for_scalar (bool): This parameter will be deprecated and removed in future versions.
+        support_binary (bool): Whether to support run .pyc or .so in graph mode. This parameter will be deprecated and
+            removed in a future version. Please use the environment variable `MS_SUPPORT_BINARY` instead.
 
     Examples:
         >>> import mindspore as ms
@@ -1930,7 +1611,7 @@ def set_context(**kwargs):
         >>> ms.set_context(gpu_config={"conv_fprop_algo": "performance", "conv_allow_tf32": True,
         ...                "matmul_allow_tf32": True})
         >>> ms.set_context(jit_config={"jit_level": "O0"})
-        >>> ms.set_context(exec_order="gpto")
+        >>> ms.set_context(exec_order="bfs")
     """
     ctx = _context()
     # set device target first
@@ -2001,7 +1682,9 @@ def set_context(**kwargs):
 def get_context(attr_key):
 
     """
-    Get context attribute value according to the input key.
+    Get context attribute value according to the input key, this api will be deprecated and removed in future versions,
+    please use :func:`mindspore.get_current_device` instead.
+
     If some attributes are not set, they will be automatically obtained.
 
     Args:
@@ -2078,7 +1761,7 @@ class ParallelMode:
 @args_type_check(enable_ps=bool)
 def set_ps_context(**kwargs):
     """
-    Set parameter server training mode context.
+    Set parameter server training mode context, this api will be deprecated and removed in future versions.
 
     Note:
         Parameter server mode is only supported in graph mode.
@@ -2099,7 +1782,7 @@ def set_ps_context(**kwargs):
         enable_ps (bool): Whether to enable parameter server training mode.
                           Only after enable_ps is set True, the environment variables will be effective.
                           Default: ``False`` .
-        config_file_path (string): Configuration file path used by recovery, parameter server training mode only
+        config_file_path (str): Configuration file path used by recovery, parameter server training mode only
                                    supports Server disaster recovery currently. Default: ``''`` .
         scheduler_manage_port (int): Scheduler manage port used to scale out/in. Default: ``11202`` .
         enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False`` .
@@ -2118,19 +1801,21 @@ def set_ps_context(**kwargs):
 
 def get_ps_context(attr_key):
     """
-    Get parameter server training mode context attribute value according to the key.
+    Get parameter server training mode context attribute value according to the key, this api will be deprecated and
+    removed in future versions.
 
     Args:
         attr_key (str): The key of the attribute:
 
-            - enable_ps (bool): Whether to enable parameter server training mode. Default: ``False`` .
-            - config_file_path (string): Configuration file path used by recovery, parameter server training mode only
+            - enable_ps (bool, optional): Whether to enable parameter server training mode. Default: ``False`` .
+            - config_file_path (str, optional): Configuration file path used by recovery,
+              parameter server training mode only
               supports Server disaster recovery currently. Default: ``''`` .
-            - scheduler_manage_port (int): Scheduler manage port used to scale out/in. Default: ``11202`` .
-            - enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False`` .
-            - client_password (str): Password to decrypt the secret key stored in the client certificate.
+            - scheduler_manage_port (int, optional): Scheduler manage port used to scale out/in. Default: ``11202`` .
+            - enable_ssl (bool, optional): Set PS SSL mode enabled or disabled. Default: ``False`` .
+            - client_password (str, optional): Password to decrypt the secret key stored in the client certificate.
               Default: ``''`` .
-            - server_password (str): Password to decrypt the secret key stored in the server certificate.
+            - server_password (str, optional): Password to decrypt the secret key stored in the server certificate.
               Default: ``''`` .
 
     Returns:
@@ -2148,7 +1833,8 @@ def get_ps_context(attr_key):
 
 def reset_ps_context():
     """
-    Reset parameter server training mode context attributes to the default values.
+    Reset parameter server training mode context attributes to the default values, this api will be deprecated and
+    removed in future versions.
 
     Meaning of each field and its default value refer to :func:`mindspore.set_ps_context`.
 

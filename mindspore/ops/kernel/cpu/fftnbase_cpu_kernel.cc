@@ -16,12 +16,17 @@
 
 #include "kernel/cpu/fftnbase_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "mindapi/base/types.h"
 #include "utils/fft_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {
+namespace fftnbase_cpu {
 namespace {
 constexpr int kOnesideDivisor = 2;
 using complex64 = std::complex<float>;
@@ -363,5 +368,6 @@ MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFT2, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RFFTN, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFT2, FFTNBaseCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFTN, FFTNBaseCpuKernelMod);
+}  // namespace fftnbase_cpu
 }  // namespace kernel
 }  // namespace mindspore

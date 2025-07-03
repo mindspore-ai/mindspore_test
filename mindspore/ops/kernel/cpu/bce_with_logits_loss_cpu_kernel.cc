@@ -25,9 +25,11 @@
 #include "kernel/cpu/nnacl/fp32/bce_with_logits_loss_fp32.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "mindapi/base/types.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bce_with_logits_loss_cpu {
 namespace {
 using KernelRunFunc = BCEWithLogitsLossCpuKernelMod::KernelRunFunc;
 }  // namespace
@@ -258,5 +260,6 @@ const std::vector<std::pair<KernelAttr, KernelRunFunc>> &BCEWithLogitsLossCpuKer
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BCEWithLogitsLoss, BCEWithLogitsLossCpuKernelMod);
+}  // namespace bce_with_logits_loss_cpu
 }  // namespace kernel
 }  // namespace mindspore

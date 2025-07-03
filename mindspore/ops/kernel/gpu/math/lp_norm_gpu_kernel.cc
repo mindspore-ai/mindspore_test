@@ -22,11 +22,12 @@
 #include <set>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lp_norm_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_type.cuh"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 namespace mindspore {
 namespace kernel {
 bool LpNormGpuKernelMod::GetLpNormAttr() {

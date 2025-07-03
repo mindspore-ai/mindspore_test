@@ -23,12 +23,13 @@
 
 #include "mindspore/ops/infer/sparse_apply_proximal_gradient_descent.h"
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_apply_proximal_gradient_descent_cpu {
 class SparseApplyProximalGradientDescentCpuKernelMod
-    : public SparseOptimizerCpuKernelMod,
+    : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
       public MatchKernelHelper<SparseApplyProximalGradientDescentCpuKernelMod> {
  public:
   SparseApplyProximalGradientDescentCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class SparseApplyProximalGradientDescentCpuKernelMod
   std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
   void ResetResouce() noexcept;
 };
+}  // namespace sparse_apply_proximal_gradient_descent_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

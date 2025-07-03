@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """test python built-in functions in graph mode"""
-import pytest
 import numpy as np
 from mindspore import Tensor, context, nn, jit
 from tests.mark_utils import arg_mark
@@ -50,7 +49,7 @@ def test_fallback_all_list_hybrid():
     Expectation: No exception
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(a, b):
         x = [a, np.array([1]), Tensor(1)]
         y = [a, np.array([0]), Tensor(1)]

@@ -17,10 +17,11 @@
 #include "kernel/cpu/cumprod_cpu_kernel.h"
 #include <functional>
 #include <thread>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cumprod_cpu {
 namespace {
 constexpr size_t kCumProdInputsNum = 4;
 constexpr size_t kCumProdOutputsNum = 1;
@@ -361,5 +362,6 @@ const std::vector<cumProdPair> &CumProdCpuKernelMod::GetFuncList() const {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CumProd, CumProdCpuKernelMod);
+}  // namespace cumprod_cpu
 }  // namespace kernel
 }  // namespace mindspore

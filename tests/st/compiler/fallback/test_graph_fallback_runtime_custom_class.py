@@ -16,9 +16,11 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import context
+from mindspore import ops, nn, Tensor
 from mindspore import mutable
 from tests.mark_utils import arg_mark
+from tests.st.compiler.utils import match_array
 
 ms.set_context(mode=ms.GRAPH_MODE)
 
@@ -231,6 +233,7 @@ def test_resolve_cust_ms_function_call_class():
     Description: Graph syntax resolve support custom class input.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = UNet(UserDefinedMsFunctionCallNet())
     x = np.array([10, 10], np.float32)
     with pytest.raises(RuntimeError) as err:
@@ -265,6 +268,7 @@ def test_pyexecute_with_stub_tensor():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedTupleNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -290,6 +294,7 @@ def test_pyexecute_with_stub_tensor_2():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedListNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -315,6 +320,7 @@ def test_pyexecute_with_stub_tensor_3():
     Description: The output of pyexecute is not allow to have stub tensor.
     Expectation: No error.
     """
+    context.set_context(jit_level='O0')
     net = OuterNet(UserDefinedDictNet())
     x = np.array([10], np.float64)
     output = net(ms.Tensor(x))
@@ -351,6 +357,7 @@ def test_parser_fallback_nested_class_outer_grad():
     x = 2
     y = 4
     net = NestedNet()
+    # pylint: disable=E1102
     output = ops.grad(net)(mutable(x), y)
     assert output == 0
 
@@ -437,7 +444,7 @@ def test_getattr_cust_class_const():
     assert out == 198
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_custom_class_jit():
     """
     Feature: Syntax resolve.
@@ -508,3 +515,35 @@ def test_kwargs_is_custom_class_attr():
     net = Net(config)
     output = net(x=ms.Tensor(3))
     assert output == 6
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_custom_class_getattr_and_custom_class_may_raise_exception():
+    """
+    Feature: attr is a custom-type object.
+    Description: self.config is a custom-type object.
+    Expectation: No error.
+    """
+
+    class Config:
+        def __init__(self):
+            self.k = 5
+
+        def __str__(self):
+            # The jit fallback may invoke the `__str__` method of a Python object.
+            # The framework should catch exceptions when calling `__str__`; otherwise, the compilation will fail.
+            raise NotImplementedError("Not support __str__")
+
+    class Model(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.config = Config()
+
+        def construct(self, x: Tensor, k=None):
+            k = k if k is not None else self.config.k  # self.config will be converted to InterpretedObject
+            return x + k
+
+    model = Model()
+    a = Tensor([1, 2, 3])
+    o = model(a)
+    match_array(o, Tensor([6, 7, 8]))

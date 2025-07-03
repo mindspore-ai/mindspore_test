@@ -3,6 +3,9 @@ smooth_l1_loss:
         Calculate the smooth L1 loss, and the L1 loss function has robustness.
 
         Refer to :func:`mindspore.ops.smooth_l1_loss` for more details.
+
+        .. warning::
+            This API has poor performance on CPU and it is recommended to run it on the Ascend/GPU.
         
         Args:
             beta (number, optional): A parameter used to control the point where the function will change between
@@ -26,6 +29,7 @@ smooth_l1_loss:
                 
               - CPU/Ascend: has the same shape as the `logits`, `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
               - GPU: has the same shape and dtype as the `logits`.
+
         Outputs:
             Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`. Otherwise the shape of output tensor is :math:`()`.
 

@@ -31,7 +31,7 @@ namespace distributed {
 namespace rpc {
 class TCPComm;
 
-class BACKEND_EXPORT TCPClient : public RPCClientBase {
+class BACKEND_COMMON_EXPORT TCPClient : public RPCClientBase {
  public:
   explicit TCPClient(bool enable_ssl = false);
   ~TCPClient() override;

@@ -20,12 +20,13 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace col2im_cpu {
 class Col2ImCpuKernelMod : public NativeCpuKernelMod {
  public:
   Col2ImCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class Col2ImCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> dilation_;
   std::vector<int64_t> padding_;
 };
+}  // namespace col2im_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

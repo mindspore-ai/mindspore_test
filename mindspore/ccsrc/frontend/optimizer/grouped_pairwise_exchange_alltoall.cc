@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,15 @@
 #include "frontend/parallel/tensor_layout/tensor_info.h"
 #include "frontend/parallel/device_matrix.h"
 #include "pipeline/jit/ps/action.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -75,7 +84,9 @@ CNodePtr FindFrontAlltoall(const CNodePtr &marked_node, std::vector<CNodePtr> *v
   }
 
   if (alltoall_node == nullptr) {
-    MS_LOG(WARNING) << "Can't find alltoall node before " << GetCNodePrimitive(marked_node)->name();
+    auto prim = GetCNodePrimitive(marked_node);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(WARNING) << "Can't find alltoall node before " << prim->name();
   }
   return alltoall_node;
 }
@@ -116,7 +127,9 @@ CNodePtr FindBackAlltoall(const FuncGraphManagerPtr &manager, const CNodePtr &ma
   }
 
   if (alltoall_node == nullptr) {
-    MS_LOG(WARNING) << "Can't find alltoall node after " << GetCNodePrimitive(marked_node)->name();
+    const auto &prim = GetCNodePrimitive(marked_node);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(WARNING) << "Can't find alltoall node after " << prim->name();
   }
   return alltoall_node;
 }
@@ -147,8 +160,8 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
-
-    if (!GetCNodePrimitive(cnode)->HasAttr("gpea_label")) {
+    auto prim = GetCNodePrimitive(cnode);
+    if (!prim->HasAttr("gpea_label")) {
       continue;
     }
 
@@ -159,7 +172,7 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     visited_marked_nodes.push_back(cnode);
     auto alltoall_pair = FindAlltoallPair(manager, cnode, &visited_marked_nodes);
     if (alltoall_pair.first == nullptr || alltoall_pair.second == nullptr) {
-      MS_LOG(WARNING) << "not find alltoall_pair around cnode: " << GetCNodePrimitive(cnode)->name();
+      MS_LOG(WARNING) << "not find alltoall_pair around cnode: " << prim->name();
       continue;
     }
     alltoall_pairs->push_back(alltoall_pair);
@@ -413,6 +426,32 @@ const std::vector<CNodePtr> FindCNodesAmongAlltoall(const std::vector<CNodePtr> 
   return cnodes;
 }
 
+std::vector<AnfNodePtr> CloneInputs(const CNodePtr &cnode, mindspore::HashMap<CNodePtr, CNodePtr> *cnode_map) {
+  std::vector<AnfNodePtr> new_inputs;
+  auto inputs = cnode->inputs();
+  for (size_t j = 0; j < inputs.size(); j++) {
+    auto input = inputs[j];
+    if (input->isa<CNode>()) {
+      auto curr_input_cnode = input->cast<CNodePtr>();
+      CNodePtr new_cnode;
+      if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad) ||
+          IsPrimitiveCNode(curr_input_cnode, prim::kPrimUpdateState)) {
+        new_cnode = curr_input_cnode;
+      } else {
+        new_cnode = (*cnode_map)[curr_input_cnode];
+      }
+      auto new_anf_node = new_cnode->cast<AnfNodePtr>();
+      new_inputs.push_back(new_anf_node);
+    } else if (input->isa<ValueNode>()) {
+      ValueNodePtr new_value_node = NewValueNode(GetValueNode(input));
+      new_inputs.push_back(new_value_node);
+    } else if (input->isa<Parameter>()) {
+      new_inputs.push_back(input);
+    }
+  }
+  return new_inputs;
+}
+
 void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr &input_node, size_t scale_factor,
                       GpeaInfo *gpea_info, std::vector<AnfNodePtr> *new_nodes) {
   mindspore::HashMap<CNodePtr, CNodePtr> cnode_map;
@@ -426,34 +465,16 @@ void CloneScaledGraph(const std::vector<CNodePtr> &old_cnodes, const AnfNodePtr 
   std::vector<uint32_t> reshape_scale_axis = gpea_info->GetReshapeScaleAxisVec();
   for (size_t i = 0; i < old_cnodes.size(); i++) {
     auto cnode = old_cnodes[i];
-    MS_LOG(DEBUG) << "node in " << i << " " << GetCNodePrimitive(cnode)->name();
+    auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    MS_LOG(DEBUG) << "node in " << i << " " << prim->name();
     if (IsPrimitiveCNode(cnode, prim::kPrimLoad)) {
       new_nodes->push_back(cnode);  // reuse old Load node to not increase device memory
       continue;
     }
 
     // clone inputs
-    std::vector<AnfNodePtr> new_inputs;
-    auto inputs = cnode->inputs();
-    for (size_t j = 0; j < inputs.size(); j++) {
-      auto input = inputs[j];
-      if (input->isa<CNode>()) {
-        auto curr_input_cnode = input->cast<CNodePtr>();
-        CNodePtr new_cnode;
-        if (IsPrimitiveCNode(curr_input_cnode, prim::kPrimLoad)) {
-          new_cnode = curr_input_cnode;
-        } else {
-          new_cnode = cnode_map[curr_input_cnode];
-        }
-        auto new_anf_node = new_cnode->cast<AnfNodePtr>();
-        new_inputs.push_back(new_anf_node);
-      } else if (input->isa<ValueNode>()) {
-        ValueNodePtr new_value_node = NewValueNode(GetValueNode(input));
-        new_inputs.push_back(new_value_node);
-      } else if (input->isa<Parameter>()) {
-        new_inputs.push_back(input);
-      }
-    }
+    std::vector<AnfNodePtr> new_inputs = CloneInputs(cnode, &cnode_map);
 
     // scale reshape shape value
     if (IsPrimitiveCNode(cnode, prim::kPrimReshape)) {

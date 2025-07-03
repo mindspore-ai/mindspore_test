@@ -55,19 +55,19 @@ mindspore.nn.RMSProp
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 默认值： ``0.1`` 。
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 默认值： ``0.1`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **decay** (float) - 衰减率。必须大于等于0。默认值： ``0.9`` 。
-        - **momentum** (float) - float类型的超参数，表示移动平均的动量（momentum）。必须大于等于0。默认值： ``0.0`` 。
-        - **epsilon** (float) - 将添加到分母中，以提高数值稳定性。取值大于0。默认值： ``1e-10`` 。
-        - **use_locking** (bool) - 是否对参数更新加锁保护。默认值： ``False`` 。
-        - **centered** (bool) - 如果为True，则梯度将通过梯度的估计方差进行归一。默认值： ``False`` 。
+        - **decay** (float，可选) - 衰减率。必须大于等于0。默认值： ``0.9`` 。
+        - **momentum** (float，可选) - float类型的超参数，表示移动平均的动量（momentum）。必须大于等于0。默认值： ``0.0`` 。
+        - **epsilon** (float，可选) - 将添加到分母中，以提高数值稳定性。取值大于0。默认值： ``1e-10`` 。
+        - **use_locking** (bool，可选) - 是否对参数更新加锁保护。默认值： ``False`` 。
+        - **centered** (bool，可选) - 如果为True，则梯度将通过梯度的估计方差进行归一。默认值： ``False`` 。
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
-        - **weight_decay** (Union[float, int, Cell]) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 权重衰减（L2 penalty）。默认值： ``0.0`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_wd.rst
 

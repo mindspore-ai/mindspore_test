@@ -25,11 +25,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-const std::set<TypeId> valid_types = {kNumberTypeUInt8,   kNumberTypeInt8,     kNumberTypeInt16,
-                                      kNumberTypeInt32,   kNumberTypeInt64,    kNumberTypeFloat16,
-                                      kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeBool};
-};  // namespace
 
 ShapeArray LogSumExpFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return ReduceGeneralInferShape(primitive, input_infos);
@@ -39,6 +34,9 @@ std::vector<TypeId> LogSumExpFuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
   auto input_type = input_infos[kInputIndex0]->GetType();
   auto prim_name = primitive->name();
+  const std::set<TypeId> valid_types = {kNumberTypeUInt8,   kNumberTypeInt8,     kNumberTypeInt16,
+                                        kNumberTypeInt32,   kNumberTypeInt64,    kNumberTypeFloat16,
+                                        kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeBool};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", input_type, valid_types, prim_name);
   const std::set<TypeId> float_types = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
   if (float_types.find(input_type) == float_types.end()) {

@@ -290,7 +290,7 @@ def test_list_comprehension_with_iter_list_3():
     assert res[2] == 13
 
 
-def test_list_comprehension_with_sring():
+def test_list_comprehension_with_string():
     """
     Feature: Graph isinstance.
     Description: Graph list comprehension syntax with list as iteration object.

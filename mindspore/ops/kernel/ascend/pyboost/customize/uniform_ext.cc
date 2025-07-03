@@ -16,9 +16,9 @@
 
 #include "kernel/ascend/pyboost/customize/uniform_ext.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
@@ -42,9 +42,9 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
 }
 }  // namespace
 
-tensor::BaseTensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
-                                                const ScalarPtr &a, const ScalarPtr &b, const BaseTensorPtr &seed,
-                                                const BaseTensorPtr &offset) {
+tensor::TensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor_tensor,
+                                            const ScalarPtr &a, const ScalarPtr &b, const TensorPtr &seed,
+                                            const TensorPtr &offset) {
   MS_LOG(DEBUG) << "UniformExt call start";
   OpRunner::InferOpOutput(op, tensor_tensor, a, b, seed, offset);
   // ValueTuple to std::vector

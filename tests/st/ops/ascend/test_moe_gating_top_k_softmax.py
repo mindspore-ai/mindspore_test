@@ -18,7 +18,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore as ms
 import mindspore.common.dtype as mstype
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from mindspore.ops.auto_generate import MoeGatingTopKSoftmax
 
 def softmax_func(x, axis=None):
@@ -55,7 +55,7 @@ def moe_gating_topk_softmax_forward_func(x, finished, k):
     net = MoeGatingTopKSoftmax()
     return net(x, finished, k)
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 @pytest.mark.parametrize('support_type', [mstype.float32, mstype.float16, mstype.bfloat16])
 def test_moe_gating_top_k_softmax_case0(mode, support_type):
@@ -75,12 +75,10 @@ def test_moe_gating_top_k_softmax_case0(mode, support_type):
         y_ms, expert_idx_ms, row_idx_ms = moe_gating_topk_softmax_forward_func(x, finished, k)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func,\
-            jit_config=JitConfig(jit_level="O0")))(x, finished, k)
+        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func, jit_level="O0"))(x, finished, k)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func,\
-            jit_config=JitConfig(jit_level="O2")))(x, finished, k)
+        y_ms, expert_idx_ms, row_idx_ms = (jit(moe_gating_topk_softmax_forward_func, backend="GE"))(x, finished, k)
 
     if support_type == mstype.bfloat16:
         y, expert_idx, row_idx = \
@@ -92,7 +90,7 @@ def test_moe_gating_top_k_softmax_case0(mode, support_type):
     np.testing.assert_allclose(expert_idx, expert_idx_ms.asnumpy())
     np.testing.assert_allclose(row_idx, row_idx_ms.asnumpy())
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_moe_gating_top_k_softmax_dynamic():
     """
     Feature: Test the MoeGatingTopKSoftmax calculate with dynamic shape.
@@ -108,4 +106,5 @@ def test_moe_gating_top_k_softmax_dynamic():
     k2 = 5
 
     TEST_OP(moe_gating_topk_softmax_forward_func, [[Tensor(x1), Tensor(finished1), k1],\
-            [Tensor(x2), Tensor(finished2), k2]], 'moe_gating_top_k_softmax', disable_grad=True)
+            [Tensor(x2), Tensor(finished2), k2]], 'moe_gating_top_k_softmax', disable_mode=['GRAPH_MODE'],\
+            disable_grad=True)

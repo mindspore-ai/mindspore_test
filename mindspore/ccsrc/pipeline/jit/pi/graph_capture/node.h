@@ -26,10 +26,10 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/constant_info.h"
-#include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/utils/inline_reason.h"
 
 namespace mindspore {
 namespace pijit {
@@ -105,6 +105,7 @@ class InstrNode : public AbstractNode {
 class ValueNode : public InstrNode {
  public:
   static ValueNode kUnboundLocal;
+  static ValueNode kStackNull;
 
   ValueNode(AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
       : InstrNode(Value, opcode, oparg), vobj_(vobj), inputs_(inputs) {}
@@ -117,8 +118,8 @@ class ValueNode : public InstrNode {
   void ClearInputs() { inputs_.clear(); }
 
   void SetVobj(AObject *vobj);
-  const auto &GetVobj() const { return vobj_; }
-
+  const auto GetVobj() const { return vobj_ == nullptr ? vobj_ : vobj_->GetLatestVersion(); }
+  const auto &GetOwnVobj() const { return vobj_; }
   AObject *get_attr(const std::string &nam);
 
   AObject *binary_subscr(ValueNode *sub);
@@ -134,12 +135,27 @@ class ValueNode : public InstrNode {
 
   TracePtr GetTrace() { return trace_; }
   void SetTrace(TracePtr t) { trace_ = t; }
+  const auto GetScope() const { return vobj_ == nullptr ? AObject::Scope::SCOPE_NOT_SPECIFIED : vobj_->GetScope(); }
+  void SetScope(AObject::Scope scope) { vobj_ == nullptr ? void(0) : vobj_->SetScope(scope); }
+  void AddScope(AObject::Scope scope) { vobj_ == nullptr ? void(0) : vobj_->AddScope(scope); }
+  const auto GetScopeDesc() const { return vobj_ == nullptr ? "SCOPE_NOT_SPECIFIED" : vobj_->GetScopeDesc(); }
+  void MarkVmNode() { flag_ = (flag_ & ~NODE_GRAPH) | MODE_BYTECODE; }
+  bool IsVmNode() const { return flag_ & MODE_BYTECODE; }
+  void MarkGraphNode() { flag_ = (flag_ & ~MODE_BYTECODE) | NODE_GRAPH; }
+  bool IsGraphNode() const { return flag_ & NODE_GRAPH; }
+  void MarkVmGraphNode() { flag_ = flag_ | NODE_GRAPH | MODE_BYTECODE; }
+  bool IsSideEffectNode() const { return flag_ & NODE_SIDE_EFFECT; }
+  void MarkSideEffectNode() { flag_ = flag_ | NODE_SIDE_EFFECT; }
 
  protected:
   ValueNode(Type type, AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
       : InstrNode(type, opcode, oparg), vobj_(vobj), inputs_(inputs) {}
 
  private:
+  static constexpr int MODE_BYTECODE = 1;
+  static constexpr int NODE_GRAPH = 1 << 1;
+  static constexpr int NODE_SIDE_EFFECT = 2 << 1;
+
   // value info
   AObject *vobj_;
 
@@ -154,6 +170,9 @@ class ValueNode : public InstrNode {
 
   // Trace cache to be reused
   TracePtr trace_;
+
+  // mark the node used in bytecode(VM) or graph
+  int flag_{MODE_BYTECODE};
 };
 
 // simulate PyCellObject, oparg is index
@@ -195,12 +214,22 @@ class ParamNode : public ValueNode {
 
 class CallNode : public ValueNode {
  public:
-  CallNode(int opcode, int oparg, const std::vector<ValueNode *> &inputs)
-      : ValueNode(Call, nullptr, opcode, oparg, inputs), sub_graph_(nullptr) {}
+  CallNode(int opcode, int oparg, const std::vector<ValueNode *> &inputs);
   virtual ~CallNode() {}
+
+  // python3.11 ~ python3.13 only
+  void set_kw_names(const py::object &kw) { kw_names_ = kw; }
+  const auto &kw_names() const { return kw_names_; }
 
   Graph *GetSubGraph() const { return sub_graph_; }
   void SetSubGraph(Graph *n);
+  bool IsCallKW();
+  bool IsCallEX();
+
+  // The input arguments when calling subgraph's FuncGraph.
+  const std::vector<AbstractWrapperPtr> &subgraph_args() const { return subgraph_args_; }
+  void set_subgraph_args(const std::vector<AbstractWrapperPtr> &subgraph_args) { subgraph_args_ = subgraph_args; }
+
   std::string ToString() const override;
   void SetInlineReason(InlineReason r) { reason_ = r; }
   InlineReason GetInlineReason() { return reason_; }
@@ -220,16 +249,43 @@ class CallNode : public ValueNode {
     return args;
   }
 
+  ValueNode *GetSelf() const;
+
+  void UpdateVobj();
+
  private:
   // sub-graph if traced function
   Graph *sub_graph_;
+  // The input arguments when calling subgraph's FuncGraph.
+  std::vector<AbstractWrapperPtr> subgraph_args_{};
 
   InlineReason reason_ = InlineReason::kInlineUnknown;
 
   std::vector<ValueNode *> params_;  // extra values for inline function
+
+  py::object kw_names_;
+};
+
+class IterNode : public ValueNode {
+ public:
+  IterNode(ValueNode *iterable, AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
+      : ValueNode(vobj, opcode, oparg, inputs), iterable_(iterable), index_(0) {}
+  ~IterNode() override = default;
+
+  ValueNode *iterable() const { return iterable_; }
+  void set_iterable(ValueNode *iterable_node) { iterable_ = iterable_node; }
+  size_t index() const { return index_; }
+  void set_index(size_t idx) { index_ = idx; }
+
+ private:
+  ValueNode *iterable_;
+  size_t index_;
 };
 
 bool IsNonLocalValue(ValueNode *i);
+
+std::string ToString(const pijit::AbstractNode *node);
+
 }  // namespace pijit
 }  // namespace mindspore
 

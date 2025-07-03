@@ -1,13 +1,13 @@
 mindspore.Tensor.new_zeros
 ===========================
 
-.. py:method:: mindspore.Tensor.new_zeros(size, dtype=None)
+.. py:method:: mindspore.Tensor.new_zeros(size, dtype=None) -> Tensor
 
     返回一个大小为 `size` 的Tensor，填充值为0。
 
     参数：
         - **size** (Union[int, tuple(int), list(int)]) - 定义输出的shape。
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出的数据类型。默认值： ``None`` ，返回的Tensor使用和 `self` 相同的数据类型。
+        - **dtype** (:class:`mindspore.dtype`，可选) - 输出的数据类型。默认值： ``None`` ，返回的Tensor使用与 `self` 相同的数据类型。
 
     返回：
         Tensor，shape和dtype由输入定义，填充值为0。

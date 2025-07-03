@@ -19,6 +19,7 @@ from decimal import Decimal
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.common.constant import ProfilerActivity
 
 
 class MemoryRecordBean:
@@ -167,6 +168,7 @@ class AscendMemoryViewer(BaseViewer):
         self._framework_path = kwargs.get("framework_path")
         self._msprof_profiler_output_path = kwargs.get("msprof_profile_output_path")
         self._ascend_ms_dir = kwargs.get("ascend_ms_dir")
+        self._activities = kwargs.get("activities")
         ProfilerLogger.init(self._ascend_ms_dir)
         self._logger = ProfilerLogger.get_instance()
         self._ge_memory_record = []
@@ -222,11 +224,16 @@ class AscendMemoryViewer(BaseViewer):
 
     def _parse_ms_memory_record(self):
         """Parse mindspore memory record data"""
+
+        # No frame work data is collected when no CPU is passed in activities
+        if ProfilerActivity.CPU.value not in self._activities:
+            return
+
         memory_record_file = os.path.join(
             self._framework_path,
             f"cpu_ms_memory_record_{self._rank_id}.txt",
         )
-        data = FileManager.read_txt_file(memory_record_file)
+        data = FileManager.read_csv_file(memory_record_file)
         if len(data) > 1:
             self._ms_memory_record.extend(data[1:])
 

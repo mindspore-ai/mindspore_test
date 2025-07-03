@@ -23,7 +23,7 @@ from mindspore.nn import Momentum
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
-from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.nn import DistributedGradReducer
 
 
 def setup_function():

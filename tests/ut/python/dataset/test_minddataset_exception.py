@@ -15,8 +15,9 @@
 # ==============================================================================
 
 import os
-import pytest
+
 import numpy as np
+import pytest
 
 import mindspore.dataset as ds
 from mindspore.mindrecord import FileWriter
@@ -373,6 +374,7 @@ def test_mindrecord_exception():
     Description: Test MindDataset by mapping function that will raise Exception and print error info
     Expectation: Exception is raised as expected
     """
+
     def exception_func(item):
         raise Exception("Error occur!")
 
@@ -402,6 +404,7 @@ def test_mindrecord_exception():
             num_iter += 1
     os.remove(file_name)
     os.remove("{}.db".format(file_name))
+
 
 def test_shuffle_with_num_samples_exception():
     """
@@ -497,7 +500,7 @@ def test_rename_exception_03():
     columns_list = ["data", "file_name", "label"]
     num_readers = 4
     with pytest.raises(RuntimeError, match="can not be found. Please check whether the mindrecord file exists" \
-                      " and do not rename the mindrecord file."):
+                                           " and do not rename the mindrecord file."):
         data_set = ds.MindDataset(new_file_name, columns_list, num_readers)
         num_iter = 0
         for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -569,7 +572,7 @@ def test_rename_exception_05():
     num_readers = 4
     file_name = ori_file_name + '0'
     with pytest.raises(RuntimeError, match="can not be found. Please check whether the mindrecord file exists" \
-                      " and do not rename the mindrecord file."):
+                                           " and do not rename the mindrecord file."):
         data_set = ds.MindDataset(file_name, columns_list, num_readers)
         num_iter = 0
         for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -684,7 +687,7 @@ def test_rename_exception_08():
     columns_list = ["data", "file_name", "label"]
     num_readers = 4
     with pytest.raises(RuntimeError, match="can not be found. Please check whether the mindrecord file exists" \
-                      " and do not rename the mindrecord file."):
+                                           " and do not rename the mindrecord file."):
         data_set = ds.MindDataset(new_file_name, columns_list, num_readers)
         num_iter = 0
         for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -726,7 +729,7 @@ def test_rename_exception_09():
     num_readers = 4
     file_name = ori_file_name + '0'
     with pytest.raises(RuntimeError, match="can not be found. Please check whether the mindrecord file exists" \
-                      " and do not rename the mindrecord file."):
+                                           " and do not rename the mindrecord file."):
         data_set = ds.MindDataset(file_name, columns_list, num_readers)
         num_iter = 0
         for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
@@ -749,18 +752,13 @@ def test_rename_exception_09():
             os.remove(ori_file_name + str(x) + ".db")
 
 
-def test_write_with_invalid_float_type():
+@pytest.mark.parametrize("cleanup_tmp_file", ["test.mindrecord*"], indirect=True)
+def test_write_with_invalid_float_type(cleanup_tmp_file):
     """
     Feature: test FileWriter with invalid float type
     Description: data type is not matched with the schema
     Expectation: exception occur
     """
-    mindrecord_file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
-
-    if os.path.exists(mindrecord_file_name):
-        os.remove(mindrecord_file_name)
-    if os.path.exists(mindrecord_file_name + ".db"):
-        os.remove(mindrecord_file_name + ".db")
 
     # Some data in the data list is incorrect.
     writer = FileWriter(file_name="test.mindrecord", shard_num=1, overwrite=True)
@@ -791,11 +789,6 @@ def test_write_with_invalid_float_type():
         count += 1
     assert count == 6
 
-    if os.path.exists(mindrecord_file_name):
-        os.remove(mindrecord_file_name)
-    if os.path.exists(mindrecord_file_name + ".db"):
-        os.remove(mindrecord_file_name + ".db")
-
     # All data in the data list is incorrect.
     with pytest.raises(Exception, match="There is no valid data which can be written"):
         writer = FileWriter(file_name="test.mindrecord", shard_num=1, overwrite=True)
@@ -809,11 +802,6 @@ def test_write_with_invalid_float_type():
                  "data": input_data}]
         writer.write_raw_data(data)
         writer.commit()
-
-    if os.path.exists(mindrecord_file_name):
-        os.remove(mindrecord_file_name)
-    if os.path.exists(mindrecord_file_name + ".db"):
-        os.remove(mindrecord_file_name + ".db")
 
     # All data in the data list is incorrect and write with parallel
     with pytest.raises(Exception) as err:
@@ -840,11 +828,6 @@ def test_write_with_invalid_float_type():
     assert "has stopped abnormally. Please check the above log" in str(err) or \
            "Parallel write worker error, please check the above log" in str(err)
 
-    if os.path.exists(mindrecord_file_name):
-        os.remove(mindrecord_file_name)
-    if os.path.exists(mindrecord_file_name + ".db"):
-        os.remove(mindrecord_file_name + ".db")
-
     # All data in the data list is incorrect and write with parallel and use shard_num=4
     with pytest.raises(Exception) as err:
         writer = FileWriter(file_name="test.mindrecord", shard_num=4, overwrite=True)
@@ -870,11 +853,6 @@ def test_write_with_invalid_float_type():
     assert "has stopped abnormally. Please check the above log" in str(err) or \
            "Parallel write worker error, please check the above log" in str(err)
 
-    if os.path.exists(mindrecord_file_name):
-        os.remove(mindrecord_file_name)
-    if os.path.exists(mindrecord_file_name + ".db"):
-        os.remove(mindrecord_file_name + ".db")
-
 
 if __name__ == '__main__':
     test_cv_lack_json()
@@ -899,4 +877,4 @@ if __name__ == '__main__':
     test_rename_exception_07()
     test_rename_exception_08()
     test_rename_exception_09()
-    test_write_with_invalid_float_type()
+    test_write_with_invalid_float_type(cleanup_tmp_file)

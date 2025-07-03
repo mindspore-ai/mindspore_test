@@ -26,7 +26,7 @@
 #include <fstream>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "src/extendrt/delegate/delegate_utils.h"
-#include "ccsrc/kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "ccsrc/include/backend/optimizer/helper.h"
 #include "ccsrc/include/common/utils/convert_utils.h"
 #include "common/config_infos.h"
@@ -34,6 +34,8 @@
 #include "src/extendrt/utils/func_graph_utils.h"
 #include "src/extendrt/delegate/tensorrt/optimizer/tensorrt_optimizer.h"
 #include "infer/custom.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::lite {
 namespace {
@@ -656,8 +658,8 @@ std::vector<tensor::Tensor> TensorRTExecutor::GetOutputInfos(uint32_t) {
   return tensors;
 }
 
-static std::shared_ptr<device::GraphExecutor> TensorRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
-                                                                           const ConfigInfos &config_infos) {
+static std::shared_ptr<LiteGraphExecutor> TensorRTGraphExecutorCreator(const std::shared_ptr<Context> &ctx,
+                                                                       const ConfigInfos &config_infos) {
   auto executor = std::make_shared<TensorRTExecutor>(ctx, config_infos);
   if (!executor->Init()) {
     return nullptr;

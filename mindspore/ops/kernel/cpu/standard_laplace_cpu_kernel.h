@@ -19,11 +19,12 @@
 
 #include <random>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace standard_laplace_cpu {
 class StandardLaplaceCpuKernelMod : public NativeCpuKernelMod {
  public:
   StandardLaplaceCpuKernelMod() = default;
@@ -39,6 +40,7 @@ class StandardLaplaceCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::default_random_engine rng_;
 };
+}  // namespace standard_laplace_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_STANDARD_LAPLACE_CPU_KERNEL_H_

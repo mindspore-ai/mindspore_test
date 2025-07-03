@@ -47,7 +47,7 @@ class TestBinaryCrossEntropyExpander : public TestGraphKernelExpander,
   void SetUp() override {
     SetDeviceTarget(kAscendDevice);
     std::map<std::string, std::string> jit_config;
-    jit_config["graph_kernel_flags"] = "--kernel_generator=DVM";
+    jit_config["graph_kernel_flags"] = "--kernel_generator=DVM --enable_expand_ops=BinaryCrossEntropy";
     graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
   }
 };

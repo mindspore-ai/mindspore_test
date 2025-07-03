@@ -22,6 +22,7 @@
 #include "runtime/collective/communication_group.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "utils/ms_context.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 constexpr int kDecimalBase = 10;
@@ -54,7 +55,7 @@ class DummyCommunicationGroup : public CommunicationGroup {
 /// \brief DummyCollectiveCommunicationLib to maintain collective communication relationship without real device
 /// communication.
 ///
-class DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
+class BACKEND_COMMON_EXPORT DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
  public:
   DummyCollectiveCommunicationLib();
 
@@ -65,7 +66,8 @@ class DummyCollectiveCommunicationLib : public CollectiveCommunicationLib {
   bool CreateDeviceCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks) override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   uint32_t GetRankId(const std::string &group_name) override;
 

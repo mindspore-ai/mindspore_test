@@ -20,12 +20,13 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nan_to_num {
 void NanToNumAscend::GetInfValues(TypeId input_type, const std::optional<float> &posinf,
                                   const std::optional<float> &neginf, bool posinf_has_value, bool neginf_has_value) {
   const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
@@ -73,8 +74,8 @@ void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   bool posinf_has_value = posinf.has_value();
   bool neginf_has_value = neginf.has_value();
   if (posinf_has_value && neginf_has_value) {
-    posinf_ = transform::ConvertKernelTensor<float>(inputs[kIndex2]);
-    neginf_ = transform::ConvertKernelTensor<float>(inputs[kIndex3]);
+    posinf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex2]);
+    neginf_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex3]);
   } else {
     auto input_type = inputs[kIndex0]->dtype_id();
     GetInfValues(input_type, posinf, neginf, posinf_has_value, neginf_has_value);
@@ -90,5 +91,6 @@ bool NanToNumAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NanToNum, NanToNumAscend);
+}  // namespace nan_to_num
 }  // namespace kernel
 }  // namespace mindspore

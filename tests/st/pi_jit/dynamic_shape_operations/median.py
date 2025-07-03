@@ -48,12 +48,12 @@ class MedianDynamicRankFactory():
         """正向比较"""
         ps_net = MedianDynamicRankNet(global_median=self.global_median, axis=self.axis,
                                       keep_dims=self.keep_dims)
-        jit(ps_net.construct, mode="PSJit")(self.input_x_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.input_x_ms)
         context.set_context(mode=context.GRAPH_MODE)
         psjit_y, _ = self.forward_mindspore_impl(ps_net)
         pi_net = MedianDynamicRankNet(global_median=self.global_median, axis=self.axis,
                                       keep_dims=self.keep_dims)
-        jit(pi_net.construct, mode="PIJit")(self.input_x_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.input_x_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         pijit_y, _ = self.forward_mindspore_impl(pi_net)
 

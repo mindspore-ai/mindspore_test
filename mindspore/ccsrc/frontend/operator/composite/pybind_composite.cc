@@ -85,6 +85,10 @@ void RegCompositeOpsGroup(const py::module *m) {
   (void)py::class_<Shard, MetaFuncGraph, std::shared_ptr<Shard>>(*m, "Shard_")
     .def(py::init<const std::string &>(), py::arg("fn"));
 
+  // Reg AddAttr
+  (void)py::class_<AddAttr, MetaFuncGraph, std::shared_ptr<AddAttr>>(*m, "AddAttr_")
+    .def(py::init<const std::string &>(), py::arg("fn"));
+
   // Reg ListAppend
   (void)py::class_<ListAppend, MetaFuncGraph, std::shared_ptr<ListAppend>>(*m, "ListAppend_")
     .def(py::init<std::string &>());
@@ -138,6 +142,7 @@ void RegCompositeOpsGroup(const py::module *m) {
   (void)py::class_<MultitypeFuncGraph, MetaFuncGraph, std::shared_ptr<MultitypeFuncGraph>>(*m, "MultitypeFuncGraph_")
     .def(py::init<const std::string &>())
     .def("register_fn", &MultitypeFuncGraph::PyRegister)
+    .def("register_default_fn", &MultitypeFuncGraph::PyRegisterDefault)
     .def("set_doc_url_", &MultitypeFuncGraph::set_doc_url)
     .def("set_need_raise_", &MultitypeFuncGraph::set_need_raise);
 

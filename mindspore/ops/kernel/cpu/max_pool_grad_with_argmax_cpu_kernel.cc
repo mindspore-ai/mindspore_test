@@ -17,11 +17,12 @@
 #include "kernel/cpu/max_pool_grad_with_argmax_cpu_kernel.h"
 #include <algorithm>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/max_pool_grad_with_argmax.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_grad_with_argmax_cpu {
 namespace {
 constexpr size_t kMaxPoolGradWithArgmaxInputsNum = 3;
 constexpr size_t kMaxPoolGradWithArgmaxOutputsNum = 1;
@@ -168,5 +169,6 @@ std::vector<KernelAttr> MaxPoolGradWithArgmaxCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxPoolGradWithArgmax, MaxPoolGradWithArgmaxCpuKernelMod);
+}  // namespace max_pool_grad_with_argmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

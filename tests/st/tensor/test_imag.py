@@ -38,6 +38,6 @@ def test_tensor_imag(mode):
     """
     ms.set_context(mode=mode)
 
-    x = Tensor(np.asarray(np.complex(1.3 + 0.4j)), ms.complex64)
+    x = Tensor(np.asarray(np.complex_(1.3 + 0.4j)), ms.complex64)
     output = x.imag()
     assert np.allclose(output.asnumpy(), 0.4)

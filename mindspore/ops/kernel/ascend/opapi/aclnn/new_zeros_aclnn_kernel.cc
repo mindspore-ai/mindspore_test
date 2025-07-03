@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace new_zeros {
 
 void NewZerosAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
@@ -31,5 +32,6 @@ bool NewZerosAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NewZeros, NewZerosAscend);
+}  // namespace new_zeros
 }  // namespace kernel
 }  // namespace mindspore

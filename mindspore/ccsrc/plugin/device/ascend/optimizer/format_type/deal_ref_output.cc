@@ -24,15 +24,19 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
-#include "transform/acl_ir/ge_adapter_info.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
+#include "kernel/ascend/acl_ir/ge_adapter_info.h"
+#include "kernel/ascend/acl/acl_kernel_build.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace opt {
@@ -45,29 +49,15 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
     return ref_infos;
   }
 
-  if (kernel_type == KernelType::GE_KERNEL) {
-    if (!common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimGEGraphOp)) {
-      MS_LOG(EXCEPTION) << "Current node must be callinline! but got " << cnode->DebugString();
-    }
-    auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
-    if (kernel_mod == nullptr) {
-      return ref_infos;
-    }
-    auto ge_ref = dynamic_cast<kernel::GeKernelMod *>(kernel_mod)->io_indexes();
-    for (auto [input_idx, output_idx] : ge_ref) {
-      ref_infos[output_idx] = input_idx;
-    }
-  }
-
   auto op_name = common::AnfAlgo::GetCNodeName(cnode);
   if (kernel_type == KernelType::ACL_KERNEL) {
-    auto info = transform::GeAdapterManager::GetInstance().GetInfo(op_name, true);
+    auto info = device::ascend::GeAdapterManager::GetInstance().GetInfo(op_name, true);
     if (info == nullptr) {
       return ref_infos;
     }
 
     ref_infos = info->GetRefMappingInfo();
-  } else if (kernel_type == KernelType::OPAPI_KERNEL) {
+  } else if (kernel_type == KernelType::OPAPI_KERNEL || kernel_type == KernelType::ATB_KERNEL) {
     mindspore::ops::OpDefPtr op_def = mindspore::ops::GetOpDef(op_name);
     if (op_def == nullptr) {
       return ref_infos;
@@ -329,7 +319,12 @@ const AnfNodePtr DealRefOutput::Process(const FuncGraphPtr &graph, const AnfNode
   if (ref_infos.empty()) {
     return nullptr;
   }
-
+  if (cnode->kernel_info() != nullptr) {
+    auto kernel_info = dynamic_cast<device::KernelInfo *>(cnode->kernel_info());
+    MS_EXCEPTION_IF_NULL(kernel_info);
+    std::for_each(ref_infos.begin(), ref_infos.end(),
+                  [&kernel_info](const auto &pair) { kernel_info->AddRefMap(pair.first, pair.second); });
+  }
   auto type = cnode->Type();
   MS_EXCEPTION_IF_NULL(type);
   if (!type->isa<Tuple>()) {

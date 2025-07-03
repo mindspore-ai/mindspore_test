@@ -59,7 +59,6 @@ class MS_API OpenCLRuntimeWrapper {
   /// \param[in] kernel Define OpenCl kernel.
   /// \param[in] index Define OpenCl kernel argument index.
   /// \param[in] value Define OpenCl kernel argument value pointer.
-  /// \param[in] mem_type Define OpenCl kernel argument value memory type.
   ///
   /// \return Status as a status identification of set kernel argument
   Status SetKernelArg(const cl::Kernel &kernel, uint32_t index, void *const value);
@@ -69,7 +68,6 @@ class MS_API OpenCLRuntimeWrapper {
   /// \param[in] kernel Define OpenCl kernel.
   /// \param[in] index Define OpenCl kernel argument index.
   /// \param[in] value Define OpenCl kernel argument value.
-  /// \param[in] mem_type Define OpenCl kernel argument value memory type.
   ///
   /// \return Status as a status identification of set kernel argument
   template <typename T>

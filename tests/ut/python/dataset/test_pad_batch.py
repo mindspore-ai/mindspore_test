@@ -14,8 +14,8 @@
 # ==============================================================================
 
 import time
+
 import numpy as np
-import pytest
 
 import mindspore.dataset as ds
 
@@ -231,8 +231,6 @@ def test_pad_via_map():
         np.testing.assert_array_equal(res_from_map[i], res_from_batch[i])
 
 
-# Run this test in separate process since this test updates shared memory config
-@pytest.mark.forked
 def test_pad_via_map_multiproc():
     """
     Feature: Batch Padding

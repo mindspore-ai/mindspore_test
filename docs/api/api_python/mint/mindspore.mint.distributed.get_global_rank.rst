@@ -9,7 +9,7 @@ mindspore.mint.distributed.get_global_rank
         `get_global_rank` 方法应该在 :func:`mindspore.mint.distributed.init_process_group` 方法之后使用。
 
     参数：
-        - **group** (str) - 通信组名称，通常由 `mindspore.mint.distributed.new_group` 方法创建，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。
+        - **group** (str) - 通信组名称，通常由 :func:`mindspore.mint.distributed.new_group` 方法创建，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。
         - **group_rank** (int) - 通信组内的设备序号。
 
     返回：

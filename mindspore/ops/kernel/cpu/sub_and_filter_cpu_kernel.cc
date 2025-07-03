@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/sub_and_filter_cpu_kernel.h"
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sub_and_filter_cpu {
 namespace {
 constexpr size_t kSubAndFilterInputsNum = 3;
 constexpr size_t kSubAndFilterOutputNum = 2;
@@ -99,5 +100,6 @@ void SubAndFilterCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<Kernel
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SubAndFilter, SubAndFilterCpuKernelMod);
+}  // namespace sub_and_filter_cpu
 }  // namespace kernel
 }  // namespace mindspore

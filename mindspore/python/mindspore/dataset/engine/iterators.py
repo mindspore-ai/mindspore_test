@@ -220,7 +220,7 @@ class Iterator:
         dataset: Dataset to be iterated over
     """
 
-    def __init__(self, dataset, num_epochs=-1, output_numpy=False, do_copy=True):
+    def __init__(self, dataset, num_epochs=-1, output_numpy=False, do_copy=False):
         self._col_names = None
 
         # create a copy of tree and work on it.
@@ -355,9 +355,11 @@ class Iterator:
                            "It might because Iterator stop() had been called, or C++ pipeline crashed silently.")
             raise RuntimeError("Iterator does not have a running C++ pipeline.")
 
-        if self.parallel_convert:
-            return self._parallel_transformation_iteration()
-        return self.serial_conversion_iteration()
+        from mindspore.profiler import mstx
+        range_id = mstx.range_start('dataloader', None)
+        out = self._parallel_transformation_iteration() if self.parallel_convert else self.serial_conversion_iteration()
+        mstx.range_end(range_id)
+        return out
 
     def __deepcopy__(self, memo):
         return self
@@ -491,7 +493,7 @@ class TupleIterator(Iterator):
     The derived class of Iterator with list type.
     """
 
-    def __init__(self, dataset, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def __init__(self, dataset, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         if columns is not None:
             if not isinstance(columns, list):
                 columns = [columns]

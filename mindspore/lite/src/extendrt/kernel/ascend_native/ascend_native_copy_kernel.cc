@@ -19,6 +19,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/utils.h"
 #include "extendrt/delegate/ops/copy.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::kernel {
 int AscendNativeCopyKernel::InferShape() {

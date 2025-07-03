@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hswish_cpu {
 class HSwishCpuKernelMod : public NativeCpuKernelMod {
  public:
   HSwishCpuKernelMod() = default;
@@ -53,6 +54,7 @@ class HSwishCpuKernelMod : public NativeCpuKernelMod {
   ShapeVector x_shape_;
   uint64_t tensor_size_ = 1;
 };
+}  // namespace hswish_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HSWISH_CPU_KERNEL_H_

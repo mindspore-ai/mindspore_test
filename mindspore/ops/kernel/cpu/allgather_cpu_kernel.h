@@ -18,11 +18,12 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_ALLGATHER_CPU_KERNEL_H_
 
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace allgather_cpu {
 class AllGatherCpuKernelMod : public NativeCpuKernelMod {
  public:
   AllGatherCpuKernelMod() = default;
@@ -42,6 +43,7 @@ class AllGatherCpuKernelMod : public NativeCpuKernelMod {
  private:
   std::vector<int> ranks_group_;
 };
+}  // namespace allgather_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

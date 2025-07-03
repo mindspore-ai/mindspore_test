@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
 
 using DeviceAddress = mindspore::device::DeviceAddress;
 
@@ -29,7 +29,8 @@ class InferDeviceAddress : public DeviceAddress {
       : DeviceAddress(ptr, size, format, type_id) {}
   ~InferDeviceAddress() override { ClearDeviceMemory(); }
 
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override;
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand = false) const override;
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                         const std::string &format) const override;
   void ClearDeviceMemory() override;

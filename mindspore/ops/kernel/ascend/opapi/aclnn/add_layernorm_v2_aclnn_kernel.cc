@@ -20,15 +20,16 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace add_layernorm_v2 {
 
 void AddLayerNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto additional_out = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  auto additional_out = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
   auto eps_dtype_id = inputs[kIndex4]->dtype_id();
   eps_ = (eps_dtype_id == kNumberTypeFloat32) ? static_cast<double>(inputs[kIndex4]->GetValueWithCheck<float>())
                                               : inputs[kIndex4]->GetValueWithCheck<double>();
@@ -40,7 +41,7 @@ void AddLayerNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inp
 bool AddLayerNormAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto additional_out = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  auto additional_out = device::ascend::ConvertKernelTensor<bool>(inputs[kIndex5]);
 
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], nullptr, eps_,
         additional_out, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2], outputs[kIndex3]);
@@ -48,5 +49,6 @@ bool AddLayerNormAscend::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AddLayerNormV2, AddLayerNormAscend);
+}  // namespace add_layernorm_v2
 }  // namespace kernel
 }  // namespace mindspore

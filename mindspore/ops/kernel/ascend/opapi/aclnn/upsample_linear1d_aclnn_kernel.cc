@@ -24,12 +24,13 @@
 
 #include "ir/tensor.h"
 #include "mindapi/base/types.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_linear1d {
 namespace {
 const double UpsampleLinear1dEps = 1e-7;
 const pyfloat DEFAULT_SCALE_VALUE = -1;
@@ -77,5 +78,6 @@ bool UpsampleLinear1DAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UpsampleLinear1D, UpsampleLinear1DAscend);
+}  // namespace upsample_linear1d
 }  // namespace kernel
 }  // namespace mindspore

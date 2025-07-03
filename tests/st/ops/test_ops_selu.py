@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, jit
 from mindspore.mint.nn import SELU
 from mindspore.mint.nn.functional import selu
 from tests.st.utils import test_utils
@@ -54,6 +54,7 @@ def selu_backward_func(x):
     return ms.grad(selu_forward_func, (0))(x)
 
 
+@jit(backend="ms_backend")
 @test_utils.run_with_cell
 def selu_vmap_func(x):
     return ops.vmap(selu_forward_func)(x)

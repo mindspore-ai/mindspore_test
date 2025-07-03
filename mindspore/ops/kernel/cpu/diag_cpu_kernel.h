@@ -19,11 +19,12 @@
 
 #include <vector>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace diag_cpu {
 class DiagCpuKernelMod : public NativeCpuKernelMod {
  public:
   DiagCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class DiagCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, DiagFunc>> func_list_;
   DiagFunc kernel_func_;
 };
+}  // namespace diag_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -23,14 +23,15 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> ArgMaxWithValueAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const Int64ImmPtr &axis,
-  const BoolImmPtr &keep_dims);
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> ArgMaxWithValueAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                                const TensorPtr &input_tensor,
+                                                                                const Int64ImmPtr &axis,
+                                                                                const BoolImmPtr &keep_dims);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

@@ -22,7 +22,7 @@
 #include <map>
 #include "include/common/utils/convert_utils.h"
 #include "kernel/gpu/data/dataset_utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
 #include "include/backend/data_queue/data_queue_mgr.h"

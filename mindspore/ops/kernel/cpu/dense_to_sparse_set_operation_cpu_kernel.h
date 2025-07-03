@@ -22,12 +22,13 @@
 #include <set>
 #include <map>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dense_to_sparse_set_operation_cpu {
 enum SetOperation { A_MINUS_B = 0, B_MINUS_A = 1, INTERSECTION = 2, UNION = 3 };
 class DenseToSparseSetOperationCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -65,6 +66,7 @@ class DenseToSparseSetOperationCpuKernelMod : public NativeCpuKernelMod {
   std::vector<ShapeVector> infer_shape_ = {};
   TypeId data_type_;
 };
+}  // namespace dense_to_sparse_set_operation_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DENSE_TO_SPARSE_SET_OPERATION_H_

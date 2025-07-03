@@ -19,11 +19,12 @@
 #include <functional>
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace layer_norm_grad_grad_cpu {
 class LayerNormGradGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   LayerNormGradGradCpuKernelMod() = default;
@@ -47,6 +48,7 @@ class LayerNormGradGradCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> g_shape_;
   std::vector<int64_t> mean_shape_;
 };
+}  // namespace layer_norm_grad_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -1,3 +1,4 @@
+import pytest
 from mindspore.nn import Cell
 from mindspore.common import dtype as ms
 from mindspore import nn
@@ -5,15 +6,8 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore import context, jit
 from mindspore.common.parameter import Parameter
-from ..share.utils import match_array
+from ..share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlForContinueRange1(Cell):
@@ -40,11 +34,11 @@ def test_control_flow_for_range_1_10_3_continue():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForContinueRange1()
-    jit(fn=CtrlForContinueRange1.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForContinueRange1.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForContinueRange1()
-    jit(fn=CtrlForContinueRange1.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForContinueRange1.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -73,11 +67,11 @@ def test_control_flow_for_range_4_n8_n4_continue():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForContinueRange2()
-    jit(fn=CtrlForContinueRange2.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForContinueRange2.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForContinueRange2()
-    jit(fn=CtrlForContinueRange2.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForContinueRange2.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -106,11 +100,11 @@ def test_control_flow_for_range_n5_5_2_continue():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForContinueRange3()
-    jit(fn=CtrlForContinueRange3.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForContinueRange3.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForContinueRange3()
-    jit(fn=CtrlForContinueRange3.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForContinueRange3.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -139,11 +133,11 @@ def test_control_flow_for_range_n2_n8_n2_continue():
     x = Tensor([2, 3, 4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForContinueRange4()
-    jit(fn=CtrlForContinueRange4.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForContinueRange4.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForContinueRange4()
-    jit(fn=CtrlForContinueRange4.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForContinueRange4.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -181,12 +175,12 @@ def test_control_flow_for_enumerate_if_continue():
     x = Tensor([4], ms.int32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForEnumerateIfContinue(t1, t2, t3)
-    jit(fn=CtrlForEnumerateIfContinue.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForEnumerateIfContinue.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForEnumerateIfContinue(t1, t2, t3)
-    cfg = {"compile_by_trace": False} # One-stage will fix it later
-    jit(fn=CtrlForEnumerateIfContinue.construct, mode="PIJit", jit_config=cfg)(pi_net, x)
+    # One-stage will fix it later
+    pi_jit_with_config(CtrlForEnumerateIfContinue.construct)(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)
 
@@ -224,10 +218,10 @@ def test_control_flow_for_continue_in_elif_else():
     x = Tensor([0.5], ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = CtrlForContinueElifElse()
-    jit(fn=CtrlForContinueElifElse.construct, mode="PSJit")(ps_net, x)
+    jit(function=CtrlForContinueElifElse.construct, capture_mode="ast")(ps_net, x)
     ps_out = ps_net(x)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = CtrlForContinueElifElse()
-    jit(fn=CtrlForContinueElifElse.construct, mode="PIJit")(pi_net, x)
+    jit(function=CtrlForContinueElifElse.construct, capture_mode="bytecode")(pi_net, x)
     pi_out = pi_net(x)
     match_array(ps_out, pi_out)

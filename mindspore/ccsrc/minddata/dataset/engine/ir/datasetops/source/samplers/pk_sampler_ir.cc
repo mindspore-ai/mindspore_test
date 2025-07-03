@@ -15,10 +15,11 @@
  */
 
 #include "minddata/dataset/engine/ir/datasetops/source/samplers/pk_sampler_ir.h"
+
+#include <limits>
+
 #include "minddata/dataset/engine/datasetops/source/sampler/pk_sampler.h"
 #include "minddata/dataset/core/config_manager.h"
-
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"
@@ -26,7 +27,6 @@
 #include "minddata/mindrecord/include/shard_sample.h"
 #include "minddata/mindrecord/include/shard_sequential_sample.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
@@ -60,7 +60,6 @@ Status PKSamplerObj::to_json(nlohmann::json *const out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status PKSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples, std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "num_val", "PKSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "shuffle", "PKSampler"));
@@ -71,7 +70,6 @@ Status PKSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples, std
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 Status PKSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   // runtime sampler object
@@ -81,7 +79,6 @@ Status PKSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   return s;
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> PKSamplerObj::BuildForMindDataset() {
   // runtime mindrecord sampler object
   std::shared_ptr<mindrecord::ShardOperator> mind_sampler;
@@ -94,7 +91,6 @@ std::shared_ptr<mindrecord::ShardOperator> PKSamplerObj::BuildForMindDataset() {
 
   return mind_sampler;
 }
-#endif
 
 std::shared_ptr<SamplerObj> PKSamplerObj::SamplerCopy() {
   auto sampler = std::make_shared<PKSamplerObj>(num_val_, shuffle_, num_samples_);

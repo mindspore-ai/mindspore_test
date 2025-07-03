@@ -101,6 +101,7 @@ Status Conv2DInfo::GetAttrsBase() {
 
   MS_EXCEPTION_IF_NULL(kernel_size_iter->second);
   if (kernel_size_iter->second->isa<Int64Imm>()) {
+    MS_EXCEPTION_IF_NULL(kernel_size_iter->second->cast<Int64ImmPtr>());
     int64_t kernel_size = kernel_size_iter->second->cast<Int64ImmPtr>()->value();
     kernel_size_ = Shape(inputs_shape_[1].size() - 2, kernel_size);
   } else if (kernel_size_iter->second->isa<ValueTuple>() || kernel_size_iter->second->isa<ValueList>()) {
@@ -999,7 +1000,9 @@ ReplaceGraphPtr Conv2DInfo::replace_graph(const CNodePtr &cnode) {
     if (!out_channel_shard_) {
       return nullptr;
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(OUT_CHANNEL, MakeValue(new_out_channel_));
     return nullptr;
   }
@@ -1015,6 +1018,7 @@ ReplaceGraphPtr Conv2DInfo::replace_graph(const CNodePtr &cnode) {
   if (all_send_lens + all_recv_lens == 0) {
     int64_t pad_mode = 0;  // 0 is "pad" mode
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr(OUT_CHANNEL, MakeValue(new_out_channel_));
     prim->set_attr(PAD_MODE, MakeValue(pad_mode));  // need to use int64_t to define pad_mode
     prim->set_attr(PAD, MakeValue(new_pad_list_));
@@ -1131,6 +1135,7 @@ Status Conv2DBackpropInputInfo::GetOutShape() {
   for (auto &element : elements) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {
+      MS_EXCEPTION_IF_NULL(element->cast<Int64ImmPtr>());
       int64_t ele_value = element->cast<Int64ImmPtr>()->value();
       out_shape_.push_back(ele_value);
     } else {

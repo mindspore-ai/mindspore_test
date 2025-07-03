@@ -29,6 +29,9 @@
 #include "ir/func_graph.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
 
 namespace mindspore {
 namespace parallel {
@@ -64,11 +67,13 @@ size_t GetNumLayers(const FuncGraphPtr &root) {
     if (!node->isa<CNode>()) continue;
 
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!IsValueNode<FuncGraph>(cnode->input(0))) {
       continue;
     }
 
     auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+    MS_EXCEPTION_IF_NULL(graph);
     if (graph->stage() == -1 ||
         std::find(pipeline_cells.begin(), pipeline_cells.end(), graph) != pipeline_cells.end()) {
       continue;
@@ -104,8 +109,10 @@ bool HasRecompute(const FuncGraphPtr &root) {
       continue;
     }
     auto cnode = forward_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (IsValueNode<FuncGraph>(cnode->input(0))) {
       auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+      MS_EXCEPTION_IF_NULL(fg);
       if (fg->has_flag(FUNC_GRAPH_RECOMPUTE_GRAD_GRAPH) || fg->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)) {
         MS_LOG(DEBUG) << "found recompute cell " << fg->ToString();
         return true;
@@ -196,6 +203,7 @@ std::tuple<size_t, size_t> GetVocabAndHiddenSize(const FuncGraphPtr &root) {
   std::vector<AnfNodePtr> parameters = root->parameters();
   for (auto &p : parameters) {
     auto parameter_ptr = p->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter_ptr);
     Shapes param_shapes = GetNodeShape(p);
     if (hidden_size == 0 && std::regex_match(parameter_ptr->name().c_str(), std::regex(".*0.attention.*.weight"))) {
       hidden_size = static_cast<size_t>(param_shapes[0][1]);
@@ -228,6 +236,7 @@ std::tuple<size_t, size_t> GetSeqLengthAndAttentionHeads(const FuncGraphPtr &roo
       auto cnode = forward_node->cast<CNodePtr>();
       if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
         auto current_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        MS_EXCEPTION_IF_NULL(current_prim);
         if (seq_length == 0 && strcmp(current_prim->name().c_str(), GET_NEXT) == 0) {
           Shapes param_shapes = GetNodeShape(cnode);
           MS_LOG(DEBUG) << current_prim->name().c_str() << " with shape " << param_shapes;
@@ -291,6 +300,7 @@ size_t GetPerBatch(const FuncGraphPtr &root, size_t seq_l) {
       auto cnode = forward_node->cast<CNodePtr>();
       if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
         auto current_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+        MS_EXCEPTION_IF_NULL(current_prim);
         if (per_batch == 0 && strcmp(current_prim->name().c_str(), MATMUL) == 0) {
           Shapes param_shapes = GetNodeShape(cnode);
           MS_LOG(DEBUG) << current_prim->name().c_str() << " with shape " << param_shapes;
@@ -408,6 +418,7 @@ size_t GetExpansionRatio(const FuncGraphPtr &root) {
   std::vector<AnfNodePtr> parameters = root->parameters();
   for (auto &p : parameters) {
     auto parameter_ptr = p->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter_ptr);
     Shapes param_shapes = GetNodeShape(p);
     if (std::regex_match(parameter_ptr->name().c_str(), std::regex(".*0.feed_forward.*.weight")) ||
         std::regex_match(parameter_ptr->name().c_str(), std::regex(".*0.output.projection.weight"))) {
@@ -429,6 +440,7 @@ std::tuple<size_t, size_t, size_t> GetNumTransformerComponents(const FuncGraphPt
       continue;
     }
     auto parameter_ptr = p->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter_ptr);
     if (std::regex_match(parameter_ptr->name().c_str(), std::regex("^model.layers.0.attention.wo.weight")) ||
         std::regex_match(parameter_ptr->name().c_str(), std::regex("^backbone.blocks.0.attention.dense1.weight"))) {
       n_mha++;
@@ -459,6 +471,7 @@ std::tuple<size_t, size_t> GetNumWeightsTransformer(const FuncGraphPtr &root) {
       continue;
     }
     auto parameter_ptr = p->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter_ptr);
     if (std::regex_match(parameter_ptr->name().c_str(), std::regex("^model.layers.0.attention.w.*weight")) ||
         std::regex_match(parameter_ptr->name().c_str(), std::regex("^backbone.blocks.0.attention.*weight"))) {
       n_weight_MHA++;

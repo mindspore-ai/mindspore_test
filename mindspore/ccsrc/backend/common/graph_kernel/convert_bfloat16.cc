@@ -22,7 +22,14 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -122,12 +129,24 @@ AnfNodePtr NewCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_n
 }
 
 // {prim_name, {inputs_keep_index}}
-const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {
-  {ops::kNameAssign, {kIndex2}}, {ops::kNameMatMul, {kIndex1, kIndex2}}, {ops::kNameBatchMatMul, {kIndex1, kIndex2}}};
+const HashMap<std::string, std::vector<size_t>> kNeedKeepBF16Ops = {{ops::kNameAssign, {kIndex2}},
+                                                                    {ops::kNameMatMul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameBatchMatMul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameGroupedMatmul, {kIndex1, kIndex2}},
+                                                                    {ops::kNameStridedSlice, {kIndex1}},
+                                                                    {ops::kNameSlice, {kIndex1}},
+                                                                    {ops::kNameCast, {kIndex1}}};
+
+const HashSet<std::string> kCanKeepBF16Ops = {ops::kNameReshape, kTupleGetItemOpName, ops::kNameBroadcastTo};
 
 inline bool NeedKeepBF16(const CNodePtr &cnode) {
   const auto &prim = GetCNodePrimitive(cnode);
   return prim != nullptr && kNeedKeepBF16Ops.find(prim->name()) != kNeedKeepBF16Ops.end();
+}
+
+inline bool CanKeepBF16(const CNodePtr &cnode) {
+  const auto &prim = GetCNodePrimitive(cnode);
+  return prim != nullptr && kCanKeepBF16Ops.find(prim->name()) != kCanKeepBF16Ops.end();
 }
 }  // namespace
 
@@ -145,7 +164,7 @@ AnfNodePtr ConvertBFloat16::CastTensor(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value_node);
   auto value = value_node->value();
   MS_EXCEPTION_IF_NULL(value);
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto *src_data = reinterpret_cast<bfloat16 *>(tensor->data_c());
   MS_EXCEPTION_IF_NULL(src_data);
@@ -246,23 +265,26 @@ bool ConvertBFloat16::Process(const FuncGraphPtr &func_graph) {
     if (cnode == last_node_) {
       break;
     }
-    // For cast node, directly update its input data type
-    if (IsPrimitiveCNode(node, prim::kPrimCast)) {
-      auto orig_input_type = cb->GetInputType(node, 0);
-      auto cur_input_type = cb->GetOutputType(cnode->input(1), 0);
-      if (cur_input_type != orig_input_type) {
-        UpdateBuildInfoInputDataType(node, orig_input_type, cur_input_type);
-      }
-      continue;
-    }
     // For other nodes, add cast for its input and update its abstract and build info
-    //   add cast for node's output if node is sub-graph's output
+    // add cast for node's output if node is sub-graph's output
     bool need_update = false;
+    bool can_keep_bf16 = CanKeepBF16(cnode);
     for (size_t i = 0; i < common::AnfAlgo::GetInputTensorNum(cnode); ++i) {
-      auto orig_input_type = cb->GetInputType(cnode, i);
-      if (orig_input_type == kNumberTypeBFloat16) {
-        need_update = true;
-        changed = true;
+      auto ori_input_type = cb->GetInputType(cnode, i);
+      if (ori_input_type != kNumberTypeBFloat16) {
+        continue;
+      }
+      if (can_keep_bf16) {
+        auto input_node = cnode->input(i + 1);
+        if (input_node->isa<ValueNode>()) {
+          continue;
+        }
+        auto cur_input_type = cb->GetOutputType(input_node, 0);
+        if (cur_input_type != ori_input_type) {
+          need_update = changed = true;
+        }
+      } else {
+        need_update = changed = true;
         CastInput(cnode, i, func_graph);
       }
     }

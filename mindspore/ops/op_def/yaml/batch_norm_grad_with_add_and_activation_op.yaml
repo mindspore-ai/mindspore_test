@@ -1,4 +1,4 @@
-batch_norm_grad_with_activation:
+batch_norm_grad_with_add_and_activation:
     args:
         dy:
             dtype: tensor

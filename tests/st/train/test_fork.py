@@ -13,14 +13,18 @@
 # limitations under the License.
 # ============================================================================
 """ test fork. """
+import time
 import platform
 import pytest
 import mindspore as ms
 import mindspore.ops as ops
 import mindspore.multiprocessing as mp
 import mindspore.ops.functional as F
+import mindspore.context as context
 import numpy as np
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 def subprocess(mode, i, q):
@@ -123,6 +127,11 @@ def childprocess(mode, i, q):
     assert np.allclose(fgrad[1].asnumpy(), np.array([0.]), 1e-3)
 
 
+@ms.jit(backend="ms_backend")
+def grad_func(net, x, y):
+    return F.grad(net, grad_position=(0, 1))(x, y)
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
@@ -137,11 +146,12 @@ def test_fork_subgraphs(mode):
     if platform.system() != 'Linux':
         return
     ms.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     x = np.array([-1], np.float32)
     y = np.array([2], np.float32)
     net = Net()
-    grad_net = F.grad(net, grad_position=(0, 1))
-    fgrad = grad_net(ms.Tensor(x), ms.Tensor(y))
+    fgrad = grad_func(net, ms.Tensor(x), ms.Tensor(y))
     assert np.allclose(fgrad[0].asnumpy(), np.array([1.]), 1e-3)
     assert np.allclose(fgrad[1].asnumpy(), np.array([0.]), 1e-3)
 
@@ -157,3 +167,46 @@ def test_fork_subgraphs(mode):
         q.put(ms.Tensor(2, dtype=ms.float32))
         p.join(5) # timeout:5s
         assert p.exitcode == 0, f"child process idx:{i}, exitcode:{p.exitcode}"
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_fork_with_pynative_pipeline():
+    """
+    Feature: Fork test
+    Description: Test multiprocessing with PyNative pipeline.
+    Expectation: No exception
+    """
+    ms.set_context(mode=ms.PYNATIVE_MODE)
+
+    def my_child_process(q):
+        for _ in range(10):
+            y = ops.log(ms.Tensor(2.0))
+        y.asnumpy()
+
+        # wait condition variable
+        time.sleep(2)
+
+        # execute log op to weak up condition variable.
+        y = ops.log(ms.Tensor(2.0))
+        y.asnumpy()
+
+        q.put(y)
+
+    mp.set_start_method("fork", force=True)
+
+    # enable thread
+    for _ in range(10):
+        output = ops.log(ms.Tensor(1.0))
+    output.asnumpy()
+
+    # wait condition variable
+    time.sleep(2)
+
+    q = mp.Queue()
+    p = mp.Process(target=my_child_process, args=(q,))
+    p.start()
+    assert q.get().asnumpy() == ops.log(ms.Tensor(2.0)).asnumpy()
+    p.join()

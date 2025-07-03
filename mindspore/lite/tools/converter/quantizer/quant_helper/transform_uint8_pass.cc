@@ -25,6 +25,9 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::lite::quant {
 // only enable for uint8
@@ -326,6 +329,7 @@ bool TransformUint8Pass::CheckNeedDTypeTrans(const CNodePtr &cnode) {
     return false;
   }
   auto curr_quant_param_holder = GetCNodeQuantHolder(cnode);
+  MS_CHECK_TRUE_MSG(curr_quant_param_holder != nullptr, false, "curr_quant_param_holder is nullptr!");
   if (curr_quant_param_holder->get_output_quant_params().empty()) {
     return false;
   }

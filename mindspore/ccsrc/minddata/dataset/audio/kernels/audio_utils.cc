@@ -21,6 +21,7 @@
 #include "base/float16.h"
 #include "minddata/dataset/core/type_id.h"
 #include "minddata/dataset/util/random.h"
+#include "minddata/utils.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {
@@ -542,6 +543,7 @@ Status Norm(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *outpu
   float block_size = 30000;
 
   auto task = [&input, &out, &power, &count](size_t start, size_t end, size_t num, size_t task_num) {
+    mindspore::dataset::BindThreadCoreForMindDataOp("dataset::audio::Norm");
     if ((task_num - num) == 1) {
       end = count;
     }

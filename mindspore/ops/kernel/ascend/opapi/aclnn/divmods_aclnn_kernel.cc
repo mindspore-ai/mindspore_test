@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace divmods {
 
 void DivModsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
@@ -27,7 +28,7 @@ void DivModsAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   if (mode_opt.has_value()) {
     mode_ = mode_opt.value();
   }
-  other_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  other_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   GetWorkspaceForResize(inputs[kIndex0], other_, mode_, outputs[kIndex0]);
 }
 
@@ -39,5 +40,6 @@ bool DivModsAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(DivMods, DivModsAscend);
+}  // namespace divmods
 }  // namespace kernel
 }  // namespace mindspore

@@ -30,7 +30,7 @@ from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.function.random_func import _get_seed
 from mindspore.nn.layer.basic import tril as nn_tril
 from mindspore.nn.layer.basic import triu as nn_triu
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 
 from mindspore.numpy.utils import _check_input_for_asarray, _deep_list, _deep_tensor_to_nparray, \
     _check_input_tensor, _convert_64_to_32, _get_dtype_from_scalar, \
@@ -133,7 +133,7 @@ def asarray_const(a, dtype=None):
             elif dtype == mstype.int64:
                 dtype = mstype.int32
         if a.size == 0:
-            a = Tensor_(a)
+            a = Tensor(a)
 
     if isinstance(a, onp.ndarray) and dtype is None:
         if a.dtype is onp.dtype('object'):
@@ -945,7 +945,7 @@ def identity(n, dtype=mstype.float32):
 @constexpr
 def empty_compile(dtype, shape):
     """Returns an empty Tensor."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 def empty(shape, dtype=mstype.float32):
@@ -1384,7 +1384,7 @@ def trace(a, offset=0, axis1=0, axis2=1, dtype=None):
 
     Note:
         - `trace` is currently only used in `mindscience` scientific computing scenarios and
-          dose not support other usage scenarios.
+          does not support other usage scenarios.
         - `trace` is not supported on Windows platform yet.
 
     Args:
@@ -2512,8 +2512,8 @@ def _pad_symmetric(arr, pad_width, reflect_type):
     for i in range(arr.ndim):
         array_length = arr.shape[i]
 
-        has_pad_before = (pad_width[i][0] > 0)
-        has_pad_after = (pad_width[i][1] > 0)
+        has_pad_before = pad_width[i][0] > 0
+        has_pad_after = pad_width[i][1] > 0
 
         times_to_pad_before = pad_width[i][0] // array_length + 1
         additional_pad_before = pad_width[i][0] % array_length
@@ -2541,8 +2541,8 @@ def _pad_reflect(arr, pad_width, reflect_type):
             total_repeats = pad_width[i][0] + pad_width[i][1] + 1
             arr = ops.tile(arr, _tuple_setitem((1,) * arr.ndim, i, total_repeats))
         else:
-            has_pad_before = (pad_width[i][0] > 0)
-            has_pad_after = (pad_width[i][1] > 0)
+            has_pad_before = pad_width[i][0] > 0
+            has_pad_after = pad_width[i][1] > 0
 
             pad_size = array_length - 1
             times_to_pad_before = pad_width[i][0] // pad_size + 1

@@ -15,8 +15,8 @@
  */
 
 #include "kernel/ascend/pyboost/customize/max_pool_grad_with_indices.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/device/device_address_utils.h"
 
@@ -25,11 +25,10 @@ namespace kernel {
 namespace pyboost {
 namespace {
 void MaxPoolGradWithIndicesAscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
-                                      const BaseTensorPtr &x_tensor, const BaseTensorPtr &grad,
-                                      const BaseTensorPtr mask, const ValueTuplePtr &kernel_size,
-                                      const std::optional<ValueTuplePtr> &strides, const ValueTuplePtr &pads,
-                                      const ValueTuplePtr &dilation, const BoolImmPtr &ceil_mode,
-                                      const std::vector<tensor::BaseTensorPtr> &outputs) {
+                                      const TensorPtr &x_tensor, const TensorPtr &grad, const TensorPtr mask,
+                                      const ValueTuplePtr &kernel_size, const std::optional<ValueTuplePtr> &strides,
+                                      const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
+                                      const BoolImmPtr &ceil_mode, const std::vector<tensor::TensorPtr> &outputs) {
   std::vector<int64_t> strides_array;
   if (strides.has_value()) {
     strides_array = ConvertValueTupleToVector<int64_t>(strides.value());
@@ -43,13 +42,12 @@ void MaxPoolGradWithIndicesAscendCall(const std::shared_ptr<OpRunner> &op, const
 }
 }  // namespace
 
-tensor::BaseTensorPtr MaxPoolGradWithIndicesAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &x_tensor, const BaseTensorPtr &grad,
-                                                            const BaseTensorPtr mask, const ValueTuplePtr &kernel_size,
-                                                            const std::optional<ValueTuplePtr> &strides,
-                                                            const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
-                                                            const BoolImmPtr &ceil_mode,
-                                                            const Int64ImmPtr &argmax_type) {
+tensor::TensorPtr MaxPoolGradWithIndicesAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor,
+                                                        const TensorPtr &grad, const TensorPtr mask,
+                                                        const ValueTuplePtr &kernel_size,
+                                                        const std::optional<ValueTuplePtr> &strides,
+                                                        const ValueTuplePtr &pads, const ValueTuplePtr &dilation,
+                                                        const BoolImmPtr &ceil_mode, const Int64ImmPtr &argmax_type) {
   OpRunner::InferOpOutput(op, x_tensor, grad, mask, kernel_size, strides, pads, dilation, ceil_mode, argmax_type);
   // Create device address for input/output tensors
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor, grad, mask);

@@ -47,8 +47,8 @@ def test_no_return():
     Expectation: No exception
     """
     net = TestNoReturn()
-    x = Tensor(np.ones([2, 2], np.float))
-    y = Tensor(np.zeros([2, 2], np.float))
+    x = Tensor(np.ones([2, 2], np.float_))
+    y = Tensor(np.zeros([2, 2], np.float_))
     ret = net(x, y)
     assert not ret
 
@@ -77,7 +77,7 @@ def test_compare():
 class TestMemberChange(nn.Cell):
     def __init__(self):
         super(TestMemberChange, self).__init__()
-        self.t = Tensor(np.zeros([2, 2], np.float))
+        self.t = Tensor(np.zeros([2, 2], np.float_))
 
     def construct(self, x, y):
         self.t = x
@@ -93,8 +93,8 @@ def test_member_changer():
     Expectation: No exception
     """
     net = TestMemberChange()
-    x = Tensor(np.ones([2, 2], np.float))
-    y = Tensor(np.zeros([2, 2], np.float))
+    x = Tensor(np.ones([2, 2], np.float_))
+    y = Tensor(np.zeros([2, 2], np.float_))
     ret = net(x, y)
     assert ret.all()
 
@@ -122,8 +122,8 @@ def test_unsupport_stmt():
     """
     with pytest.raises(RuntimeError) as err:
         net = TestUnsupportSTMT()
-        x = Tensor(np.ones([2, 2], np.float))
-        y = Tensor(np.zeros([2, 2], np.float))
+        x = Tensor(np.ones([2, 2], np.float_))
+        y = Tensor(np.zeros([2, 2], np.float_))
         ret = net(x, y)
         print(ret)
     assert "Unsupported statement 'Try'." in str(err)
@@ -149,8 +149,8 @@ def test_unsupport_num():
     """
     with pytest.raises(TypeError) as err:
         net = TestUnsupportNum()
-        x = Tensor(np.ones([2, 2], np.float))
-        y = Tensor(np.zeros([2, 2], np.float))
+        x = Tensor(np.ones([2, 2], np.float_))
+        y = Tensor(np.zeros([2, 2], np.float_))
         ret = net(x, y)
         print(ret)
     assert "Only support 'Number' type of 'int` and 'float'" in str(err)

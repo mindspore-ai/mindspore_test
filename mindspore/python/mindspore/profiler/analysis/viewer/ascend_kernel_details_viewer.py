@@ -13,18 +13,21 @@
 # limitations under the License.
 # ============================================================================
 """Ascend kernel details viewer"""
-import os
 import csv
+import os
 from decimal import Decimal
 
-from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
-from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
-from mindspore.profiler.common.constant import OpSummaryHeaders
-from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.constant import TimelineLayerName
-from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel, ProfilerLevel
+from mindspore.profiler.common.constant import (
+    JitLevel,
+    ProfilerLevel,
+    OpSummaryHeaders,
+    ProfilerActivity
+)
 from mindspore.profiler.common.log import ProfilerLogger
+from mindspore.profiler.common.path_manager import PathManager
+
+from mindspore import log as logger
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -63,6 +66,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         self._is_set_schedule = kwargs.get("is_set_schedule")
         self._jit_level = kwargs.get("jit_level")
         self._profiler_level = kwargs.get("profiler_level")
+        self._activities = kwargs.get("activities")
         self.op_summary_headers = None
         self.op_summary = None
         self.trace_container = None
@@ -79,7 +83,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             if self._profiler_level == ProfilerLevel.LevelNone.value:
                 return
             self._check_input_data(data)
-            self._update_kernel_name()
+            self._update_kernel_name_and_step_id()
             self._update_headers()
             self._write_data()
             self._logger.info("Kernel details saved done")
@@ -132,27 +136,38 @@ class AscendKernelDetailsViewer(BaseViewer):
                 if header not in self.LEVEL0_EXCLUDE_HEADERS
             ]
 
-        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
+        if (not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL or
+                not self.trace_container.get_step_id_time_dict()):
             self.op_summary_headers.remove(OpSummaryHeaders.STEP_ID.value)
+
         # rename headers
         self.kernel_details_headers = [
             self.RENAME_HEADERS.get(header, header)
             for header in self.op_summary_headers
         ]
 
-    def _update_kernel_name(self):
+    def _update_kernel_name_and_step_id(self):
         """
-        Update op summary op name to framework launch op name.
+        Update kernel op name to framework launch op name and step id.
         """
         self._logger.info("Update kernel name start")
-        step_id_to_time_dict = _generate_step_id_dict_by_trace_container(self.trace_container)
+
         dev_kernels = self.trace_container.hardware_op_event
+        step_id_to_time_dict = self.trace_container.get_step_id_time_dict()
+
+        # activities parameter NPU+CPU、CPU
+        if ProfilerActivity.CPU.value in self._activities:
+            self._update_kernel_detail_op_name_and_step_id(dev_kernels, step_id_to_time_dict)
+
+    def _update_kernel_detail_op_name_and_step_id(self, dev_kernels, step_id_to_time_dict):
+        """
+        Update op summary op name and step id in NPU+CPU、CPU scenes.
+        """
         _generate_hardware_op_event_step_id(dev_kernels, step_id_to_time_dict)
 
-        if not dev_kernels:
+        if not dev_kernels and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.warning(
                 "Cannot find the device kernels with MindSpore framework launch op, "
-                "Please verify if it's in graph mode."
             )
             return
 
@@ -190,7 +205,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             else:
                 launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
 
-            if step_id is None and self._is_set_schedule:
+            if step_id is None and self._is_set_schedule and self._jit_level != JitLevel.GRAPH_LEVEL:
                 self._logger.warning(
                     "Can not find step id for dev kernel %s, ts %s",
                     dev_kernel_name,
@@ -203,27 +218,10 @@ class AscendKernelDetailsViewer(BaseViewer):
         self.op_summary[OpSummaryHeaders.OP_NAME.value] = launch_ops
 
         # update op summary step id
-        if self._is_set_schedule:
-            if not self._jit_level == JitLevel.GRAPH_LEVEL:
-                self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+        if self._is_set_schedule and self._jit_level != JitLevel.GRAPH_LEVEL:
+            self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+
         self._logger.info("Update kernel name done")
-
-
-def _generate_step_id_dict_by_trace_container(trace_container: TraceViewContainer):
-    """
-    Generate the step id to time dict.
-    """
-    # Retrieve all events from the trace container for the Mindspore timeline layer
-    events = trace_container.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()
-
-    # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
-    step_id_to_time_dict = {}
-    for event in events:
-        event_name = event.name
-        if ProfilerStepNameConstant.PROFILER_STEP in event_name:
-            step_id_to_time_dict[event.name.split("#")[-1]] = (event.ts, event.dur + event.ts)
-
-    return step_id_to_time_dict
 
 
 def _generate_hardware_op_event_step_id(hardware_op_events_dict: dict, step_id_to_time_dict: dict):

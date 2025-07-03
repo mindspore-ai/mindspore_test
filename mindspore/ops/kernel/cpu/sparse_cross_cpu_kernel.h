@@ -24,12 +24,13 @@
 #include <complex>
 #include <utility>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "kernel/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_cross_cpu {
 class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseCrossCpuKernelMod> {
  public:
   SparseCrossCpuKernelMod() = default;
@@ -75,6 +76,7 @@ class SparseCrossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHel
   int64_t N_;
   int64_t indices_row_{0};
 };
+}  // namespace sparse_cross_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_SPARSE_CROSS_CPU_KERNEL_H_

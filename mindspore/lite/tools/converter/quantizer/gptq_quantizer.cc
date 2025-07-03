@@ -23,6 +23,7 @@
 #include "tools/converter/preprocess/image_preprocess.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "src/litert/weight_decoder.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 
 namespace mindspore::lite::quant {
 GptqQuantizer::~GptqQuantizer() {

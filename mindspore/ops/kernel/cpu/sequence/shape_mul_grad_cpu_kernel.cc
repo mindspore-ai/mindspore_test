@@ -17,8 +17,7 @@
 #include "kernel/cpu/sequence/shape_mul_grad_cpu_kernel.h"
 #include <algorithm>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/thread_pool.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

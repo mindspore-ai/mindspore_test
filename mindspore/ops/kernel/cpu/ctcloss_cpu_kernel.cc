@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/ctcloss_cpu_kernel.h"
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ctcloss_cpu {
 namespace {
 constexpr size_t kCTCLossInputsNum = 4;
 constexpr size_t kCTCLossOutputsNum = 2;
@@ -381,5 +382,6 @@ std::vector<KernelAttr> CTCLossCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CTCLoss, CTCLossCpuKernelMod);
+}  // namespace ctcloss_cpu
 }  // namespace kernel
 }  // namespace mindspore

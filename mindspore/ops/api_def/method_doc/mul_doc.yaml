@@ -2,41 +2,4 @@ mul:
   description: |
     mul(other) -> Tensor
     
-    Multiplies two tensors element-wise.
-    
-    .. math::
-    
-        out_{i} = tensor_{i} * other_{i}
-    
-    Note:
-        - When `self` and `other` have different shapes,
-          they must be able to broadcast to a common shape.
-        - `self` and `other` can not be bool type at the same time,
-          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
-        - `self` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-    
-    Args:
-        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or
-            a bool or a tensor whose data type is number.Number and bool.
-    
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among `self` and `other` .
-    
-    Raises:
-        TypeError: If `other` is not one of the following: Tensor, number.Number, bool.
-        ValueError: If `self` and `other` are not the same shape.
-    
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-    
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
-        >>> y = Tensor(np.array([4.0, 5.0, 6.0]), mindspore.float32)
-        >>> output = x.mul(y)
-        >>> print(output)
-        [ 4. 10. 18.]
+    For details, please refer to :func:`mindspore.ops.mul`.

@@ -19,11 +19,12 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT ConvertListToTuple : public Pass {
+class BACKEND_COMMON_EXPORT ConvertListToTuple : public Pass {
  public:
   explicit ConvertListToTuple(const std::string &name) : Pass(name) {}
   ~ConvertListToTuple() override = default;

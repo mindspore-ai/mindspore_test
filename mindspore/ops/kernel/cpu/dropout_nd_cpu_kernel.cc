@@ -22,13 +22,15 @@
 #include <map>
 #include <functional>
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/dropout_nd.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl//fp32/dropout_fp32.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_nd_cpu {
 bool DropoutNdCpuKernelMod::CheckDropOutNdShape() {
   constexpr size_t k4d = 4;
   constexpr size_t k5d = 5;
@@ -115,6 +117,11 @@ bool DropoutNdCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
     }
     return true;
   }
+  if (channels_ == 0) {
+    // fuzz case
+    MS_LOG(DEBUG) << "For '" << kernel_name_ << "', channels equal to 0, return directly.";
+    return true;
+  }
   size_t inner_size = input_elements_ / channels_;
   int ret_code = EOK;
   for (size_t i = 0; i < channels_; ++i) {
@@ -170,5 +177,6 @@ const std::vector<std::pair<KernelAttr, DropoutNdCpuKernelMod::KernelRunFunc>> &
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dropout2D, DropoutNdCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Dropout3D, DropoutNdCpuKernelMod);
+}  // namespace dropout_nd_cpu
 }  // namespace kernel
 }  // namespace mindspore

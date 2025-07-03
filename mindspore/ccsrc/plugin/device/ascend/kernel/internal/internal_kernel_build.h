@@ -20,14 +20,14 @@
 #include <string>
 #include <vector>
 
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {
 KernelModPtr InternalKernelBuild(const AnfNodePtr &anf_node);
-bool IsRegisteredInternalKernel(const AnfNodePtr &anf_node);
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                                std::vector<std::string> *output_formats);
+bool IsEnableInternalNode(const AnfNodePtr &node);
 }  // namespace kernel
 }  // namespace mindspore
 

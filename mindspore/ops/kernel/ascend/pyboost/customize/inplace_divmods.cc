@@ -16,17 +16,17 @@
 
 #include "kernel/ascend/pyboost/customize/inplace_divmods.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceDivModsAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                    const BaseTensorPtr &input_tensor, const ScalarPtr &other,
-                                                    const std::optional<Int64ImmPtr> &rounding_mode) {
+tensor::TensorPtr InplaceDivModsAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                const ScalarPtr &other,
+                                                const std::optional<Int64ImmPtr> &rounding_mode) {
   MS_LOG(DEBUG) << "Call InplaceDivModsAscendCustomize start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});

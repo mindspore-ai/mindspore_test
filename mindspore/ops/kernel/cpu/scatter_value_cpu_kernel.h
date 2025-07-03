@@ -22,12 +22,13 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindapi/base/types.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore::kernel {
+namespace scatter_value_cpu {
 constexpr auto kUnKnown = "Unknown";
 constexpr auto kScatterValue = "ScatterValue";
 
@@ -71,6 +72,7 @@ class ScatterValueCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   std::vector<int> indices_stride_{};
   Reduce reduction_type_{Reduce::REDUCE_NONE};
 };
+}  // namespace scatter_value_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SCATTER_VALUE_CPU_KERNEL_H_

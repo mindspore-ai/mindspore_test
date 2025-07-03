@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 from mindspore.ops.primitive import Primitive, prim_attr_register
 from .manually_defined import ScalarAdd, ScalarBool, ScalarDiv, ScalarMul, ScalarEq, ScalarFloorDiv, ScalarGe, \
-    ScalarGt, ScalarLe, ScalarLog, ScalarLt, ScalarMod, ScalarPow, ScalarSub, ScalarUadd, ScalarUsub
+    ScalarGt, ScalarLe, ScalarLog, ScalarLt, ScalarMod, ScalarPow, ScalarSub, ScalarUadd, ScalarUsub, ScalarMax, \
+    ScalarMin
 
 
 class bool_not(Primitive):

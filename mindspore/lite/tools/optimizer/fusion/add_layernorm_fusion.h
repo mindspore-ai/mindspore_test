@@ -65,17 +65,7 @@ class LayerNormV3Fusion : public MultiplePatternProcessPass {
 
 class FuseAddAndLayernorm : public opt::LitePatternProcessPass {
  public:
-  explicit FuseAddAndLayernorm(bool multigraph = true)
-      : opt::LitePatternProcessPass("FuseAddAndLayernorm", multigraph) {
-    x1_ = std::make_shared<Var>();
-    x2_ = std::make_shared<Var>();
-    gamma_ = std::make_shared<Var>();
-    beta_ = std::make_shared<Var>();
-    begin_norm_axis_ = std::make_shared<Var>();
-    begin_params_axis_ = std::make_shared<Var>();
-    eps_ = std::make_shared<Var>();
-    layer_norm_ = std::make_shared<Var>(std::make_shared<Primitive>(prim::kPrimLayerNormV3->name()));
-  }
+  explicit FuseAddAndLayernorm(bool multigraph = true);
   ~FuseAddAndLayernorm() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;

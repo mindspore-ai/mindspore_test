@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """test mutable"""
-import sys  
 import pytest 
 from mindspore.common import mutable
 import mindspore.common.dtype as mstype
@@ -22,13 +21,6 @@ from mindspore import jit, context
 from tests.mark_utils import arg_mark
 
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
-
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_mutable_with_scalar():
     """
@@ -40,7 +32,7 @@ def test_mutable_with_scalar():
     mutable(1)
     mutable([Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32), (2,)])
     mutable({'a': Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32), 'b': (2,)})
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def net():
         x = mutable(2)
         return x

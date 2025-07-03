@@ -4,7 +4,7 @@ mindspore.numpy.log2
 .. py:function:: mindspore.numpy.log2(x, dtype=None)
 
     `x` 的以2为底的对数。
-    
+
     .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
 

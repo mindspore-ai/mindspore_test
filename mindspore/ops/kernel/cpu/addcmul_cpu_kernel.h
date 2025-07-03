@@ -22,12 +22,13 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace addcmul_cpu {
 class AddcmulCpuKernelMod : public NativeCpuKernelMod {
  public:
   AddcmulCpuKernelMod() = default;
@@ -63,6 +64,7 @@ class AddcmulCpuKernelMod : public NativeCpuKernelMod {
   template <typename T1, typename T2>
   bool AddcmulCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace addcmul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ADDCMUL_CPU_KERNEL_H_

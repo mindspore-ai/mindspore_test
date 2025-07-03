@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_div_cpu {
 class SparseDenseCwiseDivCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseDenseCwiseDivCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseDenseCwiseDivCpuKernelMod : public NativeCpuKernelMod {
   void SparseDenseCwiseDivBcastCompute(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace sparse_dense_cwise_div_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

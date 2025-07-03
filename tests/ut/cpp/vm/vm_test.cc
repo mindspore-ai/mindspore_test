@@ -17,7 +17,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "common/common_test.h"
 #include "frontend/operator/ops.h"
-#include "backend/graph_compiler/backend.h"
 
 namespace mindspore {
 namespace compile {
@@ -43,21 +42,5 @@ TEST_F(TestCompileVM, StructPartial) {
   delete partial;
   partial = nullptr;
 }
-
-TEST_F(TestCompileVM, FinalVM) {
-  std::vector<std::pair<Instruction, VectorRef>> instr;
-  instr.push_back({Instruction::kCall, VectorRef({static_cast<int64_t>(-1)})});
-  instr.push_back(
-    {Instruction::kTailCall, VectorRef({static_cast<int64_t>(-2), static_cast<int64_t>(1), static_cast<int64_t>(1)})});
-  instr.push_back({Instruction::kReturn, VectorRef({static_cast<int64_t>(-1), static_cast<int64_t>(1)})});
-  instr.push_back({Instruction::kPartial, VectorRef({static_cast<int64_t>(0), "cc"})});
-  BackendPtr backend = std::make_shared<Backend>("vm");
-  auto vm = new FinalVM(instr, backend);
-  vm->Eval(VectorRef({static_cast<int64_t>(1), static_cast<int64_t>(2), static_cast<int64_t>(3),
-                      static_cast<int64_t>(-1), "a", "b", "c"}));
-  delete vm;
-  vm = nullptr;
-}
-
 }  // namespace compile
 }  // namespace mindspore

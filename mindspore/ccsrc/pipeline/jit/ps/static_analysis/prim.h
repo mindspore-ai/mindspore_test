@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,19 +50,11 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
     return op_def_->is_graph_view_;
   }
   std::vector<size_t> rw_write_input_indexes() const { return prim_func_->rw_write_input_indexes(); }
-  std::vector<int64_t> inplace_input_indexes() const {
-    MS_EXCEPTION_IF_NULL(op_def_);
-    size_t output_size = op_def_->returns_.size();
-    std::vector<int64_t> indexes;
-    for (size_t index = 0; index < output_size; ++index) {
-      auto inplace_index = op_def_->returns_[index].inplace_input_index_;
-      (void)indexes.emplace_back(inplace_index);
-    }
-    return indexes;
-  }
+  std::vector<int64_t> inplace_input_indexes() const { return prim_func_->inplace_input_indexes(); }
 
  private:
   AbstractBasePtr CheckAndInfer(const AbstractBasePtrList &args);
+  AbstractBasePtr ProcessViewInplaceAbstract(const AbstractBasePtrList &args, const AbstractBasePtr &res);
   void CheckArgsSizeAndType(const AbstractBasePtrList &args);
   PrimitivePtr prim_func_;
   mindspore::ops::OpDefPtr op_def_{nullptr};
@@ -85,31 +77,7 @@ class StandardPrimEvaluator final : public TrivialPrimEvaluator {
  protected:
   bool inplace_prim() const override { return prim_->inplace_prim(); }
   std::vector<size_t> rw_write_input_indexes() const { return prim_->rw_write_input_indexes(); }
-  std::vector<int64_t> inplace_input_indexes() const {
-    auto input_names = prim_->GetAttr("input_names");
-    auto output_names = prim_->GetAttr("output_names");
-    std::vector<int64_t> inplace_indexes{};
-    if (input_names != nullptr && output_names != nullptr) {
-      const auto &input_name_list = GetValue<std::vector<std::string>>(input_names);
-      std::vector<std::string> output_name_list{};
-      if (output_names->isa<StringImm>()) {
-        (void)output_name_list.emplace_back(GetValue<std::string>(output_names));
-      } else {
-        output_name_list = GetValue<std::vector<std::string>>(output_names);
-      }
-      for (const auto &output : output_name_list) {
-        const auto &rw_write_indexes = rw_write_input_indexes();
-        auto iter = std::find(input_name_list.begin(), input_name_list.end(), output);
-        auto index = std::distance(input_name_list.begin(), iter);
-        // Record the ref index when output's name is one of inputs' names and this input is rw_write.
-        bool is_ref = (iter != input_name_list.end()) &&
-                      (std::find(rw_write_indexes.begin(), rw_write_indexes.end(), index) != rw_write_indexes.end());
-        auto inplace_index = is_ref ? index : -1;
-        (void)inplace_indexes.emplace_back(inplace_index);
-      }
-    }
-    return inplace_indexes;
-  }
+  std::vector<int64_t> inplace_input_indexes() const { return prim_->inplace_input_indexes(); }
 
  private:
   EvalResultPtr EvalPyCheckPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args);
@@ -260,7 +228,7 @@ class SwitchEvaluator final : public Evaluator {
   }
 };
 
-class PrimitiveArgsToInputsEvaluator : public TransitionPrimEvaluator {
+class PrimitiveArgsToInputsEvaluator final : public TransitionPrimEvaluator {
  public:
   explicit PrimitiveArgsToInputsEvaluator(const PrimitivePtr primitive)
       : TransitionPrimEvaluator("PrimitiveArgsToInputsEvaluator"), prim_(primitive) {}
@@ -273,7 +241,7 @@ class PrimitiveArgsToInputsEvaluator : public TransitionPrimEvaluator {
   PrimitivePtr prim_;
 };
 
-class DoTransPrimitiveFunctionEvaluator : public TransitionPrimEvaluator {
+class DoTransPrimitiveFunctionEvaluator final : public TransitionPrimEvaluator {
  public:
   explicit DoTransPrimitiveFunctionEvaluator(const PrimitivePtr primitive)
       : TransitionPrimEvaluator("DoTransPrimitiveFunctionEvaluator"), prim_(primitive) {}
@@ -286,7 +254,7 @@ class DoTransPrimitiveFunctionEvaluator : public TransitionPrimEvaluator {
   PrimitivePtr prim_;
 };
 
-class PrimInstanceEvaluator : public TransitionPrimEvaluator {
+class PrimInstanceEvaluator final : public TransitionPrimEvaluator {
  public:
   explicit PrimInstanceEvaluator(const std::string &prim_name, const AnfNodePtr node)
       : TransitionPrimEvaluator("PrimInstanceEvaluator"), prim_name_(prim_name), instance_node_(AnfNodePtr(node)) {}
@@ -300,7 +268,20 @@ class PrimInstanceEvaluator : public TransitionPrimEvaluator {
   AnfNodeWeakPtr instance_node_;
 };
 
-class FunctionalEvaluator : public TransitionPrimEvaluator {
+class PrimitiveToMetaEvaluator final : public TransitionPrimEvaluator {
+ public:
+  explicit PrimitiveToMetaEvaluator(const PrimitivePtr primitive)
+      : TransitionPrimEvaluator("PrimitiveToMetaEvaluator"), prim_(primitive) {}
+  ~PrimitiveToMetaEvaluator() override = default;
+  MS_DECLARE_PARENT(PrimitiveToMetaEvaluator, TransitionPrimEvaluator)
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override;
+
+ private:
+  PrimitivePtr prim_;
+};
+
+class FunctionalEvaluator final : public TransitionPrimEvaluator {
  public:
   explicit FunctionalEvaluator(const std::string &name, bool is_method)
       : TransitionPrimEvaluator("FunctionalEvaluator"), name_(name), is_method_(is_method) {}
@@ -314,7 +295,7 @@ class FunctionalEvaluator : public TransitionPrimEvaluator {
   bool is_method_{false};
 };
 
-class ConstexprEvaluator : public TransitionPrimEvaluator {
+class ConstexprEvaluator final : public TransitionPrimEvaluator {
  public:
   explicit ConstexprEvaluator(const PrimitivePyPtr primitive)
       : TransitionPrimEvaluator("ConstexprEvaluator"), prim_py_(primitive) {}
@@ -327,7 +308,7 @@ class ConstexprEvaluator : public TransitionPrimEvaluator {
   PrimitivePyPtr prim_py_;
 };
 
-class MakeTupleEvaluator : public TransitionPrimEvaluator {
+class MakeTupleEvaluator final : public TransitionPrimEvaluator {
  public:
   MakeTupleEvaluator() : TransitionPrimEvaluator("MakeTupleEvaluator") {}
   ~MakeTupleEvaluator() override = default;
@@ -336,7 +317,7 @@ class MakeTupleEvaluator : public TransitionPrimEvaluator {
                          const AnfNodeConfigPtr &out_conf) override;
 };
 
-class MakeListEvaluator : public TransitionPrimEvaluator {
+class MakeListEvaluator final : public TransitionPrimEvaluator {
  public:
   MakeListEvaluator() : TransitionPrimEvaluator("MakeListEvaluator") {}
   ~MakeListEvaluator() override = default;
@@ -345,7 +326,7 @@ class MakeListEvaluator : public TransitionPrimEvaluator {
                          const AnfNodeConfigPtr &out_conf) override;
 };
 
-class PyExecuteEvaluator : public TransitionPrimEvaluator {
+class PyExecuteEvaluator final : public TransitionPrimEvaluator {
  public:
   PyExecuteEvaluator() : TransitionPrimEvaluator("PyExecuteEvaluator") {}
   ~PyExecuteEvaluator() override = default;
@@ -358,36 +339,7 @@ bool IsInWhiteList(const PrimitivePtr &primitive);
 
 PrimEvaluatorMap &GetPrimEvaluatorConstructors();
 
-// Check whether type x is a subtype of model.
-bool IsSubtype(const AbstractBasePtr x, const TypePtr model);
-
-void ClearPrimEvaluatorMap();
-
-py::dict ConvertAbstractToPython(const AbstractBasePtr &abs_base, bool only_convert_value = false);
-ME_EXPORT py::tuple PreparePyInputs(const AbstractBasePtrList &args);
-ME_EXPORT AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
-
-// Get the __init__() arguments of the PrimitivePy object.
-AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
-
-bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg);
-
-AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,
-                                            const std::vector<ops::OpInputArg> &op_args,
-                                            const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
-                                            const FuncGraphPtr &graph);
-
-bool IsMonad(const AnfNodePtr &input);
-
-void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::OpInputArg> &op_args,
-                       const AnfNodePtr &input, const FuncGraphPtr &graph, std::map<std::string, AnfNodePtr> *key_map);
-
-// Process the primitive's arguments (such as dtype auto-cast, add argument with default-value...),
-// then generate the primitive CNode and add it to graph.
-// (The returned CNode is without abstract, need to evaluate its abstract manually).
-CNodePtr GeneratePrimitiveCNode(const PrimitivePtr &primitive, const ops::OpDef *op_def, const FuncGraphPtr &graph,
-                                const AnfNodePtrList &init_args_nodes, const AnfNodePtrList &call_args_nodes,
-                                const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func);
+FRONTEND_EXPORT void ClearPrimEvaluatorMap();
 }  // namespace abstract
 }  // namespace mindspore
 

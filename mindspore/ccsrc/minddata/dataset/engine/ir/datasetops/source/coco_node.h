@@ -31,7 +31,7 @@ class CocoNode : public MappableSourceNode {
   /// \brief Constructor.
   CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
            const bool &decode, const std::shared_ptr<SamplerObj> &sampler, std::shared_ptr<DatasetCache> cache,
-           const bool &extra_metadata, py::function decrypt = py::none());
+           const bool &extra_metadata, const py::function &decrypt = py::object());
 #else
   /// \brief Constructor.
   CocoNode(const std::string &dataset_dir, const std::string &annotation_file, const std::string &task,
@@ -40,7 +40,7 @@ class CocoNode : public MappableSourceNode {
 #endif
 
   /// \brief Destructor.
-  ~CocoNode() override = default;
+  ~CocoNode() override;
 
   /// \brief Node name getter.
   /// \return Name of the current node.
@@ -88,13 +88,11 @@ class CocoNode : public MappableSourceNode {
   /// \return Status of the function.
   Status to_json(nlohmann::json *out_json) override;
 
-#ifndef ENABLE_ANDROID
   /// \brief Function to read dataset in json.
   /// \param[in] json_obj The JSON object to be deserialized.
   /// \param[out] ds Deserialized dataset.
   /// \return Status The status code returned.
   static Status from_json(nlohmann::json json_obj, std::shared_ptr<DatasetNode> *ds);
-#endif
 
   /// \brief Sampler getter.
   /// \return SamplerObj of the current node.

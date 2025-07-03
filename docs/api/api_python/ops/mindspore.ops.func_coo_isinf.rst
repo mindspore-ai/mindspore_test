@@ -17,7 +17,7 @@ mindspore.ops.coo_isinf
         - **x** (COOTensor) - 任意维度的COOTensor。
 
     返回：
-        COOTensor，shape与相同的输入，数据的类型为bool。
+        COOTensor，shape与输入相同，数据类型为bool。
 
     异常：
         - **TypeError** - 如果 `x` 不是COOTensor。

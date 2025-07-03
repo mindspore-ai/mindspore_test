@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore::ops {
 BaseShapePtr Atan2ExtFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -47,7 +48,7 @@ TypePtr Atan2ExtFuncImpl::InferType(const PrimitivePtr &primitive,
   }
 }
 TypePtrList Atan2ExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &input_type = x_tensor->Dtype();
   const auto &input_type_id = x_tensor->Dtype()->type_id();

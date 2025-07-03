@@ -27,26 +27,25 @@ class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
   GroupedMatmulV4FuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.group_list = 8;
-    idxes_.split_item = 12;
-    idxes_.group_type = 13;
+    idxes_.split_item_offset = -4;
+    idxes_.group_type_offset = -3;
   }
   ~GroupedMatmulV4FuncImpl() = default;
 
-  std::set<int64_t> GetValueDependArgIndices() const override {
-    return {static_cast<int64_t>(this->idxes_.group_list)};
-  }
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
+  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
-  int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                                 int64_t group_type) const override;
-
  private:
+  int64_t group_list_idx_ = 8;
   int64_t group_list_type_idx_ = 14;
+  int64_t per_token_scale_idx_ = 7;
+  int64_t scale_idx_ = 3;
 };
 }  // namespace ops
 }  // namespace mindspore

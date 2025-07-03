@@ -20,7 +20,7 @@ from decimal import Decimal
 from mindspore.profiler.common.constant import EventConstant
 from mindspore.profiler.analysis.parser.timeline_event.cpu_op_event import CpuOpCompleteEvent
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import MsprofCompleteEvent
-from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkCompleteEvent
+from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkCompleteEvent, OpRangeStructField
 from mindspore.profiler.common.constant import FileConstant
 from mindspore.profiler.analysis.parser.timeline_creator.scope_layer_timeline_creator import (
     ScopeLayerTimelineCreator,
@@ -65,24 +65,15 @@ class TestScopeLayerTimelineCreator(unittest.TestCase):
     @staticmethod
     def _create_fwk_op_data(name, start_ns, end_ns, flow_id):
         """Helper method to create MindSporeOpEvent test data."""
-        fix_data = (
-            start_ns,
-            end_ns,
-            1,  # sequence_number
-            1,  # process_id
-            2,  # start_thread_id
-            2,  # end_thread_id
-            3,  # forward_thread_id
-            flow_id,  # flow_id
-            0,  # step_id
-            1,  # level
-            False  # is_async
-        )
+        fix_data = (2, flow_id, 0, start_ns, end_ns, 1, 0, 0, 0, 1, False, False, True)
 
         return {
             FileConstant.FIX_SIZE_DATA: fix_data,
-            3: name,  # OP_NAME
-            9: "type:MatMul"  # CUSTOM_INFO
+            OpRangeStructField.NAME.value: name,  # name
+            OpRangeStructField.FULL_NAME.value: name,  # full_name
+            OpRangeStructField.MODULE_GRAPH.value: "",  # module_graph
+            OpRangeStructField.EVENT_GRAPH.value: "",  # event_graph
+            OpRangeStructField.CUSTOM_INFO.value: "type:MatMul"  # custom_info
         }
 
     def test_create_should_create_scope_layers_when_processing_mindspore_op(self):

@@ -24,13 +24,14 @@
 #include <functional>
 #include <utility>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/ms_factory.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_look_up_cpu {
 class EmbeddingLookUpCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<EmbeddingLookUpCpuKernelMod> {
  public:
   EmbeddingLookUpCpuKernelMod() = default;
@@ -68,6 +69,7 @@ class EmbeddingLookUpCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   // The global unique parameter key, used to get the embedding storage instance.
   int32_t parameter_key_{-1};
 };
+}  // namespace embedding_look_up_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

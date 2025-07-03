@@ -20,6 +20,7 @@
 #include "src/extendrt/delegate/tensorrt/op/cast_tensorrt.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::lite {
 // FastGelu is defined as "0.5x * (1 + tanh[sqrt(2.0/Pi) * (x + 0.044715 * x^3)])" in paper "Gaussian Error Linear Units

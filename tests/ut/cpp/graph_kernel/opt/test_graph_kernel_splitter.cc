@@ -30,6 +30,8 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "common/mockcpp.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 void SetKernelInfo(const FuncGraphPtr &func_graph);
@@ -53,11 +55,69 @@ FuncGraphPtr ConstructGraph_1() {
   c.SetOutput(op);
   return c.GetGraph();
 }
+
 /// Feature: Test graph kernel splitter pass 
 /// Description: op will expand, then split, check main graph multiple output when no inline.
 /// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_graph_multi_output) {
   SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 5);
+}
+
+/// Feature: Test graph kernel splitter pass with enable_fusion_pattern_only
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, enable_fusion_pattern_only) {
+  SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits --enable_fusion_pattern_only=elemwise");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 8);
+}
+
+/// Feature: Test graph kernel splitter pass with disable_fusion_pattern
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, disable_fusion_pattern) {
+  SetGraphKernelFlags("--enable_expand_ops=SoftmaxCrossEntropyWithLogits --disable_fusion_pattern=reduce");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_1();
+  RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
+                               std::make_shared<graphkernel::StaticShapeCluster>(),
+                               std::make_shared<graphkernel::GraphKernelSplitterWithPy>(false)});
+  auto out = fg->output();
+  ASSERT_EQ(IsPrimitiveCNode(out, prim::kPrimMakeTuple), true);
+  auto cnode = dyn_cast_ptr<CNode>(out);
+  bool pattern_match = std::all_of(cnode->inputs().begin() + 1, cnode->inputs().end(),
+                                   [](const AnfNodePtr &anf_node) { return AnfUtils::IsGraphKernel(anf_node); });
+  ASSERT_EQ(pattern_match, true);
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 8);
+}
+
+/// Feature: Test graph kernel splitter pass with json
+/// Description: op will expand, then split, check main graph multiple output when no inline.
+/// Expectation: After split pass, the output should be maketuple, and inputs should be gk node.
+TEST_F(TestGraphSplit, flag_path) {
+  SetGraphKernelFlags("--path=graph_kernel_config/1.json");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_1();
   RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
@@ -147,7 +207,7 @@ FuncGraphPtr ConstructGraph_2() {
 /// Description: op will expand, then split, check main graph single output when no inline.
 /// Expectation: After split pass, the output should be gk node.
 TEST_F(TestGraphSplit, no_inline_main_single_out) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   RunPass(fg, {std::make_shared<graphkernel::GraphKernelExpanderCloud>(),
@@ -162,7 +222,7 @@ TEST_F(TestGraphSplit, no_inline_main_single_out) {
 /// Description: op will expand, then split, check main graph node and gk node when partial inline.
 /// Expectation: After split pass, the main graph should have inline node and gk node.
 TEST_F(TestGraphSplit, partial_inline) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   MOCKER_CPP(&CommonSplitSchemer::NeedInline, bool (*)(const CommonSplitSchemer*, size_t)).stubs().will(invoke(StubNeedInline));
@@ -182,7 +242,7 @@ TEST_F(TestGraphSplit, partial_inline) {
 /// Description: op will expand, then split, check main graph node when all inline.
 /// Expectation: After split pass, the main graph should have all inline node and no gk node.
 TEST_F(TestGraphSplit, all_inline) {
-  SetGraphKernelFlags("--enable_expand_ops=SiluGrad");
+  SetGraphKernelFlags("--enable_expand_ops=SiLUGrad,AssignAdd");
   SetDeviceTarget(kAscendDevice);
   auto fg = ConstructGraph_2();
   MOCKER_CPP(&CommonSplitSchemer::NeedInline, bool (*)(const CommonSplitSchemer*, size_t)).stubs().will(returnValue(true));

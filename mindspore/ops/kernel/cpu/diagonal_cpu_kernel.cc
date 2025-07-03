@@ -17,10 +17,11 @@
 #include "kernel/cpu/diagonal_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace diagonal_cpu {
 namespace {
 constexpr size_t kDiagonalInputsNum = 4;
 constexpr size_t kDiagonalOutputsNum = 1;
@@ -295,5 +296,6 @@ std::vector<KernelAttr> DiagonalCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Diagonal, DiagonalCpuKernelMod);
+}  // namespace diagonal_cpu
 }  // namespace kernel
 }  // namespace mindspore

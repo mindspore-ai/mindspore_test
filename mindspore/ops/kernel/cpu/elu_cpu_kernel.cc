@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/elu_cpu_kernel.h"
 #include "nnacl/fp32/activation_fp32.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace elu_cpu {
 template <typename T>
 bool EluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace,
@@ -58,5 +59,6 @@ const std::vector<std::pair<KernelAttr, EluCpuKernelMod::KernelRunFunc>> &EluCpu
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Elu, EluCpuKernelMod);
+}  // namespace elu_cpu
 }  // namespace kernel
 }  // namespace mindspore

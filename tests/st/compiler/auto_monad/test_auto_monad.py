@@ -73,7 +73,7 @@ def test_print():
         out = net(input_x, input_y)
         np.testing.assert_array_equal(out.asnumpy(), input_x.asnumpy())
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'input_x:\nTensor(shape=[], dtype=Int32, value=3)\n'
                 'input_y:\nTensor(shape=[], dtype=Int32, value=4)'}
@@ -108,7 +108,7 @@ def test_print_add():
         net = Print_Add()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x:\nTensor(shape=[], dtype=Int32, value=7)\n'
@@ -144,7 +144,7 @@ def test_print_assign():
         net = Print_Assign()
         out = net(input_x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'before:\nTensor(shape=[], dtype=Int32, value=1)',
@@ -183,7 +183,7 @@ def test_print_assign_add():
         net = Print_Assign_Add()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'before:\nTensor(shape=[], dtype=Int32, value=1)',
@@ -220,7 +220,7 @@ def test_print_while():
         net = Print_While()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x before:\nTensor(shape=[], dtype=Int32, value=1)\n'
@@ -263,7 +263,7 @@ def test_print_if():
         net = Print_If()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {'input_x before:\nTensor(shape=[], dtype=Int32, value=3)\n'
@@ -306,7 +306,7 @@ def test_print_assign_while():
         net = Print_Assign_While()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -358,7 +358,7 @@ def test_print_assign_if():
         net = Print_Assign_If()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -556,6 +556,7 @@ def test_while():
             x = x + 3
             return x
 
+    context.set_context(jit_config={"jit_level": "O0"})
     input_x = Tensor(2, dtype=ms.int32)
     input_y = Tensor(14, dtype=ms.int32)
     expect = Tensor(21, dtype=ms.int32)
@@ -645,7 +646,7 @@ def test_print_for():
         net = Print_For()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -694,7 +695,7 @@ def test_print_assign_for():
         net = Print_Assign_For()
         out = net(input_x, input_y)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
     patterns = {
@@ -896,6 +897,7 @@ def test_multi_assign_print():
             self.print(self.para2)
             return inputs
 
+    context.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         x = Tensor(9, dtype=ms.int32)
@@ -1578,6 +1580,7 @@ def test_while_forward():
     Description: Verify control flow.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class MyWhileNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -1690,7 +1693,7 @@ def test_multi_abs_add_assign():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_print_assign_print():
     """
     Feature: Auto Monad
@@ -1703,7 +1706,7 @@ def test_print_assign_print():
             super().__init__()
             self.print = P.Print()
             self.assign = P.Assign()
-            self.param = Parameter(Tensor(1, dtype=ms.int32), name='param')
+            self.param = Parameter(Tensor(1, dtype=ms.int64), name='param')
 
         def func(self):
             self.assign(self.param, self.param * 5)
@@ -1721,19 +1724,68 @@ def test_print_assign_print():
 
     cap = Capture()
     with capture(cap):
-        input_x = Tensor(3, dtype=ms.int32)
-        expect = Tensor(10, dtype=ms.int32)
+        input_x = Tensor(3, dtype=ms.int64)
+        expect = Tensor(10, dtype=ms.int64)
         net = Print()
         out = net(input_x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
-    patterns = {'param_1:\nTensor(shape=[], dtype=Int32, value=1)\n'
-                'res:\nTensor(shape=[], dtype=Int32, value=10)\n'
-                'param_2:\nTensor(shape=[], dtype=Int32, value=5)\n'
-                'param_3:\nTensor(shape=[], dtype=Int32, value=3)\n'}
+    patterns = {'param_1:\nTensor(shape=[], dtype=Int64, value=1)\n'
+                'res:\nTensor(shape=[], dtype=Int64, value=10)\n'
+                'param_2:\nTensor(shape=[], dtype=Int64, value=5)\n'
+                'param_3:\nTensor(shape=[], dtype=Int64, value=3)\n'}
     check_output(cap.output, patterns)
     np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
+
+
+@security_off_wrap
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_print_assign_print_for_tensor():
+    """
+    Feature: Auto Monad
+    Description: Test load eliminate when umonad and iomona both exist.
+    Expectation: No exception.
+    """
+
+    class Print(Cell):
+        def __init__(self):
+            super().__init__()
+            self.print = P.Print()
+            self.assign = P.Assign()
+
+
+        def func(self, param):
+            self.assign(param, param * 5)
+            return param + 5
+
+        @ms.jit
+        def construct(self, value, param):
+            self.print("param_1:", param)
+            res = self.func(param)
+            self.print("res:", res)
+            self.print("param_2:", param)
+            self.assign(param, value)
+            self.print("param_3:", param)
+            return param
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    cap = Capture()
+    with capture(cap):
+        input_x = Tensor(3, dtype=ms.int64)
+        param = Tensor(1, dtype=ms.int64)
+        net = Print()
+        out, grad = ops.value_and_grad(net, grad_position=1)(input_x, param)
+        sys.stdout.flush()
+        time.sleep(2.0)
+
+    patterns = {'param_1:\nTensor(shape=[], dtype=Int64, value=1)\n'
+                'res:\nTensor(shape=[], dtype=Int64, value=10)\n'
+                'param_2:\nTensor(shape=[], dtype=Int64, value=5)\n'
+                'param_3:\nTensor(shape=[], dtype=Int64, value=3)\n'}
+    check_output(cap.output, patterns)
+    assert out == 3 and grad == 1
+    context.set_context(mode=context.GRAPH_MODE)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
@@ -1755,7 +1807,7 @@ def test_print_in_constant_returned_func():
         net = Print()
         net()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:\n(1, 2, 3, 4, 5)'}
     check_output(cap.output, patterns)
@@ -1864,7 +1916,7 @@ def test_bprop_print_func():
         assert out[0] == (x + 1)
         assert out[1] == (y + 1)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'Tensor(shape=[1], dtype=Int32, value=[1])\nTensor(shape=[1], dtype=Int32, value=[2])'}
     check_output(cap.output, patterns)

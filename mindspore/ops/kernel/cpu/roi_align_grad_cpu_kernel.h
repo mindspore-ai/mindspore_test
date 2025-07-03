@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ROI_ALIGN_CPU_KERNEL_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ROI_ALIGN_CPU_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ROI_ALIGN_GRAD_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_ROI_ALIGN_GRAD_CPU_KERNEL_H_
 #include <vector>
 #include <map>
 #include <string>
@@ -22,11 +22,12 @@
 #include <memory>
 #include <utility>
 #include "mindspore/ops/infer/grad/roi_align_grad.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace roi_align_grad_cpu {
 class ROIAlignGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ROIAlignGradCpuKernelMod> {
  public:
   ROIAlignGradCpuKernelMod() = default;
@@ -80,6 +81,7 @@ class ROIAlignGradCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   size_t rois_size_{0};
   size_t output_size_{0};
 };
+}  // namespace roi_align_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

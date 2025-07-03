@@ -18,4 +18,3 @@ split_tensor:
     GPU: None
   function:
     disable: True
-    

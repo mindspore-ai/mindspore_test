@@ -22,16 +22,15 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                           const BaseTensorPtr &gradout_tensor,
-                                                           const ValueTuplePtr &input_size,
-                                                           const std::optional<ValueTuplePtr> &output_size,
-                                                           const std::optional<ValueTuplePtr> &scale_factors);
+tensor::TensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                       const TensorPtr &gradout_tensor, const ValueTuplePtr &input_size,
+                                                       const std::optional<ValueTuplePtr> &output_size,
+                                                       const std::optional<ValueTuplePtr> &scale_factors);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

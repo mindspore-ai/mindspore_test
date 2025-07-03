@@ -3,7 +3,7 @@ mindspore.dataset.vision.RandomPerspective
 
 .. py:class:: mindspore.dataset.vision.RandomPerspective(distortion_scale=0.5, prob=0.5, interpolation=Inter.BICUBIC)
 
-    按照指定的概率对输入PIL图像进行透视变换。
+    以给定的概率，对输入PIL图像进行透视变换。
 
     参数：
         - **distortion_scale** (float，可选) - 失真程度，取值范围为[0.0, 1.0]。默认值： ``0.5`` 。

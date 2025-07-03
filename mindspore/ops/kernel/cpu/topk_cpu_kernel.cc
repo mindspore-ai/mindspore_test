@@ -17,12 +17,13 @@
 #include "kernel/cpu/topk_cpu_kernel.h"
 #include <algorithm>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 #include "infer/topk.h"
 
 namespace mindspore {
 namespace kernel {
+namespace topk_cpu {
 namespace {
 constexpr size_t kTopKInputsNum = 2;
 constexpr size_t kTopKOutputsNum = 2;
@@ -214,5 +215,6 @@ std::vector<KernelAttr> TopKCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TopK, TopKCpuKernelMod);
+}  // namespace topk_cpu
 }  // namespace kernel
 }  // namespace mindspore

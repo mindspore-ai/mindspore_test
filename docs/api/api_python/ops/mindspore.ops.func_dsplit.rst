@@ -3,11 +3,11 @@ mindspore.ops.dsplit
 
 .. py:function:: mindspore.ops.dsplit(input, indices_or_sections)
 
-    沿着第三轴将输入Tensor分割成多个子Tensor。等同于 :math:`axis=2` 时的 `ops.tensor_split` 。
+    沿第三轴分割输入tensor。等同于 :math:`axis=2` 时的 `ops.tensor_split` 。
 
     参数：
-        - **input** (Tensor) - 待分割的Tensor。
-        - **indices_or_sections** (Union[int, tuple(int), list(int)]) - 参考 :func:`mindspore.ops.tensor_split` 。
+        - **input** (Tensor) - 待分割的tensor。
+        - **indices_or_sections** (Union[int, tuple(int), list(int)]) - 参考 :func:`mindspore.ops.tensor_split` 中的indices_or_sections参数。
 
     返回：
-        tuple[Tensor]，被分割后的子Tensor。
+        多个tensor组成的tuple。

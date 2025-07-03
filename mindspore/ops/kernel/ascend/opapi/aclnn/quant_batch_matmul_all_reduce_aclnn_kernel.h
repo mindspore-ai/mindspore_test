@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace quant_batch_matmul_all_reduce {
 
 class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
   std::string reduce_op_;
   int64_t stream_mode_ = 1;
 };
+}  // namespace quant_batch_matmul_all_reduce
 }  // namespace kernel
 }  // namespace mindspore
 

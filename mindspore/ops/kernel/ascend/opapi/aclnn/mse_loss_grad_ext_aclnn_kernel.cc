@@ -18,13 +18,14 @@
 #include <unordered_map>
 #include <memory>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace mse_loss_grad_ext {
 
 void MSELossGradExtAclnnKernelMod::SetExpandTensor(KernelTensor *input_tensor,
                                                    const std::vector<KernelTensor *> &inputs,
@@ -37,7 +38,7 @@ void MSELossGradExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTens
                                                     const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
-  auto reduction_imm = static_cast<Reduction>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  auto reduction_imm = static_cast<Reduction>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   // transform reduction enum value to corresponding value
   reduction_value_ = ops::ConvertReductionForAclnn(reduction_imm);
 
@@ -96,5 +97,6 @@ bool MSELossGradExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inp
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MSELossGradExt, MSELossGradExtAclnnKernelMod);
+}  // namespace mse_loss_grad_ext
 }  // namespace kernel
 }  // namespace mindspore

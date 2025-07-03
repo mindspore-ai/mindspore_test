@@ -23,13 +23,14 @@
 #include <random>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/base/tile_base.h"
 #include "mindspore/ops/infer/multinomial.h"
 
 namespace mindspore {
 namespace kernel {
+namespace multinomial_cpu {
 class MultinomialCpuKernelMod : public NativeCpuKernelMod {
  public:
   MultinomialCpuKernelMod() { ResetResource(); }
@@ -66,6 +67,7 @@ class MultinomialCpuKernelMod : public NativeCpuKernelMod {
   MultinomialFunc kernel_func_{};
   static std::vector<std::pair<KernelAttr, MultinomialFunc>> func_list_;
 };
+}  // namespace multinomial_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_MULTINOMIAL_CPU_KERNEL_H

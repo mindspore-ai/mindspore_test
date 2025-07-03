@@ -18,12 +18,12 @@
 #include <cstddef>
 #include <algorithm>
 #include <vector>
-#include "hal/device/ascend_stream_manager.h"
-#include "mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "include/common/utils/utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/log_adapter.h"
 
@@ -48,6 +48,8 @@ namespace {
 constexpr size_t kDefaultStreamId = 0;
 constexpr char kHcclWorldGroup[] = "hccl_world_group";
 constexpr size_t kMegaByte = 1024 * 1024;
+constexpr size_t kUceParamsMaxMemThresh = 512 * kMegaByte;       // 512MB
+constexpr size_t kUceDeviceFreeMemTresh = 8 * 1024 * kMegaByte;  // 8GB
 
 uint64_t AlignSize(uint64_t num) {
   constexpr uint64_t align_value = 64;
@@ -64,6 +66,10 @@ uint64_t GetExchangeBufferSize(const DataExchangeInfo &local_info, const DataExc
   }
 
   return std::min({min_free_mem_size, local_info.GetSizeSum()});
+}
+
+bool UceCanUseBatchCopy(size_t params_size_in_bytes, size_t device_free_mem_size) {
+  return params_size_in_bytes < kUceParamsMaxMemThresh && device_free_mem_size > kUceDeviceFreeMemTresh;
 }
 }  // namespace
 
@@ -102,10 +108,10 @@ void ParamReplication::Init() {
 struct ExchangeDevAddr {
   explicit ExchangeDevAddr(const AscendDeviceResManager *res_mgr) : res_mgr_(res_mgr) {}
   ~ExchangeDevAddr() {
-    if (send_dev_addr != nullptr) {
+    if (send_dev_addr != nullptr && res_mgr_ != nullptr) {
       res_mgr_->FreeMemory(send_dev_addr);
     }
-    if (recv_dev_addr != nullptr) {
+    if (recv_dev_addr != nullptr && res_mgr_ != nullptr) {
       res_mgr_->FreeMemory(recv_dev_addr);
     }
   }
@@ -116,6 +122,8 @@ struct ExchangeDevAddr {
 
 int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExchangeInfo *remote_info, int src_rank,
                                           int dst_rank) {
+  MS_EXCEPTION_IF_NULL(local_info);
+  MS_EXCEPTION_IF_NULL(remote_info);
   size_t xchg_info_size = local_info->GetSize() * sizeof(int64_t);
   ExchangeDevAddr addr(res_mgr_);
   addr.send_dev_addr = res_mgr_->AllocateMemory(xchg_info_size, stream_id_);
@@ -126,8 +134,8 @@ int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExch
   }
 
   // copy local free device memory and memory info from host to device
-  if (aclrtMemcpy(addr.send_dev_addr, xchg_info_size, local_info->GetData(), xchg_info_size,
-                  ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
+  if (CALL_ASCEND_API(aclrtMemcpy, addr.send_dev_addr, xchg_info_size, local_info->GetData(), xchg_info_size,
+                      ACL_MEMCPY_HOST_TO_DEVICE) != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Copy exchange info from host to device fail.";
     return 1;
   }
@@ -153,13 +161,14 @@ int ParamReplication::DoParamInfoExchange(DataExchangeInfo *local_info, DataExch
   (void)res_mgr_->SyncStream(stream_id_);
 
   // copy remote free device memory and memory info from device to host
-  if (aclrtMemcpy(remote_info->GetData(), xchg_info_size, addr.recv_dev_addr, xchg_info_size,
-                  ACL_MEMCPY_DEVICE_TO_HOST) != ACL_SUCCESS) {
+  if (CALL_ASCEND_API(aclrtMemcpy, remote_info->GetData(), xchg_info_size, addr.recv_dev_addr, xchg_info_size,
+                      ACL_MEMCPY_DEVICE_TO_HOST) != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Copy exchange info from device to host fail.";
     return 1;
   }
 
   if (!local_info->IsParamInfoSame(*remote_info)) {
+    MS_LOG(ERROR) << "Sizes of parameters of local and remote are not same, can not do parameter replication.";
     for (size_t i = 0; i < local_info->GetSize(); ++i) {
       MS_LOG(INFO) << "rank " << rank_id_ << " [" << i << "]=" << local_info->GetData()[i] << "("
                    << remote_info->GetData()[i] << ")";
@@ -191,8 +200,8 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
       void *src_addr =
         is_send ? tensor->device_address()->GetMutablePtr() : reinterpret_cast<uint8_t *>(xchg_buf_addr) + sum_size;
 
-      if (aclrtMemcpyAsync(dst_addr, tensor->Size(), src_addr, tensor->Size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) !=
-          ACL_SUCCESS) {
+      if (CALL_ASCEND_API(aclrtMemcpyAsync, dst_addr, tensor->Size(), src_addr, tensor->Size(),
+                          ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) != ACL_SUCCESS) {
         MS_LOG(EXCEPTION) << "Copy data from device to device fail.";
       }
       sum_size += aligned_size;
@@ -203,7 +212,7 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
 
   size_t index = 0;
   while (index < params.size()) {
-    MS_LOG(INFO) << "$$$$$$ loop begin index = " << index << "/" << params.size()
+    MS_LOG(INFO) << "Copy parameter begin, index = " << index << "/" << params.size()
                  << (rank_id_ == src_rank ? " send" : " recv");
     if (rank_id_ == src_rank) {
       index = copy_param(index, true);
@@ -216,7 +225,7 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
       index = copy_param(index, false);
     }
     (void)res_mgr_->SyncStream(stream_id_);
-    MS_LOG(INFO) << "$$$$$$ loop *end* index = " << index << "/" << params.size()
+    MS_LOG(INFO) << "Copy parameter end, index = " << index << "/" << params.size()
                  << (rank_id_ == src_rank ? " send" : " recv");
   }
 
@@ -231,7 +240,12 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
 
   for (size_t index = 0; index < params.size(); ++index) {
     auto &tensor = params[index];
-    MS_LOG(INFO) << "$$$$$$ loop begin index = " << index << "/" << params.size() << " "
+    if (tensor->device_address() == nullptr || tensor->device_address()->GetMutablePtr() == nullptr) {
+      MS_LOG(INFO) << "Device address is nullptr, skip copying parameter index = " << index << "/" << params.size()
+                   << " " << (rank_id_ == src_rank ? " send" : " recv");
+      continue;
+    }
+    MS_LOG(INFO) << "Copy parameter begin, index = " << index << "/" << params.size() << " "
                  << (rank_id_ == src_rank ? " send" : " recv");
     if (rank_id_ == src_rank) {
       hccl::HcclAdapter::GetInstance().HcclSend(tensor->device_address()->GetMutablePtr(), tensor->Size(),
@@ -240,7 +254,7 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
       hccl::HcclAdapter::GetInstance().HcclRecv(tensor->device_address()->GetMutablePtr(), tensor->Size(),
                                                 HCCL_DATA_TYPE_INT8, src_rank, stream_, comm_);
     }
-    MS_LOG(INFO) << "$$$$$$ loop *end* index = " << index << "/" << params.size() << " "
+    MS_LOG(INFO) << "Copy parameter end, index = " << index << "/" << params.size() << " "
                  << (rank_id_ == src_rank ? " send" : " recv");
   }
   (void)res_mgr_->SyncStream(stream_id_);
@@ -265,12 +279,12 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
   size_t device_hbm_free_size;
   size_t device_hbm_total_size;
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size, &device_hbm_total_size);
-  if (ret != ACL_ERROR_NONE || device_hbm_total_size == 0) {
+  if (ret != ACL_SUCCESS || device_hbm_total_size == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device MOC memory size failed, ret = " << ret
                       << ", total MOC size :" << device_hbm_total_size;
   }
   MS_LOG(INFO) << "device_moc_free_size=" << device_hbm_free_size / kMegaByte
-               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte;
+               << "MB, device_moc_total_size=" << device_hbm_total_size / kMegaByte << "MB";
 
   DataExchangeInfo local_info(params, device_hbm_free_size);
   DataExchangeInfo remote_info(params.size());
@@ -280,14 +294,17 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
 
   size_t xchg_buf_size = GetExchangeBufferSize(local_info, remote_info);
   void *xchg_buf_addr = nullptr;
-  if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize) {
+  if (xchg_buf_size != DataExchangeInfo::kInvalidParamSize &&
+      UceCanUseBatchCopy(xchg_buf_size, local_info.GetFreeDevMem()) && !UCEException::GetInstance().is_arf()) {
     xchg_buf_addr = res_mgr_->AllocateMemory(xchg_buf_size, stream_id_);
   }
 
   int ret_value = 0;
   if (xchg_buf_addr == nullptr) {
+    MS_LOG(INFO) << "Copy parameters one by one.";
     ret_value = CopyParamsOneByOne(params, src_rank, dst_rank);
   } else {
+    MS_LOG(INFO) << "Copy parameters on batches.";
     ret_value = CopyParamsInBatches(params, src_rank, dst_rank, xchg_buf_addr, xchg_buf_size);
     res_mgr_->FreeMemory(xchg_buf_addr);
   }

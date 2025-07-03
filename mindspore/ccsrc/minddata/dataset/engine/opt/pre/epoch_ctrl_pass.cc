@@ -47,7 +47,6 @@ Status EpochCtrlPass::InjectionFinder::Visit(std::shared_ptr<BuildVocabNode> nod
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // Performs finder work for BuildSentencePieceVocabNode that has special rules about epoch control injection
 Status EpochCtrlPass::InjectionFinder::Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);
@@ -55,7 +54,6 @@ Status EpochCtrlPass::InjectionFinder::Visit(std::shared_ptr<BuildSentenceVocabN
   injection_point_ = nullptr;
   return Status::OK();
 }
-#endif
 
 Status EpochCtrlPass::InjectionFinder::VisitAfter(std::shared_ptr<DataQueueNode> node, bool *const modified) {
   RETURN_UNEXPECTED_IF_NULL(node);

@@ -94,13 +94,14 @@ endif()
 
 if((MODE_ASCEND_ACL) AND NOT BUILD_LITE)
     list(APPEND MSLIB_SRC
+        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/backend_manager/backend_jit_config.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/pattern_engine.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/helper.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/node_pass.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/common/optimizer/visitor.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/backend/operator/ops_backend_infer_function.cc"
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/kernel/kernel_build_info.cc"
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/device/kernel_info.cc"
+        "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/common/kernel_build_info.cc"
+        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/kernel/kernel_info.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/reduce_axis_update.cc"
         "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/ge_optimization.cc")
     # MODE_ASCEND_ACL don't need reg akg kernel
@@ -115,7 +116,6 @@ endif()
 if(BUILD_LITE)
     list(APPEND MSLIB_SRC
         "${TOP_DIR}/mindspore/ccsrc/utils/config_manager.cc"
-        "${TOP_DIR}/mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/model/aoe/auto_tune_process.cc")
     file(GLOB_RECURSE ACL_REMOVE_SRC ${CMAKE_CURRENT_SOURCE_DIR}
             "model/acl/acl_vm/*.cc"
@@ -137,12 +137,10 @@ else()
     add_library(mindspore_shared_lib SHARED $<TARGET_OBJECTS:common_shared_lib_obj> ${MSLIB_SRC_DEPEND})
 endif()
 if(BUILD_LITE)
-    target_link_libraries(mslite_shared_lib PRIVATE $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>
-    $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
-    add_dependencies(mslite_shared_lib _mindspore_transform_graph_ir_obj _mindspore_transform_symbol_obj)
+    target_link_libraries(mslite_shared_lib PRIVATE mindspore_graph_ir)
+    add_dependencies(mslite_shared_lib mindspore_graph_ir)
 elseif(MODE_ASCEND_ACL)
-    target_link_libraries(mindspore_shared_lib PRIVATE _mindspore_transform_graph_ir_obj
-            _mindspore_transform_symbol_obj
+    target_link_libraries(mindspore_shared_lib PRIVATE mindspore_graph_ir
             _mindspore_backend_graph_compiler_obj _mindspore_debug_obj mindspore_backend_static)
     if(MS_BUILD_GRPC)
         target_link_libraries(mindspore_shared_lib PRIVATE mindspore::grpc++)
@@ -169,18 +167,20 @@ endif()
 if(ENABLE_D OR ENABLE_GPU)
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common proto_input mindspore::protobuf)
+                mindspore_ms_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common proto_input mindspore::protobuf mindspore_profiler mindspore_backend_manager)
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE -Wl,--as-needed ${SECUREC_LIBRARY}
-                mindspore_backend mindspore_core mindspore_ops mindspore_common proto_input mindspore::protobuf)
+                mindspore_ms_backend mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common mindspore_profiler proto_input mindspore::protobuf mindspore_backend_manager)
     endif()
 else()
     if(BUILD_LITE)
         target_link_libraries(mslite_shared_lib PRIVATE mindspore_core mindspore_ops ${SECUREC_LIBRARY})
     else()
         target_link_libraries(mindspore_shared_lib PRIVATE ${PY3_LIBG} ${SECUREC_LIBRARY}
-                mindspore_backend mindspore mindspore_core mindspore_ops mindspore_common
-                proto_input mindspore::protobuf)
+                mindspore_ms_backend mindspore mindspore_core mindspore_ops mindspore_common mindspore_ops_kernel_common
+                mindspore_backend_common mindspore_profiler proto_input mindspore::protobuf mindspore_backend_manager)
     endif()
 endif()
 

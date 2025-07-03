@@ -21,11 +21,12 @@
 #include <utility>
 #include <memory>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace maximum_cpu {
 class MaximumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MaximumCpuKernelMod> {
  public:
   MaximumCpuKernelMod() = default;
@@ -86,6 +87,7 @@ class MaximumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<
   std::vector<size_t> broadcast_output_shape_;
   const size_t max_dims_{8};
 };
+}  // namespace maximum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

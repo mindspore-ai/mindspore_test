@@ -28,6 +28,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <functional>
+#include "include/actor/log.h"
 #include "thread/threadlog.h"
 #include "thread/core_affinity.h"
 #ifndef _WIN32
@@ -189,6 +190,10 @@ class MS_CORE_API ThreadPool {
   void SetMinSpinCount(int spin_count);
   void ActiveWorkers();
   void SetWorkerIdMap();
+  void ThreadPoolSetAffinity(size_t thread_num);
+  // function to bind core for actor thread in set_cpu_affinity.
+  void APIThreadPoolSetAffinity(const size_t thread_num, const std::vector<int> &cpu_list,
+                                const std::string actor_thread_fix_bind);
   // init task queues
   int TaskQueuesInit(size_t thread_num);
   void ChildAfterFork();

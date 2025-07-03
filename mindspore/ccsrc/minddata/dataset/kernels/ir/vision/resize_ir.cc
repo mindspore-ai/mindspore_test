@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/resize_ir.h"
 
 #include "minddata/dataset/kernels/image/resize_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_resize_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -69,7 +69,7 @@ std::shared_ptr<TensorOp> ResizeOperation::Build() {
 
   if (device_target_ == "CPU") {
     return std::make_shared<ResizeOp>(height, width, interpolation_);
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppResizeOp>(height, width, interpolation_);
 #endif

@@ -1,5 +1,5 @@
 /**
- * Copyright 2024-2025Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,15 @@
 #include "frontend/parallel/tensor_layout/tensor_info.h"
 #include "frontend/parallel/device_matrix.h"
 #include "pipeline/jit/ps/action.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parallel {
@@ -75,6 +84,7 @@ CNodePtr FindFrontAlltoall(const CNodePtr &marked_node, std::vector<CNodePtr> *v
   }
 
   if (alltoall_node == nullptr) {
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(marked_node));
     MS_LOG(WARNING) << "Can't find alltoall node before " << GetCNodePrimitive(marked_node)->name();
   }
   return alltoall_node;
@@ -116,6 +126,7 @@ CNodePtr FindBackAlltoall(const FuncGraphManagerPtr &manager, const CNodePtr &ma
   }
 
   if (alltoall_node == nullptr) {
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(marked_node));
     MS_LOG(WARNING) << "Can't find alltoall node after " << GetCNodePrimitive(marked_node)->name();
   }
   return alltoall_node;
@@ -135,8 +146,6 @@ CNodePtrPair FindAlltoallPair(const FuncGraphManagerPtr &manager, const CNodePtr
     return null_alltoall_pair;
   }
 
-  MS_LOG(INFO) << "check if keynode has expert_num and pe_num " << GetCNodePrimitive(marked_node)->name();
-
   CNodePtrPair alltoall_pair(front_alltoall, back_alltoall);
   return alltoall_pair;
 }
@@ -152,6 +161,7 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
     if (!GetCNodePrimitive(cnode)->HasAttr("expert_num") || !GetCNodePrimitive(cnode)->HasAttr("pe_num")) {
       continue;
     }
@@ -320,6 +330,7 @@ CNodePtr CloneFrontAlltoAllNode(const AnfNodePtr &input_node, const AnfNodePtr &
 
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
@@ -357,6 +368,7 @@ CNodePtr CloneBackAlltoAllNode(const AnfNodePtr &input_node, const AnfNodePtr &n
 
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
@@ -409,8 +421,15 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
   }
 
   auto shape_value_node = new_inputs[kIndex2]->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(shape_value_node);
+
   auto value_ptr = shape_value_node->value();
-  std::vector<ValuePtr> value_ptr_vec = value_ptr->cast<ValueTuplePtr>()->value();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+
+  auto value_tuple_ptr = value_ptr->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(value_tuple_ptr);
+
+  std::vector<ValuePtr> value_ptr_vec = value_tuple_ptr->value();
 
   size_t scale_dim = 0;
   if (node_idx == kIndex0 || node_idx == kIndex3) {
@@ -453,6 +472,7 @@ CNodePtr CloneCompNode(const AnfNodePtr &input_node, mindspore::HashMap<CNodePtr
   }
   std::vector<AnfNodePtr> new_inputs;
   auto input_cnode = input_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(input_cnode);
   auto inputs = input_cnode->inputs();
   for (size_t j = 0; j < inputs.size(); j++) {
     auto input = inputs[j];

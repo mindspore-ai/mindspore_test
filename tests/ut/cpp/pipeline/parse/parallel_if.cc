@@ -28,6 +28,8 @@
 #include "frontend/optimizer/irpass.h"
 #include "pipeline/jit/ps/action.h"
 #include "ir/func_graph_cloner.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace parse {

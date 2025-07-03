@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/sequence/sequence_zeros_like_cpu_kernel.h"
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

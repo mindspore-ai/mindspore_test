@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/max_pool_with_mask.h"
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 #include <set>
 #include "ops_utils/op_constants.h"
@@ -26,15 +27,7 @@
 
 namespace mindspore {
 namespace ops {
-TypePtr MaxPoolWithMaskFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  auto output_dtype = input_args[kIndex0]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("input", input_args[kIndex0]->GetType(), {kFloat16, kFloat32},
-                                                   primitive->name());
-  std::vector<TypePtr> type_list = {output_dtype, kInt8};
-  return std::make_shared<Tuple>(type_list);
-}
-
+namespace {
 inline int64_t MaskComputeSize(int64_t in_value, const ArrayValue<int64_t> &kernel_size,
                                const ArrayValue<int64_t> &strides, const ArrayValue<int64_t> &pads,
                                const ArrayValue<int64_t> &dilation, size_t index, bool ceil_mode) {
@@ -82,50 +75,53 @@ inline void MaskCheckPositiveVector(const string &arg_name, const ArrayValue<int
     }
   }
 }
+}  // namespace
+TypeIdList MaxPoolWithMaskFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  auto input_type = input_infos[kIndex0]->GetType();
+  CheckAndConvertUtils::CheckTypeIdValid("input", input_type, {kNumberTypeFloat16, kNumberTypeFloat32},
+                                         primitive->name());
+  return {input_type, kNumberTypeInt8};
+}
 
-BaseShapePtr MaxPoolWithMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
+ShapeArray MaxPoolWithMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
   const size_t kAttrH = 0;
   const size_t kAttrW = 1;
   const int64_t kInputShapeSize = 4;
   const int64_t kAttrsSize = 2;
-  auto x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
-  if (IsDynamicRank(x_shape)) {
-    std::vector<abstract::BaseShapePtr> shape_list = {std::make_shared<abstract::Shape>(std::vector<int64_t>{
-                                                        abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                                                        abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny}),
-                                                      std::make_shared<abstract::Shape>(std::vector<int64_t>{
-                                                        abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                                                        abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny})};
-    return std::make_shared<abstract::TupleShape>(shape_list);
+
+  const auto &x_info = input_infos[kIndex0];
+  auto x_shape = x_info->GetShape();
+  if (MS_UNLIKELY(x_info->IsDynamicRank())) {
+    std::vector<int64_t> shape(kIndex4, abstract::Shape::kShapeDimAny);
+    return {shape, shape};
   }
+
   (void)CheckAndConvertUtils::CheckInteger("input x rank", SizeToLong(x_shape.size()), kEqual, kInputShapeSize,
                                            primitive->name());
   auto batch = x_shape[kIndex0];
   auto channel = x_shape[kIndex1];
 
-  auto kernel_size = input_args[kIndex1]->GetValue();
-  auto kernel_size_array_opt = GetArrayValue<int64_t>(kernel_size);
-  ValuePtr strides;
-  if (input_args[kIndex2]->GetType()->type_id() == kMetaTypeNone) {
-    strides = kernel_size;
+  const auto &kernel_size_info = input_infos[kIndex1];
+  auto kernel_size_array_opt = kernel_size_info->GetArrayValue<int64_t>();
+
+  std::optional<ArrayValue<int64_t>> strides_array_opt;
+  if (input_infos[kIndex2]->IsNone()) {
+    strides_array_opt = kernel_size_array_opt;
   } else {
-    strides = input_args[kIndex2]->GetValue();
+    strides_array_opt = input_infos[kIndex2]->GetArrayValue<int64_t>();
   }
-  auto strides_array_opt = GetArrayValue<int64_t>(strides);
-  auto pads = input_args[kIndex3]->GetValue();
-  auto pads_array_opt = GetArrayValue<int64_t>(pads);
-  auto dilation = input_args[kIndex4]->GetValue();
-  auto dilation_array_opt = GetArrayValue<int64_t>(dilation);
-  auto ceil_mode = input_args[kIndex5]->GetValue();
-  auto ceil_mode_scalar_opt = GetScalarValue<bool>(ceil_mode);
+
+  auto pads_array_opt = input_infos[kIndex3]->GetArrayValue<int64_t>();
+  auto dilation_array_opt = input_infos[kIndex4]->GetArrayValue<int64_t>();
+  auto ceil_mode_scalar_opt = input_infos[kIndex5]->GetScalarValue<bool>();
   if (!kernel_size_array_opt.has_value() || !strides_array_opt.has_value() || !pads_array_opt.has_value() ||
       !dilation_array_opt.has_value() || !ceil_mode_scalar_opt.has_value()) {
     ShapeVector dyn_output{batch, channel, abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny};
-    std::vector<abstract::BaseShapePtr> shape_list = {std::make_shared<abstract::Shape>(dyn_output),
-                                                      std::make_shared<abstract::Shape>(dyn_output)};
-    return std::make_shared<abstract::TupleShape>(shape_list);
+    return {dyn_output, dyn_output};
   }
+
   const auto &kernel_size_array = kernel_size_array_opt.value();
   const auto &strides_array = strides_array_opt.value();
   const auto &pads_array = pads_array_opt.value();
@@ -140,40 +136,36 @@ BaseShapePtr MaxPoolWithMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            primitive->name());
   (void)CheckAndConvertUtils::CheckInteger("dilation rank", SizeToLong(dilation_array.size()), kEqual, kAttrsSize,
                                            primitive->name());
+
   auto H_in = x_shape[kIndex2];
   auto W_in = x_shape[kIndex3];
   auto H_out =
     MaskComputeSize(H_in, kernel_size_array, strides_array, pads_array, dilation_array, kAttrH, ceil_mode_scalar);
   auto W_out =
     MaskComputeSize(W_in, kernel_size_array, strides_array, pads_array, dilation_array, kAttrW, ceil_mode_scalar);
+
   ShapeVector output_shape = {x_shape[kIndex0], x_shape[kIndex1], H_out, W_out};
   ShapeVector argmax_shape = {x_shape[kIndex0], x_shape[kIndex1], kernel_size_array[kAttrH] * kernel_size_array[kAttrW],
                               (static_cast<int>(ceil(static_cast<double>(H_out * W_out) / 16)) + 1) * 2 * 16};
-
-  std::vector<abstract::BaseShapePtr> shape_list = {std::make_shared<abstract::Shape>(output_shape),
-                                                    std::make_shared<abstract::Shape>(argmax_shape)};
-  return std::make_shared<abstract::TupleShape>(shape_list);
+  return {output_shape, argmax_shape};
 }
+
 int32_t MaxPoolWithMaskFuncImpl::CheckValidation(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
+                                                 const InferInfoPtrList &input_infos) const {
   int32_t check_status = OP_CHECK_SUCCESS;
 
   const size_t kAttrH = 0;
   const size_t kAttrW = 1;
-  auto kernel_size = input_args[kIndex1]->GetValue();
-  auto kernel_size_array_opt = GetArrayValue<int64_t>(kernel_size);
-  ValuePtr strides;
-  if (input_args[kIndex2]->GetType()->type_id() == kMetaTypeNone) {
-    strides = kernel_size;
-  } else {
-    strides = input_args[kIndex2]->GetValue();
-  }
-  auto strides_array_opt = GetArrayValue<int64_t>(strides);
-  auto pads = input_args[kIndex3]->GetValue();
-  auto pads_array_opt = GetArrayValue<int64_t>(pads);
-  auto dilation = input_args[kIndex4]->GetValue();
-  auto dilation_array_opt = GetArrayValue<int64_t>(dilation);
 
+  auto kernel_size_array_opt = input_infos[kIndex1]->GetArrayValue<int64_t>();
+  std::optional<ArrayValue<int64_t>> strides_array_opt;
+  if (input_infos[kIndex2]->IsNone()) {
+    strides_array_opt = kernel_size_array_opt;
+  } else {
+    strides_array_opt = input_infos[kIndex2]->GetArrayValue<int64_t>();
+  }
+  auto pads_array_opt = input_infos[kIndex3]->GetArrayValue<int64_t>();
+  auto dilation_array_opt = input_infos[kIndex4]->GetArrayValue<int64_t>();
   if (MS_UNLIKELY(!kernel_size_array_opt.has_value() || !strides_array_opt.has_value() || !pads_array_opt.has_value() ||
                   !dilation_array_opt.has_value())) {
     check_status = OP_CHECK_RETRY;

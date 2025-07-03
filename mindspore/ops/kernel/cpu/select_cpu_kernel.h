@@ -20,11 +20,12 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace select_cpu {
 class SelectCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SelectCpuKernelMod> {
  public:
   SelectCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SelectCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<S
   std::vector<size_t> index_list3_{};
   bool is_need_broadcast_{false};
 };
+}  // namespace select_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

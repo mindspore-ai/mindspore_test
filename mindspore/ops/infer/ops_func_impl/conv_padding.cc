@@ -19,7 +19,7 @@
 #include <utility>
 #include <string>
 #include <set>
-#include "include/common/utils/utils.h"
+
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

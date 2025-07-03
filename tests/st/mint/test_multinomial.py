@@ -52,9 +52,9 @@ def test_multinomial_std(mode):
         output1 = multinomial_forward_func(ms.Tensor(x0), 2, True)
         output2 = multinomial_forward_func(ms.Tensor(x1), 6, True)
     else:
-        output0 = (jit(multinomial_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x0), 1, True)
-        output1 = (jit(multinomial_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x0), 2, True)
-        output2 = (jit(multinomial_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x1), 6, True)
+        output0 = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x0), 1, True)
+        output1 = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x0), 2, True)
+        output2 = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x1), 6, True)
 
     assert output0.asnumpy().shape == (1,)
     assert output1.asnumpy().shape == (2,)
@@ -96,7 +96,7 @@ def test_multinomial_bfloat16(mode):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = multinomial_forward_func(ms.Tensor(x, dtype=ms.bfloat16), 6, True)
     else:
-        output = (jit(multinomial_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16),
+        output = (jit(multinomial_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16),
                                                                                        6, True)
 
     assert output.asnumpy().shape == (2, 6)

@@ -39,7 +39,7 @@ PyObject *EvalFrameGetLocals(_PyInterpreterFrame *f);
 inline PyObject *EvalFrameGetFreevars(_PyInterpreterFrame *f) {
   auto func = EvalFrameGetFunction(f);
   Py_DECREF(func);  // frame has reference
-  return Py_NewRef(func->func_closure);
+  return Py_XNewRef(func->func_closure);
 }
 
 #else
@@ -121,10 +121,8 @@ PyObject *EvalFrameGetLocals(PyFrameObject *f) {
 namespace mindspore {
 namespace pijit {
 
-EvalFrameObject *FrameConvert(PyFrameObject *f) { return GetEvalFrame(f); }
-
 // copy a function helper for EvalNewCode
-static PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
+PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
   PyObject *tmp = reinterpret_cast<PyObject *>(new_code);
   tmp = PyFunction_New(tmp, old_func->func_globals);
   PyFunctionObject *op = reinterpret_cast<PyFunctionObject *>(tmp);
@@ -219,6 +217,7 @@ py::tuple PyFrameWrapper::PackArgs() const {
   PyTuple_SET_ITEM(ret, 1, Py_XNewRef(value));
   value = has_kw_va ? fast[argc++] : Py_None;
   PyTuple_SET_ITEM(ret, kTwo, Py_XNewRef(value));
+  argc = argc - has_va - has_kw_va;
 
 #if !IS_PYTHON_3_11_PLUS
   Py_ssize_t ncells = PyTuple_GET_SIZE(co->co_cellvars);
@@ -247,7 +246,7 @@ py::object PyFrameWrapper::GetFunction() const {
 }
 py::tuple PyFrameWrapper::FreeVars() const {
   PyObject *ref = EvalFrameGetFreevars(frame_);
-  return py::reinterpret_steal<py::tuple>(ref);
+  return ref ? py::reinterpret_steal<py::tuple>(ref) : py::tuple();
 }
 py::dict PyFrameWrapper::Locals() const {
   PyObject *ref = EvalFrameGetLocals(frame_);
@@ -275,7 +274,7 @@ PyCodeWrapper PyFrameWrapper::GetCode() const { return PyCodeWrapper(EvalFrameGe
  * Cells and fress is empty at the begin of eval frame.
  * Frame is incomplete and no PyFrameObject until executed the first instruction
  */
-PyObject **PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
+PyObject *const *PyFrameWrapper::FastLocal() const { return EvalFrameGetFastLocals(frame_); }
 
 }  // namespace pijit
 }  // namespace mindspore

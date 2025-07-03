@@ -1,20 +1,19 @@
 #operator inplace_copy
 inplace_copy:
   args:
-    variable:
+    input:
       dtype: tensor
-    value:
+    src:
       dtype: tensor
   args_signature:
-    rw_write: variable
+    rw_write: input
   returns:
     output:
       dtype: tensor
-      inplace: variable
+      inplace: input
   labels:
     side_effect_mem: True
-  class:
-    name: InplaceCopy
   dispatch:
     enable: True
     Ascend: InplaceCopyAscend
+    CPU: InplaceCopyCPU

@@ -68,7 +68,7 @@ class _NormBase(Cell):
                                           requires_grad=False, name="running_mean")
             self.running_var = Parameter(Tensor(np.ones(num_features), dtype=self.dtype),
                                          requires_grad=False, name="running_var")
-            self.num_batches_tracked = Parameter(Tensor(0, dtype=ms.float32),
+            self.num_batches_tracked = Parameter(Tensor(0, dtype=ms.int64),
                                                  requires_grad=False, name="num_batches_tracked")
         else:
             self.running_mean = None
@@ -84,7 +84,7 @@ class _NormBase(Cell):
                 np.zeros(self.num_features), dtype=self.dtype)
             one_running_var = Tensor(
                 np.ones(self.num_features), dtype=self.dtype)
-            zero_num_batches_tracked = Tensor(0, dtype=ms.float32)
+            zero_num_batches_tracked = Tensor(0, dtype=ms.int64)
 
             ops.assign(self.running_mean, zero_running_mean)
             ops.assign(self.running_var, one_running_var)
@@ -136,11 +136,9 @@ class _BatchNorm(_NormBase):
 
         if self.training and self.track_running_stats:
             if self.num_batches_tracked is not None:
-                num_batches_tracked_one = Tensor(1, dtype=ms.float32)
-                ops.assign_add(self.num_batches_tracked,
-                               num_batches_tracked_one)
+                self.num_batches_tracked += 1
                 if self.momentum is None:
-                    exponential_average_factor = float(1.0 / self.num_batches_tracked)
+                    exponential_average_factor = 1.0 / float(self.num_batches_tracked)
                 else:
                     exponential_average_factor = self.momentum
 
@@ -250,8 +248,8 @@ class BatchNorm2d(_BatchNorm):
     elements of :math:`\gamma` are set to 1 and the elements of :math:`\beta` are set to 0.
 
     .. warning::
-        This API does not support Dynamic Rank.
-        This is an experimental API that is subject to change or deletion.
+        - This API does not support Dynamic Rank.
+        - This is an experimental API that is subject to change or deletion.
 
     Args:
         num_features (int): `C` from an expected input of shape :math:`(N, C, H, W)`.
@@ -264,7 +262,7 @@ class BatchNorm2d(_BatchNorm):
         track_running_stats (bool, optional): a boolean value that when set to ``True``, this
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
-            in both training and eval modes. Default: ``True`` .
+            in both train and eval modes. Default: ``True`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
@@ -312,7 +310,7 @@ class BatchNorm3d(_BatchNorm):
 
     .. math::
 
-        y = \frac{x - mean}{\sqrt{variance + \epsilon}} * \gamma + \beta
+        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
     The mean and standard-deviation are calculated per-dimension over
     the mini-batches and :math:`\gamma` and :math:`\beta` are learnable parameter vectors
@@ -403,7 +401,7 @@ class GroupNorm(Cell):
           additional dimensions.
 
     Outputs:
-        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `x`.
+        Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `input`.
 
     Raises:
         TypeError: If `num_groups` or `num_channels` is not an int.
@@ -487,10 +485,12 @@ class SyncBatchNorm(_BatchNorm):
 
     Args:
         num_features (int): `C` from an expected input of size :math:`(N, C, +)`.
-        eps (float): :math:`\epsilon`, a value added to the denominator for numerical stability. Default: ``1e-5`` .
-        momentum (float): A floating hyperparameter of the momentum for the
+        eps (float, optional): :math:`\epsilon`, a value added to the denominator for numerical stability.
+            Default: ``1e-5`` .
+        momentum (float, optional): A floating hyperparameter of the momentum for the
             running_mean and running_var computation. Default: ``0.1`` .
-        affine (bool): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` can be learned.
+        affine (bool, optional): A bool value. When set to ``True`` , :math:`\gamma` and :math:`\beta` are learnable
+            parameters. When set to ``False`` , :math:`\gamma` and :math:`\beta` are unlearnable parameters.
             Default: ``True`` .
         track_running_stats (bool, optional): a boolean value that when set to ``True``, this
             cell tracks the running mean and variance, and when set to ``False``,
@@ -524,7 +524,7 @@ class SyncBatchNorm(_BatchNorm):
             Here, examples use msrun to pull multi-process distributed tasks across nodes with a single command
             line instruction.
             Please see the `Ascend tutorial
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with multiple devices.
@@ -594,28 +594,23 @@ class SyncBatchNorm(_BatchNorm):
             exponential_average_factor = self.momentum
 
         if self.training and self.track_running_stats:
-            one_tensor = Tensor(1, dtype=ms.float32)
-            ops.assign_add(self.num_batches_tracked, one_tensor)
+            self.num_batches_tracked += 1
             if self.momentum is None:  # use cumulative moving average
-                exponential_average_factor = 1.0 / self.num_batches_tracked.value()
+                exponential_average_factor = 1.0 / float(self.num_batches_tracked.value())
             else:  # use exponential moving average
                 exponential_average_factor = self.momentum
 
-        r"""
-        Decide whether the mini-batch stats should be used for normalization rather than the buffers.
-        Mini-batch stats are used in training mode, and in eval mode when buffers are None.
-        """
+        # Decide whether the mini-batch stats should be used for normalization rather than the buffers.
+        # Mini-batch stats are used in training mode, and in eval mode when buffers are None.
         if self.training:
             bn_training = True
         else:
             bn_training = (self.running_mean is None) and (
                 self.running_var is None)
 
-        r"""
-        Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be
-        passed when the update should occur (i.e. in training mode when they are tracked), or when buffer stats are
-        used for normalization (i.e. in eval mode when buffers are not None).
-        """
+        # Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be
+        # passed when the update should occur (i.e. in training mode when they are tracked), or when buffer stats are
+        # used for normalization (i.e. in eval mode when buffers are not None).
         # If buffers are not to be tracked, ensure that they won't be updated
         running_mean = (
             self.running_mean if not self.training or self.track_running_stats else None

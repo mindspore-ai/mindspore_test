@@ -23,12 +23,13 @@
 #include <map>
 #include <string>
 #include <tuple>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/grad/igammagrada.h"
 
 namespace mindspore {
 namespace kernel {
+namespace igammagrada_cpu {
 class IgammaGradACpuKernelMod : public NativeCpuKernelMod {
  public:
   IgammaGradACpuKernelMod() = default;
@@ -63,6 +64,7 @@ class IgammaGradACpuKernelMod : public NativeCpuKernelMod {
   template <typename T>
   void NoBcastCompute(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &);
 };
+}  // namespace igammagrada_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

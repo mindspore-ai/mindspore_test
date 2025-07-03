@@ -20,10 +20,11 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_ext {
 
 class ArgMinAscend : public AclnnKernelMod {
  public:
@@ -42,6 +43,7 @@ class ArgMinAscend : public AclnnKernelMod {
   ShapeVector output_real_shape_;
   std::shared_ptr<KernelTensor> input_kernel_tensor_;
 };
+}  // namespace argmin_ext
 }  // namespace kernel
 }  // namespace mindspore
 

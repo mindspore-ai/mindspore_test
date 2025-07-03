@@ -23,11 +23,14 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
-// From:
+// From
 //   MakeList(arg1, arg2, ...)
-// To:
+// To
 //   MakeTuple(arg1, arg2, ...)
 AnfNodePtr MakeListPass::ConvertMakeListToMakeTuple(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -44,9 +47,9 @@ AnfNodePtr MakeListPass::ConvertMakeListToMakeTuple(const CNodePtr &node) {
   return tuple_cnode;
 }
 
-// From:
+// From
 //   list_getitem(list, key)
-// To:
+// To
 //   TupleGetItem(list, key)
 AnfNodePtr MakeListPass::ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -67,9 +70,9 @@ AnfNodePtr MakeListPass::ConvertListGetItemToTupleGetItem(const CNodePtr &node) 
   return node->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleGetItem), data, key});
 }
 
-// From:
+// From
 //   ListSetItem(list, index, item)
-// To:
+// To
 //   TupleSetItem(list, index, item)
 AnfNodePtr MakeListPass::ConvertListSetItemToTupleSetItem(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);

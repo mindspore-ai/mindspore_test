@@ -17,23 +17,21 @@
 #include "kernel/ascend/pyboost/customize/l1_loss_backward_ext.h"
 #include <memory>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindapi/base/types.h"
-#include "kernel/common_utils.h"
-#include "kernel/common/pyboost/auto_generate/broadcast_to.h"
+#include "common/common_utils.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/broadcast_to.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                       const BaseTensorPtr &grad_output_tensor,
-                                                       const BaseTensorPtr &input_tensor,
-                                                       const BaseTensorPtr &target_tensor,
-                                                       const Int64ImmPtr &reduction) {
+tensor::TensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                   const TensorPtr &grad_output_tensor, const TensorPtr &input_tensor,
+                                                   const TensorPtr &target_tensor, const Int64ImmPtr &reduction) {
   MS_LOG(DEBUG) << "L1LossBackwardExt call start";
   OpRunner::InferOpOutput(op, grad_output_tensor, input_tensor, target_tensor, reduction);
 
@@ -44,8 +42,7 @@ tensor::BaseTensorPtr L1LossBackwardExtAscendCustomize(const std::shared_ptr<OpR
   const auto &input_shape = input_tensor->shape();
   const auto &target_shape = target_tensor->shape();
   const auto &expand_shape = op->output_value_simple_info()->shape_vector_[kIndex0];
-  const auto &expand_shape_ptr = ops::ConvertShapeVectorToValueTuple(expand_shape);
-  MS_EXCEPTION_IF_NULL(expand_shape_ptr);
+  const auto &expand_shape_ptr = expand_shape;
 
   auto expand_input_tensor = input_tensor;
   auto expand_target_tensor = target_tensor;

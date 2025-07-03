@@ -23,14 +23,23 @@
 #include <mutex>
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "runtime/device/memory_manager.h"
+#include "runtime/collective/collective_communication_lib.h"
+#include "runtime/collective/collective_comm_lib_loader.h"
+#include "runtime/device/res_manager/memory_manager.h"
+#include "plugin/res_manager/cpu/cpu_res_manager.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
 class CPUDeviceResManager : public DeviceResManager {
  public:
-  CPUDeviceResManager() {}
+  CPUDeviceResManager() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    ResKey res_key = {DeviceType::kCPU, device_id};
+    cpu_res_manager_ = static_cast<CPUResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
+  }
   ~CPUDeviceResManager() override = default;
 
   void Initialize() override;
@@ -40,12 +49,12 @@ class CPUDeviceResManager : public DeviceResManager {
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 
-  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const override;
+  DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const override;
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override;
 
-  std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
+  std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) override;
   tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
                                                     const std::vector<size_t> &before_padding_size,
@@ -55,15 +64,16 @@ class CPUDeviceResManager : public DeviceResManager {
                                                  size_t end) override;
 
   bool LoadCollectiveCommLib() override;
-
-  void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor, const std::string &to,
-              bool blocking, bool *return_self) override;
+  CollectiveCommunicationLib *collective_comm_lib() const override;
 
   // Relevant function to allocate and free device memory of raw ptr.
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(void *ptr) const override;
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override;
+
+ private:
+  CPUResManager *cpu_res_manager_{nullptr};
 };
 
 class CPUKernelExecutor : public KernelExecutor {
@@ -84,10 +94,19 @@ class CPUKernelExecutor : public KernelExecutor {
 
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
-                    KernelMod *kernel_mod, void * /*stream*/) const override;
+                    KernelMod *kernel_mod, void * /* stream */) const override;
+  bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
+                      const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
+                      KernelMod *kernel_mod, void *stream) const override {
+    return LaunchKernel(kernel, inputs, workspace, outputs, kernel_mod, stream);
+  }
 
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
+  bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                         const std::vector<device::DeviceAddress *> &input_addr_list,
+                         const std::vector<device::DeviceAddress *> &output_addr_list,
+                         const size_t &stream_id) const override;
 
  private:
   // Select the matching backend kernels according to the data type and format of input and output for all
@@ -118,8 +137,6 @@ class CPUDeviceContext : public DeviceInterface<CPUKernelExecutor, CPUDeviceResM
   void Initialize() override;
 
   void Destroy() override;
-
-  RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return RunMode::kKernelMode; }
 
  private:
   DISABLE_COPY_AND_ASSIGN(CPUDeviceContext);

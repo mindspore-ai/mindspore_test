@@ -96,6 +96,6 @@ def test_marin_loss():
     y = Tensor(np.ones([512, 512]), dtype=ms.float32)
 
     net = GradWrap(NetWithLoss(MarginCE()))
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     net.set_train()
     _cell_graph_executor.compile(net, x, y)

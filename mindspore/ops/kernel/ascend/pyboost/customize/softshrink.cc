@@ -16,18 +16,18 @@
 
 #include "kernel/ascend/pyboost/customize/softshrink.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl/acl_kernel_mod.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SoftShrinkAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const ScalarPtr &lambd) {
+tensor::TensorPtr SoftShrinkAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const ScalarPtr &lambd) {
   MS_LOG(DEBUG) << "Softshrink Ascend start";
   OpRunner::InferOpOutput(op, input_tensor, lambd);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);

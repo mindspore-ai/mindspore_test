@@ -25,7 +25,7 @@
 #include "kernel/graph_kernel_info.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_device_context.h"
 
 namespace mindspore {

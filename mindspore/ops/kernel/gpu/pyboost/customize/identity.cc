@@ -17,14 +17,14 @@
 #include "kernel/gpu/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "mindspore/ops/kernel/common/pyboost/customize/identity.h"
-#include "mindspore/ccsrc/runtime/runtime_conf/runtime_conf.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
+#include "mindspore/ccsrc/pyboost/customize/identity.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IdentityGPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+tensor::TensorPtr IdentityGPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Identity call start";
   IdentityCustomize(op, x_tensor);
   auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();

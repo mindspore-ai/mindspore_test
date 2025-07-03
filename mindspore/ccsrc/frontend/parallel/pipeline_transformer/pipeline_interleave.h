@@ -47,13 +47,18 @@ class PipelineInterleave {
   void LabelMicroBatch();
   void ParameterColoring();
   void ElimParameter();
-  bool HasNoUpdateParameter();
+  bool IsNoUpdateParameterStage(const int64_t stage);
 
  private:
   void CreateSendReceiveGroup();
+  std::shared_ptr<NodeStageInfo> GetStageInfoByGraph(const FuncGraphPtr &fg);
+  void InsertSendReceiveForParameter(const AnfNodePtr &param, const AnfNodePtr &node, int64_t src_stage,
+                                     int64_t dst_stage, int64_t chunk, int64_t index, int64_t order);
+  void InsertSendReceiveForSharedParam(const AnfNodePtr &parameter, const AnfNodePtr &argument, int64_t *order);
+  void HandleSharedParam(int64_t *order);
   void RedundancyNode(const AnfNodePtr &node, mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> *make_tuple_map);
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
-  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order);
+  void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order, int64_t index);
   void RemoveMonadNode();
   void BroadCastGraphStage(const FuncGraphPtr &fg);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;
@@ -62,6 +67,8 @@ class PipelineInterleave {
   void CutBorderForNode(const FuncGraphPtr &graph, const AnfNodePtr &node, int64_t *order);
   bool GetStageByArgument(const CNodePtr &node, size_t index, const std::vector<AnfNodePtr> &parameters,
                           const NodeUsersMap &node_users_map, std::set<int64_t> *const parameter_stage);
+  void FindStridedSliceNodes(const AnfNodePtr &node, AnfNodeSet *strided_slice_nodes) const;
+  size_t MicroSize(const AnfNodeIndexSet &input_node_users) const;
   size_t GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const;
   FuncGraphManagerPtr manager_;
   NodeUsersMap node_users_map_;
@@ -94,6 +101,7 @@ class PipelinePostProcess {
 
  private:
   void LabelInterleaveIndex();
+  void RemoveUselessOriginSharedCell();
   std::vector<AnfNodePtr> PartitionChunkGraph(const FuncGraphPtr &fg, int64_t chunk);
   void GetSendsRecvs(const FuncGraphPtr &fg, int64_t chunk, std::vector<AnfNodePtr> *recvs,
                      std::vector<AnfNodePtr> *sends, std::vector<AnfNodePtr> *temp);

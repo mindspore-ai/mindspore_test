@@ -17,12 +17,12 @@ from __future__ import absolute_import
 
 import numpy as np
 
+import mindspore.ops as ops
 import mindspore.common.dtype as mstype
 import mindspore.log as logger
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import initializer, Initializer
 from mindspore.communication.management import get_group_size, get_rank
-from mindspore.ops import operations as P
 from mindspore.ops.operations._thor_ops import ThorIm2Col
 from mindspore.common.parameter import Parameter
 from mindspore import _checkparam as Validator
@@ -34,7 +34,6 @@ from mindspore.parallel._ps_context import _is_role_worker, _get_ps_context, \
     _set_rank_id, _insert_hash_table_size, _set_cache_enable
 from mindspore.parallel._utils import _get_parallel_mode, _get_full_batch
 from mindspore.context import ParallelMode
-from mindspore.ops import functional as F
 from mindspore.nn.layer.basic import ClipByNorm
 from mindspore.ops.primitive import constexpr
 
@@ -61,9 +60,11 @@ class DenseThor(Cell):
         in_channels (int): The number of the input channels.
         out_channels (int): The number of the output channels.
         weight_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable weight_init parameter. The dtype
-            is same as `x`. The values of str refer to the function `initializer`. Default: ``'normal'`` .
+            is same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
+            Default: ``'normal'`` .
         bias_init (Union[Tensor, str, Initializer, numbers.Number]): The trainable bias_init parameter. The dtype is
-            same as `x`. The values of str refer to the function `initializer`. Default: ``'zeros'`` .
+            same as `x`. The values of str refer to the function :func:`mindspore.common.initializer.initializer`.
+            Default: ``'zeros'`` .
         has_bias (bool): Specifies whether the layer uses a bias vector. Default: ``True`` .
         activation (str): activate function applied to the output of the fully connected layer, eg. 'ReLU'.
             Default: ``None`` .
@@ -120,9 +121,9 @@ class DenseThor(Cell):
                                      f"be equal to 1, and the first dim must be equal to 'out_channels'. But got "
                                      f"'bias_init': {bias_init}, 'out_channels': {out_channels}.")
             self.bias = Parameter(initializer(bias_init, [out_channels]), name="bias")
-            self.bias_add = P.BiasAdd()
+            self.bias_add = ops.BiasAdd()
 
-        self.matmul = P.MatMul(transpose_b=True)
+        self.matmul = ops.MatMul(transpose_b=True)
         self.activation = get_activation(activation)
         self.activation_flag = self.activation is not None
 
@@ -130,25 +131,25 @@ class DenseThor(Cell):
                                   name='matrix_a', requires_grad=False)
         self.matrix_g = Parameter(Tensor(np.eye(out_channels).astype(np.float32)),
                                   name="matrix_g", requires_grad=False)
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
-        self.transpose = P.Transpose()
-        self.mul = P.Mul()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
+        self.transpose = ops.Transpose()
+        self.mul = ops.Mul()
         self.is_ascend = True
         self.split_dim = 128
         if context.get_context("device_target") == "Ascend":
             self._process_ascend_dense_thor(out_channels, in_channels)
         else:
             self.is_ascend = False
-            self.cube_matmul = P.MatMul(transpose_a=True)
-        self.getG = P.InsertGradientOf(self.save_gradient)
+            self.cube_matmul = ops.MatMul(transpose_a=True)
+        self.getG = ops.InsertGradientOf(self.save_gradient)
 
     def _process_ascend_dense_thor(self, out_channels, in_channels):
         """process ascend dense thor"""
-        self.matmul = P.MatMul(transpose_b=True)
-        self.cube_matmul = P.CusMatMulCube(transpose_a=True)
-        self.cast = P.Cast()
-        self.is_nsp_layer = (out_channels == 2)
+        self.matmul = ops.MatMul(transpose_b=True)
+        self.cube_matmul = ops.CusMatMulCube(transpose_a=True)
+        self.cast = ops.Cast()
+        self.is_nsp_layer = out_channels == 2
 
     def save_gradient(self, dout):
         """
@@ -195,7 +196,7 @@ class DenseThor(Cell):
             x = self.activation(x)
         # We use Depend to make 'self.matrix_g' as primal graph's weight parameter,
         # for it's used in 'save_gradient' gradient procedure.
-        return F.depend(x, self.matrix_g)
+        return ops.depend(x, self.matrix_g)
 
     def extend_repr(self):
         s = 'input_channels={}, output_channels={}'.format(self.in_channels, self.out_channels)
@@ -388,19 +389,19 @@ class Conv2dThor(_ConvThor):
         dilation = twice(dilation)
         super(Conv2dThor, self).__init__(in_channels, out_channels, kernel_size,
                                          stride, pad_mode, padding, dilation, group, has_bias, weight_init, bias_init)
-        self.conv2d = P.Conv2D(out_channel=self.out_channels, kernel_size=self.kernel_size,
-                               mode=1, pad_mode=self.pad_mode, pad=self.padding,
-                               stride=self.stride, dilation=self.dilation, group=self.group)
+        self.conv2d = ops.Conv2D(out_channel=self.out_channels, kernel_size=self.kernel_size,
+                                 mode=1, pad_mode=self.pad_mode, pad=self.padding,
+                                 stride=self.stride, dilation=self.dilation, group=self.group)
         self._init_depthwise_conv2d(weight_init)
-        self.bias_add = P.BiasAdd()
+        self.bias_add = ops.BiasAdd()
         self.thor = True
         self.hw = kernel_size[0] * kernel_size[1]
         self.matrix_a_dim = self.in_channels * self.kernel_size[0] * self.kernel_size[1]
         self.matrix_g_dim = self.out_channels
-        self.shape = P.Shape()
-        self.reshape = P.Reshape()
-        self.mul = P.Mul()
-        self.cast = P.Cast()
+        self.shape = ops.Shape()
+        self.reshape = ops.Reshape()
+        self.mul = ops.Mul()
+        self.cast = ops.Cast()
         self.a_normalizer = Parameter(initializer(1, [1], mstype.float32), name="a_normalizer", requires_grad=False)
         self.g_normalizer = Parameter(initializer(1, [1], mstype.float32), name="g_normalizer", requires_grad=False)
         self.is_ascend = True
@@ -409,30 +410,30 @@ class Conv2dThor(_ConvThor):
         else:
             self.is_ascend = False
             self.img2col = ThorIm2Col(kernel_size=kernel_size, stride=stride, pad_mode="same")
-            self.matmul = P.MatMul(transpose_b=True)
-            self.reduce_mean = P.ReduceMean(keep_dims=False)
+            self.matmul = ops.MatMul(transpose_b=True)
+            self.reduce_mean = ops.ReduceMean(keep_dims=False)
             self.matrix_a_cov = Parameter(Tensor(np.zeros([self.matrix_a_dim, self.matrix_a_dim]).astype(np.float32)),
                                           name='matrix_a', requires_grad=False)
             self.matrix_g_cov = Parameter(Tensor(np.zeros([self.matrix_g_dim, self.matrix_g_dim]).astype(np.float32)),
                                           name='matrix_g', requires_grad=False)
-        self.getG = P.InsertGradientOf(self.save_gradient)
+        self.getG = ops.InsertGradientOf(self.save_gradient)
 
     def _process_ascend_conv2d_thor(self, kernel_size, stride):
         """process ascend conv2d thor"""
         ksizes = (1, kernel_size[0], kernel_size[1], 1)
         strides = (1, stride[0], stride[1], 1)
         ksizes_tbe = (kernel_size[0], kernel_size[1])
-        self.img2col = P.CusImg2Col(ksizes=ksizes, strides=strides)
-        self.transpose = P.Transpose()
-        self.reshape = P.Reshape()
-        self.cube_matmul = P.CusMatMulCube(transpose_a=True)
+        self.img2col = ops.CusImg2Col(ksizes=ksizes, strides=strides)
+        self.transpose = ops.Transpose()
+        self.reshape = ops.Reshape()
+        self.cube_matmul = ops.CusMatMulCube(transpose_a=True)
         self.diag_block_dim = 128
         self.matrix_a_cov = Parameter(Tensor(np.eye(self.matrix_a_dim).astype(np.float32)),
                                       name='matrix_a', requires_grad=False)
         self.matrix_g_cov = Parameter(Tensor(np.eye(self.matrix_g_dim).astype(np.float32)),
                                       name='matrix_g', requires_grad=False)
-        self.slice = P.Slice()
-        self.im2col = P.NewIm2Col(ksizes=ksizes_tbe, strides=stride[0], padding_mode="SAME")
+        self.slice = ops.Slice()
+        self.im2col = ops.NewIm2Col(ksizes=ksizes_tbe, strides=stride[0], padding_mode="SAME")
 
     def _init_depthwise_conv2d(self, weight_init):
         """Initialize depthwise conv2d op"""
@@ -440,12 +441,12 @@ class Conv2dThor(_ConvThor):
             self.dilation = self._dilation
             Validator.check_int('group', self.group, self.in_channels, Validator.EQ, self.cls_name)
             Validator.check_int('group', self.group, self.out_channels, Validator.EQ, self.cls_name)
-            self.conv2d = P.DepthwiseConv2dNative(channel_multiplier=1,
-                                                  kernel_size=self.kernel_size,
-                                                  pad_mode=self.pad_mode,
-                                                  pad=self.padding,
-                                                  stride=self.stride,
-                                                  dilation=self.dilation)
+            self.conv2d = ops.DepthwiseConv2dNative(channel_multiplier=1,
+                                                    kernel_size=self.kernel_size,
+                                                    pad_mode=self.pad_mode,
+                                                    pad=self.padding,
+                                                    stride=self.stride,
+                                                    dilation=self.dilation)
             weight_shape = [1, self.in_channels, *self.kernel_size]
             self.weight_init = weight_init
             if isinstance(weight_init, Tensor):
@@ -598,29 +599,29 @@ class EmbeddingThor(Cell):
                                                          "padding_idx", self.cls_name)
             self.init_tensor[self.padding_idx] = 0
         self.embedding_table = Parameter(self.init_tensor, name='embedding_table')
-        self.expand = P.ExpandDims()
-        self.reshape_flat = P.Reshape()
+        self.expand = ops.ExpandDims()
+        self.reshape_flat = ops.Reshape()
         self.shp_flat = (-1,)
-        self.gather = P.Gather()
-        self.one_hot = P.OneHot()
+        self.gather = ops.Gather()
+        self.one_hot = ops.OneHot()
         self.on_value = Tensor(1.0, self.dtype)
         self.off_value = Tensor(0.0, self.dtype)
-        self.array_mul = P.MatMul()
-        self.reshape = P.Reshape()
-        self.get_shp = P.Shape()
+        self.array_mul = ops.MatMul()
+        self.reshape = ops.Reshape()
+        self.get_shp = ops.Shape()
         self.thor = True
         self.matrix_a = Parameter(Tensor(np.zeros([vocab_size]).astype(np.float32)),
                                   name='matrix_a', requires_grad=False)
         self.matrix_g = Parameter(Tensor(np.zeros([embedding_size, embedding_size]).astype(np.float32)),
                                   name="matrix_g", requires_grad=False)
-        self.reduce_sum = P.ReduceSum(keep_dims=False)
-        self.getG = P.InsertGradientOf(self.save_gradient)
-        self.cast = P.Cast()
+        self.reduce_sum = ops.ReduceSum(keep_dims=False)
+        self.getG = ops.InsertGradientOf(self.save_gradient)
+        self.cast = ops.Cast()
         if context.get_context("device_target") == "Ascend":
-            self.cube_matmul = P.CusMatMulCube(transpose_a=True)
+            self.cube_matmul = ops.CusMatMulCube(transpose_a=True)
         else:
-            self.cube_matmul = P.MatMul(transpose_a=True)
-        self.mul = P.Mul()
+            self.cube_matmul = ops.MatMul(transpose_a=True)
+        self.mul = ops.Mul()
 
     def save_gradient(self, dout):
         """
@@ -656,7 +657,7 @@ class EmbeddingThor(Cell):
         output = self.reshape(output_for_reshape, out_shape)
         # We use Depend to make 'self.matrix_g' as primal graph's weight parameter,
         # for it's used in 'save_gradient' gradient procedure.
-        return F.depend(output, self.matrix_g)
+        return ops.depend(output, self.matrix_g)
 
     def extend_repr(self):
         s = 'vocab_size={}, embedding_size={}, use_one_hot={}, embedding_table={}, dtype={}, padding_idx={}'.format(
@@ -752,10 +753,10 @@ class EmbeddingLookupThor(Cell):
             raise ValueError(f"For '{self.cls_name}', embedding_lookup must be sparse when 'target' is CPU, but got "
                              f"'sparse': {sparse}, 'target': {target}.")
         if sparse:
-            self.gatherv2 = P.SparseGatherV2()
+            self.gatherv2 = ops.SparseGatherV2()
         else:
-            self.gatherv2 = P.Gather()
-        self.embeddinglookup = P.EmbeddingLookup().set_device('CPU')
+            self.gatherv2 = ops.Gather()
+        self.embeddinglookup = ops.EmbeddingLookup().set_device('CPU')
         enable_ps = _get_ps_context("enable_ps")
         if enable_ps:
             self._process_vocab_cache(slice_mode)
@@ -764,13 +765,13 @@ class EmbeddingLookupThor(Cell):
                                                      mstype.float16), name='embedding_table')
         parallel_mode = _get_parallel_mode()
         is_auto_parallel = parallel_mode in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-        self.gather_revert = P.Gather()
-        self.reshape_first = P.Reshape()
-        self.reshape = P.Reshape()
-        self.unique = P.Unique()
-        self.shape = P.Shape()
+        self.gather_revert = ops.Gather()
+        self.reshape_first = ops.Reshape()
+        self.reshape = ops.Reshape()
+        self.unique = ops.Unique()
+        self.shape = ops.Shape()
         if is_auto_parallel:
-            self.unique = P.Unique().shard(((1,),))
+            self.unique = ops.Unique().shard(((1,),))
         if self.cache_enable and enable_ps:
             self._set_voacb_cache_enable_for_ps(vocab_cache_size, embedding_size, vocab_size)
             if is_auto_parallel:
@@ -833,14 +834,14 @@ class EmbeddingLookupThor(Cell):
                                   name='matrix_a', requires_grad=False)
         self.matrix_g = Parameter(Tensor(np.zeros([embedding_size, embedding_size]).astype(np.float32)),
                                   name="matrix_g", requires_grad=False)
-        self.reduce_sum = P.ReduceSum(keep_dims=False)
-        self.getG = P.InsertGradientOf(self.save_gradient)
-        self.cast = P.Cast()
-        self.cube_matmul = P.MatMul(transpose_a=True)
-        self.mul = P.Mul()
+        self.reduce_sum = ops.ReduceSum(keep_dims=False)
+        self.getG = ops.InsertGradientOf(self.save_gradient)
+        self.cast = ops.Cast()
+        self.cube_matmul = ops.MatMul(transpose_a=True)
+        self.mul = ops.Mul()
         self.on_value = Tensor(1.0, self.dtype)
         self.off_value = Tensor(0.0, self.dtype)
-        self.one_hot = P.OneHot()
+        self.one_hot = ops.OneHot()
 
 
     def save_gradient(self, dout):
@@ -872,11 +873,11 @@ class EmbeddingLookupThor(Cell):
 
         logger.info("EmbeddingLookup cache enable takes effect.")
         self.forward_unique = True
-        self.unique = P.Unique().set_device('CPU')
+        self.unique = ops.Unique().set_device('CPU')
         self.unique.add_prim_attr('cache_enable', True)
         self.embedding_table.cache_enable = self.cache_enable
         self.embedding_table.cache_shape = (self.vocab_cache_size, self.embedding_size)
-        self.reshape_first = P.Reshape().set_device('CPU')
+        self.reshape_first = ops.Reshape().set_device('CPU')
 
     def _process_vocab_cache(self, slice_mode):
         """PS embeddingLookup cache check and process."""
@@ -955,9 +956,9 @@ class EmbeddingLookupThor(Cell):
                 else:
                     out = self.gatherv2(self.embedding_table, indices, 0)
         if self.max_norm is not None:
-            axis = _make_axis_range(F.rank(indices), F.rank(out))
+            axis = _make_axis_range(ops.rank(indices), ops.rank(out))
             clip_by_norm = ClipByNorm(axis)
             out = clip_by_norm(out, self.max_norm)
         # We use Depend to make 'self.matrix_g' as primal graph's weight parameter,
         # for it's used in 'save_gradient' gradient procedure.
-        return F.depend(out, self.matrix_g)
+        return ops.depend(out, self.matrix_g)

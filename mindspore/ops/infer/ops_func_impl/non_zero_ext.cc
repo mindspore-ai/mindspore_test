@@ -22,6 +22,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 
 namespace mindspore {
 namespace ops {
@@ -67,7 +68,7 @@ int32_t NonZeroExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray NonZeroExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   auto x_shape = x_tensor->shape();
   auto x_rank = SizeToLong(x_shape.size());
@@ -86,7 +87,7 @@ ShapeArray NonZeroExtFuncImpl::InferShape(const PrimitivePtr &primitive, const V
 }
 
 TypePtrList NonZeroExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto x_shape = x_tensor->shape();
   auto x_rank_size = x_shape.size();

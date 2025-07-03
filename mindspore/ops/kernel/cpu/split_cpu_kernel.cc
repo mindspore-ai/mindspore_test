@@ -18,12 +18,13 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 #include "infer/ops_func_impl/split.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_cpu {
 namespace {
 constexpr size_t kSplitInputsNum = 3;
 using complex64 = std::complex<float>;
@@ -239,8 +240,16 @@ std::vector<std::tuple<KernelAttr, SplitCpuKernelMod::SplitFunc, SplitCpuKernelM
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
        .AddOutputAttr(kNumberTypeBool),
-     &SplitCpuKernelMod::LaunchKernel<bool>, &SplitCpuKernelMod::InitIOSize<bool>}};
+     &SplitCpuKernelMod::LaunchKernel<bool>, &SplitCpuKernelMod::InitIOSize<bool>},
+    {KernelAttr()
+       .AddAllSameAttr(true)
+       .AddInputAttr(kNumberTypeBFloat16)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+       .AddOutputAttr(kNumberTypeBFloat16),
+     &SplitCpuKernelMod::LaunchKernel<bfloat16>, &SplitCpuKernelMod::InitIOSize<bfloat16>}};
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Split, SplitCpuKernelMod);
+}  // namespace split_cpu
 }  // namespace kernel
 }  // namespace mindspore

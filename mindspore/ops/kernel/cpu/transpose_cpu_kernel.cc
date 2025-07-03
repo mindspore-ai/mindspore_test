@@ -17,16 +17,17 @@
 #include <complex>
 #include <vector>
 #include <algorithm>
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "nnacl/errorcode.h"
 #include "include/common/thread_pool.h"
 #include "kernel/cpu/transpose_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/check_convert_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace transpose_cpu {
 namespace {
 constexpr size_t kTransposeInputNum = 2;
 constexpr size_t kTransposeOutputsNum = 1;
@@ -561,5 +562,6 @@ void TransposeFwdCpuKernelMod::TransposeDims(const T *in_data, T *out_data, int6
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Transpose, TransposeFwdCpuKernelMod);
+}  // namespace transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore

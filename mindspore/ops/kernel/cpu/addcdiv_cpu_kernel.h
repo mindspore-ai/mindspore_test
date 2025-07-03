@@ -21,12 +21,13 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/arithmetic_parameter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace addcdiv_cpu {
 class AddcdivCpuKernelMod : public NativeCpuKernelMod {
  public:
   AddcdivCpuKernelMod() = default;
@@ -61,6 +62,7 @@ class AddcdivCpuKernelMod : public NativeCpuKernelMod {
   template <typename T1, typename T2>
   bool AddcdivCompute(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace addcdiv_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

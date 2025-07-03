@@ -173,6 +173,12 @@ class MS_CORE_API Float : public Number {
   /// \param nbits Define the bit length of Float object.
   explicit Float(const int nbits);
 
+  /// \brief Constructor for Float, used to support float8.
+  ///
+  /// \param type_id Define the type id of Float object.
+  /// \param nbits Define the bit length of Float object.
+  explicit Float(const TypeId type_id, const int nbits);
+
   /// \brief Destructor of Float.
   ~Float() override {}
   MS_DECLARE_PARENT(Float, Number)
@@ -182,12 +188,44 @@ class MS_CORE_API Float : public Number {
     if (nbits() == 0) {
       return std::make_shared<Float>();
     }
-    return std::make_shared<Float>(nbits());
+    return std::make_shared<Float>(type_id(), nbits());
   }
 
-  std::string ToString() const override { return GetTypeName("Float"); }
-  std::string ToReprString() const override { return nbits() == 0 ? "float_" : GetTypeName("float"); }
+  std::string ToString() const override {
+    if (type_id() == kNumberTypeFloat8E4M3FN) {
+      return "Float8E4M3FN";
+    }
+    if (type_id() == kNumberTypeFloat8E5M2) {
+      return "Float8E5M2";
+    }
+    if (type_id() == kNumberTypeHiFloat8) {
+      return "HiFloat8";
+    }
+    return GetTypeName("Float");
+  }
+
+  std::string ToReprString() const override {
+    if (type_id() == kNumberTypeFloat8E4M3FN) {
+      return "float8_e4m3fn";
+    }
+    if (type_id() == kNumberTypeFloat8E5M2) {
+      return "float8_e5m2";
+    }
+    if (type_id() == kNumberTypeHiFloat8) {
+      return "hifloat8";
+    }
+    return nbits() == 0 ? "float_" : GetTypeName("float");
+  }
   std::string DumpText() const override {
+    if (type_id() == kNumberTypeFloat8E4M3FN) {
+      return "F8E4M3FN";
+    }
+    if (type_id() == kNumberTypeFloat8E5M2) {
+      return "F8E5M2";
+    }
+    if (type_id() == kNumberTypeHiFloat8) {
+      return "HiF8";
+    }
     return nbits() == 0 ? std::string("Float") : std::string("F") + std::to_string(nbits());
   }
 };
@@ -262,9 +300,12 @@ GVAR_DEF(TypePtr, kUInt8, std::make_shared<UInt>(static_cast<int>(BitsNum::eBits
 GVAR_DEF(TypePtr, kUInt16, std::make_shared<UInt>(static_cast<int>(BitsNum::eBits16)));
 GVAR_DEF(TypePtr, kUInt32, std::make_shared<UInt>(static_cast<int>(BitsNum::eBits32)));
 GVAR_DEF(TypePtr, kUInt64, std::make_shared<UInt>(static_cast<int>(BitsNum::eBits64)));
-GVAR_DEF(TypePtr, kFloat16, std::make_shared<Float>(static_cast<int>(BitsNum::eBits16)));
-GVAR_DEF(TypePtr, kFloat32, std::make_shared<Float>(static_cast<int>(BitsNum::eBits32)));
-GVAR_DEF(TypePtr, kFloat64, std::make_shared<Float>(static_cast<int>(BitsNum::eBits64)));
+GVAR_DEF(TypePtr, kFloat16, std::make_shared<Float>(kNumberTypeFloat16, static_cast<int>(BitsNum::eBits16)));
+GVAR_DEF(TypePtr, kFloat32, std::make_shared<Float>(kNumberTypeFloat32, static_cast<int>(BitsNum::eBits32)));
+GVAR_DEF(TypePtr, kFloat64, std::make_shared<Float>(kNumberTypeFloat64, static_cast<int>(BitsNum::eBits64)));
+GVAR_DEF(TypePtr, kFloat8E4M3FN, std::make_shared<Float>(kNumberTypeFloat8E4M3FN, static_cast<int>(BitsNum::eBits8)));
+GVAR_DEF(TypePtr, kFloat8E5M2, std::make_shared<Float>(kNumberTypeFloat8E5M2, static_cast<int>(BitsNum::eBits8)));
+GVAR_DEF(TypePtr, kHiFloat8, std::make_shared<Float>(kNumberTypeHiFloat8, static_cast<int>(BitsNum::eBits8)));
 GVAR_DEF(TypePtr, kBFloat16, std::make_shared<BFloat>(static_cast<int>(BitsNum::eBits16)));
 GVAR_DEF(TypePtr, kInt, std::make_shared<Int>());
 GVAR_DEF(TypePtr, kUInt, std::make_shared<UInt>());

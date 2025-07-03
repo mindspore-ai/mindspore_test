@@ -19,10 +19,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace inner_non_zero {
 
 class InnerNonZeroAscend : public AclnnKernelMod {
  public:
@@ -40,6 +41,7 @@ class InnerNonZeroAscend : public AclnnKernelMod {
  protected:
   std::vector<ShapeVector> outputs_shape_{0};
 };
+}  // namespace inner_non_zero
 }  // namespace kernel
 }  // namespace mindspore
 

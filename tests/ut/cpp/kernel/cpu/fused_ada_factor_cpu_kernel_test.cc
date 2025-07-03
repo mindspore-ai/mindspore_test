@@ -27,7 +27,7 @@ namespace kernel {
 static constexpr size_t kSizeFloat32 = sizeof(float);
 class FusedAdaFactorCpuKernelTest : public UT::Common {
  public:
-  FusedAdaFactorCpuKernelTest() : ada_factor_(std::make_shared<FusedAdaFactorCpuKernelMod>()) {}
+  FusedAdaFactorCpuKernelTest() : ada_factor_(std::make_shared<fused_ada_factor_cpu::FusedAdaFactorCpuKernelMod>()) {}
 
   void SetUp() override {
     ada_factor_->elem_num_ = elem_num_;
@@ -163,7 +163,7 @@ class FusedAdaFactorCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> inputs_;
   std::vector<KernelTensor *> workspace_;
   std::vector<KernelTensor *> outputs_;
-  std::shared_ptr<FusedAdaFactorCpuKernelMod> ada_factor_;
+  std::shared_ptr<fused_ada_factor_cpu::FusedAdaFactorCpuKernelMod> ada_factor_;
 
   size_t last_row_dim_size_ = 4;
   size_t last_col_dim_size_ = 6;

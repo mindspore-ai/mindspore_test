@@ -78,17 +78,19 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"Softshrink", {{"lambd", 2}}},
   {"Squeeze", {{"axis", 2}}},
   {"FusedInferAttentionScore",
-   {{"num_heads", 18},
-    {"scale_value", 19},
-    {"pre_tokens", 20},
-    {"next_tokens", 21},
-    {"input_layout", 22},
-    {"num_key_value_heads", 23},
-    {"sparse_mode", 24},
-    {"inner_precise", 25},
-    {"block_size", 26},
-    {"antiquant_mode", 27},
-    {"softmax_lse_flag", 28}}},
+   {{"num_heads", 25},
+    {"scale", 26},
+    {"pre_tokens", 27},
+    {"next_tokens", 28},
+    {"input_layout", 29},
+    {"num_key_value_heads", 30},
+    {"sparse_mode", 31},
+    {"inner_precise", 32},
+    {"block_size", 33},
+    {"antiquant_mode", 34},
+    {"softmax_lse_flag", 35},
+    {"key_antiquant_mode", 36},
+    {"value_antiquant_mode", 37}}},
   {"IncreFlashAttention",
    {{"num_heads", 16},
     {"input_layout", 17},
@@ -100,13 +102,16 @@ static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> 
   {"GridSampler2D", {{"interpolation_mode", 3}, {"padding_mode", 4}, {"align_corners", 5}}},
   {"WeightQuantBatchMatmul", {{"transpose_x", 8}, {"transpose_weight", 9}, {"antiquant_group_size", 10}}},
   {"QuantBatchMatmul", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
-  {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}}},
+  {"QuantBatchMatmulV3", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
+  {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}, {"transpose_a", 11}, {"transpose_b", 12}}},
+  {"AdaptiveMaxPool2D", {{"output_size", 2}}},
   {"BinaryCrossEntropy", {{"reduction", 4}}},
   {"Cross", {{"dim", 3}}},
   {"Triu", {{"diagonal", 2}}},
+  {"SoftMarginLoss", {{"reduction", 3}}},
   {"SmoothL1Loss", {{"beta", 3}, {"reduction", 4}}},
-  {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}}  // reduce OR reduction is passed
-};
+  {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}},  // reduce OR reduction is passed
+  {"ResizeD", {{"sizes", 2}, {"scales", 3}, {"coordinate_transformation_mode", 4}}}};
 
 constexpr size_t kMatMulInputSizeWithBias = 6;  // primitive, x1, x2, bias, transpose_a, transpose_b
 constexpr size_t kInputSizeTwo = 2;
@@ -114,6 +119,7 @@ constexpr size_t kInputSizeThree = 3;
 constexpr auto kMatMulOpName = "MatMul";
 constexpr auto kMatMulV2OpName = "MatMulV2";
 constexpr auto kSqueezeOpName = "Squeeze";
+constexpr auto kStridedSliceOpName = "StridedSlice";
 constexpr auto kCustomOpName = "Custom";
 constexpr auto kPromptFlashAttentionOpName = "PromptFlashAttention";
 
@@ -156,6 +162,21 @@ int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNo
   return RET_OK;
 }
 
+bool IsValidInputIndex(const std::vector<int64_t> &input_index) {
+  if (input_index.empty()) {
+    return true;
+  }
+  if (input_index[0] < 0) {
+    return false;
+  }
+  for (size_t i = 1; i < input_index.size(); ++i) {
+    if (input_index[i] <= input_index[i - 1]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
   auto cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
@@ -166,7 +187,47 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
     return AdjustInputsAndAttrsForSqueeze(manager, cnode, origin_prim);
   }
   if (prim_name == kCustomOpName) {
-    prim_name = GetValue<std::string>(origin_prim->GetAttr("type"));
+    auto attr_type = origin_prim->GetAttr("type");
+    auto attr_reg_op_name = origin_prim->GetAttr("reg_op_name");
+    if (attr_type != nullptr) {
+      prim_name = GetValue<std::string>(attr_type);
+    } else if (attr_reg_op_name != nullptr) {
+      prim_name = GetValue<std::string>(attr_reg_op_name);
+    } else {
+      MS_LOG(ERROR) << "Custom op has no attribute type or reg_op_name!";
+      return RET_ERROR;
+    }
+    auto attr_input_index = origin_prim->GetAttr("input_index");
+    if (attr_input_index != nullptr) {
+      AnfNodePtrList new_inputs = {};
+      new_inputs.emplace_back(cnode->input(0));
+      auto attr_input_names = origin_prim->GetAttr("input_names");
+      MS_CHECK_TRUE_MSG(attr_input_names != nullptr, RET_ERROR, "Custom op has no attribute input_names!");
+      auto input_names = GetValue<std::vector<std::string>>(attr_input_names);
+      auto input_index = GetValue<std::vector<int64_t>>(attr_input_index);
+      if (!IsValidInputIndex(input_index)) {
+        MS_LOG(ERROR) << "Custom op attribute input_index is invalid!";
+        return RET_ERROR;
+      }
+      for (size_t i = 0; i < input_names.size(); i++) {
+        auto index_it = std::find(input_index.begin(), input_index.end(), i);
+        if (index_it == input_index.end()) {
+          auto none_input = NewValueNode(std::make_shared<None>());
+          none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
+          new_inputs.emplace_back(none_input);
+        } else {
+          auto index = index_it - input_index.begin() + 1;
+          auto input = cnode->input(index);
+          if (input == nullptr) {
+            MS_LOG(ERROR) << "Failed to get cnode input at index " << index << ", input name is " << input_names[i]
+                          << "!";
+            return RET_ERROR;
+          }
+          new_inputs.emplace_back(input);
+        }
+      }
+      cnode->set_inputs(new_inputs);
+    }
     if (kAttrMapNeedAdjust.find(prim_name) == kAttrMapNeedAdjust.end()) {
       MS_LOG(INFO) << "Custom with type: '" << prim_name << "' does not need to do attr_to_args conversion.";
       return RET_OK;
@@ -174,9 +235,12 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
   }
   const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
   const auto &origin_attrs = origin_prim->attrs();
-
   auto node_inputs = cnode->inputs();
   auto actual_input_num = node_inputs.size();
+  // skip when attr to arg conversion has been completed.
+  if ((prim_name == kStridedSliceOpName) && ((attrs_adjust.back().second + 1) == actual_input_num)) {
+    return RET_OK;
+  }
   // Pad none for optional input, first input of cnode is Primitive, so an extra none is padded.
   if (attrs_adjust.begin()->second > actual_input_num) {
     auto pad_none_size = attrs_adjust.begin()->second - actual_input_num;
@@ -238,10 +302,10 @@ bool AttrToArgsPass::Run(const FuncGraphPtr &func_graph) {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
-    auto prim_name = prim->name();
     if (prim == nullptr) {
       continue;
     }
+    auto prim_name = prim->name();
     if (kAttrMapNeedAdjust.find(prim->name()) == kAttrMapNeedAdjust.end() && !(prim_name == kCustomOpName)) {
       continue;
     }

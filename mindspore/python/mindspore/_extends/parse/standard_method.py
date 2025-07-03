@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from mindspore import Tensor, CSRTensor, COOTensor, Parameter
 from mindspore import dtype as mstype
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common import mutable
 from mindspore.common.generator import default_generator
 import mindspore.common._monad as monad
@@ -27,9 +27,11 @@ from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, inplace_index_add_op
-from mindspore.ops.auto_generate import inplace_copy_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, \
+    inplace_index_add_op
+from mindspore.ops.auto_generate import inplace_copy_op, inplace_uniform_op, inplace_erfinv_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
+from mindspore.ops.auto_generate import inplace_exponential_op
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -39,7 +41,7 @@ from ...ops import operations as P
 from ...ops import composite
 from ...ops.operations import array_ops
 from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
-    zeros_like, ones_like, repeat_elements, multitype_ops
+    zeros_like, ones_like, multitype_ops, _ones_like_for_grad
 from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ...ops.composite.multitype_ops import _compile_utils as compile_utils
 from ...ops.operations._inner_ops import Format
@@ -52,7 +54,7 @@ from ...ops.operations._sequence_ops import ListAppend, ListInsert, SequenceMax,
     SequenceIndex
 
 __all__ = ['MultitypeFuncGraph', 'env_get',
-           'hyper_add', 'zeros_like', 'ones_like']
+           'hyper_add', 'zeros_like', 'ones_like', '_ones_like_for_grad']
 
 shape_ = P.Shape()
 dtype_ = P.DType()
@@ -421,7 +423,7 @@ def hasattr(x, attr):  # pylint: disable=redefined-builtin
 
     Args:
         x (object): Input object.
-        attr (string): The name of attribute
+        attr (str): The name of attribute
 
     Returns:
         Boolean value, indicates whether the object x has attribute attr.
@@ -579,7 +581,7 @@ def transpose(x, *axis):
 
     Raises:
         TypeError: If input arguments have types not specified above.
-        ValueError: If the number of `axes` is not euqal to a.ndim.
+        ValueError: If the number of `axes` is not equal to a.ndim.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1232,6 +1234,13 @@ def pow(x, y):  # pylint: disable=redefined-builtin
     return F.pow(x, y)
 
 
+def put_(x, index, source, accumulate=False):
+    """
+    Copies the elements from source into the positions specified by index.
+    """
+    return F.put_(x, index, source, accumulate)
+
+
 def log(x):
     """
     Calculate the logarithm of Tensor.
@@ -1274,12 +1283,12 @@ def logcumsumexp(input, axis):
     return F.logcumsumexp(input, axis)
 
 
-def logsumexp(input, axis, keepdims=False):
+def logsumexp(input, dim, keepdim=False):
     """
     Reduces a dimension of a tensor by calculating exponential for all elements in the dimension,
     then calculate logarithm of the sum.
     """
-    return F.logsumexp(input, axis, keepdims)
+    return F.logsumexp(input, dim, keepdim)
 
 
 def round_(x):
@@ -1289,12 +1298,11 @@ def round_(x):
     return F.round(x)
 
 
-def roll(x, shifts, dims):
+def roll(x, shifts, dims=None):
     """
     Rolls the elements of a tensor along an axis.
     """
-    dims = dims if dims is not None else 0
-    return F.Roll(shifts, dims)(x)
+    return F.roll(x, shifts, dims)
 
 
 def rot90(x, k, dims):
@@ -1362,11 +1370,11 @@ def remainder(input, divisor):
     return F.remainder(input, divisor)
 
 
-def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
     """
     Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
     """
-    return F.unique_consecutive(input, return_idx, return_counts, axis)
+    return F.unique_consecutive(input, return_inverse, return_counts, dim)
 
 
 def unique_with_pad(x, pad_num):
@@ -1850,7 +1858,7 @@ def searchsorted(x, v, side='left', sorter=None):
 
     if side not in ('left', 'right'):
         raise ValueError(f"For 'Tensor.searchsorted', the argument 'side' should be one of in "
-                            f"['left', 'right'], but got {side}.")
+                         f"['left', 'right'], but got {side}.")
     if not isinstance(v, Tensor):
         v = const_utils.make_tensor(v)
     if sorter is not None:
@@ -2125,14 +2133,14 @@ def _check_sum_to_size(size, input_dim, shape_input):
 
 
 @_primexpr
-def _count_axes(size, input_shape, shape_input):
+def _count_axes(size, input_shape, shape_input, pre_len, pre_axis):
     """Count the sum axes for sum_to_size."""
-    axes = []
+    axes = pre_axis
     for i in range(len(size)):
         element = size[i]
-        if element != input_shape[i] and element == 1:
-            axes.append(i)
-        elif element != input_shape[i]:
+        if element != input_shape[i + pre_len] and element == 1:
+            axes.append(i + pre_len)
+        elif element != input_shape[i + pre_len]:
             raise ValueError(f"For sum_to_size, size {size} is not expandable to the tensor size {shape_input}.")
     return axes
 
@@ -2145,13 +2153,15 @@ def sum_to_size(input, *size):
         size = size[0]
     shape_input = input.shape
     _check_sum_to_size(size, input.ndim, shape_input)
+    pre_len = 0
+    pre_axis = []
     if len(size) < input.ndim:
-        pre_axis = tuple(axis for axis in range(input.ndim - len(size)))
-        input = input.sum(pre_axis)
+        pre_len = input.ndim - len(size)
+        pre_axis = [axis for axis in range(pre_len)]
 
-    axes = _count_axes(size, input.shape, shape_input)
+    axes = _count_axes(size, input.shape, shape_input, pre_len, pre_axis)
     if axes:
-        return input.sum(tuple(axes), keepdims=True)
+        return input.sum(tuple(axes), keepdims=True).reshape(size)
     return input
 
 
@@ -2177,71 +2187,53 @@ def nanmedian(input, axis=-1, keepdims=False):
     return F.nanmedian(input, axis, keepdims)
 
 
-def repeat(x, repeats, axis=None):
+def repeat(x, *args, repeats=None):
     """
     Repeat elements of an array.
 
     Args:
         x (Tensor): Input tensor.
-        repeats (Union[int, tuple, list]): The number of repetitions for each element.
-            `repeats` is broadcasted to fit the shape of the given axis.
-        axis (int, optional): The axis along which to repeat values. By default,
-            use the flattened input tensor, and return a flat output tensor.
+        args (*int): To simulate an overload like ``repeat(x, *repeats: int)``.
+        repeats (Union[int, tuple[int], list[int]]): The number of repetitions of `a` along
+            each axis. Requires that ``len(repeats) >= x.rank``.
 
     Returns:
-        Tensor, has the same shape as input tensor except along the given axis.
+        Tensor, the repeated output array.
 
     Raises:
-        ValueError: if axis is out of range.
         TypeError: if input is not a Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore.numpy as np
-        >>> x = np.array(3)
-        >>> print(x.repeat(4))
-        [3 3 3 3]
-        >>> x = np.array([[1,2],[3,4]])
-        >>> print(x.repeat(2))
-        [1 1 2 2 3 3 4 4]
-        >>> print(x.repeat(3, axis=1))
-        [[1 1 1 2 2 2]
-        [3 3 3 4 4 4]]
-        >>> print(x.repeat([1,2], axis=0))
-        [[1 2]
-        [3 4]
-        [3 4]]
+        >>> from mindspore import Tensor
+        >>> a = tensor([0, 1, 2])
+        >>> output = a.repeat(2, 2)  # same as a.repeat((2, 2))
+        >>> print(output)
+        [[0 1 2 0 1 2]
+         [0 1 2 0 1 2]]
     """
-    if not isinstance(repeats, (tuple, list)):
-        repeats = (repeats,)
-    for element in repeats:
-        if not isinstance(element, int):
-            const_utils.raise_type_error("Each element should be integer")
-    if axis is None:
-        x = ravel(x)
-        axis = 0
-    if not isinstance(axis, int):
-        const_utils.raise_type_error('axes should be integers')
-    check_axis_in_range(axis, x.ndim)
-    axis = axis + x.ndim if axis < 0 else axis
-
-    if len(repeats) == 1:
-        repeats = repeats[0]
-        if repeats == 0:
-            return empty_tensor(x.dtype)
-        return repeat_elements(x, repeats, axis)
-    size = x.shape[axis]
-    if len(repeats) != size:
-        const_utils.raise_value_error(
-            'operands could not be broadcast together')
-    subs = P.Split(axis, size)(x)
-    repeated_subs = []
-    for sub_item, rep in zip(subs, repeats):
-        if rep != 0:
-            repeated_subs.append(repeat_elements(sub_item, rep, axis))
-    return P.Concat(axis)(repeated_subs)
+    # only simulate 2 overload of repeat. Further check by F.tile
+    if repeats is None:
+        # no `repeats`: called by positional arguments like ``x.repeat(...)``
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            repeats = tuple(args[0])  # transform ``x.repeat([x0, x1, ...])`` (list type) to tuple
+        else:
+            repeats = args  # called as variable-length parameter like ``x.repeat(x0, x1, ...)``
+    else:
+        if args:  # simulate an exception thrown by Python interpreter
+            raise TypeError("repeat() got multiple values for argument 'repeat'")
+        # transform named argument with list type like ``x.repeat(repeats=[x0, x1, ...])`` to tuple
+        if isinstance(repeats, list):
+            repeats = tuple(repeats)
+    x_rank = F.rank(x)
+    if len(repeats) < x_rank:
+        raise ValueError(
+            "For repeat, number of items of repeats can not be smaller than the number of "
+            f"dimensions of self tensor, but got repeats with {len(repeats)}"
+            f" items and rank of self Tensor is {x_rank}.")
+    return F.tile(x, repeats)
 
 
 def repeat_interleave(x, repeats, dim=None):
@@ -2395,7 +2387,7 @@ def bool_func(*data):
 def cast_to_int(*data):
     target = data[0]
     if isinstance(target, (Tensor, Tensor_)):
-        target = Tensor(target, internal=True)
+        target = Tensor(target)
     if len(data) == 1:
         return int(target)
     return int(target, data[1])
@@ -2433,7 +2425,7 @@ def int_func(*data):
 @constexpr
 def cast_to_float(data):
     if isinstance(data, (Tensor, Tensor_)):
-        data = Tensor(data, internal=True)
+        data = Tensor(data)
     return float(data)
 
 
@@ -2494,6 +2486,18 @@ def tuple_func(data):
     for i in data:
         ret = ret + F.make_tuple(i)
     return ret
+
+
+def dict_func(data):
+    """Implementation of `dict`."""
+    if isinstance(data, (tuple, list)):
+        keys = F.make_tuple()
+        values = F.make_tuple()
+        for pair in data:
+            keys = keys + F.make_tuple(pair[0])
+            values = values + F.make_tuple(pair[1])
+        return F.make_dict(keys, values)
+    raise TypeError('Currently, dict() only supports tuple or list input.')
 
 
 def ms_zip(*data):
@@ -2605,7 +2609,7 @@ def ms_max_one_element(x):
 def ms_max(*data):
     """Implementation of `max`."""
     len_data = get_max_min_data_len(data)
-    if len_data <= 0: # pylint: disable=no-else-raise
+    if len_data <= 0:  # pylint: disable=no-else-raise
         raise TypeError("max() requires 1 argument at least.")
     elif len_data == 1:
         x = data[0]
@@ -2681,7 +2685,7 @@ def ms_min_one_element(x):
 def ms_min(*data):
     """Implementation of `min`."""
     len_data = get_max_min_data_len(data)
-    if len_data <= 0: # pylint: disable=no-else-raise
+    if len_data <= 0:  # pylint: disable=no-else-raise
         raise TypeError("min() requires 1 argument at least.")
     elif len_data == 1:
         x = data[0]
@@ -3214,7 +3218,7 @@ def random_categorical(x, num_sample, seed=0, dtype=mstype.int64):
 @constexpr
 def empty_tensor(dtype):
     """Return empty tensor"""
-    return Tensor_([], dtype)
+    return Tensor([], dtype)
 
 
 @constexpr
@@ -3291,7 +3295,7 @@ check_bool = constexpr(validator.check_bool)
 @constexpr
 def empty_compile(dtype, shape):
     """Returns an empty Tensor."""
-    return Tensor_(dtype, shape)
+    return Tensor(dtype=dtype, shape=shape)
 
 
 def tensor_bool(x):
@@ -3414,8 +3418,8 @@ def normal_(input, mean=0, std=1, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(  # pylint: disable=protected-access
-        generator_step_)
+
+    seed, offset = generator._step(generator_step_)
     return inplace_normal_op(input, mean, std, seed, offset)
 
 
@@ -3698,11 +3702,11 @@ def sparse_ndim_(x):
     return F.tuple_len(x.shape)
 
 
-def bernoulli(input, p=0.5, seed=None):
+def bernoulli(input, *, generator=None):
     """
     Randomly draws binary numbers from a Bernoulli distribution.
     """
-    return F.bernoulli(input, p, seed)
+    return F.bernoulli_ext(input, generator=generator)
 
 
 def gather_nd(input_x, indices):
@@ -3935,7 +3939,7 @@ def atanh(x):
     return F.atanh(x)
 
 
-def baddbmm(x, batch1, batch2, beta=1, alpha=1):
+def baddbmm(x, batch1, batch2, *, beta=1, alpha=1):
     r"""
     For details, please refer to :func:`mindspore.ops.baddbmm`.
     """
@@ -4003,6 +4007,7 @@ def to_double(input_x):
     Converts input tensor dtype to float64.
     """
     return F.cast(input_x, mstype.float64)
+
 
 def to_bfloat16(input_x):
     r"""
@@ -4101,6 +4106,16 @@ def erfinv(input):
     Computes the inverse error function of input tensor.
     """
     return F.erfinv(input)
+
+
+def erfinv_(input):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.erfinv_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    return inplace_erfinv_op(input)
 
 
 def less_equal(input, other):
@@ -4467,6 +4482,29 @@ def uniform(input, from_=0., to=1., generator=None):
     return F.uniform_ext(input, from_, to, generator)
 
 
+def uniform_(input, from_=0, to=1, *, generator=None):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.uniform_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return inplace_uniform_op(input, from_, to, seed, offset)
+
+
+def exponential_(input, lambd=1, *, generator=None):
+    r"""
+        Fills `self` tensor with elements drawn from the exponential distribution:
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return inplace_exponential_op(input, lambd, seed, offset)
+
+
 def amin(input, axis=None, keep_dims=False):
     r"""
     For details, please refer to :func:`mindspore.ops.amin`.
@@ -4569,3 +4607,18 @@ def zero_(input):
     Return a tensor filled with zeros.
     """
     return F.zero_(input)
+
+
+def slice_get_start(slice_node):
+    """Using SliceGetItem to get slice_node.start"""
+    return F.SliceGetItem(slice_node, "start")
+
+
+def slice_get_stop(slice_node):
+    """Using SliceGetItem to get slice_node.stop"""
+    return F.SliceGetItem(slice_node, "stop")
+
+
+def slice_get_step(slice_node):
+    """Using SliceGetItem to get slice_node.step"""
+    return F.SliceGetItem(slice_node, "step")

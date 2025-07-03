@@ -21,12 +21,13 @@
 #include <limits>
 #include <mutex>
 #include <random>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "mindspore/ops/infer/histogram.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace histogram_cpu {
 namespace {
 const uint32_t kInputNum = 1;
 const uint32_t kOutputNum = 1;
@@ -143,5 +144,6 @@ std::vector<KernelAttr> HistogramCPUKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Histogram, HistogramCPUKernelMod);
+}  // namespace histogram_cpu
 }  // namespace kernel
 }  // namespace mindspore

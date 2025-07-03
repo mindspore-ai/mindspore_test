@@ -29,10 +29,10 @@ from mindspore.nn import TrainOneStepCell, Momentum
 from mindspore.ops import composite as C
 from mindspore.nn.wrap.loss_scale import TrainOneStepWithLossScaleCell
 from mindspore.context import ParallelMode
-from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.nn import DistributedGradReducer
 from mindspore.communication.management import get_group_size
 from mindspore.parallel._utils import _get_enable_parallel_optimizer
-from mindspore.nn.wrap.cell_wrapper import PipelineCell
+from mindspore.nn import PipelineCell
 from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell
 from mindspore import Symbol
 
@@ -1481,7 +1481,6 @@ def compile_pipeline_net(net, _x1, _x2, _x3):
     phase, _ = _cell_graph_executor.compile(train_net, _x1, _x2, _x3)
     context.reset_auto_parallel_context()
     return phase
-
 
 def test_pipeline_dp_mp_op_bs_and_seq_dynamic_stage0():
     '''

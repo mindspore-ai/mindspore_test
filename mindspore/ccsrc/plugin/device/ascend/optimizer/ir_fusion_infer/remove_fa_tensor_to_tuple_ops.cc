@@ -30,6 +30,8 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -59,12 +61,6 @@ const BaseRef RemoveFATensorToTupleOps::DefinePattern() const {
 
 const AnfNodePtr RemoveFATensorToTupleOps::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
                                                    const EquivPtr &) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
-
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();

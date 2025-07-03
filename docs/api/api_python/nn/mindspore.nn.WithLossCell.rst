@@ -23,8 +23,8 @@ mindspore.nn.WithLossCell
 
     .. py:method:: backbone_network
         :property:
-    
+
         获取骨干网络。
-    
+
         返回：
             Cell，骨干网络。

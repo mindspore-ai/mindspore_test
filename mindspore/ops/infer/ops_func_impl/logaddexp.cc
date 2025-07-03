@@ -31,6 +31,7 @@
 #include "base/base.h"
 #include "ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
 namespace mindspore::ops {
 static inline void IsValidLogAddExpType(const std::string &type_name, const TypeId &t, const TypePtr &type) {
@@ -60,8 +61,8 @@ ShapeArray LogAddExpFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList LogAddExpFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const auto &other_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
+  const auto &other_tensor = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(other_tensor);
   const auto &input_type = input_tensor->Dtype();

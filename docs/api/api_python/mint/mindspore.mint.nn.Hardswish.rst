@@ -17,7 +17,7 @@ mindspore.mint.nn.Hardswish
 
     HardSwish函数图：
 
-    .. image:: ../images/HardSwish.png
+    .. image:: ../images/Hardswish.png
         :align: center
 
     输入：

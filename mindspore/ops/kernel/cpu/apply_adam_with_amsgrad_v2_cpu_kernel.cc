@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
+#include "kernel/cpu/apply_adam_with_amsgrad_v2_cpu_kernel.h"
+
 #include <map>
 #include <functional>
 #include <algorithm>
 
-#include "kernel/common_utils.h"
-#include "kernel/cpu/apply_adam_with_amsgrad_v2_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/common_utils.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 #include "mindspore/ops/infer/apply_adam_with_amsgradv2.h"
 #include "utils/ms_utils.h"
@@ -28,6 +29,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_adam_with_amsgrad_v2_cpu {
 namespace {
 constexpr size_t kApplyAdamWithAmsgradV2InputsNum = 11;
 constexpr size_t kApplyAdamWithAmsgradV2OutputsNum = 4;
@@ -254,5 +256,6 @@ std::vector<KernelAttr> ApplyAdamWithAmsgradV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyAdamWithAmsgradV2, ApplyAdamWithAmsgradV2CpuKernelMod);
+}  // namespace apply_adam_with_amsgrad_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

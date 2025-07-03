@@ -16,13 +16,13 @@
 
 #include "pybind_api/hal/event_py.h"
 #include "runtime/pynative/op_executor.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
-#include "pipeline/pynative/forward/forward_task.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "runtime/device/multi_stream_controller.h"
+#include "pynative/forward/forward_task.h"
+#include "pynative/pynative_utils.h"
+#include "runtime/device/res_manager/multi_stream_controller.h"
 
 namespace mindspore {
 namespace hal {
@@ -31,12 +31,23 @@ std::mutex EventCnt::unrecorded_cnt_mtx_;
 
 EventPy::~EventPy() {
   if (creator_stream_ != nullptr && event_ != nullptr) {
-    runtime::Pipeline::Get().WaitForward();
-    const auto &device_ctx = creator_stream_->device_ctx();
-    MS_LOG(DEBUG) << "DestroyEvent, event:" << event_;
-    if (device_ctx != nullptr && device_ctx->initialized()) {
-      device_ctx->device_res_manager_->DestroyEvent(event_);
-    }
+    pynative::DispatchOp(
+      std::make_shared<pynative::PassthroughFrontendTask>([creator_stream = creator_stream_, event = event_]() {
+        auto destruct_fn = [creator_stream, event]() {
+          const auto &device_ctx = creator_stream->device_ctx();
+          if (device_ctx != nullptr && device_ctx->initialized()) {
+            runtime::OpExecutor::DispatchLaunchTask(
+              [device_ctx, event]() { device_ctx->device_res_manager_->DestroyEvent(event); });
+          }
+        };
+
+        if (!runtime::OpExecutor::NeedSync()) {
+          runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
+            std::make_shared<runtime::PassthroughNoWaitDeviceTask>(destruct_fn));
+        } else {
+          destruct_fn();
+        }
+      }));
   }
   creator_stream_ = nullptr;
   event_ = nullptr;
@@ -61,9 +72,10 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
   pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>(
     [stream, event = event_, record_stream_id = record_stream_id_, task_id_on_stream = task_id_on_stream_]() {
       auto record_fn = [stream, event, record_stream_id, task_id_on_stream]() {
-        device::MultiStreamController::GetInstance()->Refresh(stream->device_ctx());
-        auto task_id =
-          device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(stream->device_ctx(), record_stream_id);
+        auto &multi_stream_controller = device::HalResManager::GetInstance().GetMultiStreamController(
+          stream->device_ctx()->device_context_key().device_name_);
+        multi_stream_controller->Refresh();
+        auto task_id = multi_stream_controller->LaunchTaskIdOnStream(record_stream_id);
         *task_id_on_stream = task_id;
         auto stream_ptr = stream->stream();
         auto device_ctx = stream->device_ctx();
@@ -117,8 +129,9 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
 
         // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
         // id.
-        (void)device::MultiStreamController::GetInstance()->WaitEvent(stream->device_ctx(), *task_id_on_stream,
-                                                                      record_stream_id, stream->stream_id());
+        (void)device::HalResManager::GetInstance()
+          .GetMultiStreamController(stream->device_ctx()->device_context_key().device_name_)
+          ->WaitEvent(*task_id_on_stream, record_stream_id, stream->stream_id());
       };
       if (!runtime::OpExecutor::NeedSync()) {
         runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
@@ -160,7 +173,9 @@ void EventPy::Synchronize() {
   event_->SyncEvent();
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // Clear cross stream memory event which task id less than task_id_on_stream.
-  (void)device::MultiStreamController::GetInstance()->WaitEvent(device_ctx_, *task_id_on_stream_, record_stream_id_);
+  (void)device::HalResManager::GetInstance()
+    .GetMultiStreamController(device_ctx_->device_context_key().device_name_)
+    ->WaitEvent(*task_id_on_stream_, record_stream_id_);
 }
 
 float EventPy::ElapsedTime(const EventPyPtr &other_event) {
@@ -193,6 +208,8 @@ bool EventPy::Query() {
     MS_LOG(DEBUG) << "Event is nullptr, no need to Sync.";
     return true;
   }
+
+  runtime::Pipeline::Get().WaitForward();
 
   if (!EventCnt::IsEventRecorded(event_)) {
     // Event is dispatching, not recorded yet.

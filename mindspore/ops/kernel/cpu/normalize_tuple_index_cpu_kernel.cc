@@ -17,13 +17,15 @@
 #include "kernel/cpu/normalize_tuple_index_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/normalize_tuple_index.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_tuple_index_cpu {
 bool NormalizeTupleIndexCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   index_types_ = GetValue<string>(primitive_->GetAttr(kAttrOriginIndexType));
@@ -188,23 +190,19 @@ std::vector<std::pair<KernelAttr, NormalizeTupleIndexCpuKernelMod::NormalizeTupl
 
 std::vector<KernelAttr> NormalizeTupleIndexCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
-  std::vector<TypeId> data_type_ids = {kNumberTypeFloat16,   kNumberTypeFloat32,   kNumberTypeFloat64, kNumberTypeInt8,
-                                       kNumberTypeInt16,     kNumberTypeInt32,     kNumberTypeInt64,   kNumberTypeUInt8,
-                                       kNumberTypeUInt16,    kNumberTypeUInt32,    kNumberTypeUInt64,  kNumberTypeBool,
-                                       kNumberTypeComplex64, kNumberTypeComplex128};
   (void)std::transform(
-    data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+    ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
     [](TypeId data_type_id) -> std::pair<KernelAttr, NormalizeTupleIndexFunc> {
       return {KernelAttr().AddInputAttr(data_type_id).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
               &NormalizeTupleIndexCpuKernelMod::LaunchKernel<int64_t>};
     });
   (void)std::transform(
-    data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+    ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
     [](TypeId data_type_id) -> std::pair<KernelAttr, NormalizeTupleIndexFunc> {
       return {KernelAttr().AddInputAttr(data_type_id).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeInt64),
               &NormalizeTupleIndexCpuKernelMod::LaunchKernel<bool>};
     });
-  (void)std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  (void)std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                        [](TypeId data_type_id) -> std::pair<KernelAttr, NormalizeTupleIndexFunc> {
                          return {KernelAttr()
                                    .AddInputAttr(data_type_id)
@@ -212,7 +210,7 @@ std::vector<KernelAttr> NormalizeTupleIndexCpuKernelMod::GetOpSupport() {
                                    .AddOutputAttr(kNumberTypeInt64),
                                  &NormalizeTupleIndexCpuKernelMod::LaunchKernel<bool>};
                        });
-  std::transform(data_type_ids.begin(), data_type_ids.end(), std::back_inserter(func_list_),
+  std::transform(ops::all_type_ids.begin(), ops::all_type_ids.end(), std::back_inserter(func_list_),
                  [](TypeId data_type_id) -> std::pair<KernelAttr, NormalizeTupleIndexFunc> {
                    return {KernelAttr()
                              .AddInputAttr(data_type_id)
@@ -225,5 +223,6 @@ std::vector<KernelAttr> NormalizeTupleIndexCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NormalizeTupleIndex, NormalizeTupleIndexCpuKernelMod);
+}  // namespace normalize_tuple_index_cpu
 }  // namespace kernel
 }  // namespace mindspore

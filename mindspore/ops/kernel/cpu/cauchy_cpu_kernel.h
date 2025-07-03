@@ -19,11 +19,12 @@
 
 #include <functional>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cauchy_cpu {
 class CauchyCpuKernelMod : public NativeCpuKernelMod {
  public:
   CauchyCpuKernelMod() = default;
@@ -44,6 +45,7 @@ class CauchyCpuKernelMod : public NativeCpuKernelMod {
   float sigma_{1.0};
   float median_{0};
 };
+}  // namespace cauchy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

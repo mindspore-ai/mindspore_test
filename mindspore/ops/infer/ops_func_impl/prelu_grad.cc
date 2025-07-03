@@ -21,6 +21,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore::ops {
 BaseShapePtr PReLUGradFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -55,17 +56,17 @@ TypePtr PReLUGradFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList PReLUGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &w_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &w_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(w_tensor);
   return {x_tensor->Dtype(), w_tensor->Dtype()};
 }
 
 ShapeArray PReLUGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  const auto &w_tensor = input_values[kIndex2]->cast<tensor::BaseTensorPtr>();
+  const auto &w_tensor = input_values[kIndex2]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(w_tensor);
   return {x_tensor->shape(), w_tensor->shape()};
 }

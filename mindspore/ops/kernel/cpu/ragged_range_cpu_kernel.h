@@ -21,11 +21,12 @@
 #include <cmath>
 #include <type_traits>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ragged_range_cpu {
 class RaggedRangeCpuKernelMod : public NativeCpuKernelMod {
  public:
   RaggedRangeCpuKernelMod() = default;
@@ -54,6 +55,7 @@ class RaggedRangeCpuKernelMod : public NativeCpuKernelMod {
   template <typename T, typename TSPLITS>
   TSPLITS RangeSize(T start, T limit, T delta) const;
 };
+}  // namespace ragged_range_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

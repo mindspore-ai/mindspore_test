@@ -20,17 +20,17 @@
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #endif
-#include "runtime/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/thread_bind_core.h"
+#include "include/common/runtime_conf/runtime_conf.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
-#include "include/common/profiler.h"
-
-#include "utils/profile.h"
+#include "debug/profiler/profiler.h"
 
 namespace mindspore {
 namespace runtime {
 constexpr size_t kThreadNameThreshold = 15;
 thread_local kThreadWaitLevel current_level_{kThreadWaitLevel::kLevelUnknown};
+constexpr auto kMsDevHostBlockingRun = "MS_DEV_HOST_BLOCKING_RUN";
 
 AsyncRQueue::~AsyncRQueue() {
   try {
@@ -50,13 +50,45 @@ void AsyncRQueue::SetThreadName() const {
 void AsyncRQueue::BindCoreForThread() {
   auto &bind_core_manager = ThreadBindCore::GetInstance();
   if (bind_core_manager.is_enable_thread_bind_core_) {
+    // Bind core for pynative pipeline thread.
     const auto &core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kPYNATIVE);
     if (core_list.empty()) {
       MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to Pynative threads.";
     } else {
       if (const auto it = thread_to_core_idx.find(name_); it != thread_to_core_idx.end()) {
         bind_core_manager.bind_thread_core({core_list[it->second]});
+        return;
       }
+    }
+
+    // Bind core for runtime batch launch thread.
+    auto runtime_conf_instance = RuntimeConf::GetInstance();
+    MS_EXCEPTION_IF_NULL(runtime_conf_instance);
+    bool enable_batch_launch_kernel = runtime_conf_instance->IsKernelLaunchGroupConfigured();
+    if (!enable_batch_launch_kernel) {
+      return;
+    }
+
+    uint32_t group_launch_thread_num = runtime_conf_instance->group_launch_thread_num();
+    std::map<std::string, int> batch_launch_thread_to_core_idx;
+    const std::string kBatchLaunch = "batch_launch_";
+    for (uint32_t i = 0; i < group_launch_thread_num; i++) {
+      batch_launch_thread_to_core_idx.emplace((kBatchLaunch + std::to_string(i)), i);
+    }
+
+    auto iter = batch_launch_thread_to_core_idx.find(name_);
+    if (iter == batch_launch_thread_to_core_idx.end()) {
+      return;
+    }
+
+    const auto &batch_launch_core_list = bind_core_manager.get_thread_bind_core_list(kBindCoreModule::kBATCHLAUNCH);
+    if (batch_launch_core_list.empty()) {
+      MS_LOG(WARNING) << "Failed to bind thread core as no available core assigned to batch launch threads.";
+    } else {
+      auto bind_code_index = iter->second;
+      std::vector<int> cpu_list = {batch_launch_core_list[bind_code_index]};
+      bind_core_manager.bind_thread_core(cpu_list);
+      MS_LOG(INFO) << "The thread: " << name_ << " bind core : " << cpu_list;
     }
   }
 }
@@ -83,32 +115,32 @@ void AsyncRQueue::WorkerLoop() {
   BindCoreForThread();
 
   while (true) {
-    std::shared_ptr<AsyncTask> task = tasks_queue_.Head();
+    std::shared_ptr<AsyncTask> task = tasks_queue_->Head();
 
     MS_LOG(DEBUG) << "Get task";
     MS_EXCEPTION_IF_NULL(task);
     if (task->task_type() == kExitTask) {
-      tasks_queue_.Dequeue();
+      tasks_queue_->Dequeue();
       MS_LOG(DEBUG) << "Thread exit";
       return;
     }
 
     try {
       task->Run();
-      tasks_queue_.Dequeue();
+      tasks_queue_->Dequeue();
     } catch (const std::exception &e) {
       MS_LOG(INFO) << "Run task failed, error msg:" << e.what();
       {
         MsException::Instance().SetException();
         // MsException is unreliable because it gets modified everywhere.
         auto e_ptr = std::current_exception();
-        while (!tasks_queue_.IsEmpty()) {
-          auto &t = tasks_queue_.Head();
+        while (!tasks_queue_->IsEmpty()) {
+          auto &t = tasks_queue_->Head();
           if (t->task_type() == kExitTask) {
             break;
           }
           t->SetException(e_ptr);
-          tasks_queue_.Dequeue();
+          tasks_queue_->Dequeue();
         }
       }
     }
@@ -116,6 +148,11 @@ void AsyncRQueue::WorkerLoop() {
 }
 
 void AsyncRQueue::Push(const AsyncTaskPtr &task) {
+  static bool blocking_run = common::GetEnv(kMsDevHostBlockingRun) == "1";
+  if (blocking_run || disable_multi_thread_) {
+    task->Run();
+    return;
+  }
   if (worker_ == nullptr) {
     worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
   }
@@ -129,7 +166,7 @@ void AsyncRQueue::Push(const AsyncTaskPtr &task) {
   if (current_level_ >= wait_level_) {
     MS_LOG(EXCEPTION) << "Cannot push task from thread " << current_level_ << " to queue " << wait_level_;
   }
-  tasks_queue_.Enqueue(task);
+  tasks_queue_->Enqueue(task);
 }
 
 bool AsyncRQueue::CanPush() const {
@@ -161,17 +198,17 @@ void AsyncRQueue::Wait() {
                                      false);
 
   MS_LOG(DEBUG) << "Start to wait thread " << name_;
-  while (!tasks_queue_.IsEmpty()) {
+  while (!tasks_queue_->IsEmpty()) {
   }
   MsException::Instance().CheckException();
   MS_LOG(DEBUG) << "End to wait thread " << name_;
 }
 
-bool AsyncRQueue::Empty() { return tasks_queue_.IsEmpty(); }
+bool AsyncRQueue::Empty() { return tasks_queue_->IsEmpty(); }
 
 void AsyncRQueue::Clear() {
   {
-    if (tasks_queue_.IsEmpty()) {
+    if (tasks_queue_->IsEmpty()) {
       return;
     }
 
@@ -180,7 +217,7 @@ void AsyncRQueue::Clear() {
     // Avoid to push task after WorkerJoin.
     if (worker_ != nullptr && worker_->joinable()) {
       auto task = std::make_shared<WaitTask>();
-      tasks_queue_.Enqueue(task);
+      tasks_queue_->Enqueue(task);
     }
   }
   // There is still one task in progress
@@ -189,7 +226,7 @@ void AsyncRQueue::Clear() {
 
 void AsyncRQueue::Reset() {
   {
-    if (tasks_queue_.IsEmpty()) {
+    if (tasks_queue_->IsEmpty()) {
       return;
     }
 
@@ -199,10 +236,10 @@ void AsyncRQueue::Reset() {
 }
 
 void AsyncRQueue::ClearTaskWithException() {
-  while (!tasks_queue_.IsEmpty()) {
-    auto &t = tasks_queue_.Head();
+  while (!tasks_queue_->IsEmpty()) {
+    auto &t = tasks_queue_->Head();
     t->SetException(std::make_exception_ptr(std::runtime_error("Clean up tasks that are not yet running")));
-    tasks_queue_.Dequeue();
+    tasks_queue_->Dequeue();
   }
 }
 
@@ -215,7 +252,7 @@ void AsyncRQueue::WorkerJoin() {
     if (worker_->joinable() && worker_->get_id() != std::this_thread::get_id()) {
       {
         auto task = std::make_shared<ExitTask>();
-        tasks_queue_.Enqueue(task);
+        tasks_queue_->Enqueue(task);
         MS_LOG(DEBUG) << "Push exit task and notify all";
       }
       worker_->join();
@@ -239,13 +276,23 @@ void AsyncRQueue::ChildAfterFork() {
   if (worker_ != nullptr) {
     MS_LOG(DEBUG) << "Release and recreate worker_.";
     (void)worker_.release();
-    worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
+    worker_ = nullptr;
   }
+  tasks_queue_ = std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>();
   MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork done.";
 }
 
+void AsyncRQueue::ParentBeforeFork() {
+  WorkerJoin();
+  if (worker_ != nullptr) {
+    (void)worker_.release();
+    worker_ = nullptr;
+  }
+  tasks_queue_ = std::make_unique<RingQueue<AsyncTaskPtr, kQueueCapacity>>();
+}
+
 void AsyncRQueue::SetSpin(bool spin) {
-  tasks_queue_.set_spin(spin);
+  tasks_queue_->set_spin(spin);
   MS_LOG(INFO) << "Thread " << name_ << " is set spin to " << spin;
 }
 }  // namespace runtime

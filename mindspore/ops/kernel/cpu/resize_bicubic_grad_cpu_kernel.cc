@@ -17,12 +17,13 @@
 #include "kernel/cpu/resize_bicubic_grad_cpu_kernel.h"
 #include <limits>
 #include <utility>
-#include "kernel/ops_utils.h"
+#include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic_grad.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace resize_bicubic_grad_cpu {
 namespace {
 constexpr size_t kResizeBicubicGradInputsNum = 4;
 constexpr size_t kResizeBicubicGradOutputNum = 1;
@@ -376,5 +377,6 @@ std::vector<KernelAttr> ResizeBicubicGradCPUKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ResizeBicubicGrad, ResizeBicubicGradCPUKernelMod);
+}  // namespace resize_bicubic_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

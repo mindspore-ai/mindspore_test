@@ -15,7 +15,7 @@
  */
 #include "minddata/dataset/engine/perf/cpu_sampler.h"
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include <sys/syscall.h>
 #endif
 #include <algorithm>
@@ -35,7 +35,7 @@
 namespace mindspore {
 namespace dataset {
 using json = nlohmann::json;
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #define USING_LINUX
 #endif
 

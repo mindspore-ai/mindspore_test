@@ -40,16 +40,13 @@ STATUS DepthToSpaceMapper::Mapper(const CNodePtr &cnode) {
     MS_LOG(ERROR) << "For node: " << cnode->fullname_with_scope() << ", value node is nullptr!";
     return RET_ERROR;
   }
-
   auto fmk_attr_val = src_prim->GetAttr(ops::kFmkType);
-  if (fmk_attr_val == nullptr) {
-    MS_LOG(ERROR) << "For node: " << cnode->fullname_with_scope() << ", fmk attr is nullptr!";
-    return RET_ERROR;
-  }
-  int64_t fmk_type = GetValue<int64_t>(fmk_attr_val);
-  if (static_cast<converter::FmkType>(fmk_type) == converter::kFmkTypeOnnx) {
-    // DepthToSpace op : cann need attr of data_format
-    src_prim->AddAttr("data_format", MakeValue("NCHW"));
+  if (fmk_attr_val != nullptr) {
+    int64_t fmk_type = GetValue<int64_t>(fmk_attr_val);
+    if (static_cast<converter::FmkType>(fmk_type) == converter::kFmkTypeOnnx) {
+      // DepthToSpace op : cann need attr of data_format
+      src_prim->AddAttr("data_format", MakeValue("NCHW"));
+    }
   }
   return lite::RET_OK;
 }

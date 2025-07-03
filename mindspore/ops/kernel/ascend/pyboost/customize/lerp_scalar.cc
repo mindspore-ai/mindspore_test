@@ -16,16 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/lerp_scalar.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr LerpScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                                const BaseTensorPtr &end_tensor, const ScalarPtr &weight) {
+tensor::TensorPtr LerpScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                            const TensorPtr &end_tensor, const ScalarPtr &weight) {
   OpRunner::InferOpOutput(op, input_tensor, end_tensor, weight);
   // No need to convert input
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, end_tensor);

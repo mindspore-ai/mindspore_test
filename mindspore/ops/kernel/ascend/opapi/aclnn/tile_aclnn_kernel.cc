@@ -16,13 +16,14 @@
 #include "kernel/ascend/opapi/aclnn/tile_aclnn_kernel.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tile {
 void TileAscend::GetAdaptedMultiples(KernelTensor *x_tensor, KernelTensor *multiples_tensor) {
   auto x_shape = x_tensor->GetShape()->GetShapeVector();
   if (MS_UNLIKELY(IsDynamicRank(x_shape))) {
@@ -54,5 +55,6 @@ bool TileAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::ve
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Tile, TileAscend);
+}  // namespace tile
 }  // namespace kernel
 }  // namespace mindspore

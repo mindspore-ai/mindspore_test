@@ -13,17 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """ test PIJit control flow."""
-import sys  
 import pytest 
 import numpy as np
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
-
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -34,7 +27,7 @@ def test_while_after_for_in_if_1():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func2301():
         x = Tensor([1])
         y = Tensor([2])
@@ -63,7 +56,7 @@ def test_while_after_for_in_if_2():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func2302():
         x = Tensor([1])
         y = Tensor([2])
@@ -88,7 +81,6 @@ def test_while_after_for_in_if_2():
     assert res_z == 1
 
 
-@pytest.mark.skip(reason="tmp skip, fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_while_after_for_in_if_3():
     """
@@ -97,7 +89,7 @@ def test_while_after_for_in_if_3():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func2303():
         x = np.array([3, 2])
         y = Tensor(np.array([3, 2]))
@@ -124,7 +116,7 @@ def test_while_after_for_in_if_4():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func2304():
         x = [3, 2]
         y = [1, 2, 3, 4]

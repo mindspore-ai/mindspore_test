@@ -19,6 +19,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace dropout_ext {
 void DropoutExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
@@ -42,5 +43,6 @@ bool DropoutExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(DropoutExt, DropoutExtAscend);
+}  // namespace dropout_ext
 }  // namespace kernel
 }  // namespace mindspore

@@ -3,16 +3,13 @@ mindspore.mint.special.expm1
 
 .. py:function:: mindspore.mint.special.expm1(input)
 
-    逐元素计算输入Tensor的指数，然后减去1。
+    逐元素计算输入tensor的指数，然后减1。
 
     .. math::
         out_i = e^{x_i} - 1
 
     参数：
-        - **input** (Tensor) - 输入Tensor。上述公式中的 :math:`x` 。
+        - **input** (Tensor) - 输入tensor。
 
     返回：
-        Tensor，shape与 `input` 相同。
-
-    异常：
-        - **TypeError** - 如果 `input` 不是Tensor。
+        Tensor

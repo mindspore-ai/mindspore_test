@@ -27,16 +27,17 @@
 #include <memory>
 #include "utils/hash_map.h"
 #include "actor/op_actor.h"
-#include "include/backend/device_address.h"
+#include "common/kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "utils/log_adapter.h"
 #include "ir/tensor.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
-#include "include/common/profiler.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 namespace mindspore {
@@ -47,8 +48,15 @@ using DeviceTensor = mindspore::device::DeviceAddress;
 using DeviceTensorPtr = std::shared_ptr<DeviceTensor>;
 using mindspore::device::DeviceContext;
 using mindspore::device::KernelInfo;
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 using CompileFunc = std::function<KernelGraphPtr(
-  const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *, device::RunMode)>;
+  const GraphSegmentPtr &, const std::pair<AnfNodePtrList, AnfNodePtrList> &, const DeviceContext *)>;
+
+template <typename T>
+using OpContext = OpRTContext<T>;
+template <typename T>
+using OpActor = OpRTActor<T>;
 
 // The execution result of actor.
 constexpr int kSuccess = 0;
@@ -81,8 +89,6 @@ const char kMemoryAllocActorNameSuffix[] = "_MemoryAllocActor";
 const char kMemoryFreeActorNameSuffix[] = "_MemoryFreeActor";
 const char kCopyActorNameSignFromStore[] = "_device_tensor_store:";
 const char kReplaceDSActorStore[] = "_graph_parameter_store:";
-const char kMemSwapInActorNameSuffix[] = "_MemorySwapInActor";
-const char kMemSwapOutActorNameSuffix[] = "_MemorySwapOutActor";
 const char kMemSwapActorNamePrefix[] = "MemorySwapActor_";
 const char kKernelInferActorNamePrefix[] = "KernelInferActor_";
 const char kKernelResizeActorNamePrefix[] = "KernelResizeActor_";
@@ -90,12 +96,10 @@ const char kKernelResizeActorNamePrefix[] = "KernelResizeActor_";
 enum class KernelTransformType {
   kUnknown,
   kDataPrepareActor,
-  kDeviceDataSourceActor,
   kHostDataSourceActor,
   kKernelActor,
   kKernelInferActor,
   kKernelResizeActor,
-  kCustomActor,
   // Super kernel actor represents the sink executing of graph which is the combination of kernels.
   kSuperKernelActor,
   // Any type kernel actor represents the graph which has an any type input.
@@ -130,6 +134,7 @@ enum class KernelTransformType {
 #define SET_OPCONTEXT_FAIL_RET_WITH_ERROR(op_context, message) \
   do {                                                         \
     if ((op_context).error_info_.empty()) {                    \
+      (op_context).is_error_ = true;                           \
       (op_context).error_info_ = message;                      \
     }                                                          \
     (op_context).SetFailed(kFailure);                          \
@@ -148,6 +153,7 @@ enum class KernelTransformType {
       MS_LOG(EXCEPTION) << (message);                                                \
     }                                                                                \
     if ((op_context).error_info_.empty()) {                                          \
+      (op_context).is_error_ = true;                                                 \
       (op_context).error_info_ = message;                                            \
     }                                                                                \
     (op_context).SetFailed(kFailure);                                                \
@@ -171,6 +177,7 @@ enum class KernelTransformType {
       MS_LOG(ERROR) << message;                                                                                    \
     }                                                                                                              \
     if ((op_context).error_info_.empty()) {                                                                        \
+      (op_context).is_error_ = true;                                                                               \
       (op_context).error_info_ = message;                                                                          \
     }                                                                                                              \
     (op_context).SetFailed(kFailure);                                                                              \
@@ -183,13 +190,15 @@ enum MemoryType {
 };
 
 struct KernelMemoryTraceBlock {
-  KernelMemoryTraceBlock(const CNodePtr &kernel, void *start, size_t size, MemoryType mem_type, size_t index)
+  KernelMemoryTraceBlock(const CNodePtr &kernel, void *start, size_t size, MemoryType mem_type, size_t index,
+                         kernel::KernelTensor *kernel_tensor)
       : kernel_(kernel),
         start_(reinterpret_cast<uint8_t *>(start)),
         end_(reinterpret_cast<uint8_t *>(start) + size),
         size_(size),
         mem_type_(mem_type),
         index_(index),
+        kernel_tensor_(kernel_tensor),
         in_memory_trace_block_index_(0),
         offset_in_memory_trace_block_(0) {}
 
@@ -199,9 +208,11 @@ struct KernelMemoryTraceBlock {
   size_t size_;
   MemoryType mem_type_;
   size_t index_;
+  kernel::KernelTensor *kernel_tensor_;
 
   size_t in_memory_trace_block_index_;
   size_t offset_in_memory_trace_block_;
+  SpinLock lock_;
 };
 
 struct MemoryTraceBlock {
@@ -232,9 +243,14 @@ class MemoryTraceManager {
 
   const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &GetAllKernelBlocksnfo();
 
+  const std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> &GetKernelTensorToMemBlocksInfo()
+    const;
+
   void MergeBlocks();
 
-  void Clear();
+  void ClearExpiredCache();
+
+  void ClearAllCache();
 
  private:
   MemoryTraceManager() = default;
@@ -247,6 +263,7 @@ class MemoryTraceManager {
   std::shared_ptr<std::map<const DeviceContext *, std::vector<KernelMemoryTraceBlockPtr>>> kernel_memory_trace_blocks_;
   std::shared_ptr<std::map<const DeviceContext *, std::vector<MemoryTraceBlockPtr>>> merged_memory_trace_blocks_;
   std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> kernel_to_block_;
+  std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>> kernel_tensor_to_kernel_mem_blocks_;
 
   std::map<uint32_t, std::shared_ptr<std::map<const DeviceContext *, std::vector<KernelMemoryTraceBlockPtr>>>>
     graph_to_kernel_memory_trace_blocks_;
@@ -254,10 +271,13 @@ class MemoryTraceManager {
     graph_to_merged_memory_trace_blocks_;
   std::map<uint32_t, std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>>>
     graph_to_kernel_blocks_;
+
+  std::map<std::uint32_t, std::shared_ptr<HashMap<kernel::KernelTensor *, KernelMemoryTraceBlockPtr>>>
+    graph_to_kernel_tensor_with_mem_blocks_;
 };
 
 // Encapsulate the actor APIs associated with execution.
-class ActorDispatcher {
+class BACKEND_EXPORT ActorDispatcher {
  public:
   template <typename T, typename Arg0, typename Arg1>
   static void Send(const AID &aid, void (T::*method)(Arg0), Arg1 &&arg) {
@@ -310,7 +330,7 @@ class ActorDispatcher {
   }
 
   template <typename T, typename... Args0, typename... Args1>
-  static void SendSync(OpActor<DeviceTensor> *to_actor, void (T::*method)(Args0...), Args1 &&... args) {
+  static void SendSync(OpActor<KernelTensor> *to_actor, void (T::*method)(Args0...), Args1 &&... args) {
     T *actor = static_cast<T *>(to_actor);
     MS_EXCEPTION_IF_NULL(actor);
     (actor->*method)(std::forward<Args1>(args)...);
@@ -369,6 +389,18 @@ class ActorDispatcher {
   }
   static bool enable_use_trace_memory() { return enable_use_trace_memory_; }
 
+  static void set_enable_parallel_dispatch_kernel_for_cur_actor_set(bool enable_parallel_dispatch_kernel) {
+    enable_parallel_dispatch_kernel_for_cur_actor_set_ = enable_parallel_dispatch_kernel;
+  }
+  static bool enable_parallel_dispatch_kernel_for_cur_actor_set() {
+    return enable_parallel_dispatch_kernel_for_cur_actor_set_;
+  }
+
+  static void set_enable_parallel_dispatch_kernel_for_cur_step(bool enable_parallel_dispatch_kernel) {
+    enable_parallel_dispatch_kernel_for_cur_step_ = enable_parallel_dispatch_kernel;
+  }
+  static bool enable_parallel_dispatch_kernel_for_cur_step() { return enable_parallel_dispatch_kernel_for_cur_step_; }
+
   static void set_enable_input_optimize_for_cur_actor_set(bool enable_input_optimize) {
     enable_input_optimize_for_cur_actor_set_ = enable_input_optimize;
   }
@@ -413,11 +445,11 @@ class ActorDispatcher {
   static bool enable_trace_dynamic_memory_;
   static bool enable_use_trace_memory_;
   static bool enable_input_optimize_for_cur_actor_set_;
-};
+  static bool enable_parallel_dispatch_kernel_for_cur_actor_set_;
+  static bool enable_parallel_dispatch_kernel_for_cur_step_;
+};  // namespace runtime
 
-bool IsRunningFailed(const OpContext<DeviceTensor> *context);
-
-bool IsDeviceQueueDSActor(const AnfNodePtr &node, GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
+bool IsRunningFailed(const OpContext<KernelTensor> *context);
 
 // Host parameters are parameters of root funcgraph, in control flow, only the parameters of the root funcgraph are
 // in the host data source.
@@ -428,8 +460,6 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph = nu
 bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph = nullptr,
                           const std::vector<AnfNodePtr> &host_parameters = {},
                           GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
-
-bool IsCustomActor(const AnfNodePtr &node);
 
 bool IsKernelActor(const AnfNodePtr &node, GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline);
 
@@ -453,7 +483,7 @@ bool IsControlFlowActor(KernelTransformType actor_type);
 bool IsMemoryActor(KernelTransformType actor_type);
 
 // Judge whether skip the launch by the env MS_KERNEL_LAUNCH_SKIP.
-bool IsSkippedLaunch(const CNodePtr &kernel, const KernelGraphPtr &kernel_graph);
+bool IsSkippedLaunch(const CNodePtr &kernel = nullptr, const KernelGraphPtr &kernel_graph = nullptr);
 
 // Whether enable asynchronously infer shape and resize kernel mod by KernelInferActor and KernelResizeActor.
 bool EnableAsyncInfer();
@@ -475,18 +505,17 @@ bool EnableInputOptimize();
 // shape kernel.
 bool EnableRuntimePipeline();
 
+bool EnableParallelDispatchKernel();
+
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.
-bool WaitRuntimePipelineFinish(const OpContext<DeviceTensor> *context, bool wait_kernel_launch_finish = true);
+bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
+                               bool wait_kernel_launch_finish = true);
 
 size_t GetDefragMemoryStepFreq();
 
 // Copy data from src_device_tensor to dst_device_tensor.
 bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor);
-
-void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = false);
-// Update the reference count of device tensor by the output index of node.
-void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context);
 // The memory free for the pynative bprop graph which is managed by the value node.
@@ -510,15 +539,24 @@ std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);
 
 // GetThe repeat device tensor index.
-mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors);
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<KernelTensorPtr> &kernel_tensors);
 
 // Check a graph is from inference phase.
 bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
-DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
-                             OpContext<DeviceTensor> *const context, const DeviceContext *device_context,
-                             const AID &from_aid);
+KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
+                               bool is_first_user = true, size_t stream_id = SIZE_MAX,
+                               bool enable_parallel_dispath = false);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
+size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
+
+inline bool NeedRunMemTracker() {
+  static bool is_enable_mem_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (is_enable_mem_tracker) {
+    return true;
+  }
+  return device::tracker::MemTrackerManager::GetInstance().enable_memory_debug_info();
+}
 }  // namespace runtime
 }  // namespace mindspore
 

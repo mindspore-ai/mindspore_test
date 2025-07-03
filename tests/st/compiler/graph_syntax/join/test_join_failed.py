@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore import mutable
 from mindspore import jit, nn, Tensor, context
 from tests.mark_utils import arg_mark
 
@@ -152,3 +153,96 @@ def test_switch_layer_join_failed():
     assert "return self.softmax(input)" in str(ex.value)
     assert "return x, Tensor(10)" in str(ex.value)
     assert "return x**2" in str(ex.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_control_flow_with_fix_length_input_1():
+    """
+    Feature: Control flow with fix length input.
+    Description: Abstract can't be converted to dynamic length
+    Expectation: Catch exception, no core dump.
+    """
+    class MyNet(nn.Cell):
+        def construct(self, x, y, z):
+            if x == 1:
+                return x, y, z
+            return x, y
+
+    net = MyNet()
+    x = mutable(input_data=1, dynamic_len=False)
+    y = mutable(input_data=Tensor(np.random.randn(18, 22).astype(np.float16)), dynamic_len=False)
+    z = mutable(input_data=10, dynamic_len=False)
+    try:
+        net(x, y, z)
+    except TypeError:
+        assert "Cannot join the return values of different branches" in str(TypeError.value)
+        assert "if x == 1:" in str(TypeError.value)
+        assert "return x, y, z" in str(TypeError.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_control_flow_with_fix_length_input_2():
+    """
+    Feature: Control flow with fix length input.
+    Description: Abstract type AbstractTuple cannot join with AbstractTensor.
+    Expectation: Catch exception, no core dump.
+    """
+    class MyNet(nn.Cell):
+        def construct(self, x, y):
+            if x == 1:
+                return x, y
+            return y
+
+    net = MyNet()
+    x = mutable(input_data=1, dynamic_len=False)
+    y = mutable(input_data=Tensor(np.random.randn(18, 22).astype(np.float16)), dynamic_len=False)
+
+    try:
+        net(x, y)
+    except TypeError:
+        assert "Cannot join the return values of different branches" in str(TypeError.value)
+        assert "if x == 1:" in str(TypeError.value)
+        assert "return x, y" in str(TypeError.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_type_join_error_msg():
+    """
+    Feature: Control flow with different type in two branches.
+    Description: Abstract type AbstractScalar(Type: Int64) cannot join with AbstractScalar(Type: String).
+    Expectation: Catch exception, no core dump.
+    """
+    @jit
+    def func(input_x):
+        """
+        if_if_if分支都包含return
+        """
+        if input_x < 10:
+            if input_x > 0:
+                if input_x > 1:
+                    return '2'
+                return 1
+            return [1]
+        return 1, 2
+
+    input_x = Tensor(9)
+    with pytest.raises(TypeError) as exec_info:
+        func(input_x)
+    error_info = str(exec_info.value)
+    assert "Cannot join the return values of different branches" in error_info
+    assert "if input_x > 1:" in error_info
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_type_join_mstype():
+    """
+    Feature: Control flow with different type in two branches.
+    Description: AbstractType(ms.int32) join with AbstractType(ms.int64).
+    Expectation: No exception.
+    """
+    @ms.jit(backend='ms_backend')
+    def func(x):
+        return ms.int32 if x else ms.int64
+
+    out = func(ms.mutable(False))
+    assert out == ms.int64

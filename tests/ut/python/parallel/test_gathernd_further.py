@@ -330,7 +330,7 @@ def test_gathernd_auto_parallel():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     w1_shape = [8, 16, 32]
     indices_shape = [8, 4, 2, 1]
     net = Net(w1_shape, indices_shape)
@@ -344,7 +344,7 @@ def test_gathernd_auto_parallel2():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     w1_shape = [8, 16, 32]
     indices_shape = [8, 4, 2, 2]
     net = Net(w1_shape, indices_shape)
@@ -358,7 +358,7 @@ def test_gathernd_auto_parallel3():
     Expectation: compile success
     """
     context.set_auto_parallel_context(
-        parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8, global_rank=0)
+        parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8, global_rank=0)
     w1_shape = [8, 16, 32]
     indices_shape = [8, 4, 2, 3]
     net = Net(w1_shape, indices_shape)

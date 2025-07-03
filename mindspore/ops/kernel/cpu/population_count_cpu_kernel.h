@@ -20,11 +20,12 @@
 #include <vector>
 #include <utility>
 #include <memory>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace population_count_cpu {
 class PopulationCountCpuKernelMod : public NativeCpuKernelMod {
  public:
   PopulationCountCpuKernelMod() = default;
@@ -48,6 +49,7 @@ class PopulationCountCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace population_count_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

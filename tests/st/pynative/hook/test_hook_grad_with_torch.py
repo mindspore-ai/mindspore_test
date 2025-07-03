@@ -283,6 +283,28 @@ class NestedBpropNet(nn.Cell):
         return (2 * args[0] * args[-1],)
 
 
+class TupleScalarBpropNet(nn.Cell):
+    def __init__(self):
+        super(TupleScalarBpropNet, self).__init__()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        return 3, x * x
+
+    def bprop(self, *args):
+        return (2 * args[0] * args[-1][1],)
+
+
+class TestTupleScalarBpropNet(nn.Cell):
+    def __init__(self):
+        super(TestTupleScalarBpropNet, self).__init__()
+        self.sub_cell = TupleScalarBpropNet()
+
+    def construct(self, x):
+        out = self.sub_cell(x)
+        return out[0] * 2 * out[1]
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -335,3 +357,21 @@ def test_bprop_with_none():
     grad_net = GradOfFirstInput(net)
     input_grad = grad_net(input1, output)
     assert np.allclose(input_grad.asnumpy(), np.array([1], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_with_tuple_scalar():
+    """
+    Feature: Test custom bprop with tuple scalar
+    Description: Test custom bprop with tuple scalar
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = TestTupleScalarBpropNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([60], dtype=np.float32), 0.0001, 0.0001)

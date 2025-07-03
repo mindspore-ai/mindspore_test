@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 namespace mindspore {
 namespace parallel {
 bool Shard(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &);
+bool HandleAddAttr(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -16,7 +16,7 @@
 #include "minddata/dataset/kernels/ir/vision/decode_ir.h"
 
 #include "minddata/dataset/kernels/image/decode_op.h"
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_decode_op.h"
 #endif
 #include "minddata/dataset/util/validators.h"
@@ -45,7 +45,7 @@ Status DecodeOperation::ValidateParams() {
 std::shared_ptr<TensorOp> DecodeOperation::Build() {
   if (device_target_ == "CPU") {
     return std::make_shared<DecodeOp>(rgb_);
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     return std::make_shared<DvppDecodeOp>();
 #endif

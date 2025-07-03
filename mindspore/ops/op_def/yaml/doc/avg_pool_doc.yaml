@@ -5,10 +5,10 @@ avg_pool:
     Refer to :func:`mindspore.ops.avg_pool2d` for more details.
 
     Args:
-        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the average value,
+        kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the average value,
             is an int number that represents height and width of the kernel, or a tuple
             of two int numbers that represent height and width respectively. Default: ``1`` .
-        strides (Union[int, tuple[int]]): The distance of kernel moving, an int number that represents
+        strides (Union[int, tuple[int]], optional): The distance of kernel moving, an int number that represents
             the height and width of movement are both strides, or a tuple of two int numbers that
             represent height and width of movement respectively. Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:

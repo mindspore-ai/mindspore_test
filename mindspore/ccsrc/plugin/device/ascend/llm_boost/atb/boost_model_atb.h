@@ -38,7 +38,7 @@ class BACKEND_EXPORT BoostModelATB : public BoostBaseModel {
                                          const std::string &param) override;
   void InitContext();
 
-  void *GetWorkSpace(uint64_t bufferSize);
+  void *GetWorkSpace(uint64_t bufferSize, uint32_t bufferKey);
   atb::Tensor CreateInternalTensorFromDesc(const atb::TensorDesc &tensorDesc);
   atb::Tensor MSTensor2Tensor(const tensor::TensorPtr &msTensor);
   int64_t MSTensor2Tensor(const std::vector<tensor::TensorPtr> &msTensors, std::vector<atb::Tensor> &opsTensors);

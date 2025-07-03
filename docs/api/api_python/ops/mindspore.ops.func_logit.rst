@@ -3,7 +3,9 @@ mindspore.ops.logit
 
 .. py:function:: mindspore.ops.logit(input, eps=None)
 
-    逐元素计算Tensor的逻辑回归函数值。该函数公式如下：
+    逐元素计算tensor的逻辑回归函数值。
+
+    公式如下：
 
     .. math::
         \begin{align}
@@ -17,14 +19,9 @@ mindspore.ops.logit
         \end{align}
 
     参数：
-        - **input** (Tensor) - Tensor输入，其数据类型为float16、float32或float64。
-        - **eps** (float, 可选) - 截断范围值，当eps不是None时，输入的数值界限被定义[eps, 1-eps]，否则没有界限。
-          默认值： ``None`` 。
+        - **input** (Tensor) - 输入tensor。
+        - **eps** (float, 可选) - 用于输入限制边界的epsilon值。当eps不是None时，输入的数值界限被定义[eps, 1-eps]，否则没有界限。
+          默认 ``None`` 。
 
     返回：
-        Tensor，具有与 `input` 相同的shape。
-
-    异常：
-        - **TypeError** - `eps` 不是float类型。
-        - **TypeError** - `input` 不是Tensor类型。
-        - **TypeError** - `input` 的数据类型不是float16、float32或float64。
+        Tensor

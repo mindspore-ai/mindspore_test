@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_add_cpu {
 class SparseMatrixAddCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<SparseMatrixAddCpuKernelMod> {
  public:
   SparseMatrixAddCpuKernelMod() = default;
@@ -51,6 +52,7 @@ class SparseMatrixAddCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   size_t row_ = 0;
   std::vector<TypeId> types_;
 };
+}  // namespace sparse_matrix_add_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

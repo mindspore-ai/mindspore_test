@@ -38,7 +38,6 @@ import warnings
 import time
 import uuid
 import multiprocessing
-from enum import Enum
 from importlib import import_module
 import sys
 import threading
@@ -55,15 +54,15 @@ from mindspore import log as logger
 from mindspore.parallel._ps_context import _is_role_pserver, _is_role_sched, _get_ps_context, \
     _enable_distributed_mindrt
 from mindspore.dataset.engine.offload import GetOffloadModel
-
+from mindspore.communication.management import get_group_size
 import mindspore.dataset.transforms.c_transforms as c_transforms
 import mindspore.dataset.transforms.py_transforms as py_transforms
 import mindspore.dataset.transforms as transforms
 from mindspore.dataset.text.utils import SentencePieceModel, DE_C_INTER_SENTENCEPIECE_MODE
-from mindspore.parallel._utils import _get_device_num
 from mindspore.dataset.debug import DebugHook
 
 from mindspore.dataset.engine import samplers
+from mindspore.dataset.engine.samplers import Shuffle
 from .iterators import DictIterator, TupleIterator, DummyIterator, check_iterator_cleanup, _set_iterator_cleanup, \
     ITERATORS_LIST, _unset_iterator_cleanup, _cleanup_the_iterators_if_created
 from .queue import _SharedQueue, _Queue
@@ -134,71 +133,6 @@ def _reset_training_dataset(global_step, dataset_size):
         dataset._reset(global_step, dataset_size)  # pylint: disable=protected-access
     else:
         raise RuntimeError("Training dataset is not set.")
-
-
-class Shuffle(str, Enum):
-    """Specify the shuffle mode.
-
-    - ``Shuffle.GLOBAL`` : Shuffle both the files and samples.
-    - ``Shuffle.FILES`` : Shuffle files only.
-    - ``Shuffle.INFILE`` : Shuffle data within each file.
-    """
-    GLOBAL: str = "global"
-    FILES: str = "files"
-    INFILE: str = "infile"
-
-
-ShuffleToShuffleMode = {Shuffle.FILES: cde.ShuffleMode.FILES,
-                        Shuffle.GLOBAL: cde.ShuffleMode.GLOBAL,
-                        Shuffle.INFILE: cde.ShuffleMode.INFILE}
-
-
-def shuffle_to_shuffle_mode(shuffle):
-    """
-    Shuffle Enum to Shuffle Mode
-
-    Args:
-        shuffle (Shuffle): shuffle flag to shuffle mode in C layer
-
-    Returns:
-        ShuffleMode, shuffle mode
-    """
-    shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
-    if not isinstance(shuffle, Shuffle):
-        if shuffle is None or shuffle:
-            shuffle_mode = cde.ShuffleMode.GLOBAL  # Global shuffle
-        else:
-            shuffle_mode = cde.ShuffleMode.FALSE  # No shuffle
-    else:
-        shuffle_mode = ShuffleToShuffleMode[shuffle]
-    return shuffle_mode
-
-
-def shuffle_to_bool(shuffle):
-    """
-    Shuffle Enum to bool
-
-    Args:
-        shuffle (Shuffle): shuffle flag to bool
-
-    Returns:
-        bool, True / False
-    """
-    if shuffle is not None and not isinstance(shuffle, (bool, Shuffle)):
-        raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.GLOBAL' or "
-                        "'Shuffle.FILES' or 'Shuffle.INFILE'.")
-
-    shuffle_bool = True
-    if not isinstance(shuffle, Shuffle):
-        if shuffle is None:
-            shuffle_bool = None
-        elif shuffle:
-            shuffle_bool = True
-        else:
-            shuffle_bool = False
-    else:
-        shuffle_bool = True
-    return shuffle_bool
 
 
 @check_zip
@@ -509,8 +443,7 @@ class Dataset:
         .. image:: bucket_batch_by_length_en.png
 
         Note:
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -575,7 +508,7 @@ class Dataset:
     @check_batch
     def batch(self, batch_size, drop_remainder=False, num_parallel_workers=None, **kwargs):
         """
-        Combine batch_size number of consecutive rows into batch which apply per_batch_map to the samples first.
+        Combine `batch_size` number of consecutive rows into batch which apply `per_batch_map` to the samples first.
 
         For any column, all the elements within that column must have the same shape.
 
@@ -586,8 +519,7 @@ class Dataset:
         Note:
             - The order of using repeat and batch reflects the number of batches and per_batch_map.
               It is recommended that the repeat operation applied after the batch operation finished.
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -629,13 +561,19 @@ class Dataset:
 
                 - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
                   allocation to copy data between processes, the total occupied shared memory will increase as
-                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set
-                  to -1, shared memory will be dynamically allocated with the actual size of data. This is only used if
-                  ``python_multiprocessing`` is set to True. If it is an int value, it represents
-                  ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
-                  If it is a list, the first element represents the ``input_columns`` use this value as the unit to
-                  create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
+                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
+                  This is only used if ``python_multiprocessing`` is set to ``True``.
+                  Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
+
+                  - If set to ``-1`` / ``None``, shared memory will be dynamically allocated with the
+                    actual size of data.
+
+                  - If it is an int value, it represents ``input_columns`` and ``output_columns`` use this value as the
+                    unit to create shared memory.
+
+                  - If it is a list, represents the ``input_columns`` use the first element as the unit to
+                    create shared memory, and represents ``output_columns`` use the second element as the
+                    unit to create shared memory.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -683,8 +621,7 @@ class Dataset:
         Note:
             - The order of using repeat and padded_batch reflects the number of batches.
               It is recommended that the repeat operation applied after the padded_batch operation finished.
-            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
-              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+            - When using Data Sinking in Graph mode, the input shape of the network should keep consistent.
               You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
               or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
@@ -738,9 +675,9 @@ class Dataset:
 
         Args:
             condition_name (str): The condition name that is used to toggle sending next row.
-            num_batch (int): the number of batches without blocking at the start of each epoch.
+            num_batch (int, optional): the number of batches without blocking at the start of each epoch.
                 Default: ``1``.
-            callback (function): The callback function that will be invoked when sync_update is called.
+            callback (function, optional): The callback function that will be invoked when sync_update is called.
                 Default: ``None``.
 
         Returns:
@@ -925,15 +862,21 @@ class Dataset:
                 - python_multiprocessing (bool, optional): Parallelize Python operations with multiple worker processes.
                   This option could be beneficial if the Python operation is computational heavy. Default: ``False``.
 
-                - max_rowsize (Union[int, list[int]], optional): Maximum size of row in MB that is used for shared
-                  memory allocation to copy data between processes, the total occupied shared memory will increase as
-                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set
-                  to -1, shared memory will be dynamically allocated with the actual size of data. This is only used if
-                  ``python_multiprocessing`` is set to True. If it is an int value, it represents
-                  ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
-                  If it is a list, the first element represents the ``input_columns`` use this value as the unit to
-                  create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
+                - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
+                  allocation to copy data between processes, the total occupied shared memory will increase as
+                  ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase.
+                  This is only used if ``python_multiprocessing`` is set to ``True``.
+                  Default: ``None`` , allocate shared memory dynamically (deprecated in future version).
+
+                  - If set to ``-1`` / ``None``, shared memory will be dynamically allocated with the
+                    actual size of data.
+
+                  - If it is an int value, it represents ``input_columns`` and ``output_columns`` use this value as the
+                    unit to create shared memory.
+
+                  - If it is a list, the first element represents the ``input_columns`` use this value as the unit to
+                    create shared memory, and the second element represents ``output_columns`` use this value as the
+                    unit to create shared memory.
 
                 - cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing.
                   Default: ``None``, which means no cache is used.
@@ -946,8 +889,29 @@ class Dataset:
         Note:
             - Input `operations` accepts TensorOperations defined in mindspore.dataset part, plus user-defined
               Python functions (PyFuncs).
-            - Do not add network computing operators from mindspore.nn and mindspore.ops or others into this
-              `operations` .
+            - Setting the start method of multiprocessing to `spawn` mode by
+              ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+              and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and
+              mindspore.ops or other network computing operators into this `operations` .
+              Otherwise, adding to `operations` is not supported.
+            - Currently only some scenarios support calling DVPP operators in Python functions passed in with the
+              `operations` parameter:
+
+              +---------------+----------------------------+----------------------------+----------------------------+
+              |               |                            |                     Multiprocessing                     |
+              |               |       Multithreading       +----------------------------+----------------------------+
+              |               |                            |           spawn            |            fork            |
+              +===============+============================+============================+============================+
+              |Independent    |Data Processing: support    |Data Processing: support    |Data Processing: support    |
+              |               |                            |                            |                            |
+              |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+              |               |training: not support       |training: support           |training: not support       |
+              +---------------+----------------------------+----------------------------+----------------------------+
+              |Non-independent|Data Processing: support    |Data Processing: support    |Data Processing: support    |
+              |               |                            |                            |                            |
+              |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+              |               |training: support           |training: support           |training: not support       |
+              +---------------+----------------------------+----------------------------+----------------------------+
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -1593,7 +1557,7 @@ class Dataset:
         del api_tree
 
     @check_tuple_iterator
-    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         """
         Create an iterator over the dataset that yields samples of type list, whose elements are
         the data for each column.
@@ -1607,7 +1571,7 @@ class Dataset:
                 convert it to Tensor. Default: ``False`` .
             do_copy (bool, optional): Whether to copy the data when converting output to Tensor,
                 or reuse the buffer for better performance, only works when `output_numpy` is ``False`` .
-                Default: ``True`` .
+                Default: ``False`` .
 
         Returns:
             Iterator, a dataset iterator that yields samples of type list.
@@ -1634,7 +1598,7 @@ class Dataset:
         return TupleIterator(self, columns, num_epochs, output_numpy, do_copy)
 
     @check_dict_iterator
-    def create_dict_iterator(self, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_dict_iterator(self, num_epochs=-1, output_numpy=False, do_copy=False):
         """
         Create an iterator over the dataset that yields samples of type dict,
         while the key is the column name and the value is the data.
@@ -1646,7 +1610,7 @@ class Dataset:
                 convert it to Tensor. Default: ``False`` .
             do_copy (bool, optional): Whether to copy the data when converting output to Tensor,
                 or reuse the buffer for better performance, only works when `output_numpy` is ``False`` .
-                Default: ``True`` .
+                Default: ``False`` .
 
         Returns:
             Iterator, a dataset iterator that yields samples of type dict.
@@ -1771,7 +1735,7 @@ class Dataset:
         Get the shapes of output data.
 
         Args:
-            estimate (bool): If `estimate` is ``False`` , will return the shapes of first data row.
+            estimate (bool, optional): If `estimate` is ``False`` , will return the shapes of first data row.
                 Otherwise, will iterate the whole dataset and return the estimated shapes of data row,
                 where dynamic shape is marked as None (used in dynamic data shapes scenario).
                 Default: ``False`` .
@@ -2348,10 +2312,10 @@ class SourceDataset(Dataset):
         self.shard_id = replace_none(shard_id, 0)
 
         if shuffle is not None and not isinstance(shuffle, (bool, Shuffle)):
-            raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.GLOBAL' or "
-                            "'Shuffle.FILES' or 'Shuffle.INFILE'.")
+            raise TypeError("shuffle must be of boolean or enum of 'Shuffle' values like 'Shuffle.ADAPTIVE' or "
+                            "'Shuffle.GLOBAL' or 'Shuffle.PARTIAL' or 'Shuffle.FILES' or 'Shuffle.INFILE'.")
 
-        self.shuffle_flag = 2  # Global shuffle
+        self.shuffle_flag = 5  # Adaptive shuffle
         if not isinstance(shuffle, Shuffle):
             if shuffle is None or shuffle:
                 self.shuffle_flag = 2  # Global shuffle
@@ -2364,6 +2328,10 @@ class SourceDataset(Dataset):
                 self.shuffle_flag = 1  # Files shuffle
             elif shuffle == Shuffle.INFILE:
                 self.shuffle_flag = 3  # Infile shuffle
+            elif shuffle == Shuffle.ADAPTIVE:
+                self.shuffle_flag = 5
+            elif shuffle == Shuffle.PARTIAL:
+                self.shuffle_flag = 4
 
     def parse(self, children=None):
         raise NotImplementedError("Dataset has to implement parse method.")
@@ -2420,14 +2388,22 @@ class MappableDataset(SourceDataset):
     def __init__(self, num_parallel_workers=None, sampler=None, num_samples=None, shuffle=None, num_shards=None,
                  shard_id=None, cache=None):
         num_shards, shard_id = self._update_data_shard(num_shards, shard_id)
+        if sampler is None:
+            if shuffle is None or shuffle is True:
+                shuffle = Shuffle.GLOBAL
+            elif shuffle is False:
+                shuffle = Shuffle.FALSE
         super().__init__(num_parallel_workers=num_parallel_workers, num_samples=num_samples, shuffle=shuffle,
                          num_shards=num_shards, shard_id=shard_id, cache=cache)
-        self.shuffle_flag = replace_none(shuffle, True)
         self.sampler = samplers.select_sampler(num_samples, sampler, shuffle, num_shards, shard_id)
 
     def add_sampler(self, new_sampler):
         """
         Add a child sampler for the current dataset.
+
+        Note:
+            - If the sampler is added and it has a shuffle option, its value must be ``Shuffle.GLOBAL`` .
+              Additionally, the original sampler's shuffle value cannot be ``Shuffle.PARTIAL`` .
 
         Args:
             new_sampler (Sampler): The child sampler to be added.
@@ -2442,6 +2418,16 @@ class MappableDataset(SourceDataset):
         # Note: By adding a sampler, the sampled IDs will flow to the new_sampler
         # after first passing through the current samplers attached to this dataset.
         self.dataset_size = None
+
+        if self.sampler is not None and self.sampler.get_shuffle_mode() == Shuffle.PARTIAL:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the current sampler "
+                               "must not be Shuffle.PARTIAL.")
+
+        if new_sampler.get_shuffle_mode() != Shuffle.GLOBAL and new_sampler.get_shuffle_mode() != Shuffle.FALSE:
+            raise RuntimeError("When multiple samplers are used, ensure that the shuffle of the input sampler "
+                               "must be Shuffle.FALSE or Shuffle.GLOBAL, but got: {}."
+                               .format(new_sampler.get_shuffle_mode()))
+
         new_sampler.add_child(self.sampler)
         self.sampler = new_sampler
 
@@ -2604,7 +2590,7 @@ def _check_shm_usage(num_worker, queue_size, in_rowsize, out_rowsize):
     threshold_ratio = 0.8
     # Verify available size only when using static shared memory on Linux
     if platform.system().lower() not in {"windows", "darwin"} and in_rowsize != -1 and out_rowsize != -1:
-        device_num = _get_device_num()
+        device_num = get_group_size()
         # In the cluster, _get_device_num indicates the number of the entire cluster. The maximum number of cards
         # on the ascend server is 8.
         if device_num > 1:
@@ -2689,11 +2675,6 @@ class BatchDataset(UnionBaseDataset):
             self.max_rowsize = [max_rowsize * self.batch_size] * 2 if max_rowsize != -1 else [max_rowsize, max_rowsize]
         else:
             self.max_rowsize = [max_rowsize[0] * self.batch_size, max_rowsize[1] * self.batch_size]
-
-    def __del__(self):
-        if hasattr(self, "process_pool") and self.process_pool is not None:
-            self.process_pool.terminate()
-            del self.process_pool
 
     def parse(self, children=None):
         return cde.BatchNode(children[0], self.batch_size, self.drop_remainder, False, self.input_columns,
@@ -3033,7 +3014,7 @@ class SyncWaitDataset(UnionBaseDataset):
 
 class ShuffleDataset(UnionBaseDataset):
     """
-    The result of applying Shuffle operation to the input Dataset.
+    The result of applying shuffle operation to the input Dataset.
 
     Args:
         input_dataset (Dataset): Input Dataset to be shuffled.
@@ -3387,6 +3368,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         # cache thread (get_ident()) to worker_id mapping in Python layer
         self.python_threads_to_workers = {}
         self.eof = None
+        self.running = False
 
     def __del__(self):
         try:
@@ -3527,15 +3509,20 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         # Launch a clean process and register worker processes to be monitored by the watch dog.
         self._launch_monitor()
+        self.running = True
 
-        atexit.register(self.terminate)
+        # Register a termination function using weakref to avoid the object from unable to properly destruct.
+        atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
+                        weakref.WeakMethod(self.terminate))
 
     def terminate(self):
-        # abort the monitor first and then close all the workers
-        self._abort_monitor()
-        self.close_all_workers()
-        if hasattr(self, "warning_ctl"):
-            del self.warning_ctl
+        if self.running:
+            # abort the monitor first and then close all the workers
+            self._abort_monitor()
+            self.close_all_workers()
+            if hasattr(self, "warning_ctl"):
+                del self.warning_ctl
+            self.running = False
 
     def get_pids(self):
         """
@@ -3822,11 +3809,6 @@ class MapDataset(UnionBaseDataset):
 
     def __deepcopy__(self, memodict):
         return self.__safe_deepcopy__(memodict, exclude=("operations", "callbacks", "__transfer_dataset__"))
-
-    def __del__(self):
-        if hasattr(self, "process_pool") and self.process_pool is not None:
-            self.process_pool.terminate()
-            del self.process_pool
 
     @staticmethod
     def __parse_op_name(op):
@@ -4285,7 +4267,7 @@ class _ToDevice:
         if get_debug_mode():
             logger.error("MindData debugger cannot be used in dataset sink mode. Please manually turn off "
                          "sink mode and try debugger again.")
-        ir_tree, self.api_tree = dataset.create_ir_tree()
+        ir_tree, _ = dataset.create_ir_tree()
 
         self._runtime_context = cde.PythonRuntimeContext()
         self._runtime_context.Init()
@@ -4403,7 +4385,7 @@ class TransferDataset(Dataset):
     def create_dict_iterator(self, num_epochs=-1, output_numpy=False):
         raise RuntimeError("TransferDataset is not iterable.")
 
-    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=True):
+    def create_tuple_iterator(self, columns=None, num_epochs=-1, output_numpy=False, do_copy=False):
         raise RuntimeError("TransferDataset is not iterable.")
 
     def __iter__(self):
@@ -4485,7 +4467,7 @@ class Schema:
     Class to represent a schema of a dataset.
 
     Args:
-        schema_file (str): Path of the schema file. Default: ``None``.
+        schema_file (str, optional): Path of the schema file. Default: ``None``.
 
     Raises:
         RuntimeError: If schema file failed to load.

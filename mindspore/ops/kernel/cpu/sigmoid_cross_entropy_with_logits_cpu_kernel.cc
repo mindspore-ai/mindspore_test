@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/sigmoid_cross_entropy_with_logits_cpu_kernel.h"
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sigmoid_cross_entropy_with_logits_cpu {
 namespace {
 constexpr size_t kSigmoidCrossEntropyWithLogitsInputsNum = 2;
 constexpr size_t kSigmoidCrossEntropyWithLogitsOutputsNum = 1;
@@ -77,5 +78,6 @@ void SigmoidCrossEntropyWithLogitsCpuKernelMod::LaunchKernel(const std::vector<K
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SigmoidCrossEntropyWithLogits, SigmoidCrossEntropyWithLogitsCpuKernelMod);
+}  // namespace sigmoid_cross_entropy_with_logits_cpu
 }  // namespace kernel
 }  // namespace mindspore

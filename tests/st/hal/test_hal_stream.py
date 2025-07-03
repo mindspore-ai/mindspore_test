@@ -1,3 +1,4 @@
+
 # Copyright 2023 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,7 +57,7 @@ def test_runtime_set_stream():
     assert ms.runtime.current_stream() == s1
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_runtime_stream_query():
     """
@@ -121,12 +122,12 @@ def test_runtime_wait_event():
     with ms.runtime.StreamCtx(s1):
         b = ops.matmul(a, a)
         ev.record(s1)
-        assert ev.query() is False
 
     with ms.runtime.StreamCtx(s2):
         s2.wait_event(ev)
         c = ops.matmul(b, b)
     ms.runtime.synchronize()
+    assert ev.query() is True
     assert np.allclose(ops.mm(a, a).asnumpy(), b.asnumpy())
     assert np.allclose(ops.mm(b, b).asnumpy(), c.asnumpy())
 
@@ -226,7 +227,7 @@ def test_runtime_get_stream():
     s1.record_event()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0',
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')
 def test_runtime_multi_streams():
     """

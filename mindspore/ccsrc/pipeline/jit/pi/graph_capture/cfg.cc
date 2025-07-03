@@ -22,15 +22,26 @@
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/utils/utils.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
 
 constexpr const int PY_BCSIZE = sizeof(_Py_CODEUNIT);
 
+int Instr::InstrSize() const { return Opcode(op_).InstrSize(arg_); }
+
 std::string Instr::ToString() const {
+#if IS_PYTHON_3_11_PLUS
+  if (op() == CACHE) {
+    return "<CACHE>";
+  }
+#endif
   std::stringstream s;
-  s << bci_ << ' ' << Opcode(op_).name() << ' ' << arg_;
+  s << bci() << ' ' << Opcode(op_).name() << ' ' << arg_;
+  if (Opcode(op_).IsBinaryMath()) {
+    s << "(" << Opcode(op_).BinaryMathString(arg_) << ")";
+  }
   if (!name().empty()) {
     s << "  " << name();
   }
@@ -40,81 +51,13 @@ std::string Instr::ToString() const {
   if (extra_jump()) {
     s << " -> " << extra_jump()->bci();
   }
+  s << " " << loc_;
   return s.str();
-}
-
-std::string Instr::Dump(const std::string &prefix) const {
-  std::stringstream os;
-  os << prefix << " " << bci_ << ' ' << Opcode(op_).name() << ' ' << arg_;
-  return os.str();
 }
 
 void Block::AddSuccBB(Block *bb) {
   succ_bbs_.insert(bb);
   bb->pred_bbs_.insert(this);
-}
-
-void Block::SetFallBB(Block *arg) {
-  if (arg != nullptr) {
-    fall_bb_ = arg;
-    AddSuccBB(arg);
-  } else if (fall_bb_ != nullptr) {
-    // remove fall_bb_
-    succ_bbs_.erase(fall_bb_);
-    fall_bb_->pred_bbs().erase(this);
-    fall_bb_ = nullptr;
-  }
-}
-
-void Block::SetJumpBB(Block *arg) {
-  if (arg != nullptr) {
-    jump_bb_ = arg;
-    AddSuccBB(arg);
-  } else if (jump_bb_ != nullptr) {
-    // remove jump_bb_
-    succ_bbs_.erase(jump_bb_);
-    jump_bb_->pred_bbs().erase(this);
-    jump_bb_ = nullptr;
-  }
-}
-
-void Block::RemoveInstr(Instr *instr) {
-  Instr *jump = instr->extra_jump();
-  if (jump != nullptr) {
-    auto &v = jump->extra_preds();
-    v.erase(std::remove(v.begin(), v.end(), jump), v.end());
-    jump->set_extra_jump(nullptr);
-  }
-  for (Instr *pred : instr->extra_preds()) {
-    pred->set_extra_jump(nullptr);
-  }
-  instr->extra_preds().clear();
-  instrs_.erase(instr);
-}
-
-void Block::RemoveInstrs() {
-  if (instrs_.empty()) {
-    return;
-  }
-  RemoveInstr(&instrs_.front());
-  if (instrs_.empty()) {
-    return;
-  }
-  RemoveInstr(&instrs_.back());
-  instrs_.clear();
-}
-
-bool Block::RemoveEdge(Block *bb) {
-  bb->pred_bbs_.erase(this);
-  jump_bb_ = jump_bb_ == bb ? nullptr : jump_bb_;
-  fall_bb_ = fall_bb_ == bb ? nullptr : fall_bb_;
-  return succ_bbs_.erase(bb);
-}
-
-void Block::ClearOutEdges() {
-  while (!succ_bbs_.empty()) {
-    RemoveEdge(*succ_bbs_.begin());
-  }
 }
 
 std::string Block::Dump(bool dump_instr) const {
@@ -127,204 +70,223 @@ std::string Block::Dump(bool dump_instr) const {
   }
   os << "}, succs={";
   for (Block *bb : succ_bbs_) {
-    if (bb == jump_bb_) {
-      os << "jump:";
-    } else {
-      os << "fall:";
-    }
     os << bb->id() << " ";
   }
   os << "}";
-  if (IsTrackBreak()) {
-    os << " Break";
-  }
-  if (HasPrimitive()) {
-    os << " HasPrimitive";
-  }
-  if (HasTensor()) {
-    os << " HasTensor";
-  }
-  if (HasAttrSideEffect()) {
-    os << " HasAttrSideEffect";
+  if (is_loop_head()) {
+    os << ", loop_body={";
+    for (auto bb : loop_body_bbs_) {
+      os << bb->id() << " ";
+    }
+    os << "}";
   }
   os << ")";
-  if (!dump_instr) {
-    return os.str();
-  }
-  os << "\n";
-  for (const auto &instr : instrs_) {
-    os << instr.Dump("    ") << "\n";
-  }
   return os.str();
 }
 
-Block *Block::Clone(CFG *cfg) {
-  Block *new_bb = cfg->NewBBAppend();
-  new_bb->set_is_dead(is_dead_);
-  new_bb->set_is_loop_head(is_loop_head_);
-  new_bb->begin_ = this->begin_;
-  new_bb->end_ = this->end_;
-  // clone instr list
-  for (const auto &instr : instrs_) {
-    Instr *new_instr = cfg->NewInstrNode(instr);
-    new_bb->AddInstr(new_instr);
+void Block::set_loop_head(Block *block) {
+  if (block && block->is_loop_head()) {
+    block->add_loop_body(this);
+    loop_head_bb_ = block;
   }
-  return new_bb;
-}
-
-bool BBIdCmp::operator()(const Block *lhs, const Block *rhs) const { return (lhs->id() < rhs->id()); }
-
-bool BBIdGreaterCmp::operator()(const Block *lhs, const Block *rhs) const { return (lhs->id() > rhs->id()); }
-
-Block *CFG::NewBBAppend() {
-  std::unique_ptr<Block> bb_node = std::make_unique<Block>();
-  bb_node->set_id(bb_pool_.size());
-  bb_pool_.push_back(std::move(bb_node));
-  Block *bb = bb_pool_.back().get();
-  return bb;
-}
-
-Instr *CFG::NewInstrNode(int bci, int op, int arg, int line) {
-  instrs_.emplace_back(std::make_unique<Instr>(op, arg, bci, line));
-  Instr *i = instrs_.back().get();
-  if (op == LOAD_CONST) {
-    i->set_cnst(PyTuple_GET_ITEM(pycode_->co_consts, arg));
-  }
-  if (Opcode(op).HasName()) {
-    i->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(pycode_->co_names, arg)));
-  }
-  return i;
-}
-
-Instr *CFG::NewLoadInstrNode(int bci, int arg, int line, PyObject *cnst) {
-  Instr *i = NewInstrNode(bci, 0, -1, line);
-  i->set_cnst(cnst);
-  i->set_op(LOAD_CONST);
-  return i;
-}
-
-Instr *CFG::NewInstrNode(const Instr &instr) {
-  instrs_.emplace_back(std::make_unique<Instr>(instr.op(), instr.arg(), instr.bci(), instr.line()));
-  Instr *i = instrs_.back().get();
-  i->set_cnst(instr.cnst());
-  i->set_name(instr.name());
-  return i;
 }
 
 void CFG::GenerateCFG() {
-  MS_EXCEPTION_IF_CHECK_FAIL(pycode_, "shouldn't use this function to generate empty cfg");
-  if (!is_generated_) {
-    nlocals_ = pycode_->co_nlocals;
-    is_generated_ = true;
-    BuildInst();
-    BuildBB();
-    BuildCFG();
-    MarkDeadBB();
+  if (bb_pool().size() != 0) {
+    return;
   }
+  py::object code_bytes = co_.Code();
+  MS_EXCEPTION_IF_CHECK_FAIL(code_bytes.ptr() != nullptr && PyBytes_Check(code_bytes.ptr()),
+                             "system error, code.co_code not bytes");
+  const char *bytes = PyBytes_AS_STRING(code_bytes.ptr());
+  Py_ssize_t size = PyBytes_Size(code_bytes.ptr());
+  const uint8_t *begin = reinterpret_cast<const uint8_t *>(bytes);
+  const uint8_t *end = reinterpret_cast<const uint8_t *>(bytes + size);
+  this->instrs_.resize(size / PY_BCSIZE);
+
+  BuildInst(begin, end);
+  BuildCFG(BuildBB(begin, end));
+  MarkDeadBB();
+  exc_table_ = co_.DecodeExceptionTable();
+
+#if IS_PYTHON_3_11_PLUS
+  for (size_t index = 0, size = instrs_.size(); index < size; ++index) {
+    // code check: std::replace can't apply to std::make_unique
+    (void)(instrs_[index] == nullptr ? !(instrs_[index] = std::make_unique<Instr>(CACHE, 0, index)) : false);
+  }
+#endif
 }
 
-void CFG::BuildInst() {
-  const _Py_CODEUNIT *bytecode_ = _PyCode_CODE(pycode_);
-  int size = static_cast<size_t>(_PyCode_NBYTES(pycode_)) / sizeof(_Py_CODEUNIT);
-  int exarg = 0;
-  std::map<int, std::vector<Instr *>> succ_jump;
-  for (int bci = 0; bci < size; ++bci) {
-    Opcode opcode(_Py_OPCODE(bytecode_[bci]));
-    int oparg = (exarg << 8) | _Py_OPARG(bytecode_[bci]);
-    exarg = (opcode == EXTENDED_ARG) ? oparg : 0;
-    int line = PyCode_Addr2Line(pycode_, PY_BCSIZE * bci);
-    if (opcode == LOAD_METHOD) {
-      opcode = LOAD_ATTR;
-    } else if (opcode == CALL_METHOD) {
-      opcode = CALL_FUNCTION;
-    }
-    Instr *instr = NewInstrNode(bci, opcode, oparg, line);
-    instr->set_is_fall(!opcode.IsNotFall());
-    // link instr jump relation
-    if (opcode.IsJRel() || opcode.IsJAbs()) {
-      int dest = opcode.JumpTarget(bci, oparg);
-      if (dest < bci) {
-        Instr *succ = instr_pool()[dest].get();
-        succ->AddExtraPred(instr);
-        instr->set_extra_jump(succ);
-      } else {
-        // record succ jump
-        succ_jump[dest].push_back(instr);
-      }
-    }
-    auto it = succ_jump.find(bci);
-    if (it != succ_jump.cend()) {
-      for (Instr *pred : it->second) {
-        instr->AddExtraPred(pred);
-        MS_EXCEPTION_IF_CHECK_FAIL(pred->extra_jump() == nullptr, "Python bytecode has at most one jump branch");
-        pred->set_extra_jump(instr);
-      }
-    }
-  }
+static int DeOptimizedOpcode(int op) {
+#if IS_PYTHON_3_11_PLUS
+  /**
+   * `PRECALL` is only for python3.11, and it's a optimized opcode that do nothing if not bound method call
+   * It's same as `LOAD_METHOD` and `CALL_METHOD`, here ignore it
+   * `MAKE_CELL` and `COPY_FREE_VARS` is prefix of code, used to complete `FrameType` object. If reuse
+   * free variable and cell variable, and change local position, need change these codes. Here ignore it,
+   * add them at code gen
+   */
+  op = (op == PRECALL || op == MAKE_CELL || op == COPY_FREE_VARS) ? NOP : op;
+#else
+  op = op == LOAD_METHOD ? LOAD_ATTR : (op == CALL_METHOD ? CALL_FUNCTION : op);
+#endif
+  // for python3.11+, the bytes from getattr(code, "co_code"), all opcode is de-optimized
+  return op;
 }
 
-void CFG::BuildBB() {
-  Block *curr_bb = nullptr;
-  for (const auto &instr : instr_pool()) {
-    if (instr == nullptr) {
+// Skip inline CACHE entries
+template <typename Ft = void (*)(int off, int op, int arg)>
+inline void DecodeInstructionBytes(const uint8_t *begin, const uint8_t *end, Ft yield) {
+  const int uint8_w = 8;
+  const uint8_t *code = begin;
+  int extended_arg = 0;
+  int caches = 0;
+  int arg;
+  for (int i = 0; (begin + i) < end; i += PY_BCSIZE) {
+    if (caches) {
+      caches--;
       continue;
     }
-    // check start of BB
-    if (curr_bb == nullptr || !instr->extra_preds().empty()) {
-      curr_bb = NewBBAppend();
-    }
-    curr_bb->AddInstr(instr.get());
-    // check end of BB
-    if (!instr->is_fall() || instr->extra_jump() != nullptr) {
-      curr_bb = nullptr;
-    }
-  }
-  for (const auto &i : bb_pool()) {
-    i->set_begin_ci(i->instrs().front().bci());
-    i->set_end_ci(i->instrs().back().bci() + 1);
+    int op = code[i];
+    Opcode deop(op);
+    caches = deop.InstrSize() - 1;
+    arg = code[i + 1] | extended_arg;
+    extended_arg = (deop == EXTENDED_ARG) ? (arg << uint8_w) : 0;
+    yield(i, deop, arg);
   }
 }
 
-bool CFG::BuildCFG() {
-  // build target map
-  std::map<const Instr *, Block *> target_instr_bb_map;
-  for (const auto &unique_bb : bb_pool_) {
-    Block *bb = unique_bb.get();
-    if (bb->instrs().empty()) {
-      continue;
-    }
-    const Instr *instr_head = &(bb->instrs().front());
-    target_instr_bb_map[instr_head] = bb;
+Instr *CFG::GetInstruction(int bci) {
+  if (instrs_[bci] == nullptr) {
+    instrs_[bci] = std::make_unique<Instr>(CACHE);
   }
+  return instrs_[bci].get();
+}
+
+static void SetInstructionName(PyCodeWrapper co, Instr *cur) {
+  Opcode opcode(cur->op());
+  int arg = cur->arg();
+  if (opcode.IsLocalAccess() || opcode.HasFree()) {
+    PyCodeWrapper::LocalKind k = opcode.IsLocalAccess() ? PyCodeWrapper::kCoFastLocal : PyCodeWrapper::kCoFastFree;
+    cur->set_name(co.FastLocalName(co.FastLocalIndex(k, arg)));
+  }
+  if (opcode.HasName()) {
+    int index = arg;
+#if IS_PYTHON_3_12_PLUS
+    index = opcode == LOAD_ATTR ? (index >> 1) : index;
+#endif
+#if IS_PYTHON_3_11_PLUS
+    index = opcode == LOAD_GLOBAL ? (index >> 1) : index;
+#endif
+    py::object names = co.co_names();
+    auto names_ptr = names.ptr();
+    MS_EXCEPTION_IF_NULL(names_ptr);
+    cur->set_name(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names_ptr, index)));
+  }
+}
+
+void CFG::BuildInst(const uint8_t *begin, const uint8_t *end) {
+  py::object kw_names;
+  const auto make_instr = [this, &kw_names](int off, int op, int arg) {
+    op = DeOptimizedOpcode(op);
+    Opcode opcode(op);
+    int bci = off / PY_BCSIZE;
+    MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(bci) < instrs_.size(), "Error byte code end");
+
+    Instr *cur = GetInstruction(bci);
+    cur->set_bci(bci);
+    cur->set_op(op);
+    cur->set_arg(arg);
+    cur->set_location(co_.Addr2Location(off));
+    SetInstructionName(co_, cur);
+    if (opcode.HasConst()) {  // KW_NAMES, LOAD_CONST, RETURN_CONST
+      cur->set_cnst(co_.co_consts()[arg]);
+      if (op == KW_NAMES) {
+        kw_names = cur->cnst();
+      }
+    }
+    if (kw_names.ptr() != nullptr && opcode.IsCall()) {
+      cur->set_cnst(kw_names);
+      kw_names = py::object();
+    }
+    if (opcode.HasJump()) {
+      int jump = opcode.JumpTarget(bci, arg);
+      cur->set_extra_jump(GetInstruction(jump));
+    }
+  };
+
+  DecodeInstructionBytes(begin, end, make_instr);
+}
+
+std::map<int, Block *> CFG::BuildBB(const uint8_t *begin, const uint8_t *end) {
+  std::map<int, Block *> labels;  // ordered map by bci
+  const int end_bci = (end - begin) / PY_BCSIZE;
+
+  const auto make_block = [this, &labels, &end_bci](int off, int op, int arg) {
+    int bci = off / PY_BCSIZE;
+    Opcode opcode(op);
+    if (opcode.HasJump()) {
+      labels[opcode.JumpTarget(bci, arg)] = nullptr;
+    }
+    int fall_to = bci + opcode.InstrSize();
+    if (fall_to < end_bci && (opcode.IsNotFall() || opcode.HasJump())) {
+      labels[fall_to] = nullptr;
+    }
+  };
+  labels[0] = nullptr;
+  DecodeInstructionBytes(begin, end, make_block);
+
+  for (auto iter = labels.begin(); iter != labels.end();) {
+    size_t id = this->bb_pool_.size();
+    bb_pool_.push_back(std::make_unique<Block>());
+    iter->second = bb_pool_.back().get();
+    Block *cur = iter->second;
+    cur->set_id(id);
+    cur->set_begin_ci(iter->first);
+    ++iter;
+    cur->set_end_ci(iter != labels.end() ? iter->first : end_bci);
+  }
+  return labels;
+}
+
+Instr *CFG::GetBlockTail(Block *blk) const {
+#if IS_PYTHON_3_11_PLUS
+  Instr *instr_tail = nullptr;
+  for (int bci = blk->end_ci() - 1; bci >= blk->begin_ci() && (instr_tail == nullptr || instr_tail->op() == CACHE);
+       --bci) {
+    instr_tail = instrs_[bci].get();
+  }
+  return instr_tail;
+#else
+  return instrs_[blk->end_ci() - 1].get();
+#endif
+}
+
+void CFG::BuildCFG(const std::map<int, Block *> &labels) {
   // link
   for (size_t i = 0; i < bb_pool_.size(); ++i) {
     Block *bb = bb_pool_[i].get();
-    const Instr *instr_tail = &(bb->instrs().back());
-    if (instr_tail->is_fall()) {
-      if (i + 1 >= bb_pool_.size()) {
-        MS_EXCEPTION_IF_CHECK_FAIL(false, "Method without return");
-        return false;
-      }
-      Block *bb_next = bb_pool_[i + 1].get();
-      bb->SetFallBB(bb_next);
+    const Instr *instr_tail = GetBlockTail(bb);
+    bool is_fall_through = !Opcode(instr_tail->op()).IsNotFall();
+    if (is_fall_through) {
+      MS_EXCEPTION_IF_CHECK_FAIL(i + 1 < bb_pool_.size(), "Error byte code end");
+      bb->AddSuccBB(bb_pool_[i + 1].get());
     }
     if (instr_tail->extra_jump() != nullptr) {
-      Instr *instr = instr_tail->extra_jump();
-      const auto &it_bb = target_instr_bb_map.find(instr);
-      MS_EXCEPTION_IF_CHECK_FAIL(it_bb != target_instr_bb_map.cend(), "Target BB is not found");
-      Block *bb_next = it_bb->second;
-      bb->SetJumpBB(bb_next);
+      const auto &it_bb = labels.find(instr_tail->extra_jump()->bci());
+      MS_EXCEPTION_IF_CHECK_FAIL(it_bb != labels.cend(), "Target BB is not found");
+      bb->AddSuccBB(it_bb->second);
     }
   }
-  return true;
 }
 
-static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *mark, int *loop_count) {
+static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *mark,
+                       std::vector<Block *> *loop_heads) {
   if (reach->operator[](blk->id())) {
     if (mark->operator[](blk->id()) && !blk->is_loop_head()) {
       blk->set_is_loop_head(true);
       blk->set_is_loop_body(true);
-      (*loop_count)++;
+      loop_heads->emplace_back(blk);
     }
     return blk->is_loop_body();
   }
@@ -335,12 +297,25 @@ static bool VisitBlock(Block *blk, std::vector<bool> *reach, std::vector<bool> *
   mark->operator[](blk->id()) = true;
   auto iter = blk->succ_bbs().begin();
   for (; iter != blk->succ_bbs().end(); ++iter) {
-    loop_body |= VisitBlock(*iter, reach, mark, loop_count);
+    loop_body |= VisitBlock(*iter, reach, mark, loop_heads);
+  }
+  // If the current basic block (BB) is part of the loop body but not the loop header, and among the successor BBs of
+  // the current BB there exists a BB with no successors, then that BB can also be considered part of the loop body.
+  if (loop_body && !blk->is_loop_head()) {
+    iter = blk->succ_bbs().begin();
+    for (; iter != blk->succ_bbs().end(); ++iter) {
+      if ((*iter)->succ_bbs().empty()) {
+        (*iter)->set_is_loop_body(loop_body);
+      }
+    }
   }
   mark->operator[](blk->id()) = false;
   if (blk->is_loop_head()) {
-    (*loop_count)--;
-    return (*loop_count) != 0;
+    loop_heads->pop_back();
+    return !loop_heads->empty();
+  }
+  if (!loop_heads->empty()) {
+    blk->set_loop_head(loop_heads->back());
   }
   blk->set_is_loop_body(loop_body);
   return loop_body;
@@ -352,8 +327,8 @@ void CFG::MarkDeadBB() {
   }
   std::vector<bool> reach(bb_pool_.size());
   std::vector<bool> mark(bb_pool_.size());
-  int loop_count = 0;
-  VisitBlock(bb_pool_[0].get(), &reach, &mark, &loop_count);
+  std::vector<Block *> loop_heads;
+  VisitBlock(bb_pool_[0].get(), &reach, &mark, &loop_heads);
   for (const auto &i : bb_pool_) {
     if (reach[i->id()]) {
       continue;
@@ -362,14 +337,20 @@ void CFG::MarkDeadBB() {
   }
 }
 
-// Simplified cfg
-void CFG::ClearDeadBBEdges() {
-  MarkDeadBB();
-  for (auto &i : bb_pool_) {
-    if (i->is_dead()) {
-      i->ClearOutEdges();
-    }
+ExceptionTable::const_iterator CFG::FindExcTableItem(int random_bci) const {
+  const auto &map = this->exc_table();
+  if (map.size() == 0) {
+    return map.end();
   }
+  auto iter = map.lower_bound(random_bci);
+  if (iter == map.end() || (iter->first != random_bci && iter != map.begin())) {
+    --iter;  // check previous item
+  }
+  MS_LOG(DEBUG) << "find a closest exception table item for bci: " << random_bci << ": " << iter->second;
+  if (iter->second.begin_ > random_bci || random_bci >= iter->second.end_) {
+    return map.end();
+  }
+  return iter;
 }
 
 Block *CFG::GetBlockByBci(int bci) const {
@@ -382,101 +363,99 @@ Block *CFG::GetBlockByBci(int bci) const {
   return iter->get();
 }
 
-std::unique_ptr<CFG> CFG::Clone() {
-  std::unique_ptr<CFG> new_cfg = std::make_unique<CFG>(pycode_);
-  if (bb_pool_.empty()) {
-    return new_cfg;
+ExceptionTable::const_iterator CFG::FindTryWithStart(ExceptionTable::const_iterator ii) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  auto iter = ii;
+  if (iter == map.end()) {
+    return iter;
   }
-  for (const auto &bb : bb_pool_) {
-    (void)bb->Clone(new_cfg.get());
-  }
-  // link active bb and instr
-  for (Block *bb : *this) {
-    Block *dst_bb = new_cfg->bb_pool()[bb->id()].get();
-    if (bb->GetFallBB() != nullptr) {
-      Block *dst_fall_bb = new_cfg->bb_pool()[bb->GetFallBB()->id()].get();
-      dst_bb->SetFallBB(dst_fall_bb);
+  // find try start by exception item
+  for (int handler = iter->second.jump_; list[handler]->op() != PUSH_EXC_INFO;) {
+    if (iter == map.begin()) {
+      MS_LOG(INFO) << "unknown exception handler pattern";
+      return map.end();
     }
-    if (bb->GetJumpBB() != nullptr) {
-      Block *dst_jump_bb = new_cfg->bb_pool()[bb->GetJumpBB()->id()].get();
-      dst_bb->SetJumpBB(dst_jump_bb);
-      // link instr jump
-      dst_bb->instrs().back().set_extra_jump(&dst_jump_bb->instrs().front());
-      dst_jump_bb->instrs().front().AddExtraPred(&dst_bb->instrs().back());
-    }
+    --iter;
+    handler = iter->second.jump_;
   }
-  return new_cfg;
+  if (iter == map.begin()) {
+    return iter;
+  }
+  auto another = iter;
+  --another;
+  another = FindTryWithStart(another);
+  if (another == map.end()) {
+    return iter;
+  }
+  if (another->second.jump_ == iter->second.jump_) {
+    // finally block has duplicate handler. try find again
+    --another;
+    return FindTryWithStart(another);
+  }
+  return another;
 }
 
-std::string CFG::DumpBBs(std::string phase) const {
+ExceptionTable::const_iterator CFG::FindTryWithBlock(int random_bci) const {
+  const auto &map = this->exc_table();
+  const auto &list = this->instr_pool();
+  if (map.empty()) {
+    return map.end();
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(static_cast<size_t>(random_bci) < list.size(), "out of bci range");
+  if (list[random_bci]->op() == BEFORE_WITH) {
+    random_bci++;
+  }
+  auto iter = FindExcTableItem(random_bci);
+  if (iter == map.end()) {
+    return iter;
+  }
+  auto other_iter = FindTryWithStart(iter);
+  if (other_iter != map.end()) {
+    MS_LOG(DEBUG) << "try begin maybe in " << other_iter->second;
+  }
+  int handler = iter->second.jump_;
+  if (list[handler]->op() != PUSH_EXC_INFO) {
+    MS_LOG(INFO) << "unknown exception handler pattern";
+    return map.end();
+  }
+  MS_LOG(DEBUG) << "try/with block syntax bci range (no finally block) [" << iter->second.begin_ << ","
+                << (list[handler - 1]->extra_jump() ? list[handler - 1]->extra_jump()->bci() : list.size()) << ")";
+  return iter;
+}
+
+std::string CFG::ToString() const {
   std::ostringstream os;
-  os << "*** Dump BB " << phase << "on [" << py::str(reinterpret_cast<PyObject *>(pycode_)).cast<std::string>()
-     << "] ***\n";
+  os << "*** Dump BB on [" << co_.ToString() << "] ***" << std::endl;
   for (const auto &bb : bb_pool_) {
-    os << bb->Dump();
+    os << bb->ToString() << std::endl;
+    for (int i = bb->begin_ci(), size = bb->end_ci(); i < size; ++i) {
+      if (instrs_[i] != nullptr && instrs_[i]->op() != 0) {
+        os << "  " << instrs_[i]->ToString() << std::endl;
+      }
+    }
+  }
+  if (exc_table_.empty()) {
+    return os.str();
+  }
+  os << "exception handler:" << std::endl;
+  for (const auto &pair : exc_table_) {
+    os << pair.second << std::endl;
   }
   return os.str();
-}
-
-void CFG::DumpCFGGraph() {
-  std::string file_name = Utils::GetPyName(pycode_->co_name);
-  file_name = file_name + ".dot";
-  std::ofstream file(file_name);
-  MS_EXCEPTION_IF_CHECK_FAIL(file.is_open(), "Failed to open General CFG Graph FileName:" + file_name);
-  file << "digraph {\n";
-  file << "  label=\"" << file_name << "\"\n";
-  file << "  labelloc=t\n";
-  DumpCFGGraph(file);
-  file.close();
-}
-
-void CFG::DumpCFGGraph(std::ofstream &file) {
-  for (const auto &bb : bb_pool_) {
-    DumpCFGGraphForBB(file, *bb);
-  }
-  DumpCFGGraphForEdge(file);
-  file << "}\n";
-}
-
-void CFG::DumpCFGGraphForBB(std::ofstream &file, const Block &bb) const {
-  file << "  BB" << bb.id() << " [shape=record,label=\"{\n";
-  for (const auto &instr : bb.instrs()) {
-    file << "      <instr" << instr.bci() << "> " << instr.Dump();
-    if (&instr == &bb.instrs().back()) {
-      file << "\n";
-      break;
-    } else {
-      file << " |\n";
-    }
-  }
-  file << "    }\"];\n";
-}
-
-void CFG::DumpCFGGraphForEdge(std::ofstream &file) {
-  file << "  subgraph cfg_edges {\n";
-  file << "    edge [color=\"#000000\",weight=0.3,len=3];\n";
-  for (const auto &bb : bb_pool_) {
-    const Instr &instrS = bb->instrs().back();
-    for (Block *bb_next : bb->succ_bbs()) {
-      const Instr &instrE = bb_next->instrs().front();
-      file << "    BB" << bb->id() << ":instr" << instrS.bci() << " -> ";
-      file << "BB" << bb_next->id() << ":instr" << instrE.bci() << "\n";
-    }
-  }
-  file << "  }\n";
 }
 
 CFG::BBIterator &CFG::BBIterator::operator++() {
   if (q_.empty()) {
     return *this;
   }
-  Block *bb = q_.front();
-  q_.pop();
+  Block *bb = q_.back();
+  q_.pop_back();
   for (Block *bb_next : bb->succ_bbs()) {
     if (visit_[bb_next->id()]) {
       continue;
     }
-    q_.push(bb_next);
+    q_.push_back(bb_next);
     visit_[bb_next->id()] = true;
   }
   return *this;

@@ -37,7 +37,7 @@ class Net(nn.Cell):
 
 def get_output(var, m, v, grad, enable_graph_kernel=False):
     if enable_graph_kernel:
-        context.set_context(jit_level='O1')
+        context.set_context(jit_level='O1', graph_kernel_flags="--enable_expand_ops=Adam")
     else:
         context.set_context(jit_level='O0')
     net = Net(var, m, v)
@@ -46,16 +46,18 @@ def get_output(var, m, v, grad, enable_graph_kernel=False):
 
 
 def run_basic(dtype):
-    var = Tensor(np.array([[1, 2], [3, 4]]), dtype=dtype)
-    m = Tensor(np.array([[5, 6], [7, 8]]), dtype=dtype)
-    v = Tensor(np.array([[3, 1], [7, 4]]), dtype=dtype)
-    grad = Tensor(np.array([[2, 3], [1, 5]]), dtype=dtype)
+    np.random.seed(42)
+    shape = [10, 10]
+    var = Tensor(np.random.random(shape), dtype=dtype)
+    m = Tensor(np.random.random(shape), dtype=dtype)
+    v = Tensor(np.random.random(shape), dtype=dtype)
+    grad = Tensor(np.random.random(shape), dtype=dtype)
     expect = get_output(var, m, v, grad, False)
     output = get_output(var, m, v, grad, True)
 
     expect_np = expect[0].asnumpy().copy()
     output_np = output[0].asnumpy().copy()
-    assert np.allclose(expect_np, output_np, 0.0001, 0.0001)
+    assert np.allclose(expect_np, output_np)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

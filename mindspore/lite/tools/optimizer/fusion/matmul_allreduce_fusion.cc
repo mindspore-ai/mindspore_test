@@ -29,6 +29,11 @@
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
 #include "ir/anf.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::opt {
 std::unordered_map<std::string, VectorRef> MatMulAllReduceFusion::DefinePatterns() const {
@@ -134,6 +139,8 @@ VectorRef MatMulAllReduceFusion::DefineQuantBatchMatmulAllReducePattern() const 
 
 PrimitivePtr MatMulAllReduceFusion::CreateMatMulAllReducePrim(const PrimitivePtr &allreduce_prim,
                                                               const PrimitivePtr &matmul_prim) const {
+  MS_CHECK_TRUE_RET(allreduce_prim != nullptr, {});
+  MS_CHECK_TRUE_RET(matmul_prim != nullptr, {});
   auto matmul_allreduce_prim = prim::kPrimMatMulAllReduce->Clone();
   MS_CHECK_TRUE_RET(matmul_allreduce_prim, {});
   // add attr
@@ -336,7 +343,9 @@ CNodePtr MatMulAllReduceFusion::CreateQuantBatchMatmulAllReduceNode(const FuncGr
 
   // add attr
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_CHECK_TRUE_MSG(allreduce_prim != nullptr, nullptr, "allreduce_prim is nullptr!");
   auto qbmm_prim = GetCNodePrimitive(qbmm_cnode);
+  MS_CHECK_TRUE_MSG(qbmm_prim != nullptr, nullptr, "qbmm_prim is nullptr!");
   matmul_allreduce_prim->AddAttr(kAttrNameCommRenuse, allreduce_prim->GetAttr(kAttrNameCommRenuse));
   matmul_allreduce_prim->AddAttr(kAttrNameGroup, allreduce_prim->GetAttr(kAttrNameGroup));
   matmul_allreduce_prim->AddAttr(kAttrNameFusion, allreduce_prim->GetAttr(kAttrNameFusion));

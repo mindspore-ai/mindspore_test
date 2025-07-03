@@ -1,13 +1,6 @@
 mindspore.Tensor.rsqrt
 =======================
 
-.. py:method:: mindspore.Tensor.rsqrt()
+.. py:method:: mindspore.Tensor.rsqrt() -> Tensor
 
-    逐元素计算输入Tensor元素的平方根倒数。
-
-    .. math::
-        out_{i} =  \frac{1}{\sqrt{self_{i}}}
-
-    返回：
-        Tensor，具有与 `self` 相同的shape。
-
+    详情请参考 :func:`mindspore.ops.rsqrt`。

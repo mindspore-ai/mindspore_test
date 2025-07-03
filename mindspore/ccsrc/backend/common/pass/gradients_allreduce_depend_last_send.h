@@ -19,15 +19,14 @@
 #include <vector>
 #include <string>
 #include <memory>
-
 #include "include/backend/optimizer/pass.h"
+#include "include/backend/visible.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {
-class BACKEND_EXPORT GradientsAllReduceDependLastSend : public Pass {
+class BACKEND_COMMON_EXPORT GradientsAllReduceDependLastSend : public Pass {
  public:
   GradientsAllReduceDependLastSend() : Pass("adjust_depend_for_parallel_optimizer_recompute_all_gather") {}
   ~GradientsAllReduceDependLastSend() override = default;

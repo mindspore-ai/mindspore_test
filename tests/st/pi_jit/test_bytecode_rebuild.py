@@ -17,15 +17,10 @@ from mindspore import ops, numpy, Tensor
 from mindspore.nn import Cell
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
-import sys
 import pytest
-from .share.utils import match_array, assert_executed_by_graph_mode
+from .share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 config = {
     "replace_nncell_by_construct": True,
@@ -59,8 +54,7 @@ def test_try_block():
         return x, y, z, f
 
     a = try_catch_block_test("aaaa")
-    b = jit(fn=try_catch_block_test, mode="PIJit",
-            jit_config=config)("aaaa")
+    b = pi_jit_with_config(function=try_catch_block_test, jit_config=config)("aaaa")
     assert a == b
 
 
@@ -76,7 +70,7 @@ def test_try_block_2():
     Expectation:
         The outputs should be identical regardless of the status of PIJit.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo(x):
         try:
             out = x + x
@@ -100,7 +94,7 @@ def test_try_block_3():
     Expectation:
         The outputs should be identical regardless of the status of PIJit.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo(x):
         try:
             out = x + x
@@ -126,7 +120,7 @@ def test_try_block_4():
     Expectation:
         The outputs should be identical regardless of the status of PIJit.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo(x):
         try:
             out = x + x
@@ -140,7 +134,6 @@ def test_try_block_4():
     assert np.all(ret.asnumpy() == np.array([3, 5, 7]))
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_block():
     """
@@ -170,7 +163,7 @@ def test_with_block():
             b = other.enter_set, other.exit_set, other.res
             return a == b
 
-    @jit(mode="PIJit", jit_config=config)
+    @pi_jit_with_config(jit_config=config)
     def with_block_test(o, u):
         x = 1
         y = None  # must be define before use, see issue87
@@ -182,8 +175,7 @@ def test_with_block():
         return out
 
     a = with_block_test(UserDefineObject(), 0)
-    b = jit(fn=with_block_test, mode="PIJit",
-            jit_config=config)(UserDefineObject(), 0)
+    b = pi_jit_with_config(function=with_block_test, jit_config=config)(UserDefineObject(), 0)
     assert a == b
 
 
@@ -213,11 +205,10 @@ def test_kw_inline():
         return kwf(1), kwf(1, 2), kwf(1, 2, a=3), kwf(p=1, a=3), kwf(p=1), kwf(a=1), kwf2(a=1, b=2), kwf3(a=1)
 
     a = kw_inline_test()
-    b = jit(fn=kw_inline_test, mode="PIJit", jit_config=config)()
+    b = pi_jit_with_config(function=kw_inline_test)()
     assert a == b
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_cell_free():
     """
@@ -245,7 +236,7 @@ def test_cell_free():
         return (res1, res2)
 
     res2 = cell_free_test()
-    res1 = jit(fn=cell_free_test, mode="PIJit", jit_config=config)()
+    res1 = pi_jit_with_config(function=cell_free_test, jit_config=config)()
     assert res1 == res2
 
 
@@ -283,7 +274,7 @@ def test_graph_parameter_is_closure_variable():
     o1 = fn(x)
 
     x = Tensor([1, 2, 3])
-    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = fn(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
@@ -317,7 +308,7 @@ def test_graph_parameter_is_closure_variable_v2():
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
 
-    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = fn(x, y)
 
     match_array(o1.asnumpy(), o2.asnumpy())
@@ -348,7 +339,7 @@ def test_graph_parameter_is_closure_variable_v3():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = fn(x)
 
     assert len(o1) == len(o2)
@@ -380,13 +371,13 @@ def test_graph_parameter_is_closure_variable_v4():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = fn(x)
 
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
         match_array(l.asnumpy(), r.asnumpy())
-    assert_executed_by_graph_mode(fn)
+    # LOAD_DEREF is executed by python, not a completed graph
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v5():
@@ -411,7 +402,7 @@ def test_graph_parameter_is_closure_variable_v5():
     o1 = fn(x)
 
     x = Tensor([1, 2, 3])
-    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    fn = pi_jit_with_config(fn, jit_config={'compile_with_try': False})
     o2 = fn(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
@@ -419,6 +410,54 @@ def test_graph_parameter_is_closure_variable_v5():
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v6():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in inner function.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def factory():
+        var = None
+        def producer(x):
+            nonlocal var
+            var = x
+            return x
+        def consumer(x):
+            return x + var
+        return producer, consumer
+
+    producer, consumer = factory()
+    consumer = jit(consumer, capture_mode="bytecode")
+
+    res = []
+    x = Tensor([1, 1])
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+
+    jcr = get_code_extra(consumer.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['compile_count_'] == 1
+    assert (res[0] == Tensor([2, 2])).all()
+    assert (res[1] == Tensor([4, 4])).all()
+    assert (res[2] == Tensor([8, 8])).all()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -435,7 +474,7 @@ def test_branch():
         The output for each set of parameters should match the expected output
         based on the function's defined behavior.
     """
-    @jit(mode="PIJit", jit_config=config)
+    @pi_jit_with_config(jit_config=config)
     def branch_test(a=None, b=None, use_default=True):
         x = None
         if use_default:
@@ -483,7 +522,7 @@ def test_break_at_loop(a):
         return res
 
     r1 = loop_test(a, 0)
-    r2 = jit(fn=loop_test, mode="PIJit", jit_config=config)(a, 0)
+    r2 = pi_jit_with_config(function=loop_test, jit_config=config)(a, 0)
     assert r1 == r2
 
 
@@ -508,7 +547,7 @@ def test_toy_example(a, b):
         return x * b
 
     r2 = toy_example(a, b)
-    r1 = jit(toy_example, mode="PIJit", jit_config=config)(a, b)
+    r1 = pi_jit_with_config(toy_example, jit_config=config)(a, b)
     match_array(r1, r2)
 
 
@@ -542,11 +581,10 @@ def test_stack_restore(param):
         return (f2(a), f2(f3() + f2(a)))
 
     res1 = stack_restore_test(param)
-    res2 = jit(fn=stack_restore_test, mode="PIJit", jit_config=config)(param)
+    res2 = pi_jit_with_config(function=stack_restore_test, jit_config=config)(param)
     assert res1 == res2
 
 
-@pytest.mark.skip(reason="guard fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('c', [(1, 2), [1, 2], "12", {'a': 1, 'b': 2}, Tensor([[1], [2]])])
 def test_unpack(c):
@@ -566,7 +604,7 @@ def test_unpack(c):
         return i1, i2, self
 
     r1 = unpack_test(c)
-    r2 = jit(fn=unpack_test, mode="PIJit", jit_config=config)(c)
+    r2 = pi_jit_with_config(function=unpack_test, jit_config=config)(c)
     assert r1 == r2
 
 
@@ -590,5 +628,5 @@ def test_unpack2():
         return {'a': a, 'b': b, 'c': c, 'd': d, 'e': e}
 
     r1 = unpack_test2(1, 2, 3)
-    r2 = jit(fn=unpack_test2, mode="PIJit", jit_config=config)(1, 2, 3)
+    r2 = pi_jit_with_config(function=unpack_test2, jit_config=config)(1, 2, 3)
     assert r1 == r2

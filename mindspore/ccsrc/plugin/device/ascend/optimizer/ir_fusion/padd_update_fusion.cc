@@ -24,6 +24,8 @@
 #include "frontend/optimizer/opt.h"
 #include "include/backend/optimizer/helper.h"
 #include "platform/platform_info.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace opt {

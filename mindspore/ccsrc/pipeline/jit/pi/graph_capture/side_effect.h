@@ -93,6 +93,7 @@ class SideEffect {
     kSetGlobal,
     kBuiltinFunction,
     kBuiltinMethod,
+    kTensorOptMethod,  // optimize side effect restore. Now only for tensor, extend this flag later
   };
 
   struct CacheResult {
@@ -116,29 +117,21 @@ class SideEffect {
   // check the node is a side-effect record
   bool IsRecord(ValueNode *node) const { return nodes_.empty() ? false : nodes_.find(node) != nodes_.end(); }
 
-  // return true if a record can't be reorder
-  bool NeedTrack(ValueNode *node);
-
   // check record is empty
   bool IsEmpty() const { return nodes_.empty(); }
 
   // return false if unsupported the side-effect
   bool Record(ValueNode *side_effect_node, Type type = Type::kDefault, std::string name = "");
 
-  // generate the code to restore side-effect
-  void Restore(CodeGenerator *cg) const;
-
-  // reset the record if record not find in final nodes set
-  void ResetRecord(const std::set<ValueNode *> &traced_nodes);
-
-  // return the original node(source) if it's replaced, else return the node
+  // return the original node(source, oldest version) if it's replaced, else return the node
   ValueNode *GetSource(ValueNode *node) const;
 
-  // optimize the side-effect data, remove modify operations of dead local variable
-  void Optimize(const std::vector<ValueNode *> &alive_locals);
-
   // return the side-effect handler required nodes
-  const std::set<ValueNode *> &GetRequiredNodes() const;
+  const std::set<ValueNode *> &GetRequiredNodes() const { return keep_alive_; }
+
+  // The argument `node` is a side-effect node, and the function returns the required nodes used to restore
+  // this side-effect operation.
+  std::vector<ValueNode *> GetKeepAlive(ValueNode *node) const;
 
  private:
   struct Entry {
@@ -156,18 +149,6 @@ class SideEffect {
   // if side-effect is function call, check it's supported
   bool CheckCallRecord(ValueNode *node, Type type, const std::string &name);
 
-  // restore a side-effect node
-  void RestoreEntry(CodeGenerator *cg, const Entry &) const;
-
-  // restore attribute
-  void RestoreAttrs(CodeGenerator *cg) const;
-
-  // restore global
-  void RestoreGlobal(CodeGenerator *cg) const;
-
-  // restore list, dict, or other specialized object function call
-  void RestoreBuiltinMethod(CodeGenerator *cg, const Entry &) const;
-
   // shared from other side-effect recorder
   std::shared_ptr<SideEffectData> data_;
 
@@ -181,6 +162,121 @@ class SideEffect {
 // return the self node, if return nullptr, unsupported to handle side-effect
 ValueNode *GetSelfFromKnownMethod(ValueNode *call_node, bool *is_method_descriptor = nullptr);
 
+class SideEffectHandler {
+ public:
+  explicit SideEffectHandler(Graph *graph) : graph_(graph) {}
+  virtual ~SideEffectHandler() = default;
+
+  /// \brief The processing entry of side effect.
+  ///
+  /// \note Includes variable scope analysis, side effect collection, side effect effect reproduction, etc.
+  void Run();
+  /// \brief Collect the inputs of side effect operations.
+  ///
+  /// \return The inputs of side effect operations.
+  std::vector<ValueNode *> GetSideEffectInputs() const;
+  /// \brief Get the side effect operations.
+  ///
+  /// \return The side effect operations.
+  const std::vector<ValueNode *> &GetSideEffect() const { return side_effect_nodes_; }
+  /// \brief The optimization of side effect nodes.
+  ///
+  /// \param[in] nodes All the side effect nodes.
+  ///
+  /// \return The optimized side effect nodes
+  static std::vector<ValueNode *> OptimizeSideEffect(const std::vector<ValueNode *> &nodes);
+
+ private:
+  /// \brief Reset the running environment for analysis.
+  void ResetRunningEnvironment();
+  /// \brief Collect the inputs of the captured nodes.
+  ///
+  /// \return The inputs include the parameters, interpretation execution nodes before the graph entry.
+  std::vector<ValueNode *> CollectCapturedInputs() const;
+  /// \brief Collect the captured nodes.
+  ///
+  /// \return The captured nodes.
+  ///
+  /// \note The nodes executed in the graph, need to be analyzed.
+  std::vector<ValueNode *> CollectCapturedNodes() const;
+  /// \brief The scope analysis of the call node.
+  ///
+  /// \param[in] node The call node that need to analyzed.
+  void AnalyzeCallNodeScope(CallNode *node) const;
+  /// \brief The scope analysis of the specified node.
+  ///
+  /// \param[in] node The specified node that need to analyzed.
+  void AnalyzeNodeScope(ValueNode *node) const;
+  /// \brief The scope analysis of the captured node.
+  void ScopeAnalysis() const;
+  /// \brief Group the captured nodes.
+  ///
+  /// \note Marked as a virtual machine node if There is no corresponding node in the graph.
+  ///       Marked as a graph node if created only for graph.
+  ///       Others marked as multi-purpose.
+  void GroupCapturedNodes() const;
+  /// \brief Collect the modified external variables.
+  ///
+  /// \return The modified external variables.
+  std::vector<ValueNode *> CollectModifiedExternalVariables() const;
+  /// \brief Collect the side effect operations.
+  ///
+  /// \return The side effect operations.
+  ///
+  /// \note Only side effects on external variables will be collected.
+  std::vector<ValueNode *> CollectSideEffectOperations() const;
+  /// \brief Initialize the version node map used to optimization.
+  ///
+  /// \param[in] vars All the modified external vars.
+  void InitializeVersionNodeMaps(const std::vector<ValueNode *> &vars);
+  /// \brief Revert the object that the call node is applied to the base version.
+  ///
+  /// \param[in] call_node The side effect node.
+  void RebaseObjectVersion(CallNode *call_node) const;
+  /// \brief Revert the object that the side effect is applied to the base version.
+  ///
+  /// \param[in] side_effect_nodes The side effect nodes will be handled.
+  ///
+  /// \return The side effect nodes whose object has been reverted.
+  std::vector<ValueNode *> RebaseObjectVersionInSideEffects(const std::vector<ValueNode *> &side_effect_nodes) const;
+  /// \brief Correct the variable if the module of the global not same as the graph.
+  ///
+  /// \param[in] nodes The side effect nodes will be handled.
+  ///
+  /// \return The side effect nodes have been handled
+  std::vector<ValueNode *> CorrectVariableOfStoreGlobal(const std::vector<ValueNode *> &nodes) const;
+  /// \brief Eliminating redundant side effects.
+  ///
+  /// \param[in] nodes All the side effect nodes.
+  ///
+  /// \return The side effect nodes have been handled
+  static std::vector<ValueNode *> EliminateRedundantSideEffect(const std::vector<ValueNode *> &nodes);
+  /// \brief Combining multiple side effects into one.
+  ///
+  /// \param[in] nodes All the side effect nodes.
+  ///
+  /// \return The side effect nodes have been handled
+  ///
+  /// \note scene 1 : Multiple Tensor setitem becomes one set data.
+  ///       scene 2 : Multiple list store_subscr and all list item is set.
+  std::vector<ValueNode *> MergeSideEffect(const std::vector<ValueNode *> &nodes) const;
+
+  /// \brief The graph corresponding to the nodes being captured.
+  Graph *graph_;
+  /// \brief The graph corresponding to the nodes being captured.
+  std::vector<ValueNode *> inputs_;
+  /// \brief The nodes being captured.
+  std::vector<ValueNode *> nodes_;
+  /// \brief All the base versions of external variables and Corresponding instruction node.
+  std::map<const AObject *, ValueNode *> ex_var_base_2_node_;
+  /// \brief All the latest versions of external variables and Corresponding instruction node.
+  std::map<const AObject *, ValueNode *> ex_var_latest_2_node_;
+  /// \brief The side effect operations.
+  std::vector<ValueNode *> side_effect_nodes_;
+  /// \brief Indicate the status of side effect handler.
+  ///        INT_MIN : Never Run, -1: Already Run without break point, > 0 : Already Run with break bci
+  int break_bci_{INT_MIN};
+};
 }  // namespace pijit
 }  // namespace mindspore
 

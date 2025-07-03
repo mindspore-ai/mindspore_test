@@ -16,10 +16,10 @@
 #include <atomic>
 
 #include "common/common_test.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #define private public
 #define protected public
-#include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_pool.h"
 #undef private
 #undef protected
 
@@ -324,6 +324,12 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
     return {0, 0};
   }
 
+  size_t release_free_blocks_{0};
+  size_t ReleaseFreeBlocks() override {
+    release_free_blocks_++;
+    return 0;
+  }
+
   size_t is_enable_time_event_{0};
   bool IsEnableTimeEvent() {
     is_enable_time_event_++;
@@ -335,6 +341,12 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
 
   size_t report_memory_pool_info_{0};
   void ReportMemoryPoolInfo() override { report_memory_pool_info_++; }
+
+  size_t report_free_memory_pool_info_to_mstx_{0};
+  void ReportMemoryPoolFreeInfoToMstx(void *ptr) override { report_free_memory_pool_info_to_mstx_++; }
+
+  size_t report_malloc_memory_pool_info_to_mstx_{0};
+  void ReportMemoryPoolMallocInfoToMstx(void *ptr, size_t size) override { report_malloc_memory_pool_info_to_mstx_++; };
 
   size_t gen_allocate_memory_time_event_{0};
   MemoryTimeEventPtr GenAllocateMemoryTimeEvent(const void *addr, size_t size, uint32_t stream_id, bool from_persistent,
@@ -353,6 +365,9 @@ class DefaultAscendMemoryPoolImpl : public DefaultAscendMemoryPool {
   void ResetIdleMemBuf() const override { reset_idle_mem_buf_++; }
 
   std::string GetMemoryPoolType() const override { return "DefaultAscendMemoryPoolImpl"; }
+
+  size_t gen_set_rank_id_getter_{0};
+  void SetRankIdGetter(const std::function<size_t()> &rank_id_getter) override { gen_set_rank_id_getter_++; }
 };
 using DefaultAscendMemoryPoolImplPtr = std::shared_ptr<DefaultAscendMemoryPoolImpl>;
 
@@ -369,16 +384,17 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->release_device_res_, 0);
   enhanced_pool->ReleaseDeviceRes();
   EXPECT_EQ(pool->release_device_res_, 1);
-  EXPECT_EQ(pool->is_enable_time_event_, 1);
+  EXPECT_EQ(pool->is_enable_time_event_, 0);
 
   enhanced_pool->AllocTensorMem(0);
   EXPECT_EQ(pool->alloc_tensor_mem_, 0);
   EXPECT_EQ(pool->dump_dynamic_mem_pool_state_info_, 0);
   EXPECT_EQ(pool->dump_dynamic_mem_pool_debug_info_, 0);
-  EXPECT_EQ(pool->is_enable_time_event_, 2);
+  EXPECT_EQ(pool->is_enable_time_event_, 1);
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
   EXPECT_EQ(pool->align_memory_size_.Get(), 1);
   EXPECT_EQ(pool->report_memory_pool_info_, 1);
+  EXPECT_EQ(pool->report_malloc_memory_pool_info_to_mstx_, 1);
 
   enhanced_pool->AllocContinuousTensorMem({});
   EXPECT_EQ(pool->alloc_continuous_tensor_mem_, 1);
@@ -393,7 +409,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
 
   enhanced_pool->FreePartTensorMems({}, {}, {});
   EXPECT_EQ(pool->free_part_tensor_mems_, 0);
-  EXPECT_EQ(pool->is_enable_time_event_, 4);
+  EXPECT_EQ(pool->is_enable_time_event_, 3);
   EXPECT_EQ(pool->do_free_part_tensor_mems_, 1);
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 0);
 
@@ -448,7 +464,7 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->get_max_used_mem_size_.Get(), 1);
 
   enhanced_pool->GetVmmUsedMemSize();
-  EXPECT_EQ(pool->get_vmm_used_mem_size_.Get(), 1);
+  EXPECT_EQ(pool->get_vmm_used_mem_size_.Get(), 2);
 
   enhanced_pool->DefragMemory();
   EXPECT_EQ(pool->defrag_memory_, 1);
@@ -529,15 +545,26 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   enhanced_pool->FreeIdleMemsByEagerFree();
   EXPECT_EQ(pool->free_idle_mems_by_eager_free_.Get(), 1);
 
-  EXPECT_EQ(pool->is_enable_time_event_, 4);
+  enhanced_pool->ReleaseFreeBlocks();
+  EXPECT_EQ(pool->release_free_blocks_, 1);
+
+  EXPECT_EQ(pool->is_enable_time_event_, 3);
   enhanced_pool->IsEnableTimeEvent();
-  EXPECT_EQ(pool->is_enable_time_event_, 5);
+  EXPECT_EQ(pool->is_enable_time_event_, 4);
 
   enhanced_pool->SetEnableTimeEvent(true);
   EXPECT_EQ(pool->set_enable_time_event_, 1);
 
   enhanced_pool->ReportMemoryPoolInfo();
   EXPECT_EQ(pool->report_memory_pool_info_, 2);
+
+  void *ptr;
+  enhanced_pool->ReportMemoryPoolFreeInfoToMstx(ptr);
+  EXPECT_EQ(pool->report_free_memory_pool_info_to_mstx_, 1);
+
+  size_t size{0};
+  enhanced_pool->ReportMemoryPoolMallocInfoToMstx(ptr, size);
+  EXPECT_EQ(pool->report_malloc_memory_pool_info_to_mstx_, 2);
 
   enhanced_pool->GenAllocateMemoryTimeEvent(nullptr, 0, 0, true, true);
   EXPECT_EQ(pool->gen_allocate_memory_time_event_, 1);
@@ -549,6 +576,10 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->reset_idle_mem_buf_.Get(), 1);
 
   EXPECT_EQ(enhanced_pool->GetMemoryPoolType(), "DefaultEnhancedAscendMemoryPool");
+
+  EXPECT_EQ(pool->gen_set_rank_id_getter_, 0);
+  enhanced_pool->SetRankIdGetter([]() { return 0L; });
+  EXPECT_EQ(pool->gen_set_rank_id_getter_, 1);
 }
 }  // namespace ascend
 }  // namespace device

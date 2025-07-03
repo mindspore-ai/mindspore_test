@@ -20,6 +20,7 @@
 #include "abstract/utils.h"
 namespace mindspore {
 namespace kernel {
+namespace assert_cpu {
 void PrintDataInt8(KernelTensor *input, int summarize) {
   std::ostringstream oss;
   oss << "input data: [";
@@ -120,5 +121,6 @@ bool AssertCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Assert, AssertCpuKernelMod);
+}  // namespace assert_cpu
 }  // namespace kernel
 }  // namespace mindspore

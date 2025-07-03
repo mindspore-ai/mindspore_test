@@ -15,20 +15,26 @@
  */
 
 #include "include/backend/distributed/init.h"
+#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
+#include <signal.h>
+#endif
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
+#include <functional>
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
-#include "runtime/graph_scheduler/graph_scheduler.h"
-#include "runtime/graph_scheduler/embedding_cache_scheduler.h"
-#include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace distributed {
 using distributed::recovery::RecoveryContext;
 using mindspore::debug::tft::TFTWaitSem;
+
+constexpr char kStopSchedulerFunc[] = "StopRuntimeSchedulerOnException";
+constexpr char kOpExecutorWorkerJoinFunc[] = "OpExecutorWorkerJoin";
+std::map<std::string, std::function<void()>> gDistributedCallbackMap;
 
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
@@ -64,7 +70,7 @@ bool Initialize() {
 
     // Release PyNative resources.
     runtime::Pipeline::Get().WaitAll();
-    runtime::OpExecutor::GetInstance().WorkerJoin();
+    gDistributedCallbackMap[kOpExecutorWorkerJoinFunc]();
     MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
     return true;
@@ -99,7 +105,7 @@ bool InitializeCluster() {
 
   // Set the callback for the cluster node.
   auto callback = std::make_shared<std::function<void(void)>>([]() {
-    MS_LOG(INFO) << "Callback on exception is called.";
+    MS_LOG(WARNING) << "Callback on exception is called.";
     if (TFTWaitSem::IsEnable()) {
       MS_LOG(INFO) << "Start waiting for TFT.";
       TFTWaitSem::GetInstance().Wait();
@@ -112,17 +118,11 @@ bool InitializeCluster() {
     }
     MS_LOG(DEBUG) << "End finalizing CollectiveManager in abnormal callback.";
 
-    MS_LOG(DEBUG) << "Start aborting rpc_node_scheduler.";
-    // Abort graph scheduler to avoid hang in rpc communication.
-    auto &graph_scheduler = runtime::GraphScheduler::GetInstance();
-    if (graph_scheduler.initialized() && graph_scheduler.rpc_node_scheduler() != nullptr) {
-      graph_scheduler.rpc_node_scheduler()->Abort();
+    if (gDistributedCallbackMap[kStopSchedulerFunc]) {
+      gDistributedCallbackMap[kStopSchedulerFunc]();
     }
-    MS_LOG(DEBUG) << "End aborting rpc_node_scheduler.";
 
-    MS_LOG(INFO) << "Begin finalize the EmbeddingCacheScheduler.";
-    runtime::EmbeddingCacheScheduler::GetInstance().Finalize(false);
-    MS_LOG(INFO) << "End finalize the EmbeddingCacheScheduler.";
+    MS_LOG(WARNING) << "Kill this process with SIGTERM.";
     // Forcibly Kill this process.
     (void)kill(getpid(), SIGTERM);
   });
@@ -174,5 +174,9 @@ bool FinalizeCollective() { return collective::CollectiveManager::instance()->Fi
 void set_cluster_exit_with_exception() { cluster::ClusterContext::instance()->set_cluster_exit_with_exception(); }
 
 bool cluster_exit_with_exception() { return cluster::ClusterContext::instance()->cluster_exit_with_exception(); }
+
+void RegisterCallback(const std::string &name, const std::function<void()> &func) {
+  gDistributedCallbackMap[name] = func;
+}
 }  // namespace distributed
 }  // namespace mindspore

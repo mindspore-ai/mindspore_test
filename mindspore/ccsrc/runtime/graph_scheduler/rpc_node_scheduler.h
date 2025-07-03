@@ -46,7 +46,7 @@ class RpcNodeScheduler {
   void Schedule(const ActorSet *actor_set) const;
 
   // Set op context to rpc actors.
-  void SetOpcontext(const RpcActorSetPtr &rpc_actors, OpContext<DeviceTensor> *const op_context);
+  void SetOpcontext(const RpcActorSetPtr &rpc_actors, OpContext<KernelTensor> *const op_context);
 
   // Reset op context for rpc actors.
   void ResetOpcontext(const RpcActorSetPtr &rpc_actors);
@@ -58,19 +58,10 @@ class RpcNodeScheduler {
   void Abort();
 
  private:
-  /**
-   * @description: Update reference counts of rpc actors's inputs and workspaces.
-   *               Because the memory of inputs and workspaces should not be released by the framework until rpc module
-   *               done sending or receiving.
-   * @param {RpcActorSetPtr} rpc_actor_set: The rpc actors set.
-   * @return {void}
-   */
-  void UpdateRpcActorRefCounts(RpcActorSetPtr rpc_actor_set) const;
-
   // Create new route table proxy.
   ActorRouteTableProxyPtr CreateRouteTableProxy() const;
 
-  OpContext<DeviceTensor> *op_context_;
+  OpContext<KernelTensor> *op_context_;
 
   RpcActorSetPtr rpc_actors_;
 };
@@ -79,7 +70,7 @@ class RpcNodeScheduler {
 class RpcActorOpContextSetter {
  public:
   explicit RpcActorOpContextSetter(RpcNodeScheduler *rpc_node_scheduler, const RpcActorSetPtr &rpc_actors,
-                                   OpContext<DeviceTensor> *const op_context)
+                                   OpContext<KernelTensor> *const op_context)
       : rpc_node_scheduler_(rpc_node_scheduler), rpc_actors_(rpc_actors), op_context_(op_context) {
     rpc_node_scheduler_->SetOpcontext(rpc_actors_, op_context_);
   }
@@ -94,7 +85,7 @@ class RpcActorOpContextSetter {
  private:
   RpcNodeScheduler *rpc_node_scheduler_;
   RpcActorSetPtr rpc_actors_;
-  OpContext<DeviceTensor> *op_context_;
+  OpContext<KernelTensor> *op_context_;
 };
 
 // This class is used to refresh the state of the rpc actor. For example, the mux recv actor receives requests for

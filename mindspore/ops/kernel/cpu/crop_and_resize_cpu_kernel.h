@@ -22,11 +22,12 @@
 #include <algorithm>
 #include <utility>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_cpu {
 constexpr int BILINEAR = 1;
 constexpr int NEAREST = 2;
 constexpr int BILINEAR_V2 = 3;
@@ -60,7 +61,6 @@ class CropAndResizeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
-  void InitFunc(const CNodePtr &kernel_node);
   template <typename T>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &outputs);
@@ -87,6 +87,7 @@ class CropAndResizeCpuKernelMod : public NativeCpuKernelMod {
   int final_width_{0};
   int channel_{0};
 };
+}  // namespace crop_and_resize_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

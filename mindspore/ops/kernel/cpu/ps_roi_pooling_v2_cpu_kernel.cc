@@ -18,12 +18,13 @@
 #include <functional>
 #include <map>
 #include "kernel/cpu/ps_roi_pooling_v2_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "abstract/utils.h"
 #include "mindspore/ops/infer/ps_roi_pooling.h"
 
 namespace mindspore {
 namespace kernel {
+namespace ps_roi_pooling_v2_cpu {
 namespace {
 constexpr int INPUT_NUM = 2;
 constexpr int OUTPUT_NUM = 1;
@@ -266,5 +267,6 @@ std::vector<KernelAttr> PSROIPoolingCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PSROIPooling, PSROIPoolingCpuKernelMod);
+}  // namespace ps_roi_pooling_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore

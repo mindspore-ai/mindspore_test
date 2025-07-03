@@ -24,7 +24,7 @@
 #include <set>
 #include <deque>
 #include <vector>
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -44,9 +44,19 @@
 #include "backend/operator/ops_backend_infer_function.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
-#include "include/common/profiler.h"
+#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "debug/profiler/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "ops/op_def.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace opt {
@@ -1588,7 +1598,36 @@ void GetPlantInputsAndSize(const FuncGraphPtr &graph, const CNodePtr &cnode_ptr,
     }
   }
 }
+namespace {
+static bool IsSequenceOfScalar(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractSequence>()) {
+    auto seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq_abs);
+    auto elements = seq_abs->elements();
+    if (elements.size() == 0) {
+      return false;
+    }
+    return elements[0]->isa<abstract::AbstractScalar>();
+  }
+  return false;
+}
 
+bool HasDynamicTupleInputTensor(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  size_t input_num = node->size() - 1;
+  for (size_t i = 0; i < input_num; ++i) {
+    auto input_node = common::AnfAlgo::GetInputNode(node, i);
+    MS_EXCEPTION_IF_NULL(input_node);
+    if (common::AnfAlgo::IsDynamicSequence(input_node) && !IsSequenceOfScalar(input_node)) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
 AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph, const CNodePtr &cnode_ptr) {
   MS_EXCEPTION_IF_NULL(cnode_ptr);
   MS_EXCEPTION_IF_NULL(graph);
@@ -1598,7 +1637,7 @@ AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph, const C
     return nullptr;
   }
 
-  if (common::AnfAlgo::HasDynamicTupleInput(cnode_ptr)) {
+  if (HasDynamicTupleInputTensor(cnode_ptr)) {
     MS_LOG(INFO) << "Node " << cnode_ptr->fullname_with_scope()
                  << " has dynamic tuple input, can't convert. Node debug string:" << cnode_ptr->DebugString();
     return nullptr;

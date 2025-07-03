@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/kernel/akg/akg_kernel_metadata.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {
@@ -43,7 +43,7 @@ void AkgMetadataInfo(const CNodePtr &kernel_node, std::vector<KernelBuildInfoPtr
   }
 
   if (kernel_info_list->empty()) {
-    MS_LOG(WARNING) << "Akg dose not has metadata of op[" << op_name << "].";
+    MS_LOG(WARNING) << "Akg does not has metadata of op[" << op_name << "].";
   }
 }
 }  // namespace kernel

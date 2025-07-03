@@ -21,19 +21,20 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace group_norm {
 namespace {
 constexpr size_t kNumberTwo = 2;
 }  // namespace
 
 void GroupNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  num_groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  num_groups_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   auto eps_dtype_id = inputs[kIndex4]->dtype_id();
   switch (eps_dtype_id) {
     case kNumberTypeFloat32: {
@@ -67,5 +68,6 @@ bool GroupNormAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(GroupNorm, GroupNormAscend);
+}  // namespace group_norm
 }  // namespace kernel
 }  // namespace mindspore

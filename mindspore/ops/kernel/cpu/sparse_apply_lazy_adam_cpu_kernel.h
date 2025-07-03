@@ -25,8 +25,9 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT SparseApplyLazyAdamCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                       public MatchKernelHelper<SparseApplyLazyAdamCpuKernelMod> {
+namespace sparse_apply_lazy_adam_cpu {
+class SparseApplyLazyAdamCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
+                                        public MatchKernelHelper<SparseApplyLazyAdamCpuKernelMod> {
  public:
   SparseApplyLazyAdamCpuKernelMod() { ResetResource(); }
   ~SparseApplyLazyAdamCpuKernelMod() override = default;
@@ -58,6 +59,7 @@ class BACKEND_EXPORT SparseApplyLazyAdamCpuKernelMod : public SparseOptimizerCpu
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &) const;
 };
+}  // namespace sparse_apply_lazy_adam_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

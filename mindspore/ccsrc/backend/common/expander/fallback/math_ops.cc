@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
-#include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/ms_context.h"
 #include "infer/ops_func_impl/matmul_ext.h"
@@ -25,8 +24,10 @@
 namespace mindspore {
 namespace expander {
 namespace {
-const std::set<TypeId> kIntergralSet = {kNumberTypeBool, kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16,
-                                        kNumberTypeInt32};
+const std::set<TypeId> kIntergralSet = {kNumberTypeBool,  kNumberTypeUInt8, kNumberTypeInt8,
+                                        kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+
+const std::set<TypeId> kFloatSet = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
 
 NodePtr Expand(FallbackIRBuilder *ib, NodePtr tensor, size_t ndim) {
   ShapeVector shape = tensor->shape();
@@ -48,6 +49,62 @@ REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
   return {x + y * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("AddScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+
+  auto x_type = ib->GetDtype(x)->type_id();
+  auto y_type = ib->GetDtype(y)->type_id();
+  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+      (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
+    MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
+                            << TypeIdToString(y_type) << " is not supported.";
+  }
+
+  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  auto promote_type = TypeIdToType(kNumberTypeFloat32);
+  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    promote_type = TypeIdToType(y_type);
+  } else {
+    promote_type = TypeIdToType(x_type);
+  }
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->ScalarToTensor(y, promote_type);
+
+  return {ib->Emit("AddExt", {x_cast, y_cast, alpha})};
+});
+
+REG_FALLBACK_BUILDER("SubScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+
+  auto x_type = ib->GetDtype(x)->type_id();
+  auto y_type = ib->GetDtype(y)->type_id();
+  if ((y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64) &&
+      (x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64)) {
+    MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
+                            << TypeIdToString(y_type) << " is not supported.";
+  }
+
+  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  auto promote_type = TypeIdToType(kNumberTypeFloat32);
+  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    promote_type = TypeIdToType(y_type);
+  } else {
+    promote_type = TypeIdToType(x_type);
+  }
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->ScalarToTensor(y, promote_type);
+
+  return {ib->Emit("SubExt", {x_cast, y_cast, alpha})};
+});
+
 REG_FALLBACK_BUILDER("InplaceAddExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
@@ -66,6 +123,63 @@ REG_FALLBACK_BUILDER("InplaceAddsExt").SetBody(BODYFUNC(ib) {
   return {x + other_tensor * alpha_tensor};
 });
 
+REG_FALLBACK_BUILDER("InplaceSubExt").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  auto y_cast = ib->Cast(y, x->dtype());
+  return {x - y_cast * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceSubScalar").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto alpha = ib->GetInput(kIndex2);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  auto alpha_tensor = ib->ScalarToTensor(alpha, x->dtype());
+  return {x - other_tensor * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceMul").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {x * y};
+});
+
+REG_FALLBACK_BUILDER("InplaceMuls").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {x * other_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceDiv").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {x / y};
+});
+
+REG_FALLBACK_BUILDER("InplaceDivs").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {x / other_tensor};
+});
+
+REG_FALLBACK_BUILDER("InplaceFloorDivide").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  return {ib->Emit("FloorDiv", {x, y})};
+});
+
+REG_FALLBACK_BUILDER("InplaceFloorDivides").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto other_tensor = ib->ScalarToTensor(y, x->dtype());
+  return {ib->Emit("FloorDiv", {x, other_tensor})};
+});
+
 REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
@@ -75,6 +189,30 @@ REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   }
   auto alpha_tensor = ib->Cast(ib->ScalarToTensor(alpha, x->dtype()), y->dtype());
   return {x - y * alpha_tensor};
+});
+
+REG_FALLBACK_BUILDER("Muls").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto x_type = ib->GetDtype(x)->type_id();
+  auto y_type = ib->GetDtype(y)->type_id();
+  if ((x_type == kNumberTypeUInt16 || x_type == kNumberTypeUInt32 || x_type == kNumberTypeUInt64) &&
+      (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    MS_EXCEPTION(TypeError) << "Type implicit conversion between Tensor[" << TypeIdToString(x_type) << "] and "
+                            << TypeIdToString(y_type) << " is not supported.";
+  }
+  std::set<TypeId> kSet = {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  auto promote_type = TypeIdToType(kNumberTypeFloat32);
+  if ((kSet.find(x_type) != kSet.end()) && y_type == kNumberTypeFloat32) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  } else if (x_type == kNumberTypeBool && (y_type == kNumberTypeFloat32 || y_type == kNumberTypeInt64)) {
+    promote_type = TypeIdToType(y_type);
+  } else {
+    promote_type = TypeIdToType(x_type);
+  }
+  auto x_cast = ib->Cast(x, promote_type);
+  auto y_cast = ib->ScalarToTensor(y, promote_type);
+  return {ib->Mul(x_cast, y_cast)};
 });
 
 REG_FALLBACK_BUILDER("BatchMatMulExt").SetBody(BODYFUNC(ib) {
@@ -375,6 +513,50 @@ REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
   }
 });
 
+REG_FALLBACK_BUILDER("RemainderTensorTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto promote_type = mindspore::ops::PromoteType(ib->GetDtype(input), ib->GetDtype(other), "RemainderTensorTensor");
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->Cast(input, promote_type);
+  auto other_cast = ib->Cast(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+});
+
+REG_FALLBACK_BUILDER("RemainderTensorScalar").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto input_type = ib->GetDtype(input);
+  auto promote_type = input_type;
+  if (input_type->type_id() == kNumberTypeBool) {
+    promote_type = other->dtype();
+  } else if (kIntergralSet.find(input_type->type_id()) != kIntergralSet.end() &&
+             kFloatSet.find(other->dtype()->type_id()) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  }
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->Cast(input, promote_type);
+  auto other_cast = ib->ScalarToTensor(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+});
+
+REG_FALLBACK_BUILDER("RemainderScalarTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto other_type = ib->GetDtype(other);
+  auto promote_type = other_type;
+  if (other_type->type_id() == kNumberTypeBool) {
+    promote_type = input->dtype();
+  } else if (kIntergralSet.find(other_type->type_id()) != kIntergralSet.end() &&
+             kFloatSet.find(input->dtype()->type_id()) != kFloatSet.end()) {
+    promote_type = TypeIdToType(kNumberTypeFloat32);
+  }
+  MS_EXCEPTION_IF_NULL(promote_type);
+  auto input_cast = ib->ScalarToTensor(input, promote_type);
+  auto other_cast = ib->Cast(other, promote_type);
+  return {ib->Emit("FloorMod", {input_cast, other_cast})};
+});
+
 REG_FALLBACK_BUILDER("EqualCount").SetBody(BODYFUNC(ib) {
   // Check inputs
   const auto &input_x = ib->GetInput(kIndex0);
@@ -429,6 +611,21 @@ REG_FALLBACK_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
 
   auto input_tensor = ib->ScalarToTensor(input, input->dtype());
   auto out = ib->Pow(input_tensor, exponent);
+  return {out};
+});
+
+REG_FALLBACK_BUILDER("BitwiseAndTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto input_type = input->dtype()->type_id();
+  NodePtr out{nullptr};
+  if (input_type == kNumberTypeBool) {
+    auto int_input = ib->Cast(input, kInt8);
+    auto int_other = ib->Cast(other, kInt8);
+    out = ib->Cast(ib->Emit("BitwiseAnd", {int_input, int_other}), input_type);
+  } else {
+    out = ib->Emit("BitwiseAnd", {input, other});
+  }
   return {out};
 });
 }  // namespace expander

@@ -17,21 +17,20 @@ import numpy as np
 from mindspore import Tensor, jit, context, nn
 from mindspore.common.parameter import Parameter
 from mindspore.common import dtype as mstype
-from tests.st.compiler.fallback.cases_register import case_register
+from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.GRAPH_MODE)
+context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_tensor():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_in_if():
         x = Tensor(1)
         y = Tensor(0)
@@ -44,16 +43,15 @@ def test_for_in_if_tensor():
     assert res == 10
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_tensor_2():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_in_if():
         x = Tensor(1)
         y = Tensor(0)
@@ -66,9 +64,8 @@ def test_for_in_if_tensor_2():
     assert res == -5
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_param():
     """
     Feature: JIT Fallback
@@ -98,16 +95,15 @@ def test_for_in_if_param():
     assert res2 == 12
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_isinstance_raise():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_in_if(x):
         if isinstance(x, Tensor):
             print("before add:", x)
@@ -122,16 +118,15 @@ def test_for_in_if_isinstance_raise():
     assert out == 4
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_for_in_if_dict_isinstance():
     """
     Feature: JIT Fallback
     Description: Test fallback with control flow.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def control_flow_for_in_if():
         dict_x = {'a': 1, 'b': 2}
         res = 0

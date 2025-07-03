@@ -25,9 +25,9 @@
 #include <functional>
 #include "mindspore/ops/infer/lu_unpack.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lu_unpack_impl.cuh"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
+#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 

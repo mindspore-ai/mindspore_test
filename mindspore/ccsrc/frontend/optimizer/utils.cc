@@ -19,6 +19,7 @@
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/compile_config.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace opt {
@@ -37,6 +38,9 @@ AnfNodePtr GetBpropGetter(const FuncGraphManagerPtr &manager, const CNodePtr &no
 
 AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter) {
   MS_EXCEPTION_IF_NULL(manager);
+  if (bprop_getter == nullptr) {
+    return nullptr;
+  }
   const auto &node_users = manager->node_users();
   auto iter = node_users.find(bprop_getter);
   if (iter == node_users.end()) {

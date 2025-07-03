@@ -20,11 +20,12 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace glu_grad_cpu {
 class GluGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   GluGradCpuKernelMod() = default;
@@ -47,8 +48,10 @@ class GluGradCpuKernelMod : public NativeCpuKernelMod {
   int64_t axis_{1};
   std::vector<int64_t> grad_shape_{};
   std::vector<int64_t> x_shape_{};
+  bool is_x_empty_{false};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace glu_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_GLU_GRAD_KERNEL_H_

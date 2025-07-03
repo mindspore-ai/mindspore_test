@@ -24,27 +24,36 @@
 #include "include/backend/visible.h"
 #include "backend/common/session/session_basic.h"
 #include "runtime/pynative/op_compiler.h"
-#include "runtime/pipeline/task/device_task.h"
+#include "runtime/pynative/task/device_task.h"
 
 namespace mindspore::compile {
 using BackendOpRunInfoPtr = session::BackendOpRunInfoPtr;
+using KernelTensor = kernel::KernelTensor;
+using KernelTensorPtr = kernel::KernelTensorPtr;
 
 class BACKEND_EXPORT ViewBackend {
  public:
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                        bool is_cpu_address_exist) const;
 
   void RunViewKernelTaskAsyncImpl(const runtime::KernelTaskType &task_type, DeviceContext *device_context,
                                   const device::DeviceAddressPtrList &input_addr_list,
                                   const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const;
 
-  void AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *device_context,
+  void AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceContext *device_context,
                             bool is_cpu_address_exist) const;
 
   static void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info);
+
+  using ContiguousFunc = std::function<void(const BackendOpRunInfoPtr &)>;
+
+  static void SetContiguousFunc(const ContiguousFunc &contiguous_func) { contiguous_func_ = contiguous_func; }
+
+ private:
+  inline static ContiguousFunc contiguous_func_;
 };
 
 class BACKEND_EXPORT PostRunOp {
@@ -63,19 +72,19 @@ class BACKEND_EXPORT PostRunOp {
   void UpdateOutputAbstract(const VectorRef &outputs, const session::BackendOpRunInfoPtr &op_run_info) const;
 
   void UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_run_info, const OpCompilerInfoPtr &op_compiler_info,
-                           const vector<device::DeviceAddressPtr> &device_address_list, VectorRef *outputs) const;
+                           const std::vector<KernelTensorPtr> &kernel_tensor_list, VectorRef *outputs) const;
 
   void set_forward_tensor_ref_count(const std::map<std::string, size_t> &forward_tensor_ref_count) {
     forward_tensor_ref_count_ = forward_tensor_ref_count;
   }
 
  private:
-  tensor::BaseTensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const;
+  tensor::TensorPtr CreateOutputTensor(const AnfNodePtr &output_node, size_t output_index) const;
 
-  tensor::BaseTensorPtr CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
-                                                      const AnfNodePtr &output_node, size_t output_index,
-                                                      const std::shared_ptr<device::DeviceAddress> &address,
-                                                      size_t idx_in_graph_outputs) const;
+  tensor::TensorPtr CreateOutputTensorDynamicImpl(const OpCompilerInfoPtr &op_compiler_info,
+                                                  const AnfNodePtr &output_node, size_t output_index,
+                                                  const KernelTensorPtr &kernel_tensor,
+                                                  size_t idx_in_graph_outputs) const;
 
   // Cache forward op output value node tensor ref count of kernels for back propagation graph in PyNative mode.
   std::map<std::string, size_t> forward_tensor_ref_count_;
@@ -96,7 +105,7 @@ class BACKEND_EXPORT OpBackend {
   void RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info, const runtime::KernelTaskType &task_type,
                          bool enable_async) const;
 
-  void RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
+  void RunAllocMemTask(DeviceContext *device_context, const tensor::TensorPtr &tensor, bool enable_async,
                        bool is_cpu_address_exist) const;
 
  protected:
@@ -119,11 +128,11 @@ class BACKEND_EXPORT OpBackend {
 
   void DispatchOpTaskDynamic(VectorRef *outputs, const OpCompilerInfoPtr &op_compiler_info,
                              const session::BackendOpRunInfoPtr &op_run_info,
-                             const vector<device::DeviceAddressPtr> &device_address_list);
+                             const std::vector<KernelTensorPtr> &kernel_tensor_list);
 
   void OpRunCallbackDynamic(const std::shared_ptr<runtime::OpTaskContext> &context);
 
-  device::DeviceAddressPtrList GetOutputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info) const;
+  std::vector<KernelTensorPtr> GetOutputKernelTensor(const OpCompilerInfoPtr &op_compiler_info) const;
 
   PostRunOp post_run_;
   ViewBackend view_backend_;

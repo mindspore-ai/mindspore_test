@@ -22,16 +22,15 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RepeatInterleaveTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                            const BaseTensorPtr &input_tensor,
-                                                            const BaseTensorPtr &repeats,
-                                                            const std::optional<Int64ImmPtr> &dim,
-                                                            const std::optional<Int64ImmPtr> &output_size);
+tensor::TensorPtr RepeatInterleaveTensorAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                        const TensorPtr &input_tensor, const TensorPtr &repeats,
+                                                        const std::optional<Int64ImmPtr> &dim,
+                                                        const std::optional<Int64ImmPtr> &output_size);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

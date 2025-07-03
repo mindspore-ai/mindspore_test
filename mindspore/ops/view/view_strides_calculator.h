@@ -23,7 +23,6 @@
 #include <utility>
 #include "ir/tensor.h"
 #include "utils/hash_map.h"
-#include "ir/value.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ir/primitive.h"
 
@@ -56,7 +55,7 @@ struct OldTensorInfo {
 };
 using OldTensorInfoPtr = std::shared_ptr<OldTensorInfo>;
 
-OldTensorInfoPtr GetOldTensorInfo(const tensor::BaseTensorPtr &tensor);
+OldTensorInfoPtr GetOldTensorInfo(const tensor::TensorPtr &tensor);
 
 class OPS_API ViewStridesCalcFactory {
  public:

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2025Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 #include <tuple>
 #include <utility>
 
@@ -30,9 +31,28 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace parallel {
+enum OpAttrUpdateMode : int64_t {
+  kLeftUpToLeftUp = 0,
+  kLeftUpToRightDown = 1,
+  kRightDownToRightDown = 2,
+};
+const std::map<int64_t, int64_t> opAttrUpdateMap = {{ops::kSparseDefaultMask, kLeftUpToLeftUp},
+                                                    {ops::kSparseLeftUpCausal, kLeftUpToRightDown},
+                                                    {ops::kSparseRightDownCausal, kRightDownToRightDown},
+                                                    {ops::kSparseBand, kRightDownToRightDown},
+                                                    {ops::kSparseBlockLocal, kLeftUpToRightDown}};
+
+Status ComputeSparseInfoForFlashAttentionScore(const int64_t sparse_mode, const int64_t pre_tokens,
+                                               const int64_t next_tokens, const int64_t seq_split_id,
+                                               const int64_t seq_split_num, int64_t q_seq_len, int64_t kv_seq_len,
+                                               int64_t *new_sparse_mode, int64_t *new_pre_tokens,
+                                               int64_t *new_next_tokens);
+
 class FlashAttentionScoreInfo : public OperatorInfo {
  public:
   FlashAttentionScoreInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -91,6 +111,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status InitAttnMaskStrategies();
   Status InitQKVHeadAndSeqDimFromInputLayout();
   Status CheckStrategyExpected(const StrategyPtr &strategy);
+  void ResetInputsShape();
   std::vector<int64_t> GetSplitIdAndRank();
   std::tuple<int64_t, int64_t> GetAttentionMaskAttrs(const int64_t split_id, const int64_t split_num);
   std::tuple<AnfNodePtr, AnfNodePtr> GetAttentionMaskAttrsByDynamicSeqDim(const AnfNodePtr &query_node,
@@ -121,21 +142,21 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   int64_t head_num_ = 1;
   float keep_prob_ = 1.0;
   float scale_value_ = 1.0;
-  size_t qkv_batch_dim_;
-  size_t qkv_head_dim_;
-  size_t qkv_seq_dim_;
-  int64_t pre_tokens_;
-  int64_t next_tokens_;
-  int64_t batch_split_num_;
-  int64_t n1_split_num_;
-  int64_t n2_split_num_;
-  int64_t s1_split_num_;
-  int64_t s2_split_num_;
-  int64_t t1_split_num_;  // The split num of query's T-dim under 'TND'
-  int64_t t2_split_num_;  // The split num of key and value's T=dim under 'TND'
-  int64_t dev_matrix_batch_dim_;
-  int64_t dev_matrix_n1_dim_;
-  int64_t dev_matrix_s1_dim_;
+  size_t qkv_batch_dim_ = 0;
+  size_t qkv_head_dim_ = 1;
+  size_t qkv_seq_dim_ = 2;
+  int64_t pre_tokens_ = 2147483647;
+  int64_t next_tokens_ = 2147483647;
+  int64_t batch_split_num_ = 1;
+  int64_t n1_split_num_ = 1;
+  int64_t n2_split_num_ = 1;
+  int64_t s1_split_num_ = 1;
+  int64_t s2_split_num_ = 1;
+  int64_t t1_split_num_ = 1;  // The split num of query's T-dim under 'TND'
+  int64_t t2_split_num_ = 1;  // The split num of key and value's T=dim under 'TND'
+  int64_t dev_matrix_batch_dim_ = 0;
+  int64_t dev_matrix_n1_dim_ = 1;
+  int64_t dev_matrix_s1_dim_ = 2;
   bool real_shift_have_s1_dim_ = false;     // true if real_shift and have s1 dim.
   bool real_shift_have_batch_dim_ = false;  // true if real_shift have batch dim
   bool attn_mask_have_batch_dim_ = false;   // true if attn_mask have batch dim.
@@ -145,13 +166,13 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   bool enable_flash_sp_ = false;
   bool enable_ra_send_recv_ = false;
   bool enable_ra_cp_ = false;
-  int64_t input_layout_;  // "BSH": 0; "BNSD": 1;
-  int64_t sparse_mode_;
+  int64_t input_layout_ = 1;  // "BSH": 0; "BNSD": 1;
+  int64_t sparse_mode_ = 0;
   bool kv_split_ = false;
   bool is_attn_mask_compressed_ = false;
   bool need_update_op_attrs_mode_ = false;
-  int64_t q_seq_len_;
-  int64_t kv_seq_len_;
+  int64_t q_seq_len_ = 1;
+  int64_t kv_seq_len_ = 1;
   bool dynamic_seq_flag_ = false;
   bool is_flatten_batch_seq_ = false;
   std::vector<bool> is_input_passed_;

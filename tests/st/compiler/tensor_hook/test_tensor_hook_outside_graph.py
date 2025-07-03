@@ -16,6 +16,7 @@
 import os
 import subprocess
 import shutil
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, ops, nn, Parameter
@@ -31,6 +32,11 @@ def hook_triple(grad):
 
 def hook_print(grad):
     print("grad:", grad)
+
+def hook_with_ctrl_flow(grad):
+    if grad[0] < 10000000:
+        return hook_double(grad)
+    return hook_triple(grad)
 
 np_weight0 = np.array([1.0, 2.0, 3.0])
 np_weight1 = np.array([4.0, 5.0, 6.0])
@@ -58,6 +64,17 @@ class Net(nn.Cell):
         out = (self.net0(x) + self.net0(y)) * (self.weight1 + self.weight2)
         return out
 
+class JitNet(nn.Cell):
+    def __init__(self, net0):
+        super(JitNet, self).__init__()
+        self.net0 = net0
+        self.weight1 = Parameter(Tensor(np_weight1, ms.float32), name="weight1")
+        self.weight2 = Parameter(Tensor(np_weight2, ms.float32), name="weight2")
+
+    @ms.jit
+    def construct(self, x, y):
+        out = (self.net0(x) + self.net0(y)) * (self.weight1 + self.weight2)
+        return out
 
 ground_net = Net(Net0())
 ground_grad_op = ops.GradOperation(get_all=True, get_by_list=True)
@@ -87,6 +104,30 @@ def test_one_tensor_one_hook_once_run():
 
     input_x1 = Tensor(np_input_x1, ms.float32)
     input_x1.register_hook(hook_double)
+    input_y1 = Tensor(np_input_y1, ms.float32)
+    output = grad_net(input_x1, input_y1)
+
+    output_grad = output[0][0].asnumpy()
+    expected_grad = hook_double(ground_output[0][0]).asnumpy()
+    assert np.allclose(output_grad, expected_grad)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+@pytest.mark.parametrize('hook', [hook_double, hook_with_ctrl_flow])
+def test_hook_in_jit(mode, hook):
+    """
+    Feature: Tensor.register_hook(hook_fn) outside graph.
+    Description: Test register hook outside graph when the graph is decorated by `@jit`.
+    Expectation: The grad of tensor is changed by hook.
+    """
+    context.set_context(mode=mode)
+
+    net = JitNet(Net0())
+    grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+    grad_net = grad_op(net, net.trainable_params())
+
+    input_x1 = Tensor(np_input_x1, ms.float32)
+    input_x1.register_hook(hook)
     input_y1 = Tensor(np_input_y1, ms.float32)
     output = grad_net(input_x1, input_y1)
 

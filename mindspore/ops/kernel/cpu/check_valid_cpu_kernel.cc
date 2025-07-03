@@ -19,10 +19,12 @@
 #include <algorithm>
 #include <utility>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {
+namespace check_valid_cpu {
 namespace {
 constexpr size_t kInputSize = 2;
 constexpr size_t kOutputSize = 1;
@@ -151,5 +153,6 @@ std::vector<KernelAttr> CheckValidCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CheckValid, CheckValidCpuKernelMod);
+}  // namespace check_valid_cpu
 }  // namespace kernel
 }  // namespace mindspore

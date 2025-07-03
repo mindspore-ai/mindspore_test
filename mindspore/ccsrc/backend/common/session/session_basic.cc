@@ -30,9 +30,9 @@
 #include "ops/primitive_c.h"
 #include "ir/manager.h"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "base/base_ref_utils.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -40,8 +40,7 @@
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
-#include "runtime/device/kernel_runtime_manager.h"
-#include "runtime/pynative/op_compiler.h"
+#include "pynative/base.h"
 #include "utils/ms_utils.h"
 #include "ir/anf.h"
 #include "ir/func_graph_cloner.h"
@@ -51,7 +50,7 @@
 #include "utils/file_utils.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/parallel_context.h"
-#include "kernel/oplib/oplib.h"
+#include "common/oplib/oplib.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "include/backend/distributed/ps/constants.h"
@@ -60,7 +59,6 @@
 #include "abstract/abstract_value.h"
 #endif
 #include "backend/common/session/session_factory.h"
-#include "runtime/pynative/op_executor.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
 #include "debug/debugger/proto_exporter.h"
@@ -74,6 +72,8 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace session {
@@ -81,11 +81,6 @@ MS_REG_SESSION(kSessionBasic, SessionBasic);
 
 namespace {
 constexpr int64_t kInvalidShape = -2;
-static bool IsPynativeMode() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  return ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-}
 
 BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_output_pair, const KernelGraphPtr &graph,
                                       const std::vector<tensor::TensorPtr> &input_tensors) {
@@ -100,9 +95,7 @@ BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_outpu
     MS_EXCEPTION_IF_NULL(value_node);
     return value_node->value();
   }
-  if (IsPynativeMode()) {
-    return nullptr;
-  }
+  MS_LOG(EXCEPTION) << "GetNodeOutputTensorFromInputs is deprecated.";
   if (!node->isa<Parameter>()) {
     return nullptr;
   }
@@ -160,11 +153,11 @@ BaseRef CreateNodeOutputTensor(const session::KernelWithIndex &node_output_pair,
   if (is_internal_output) {
     tensor->set_sync_status(kNoNeedSync);
   } else {
+    MS_LOG(EXCEPTION) << "CreateNodeOutputTensor is deprecated.";
     // if in pynative mode,data only copied to host when user want to print data
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-        ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kGPUDevice) {
+    if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kGPUDevice) {
       tensor->set_sync_status(kNeedSyncDeviceToHostImmediately);
     } else {
       tensor->set_sync_status(kNeedSyncDeviceToHost);
@@ -204,9 +197,8 @@ bool NeedDiscardTensorProperties(const std::string &op_device_target,
   return true;
 }
 
-ParameterPtr ConstructRunOpParameter(const std::shared_ptr<KernelGraph> &graph,
-                                     const tensor::BaseTensorPtr &input_tensor, const BackendOpRunInfoPtr &op_run_info,
-                                     InputType input_type) {
+ParameterPtr ConstructRunOpParameter(const std::shared_ptr<KernelGraph> &graph, const tensor::TensorPtr &input_tensor,
+                                     const BackendOpRunInfoPtr &op_run_info, InputType input_type) {
   MS_EXCEPTION_IF_NULL(graph);
   auto param = graph->NewParameter();
   MS_EXCEPTION_IF_NULL(param);
@@ -337,7 +329,7 @@ BaseRef CreateNodeOutputPlaceholder(const AnfNodePtr &anf, const KernelGraphPtr 
   return CreateNodeOutputPlaceholder(item_with_index, graph, input_tensors, indexes, output_indexes);
 }
 
-void CheckInputTensorShape(const tensor::BaseTensorPtr &tensor, const CNodePtr &kernel, size_t input_index) {
+void CheckInputTensorShape(const tensor::TensorPtr &tensor, const CNodePtr &kernel, size_t input_index) {
   MS_EXCEPTION_IF_NULL(tensor);
   const auto &tensor_shape = tensor->shape();
   const auto input_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, input_index);
@@ -417,7 +409,6 @@ BaseRef SessionBasic::CreateNodeOutputTensors(const AnfNodePtr &anf, const Kerne
 
 void SessionBasic::InitExecutor(const std::string &device_name, uint32_t device_id) {
   device_id_ = device_id;
-  context_ = std::make_shared<Context>(device_name, device_id);
   executor_ = ExecutorManager::Instance().GetExecutor(device_name, device_id);
 }
 
@@ -604,7 +595,7 @@ void SessionBasic::ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_val
                                           std::map<std::string, size_t> *forward_op_output_tensor_id) const {
   MS_EXCEPTION_IF_NULL(forward_op_output_tensor_id);
   for (const auto &value : input_values) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     if (tensor == nullptr) {
       continue;
     }
@@ -624,7 +615,7 @@ void SessionBasic::ReleaseForwardOpOutput(const std::vector<ValuePtr> &input_val
 
 void SessionBasic::HandleOpInputs(const std::set<KernelWithIndex> &input_kernel,
                                   std::map<KernelWithIndex, size_t> *ref_count,
-                                  std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map) const {
+                                  std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const {
   MS_EXCEPTION_IF_NULL(ref_count);
   MS_EXCEPTION_IF_NULL(op_output_map);
   for (const auto &kernel_with_index : input_kernel) {
@@ -655,7 +646,7 @@ void SessionBasic::HandleOpInputs(const std::set<KernelWithIndex> &input_kernel,
 
 void SessionBasic::HandleOpOutputs(const AnfNodePtr &kernel, const VectorRef &op_outputs,
                                    const std::map<KernelWithIndex, size_t> &ref_count,
-                                   std::map<KernelWithIndex, tensor::BaseTensorPtr> *op_output_map,
+                                   std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map,
                                    GraphOutputInfo *const graph_output_info) const {
   MS_EXCEPTION_IF_NULL(kernel);
   MS_EXCEPTION_IF_NULL(op_output_map);
@@ -673,7 +664,7 @@ void SessionBasic::HandleOpOutputs(const AnfNodePtr &kernel, const VectorRef &op
   size_t out_index = 0;
   for (const auto &output_value : output_values) {
     auto kernel_with_index = make_pair(kernel, out_index++);
-    auto output_tensor = output_value->cast<tensor::BaseTensorPtr>();
+    auto output_tensor = output_value->cast<tensor::TensorPtr>();
     bool value_is_tensor = (output_tensor != nullptr);
     if (ref_count.find(kernel_with_index) != ref_count.end() && value_is_tensor) {
       (*op_output_map)[kernel_with_index] = output_tensor;
@@ -740,7 +731,8 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   } else if (value->isa<StringImm>()) {
     auto value_string = GetValue<std::string>(value);
     const ShapeVector shape = {1, SizeToLong(value_string.size())};
-    TensorPtr tensor = std::make_shared<Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
+    tensor::TensorPtr tensor =
+      std::make_shared<tensor::Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->set_sync_status(kNeedSyncHostToDevice);
     return tensor;
@@ -753,9 +745,9 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   return value;
 }
 
-TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
-                                                 const std::map<AnfNodePtr, size_t> &parameter_index,
-                                                 const std::vector<tensor::TensorPtr> &graph_inputs) const {
+tensor::TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
+                                                         const std::map<AnfNodePtr, size_t> &parameter_index,
+                                                         const std::vector<tensor::TensorPtr> &graph_inputs) const {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<Parameter>()) {
     return nullptr;
@@ -772,8 +764,8 @@ TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
   return graph_inputs[index];
 }
 
-tensor::BaseTensorPtr SessionBasic::GetCNodeOutputTensor(
-  const KernelWithIndex &kernel_with_index, const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output) const {
+tensor::TensorPtr SessionBasic::GetCNodeOutputTensor(
+  const KernelWithIndex &kernel_with_index, const std::map<KernelWithIndex, tensor::TensorPtr> &op_output) const {
   const auto &iter = op_output.find(kernel_with_index);
   if (iter == op_output.end()) {
     MS_LOG(EXCEPTION) << "Can not find output tensor of cnode, node = " << kernel_with_index.first->DebugString();
@@ -820,7 +812,7 @@ static inline BaseShapePtr GetShapeFromTuple(const abstract::AbstractTuplePtr &t
 }
 
 void SessionBasic::GetOpInputTensors(const CNodePtr &cnode,
-                                     const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
+                                     const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
                                      const std::map<AnfNodePtr, size_t> &parameter_index,
                                      const std::vector<tensor::TensorPtr> &graph_inputs, InputInfo *input_info) const {
   MS_EXCEPTION_IF_NULL(cnode);
@@ -903,7 +895,7 @@ void SessionBasic::GetOpInputTensors(const CNodePtr &cnode,
 }
 
 void SessionBasic::GetOpInputTensorsFromCNode(const CNodePtr &cnode,
-                                              const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
+                                              const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
                                               const std::map<AnfNodePtr, size_t> &parameter_index,
                                               const std::vector<tensor::TensorPtr> &graph_inputs,
                                               InputInfo *input_info) const {
@@ -959,10 +951,11 @@ void SessionBasic::GetOpInputTensorsFromCNode(const CNodePtr &cnode,
   }
 }
 
-tensor::BaseTensorPtr SessionBasic::GetOpInputTensorByIndex(
-  const CNodePtr &cnode, const std::map<KernelWithIndex, tensor::BaseTensorPtr> &op_output,
-  const std::map<AnfNodePtr, size_t> &parameter_index, const std::vector<tensor::TensorPtr> &graph_inputs,
-  InputInfo *input_info, size_t input_index) const {
+tensor::TensorPtr SessionBasic::GetOpInputTensorByIndex(const CNodePtr &cnode,
+                                                        const std::map<KernelWithIndex, tensor::TensorPtr> &op_output,
+                                                        const std::map<AnfNodePtr, size_t> &parameter_index,
+                                                        const std::vector<tensor::TensorPtr> &graph_inputs,
+                                                        InputInfo *input_info, size_t input_index) const {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(input_info);
   if (input_index >= cnode->size() - 1) {
@@ -978,7 +971,7 @@ tensor::BaseTensorPtr SessionBasic::GetOpInputTensorByIndex(
   if (real_input->isa<Parameter>()) {
     return GetParameterOutputTensor(real_input, parameter_index, graph_inputs);
   } else if (real_input->isa<CNode>()) {
-    tensor::BaseTensorPtr tensor = GetCNodeOutputTensor(kernel_with_index, op_output);
+    tensor::TensorPtr tensor = GetCNodeOutputTensor(kernel_with_index, op_output);
     if (common::AnfAlgo::IsBpropCutOpExecInBackend(real_input)) {
       CheckInputTensorShape(tensor, cnode, input_index);
     }
@@ -1011,8 +1004,8 @@ void SessionBasic::UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_grap
     auto &node = item.second.first;
     auto &output_index = item.second.second;
     DeviceAddressPtr address = nullptr;
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-        ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
+    MS_LOG(EXCEPTION) << "SessionBasic::UpdateOutputs is deprecated.";
+    if (ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER)) {
       address = AnfAlgo::GetMutableOutputAddr(node, output_index, false);
     } else {
       address = AnfAlgo::GetMutableOutputAddr(node, output_index);
@@ -1025,10 +1018,8 @@ void SessionBasic::UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_grap
       const auto &updated_shape = common::AnfAlgo::GetOutputInferShape(node, output_index);
       (void)tensor->set_shape(updated_shape);
     }
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
-      tensor->data_sync(false);
-      tensor->set_sync_status(kNeedSyncHostToDevice);
-    }
+    tensor->data_sync(false);
+    tensor->set_sync_status(kNeedSyncHostToDevice);
   }
 }
 
@@ -1054,7 +1045,7 @@ void SessionBasic::UpdateOutputTensors(const VectorRef *outputs,
                                        std::map<DeviceAddressPtr, DeviceAddressPtr> *) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (device::KernelRuntime::UseMemScheduler()) {
+  if (AnfUtils::UseMemScheduler()) {
     return;
   }
   MS_EXCEPTION_IF_NULL(outputs);
@@ -1221,7 +1212,7 @@ std::shared_ptr<KernelGraph> SessionBasic::ConstructSingleOpGraph(const BackendO
       continue;
     }
     auto parameter =
-      ConstructRunOpParameter(graph, input_values[i]->cast<tensor::BaseTensorPtr>(), op_run_info, input_type[i]);
+      ConstructRunOpParameter(graph, input_values[i]->cast<tensor::TensorPtr>(), op_run_info, input_type[i]);
     (void)inputs.emplace_back(parameter);
     auto mutable_inputs = graph->MutableInputs();
     MS_EXCEPTION_IF_NULL(mutable_inputs);
@@ -1276,16 +1267,6 @@ AnfNodePtr SessionBasic::FindPullNode(const AnfNodePtr &push_node, const std::ve
     }
   }
   return nullptr;
-}
-
-GraphId SessionBasic::CompileGraph(const GraphSegmentPtr &segment, const AnfNodePtrList &outputs) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  return executor_->CompileGraph(shared_from_this(), segment, outputs);
-}
-
-GraphId SessionBasic::CompileGraph(NotNull<FuncGraphPtr> func_graph) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  return executor_->CompileGraph(shared_from_this(), func_graph);
 }
 
 void SessionBasic::BuildGraph(GraphId graph_id) {
@@ -1410,7 +1391,7 @@ void SetGraphBpropAttr(const KernelGraphPtr &graph) {
   }
 }
 
-void CheckSplitIndexValid(const vector<uint32_t> &split_index) {
+void CheckSplitIndexValid(const std::vector<uint32_t> &split_index) {
   uint32_t last = 0;
   for (size_t i = 0; i < split_index.size(); ++i) {
     if (split_index[i] <= last && i != 0) {
@@ -1420,7 +1401,7 @@ void CheckSplitIndexValid(const vector<uint32_t> &split_index) {
   }
 }
 
-void PreProcessOnSplitIndex(const KernelGraphPtr &graph, vector<uint32_t> *split_index) {
+void PreProcessOnSplitIndex(const KernelGraphPtr &graph, std::vector<uint32_t> *split_index) {
   MS_EXCEPTION_IF_NULL(split_index);
   if (split_index->empty()) {
     return;
@@ -1490,7 +1471,7 @@ void SessionBasic::DumpGraphs(const std::vector<KernelGraphPtr> &graphs) const {
       rank_id = GetRankId();
     }
     std::string final_graph = "trace_code_graph_" + std::to_string(graph->graph_id());
-    if (json_parser.e2e_dump_enabled() && context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+    if (json_parser.e2e_dump_enabled()) {
       std::string root_dir = json_parser.path() + "/rank_" + std::to_string(rank_id);
       MS_LOG(INFO) << "Dump graph and exeorder for graph: " << graph->graph_id()
                    << ", root_graph_id: " << graph->root_graph_id() << ", rank_id: " << rank_id;

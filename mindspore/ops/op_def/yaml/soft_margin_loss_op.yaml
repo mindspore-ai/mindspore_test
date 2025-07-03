@@ -1,0 +1,20 @@
+#operator soft_margin_loss
+soft_margin_loss:
+  args:
+    input:
+      dtype: tensor
+    target:
+      dtype: tensor
+    reduction:
+      dtype: int
+      default: "'mean'"
+      arg_handler: str_to_enum
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: False
+  dispatch:
+    enable: True
+    Ascend: SoftMarginLossAscend

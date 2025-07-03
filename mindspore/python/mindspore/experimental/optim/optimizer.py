@@ -16,7 +16,7 @@
 from __future__ import absolute_import
 from collections import defaultdict
 from typing import Iterable
-from mindspore.ops import functional as F, composite as C, operations as P
+from mindspore import ops
 
 from mindspore.nn.cell import Cell
 from mindspore.common.parameter import Parameter, ParameterTuple
@@ -98,7 +98,7 @@ class Optimizer(Cell):
         self.param_groups = []
         self.parameters = []
         self.lrs = []
-        self.map_ = C.Map()
+        self.map_ = ops.Map()
         self.group_start_id = [0]
         if not isinstance(param_groups[0], dict):
             param_groups = [{'params': param_groups}]
@@ -106,7 +106,7 @@ class Optimizer(Cell):
         for param_group in param_groups:
             self.add_param_group(param_group)
         self.parameters = ParameterTuple(self.parameters)
-        self.hyper_map = C.HyperMap()
+        self.hyper_map = ops.HyperMap()
         self.enable_tuple_broaden = True
 
     def __repr__(self):
@@ -167,7 +167,7 @@ class Optimizer(Cell):
         """Apply weight decay."""
         if weight_decay != 0.:
             weight_decay = Tensor(weight_decay, mstype.float32)
-            gradients = self.map_(F.partial(_apply_decay, weight_decay), params, gradients)
+            gradients = self.map_(ops.partial(_apply_decay, weight_decay), params, gradients)
         return gradients
 
     def _preprocess_param_group(self, param_group):
@@ -228,18 +228,18 @@ class Optimizer(Cell):
     def construct(self, *hyper_params):
         raise NotImplementedError
 
-op_add = P.AddN()
-op_gather = P.Gather()
-op_mul = P.Mul()
+op_add = ops.AddN()
+op_gather = ops.Gather()
+op_mul = ops.Mul()
 
-_apply_decay = C.MultitypeFuncGraph("apply_decay")
+_apply_decay = ops.MultitypeFuncGraph("apply_decay")
 
 
 @_apply_decay.register("Tensor", "Tensor", "RowTensor")
 def _tensor_apply_decay_with_sparse(weight_decay, weight, gradient):
     """Get grad with weight_decay."""
     indices = gradient.indices
-    values = op_add((op_gather(weight, indices, 0) * F.cast(weight_decay, F.dtype(weight)), gradient.values))
+    values = op_add((op_gather(weight, indices, 0) * ops.cast(weight_decay, ops.dtype(weight)), gradient.values))
     shape = gradient.dense_shape
     return RowTensorInner(indices, values, shape)
 
@@ -247,7 +247,7 @@ def _tensor_apply_decay_with_sparse(weight_decay, weight, gradient):
 @_apply_decay.register("Tensor", "Tensor", "Tensor")
 def _tensor_apply_decay(weight_decay, weight, gradient):
     """Get grad with weight_decay."""
-    return op_add((op_mul(weight, F.cast(weight_decay, F.dtype(weight))), gradient))
+    return op_add((op_mul(weight, ops.cast(weight_decay, ops.dtype(weight))), gradient))
 
 
 def check_not_less_than(arg_value, arg_name, prim, value=0.0):

@@ -49,15 +49,26 @@ const unsigned int kPadValueZero = 0;
 #ifdef ENABLE_PYTHON
 CocoOp::CocoOp(const TaskType &task_type, const std::string &image_folder_path, const std::string &annotation_path,
                int32_t num_workers, int32_t queue_size, bool decode, std::unique_ptr<DataSchema> data_schema,
-               std::shared_ptr<SamplerRT> sampler, bool extra_metadata, py::function decrypt)
+               std::shared_ptr<SamplerRT> sampler, bool extra_metadata, const py::function &decrypt)
     : MappableLeafOp(num_workers, queue_size, std::move(sampler)),
       decode_(decode),
       task_type_(task_type),
       image_folder_path_(image_folder_path),
       annotation_path_(annotation_path),
       data_schema_(std::move(data_schema)),
-      extra_metadata_(extra_metadata),
-      decrypt_(std::move(decrypt)) {}
+      extra_metadata_(extra_metadata) {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = decrypt;
+  }
+}
+
+CocoOp::~CocoOp() {
+  if (Py_IsInitialized() != 0) {
+    py::gil_scoped_acquire gil_acquire;
+    decrypt_ = py::object();
+  }
+}
 #else
 CocoOp::CocoOp(const TaskType &task_type, const std::string &image_folder_path, const std::string &annotation_path,
                int32_t num_workers, int32_t queue_size, bool decode, std::unique_ptr<DataSchema> data_schema,
@@ -69,6 +80,8 @@ CocoOp::CocoOp(const TaskType &task_type, const std::string &image_folder_path, 
       annotation_path_(annotation_path),
       data_schema_(std::move(data_schema)),
       extra_metadata_(extra_metadata) {}
+
+CocoOp::~CocoOp() = default;
 #endif
 
 void CocoOp::Print(std::ostream &out, bool show_all) const {

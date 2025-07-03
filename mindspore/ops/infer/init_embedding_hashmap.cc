@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops/primitive_c.h"
 #include "infer/ops_func_impl/init_embedding_hashmap.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {

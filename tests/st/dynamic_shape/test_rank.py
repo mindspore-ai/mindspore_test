@@ -75,6 +75,7 @@ def test_rank_dynamic(mode):
     Expectation: output the right rank of a tensor.
     """
     context.set_context(mode=mode)
+    context.set_context(jit_level='O0')
     x_dyn = Tensor(shape=None, dtype=ms.float32)
     test_cell = test_utils.to_cell_obj(ops.operations.manually_defined.rank)
     test_cell.set_inputs(x_dyn)

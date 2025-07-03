@@ -537,7 +537,7 @@ class Adam(Optimizer):
 
         When using Adam with use_offload=True:
 
-        This optimizer only supports `GRAPH_MODE`.
+        This optimizer only supports `GRAPH_MODE` and don't support GE backend.
 
     Args:
         params (Union[list[Parameter], list[dict]]): Must be list of `Parameter` or list of `dict`. When the
@@ -566,7 +566,7 @@ class Adam(Optimizer):
               If `order_params` in the keys, other keys will be ignored and the element of 'order_params' must be in
               one group of `params`.
 
-        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule]): Default: ``1e-3`` .
+        learning_rate (Union[float, int, Tensor, Iterable, LearningRateSchedule], optional): Default: ``1e-3`` .
 
             - float: The fixed learning rate value. Must be equal to or greater than 0.
 
@@ -582,23 +582,26 @@ class Adam(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        beta1 (float): The exponential decay rate for the 1st moment estimations. Should be in range (0.0, 1.0).
+        beta1 (float, optional): The exponential decay rate for the 1st moment estimations.
+                       Should be in range (0.0, 1.0).
                        Default: ``0.9`` .
-        beta2 (float): The exponential decay rate for the 2nd moment estimations. Should be in range (0.0, 1.0).
+        beta2 (float, optional): The exponential decay rate for the 2nd moment estimations.
+                       Should be in range (0.0, 1.0).
                        Default: ``0.999`` .
-        eps (float): Term added to the denominator to improve numerical stability. Should be greater than 0.
+        eps (float, optional): Term added to the denominator to improve numerical stability. Should be greater than 0.
                      Default: ``1e-8`` .
-        use_locking (bool): Whether to enable a lock to protect the updating process of variable tensors.
+        use_locking (bool, optional): Whether to enable a lock to protect the updating process of variable tensors.
             If ``true`` , updates of the `w`, `m`, and `v` tensors will be protected by a lock.
             If ``false`` , the result is unpredictable. Default: ``False`` .
-        use_nesterov (bool): Whether to use Nesterov Accelerated Gradient (NAG) algorithm to update the gradients.
+        use_nesterov (bool, optional): Whether to use Nesterov Accelerated Gradient (NAG) algorithm
+            to update the gradients.
             If ``true`` , update the gradients using NAG.
             If ``false`` , update the gradients without using NAG. Default: ``False`` .
-        use_amsgrad (bool): Whether to use Amsgrad algorithm to update the gradients.
+        use_amsgrad (bool, optional): Whether to use Amsgrad algorithm to update the gradients.
             If ``true`` , update the gradients using Amsgrad.
             If ``false`` , update the gradients without using Amsgrad. Default: ``False`` .
 
-        weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
+        weight_decay (Union[float, int, Cell], optional): Weight decay (L2 penalty). Default: ``0.0`` .
 
             - float: The fixed weight decay value. Must be equal to or greater than 0.
 
@@ -607,11 +610,12 @@ class Adam(Optimizer):
             - Cell: Weight decay is dynamic. During training, the optimizer calls the instance of
               the Cell with step as the input to get the weight decay value of current step.
 
-        loss_scale (float): A floating point value for the loss scale. Should be greater than 0. In general, use the
+        loss_scale (float, optional): A floating point value for the loss scale.
+            Should be greater than 0. In general, use the
             default value. Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to False, then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.
-            Default: 1.0.
+            Default: ``1.0``.
 
         kwargs:
 
@@ -1010,7 +1014,7 @@ class AdamWeightDecay(Optimizer):
         >>>
         >>> loss = nn.SoftmaxCrossEntropyWithLogits()
         >>> model = ms.Model(net, loss_fn=loss, optimizer=optim)
-   """
+    """
     _support_parallel_optimizer = True
 
     def __init__(self, params, learning_rate=1e-3, beta1=0.9, beta2=0.999, eps=1e-6, weight_decay=0.0):
@@ -1024,7 +1028,7 @@ class AdamWeightDecay(Optimizer):
         self.fused_opt = P.AdamWeightDecay()
         self.use_fused_opt = True
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         gradients = self.flatten_gradients(gradients)
         weight_decay = self.get_weight_decay()
@@ -1107,7 +1111,7 @@ class AdamOffload(Optimizer):
     :math:`\epsilon` represents `eps`.
 
     Note:
-        This optimizer only supports `GRAPH_MODE` currently.
+        This optimizer only supports `GRAPH_MODE` currently and don't support GE backend.
 
         If parameters are not grouped, the `weight_decay` in optimizer will be applied on the network parameters without
         'beta' or 'gamma' in their names. Users can group parameters to change the strategy of decaying weight. When
@@ -1244,7 +1248,7 @@ class AdamOffload(Optimizer):
         self.opt = P.AdamNoUpdateParam(use_locking, use_nesterov)
         self.opt.set_device("CPU")
 
-    @jit
+    @jit(backend="ms_backend")
     def construct(self, gradients):
         params = self._parameters
         moment1 = self.moment1

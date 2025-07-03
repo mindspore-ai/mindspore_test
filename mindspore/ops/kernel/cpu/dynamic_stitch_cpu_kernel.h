@@ -20,11 +20,12 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dynamic_stitch_cpu {
 
 class DynamicStitchCpuKernelMod : public NativeCpuKernelMod {
  public:
@@ -56,6 +57,7 @@ class DynamicStitchCpuKernelMod : public NativeCpuKernelMod {
   size_t input_tuple_num_{1};
   ShapeVector result_shape_{};
 };
+}  // namespace dynamic_stitch_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DYNAMIC_STITCH_CPU_KERNEL_H_

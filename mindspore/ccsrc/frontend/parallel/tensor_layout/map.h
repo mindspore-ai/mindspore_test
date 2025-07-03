@@ -30,7 +30,7 @@ namespace mindspore {
 namespace parallel {
 constexpr int64_t MAP_NONE = -1;
 
-class Map : public Array {
+class FRONTEND_EXPORT Map : public Array {
  public:
   Map() = default;
   ~Map() override = default;

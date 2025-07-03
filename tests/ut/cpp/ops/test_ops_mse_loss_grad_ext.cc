@@ -16,12 +16,12 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/mse_loss_grad_ext.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace ops {
@@ -87,11 +87,11 @@ TEST_P(TestMSELossGradExtSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>(op_name);
   ASSERT_NE(prim, nullptr);
-  auto grad_output = std::make_shared<tensor::BaseTensor>(param.grad_output_type->type_id(), param.grad_output_shape);
+  auto grad_output = std::make_shared<tensor::Tensor>(param.grad_output_type->type_id(), param.grad_output_shape);
   ASSERT_NE(grad_output, nullptr);
-  auto input = std::make_shared<tensor::BaseTensor>(param.input_type->type_id(), param.input_shape);
+  auto input = std::make_shared<tensor::Tensor>(param.input_type->type_id(), param.input_shape);
   ASSERT_NE(input, nullptr);
-  auto target = std::make_shared<tensor::BaseTensor>(param.target_type->type_id(), param.target_shape);
+  auto target = std::make_shared<tensor::Tensor>(param.target_type->type_id(), param.target_shape);
   ASSERT_NE(input, nullptr);
   ValuePtrList input_values;
   input_values.emplace_back(grad_output);

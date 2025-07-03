@@ -29,7 +29,7 @@ import sys
 import time
 
 from mindspore import log as logger
-from ..datasets import Shuffle
+from ..samplers import Shuffle
 from ...core.config import set_seed
 
 
@@ -506,3 +506,11 @@ class MindRecordFromOBS:
         path = os.path.join(self._local_path, target_dataset)
         _iteration = MindDataset(dataset_files=[path], shuffle=False)
         return _iteration.get_col_names()
+
+    def close(self):
+        if self._pool:
+            self._pool.terminate()
+            self._pool = None
+
+    def __del__(self):
+        self.close()

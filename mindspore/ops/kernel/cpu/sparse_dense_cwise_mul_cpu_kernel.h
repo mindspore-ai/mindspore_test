@@ -20,11 +20,12 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_dense_cwise_mul_cpu {
 class SparseDenseCwiseMulCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseDenseCwiseMulCpuKernelMod() = default;
@@ -55,6 +56,7 @@ class SparseDenseCwiseMulCpuKernelMod : public NativeCpuKernelMod {
   void SparseDenseCwiseMulBcastCompute(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs);
 };
+}  // namespace sparse_dense_cwise_mul_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

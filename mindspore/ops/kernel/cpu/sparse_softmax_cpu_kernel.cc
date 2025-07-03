@@ -18,10 +18,11 @@
 #include <algorithm>
 #include <stack>
 #include <memory>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cpu {
 namespace {
 constexpr size_t kIndicesShapeSize = 2;
 constexpr size_t kValuesShapeSize = 1;
@@ -258,5 +259,6 @@ const std::vector<std::pair<KernelAttr, SparseSoftmaxCpuKernelMod::KernelRunFunc
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SparseSoftmax, SparseSoftmaxCpuKernelMod);
+}  // namespace sparse_softmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

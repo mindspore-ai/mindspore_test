@@ -10,7 +10,6 @@ reduce_any:
     keep_dims:
       dtype: bool
       default: False
-      prim_init: True
   returns:
     output:
       dtype: tensor

@@ -14,10 +14,12 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import nn
+from mindspore import nn, context
 import mindspore as ms
 from mindspore.experimental import optim
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
 
 
 class Net(nn.Cell):

@@ -28,6 +28,7 @@
 
 namespace mindspore {
 namespace runtime {
+enum CopyStat { COPY_DISABLE, COPY_PTR, COPY_POINTER_REF_COUNT };
 // The exit actor is used to receive a set of data arrow and a branch id in the control flow, and then send the
 // device tensors in the data to the corresponding actor. It is the exit of the end of kernel graph execution.
 class ExitActor : public ControlActor {
@@ -36,7 +37,7 @@ class ExitActor : public ControlActor {
             const AnfNodePtr &node)
       : ControlActor(name, KernelTransformType::kExitActor, memory_manager_aid, parameters, node) {
     device_contexts_.resize(parameters.size());
-    input_device_tensors_.resize(parameters.size());
+    input_kernel_tensors_.resize(parameters.size());
   }
   ~ExitActor() override = default;
 
@@ -49,26 +50,26 @@ class ExitActor : public ControlActor {
   const mindspore::HashMap<int, std::vector<DataArrowPtr>> &output_branch_partial_arrows() const {
     return output_branch_partial_arrows_;
   }
-  const std::vector<bool> &is_need_copy_device_tensors() const { return is_need_copy_device_tensors_; }
+  const std::vector<CopyStat> &is_need_copy_device_tensors() const { return is_need_copy_device_tensors_; }
   const mindspore::HashMap<int, std::vector<std::pair<std::vector<size_t>, bool>>> &output_branch_dynamic_len_index()
     const {
     return output_branch_dynamic_len_index_;
   }
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
  protected:
   void Init() override;
-  void FetchInput(OpContext<DeviceTensor> *const context) override;
-  void SendOutput(OpContext<DeviceTensor> *const context) override;
-  void IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) override;
+  void FetchInput(OpContext<KernelTensor> *const context) override;
+  void SendOutput(OpContext<KernelTensor> *const context) override;
+  void IncreaseNewRefCounts(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;
 
-  void CopyDeviceAddress(OpContext<DeviceTensor> *const context);
+  void CopyDeviceAddress(OpContext<KernelTensor> *const context);
   void UpdateDeviceOutputData();
-  void MergeDynamiclenDeviceAddress(OpContext<DeviceTensor> *const context);
+  void MergeDynamiclenDeviceAddress(OpContext<KernelTensor> *const context);
   bool IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index);
 
   // Exit actor will send to different actors according to different callers, so the output data, control,
@@ -84,14 +85,14 @@ class ExitActor : public ControlActor {
 
   // In exit actor, we need to copy a new device tensor for the output of the kernel actor, but parameter is not
   // needed. This mark is used to record whether it need to be copied.
-  std::vector<bool> is_need_copy_device_tensors_;
+  std::vector<CopyStat> is_need_copy_device_tensors_;
   std::vector<bool> is_need_dynamic_checks_;
   std::map<KernelWithIndex, KernelWithIndex> ref_out_in_map_;
   // Cache the dynamic shape flag to optimize the running performance.
   std::vector<bool> is_dynamic_shapes_;
   // Output data.
   //  The output branch data corresponds to the output_data_arrows_ one by one.
-  mindspore::HashMap<int, std::vector<std::pair<size_t, OpDataUniquePtr<DeviceTensor>>>> output_branch_data_;
+  mindspore::HashMap<int, std::vector<std::pair<size_t, OpDataUniquePtr<KernelTensor>>>> output_branch_data_;
   // The value of haspmap indicates the output data flag. See constant prefixed with kOutputDataFalg for details.
   mindspore::HashMap<int, std::vector<size_t>> output_branch_data_flag_;
 };

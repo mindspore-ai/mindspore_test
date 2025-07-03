@@ -22,11 +22,12 @@
 #include <complex>
 #include <functional>
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/ops_func_impl/unique_consecutive.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unique_consecutive_cpu {
 namespace {
 // Value check constant
 constexpr size_t kUniqueConsecutiveInputsNum = 4;
@@ -386,5 +387,6 @@ const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> &UniqueConsecutiveCpuK
   return func_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UniqueConsecutive, UniqueConsecutiveCpuKernelMod);
+}  // namespace unique_consecutive_cpu
 }  // namespace kernel
 }  // namespace mindspore

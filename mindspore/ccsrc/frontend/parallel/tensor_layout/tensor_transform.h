@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "ir/value.h"
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace parallel {
@@ -32,7 +33,7 @@ using TransformFunc = std::function<std::pair<std::string, std::vector<int64_t>>
 using InferShapeFunc = std::function<Shape(const Shape &, const std::vector<int64_t> &)>;
 using ConstructOpFunc = std::function<Operator(const std::vector<int64_t> &)>;
 using RedisOpPair = std::pair<std::string, std::vector<int64_t>>;
-class TensorTransform {
+class FRONTEND_EXPORT TensorTransform {
  public:
   static std::shared_ptr<TensorTransform> GetInstance();
   ~TensorTransform() = default;
@@ -40,7 +41,7 @@ class TensorTransform {
   TensorTransform &operator=(const TensorTransform &) = delete;
   void InitTransforOperator();
   std::vector<RedisOpPair> TransformOperators(const Shapes &from, const Shapes &to, const RankList &dev_list,
-                                              int64_t rank_id);
+                                              const bool redist_opt, int64_t rank_id);
   RedistributionOpListPtr OptimizeTensorRedistributionOperatorList(
     const RedistributionOpListPtr &redistribution_op_list, const Shape &input_shape, int64_t virtual_rank = -1);
 

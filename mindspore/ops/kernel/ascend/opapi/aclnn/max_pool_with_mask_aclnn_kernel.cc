@@ -21,11 +21,12 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_pool_with_mask {
 
 void MaxPoolWithMaskAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -51,5 +52,6 @@ bool MaxPoolWithMaskAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(MaxPoolWithMask, MaxPoolWithMaskAscend);
+}  // namespace max_pool_with_mask
 }  // namespace kernel
 }  // namespace mindspore

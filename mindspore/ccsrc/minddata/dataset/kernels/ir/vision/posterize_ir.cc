@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/posterize_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/posterize_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_posterize_op.h"
 #endif
 #include "minddata/dataset/util/validators.h"
@@ -26,7 +24,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // PosterizeOperation
 PosterizeOperation::PosterizeOperation(uint8_t bits, const std::string &device_target)
     : bits_(bits), device_target_(device_target) {}
@@ -55,7 +52,7 @@ std::shared_ptr<TensorOp> PosterizeOperation::Build() {
   if (device_target_ == "CPU") {
     std::shared_ptr<PosterizeOp> tensor_op = std::make_shared<PosterizeOp>(bits_);
     return tensor_op;
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppPosterizeOp> dvpp_tensor_op = std::make_shared<DvppPosterizeOp>(bits_);
     return dvpp_tensor_op;
@@ -93,7 +90,6 @@ MapTargetDevice PosterizeOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

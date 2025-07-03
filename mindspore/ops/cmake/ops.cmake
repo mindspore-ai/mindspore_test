@@ -19,20 +19,31 @@ if(NOT "${CMAKE_CXX_FLAGS}" STREQUAL "")
 endif()
 
 # ------- CORE_OPS_LIST, CORE_SYMBOL_OPS_LIST ------
+include(${OPS_DIR}/cmake/merge_ops.cmake)
 if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
-    file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/*.cc")
+    file(GLOB_RECURSE INFER_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/*.cc")
+
+    # merge infer/ops_func_impl/*.cc and infer/*.cc(no recursive)
+    file(GLOB OLD_INFER_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/*.cc")
+    file(GLOB_RECURSE INFER_FUNC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/ops_func_impl/*.cc")
+    list(REMOVE_ITEM INFER_LIST ${INFER_FUNC_LIST} ${OLD_INFER_LIST})
+    set(INFER_MERGE_DIR ${CMAKE_BINARY_DIR}/merge/mindspore/ops/infer)
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ops_func_impl/ ${INFER_MERGE_DIR} infer_func_merge "")
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${INFER_MERGE_DIR} old_infer_merge "" TRUE) # no recursive
+    file(GLOB_RECURSE INFER_MERGE_LIST "${INFER_MERGE_DIR}/*.cc")
+
     file(GLOB_RECURSE CORE_SYMBOL_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/symbol_ops_impl/*.cc")
     file(GLOB_RECURSE VIEW_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${VIEW_DIR}/*.cc")
     file(GLOB_RECURSE UTILS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${UTILS_DIR}/*.cc")
     set_property(SOURCE ${CORE_SYMBOL_OPS_LIST} PROPERTY COMPILE_DEFINITIONS
                 SUBMODULE_ID=mindspore::SubModuleId::SM_SYMBOLIC_SHAPE)
-    list(APPEND CORE_OPS_LIST ${VIEW_LIST} ${UTILS_LIST} ${OP_DEF_SRC})
+
+    list(APPEND CORE_OPS_LIST ${VIEW_LIST} ${UTILS_LIST} ${OP_DEF_SRC} ${INFER_LIST} ${INFER_MERGE_LIST})
 else()
     # ------- LITE merge_files -----
-    include(${TOP_DIR}/mindspore/lite/cmake/merge.cmake)
-    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
-    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/view/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops view_merge "")
-    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops_utils/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops utils_merge "")
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/view/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops view_merge "")
+    merge_ops_files(${CMAKE_CURRENT_SOURCE_DIR}/ops_utils/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops utils_merge "")
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_BINARY_DIR}/merge/mindspore/ops/*.cc")
     list(APPEND CORE_OPS_LIST ${OP_DEF_SRC})
@@ -74,6 +85,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 # ------------------- COMPILE, ADD_TARGET ---------------------
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-mlong-calls" SUPPORT_MLONG_CALLS)
 set(OPS_OBJECT_COUNT 1)
 src_separate_compile(
     OBJECT_NAME ops_obj
@@ -84,11 +97,18 @@ foreach(number RANGE 1 ${OPS_OBJECT_COUNT})
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(ops_obj_${number} PRIVATE OPS_DLL)
     endif()
+    if(SUPPORT_MLONG_CALLS AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
+        target_compile_options(ops_obj_${number} PRIVATE -mlong-calls)
+    endif()
 endforeach()
 
 set(OPS_OBJECT_COUNT "${OPS_OBJECT_COUNT}" PARENT_SCOPE)
 add_library(mindspore_ops SHARED ${OPS_OBJECT_LIST})
 add_dependencies(mindspore_ops generated_code)
+
+if(SUPPORT_MLONG_CALLS AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
+    target_compile_options(mindspore_ops PRIVATE -mlong-calls)
+endif()
 
 # ------------------ LINK, SET_PROPERTY ---------------
 

@@ -636,8 +636,8 @@ class SparseTensorDenseMatmul(Primitive):
     Raises:
         TypeError: If the type of `adjoint_st` or `adjoint_dt` is not bool, or the dtype of `indices`,
             dtype of `values` and dtype of `dense` don't meet the parameter description.
-        ValueError: If `sparse_shape`, shape of `indices`, shape of `values`,
-            and shape of `dense` don't meet the parameter description.
+        ValueError: If the shapes of `sparse_shape`, `indices`, `values`,
+            and `dense` don't meet the constraints in the parameter description.
 
     Supported Platforms:
         ``GPU`` ``CPU``

@@ -19,12 +19,13 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/infer/tile_size.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tile_size_cpu {
 class TileSizeCpuKernelMod : public NativeCpuKernelMod {
  public:
   TileSizeCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class TileSizeCpuKernelMod : public NativeCpuKernelMod {
   static std::vector<std::pair<KernelAttr, TileSizeFunc>> func_list_;
   TileSizeFunc kernel_func_;
 };
+}  // namespace tile_size_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TILE_SIZE_CPU_KERNEL_H_

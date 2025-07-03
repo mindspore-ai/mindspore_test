@@ -1,0 +1,25 @@
+#operator RmsNormQuant
+rmsnorm_quant:
+  args:
+    x:
+      dtype: tensor
+    gamma:
+      dtype: tensor
+    beta:
+      dtype: tensor
+      default: None
+    scale:
+      dtype: tensor
+    offset:
+      dtype: tensor
+    epsilon:
+      dtype: float
+      default: 1e-6
+  returns:
+    out:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: RmsNormQuant
+    disable: True

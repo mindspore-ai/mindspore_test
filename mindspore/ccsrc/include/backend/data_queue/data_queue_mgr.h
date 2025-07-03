@@ -30,7 +30,7 @@
 #include "include/backend/data_queue/data_queue.h"
 #ifndef BUILD_LITE
 #include "ir/anf.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #endif
 
 namespace mindspore {
@@ -167,7 +167,7 @@ BACKEND_EXPORT void RetryPeakItemFromDataQueue(const AnfNodePtr &data_kernel,
     device_name##DataQueueCreatorClass() {                                        \
       DataQueueMgr::GetInstance().RegisterDataQueueCreator(device_name, creator); \
     }                                                                             \
-  } g_##device_name##_data_queue_creator;
+  } g_##device_name##_data_queue_creator
 }  // namespace device
 }  // namespace mindspore
 

@@ -25,7 +25,7 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT EnvironMgr {
+class BACKEND_COMMON_EXPORT EnvironMgr {
  public:
   static EnvironMgr &GetInstance() noexcept {
     static EnvironMgr instance;

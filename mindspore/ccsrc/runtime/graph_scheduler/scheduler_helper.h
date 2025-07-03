@@ -27,6 +27,7 @@
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "runtime/graph_scheduler/actor/actor_set.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace runtime {
@@ -38,14 +39,16 @@ class SchedulerHelper {
   // Judge the input node whether need the control arrow.
   static bool HasMonadControl(const AnfNodePtr &anf_node, const KernelGraphPtr &graph);
 
-  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const DeviceTensorPtr &device_tensor);
+  static void AddDeviceTensorStore(const AnfNodePtr &anf_node, const KernelTensorPtr &kernel_tensor);
 
   static void AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
                                         const KernelGraphPtr &graph);
 
   static bool IsSkipLaunchShapeRelatedOp(KernelActor *kernel_actor);
+  static bool IsSkipLaunchShapeRelatedOpV2(KernelRunner *kernel_actor);
   // Judge whether need ignore the input address that is not used in the kernel launch.
   static bool IsIgnoredInputAddress(AbstractActor *const to_actor, size_t to_input_index);
+  static bool IsIgnoredInputAddressV2(KernelRunner *const to_actor, size_t to_input_index);
   static size_t GetIgnoredInputAddressCount(const AnfNodePtr &node, const DeviceContext *device_context);
 
   // Add the arrow between from actor and to actor.
@@ -105,8 +108,11 @@ class SchedulerHelper {
   static void AddMemoryFreeSign(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                 const KernelGraphPtr &from_graph);
   static void AddSomasInfo(AbstractActor *const actor);
+  static void AddSomasInfoV2(KernelRunner *const actor);
   static void AddSomasInfoForGraphOutput(AbstractActor *const output_actor, size_t output_index, size_t graph_id);
-
+  static void AddSomasInfoForGraphOutputV2(KernelRunner *const output_actor, size_t output_index, size_t graph_id);
+  static void GetUnusedRefCount(AbstractActor *const from_actor, AbstractActor *const to_actor, size_t from_input_index,
+                                size_t to_input_index, const DeviceTensorPtr &device_tensor);
   // Check whether the actor set is valid.
   static void CheckActorValid(const ActorSet *actor_set);
 
@@ -116,8 +122,14 @@ class SchedulerHelper {
   static void ProcessStreamSendRecvEventPair(
     mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> *send_recv_nodes, const CNodePtr &kernel,
     const KernelActorPtr &kernel_actor, bool is_send_node);
+  static void ProcessStreamSendRecvEventPairV2(
+    mindspore::HashMap<uint32_t, std::pair<KernelRunnerPtr, KernelRunnerPtr>> *send_recv_nodes, const CNodePtr &kernel,
+    const KernelRunnerPtr &kernel_actor, bool is_send_node);
 
   static size_t fusion_actor_index_;
+
+  static KernelTensorPtr CloneKernelTensorWithDeviceInfo(const KernelTensorPtr &kernel_tensor,
+                                                         const DeviceContext *device_context);
 };
 }  // namespace runtime
 }  // namespace mindspore

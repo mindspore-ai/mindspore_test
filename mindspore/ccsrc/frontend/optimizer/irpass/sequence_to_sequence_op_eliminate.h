@@ -36,63 +36,13 @@ namespace irpass {
 // {prim::kPrimListToTuple, data} => {prim::kPrimMakeTuple, {prim::kPrimListGetItem, data, 0}, ...}
 class ListToTupleEliminator : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    if (!IsPrimitiveCNode(node, prim::kPrimListToTuple)) {
-      return nullptr;
-    }
-    auto fg = node->func_graph();
-    if (fg != nullptr) {
-      auto real_node = node->cast<CNodePtr>()->input(1);
-      MS_EXCEPTION_IF_NULL(real_node);
-      std::vector<AnfNodePtr> args_{NewValueNode(prim::kPrimMakeTuple)};
-      if (real_node->abstract() == nullptr || !real_node->abstract()->isa<abstract::AbstractList>()) {
-        return nullptr;
-      }
-      auto input_abs = real_node->abstract()->cast<abstract::AbstractListPtr>();
-      MS_EXCEPTION_IF_NULL(input_abs);
-      if (!input_abs->dynamic_len()) {
-        for (size_t i = 0; i < input_abs->size(); ++i) {
-          auto item = fg->NewCNode({NewValueNode(prim::kPrimListGetItem), real_node, NewValueNode(SizeToLong(i))});
-          item->set_abstract(real_node->abstract());
-          (void)args_.emplace_back(item);
-        }
-        auto new_node = fg->NewCNode(args_);
-        new_node->set_abstract(node->abstract());
-        return new_node;
-      }
-    }
-    return nullptr;
-  }
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 };
 
 // {prim::kPrimTupleToList, data} => {prim::kPrimMakeList, {prim::kPrimTupleGetItem, data, 0}, ...}
 class TupleToListEliminator : public AnfVisitor {
  public:
-  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    if (!IsPrimitiveCNode(node, prim::kPrimTupleToList)) {
-      return nullptr;
-    }
-    auto fg = node->func_graph();
-    if (fg != nullptr) {
-      auto real_node = node->cast<CNodePtr>()->input(1);
-      MS_EXCEPTION_IF_NULL(real_node);
-      std::vector<AnfNodePtr> args_{NewValueNode(prim::kPrimMakeList)};
-      MS_EXCEPTION_IF_NULL(real_node->abstract());
-      auto input_abs = real_node->abstract()->cast<abstract::AbstractTuplePtr>();
-      MS_EXCEPTION_IF_NULL(input_abs);
-      if (!input_abs->dynamic_len()) {
-        for (size_t i = 0; i < input_abs->size(); ++i) {
-          auto item = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), real_node, NewValueNode(SizeToLong(i))});
-          item->set_abstract(real_node->abstract());
-          (void)args_.emplace_back(item);
-        }
-        auto new_node = fg->NewCNode(args_);
-        new_node->set_abstract(node->abstract());
-        return new_node;
-      }
-    }
-    return nullptr;
-  }
+  AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 };
 }  // namespace irpass
 }  // namespace opt

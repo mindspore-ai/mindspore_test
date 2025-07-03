@@ -22,23 +22,22 @@
 #include <tuple>
 #include <utility>
 #include <unordered_set>
-#include "plugin/device/gpu/device_context_conf/op_precision_conf.h"
-#include "plugin/device/gpu/device_context_conf/op_tuning_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_precision_conf.h"
+#include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
-#include "plugin/device/gpu/hal/device/gpu_device_address.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_manager.h"
-#include "plugin/device/gpu/hal/device/gpu_memory_allocator.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
 #include "include/backend/distributed/init.h"
-#include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_somas.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
 #include "plugin/device/gpu/hal/hardware/optimizer.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
 #include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
@@ -46,9 +45,9 @@
 #include "include/backend/kernel_graph.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "plugin/device/gpu/hal/device/gpu_event.h"
+#include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_task.h"
-#include "plugin/device/gpu/hal/device/gpu_hash_table_util.h"
+#include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "plugin/device/gpu/optimizer/reg_gpu_const_input_to_attr.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
@@ -65,20 +64,20 @@
 #include "backend/common/pass/optimize_updatestate.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
-#include "backend/common/graph_kernel/value_graph_binder.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
-#include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
-#include "include/common/profiler.h"
+#include "backend/common/pass/value_graph_binder.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
+#include "debug/profiler/profiler.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "runtime/device/move_to.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/parallel_context.h"
-#include "include/backend/debug/profiler/profiling.h"
-#include "runtime/device/tensor_array.h"
-#include "runtime/runtime_conf/runtime_conf.h"
+#include "debug/profiler/profiling.h"
+#include "runtime/device/res_manager/tensor_array.h"
+#include "include/common/runtime_conf/runtime_conf.h"
+#include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
 
 namespace mindspore {
 namespace device {
@@ -119,8 +118,6 @@ runtime::KernelTaskPtr GetTaskByTaskType(const runtime::KernelTaskType &task_typ
 }  // namespace
 using KernelGraph = mindspore::session::KernelGraph;
 
-static thread_local bool cur_thread_device_inited{false};
-
 void GPUDeviceContext::Initialize() {
   std::lock_guard<std::mutex> lock(init_mutex_);
   if (initialized_) {
@@ -132,8 +129,8 @@ void GPUDeviceContext::Initialize() {
   }
 
   device_res_manager_->Initialize();
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
-  GetKernelExecutor(false)->Initialize();
+  MS_EXCEPTION_IF_NULL(GetKernelExecutor());
+  GetKernelExecutor()->Initialize();
   // Dump json config file if dump is enabled.
   uint32_t rank_id = 0;
   if (distributed::collective::CollectiveManager::instance()->need_init()) {
@@ -148,385 +145,92 @@ void GPUDeviceContext::Initialize() {
   initialized_ = true;
 }
 
-void GPUDeviceResManager::Initialize() {
-  // Set device id
-  if (distributed::collective::CollectiveManager::instance()->initialized()) {
-    DeviceContextKey old_key = device_context_->device_context_key();
-    device_context_->device_context_key_.device_id_ =
-      distributed::collective::CollectiveManager::instance()->local_rank_id();
+void GPUDeviceResManager::Initialize() { gpu_res_manager_->Initialize(); }
 
-    DeviceContextManager::GetInstance().UpdateDeviceContextKey(old_key, device_context_->device_context_key());
+bool GPUDeviceResManager::InitDevice() { return gpu_res_manager_->InitDevice(); }
 
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    ms_context->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, device_context_->device_context_key().device_id_);
-  }
-
-  MS_LOG(INFO) << "Set GPU device id index " << device_context_->device_context_key().device_id_;
-  // Set device id and initialize device resource.
-  if (!InitDevice()) {
-    MS_LOG(EXCEPTION) << "GPU InitDevice failed.";
-  }
-
-  // Initialize memory pool.
-  mem_manager_ = std::make_shared<GPUMemoryManager>();
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->Initialize();
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
-                                                  &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
-  }
-
-  // Initialize NCCL.
-  if (distributed::collective::CollectiveManager::instance()->initialized()) {
-#if defined(_WIN32)
-    MS_LOG(EXCEPTION) << "windows not support nccl.";
-#endif
-  }
-}
-
-bool GPUDeviceResManager::InitDevice() {
-  if (GPUDeviceManager::GetInstance().device_count() <= 0) {
-    MS_LOG(ERROR) << "No GPU device found.";
-    return false;
-  }
-
-  if (!GPUDeviceManager::GetInstance().is_device_id_init()) {
-    if (!GPUDeviceManager::GetInstance().set_cur_device_id(device_context_->device_context_key().device_id_)) {
-      MS_LOG(ERROR) << "Failed to set current device id: "
-                    << SizeToInt(device_context_->device_context_key().device_id_);
-      return false;
-    }
-  }
-  // Check the Cuda capability
-  const float cuda_cap = GET_CUDA_CAP;
-  if (cuda_cap < SUPPORTED_CAP) {
-    MS_LOG(WARNING) << "The device with Cuda compute capability " << cuda_cap
-                    << " is lower than the minimum required capability " << SUPPORTED_CAP
-                    << ", this may cause some unexpected problems and severely affect the results. "
-                    << "Eg: the outputs are all zeros.\n"
-                    << "Device with a compute capability > " << SUPPORTED_CAP << " is required, "
-                    << "and it is recommended to use devices with a compute capability >= " << RECOMMEND_SM;
-  }
-
-  // Initialize device resource, such as stream, cudnn and cublas handle.
-  GPUDeviceManager::GetInstance().InitDevice();
-  return true;
-}
-
-void GPUDeviceResManager::Destroy() {
-  (void)DestroyAllEvents();
-  if (DataQueueMgr::GetInstance().IsInit()) {
-    if (!DataQueueMgr::GetInstance().IsClosed() && !DataQueueMgr::GetInstance().CloseNotify()) {
-      MS_LOG(ERROR) << "Could not close gpu data queue.";
-    }
-    DataQueueMgr::GetInstance().Release();
-  }
-
-  // Release stream, cudnn and cublas handle, etc.
-  GPUDeviceManager::GetInstance().ReleaseDevice();
-
-  // Release device memory
-  if (mem_manager_ != nullptr) {
-    mem_manager_->Finalize();
-    mem_manager_ = nullptr;
-  }
-}
+void GPUDeviceResManager::Destroy() { gpu_res_manager_->Destroy(); }
 
 void GPUDeviceContext::Destroy() {
-  MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
-  GetKernelExecutor(false)->Destroy();
+  MS_EXCEPTION_IF_NULL(GetKernelExecutor());
+  GetKernelExecutor()->Destroy();
   device_res_manager_->Destroy();
   initialized_ = false;
 }
 
 void *GPUDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  if (!BindDeviceToCurrentThread(false)) {
-    return nullptr;
-  }
-  if (swap_manager_ != nullptr) {
-    return swap_manager_->AllocDeviceMemory(size, stream_id);
-  }
-  return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+  return gpu_res_manager_->AllocateMemory(size, stream_id);
 }
 
-void GPUDeviceResManager::FreeMemory(void *ptr) const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  MS_EXCEPTION_IF_NULL(ptr);
-  mem_manager_->FreeMemFromMemPool(ptr);
-}
+void GPUDeviceResManager::FreeMemory(void *ptr) const { gpu_res_manager_->FreeMemory(ptr); }
 
 void GPUDeviceResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                                           const std::vector<size_t> &keep_addr_sizes) const {
-  GPUMemoryAllocator::GetInstance().FreePartTensorMems(free_addrs, keep_addrs, keep_addr_sizes);
+  gpu_res_manager_->FreePartMemorys(free_addrs, keep_addrs, keep_addr_sizes);
 }
 
 bool GPUDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
-  MS_EXCEPTION_IF_NULL(address);
-  auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
-  if (device_name_in_address != device_context_->device_context_key().device_name_) {
-    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
-                      << ", type name in context:" << device_context_->device_context_key().device_name_;
-  }
-
-  if (address->GetPtr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
-    return false;
-  }
-
-  if (!BindDeviceToCurrentThread(false)) {
-    return false;
-  }
-
-  if (stream_id == UINT32_MAX) {
-    stream_id = address->stream_id();
-  }
-
-  void *device_ptr;
-  if (swap_manager_ != nullptr) {
-    device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
-  } else {
-    device_ptr =
-      mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(), false, stream_id);
-  }
-  if (!device_ptr) {
-    return false;
-  }
-
-  address->set_ptr(device_ptr);
-  address->set_from_mem_pool(true);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
-  return true;
+  return gpu_res_manager_->AllocateMemory(address, stream_id);
 }
 
 std::vector<void *> GPUDeviceResManager::AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                                   uint32_t stream_id) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    std::vector<void *> ptr_list;
-    return ptr_list;
-  }
-
-  // Memory allocation ensures memory alignment.
-  std::vector<size_t> align_size_list;
-  for (size_t size : size_list) {
-    auto align_size = GPUMemoryAllocator::GetInstance().AlignMemorySize(size);
-    (void)align_size_list.emplace_back(align_size);
-  }
-  if (swap_manager_ != nullptr) {
-    return swap_manager_->AllocDeviceContinuousMem(align_size_list, stream_id);
-  }
-  return mem_manager_->MallocContinuousMemFromMemPool(align_size_list, stream_id);
+  return gpu_res_manager_->AllocateContinuousMemory(size_list, stream_id);
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>> GPUDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
-  std::vector<size_t> after_padding_sizes;
-  for (auto &size : before_padding_sizes) {
-    auto align_size = GPUMemoryAllocator::GetInstance().AlignMemorySize(size);
-    after_padding_sizes.emplace_back(align_size);
-  }
-  auto stream_id = DefaultStream();
-  auto device_ptr_list = AllocateContinuousMemory(before_padding_sizes, stream_id);
-  for (size_t i = 0; i < after_padding_sizes.size(); ++i) {
-    auto ret = cudaMemset(device_ptr_list[i], 0, after_padding_sizes[i]);
-    if (ret != cudaSuccess) {
-      MS_LOG(EXCEPTION) << "cudaMemcpy failed, ret[" << static_cast<int>(ret) << "], " << cudaGetErrorString(ret);
-    }
-    MS_LOG(DEBUG) << "Clear ptr:" << device_ptr_list[i] << ", size:" << after_padding_sizes[i];
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  // create device for all tensor in tensor list
-  for (size_t i = 0; i < tensor_list.size(); ++i) {
-    const auto &tensor = tensor_list[i];
-    const auto &ptr = device_ptr_list[i];
-    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), Format::DEFAULT_FORMAT,
-                                              tensor->data_type(), device_name, device_id, stream_id);
-    MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
-                  << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
-    MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
-    tensor->set_device_address(device_address);
-  }
-  return std::make_pair(before_padding_sizes, after_padding_sizes);
+  return gpu_res_manager_->AllocDeviceMemoryForTensorList(tensor_list, enable_mem_align);
 }
 
 tensor::TensorPtr GPUDeviceResManager::GetSliceByTensorListIndexHandle(
   const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
   const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
-  if (start >= tensor_list.size() || end > tensor_list.size()) {
-    MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
-  }
-  size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
-                                before_padding_size[end - 1]);
-  ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
-  MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
-  auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
-
-  auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address = CreateDeviceAddress(ptr, size, shape, Format::DEFAULT_FORMAT, tensor->data_type(), device_name,
-                                            device_id, stream_id);
-  tensor->set_device_address(device_address);
-  return tensor;
+  return gpu_res_manager_->GetSliceByTensorListIndexHandle(tensor_list, before_padding_size, after_padding_size, start,
+                                                           end);
 }
 
 tensor::TensorPtr GPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
                                                                     size_t end) {
-  auto type_id = first_tensor->data_type();
-  auto type_size = UnitSizeInBytes(type_id);
-  size_t tensor_size = (end - start) * type_size;
-  ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
-  MS_EXCEPTION_IF_NULL(first_tensor->device_address());
-  auto ptr = first_tensor->device_address()->GetMutablePtr();
-  auto offset_size = start * type_size;
-
-  auto stream_id = DefaultStream();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-
-  auto device_address = CreateDeviceAddress(reinterpret_cast<uint8_t *>(ptr) + offset_size, tensor_size, shape,
-                                            Format::DEFAULT_FORMAT, type_id, device_name, device_id, stream_id);
-  MS_LOG(DEBUG) << "Create DeviceAddress, offset size to ptr0:" << offset_size << ", tensor_size:" << tensor_size
-                << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
-  tensor->set_device_address(device_address);
-  return tensor;
+  return gpu_res_manager_->GetSliceByPaddingShapeHandle(first_tensor, start, end);
 }
 
 // Relevant function to manage memory statistics
-size_t GPUDeviceResManager::GetTotalMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalMemStatistics();
-}
-size_t GPUDeviceResManager::GetTotalUsedMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalUsedMemStatistics();
-}
-size_t GPUDeviceResManager::GetTotalIdleMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalIdleMemStatistics();
-}
+size_t GPUDeviceResManager::GetTotalMemStatistics() const { return gpu_res_manager_->GetTotalMemStatistics(); }
+size_t GPUDeviceResManager::GetTotalUsedMemStatistics() const { return gpu_res_manager_->GetTotalUsedMemStatistics(); }
+size_t GPUDeviceResManager::GetTotalIdleMemStatistics() const { return gpu_res_manager_->GetTotalIdleMemStatistics(); }
 size_t GPUDeviceResManager::GetTotalEagerFreeMemStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetTotalEagerFreeMemStatistics();
+  return gpu_res_manager_->GetTotalEagerFreeMemStatistics();
 }
-size_t GPUDeviceResManager::GetUsedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetUsedMemPeakStatistics();
-}
+size_t GPUDeviceResManager::GetUsedMemPeakStatistics() const { return gpu_res_manager_->GetUsedMemPeakStatistics(); }
 size_t GPUDeviceResManager::GetReservedMemPeakStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetReservedMemPeakStatistics();
+  return gpu_res_manager_->GetReservedMemPeakStatistics();
 }
 std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockCountsStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockCountsStatistics();
+  return gpu_res_manager_->GetBlockCountsStatistics();
 }
 std::unordered_map<std::string, std::size_t> GPUDeviceResManager::GetBlockUnitSizeStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetBlockUnitSizeStatistics();
+  return gpu_res_manager_->GetBlockUnitSizeStatistics();
 }
 std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
 GPUDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetCommonMemBlocksInfoStatistics();
+  return gpu_res_manager_->GetCommonMemBlocksInfoStatistics();
 }
 std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
 GPUDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  return mem_manager_->GetPersistentMemBlocksInfoStatistics();
+  return gpu_res_manager_->GetPersistentMemBlocksInfoStatistics();
 }
-void GPUDeviceResManager::ResetMaxMemoryReserved() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryReserved();
-}
-void GPUDeviceResManager::ResetMaxMemoryAllocated() {
-  MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryAllocated();
-}
+void GPUDeviceResManager::ResetMaxMemoryReserved() { gpu_res_manager_->ResetMaxMemoryReserved(); }
+void GPUDeviceResManager::ResetMaxMemoryAllocated() { gpu_res_manager_->ResetMaxMemoryAllocated(); }
 
-namespace {
-// Create data in user data for device address.
-void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
-  MS_EXCEPTION_IF_NULL(device_address);
-  MS_EXCEPTION_IF_NULL(user_data);
-
-  device_address->set_user_data(user_data);
-  const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
-  if (user_data_type == nullptr) {
-    return;
-  }
-  if (*user_data_type == UserDataType::kUserTypeHashTable) {
-#if CUDA_VERSION > 11000 && defined(__linux__)
-    auto key_type = user_data->get<TypeId>(kHashTableKeyType);
-    auto value_type = user_data->get<TypeId>(kHashTableValueType);
-    MS_EXCEPTION_IF_NULL(key_type);
-    MS_EXCEPTION_IF_NULL(value_type);
-    const auto &iter = hashtable_func_list.find({*key_type, *value_type});
-    if (iter != hashtable_func_list.end()) {
-      return std::get<kSetFuncIndex>(iter->second)(user_data);
-    } else {
-      MS_LOG(EXCEPTION) << "Unsupported hash table type:" << *key_type << " and:" << *value_type;
-    }
-#else
-    MS_LOG(EXCEPTION) << "Invalid platform or cuda version for gpu hash table.";
-#endif
-  } else {
-    MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
-  }
-}
-}  // namespace
-
-void GPUDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
-                                 const std::string &to, bool blocking, bool *return_self) {
-  device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
-}
-
-DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  if (kernel_tensor->device_name().empty()) {
-    kernel_tensor->set_device_name(device_context_->device_context_key().device_name_);
-    kernel_tensor->set_device_id(device_context_->device_context_key().device_id_);
-  }
-  auto device_address = std::make_shared<GPUDeviceAddress>(kernel_tensor);
-
-  const auto &user_data = kernel_tensor->user_data();
-  if (user_data != nullptr) {
-    SetUserData(device_address.get(), user_data);
-  }
-
-  device_address->set_device_synchronizer(std::make_shared<GPUDeviceSynchronizer>());
-  return device_address;
-}
+DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress() const { return gpu_res_manager_->CreateDeviceAddress(); }
 
 DeviceAddressPtr GPUDeviceResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                           const Format &format, TypeId type_id,
                                                           const std::string &device_name, uint32_t device_id,
-                                                          uint32_t stream_id) const {
-  return std::make_shared<GPUDeviceAddress>(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                            stream_id);
+                                                          uint32_t stream_id, const UserDataPtr &user_data) const {
+  return gpu_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
+                                               stream_id, user_data);
 }
 
 void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
@@ -584,12 +288,10 @@ void GPUKernelExecutor::OptimizeGraphWithDeviceInfo(const KernelGraphPtr &graph)
     pm->AddPass(std::make_shared<opt::InsertFormatTransformOp>());
     pm->AddPass(std::make_shared<opt::RemoveFormatTransformPair>());
     pm->AddPass(std::make_shared<opt::RemoveRedundantFormatTransform>());
-    if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
-      // Remove node only used by UpdateState, in order to ensure the correct execution sequence in
-      // CudnnInplaceAggregate.
-      pm->AddPass(std::make_shared<opt::OptimizeUpdateState>());
-      pm->AddPass(std::make_shared<opt::CudnnInplaceAggregate>());
-    }
+    // Remove node only used by UpdateState, in order to ensure the correct execution sequence in
+    // CudnnInplaceAggregate.
+    pm->AddPass(std::make_shared<opt::OptimizeUpdateState>());
+    pm->AddPass(std::make_shared<opt::CudnnInplaceAggregate>());
   }
 
   pm->AddPass(std::make_shared<opt::AdjustDependForParallelOptimizerRecomputeAllGather>());
@@ -960,7 +662,7 @@ void GPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
     }
   }
   if (do_expand) {
-    graphkernel::BindValueToGraph().Run(graph);
+    opt::BindValueToGraph().Run(graph);
     graph->SetExecOrderByDefault();
   }
   (void)profiler::CollectHostInfo(kModelNameGPU, kEventOptimizeGraph, kStageSetKernelInfo, start_time,
@@ -1060,83 +762,42 @@ bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector
   return ret;
 }
 
-bool GPUDeviceResManager::CreateStream(size_t *stream_id) const {
-  return GPUDeviceManager::GetInstance().CreateStream(stream_id);
-}
+bool GPUDeviceResManager::CreateStream(size_t *stream_id) const { return gpu_res_manager_->CreateStream(stream_id); }
 
 bool GPUDeviceResManager::CreateStreamWithPriority(size_t *stream_id, int32_t priority) const {
-  return GPUDeviceManager::GetInstance().CreateStreamWithPriority(stream_id, priority);
+  return gpu_res_manager_->CreateStreamWithPriority(stream_id, priority);
 }
 
-size_t GPUDeviceResManager::QueryStreamSize() const { return GPUDeviceManager::GetInstance().QueryStreamSize(); }
+size_t GPUDeviceResManager::QueryStreamSize() const { return gpu_res_manager_->QueryStreamSize(); }
 
-std::vector<uint32_t> GPUDeviceResManager::GetStreamIds() const {
-  return GPUDeviceManager::GetInstance().GetStreamIds();
-}
+std::vector<uint32_t> GPUDeviceResManager::GetStreamIds() const { return gpu_res_manager_->GetStreamIds(); }
 
 bool GPUDeviceResManager::single_op_multi_stream_enable() const {
-  return GPUDeviceManager::GetInstance().single_op_multi_stream_enable();
+  return gpu_res_manager_->single_op_multi_stream_enable();
 }
 
 void GPUDeviceResManager::set_single_op_multi_stream_enable(bool single_op_multi_stream_enable) {
-  return GPUDeviceManager::GetInstance().set_single_op_multi_stream_enable(single_op_multi_stream_enable);
+  return gpu_res_manager_->set_single_op_multi_stream_enable(single_op_multi_stream_enable);
 }
 
-void *GPUDeviceResManager::GetStream(size_t stream_id) const {
-  return GPUDeviceManager::GetInstance().GetStream(stream_id);
-}
+void *GPUDeviceResManager::GetStream(size_t stream_id) const { return gpu_res_manager_->GetStream(stream_id); }
 
-size_t GPUDeviceResManager::GetCommunicationStreamID() const {
-  MS_LOG(WARNING) << "CommunicationStreamID is no create yet, return default stream.";
-  return GPUDeviceManager::GetInstance().default_stream_id();
-}
+size_t GPUDeviceResManager::GetCommunicationStreamID() const { return gpu_res_manager_->GetCommunicationStreamID(); }
 
-bool GPUDeviceResManager::DestroyStream(size_t stream_id) const {
-  return GPUDeviceManager::GetInstance().DestroyStream(stream_id);
-}
+bool GPUDeviceResManager::DestroyStream(size_t stream_id) const { return gpu_res_manager_->DestroyStream(stream_id); }
 
-void GPUDeviceResManager::SetCurrentStreamId(size_t stream_id) {
-  GPUDeviceManager::GetInstance().set_current_stream(stream_id);
-}
+void GPUDeviceResManager::SetCurrentStreamId(size_t stream_id) { gpu_res_manager_->SetCurrentStreamId(stream_id); }
 
-size_t GPUDeviceResManager::GetCurrentStreamId() const { return GPUDeviceManager::GetInstance().current_stream(); }
+size_t GPUDeviceResManager::GetCurrentStreamId() const { return gpu_res_manager_->GetCurrentStreamId(); }
 
-bool GPUDeviceResManager::QueryStream(size_t stream_id) const {
-  return GPUDeviceManager::GetInstance().QueryStream(stream_id);
-}
+bool GPUDeviceResManager::QueryStream(size_t stream_id) const { return gpu_res_manager_->QueryStream(stream_id); }
 
-bool GPUDeviceResManager::SyncStream(size_t stream_id) const {
-  bool result = GPUDeviceManager::GetInstance().SyncStream(stream_id);
-#ifdef ENABLE_DUMP_IR
-  if (!result) {
-    mindspore::RDR::TriggerAll();
-  }
-  // clear RDR gpu memory info
-  mindspore::RDR::ClearMemAddressInfo();
-#endif
-  return result;
-}
+bool GPUDeviceResManager::SyncStream(size_t stream_id) const { return gpu_res_manager_->SyncStream(stream_id); }
 
-bool GPUDeviceResManager::SyncAllStreams() const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(ERROR) << "Fail to bind device to current thread";
-    return false;
-  }
-  bool result = GPUDeviceManager::GetInstance().SyncAllStreams();
-#ifdef ENABLE_DUMP_IR
-  if (!result) {
-    mindspore::RDR::TriggerAll();
-  }
-  // clear RDR gpu memory info
-  mindspore::RDR::ClearMemAddressInfo();
-#endif
-  return result;
-}
-bool GPUDeviceResManager::SyncNotDefaultStreams() const {
-  return GPUDeviceManager::GetInstance().SyncNotDefaultStreams();
-}
+bool GPUDeviceResManager::SyncAllStreams() const { return gpu_res_manager_->SyncAllStreams(); }
+bool GPUDeviceResManager::SyncNotDefaultStreams() const { return gpu_res_manager_->SyncNotDefaultStreams(); }
 
-size_t GPUDeviceResManager::DefaultStream() const { return GPUDeviceManager::GetInstance().default_stream_id(); }
+size_t GPUDeviceResManager::DefaultStream() const { return gpu_res_manager_->DefaultStream(); }
 
 uint32_t GPUKernelExecutor::GetRankID() const {
   bool collective_inited = distributed::collective::CollectiveManager::instance()->initialized();
@@ -1151,24 +812,15 @@ uint32_t GPUKernelExecutor::GetRankID() const {
 
 // cudaEventRecordDefault 0x0 | cudaEventRecordExternal 0x1 | cudaEventWaitExternal 0x1, no need to set again.
 DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) {
-  if (!enable_blocking && !enable_record_wait) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Bad parameters, enable_blocking is false and enable_record_wait is false.";
-  }
-  uint32_t flag = cudaEventDefault;
-  flag |= cudaEventDisableTiming;
-  flag |= cudaEventBlockingSync;
-  return std::make_shared<GpuEvent>(flag);
+  return gpu_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);
 }
 
-DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
-  uint32_t flag =
-    (blocking ? cudaEventBlockingSync : cudaEventDefault) | (enable_timing ? cudaEventDefault : cudaEventDisableTiming);
-  auto event = std::make_shared<GpuEvent>(flag);
-  MS_EXCEPTION_IF_NULL(event);
-  std::lock_guard<std::mutex> lock(device_events_mutex_);
-  device_events_.push_back(event);
-  return event;
+DeviceEventPtr GPUDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking, bool use_extensional_api) {
+  return gpu_res_manager_->CreateEventWithFlag(enable_timing, blocking, use_extensional_api);
 }
+
+bool GPUDeviceResManager::DestroyEvent(const DeviceEventPtr &event) { return gpu_res_manager_->DestroyEvent(event); }
+bool GPUDeviceResManager::DestroyAllEvents() { return gpu_res_manager_->DestroyAllEvents(); }
 
 bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
                                           const device::DeviceAddressPtrList &input_addr_list,
@@ -1194,8 +846,7 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   // Sync running.
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if ((ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) &&
-      runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
+  if (runtime::RuntimeConf::GetInstance()->launch_blocking() && !res_manager_->SyncAllStreams()) {
     return false;
   }
 
@@ -1207,40 +858,105 @@ bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_ty
   return true;
 }
 
-bool GPUDeviceResManager::LoadCollectiveCommLib() {
-#ifdef ENABLE_MPI
-  std::string nvidia_comm_lib_name = GetCurrentDir() + "/gpu" + std::to_string(CUDA_VERSION / 1000) + "." +
-                                     std::to_string(CUDA_VERSION / 10 % 10) + "/libnvidia_collective.so";
-  auto loader = std::make_shared<CollectiveCommLibLoader>(nvidia_comm_lib_name);
-  MS_EXCEPTION_IF_NULL(loader);
-  if (!loader->Initialize()) {
-    MS_LOG(EXCEPTION) << "Loading NCCL collective library failed.";
-    return false;
-  }
-  void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-  MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
+bool GPUDeviceResManager::LoadCollectiveCommLib() { return gpu_res_manager_->LoadCollectiveCommLib(); }
+mindspore::device::CollectiveCommunicationLib *GPUDeviceResManager::collective_comm_lib() const {
+  return gpu_res_manager_->collective_comm_lib();
+}
 
-  auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-  collective_comm_lib_ = instance_func();
-  MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+namespace {
+constexpr size_t kMaxDim = 9;
+void MallocMemoryForDeviceAddress(device::DeviceAddress *device_address, const device::DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kContinuousMemory,
+                                                 device_address->GetSize(), device_address);
+  if (device_address->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address)) {
+      MS_LOG(EXCEPTION) << "Allocate device memory failed!";
+    }
+  }
+}
+
+void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
+                              const device::DeviceContext *device_context, std::vector<int64_t> vec) {
+  MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kWorkSpace,
+                                                 device_address->GetSize(), device_address.get());
+  if (device_address->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+      MS_LOG(EXCEPTION) << "Allocate device memory failed!";
+    }
+  }
+
+  std::reverse(vec.begin(), vec.end());
+  vec.resize(kMaxDim, 0);
+  if (!device_address->SyncHostToDevice(ShapeVector(), device_address->GetSize(), kNumberTypeInt64, vec.data(),
+                                        kOpFormat_DEFAULT)) {
+    MS_LOG(EXCEPTION) << "SyncHostToDevice failed, vec:" << vec;
+  }
+}
+}  // namespace
+
+bool GPUKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_type,
+                                          const std::vector<device::DeviceAddress *> &input_addr_list,
+                                          const std::vector<device::DeviceAddress *> &output_addr_list,
+                                          const size_t &stream_id) const {
+  if (task_type != runtime::KernelTaskType::kCONTIGUOUS_TASK) {
+    MS_LOG(EXCEPTION) << "KernelTask not supported, task_type:" << task_type;
+  }
+  MS_LOG(DEBUG) << "Start gpu contiguous task.";
+
+  const auto &input_address = input_addr_list[0];
+  const auto &output_address = output_addr_list[0];
+  const auto &input_storage_info = input_address->GetTensorStorageInfo();
+  auto stream = device_context_->device_res_manager_->GetStream(stream_id);
+  MS_EXCEPTION_IF_NULL(stream);
+
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", input_address size:" << input_address->GetSize()
+                << ", output_address size:" << output_address->GetSize();
+  MallocMemoryForDeviceAddress(input_address, device_context_);
+  MallocMemoryForDeviceAddress(output_address, device_context_);
+
+  // Ensure address life cycle
+  device::DeviceAddressPtr shape_dev_addr = nullptr;
+  device::DeviceAddressPtr strides_dev_addr = nullptr;
+
+  kernel::KernelTensorPtr shape_addr = nullptr;
+  kernel::KernelTensorPtr strides_addr = nullptr;
+
+  if (!input_storage_info->is_contiguous) {
+    // No need shape_addr and strides_addr, when tensor is contiguous
+    auto shape_kernel_tensor = AnfAlgo::CreateKernelTensor(
+      nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
+      device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
+
+    auto strides_kernel_tensor = AnfAlgo::CreateKernelTensor(
+      nullptr, kMaxDim * sizeof(int64_t), Format::DEFAULT_FORMAT, kNumberTypeInt64, ShapeVector(),
+      device_context_->device_context_key().device_name_, device_context_->device_context_key().device_id_);
+
+    shape_dev_addr = shape_kernel_tensor->device_address();
+    strides_dev_addr = strides_kernel_tensor->device_address();
+
+    MallocMemoryAndCopyValue(shape_dev_addr, device_context_, input_storage_info->shape);
+    MallocMemoryAndCopyValue(strides_dev_addr, device_context_, input_storage_info->strides);
+  }
+
+  kernel::ContiguousGpuKernel contiguous_kernel;
+  auto ret = contiguous_kernel.LaunchContiguous(input_address->type_id(), input_address, input_storage_info,
+                                                output_address->type_id(), output_address, shape_dev_addr,
+                                                strides_dev_addr, stream);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "LaunchContiguous failed";
+  }
+  MS_LOG(DEBUG) << "End gpu contiguous task.";
+
   return true;
-#else
-  return false;
-#endif
 }
 
 bool GPUDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
-  if (cur_thread_device_inited && !force_bind) {
-    return true;
-  }
-
-  if (!CudaDriver::SetDevice(UintToInt(device_context_->device_context_key().device_id_))) {
-    MS_LOG(ERROR) << "Failed to set device id: " << device_context_->device_context_key().device_id_;
-    return false;
-  }
-
-  cur_thread_device_inited = true;
-  return true;
+  return gpu_res_manager_->BindDeviceToCurrentThread(force_bind);
 }
 
 DeprecatedInterface *GPUDeviceContext::GetDeprecatedInterface() {
@@ -1269,17 +985,7 @@ cudaDeviceProp GPUDeviceContext::GetDeviceProperties(uint32_t device_id) {
 std::string GPUDeviceContext::GetArchList() { return STRING_COMPILE_OPT(CUDA_ARCH_LIST); }
 
 std::shared_ptr<void> GPUDeviceResManager::AllocateHostMemory(size_t size) const {
-  void *ptr;
-  if (CudaDriver::AllocHostPinnedMem(size, &ptr) != size) {
-    MS_LOG(ERROR) << "Failed to allow host pinned memory.";
-    return nullptr;
-  }
-
-  return std::shared_ptr<void>(ptr, [](void *ptr) -> void {
-    if (ptr != nullptr) {
-      CudaDriver::FreeHostPinnedMem(ptr);
-    }
-  });
+  return gpu_res_manager_->AllocateHostMemory(size);
 }
 
 MS_REGISTER_DEVICE(kGPUDevice, GPUDeviceContext);

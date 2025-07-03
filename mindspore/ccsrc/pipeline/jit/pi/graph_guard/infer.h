@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include "pybind11/pybind11.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 namespace pijit {
@@ -65,8 +66,6 @@ bool IsVmapOperationType(PyTypeObject *tp);
 template <bool sub>
 bool IsShardType(PyTypeObject *tp);
 template <bool sub>
-bool IsStubTensorType(PyTypeObject *tp);
-template <bool sub>
 bool IsTensorType(PyTypeObject *tp);
 template <bool sub>
 bool IsCellListType(PyTypeObject *tp);
@@ -80,11 +79,13 @@ template <bool sub>
 bool IsMetaFuncGraphType(PyTypeObject *tp);
 template <bool sub>
 bool IsMSDTypeType(PyTypeObject *tp);
+bool IsParameterObject(const py::handle &handle);
 
 bool FindTensorName(const std::string &name);
 
 bool CheckTensorDataInitialized(const py::object &tensor);
 py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, const py::object &key_words);
+bool PromotePrimitiveInputsType(const ValuePtr &primitive, AbstractBasePtrList *args_abs_list);
 
 using SpecialPrimitiveInferFuncMap =
   std::unordered_map<std::string, PyObject *(*)(PyObject *, const std::vector<PyObject *> &)>;

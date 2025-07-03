@@ -45,8 +45,14 @@ echo 'run common ut tests'
 if [[ "${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "on" || "${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "ON" || "${MSLITE_ENABLE_CLOUD_INFERENCE}" == "ON" || "${MSLITE_ENABLE_CLOUD_INFERENCE}" == "on" ]]; then
   echo 'run MSLITE_ENABLE_CLOUD_FUSION_INFERENCE ut test'
   set +e
-  source /usr/local/Ascend/latest/bin/setenv.bash
-  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/Ascend/latest/lib64
+  if [ -d "/usr/local/Ascend/ascend-toolkit" ]; then
+    ascend_setenv_path=/usr/local/Ascend/ascend-toolkit/set_env.sh
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/Ascend/ascend-toolkit/latest/lib64:/usr/local/Ascend/ascend-toolkit/latest/aarch64-linux/devlib
+  else
+    ascend_setenv_path=/usr/local/Ascend/latest/bin/setenv.bash
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/Ascend/latest/lib64
+  fi
+  source ${ascend_setenv_path}
   set -e
 
   # mindspore lite converter

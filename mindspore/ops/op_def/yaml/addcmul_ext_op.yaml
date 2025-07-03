@@ -1,0 +1,22 @@
+#operator addcmul_ext, autogenerate, import from customise
+addcmul_ext:
+    args:
+        input:
+            dtype: tensor
+        tensor1:
+            dtype: tensor
+        tensor2:
+            dtype: tensor
+        value:
+            dtype: number
+            default: 1
+            type_cast: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    class:
+        name: AddcmulExt
+    dispatch:
+        enable: True

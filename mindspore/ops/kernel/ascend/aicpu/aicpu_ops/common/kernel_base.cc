@@ -81,8 +81,8 @@ uint32_t KernelBase::ParseParam(void *param) {
     extend_param_base_ = extend_param_base_ + addr_len;
     extend_param_len_ -= addr_len;
   }
-  AICPU_CHK_STATUS_RET(ParseNodeDef())
-  AICPU_CHK_STATUS_RET(ParseExtInfo())
+  AICPU_CHK_STATUS_RET(ParseNodeDef());
+  AICPU_CHK_STATUS_RET(ParseExtInfo());
   if (unknow_shape_) {
     AICPU_LOGI("Unknown shape op: %s", kernel_name_.c_str());
     UpdateInputShape();
@@ -140,7 +140,7 @@ uint32_t KernelBase::ParseExtendParam(T *param_var, const std::string &param_nam
 
 uint32_t KernelBase::ParseNodeDef() {
   uint32_t node_def_len;
-  AICPU_CHK_STATUS_RET(ParseExtendParam(&node_def_len, "node_def_len"))
+  AICPU_CHK_STATUS_RET(ParseExtendParam(&node_def_len, "node_def_len"));
 
   if (extend_param_len_ < node_def_len) {
     AICPU_LOGE("Kernel:%s extend param is not enough for customizeAttr addr, node_def_len=%u, extendParamLen=%u.",
@@ -216,13 +216,13 @@ uint32_t KernelBase::ParseExtInfo() {
     }
     switch (ext_info_ptr->infoType) {
       case FWKAdapter::FWK_ADPT_EXT_SHAPE_TYPE:
-        AICPU_CHK_STATUS_RET(ParseExtShapeType(ext_info_ptr))
+        AICPU_CHK_STATUS_RET(ParseExtShapeType(ext_info_ptr));
         break;
       case FWKAdapter::FWK_ADPT_EXT_INPUT_SHAPE:
-        AICPU_CHK_STATUS_RET(ParseExtInputShape(ext_info_ptr))
+        AICPU_CHK_STATUS_RET(ParseExtInputShape(ext_info_ptr));
         break;
       case FWKAdapter::FWK_ADPT_EXT_OUTPUT_SHAPE:
-        AICPU_CHK_STATUS_RET(ParseExtOutputShape(ext_info_ptr))
+        AICPU_CHK_STATUS_RET(ParseExtOutputShape(ext_info_ptr));
         break;
       default:
         AICPU_LOGI("Kernel:%s ignore infoType=%d, infoLen=%u.", kernel_name_.c_str(), ext_info_ptr->infoType,

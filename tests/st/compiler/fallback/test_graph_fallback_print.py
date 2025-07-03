@@ -29,7 +29,7 @@ from tests.security_utils import security_off_wrap
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-
+context.set_context(jit_level="O0")
 
 class Capture():
     def __init__(self):
@@ -74,7 +74,7 @@ def test_np_print_1():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def np_print():
         x = np.array([1, 2, 3, 4, 5])
         print("x: ", x)
@@ -85,7 +85,7 @@ def test_np_print_1():
         res = np_print()
         assert np.all(res.asnumpy() == np.array([1, 2, 3, 4, 5]))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:  [1 2 3 4 5]'}
     check_output(cap.output, patterns)
@@ -111,7 +111,7 @@ def test_np_print_2():
         res = net()
         assert np.all(res.asnumpy() == np.array([1, 2, 3, 4, 5]))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'x:  [1 2 3 4 5]'}
     check_output(cap.output, patterns)
@@ -136,7 +136,7 @@ def test_tensor_print_1():
         res = np_print()
         assert np.all(res.asnumpy() == np.array([1, 2, 3, 4, 5]))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'Tensor(x): \nTensor(shape=[5], dtype=Int64, value=[1 2 3 4 5])\n'}
     check_output(cap.output, patterns)
@@ -163,7 +163,7 @@ def test_print_cnode_1():
         res = print_func(x, y)
         assert (res.asnumpy() == [2, 4, 6, 8, 10]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'res_sum: \nTensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\n'}
     check_output(cap.output, patterns)
@@ -190,7 +190,7 @@ def test_print_cnode_2():
         res = print_func()
         assert (res.asnumpy() == [2, 4, 6, 8, 10]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'res_sum: \nTensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\n'}
     check_output(cap.output, patterns)
@@ -204,7 +204,7 @@ def test_print_cnode_3():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([1, 2, 3, 4, 5])
@@ -217,7 +217,7 @@ def test_print_cnode_3():
         res = print_func()
         assert (res.asnumpy() == [2, 4, 6, 8, 10]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'res_sum:  [ 2  4  6  8 10]'}
     check_output(cap.output, patterns)
@@ -231,7 +231,7 @@ def test_print_validate_tuple():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = Tensor(np.array([1, 2, 3, 4, 5]))
         y = Tensor(np.array([1, 2, 3, 4, 5]))
@@ -255,7 +255,7 @@ def test_print_validate():
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         np_x = np.array([1, 2, 3, 4, 5])
         np_y = np.array([1, 2, 3, 4, 5])
@@ -288,21 +288,21 @@ def test_print_format_np():
         res = print_func()
         assert (res.asnumpy() == [2, 4, 6, 8, 10]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {'np_sum: [ 2  4  6  8 10]'}
     check_output(cap.output, patterns)
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_format_tensor():
     """
     Feature: JIT Fallback
     Description: Support print.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         x = Tensor(np.array([1, 2, 3, 4, 5]))
         y = Tensor(np.array([1, 2, 3, 4, 5]))
@@ -315,9 +315,9 @@ def test_print_format_tensor():
         res = print_func()
         assert (res.asnumpy() == [2, 4, 6, 8, 10]).all()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
-    patterns = {'tensor_sum: Tensor(shape=[5], dtype=Int64, value=[ 2  4  6  8 10])\n'}
+    patterns = {'tensor_sum: [ 2  4  6  8 10]\n'}
     check_output(cap.output, patterns)
 
 
@@ -329,7 +329,7 @@ def test_print_string_format():
     Description: Support print(string % var).
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         print("I'm %s. I'm %d years old." % ('MindSpore', 3))
         return 0
@@ -339,7 +339,7 @@ def test_print_string_format():
         res = print_func()
         assert res == 0
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {"I'm MindSpore. I'm 3 years old.\n"}
     check_output(cap.output, patterns)
@@ -366,7 +366,7 @@ def test_print_string_add_string():
         res = print_func()
         assert res == 0
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {"I'm MindSpore. I'm 3 years old.\n"}
     check_output(cap.output, patterns)
@@ -391,7 +391,7 @@ def test_print_list():
         res = print_func()
         assert res == 0
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {"list_x:\nTensor(shape=[5], dtype=Int64, value=[1 2 3 4 5])\n"}
     check_output(cap.output, patterns)
@@ -425,7 +425,7 @@ def test_print_dict():
     Description: Support print(dict).
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def print_func():
         dict_x1 = dict(zip(['one', 'two', 'three'], [1, 2, 3]))
         dict_x2 = dict([("one", 1), ("two", 2)])
@@ -438,7 +438,7 @@ def test_print_dict():
         res = print_func()
         assert res == 0
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {"dict_x1: {'one': 1, 'two': 2, 'three': 3}\n"
                 "dict_x2: {'one': 1, 'two': 2}\n"}
@@ -490,7 +490,7 @@ def test_print_joinedstr():
         res = np_print()
         assert np.all(res.asnumpy() == np.array([1, 2, 3, 4, 5]))
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
 
     patterns = {"Tensor(x): Tensor(shape=[5], dtype=Int64, value=[1 2 3 4 5]),"
                 " dict_input: {'a': 1, 'b': 2, 'x:(1, 2, 3, 4, 5)': 3}"}
@@ -498,7 +498,7 @@ def test_print_joinedstr():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_param_value():
     """
     Feature: graph print parameter value.
@@ -521,13 +521,14 @@ def test_print_param_value():
                 self.assignadd(self.p1, x)
                 print(self.p1.value())
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         test_net = ParamValueNet()
         x = Tensor(99, mstype.float32)
         test_net(x)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(0.5)
         assert test_net.p1 == 100
 
     patterns = {"Tensor(shape=[], dtype=Float32, value=100)"}
@@ -568,14 +569,14 @@ def test_print_in_lambda_func_graph_with_isolate_node():
         data = Tensor([[0, 1], [2, 3]])
         output = bool_index(data, index)
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         assert (output == data).all()
 
     patterns = {"Tensor(shape=[2, 2], dtype=Int64, value=\n[[0 2]\n [4 6]])"}
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_all_print():
     """
     Feature: graph print dict.
@@ -587,13 +588,13 @@ def test_dict_all_print():
             x = dict([("one", 1), ("two", 2)])
             print("x: ", x)
             return 0
-
+    ms.set_context(jit_config={"jit_level": "O0"})
     cap = Capture()
     with capture(cap):
         net = Netprint()
         output = net()
         sys.stdout.flush()
-        time.sleep(0.1)
+        time.sleep(2.0)
         assert output == 0
 
     patterns = {"x:  {'one': 1, 'two': 2}"}

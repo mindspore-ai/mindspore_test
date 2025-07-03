@@ -3,7 +3,7 @@
 
 .. py:class:: mindspore.ops.TensorScatterUpdate
 
-    根据指定的更新值 `update` 和输入索引 `indices` ，通过更新操作更新输出Tensor的值。此操作几乎等同于使用 :class:`mindspore.ops.ScatterNdUpdate` ，只是更新操作应用到 `input_x` Tensor而不是0。
+    根据指定的更新值 `update` 和输入索引 `indices` ，通过更新操作更新输出Tensor的值。此操作几乎等同于使用 :class:`mindspore.ops.ScatterNdUpdate` ，但更新后的结果是返回一个新的输出Tensor，而不是直接更新 `input_x` 。
 
     `indices` 的rank大于等于2，最后一个轴表示每个索引向量的深度。对于每个索引向量， `update` 中必须有相应的值。如果每个索引Tensor的深度与 `input_x` 的rank匹配，则每个索引向量对应于 `input_x` 中的Scalar，并且每次更新都会更新一个Scalar。如果每个索引Tensor的深度小于 `input_x` 的rank，则每个索引向量对应于 `input_x` 中的切片，并且每次更新都会更新一个切片。
 

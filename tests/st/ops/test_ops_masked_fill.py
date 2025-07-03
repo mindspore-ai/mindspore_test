@@ -16,7 +16,7 @@ import os
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
+from mindspore import ops, context
 from mindspore.ops import masked_fill
 
 from tests.st.utils import test_utils
@@ -35,6 +35,7 @@ def masked_fill_forward_func(input_x, mask, value):
 
 @test_utils.run_with_cell
 def masked_fill_backward_func(input_x, mask, value):
+    # pylint: disable=E1102
     return ops.grad(masked_fill_forward_func, (0, 1))(input_x, mask, value)
 
 
@@ -157,6 +158,7 @@ def test_ops_masked_fill_backward_dynamic_shape(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     if context_mode == ms.GRAPH_MODE and ms.context.get_context("device_target") == "Asecnd":
         os.environ["MS_DISABLE_KERNEL_BACKOFF"] = "0"
     input_x_dyn = ms.Tensor(shape=[None, None], dtype=ms.float32)
@@ -195,6 +197,7 @@ def test_ops_masked_fill_backward_dynamic_rank(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
+    context.set_context(jit_level='O0')
     if context_mode == ms.GRAPH_MODE and ms.context.get_context("device_target") == "Asecnd":
         os.environ["MS_DISABLE_KERNEL_BACKOFF"] = "0"
     input_x_dyn = ms.Tensor(shape=None, dtype=ms.float32)

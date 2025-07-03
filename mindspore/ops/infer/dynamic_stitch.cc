@@ -24,10 +24,53 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
+
+abstract::ShapePtr BuildOutShape(const AbstractBasePtrList &data, const AbstractBasePtrList &indices,
+                                 std::size_t data_size, bool first_dim_unknow, int64_t first_dim_size) {
+  ShapeVector out_shape;
+  if (first_dim_unknow) {
+    out_shape.push_back(abstract::Shape::kShapeDimAny);
+  } else {
+    out_shape.push_back(first_dim_size + 1);
+  }
+  // support input data dynamic shape
+  bool data_shape_is_dynamic = false;
+  for (size_t i = 0; i < data_size; i++) {
+    auto data_i = data[i]->cast<abstract::AbstractTensorPtr>();
+    MS_EXCEPTION_IF_NULL(data_i);
+    auto data_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(data_i->GetShape())[kShape];
+    if (IsDynamic(data_shape)) {
+      data_shape_is_dynamic = true;
+      break;
+    }
+  }
+
+  auto indices0 = indices[0]->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(indices0);
+  auto indices0_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(indices0->GetShape())[kShape];
+
+  auto data0 = data[0]->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(data0);
+  auto data0_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(data0->GetShape())[kShape];
+
+  if (data_shape_is_dynamic) {
+    for (size_t i = indices0_shape.size(); i < data0_shape.size(); ++i) {
+      out_shape.push_back(abstract::Shape::kShapeDimAny);
+    }
+  } else {
+    for (size_t i = indices0_shape.size(); i < data0_shape.size(); ++i) {
+      out_shape.push_back(data0_shape[i]);
+    }
+  }
+
+  return std::make_shared<abstract::Shape>(out_shape);
+}
+
 abstract::ShapePtr DynamicStitchFrontendInferShape(const PrimitivePtr &primitive,
                                                    const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);
@@ -94,14 +137,6 @@ abstract::ShapePtr DynamicStitchFrontendInferShape(const PrimitivePtr &primitive
     first_dim_size = *index_i_max > first_dim_size ? *index_i_max : first_dim_size;
   }
 
-  auto indices0 = indices[0]->cast<abstract::AbstractTensorPtr>();
-  MS_EXCEPTION_IF_NULL(indices0);
-  auto indices0_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(indices0->GetShape())[kShape];
-
-  auto data0 = data[0]->cast<abstract::AbstractTensorPtr>();
-  MS_EXCEPTION_IF_NULL(data0);
-  auto data0_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(data0->GetShape())[kShape];
-
   for (size_t i = 1; i < data.size(); ++i) {
     auto indicesi_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(indices[i]->GetShape())[kShape];
     auto datai_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(data[i]->GetShape())[kShape];
@@ -110,34 +145,7 @@ abstract::ShapePtr DynamicStitchFrontendInferShape(const PrimitivePtr &primitive
     }
   }
 
-  ShapeVector out_shape;
-  if (first_dim_unknow) {
-    out_shape.push_back(abstract::Shape::kShapeDimAny);
-  } else {
-    out_shape.push_back(first_dim_size + 1);
-  }
-  // support input data dynamic shape
-  bool data_shape_is_dynamic = false;
-  for (size_t i = 0; i < data_size; i++) {
-    auto data_i = data[i]->cast<abstract::AbstractTensorPtr>();
-    MS_EXCEPTION_IF_NULL(data_i);
-    auto data_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(data_i->GetShape())[kShape];
-    if (IsDynamic(data_shape)) {
-      data_shape_is_dynamic = true;
-      break;
-    }
-  }
-  if (data_shape_is_dynamic) {
-    for (size_t i = indices0_shape.size(); i < data0_shape.size(); ++i) {
-      out_shape.push_back(abstract::Shape::kShapeDimAny);
-    }
-  } else {
-    for (size_t i = indices0_shape.size(); i < data0_shape.size(); ++i) {
-      out_shape.push_back(data0_shape[i]);
-    }
-  }
-
-  return std::make_shared<abstract::Shape>(out_shape);
+  return BuildOutShape(data, indices, data_size, first_dim_unknow, first_dim_size);
 }
 
 TypePtr DynamicStitchFrontendInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {

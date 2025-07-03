@@ -19,12 +19,13 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/cholesky_inverse.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cholesky_inverse_cpu {
 class CholeskyInverseCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<CholeskyInverseCpuKernelMod> {
  public:
   CholeskyInverseCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class CholeskyInverseCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
   int64_t input_dim_0_ = 0;
   bool is_upper_{false};
 };
+}  // namespace cholesky_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_CHOLESKYINVERSE_CPU_KERNEL_H_

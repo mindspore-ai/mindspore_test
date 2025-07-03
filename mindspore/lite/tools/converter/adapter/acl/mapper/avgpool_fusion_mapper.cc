@@ -16,6 +16,7 @@
 
 #include "tools/converter/adapter/acl/mapper/avgpool_fusion_mapper.h"
 #include <memory>
+#include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "include/registry/converter_context.h"
@@ -23,6 +24,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace lite {
@@ -31,6 +34,29 @@ constexpr const char *kDivisorOverride = "divisor_override";
 constexpr const char *kExclusive = "exclusive";
 constexpr int kSizeHW = 20;
 constexpr int kSizeHWMul = 255;
+enum class AvgPoolType {
+  INVALID = 0,
+  AVGPOOL_2D = 1,
+  AVGPOOL_3D = 2,
+};
+namespace {
+AvgPoolType JudgeAvgPoolType(const std::vector<int> &kernel_size) {
+  int size_mul = kIndex1;
+  for (auto dim : kernel_size) {
+    size_mul *= dim;
+    if ((dim > kSizeHW) || (size_mul > kSizeHWMul)) {
+      return AvgPoolType::INVALID;
+    }
+  }
+  if (kernel_size.size() == kDim2) {
+    return AvgPoolType::AVGPOOL_2D;
+  } else if (kernel_size.size() == kDim3) {
+    return AvgPoolType::AVGPOOL_3D;
+  }
+  return AvgPoolType::INVALID;
+}
+}  // namespace
+
 STATUS AvgPoolFusionMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);
   ValueNodePtr value_node = nullptr;
@@ -43,7 +69,8 @@ STATUS AvgPoolFusionMapper::Mapper(const CNodePtr &cnode) {
   auto attr_val = src_prim->GetAttr(ops::kFmkType);
   int fmk_type = attr_val != nullptr ? GetValue<int>(attr_val) : converter::kFmkTypeTf;
   PrimitivePtr dst_prim = nullptr;
-  CreateTargetPrim(src_prim, &dst_prim, fmk_type);
+  bool is_3d = false;
+  CreateTargetPrim(src_prim, fmk_type, &dst_prim, &is_3d);
   CHECK_NULL_RETURN(dst_prim);
   dst_prim->SetAttrs(src_prim->attrs());
   if (!dst_prim->HasAttr(kDivisorOverride)) {
@@ -65,11 +92,19 @@ STATUS AvgPoolFusionMapper::Mapper(const CNodePtr &cnode) {
     // the attr format has been changed to data_format because of dynamic(defined in gen_lite_ops.h)
     dst_prim->AddAttr(kAttrDataFormat, src_prim->GetAttr(ops::kFormat));
   }
+  if (is_3d) {
+    dst_prim->AddAttr(kAttrFormat, MakeValue("NCDHW"));
+    if (src_prim->HasAttr(ops::kPad)) {
+      dst_prim->AddAttr(ops::kPadList, src_prim->GetAttr(ops::kPad));
+    }
+  }
+
   value_node->set_value(dst_prim);
   return lite::RET_OK;
 }
 
-void AvgPoolFusionMapper::CreateTargetPrim(const PrimitivePtr &src_prim, PrimitivePtr *dst_prim, int fmk_type) {
+void AvgPoolFusionMapper::CreateTargetPrim(const PrimitivePtr &src_prim, int fmk_type, PrimitivePtr *dst_prim,
+                                           bool *is_3d) {
   if (dst_prim == nullptr) {
     MS_LOG(ERROR) << "Target prim is nullptr.";
     return;
@@ -84,10 +119,12 @@ void AvgPoolFusionMapper::CreateTargetPrim(const PrimitivePtr &src_prim, Primiti
       *dst_prim = std::make_shared<acl::GlobalAveragePool>();
     } else {
       auto kernel_size = opt::CastToInt(val_ptr);
-      MS_CHECK_TRUE_RET_VOID(kernel_size.size() == kDim2);
-      if (kernel_size.at(0) <= kSizeHW && kernel_size.at(1) <= kSizeHW &&
-          kernel_size.at(0) * kernel_size.at(1) <= kSizeHWMul) {
+      MS_CHECK_TRUE_RET_VOID(kernel_size.size() == kDim2 || kernel_size.size() == kDim3);
+      if (JudgeAvgPoolType(kernel_size) == AvgPoolType::AVGPOOL_2D) {
         *dst_prim = std::make_shared<acl::AvgPoolV2>();
+      } else if (JudgeAvgPoolType(kernel_size) == AvgPoolType::AVGPOOL_3D) {
+        *dst_prim = std::make_shared<acl::AvgPool3D>();
+        *is_3d = true;
       }
     }
   }

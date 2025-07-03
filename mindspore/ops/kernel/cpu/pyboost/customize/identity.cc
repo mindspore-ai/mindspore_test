@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/identity.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/identity.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/identity.h"
+#include "mindspore/ccsrc/pyboost/customize/identity.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr IdentityCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
+tensor::TensorPtr IdentityCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor) {
   MS_LOG(DEBUG) << "Identity call start";
   IdentityCustomize(op, x_tensor);
   MS_LOG(DEBUG) << "Identity call end";

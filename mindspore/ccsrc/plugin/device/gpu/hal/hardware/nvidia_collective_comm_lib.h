@@ -32,6 +32,7 @@
 namespace mindspore {
 namespace device {
 namespace gpu {
+using GroupOptions = mindspore::device::GroupOptions;
 // Map of collective operation data type to NCCL data type.
 const std::map<TypeId, ncclDataType_t> kNCCLDataTypeMap = {
   {TypeId::kNumberTypeInt8, ncclChar},       {TypeId::kNumberTypeUInt8, ncclUint8},
@@ -60,7 +61,8 @@ class EXPORT_NCCL_WRAPPER NvidiaCollectiveCommLib : public CollectiveCommunicati
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                uint32_t local_group_rank, uint32_t local_group_size) override;
+                                uint32_t local_group_rank, uint32_t local_group_size,
+                                const GroupOptions &config = {}) override;
 
   // For each collective operation, it has two APIs.
   // One overrides the base class methods.

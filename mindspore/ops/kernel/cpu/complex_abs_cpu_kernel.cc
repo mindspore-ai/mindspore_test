@@ -15,10 +15,11 @@
  */
 #include "kernel/cpu/complex_abs_cpu_kernel.h"
 #include <complex>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace complex_abs_cpu {
 bool ComplexAbsCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 1;
@@ -58,5 +59,6 @@ const std::vector<std::pair<KernelAttr, ComplexAbsCpuKernelMod::KernelRunFunc>> 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ComplexAbs, ComplexAbsCpuKernelMod);
+}  // namespace complex_abs_cpu
 }  // namespace kernel
 }  // namespace mindspore

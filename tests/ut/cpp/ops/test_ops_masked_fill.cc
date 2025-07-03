@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,46 @@
  * limitations under the License.
  */
 
-#include "common/common_test.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "infer/ops_func_impl/masked_fill.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
-OP_FUNC_IMPL_TEST_DECLARE(MaskedFill, MultiInputOpParams);
-
-OP_FUNC_IMPL_TEST_CASES(
-  MaskedFill,
-  testing::Values(MultiInputOpParams{{{4, 3, 3}, {3, 3}, {}}, {kUInt8, kBool, kUInt8}, {{4, 3, 3}}, {kUInt8}, {}},
-                  MultiInputOpParams{{{4, -1, -1}, {3, 3}, {}}, {kInt16, kBool, kInt16}, {{4, 3, 3}}, {kInt16}, {}},
-                  MultiInputOpParams{{{4, 3, 3}, {-1, -1}, {}}, {kInt32, kBool, kInt32}, {{4, 3, 3}}, {kInt32}, {}},
-                  MultiInputOpParams{{{-1, -1}, {-1, -1}, {}}, {kFloat32, kBool, kFloat32}, {{-1, -1}}, {kFloat32}, {}},
-                  MultiInputOpParams{{{-2}, {-2}, {}}, {kFloat64, kBool, kFloat64}, {{-2}}, {kFloat64}, {}},
-                  MultiInputOpParams{{{-2}, {1}, {}}, {kComplex128, kBool, kComplex128}, {{-2}}, {kComplex128}, {}}));
+namespace  {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  // static
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{4, 3, 3}, kNumberTypeUInt8},
+                      InferInfoParam{ShapeVector{3, 3}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeUInt8, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{4, 3, 3}}, {kNumberTypeUInt8});
+  // dynamic shape
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{4, -1, -1}, kNumberTypeInt16},
+                      InferInfoParam{ShapeVector{3, 3}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt16, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{4, 3, 3}}, {kNumberTypeInt16});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{4, 3, 3}, kNumberTypeInt32},
+                      InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeInt32, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{4, 3, 3}}, {kNumberTypeInt32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                      InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat64},
+                      InferInfoParam{ShapeVector{-2}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeFloat64, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeFloat64});
+  generator
+      .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeComplex128},
+                      InferInfoParam{ShapeVector{1}, kNumberTypeBool},
+                      InferInfoParam{ShapeVector{}, kNumberTypeComplex128, CreateScalar<float>(1.0)}})
+      .FeedExpectedOutput({{-2}}, {kNumberTypeComplex128});
+  return generator.Generate();
+}
+}  //namespace
+INSTANTIATE_TEST_CASE_P(MaskedFill, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

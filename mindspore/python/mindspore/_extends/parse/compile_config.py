@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -160,6 +160,14 @@ Value Range:
 AMP_ENABLE_ALL_FG = ''
 
 """
+Name: DUMP_IR_META_DSL
+Function: Whether to dump IR for meta op.
+Value Range:
+    String. The name of the operator that needs to dump IR.
+"""
+DUMP_IR_META_DSL = ''
+
+"""
 Name: DUMP_IR_CONFIG
 Function: Configuring the generation method of IR graphs.
 Value Range:
@@ -268,16 +276,6 @@ Value Range:
 STRICT_CHECK_PARENT_CONTEXT = ''
 
 """
-Name: CELL_PARAMETER_HOOK
-Function: Whether to enable cell parameter hook.
-          Cell parameter hook is an experimental api that may be deleted later.
-Value Range:
-    1: Enable
-    Default: Disable
-"""
-CELL_PARAMETERS_HOOK = ''
-
-"""
 Name: CHECK_BPROP
 Function: Whether to check back propagation nodes. The checking ensures that the shape and dtype of
           back propagation node outputs is the same as input parameters.
@@ -308,13 +306,22 @@ Value Range:
 DEBUG_LEVEL = ''
 
 """
-Name: PYNATIVE_JIT_GRAD_MODE
-Function: Which method used for grad jit in pynative mode
+Name: PIJIT_SUBGRAPH_BREAK_OPTIMIZE
+Function: Whether to enable subgraph break optimization in PIJit.
 Value Range:
-    1: Replace ValueNode
-    Default: Parametrization
+    0: Disable subgraph break optimization in PIJit.
+    Default: Enable.
 """
-PYNATIVE_JIT_GRAD_MODE = ''
+PIJIT_SUBGRAPH_BREAK_OPTIMIZE = ''
+
+"""
+Name: ENABLE_ELIMINATE_UNUSED_PARAMS
+Function: Whether to enable eliminate unused parameters optimization in PIJit.
+Value Range:
+    1: Enable, Disable if other value.
+    Default: Disable.
+"""
+ENABLE_ELIMINATE_UNUSED_PARAMS = ''
 
 """
 Name: PUT_ALL_CNODE_INTO_ORDER_LIST
@@ -324,6 +331,36 @@ Value Range:
     Default: Enable.
 """
 PUT_ALL_CNODE_INTO_ORDER_LIST = ''
+
+"""
+Name: CHECK_PASS_NODE_SCOPE
+Function: Whether to check
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+CHECK_PASS_NODE_SCOPE = ''
+
+"""
+Name: CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL
+Function: The level of check invalid dout under view+inplace scene
+Value Range:
+    1: Only check scenario 1
+    2: Only check scenario 2
+    Default(""): Check all invalid dout for view inplace scene
+    Others: No invalid dout check for view inplace scene
+"""
+CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL = ''
+
+"""
+Name: JIT_ENABLE_AUGASSIGN_INPLACE
+Function: Whether enable augassign inplace.
+Value Range:
+    0: Disable
+    1: Enable
+    Default: Disable
+"""
+JIT_ENABLE_AUGASSIGN_INPLACE = '0'
 
 __all__ = [
     "COMPILE_PROFILE",
@@ -341,6 +378,7 @@ __all__ = [
     "BOOST_PARSE",
     "GREED_PARSE",
     "AMP_ENABLE_ALL_FG",
+    "DUMP_IR_META_DSL",
     "DUMP_IR_CONFIG",
     "TRAVERSE_SUBSTITUTIONS_MODE",
     "PRE_LIFT",
@@ -354,10 +392,13 @@ __all__ = [
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
     "STRICT_CHECK_PARENT_CONTEXT",
     "AUTO_PASSES_OPTIMIZE_PATH",
-    "CELL_PARAMETERS_HOOK",
     "CHECK_BPROP",
     "GRAD_FOR_SCALAR",
     "DEBUG_LEVEL",
-    "PYNATIVE_JIT_GRAD_MODE",
+    "PIJIT_SUBGRAPH_BREAK_OPTIMIZE",
+    "ENABLE_ELIMINATE_UNUSED_PARAMS",
     "PUT_ALL_CNODE_INTO_ORDER_LIST",
+    "CHECK_PASS_NODE_SCOPE",
+    "CHECK_INVALID_VIEW_INPLACE_DOUT_LEVEL",
+    "JIT_ENABLE_AUGASSIGN_INPLACE"
 ]

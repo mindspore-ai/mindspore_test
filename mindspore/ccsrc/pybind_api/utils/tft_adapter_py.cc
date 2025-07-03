@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+#include <vector>
 #include "include/common/pybind_api/api_register.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
+#include "runtime/graph_scheduler/pre_launch_comm.h"
+#include "runtime/graph_scheduler/graph_scheduler.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
 namespace mindspore {
 using DeviceContext = mindspore::device::DeviceContext;
@@ -34,11 +38,21 @@ DeviceContextPtr GetDeviceCtx() {
   }
   return device_ctx;
 }
+
+constexpr auto RS_NORMAL = "RS_NORMAL";
+constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
+constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
+constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 }  // namespace
 
 bool GetMemUceInfo(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
   return device_ctx->device_res_manager_->GetMemUceInfo(device_id);
+}
+
+std::vector<uint64_t> GetOptimizerTimestamps() {
+  auto device_ctx = GetDeviceCtx();
+  return device_ctx->device_res_manager_->GetOptimizerTimestamps();
 }
 
 bool GetUceLevelWithMemPoolForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
@@ -85,11 +99,13 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
                                         const std::vector<std::pair<device::DeviceMemPtr, size_t>> &mem_uce_addr) {
   // Judge whether weights got uce error.
   MS_LOG(INFO) << "Start to get UCE process strategy for kbk.";
-  const auto &device_tensors = DeviceTensorStore::GetInstance().GetAll();
+  const auto &kernel_tensors = DeviceTensorStore::GetInstance().GetAll();
   try {
-    for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
-      auto device_tensor_list = iter->second;
-      for (const auto &device_tensor : device_tensor_list) {
+    for (auto iter = kernel_tensors.begin(); iter != kernel_tensors.end(); ++iter) {
+      auto kernel_tensor_list = iter->second;
+      for (const auto &kernel_tensor : kernel_tensor_list) {
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        const auto &device_tensor = kernel_tensor->device_address();
         MS_EXCEPTION_IF_NULL(device_tensor);
         void *device_tensor_start_addr = const_cast<void *>(device_tensor->GetPtr());
         void *device_tensor_end_addr =
@@ -103,7 +119,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
           if ((device_tensor_end_addr >= mem_uce_start_addr && device_tensor_start_addr <= mem_uce_start_addr) ||
               (mem_uce_end_addr >= device_tensor_start_addr && mem_uce_start_addr <= device_tensor_start_addr)) {
             MS_LOG(INFO) << "UCE process strategy is RS_UCE_HIGHLEVEL.";
-            return device::RS_UCE_HIGHLEVEL;
+            return RS_UCE_HIGHLEVEL;
           }
         }
       }
@@ -111,7 +127,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
 
     // Return RS_UCE_LOWLEVEL if overlap of memory pool addr and mem uce addr.
     if (GetUceLevelWithMemPoolForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_addr)) {
-      return device::RS_UCE_LOWLEVEL;
+      return RS_UCE_LOWLEVEL;
     }
   } catch (const std::exception &e) {
     MS_LOG(ERROR) << "There is an error: " << e.what();
@@ -119,7 +135,7 @@ std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_bloc
 
   MS_LOG(INFO) << "UCE process strategy is RS_NORMAL.";
 
-  return device::RS_NORMAL;
+  return RS_NORMAL;
 }
 
 std::string GetUceProcessStrategy() {
@@ -138,7 +154,101 @@ void UceMemRepair(int32_t device_id) {
 
 void StopDevice(int32_t device_id) {
   auto device_ctx = GetDeviceCtx();
+  MS_LOG(WARNING) << "Try to stop device: " << device_id;
   device_ctx->device_res_manager_->StopDevice(device_id);
+  MS_LOG(WARNING) << "stop device: " << device_id << " end;";
+}
+
+void FinalizeCommunication() {
+  MS_LOG(WARNING) << "Try to finalize communication";
+  // Finalize HCCL_WORLD_GROUP
+  auto ret =
+    distributed::collective::CollectiveManager::instance()->DestroyDeviceSideCommunicationGroup(kHcclWorldGroup);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Destroy group:" << kHcclWorldGroup << " failed.";
+  }
+  // Finalize sub communication group
+  MS_LOG(WARNING) << "Finalize sub communication";
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    if (item.first == kHcclWorldGroup) {
+      continue;
+    }
+    MS_LOG(WARNING) << "Destroy sub-group, group name: " << item.first << ", ranks: " << item.second;
+    if (!distributed::collective::CollectiveManager::instance()->DestroyDeviceSideCommunicationGroup(item.first)) {
+      MS_LOG(EXCEPTION) << "Destroy group:" << item.first << " failed, ranks: " << item.second;
+    }
+    MS_LOG(WARNING) << "Destroy sub-group, group name: " << item.first << " ok";
+  }
+  distributed::collective::CollectiveManager::instance()->ClearCacheInitedGroups();
+  MS_LOG(WARNING) << "Finalize communication end";
+}
+
+void RebuildHcclWorldGroup() {
+  MS_LOG(WARNING) << "Try to rebuild hccl world group communication";
+  UCEException::GetInstance().set_rebuild_group_flag(true);
+  auto ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(kHcclWorldGroup);
+  auto ret = distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(kHcclWorldGroup, ranks);
+  if (!ret) {
+    MS_LOG(EXCEPTION) << "Rebuild group:" << kHcclWorldGroup << " failed, ranks: " << ranks;
+  }
+  MS_LOG(WARNING) << "Try to rebuild hccl world group communication ok";
+}
+
+void RebuildSubCommunication() {
+  // rebuild sub comm
+  MS_LOG(WARNING) << "Try to rebuild sub communication";
+  UCEException::GetInstance().set_rebuild_group_flag(true);
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    if (item.first == kHcclWorldGroup) {
+      continue;
+    }
+    MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << ", ranks: " << item.second;
+    if (!distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(item.first, item.second)) {
+      MS_LOG(EXCEPTION) << "Rebuild group:" << item.first << " failed, ranks: " << item.second;
+    }
+    MS_LOG(WARNING) << "Rebuild sub-group, group name: " << item.first << " ok";
+  }
+  while (group_info.size() != distributed::collective::CollectiveManager::instance()->InitedGroupSize()) {
+    MS_LOG(DEBUG) << "Wait all group init ok";
+  }
+  MS_LOG(WARNING) << "All group init done";
+  UCEException::GetInstance().set_force_stop_flag(false);
+  UCEException::GetInstance().clear_uce_error();
+  UCEException::GetInstance().set_rootinfo_clean_flag(false);
+  MS_LOG(WARNING) << "Rebuild communication end";
+}
+bool IsRebootNode() { return UCEException::GetInstance().is_reboot_node(); }
+
+void CleanRootInfo() {
+  if (!UCEException::GetInstance().need_clean_rootinfo() || UCEException::GetInstance().check_rootinfo_clean_flag()) {
+    return;
+  }
+  MS_LOG(WARNING) << "Start clean unique id";
+  auto group_info = distributed::collective::CollectiveManager::instance()->get_group_info();
+  for (const auto &item : group_info) {
+    distributed::collective::CollectiveManager::instance()->ClearUniqueID(item.first);
+  }
+  UCEException::GetInstance().set_rootinfo_clean_flag(true);
+  MS_LOG(WARNING) << "End clean unique id";
+}
+
+void RePreLaunchSendRecv(int32_t device_id) {
+  MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
+  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  if (disable_pre_build_comm) {
+    return;
+  }
+  const auto &launch_orders = runtime::PreLaunchComm::GetInstance().GetPreLaunchOrder(true);
+  for (auto graph_id : launch_orders) {
+    const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(graph_id);
+    MS_EXCEPTION_IF_NULL(actor_set);
+    PROF_START(PreLaunchCommKernel);
+    runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
+    PROF_END(PreLaunchCommKernel);
+  }
+  MS_LOG(WARNING) << "Pre-launch send recv success";
 }
 
 void RegTFT(py::module *m) {
@@ -146,9 +256,23 @@ void RegTFT(py::module *m) {
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
   (void)m->def("_get_uce_process_strategy", &mindspore::GetUceProcessStrategy, "Get UCE process strategy.");
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
+  (void)m->def("_get_optimzer_timestamps", &mindspore::GetOptimizerTimestamps,
+               "Get optimizer start and finish timestamps.");
   (void)m->def(
     "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
   (void)m->def(
     "_tft_sem_enable", []() { mindspore::debug::tft::TFTWaitSem::Enable(); }, "TFT enable sem feature");
+  (void)m->def(
+    "_tft_start_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().StartRecordThreads(); },
+    "TFT start recording newly created threads");
+  (void)m->def(
+    "_tft_finish_record_threads", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().FinishRecordThreads(); },
+    "TFT finish recording newly created threads");
+  (void)m->def("_clean_rootinfo", &CleanRootInfo, "Clean comm root info.");
+  (void)m->def("_finalize_comm", &FinalizeCommunication, "Finalize comm.");
+  (void)m->def("_rebuild_sub_group", &RebuildSubCommunication, "Rebuild comm.");
+  (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
+  (void)m->def("is_reboot_node", &IsRebootNode, "Get reboot node flag.");
+  (void)m->def("_pre_launch_send_recv", &RePreLaunchSendRecv, "PreLaunch Send Recv before launch graph.");
 }
 }  // namespace mindspore

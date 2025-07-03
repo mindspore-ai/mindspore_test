@@ -13,13 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """run whitelist test"""
-import sys
 import pytest
 import numpy as onp
 from mindspore import Tensor, jit, context
 from mindspore.nn import Cell
 import mindspore.nn as nn
-from .share.utils import match_array
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.mark_utils import arg_mark
 from mindspore.communication._hccl_management import get_rank_size
 from mindspore.runtime.memory import memory_stats
@@ -28,12 +27,7 @@ from mindspore._c_expression.np_dtypes import np_version_valid
 import math
 from tests.device_utils import set_device
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
-
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_const_func(x, y):
     """
     Feature: const function should be folded into const in graph
@@ -46,20 +40,7 @@ def whitelist_const_func(x, y):
     else:
         return x - y
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
-def whitelist_builtin_func1(x, y):
-    """
-    Feature: builtin function should be guarded as a node in graph
-    Description: builtin function will not be guarded in graph due to value
-    Expectation: 1 break count
-    """
-    x = y + x
-    if math.exp(x) is None:
-        return x + y
-    else:
-        return x - y
-
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_builtin_func0(x, y):
     """
     Feature: builtin function should be guarded as a node in graph
@@ -72,7 +53,32 @@ def whitelist_builtin_func0(x, y):
     else:
         return x - y
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
+def whitelist_builtin_func1(x, y):
+    """
+    Feature: builtin function should be guarded as a node in graph
+    Description: builtin function will not be guarded in graph due to value
+    Expectation: 1 break count
+    """
+    x = y + x
+    if math.exp(x) is None:
+        return x + y
+    else:
+        return x - y
+
+@pi_jit_with_config(jit_config={"compile_with_try": False})
+def whitelist_builtin_func2(x, y):
+    """
+    Feature: builtin function should be guarded as a node in graph
+    Description: builtin function will be guarded in graph
+    Expectation: 0 break count
+    """
+    x = y + x
+    c = "string"
+    cc = c.replace('ing', 'val')
+    return {cc: x - y}
+
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_forbidden_func(x, y):
     """
     Feature: forbidden function should be broken in graph
@@ -86,8 +92,9 @@ def whitelist_forbidden_func(x, y):
         return x - y
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('func', [(whitelist_const_func, 0), (whitelist_builtin_func1, 1), \
-                                  (whitelist_builtin_func0, 0), (whitelist_forbidden_func, 1)])
+@pytest.mark.parametrize('func', [(whitelist_const_func, 0), (whitelist_builtin_func0, 0), \
+                                  (whitelist_builtin_func1, 1), (whitelist_builtin_func2, 0), \
+                                  (whitelist_forbidden_func, 1)])
 def test_break_func(func):
     """
     Feature: graph break func

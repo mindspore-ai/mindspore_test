@@ -3,7 +3,7 @@ import mindspore
 import mindspore.communication.management as D
 from mindspore import lazy_inline, context, nn, Tensor, Parameter
 from mindspore.ops import operations as P
-from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
+from mindspore.parallel import sync_pipeline_shared_parameters
 
 context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
 pipeline_stages = 4

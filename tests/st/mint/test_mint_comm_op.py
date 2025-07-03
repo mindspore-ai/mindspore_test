@@ -15,7 +15,7 @@
 # ============================================================================
 import os
 from tests.mark_utils import arg_mark
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 def test_hccl_mint_ops():
     """
     Feature: mpi run 8P case
@@ -53,5 +53,32 @@ def test_hccl_mint_cpu_ops():
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10666 --join=True "\
         "pytest -s test_comm_cpu.py"
+    )
+    assert return_code == 0
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_hccl_mint_init_ops():
+    """
+    Feature: mpi run 8P case
+    Description: mpi run 8P case
+    Expectation: success
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 --master_port=10666 --join=True "\
+        "pytest -s test_comm_init.py"
+    )
+    assert return_code == 0
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_hccl_mint_tcp_store():
+    """
+    Feature: mpi run 8P case
+    Description: mpi run 8P case
+    Expectation: success
+    """
+    return_code = os.system(
+        "export HCCL_CONNECT_TIMEOUT=300 && export HCCL_EXEC_TIMEOUT=300 && export MS_NODE_TIMEOUT=300 && "\
+        "export MS_RECEIVE_MSG_TIMEOUT=300 && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
+        "--master_port=10668 --join=True pytest -s test_tcp_store.py"
     )
     assert return_code == 0

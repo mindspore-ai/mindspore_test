@@ -16,17 +16,16 @@
 
 #include "kernel/ascend/pyboost/customize/inplace_sub_scalar.h"
 #include <memory>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/op_register.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/op_register.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceSubScalarAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                      const BaseTensorPtr &input_tensor, const ScalarPtr &other,
-                                                      const ScalarPtr &alpha) {
+tensor::TensorPtr InplaceSubScalarAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                                  const ScalarPtr &other, const ScalarPtr &alpha) {
   MS_LOG(DEBUG) << "Call InplaceSubScalar start";
   if ((PyBoostUtils::IsBool(alpha) && (!PyBoostUtils::IsBool(input_tensor) || !PyBoostUtils::IsBool(other)))) {
     MS_EXCEPTION(TypeError) << "For " << op->primitive()->name()

@@ -23,9 +23,8 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "pipeline/pynative/grad/jit/jit_call_graph.h"
+#include "backend/common/session/jit_call_graph.h"
 #include "utils/trace_base.h"
 #include "ir/func_graph_cloner.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -34,6 +33,15 @@
 #include "include/common/utils/config_manager.h"
 #include "load_mindir/load_model.h"
 #include "include/common/debug/dump_proto.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore {
 namespace session {
@@ -618,6 +626,9 @@ nlohmann::json SaveBackendParamToFrontendParamIndex(const KernelGraphPtr &kernel
   nlohmann::json ret;
   const auto &params = kernel_graph->parameters();
   auto &context = CompileCacheContext::GetInstance();
+  if (front_graph == nullptr) {
+    return ret;
+  }
   const auto &front_params = front_graph->parameters();
   for (const auto &param : params) {
     if (!context.IsBackendParamGenFromFrontendParam(param)) {
@@ -643,9 +654,11 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
   // add node in graphkernel attributes.
   for (auto node : kg->execution_order()) {
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     for (auto attr : prim->attrs()) {
       if (attr.first == "func_graph") {
         auto g = attr.second->cast<FuncGraphPtr>();
+        MS_EXCEPTION_IF_NULL(g);
         AnfNodePtrList n = g->TopoSort(g->get_return());
         nodes.insert(nodes.end(), n.begin(), n.end());
       }
@@ -667,6 +680,7 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
     const auto &name = GetAnfUniqueCacheName(node);
     if (node->isa<Parameter>()) {
       auto param = node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param);
       param_unique_name_to_name[name] = param->name();
     }
     if (node->kernel_info() == nullptr) {
@@ -773,6 +787,7 @@ nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<An
   kg_json[kIsLoopCountSink] = kg->is_loop_count_sink();
   kg_json[kIsDynamicShape] = kg->is_dynamic_shape();
   kg_json[kDeviceTarget] = kg->device_target();
+  kg_json[kBackendJitConfig] = kg->backend_jit_config().to_json();
   kg_json[kRootGraphId] = kg->root_graph_id();
   kg_json[kExecutable] = kg->executable();
   kg_json[kHasRecursiveCall] = kg->recursive_call();
@@ -1133,18 +1148,15 @@ ValueNodePtr KernelGraphMgr::CreateNewValueNode(const AnfNodePtr &anf, KernelGra
   MS_EXCEPTION_IF_NULL(value);
   // Copy data from device if the tensor is an output of Op or Graph.
   if (value->isa<tensor::Tensor>()) {
-    auto tensor = value->cast<TensorPtr>();
+    auto tensor = value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     if (!tensor->is_forward_output() && !tensor->is_parameter()) {
       tensor->data_sync();
       MS_LOG(INFO) << "Data sync for Tensor " << tensor->ToString();
     }
   }
-  auto new_value_node = value_node;
-  if (!graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    new_value_node = graph->NewValueNode(value_node);
-    graph->FrontBackendMapAdd(anf, new_value_node);
-  }
+  auto new_value_node = graph->NewValueNode(value_node);
+  graph->FrontBackendMapAdd(anf, new_value_node);
   graph->AddValueNodeToGraph(new_value_node);
   return new_value_node;
 }
@@ -1307,7 +1319,6 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
   ParameterPtr new_parameter = nullptr;
   auto func_graph = anf->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  bool is_pynative_bprop_kernel_graph = graph->has_flag(kFlagIsPyNativeBpropKernelGraph);
   if (func_graph->manager() != nullptr && func_graph->exist_multi_target() &&
       graph->device_target() == device::DeviceType::kCPU) {
     auto iter = default_param_map_.find(anf);
@@ -1322,41 +1333,35 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
     }
     TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
     new_parameter = anf->cast<ParameterPtr>();
-    if (!is_pynative_bprop_kernel_graph) {
-      new_parameter = graph->NewParameter(new_parameter);
-    }
+    new_parameter = graph->NewParameter(new_parameter);
     graph_inputs->push_back(new_parameter);
     valid_inputs->push_back(true);
     default_param_map_[anf] = new_parameter;
     return new_parameter;
   }
   // if parameter's python parameter has been exist a backend parameter, reuse the exist parameter
-  if (!is_pynative_bprop_kernel_graph) {
-    auto context = MsContext::GetInstance();
-    if (!context->IsKByKExecutorMode() && param_value != nullptr) {
-      new_parameter = param_value->parameter();
-    }
-    if (new_parameter == nullptr) {
-      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
-      new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
-
-      auto input_node_iter = partial_parameters_map_.find(anf);
-      if (input_node_iter != partial_parameters_map_.end()) {
-        InitInternalOutputParameter(input_node_iter->second, new_parameter);
-      }
-
-      if (param_value != nullptr) {
-        param_value->set_parameter(new_parameter);
-      }
-    } else {
-      // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
-      // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
-      new_parameter->set_name(anf->cast<ParameterPtr>()->name());
-    }
-    new_parameter->IncreaseUsedGraphCount();
-  } else {
-    new_parameter = anf->cast<ParameterPtr>();
+  auto context = MsContext::GetInstance();
+  if (!context->IsKByKExecutorMode() && param_value != nullptr) {
+    new_parameter = param_value->parameter();
   }
+  if (new_parameter == nullptr) {
+    TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
+    new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
+
+    auto input_node_iter = partial_parameters_map_.find(anf);
+    if (input_node_iter != partial_parameters_map_.end()) {
+      InitInternalOutputParameter(input_node_iter->second, new_parameter);
+    }
+
+    if (param_value != nullptr) {
+      param_value->set_parameter(new_parameter);
+    }
+  } else {
+    // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
+    // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
+    new_parameter->set_name(anf->cast<ParameterPtr>()->name());
+  }
+  new_parameter->IncreaseUsedGraphCount();
   (void)graph_inputs->emplace_back(new_parameter);
   (void)valid_inputs->emplace_back(true);
   return new_parameter;
@@ -1390,7 +1395,7 @@ AnfNodePtr KernelGraphMgr::GetChildGraph(KernelGraph *graph, const AnfNodePtr &c
   FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(child_func_graph);
   MS_EXCEPTION_IF_NULL(child_graph);
   if (front_backend_graph_map_.find(child_graph.get()) == front_backend_graph_map_.end()) {
-    (void)ConstructKernelGraph(child_graph, &all_graphs, graph->device_target());
+    (void)ConstructKernelGraph(child_graph, &all_graphs, graph->device_target(), graph->backend_jit_config());
   }
   auto new_value_node = graph->GetBackendAnfByFrontAnf(child_func_graph);
   if (new_value_node != nullptr) {
@@ -1433,7 +1438,7 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       AddValueNode(backend_node, graph);
       continue;
     } else if ((is_depend && input_idx > kRealInputIndexInDepend && !enable_ge)) {
-      (void)params.emplace_back(graph->NewValueNode(std::make_shared<Tensor>(SizeToInt(input_idx))));
+      (void)params.emplace_back(graph->NewValueNode(std::make_shared<tensor::Tensor>(SizeToInt(input_idx))));
       continue;
     } else if (other_graph_cnode->find(anf) != other_graph_cnode->end()) {
       (void)params.emplace_back((*other_graph_cnode)[anf]);
@@ -1448,8 +1453,8 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
     } else if (anf->isa<Parameter>()) {
       auto new_parameter = CreateNewParameterFromParameter(anf, graph);
       MS_EXCEPTION_IF_NULL(new_parameter);
-      MS_LOG(DEBUG) << "Create new parameter:" << new_parameter->DebugString()
-                    << " by front parameter:" << anf->DebugString();
+      MS_LOG(INFO) << "Create new parameter:" << new_parameter->DebugString()
+                   << " by front parameter:" << anf->DebugString();
       (void)params.emplace_back(new_parameter);
       graph->FrontBackendMapAdd(anf, new_parameter);
       continue;
@@ -1473,6 +1478,8 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       if (parameter_from_cnode->isa<Parameter>() && IsPrimitiveCNode(anf, prim::kPrimLoad)) {
         auto para = parameter_from_cnode->cast<ParameterPtr>();
         auto load_cnode = anf->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(load_cnode);
+        MS_EXCEPTION_IF_NULL(para);
         para->set_name(load_cnode->fullname_with_scope());
       }
       (void)params.emplace_back(parameter_from_cnode);
@@ -1569,6 +1576,7 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
         common::AnfAlgo::CheckPrimitiveType(first_input, prim::kPrimSwitchLayer)) {
       auto abstract = cnode->abstract();
       new_cnode = first_input->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(new_cnode);
       new_cnode->set_abstract(abstract);
     }
   }
@@ -2209,9 +2217,34 @@ void KernelGraphMgr::SetReturnNode(const AnfNodePtr &node, KernelGraph *graph) {
   }
 }
 
+namespace {
+void UpdateRefForCNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!common::AnfAlgo::HasAbstractRef(cnode)) {
+    return;
+  }
+  const auto &real_node_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode, 0, false);
+  if (real_node_with_index.first == nullptr || real_node_with_index.first == cnode ||
+      real_node_with_index.first->abstract() == nullptr ||
+      !real_node_with_index.first->abstract()->isa<abstract::AbstractTensor>() ||
+      common::AnfAlgo::HasAbstractRef(real_node_with_index.first)) {
+    return;
+  }
+  MS_LOG(INFO) << "Set ref to origin node:" << real_node_with_index.first->DebugString()
+               << " by new cnode:" << cnode->fullname_with_scope();
+  const auto &ref_abs = cnode->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>();
+  MS_EXCEPTION_IF_NULL(ref_abs);
+  auto ref_key = ref_abs->ref_key_value();
+  auto ref_abstract = std::make_shared<abstract::AbstractRefTensor>(
+    real_node_with_index.first->abstract()->cast<abstract::AbstractTensorPtr>(), ref_key);
+  real_node_with_index.first->set_abstract(ref_abstract);
+}
+}  // namespace
+
 KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, const AnfNodePtrList &outputs,
-                                                    DeviceType device_target, bool common_opt,
-                                                    bool is_enable_zero_copy) {
+                                                    DeviceType device_target,
+                                                    const backend::BackendJitConfig &backend_jit_config,
+                                                    bool common_opt, bool is_enable_zero_copy) {
   mindspore::HashMap<AnfNodePtr, AnfNodePtr> other_graph_cnode;
   std::vector<std::weak_ptr<KernelGraph>> child_graph_order;
   auto graph = NewKernelGraph();
@@ -2226,6 +2259,7 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
   }
   MS_LOG(INFO) << "Create graph: " << graph->graph_id();
   graph->set_device_target(device_target);
+  graph->set_backend_jit_config(backend_jit_config);
   for (const auto &node : lst) {
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(DEBUG) << "Start create new cnode, node = " << node->DebugString();
@@ -2248,6 +2282,7 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
     new_cnode->set_abstract(cnode->abstract());
     new_cnode->set_scope(cnode->scope());
     new_cnode->set_attrs(cnode->attrs());
+    UpdateRefForCNode(new_cnode);
 
     if (new_cnode->HasAttr(kAttrReplaceRealKernelInBackend)) {
       MS_LOG(DEBUG) << "Erase flag for node: " << new_cnode->DebugString();
@@ -2293,23 +2328,25 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
 
 std::shared_ptr<KernelGraph> KernelGraphMgr::ConstructKernelGraph(const FuncGraphPtr &func_graph,
                                                                   std::vector<KernelGraphPtr> *all_out_graph,
-                                                                  DeviceType device_target) {
+                                                                  DeviceType device_target,
+                                                                  const backend::BackendJitConfig &backend_jit_config) {
   auto graph = NewKernelGraph();
   front_backend_graph_map_[func_graph.get()] = graph;
-  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, graph);
+  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, backend_jit_config, graph);
   return graph;
 }
 
-std::shared_ptr<KernelGraph> KernelGraphMgr::ConstructPackKernelGraph(const FuncGraphPtr &func_graph,
-                                                                      std::vector<KernelGraphPtr> *all_out_graph,
-                                                                      DeviceType device_target) {
+std::shared_ptr<KernelGraph> KernelGraphMgr::ConstructPackKernelGraph(
+  const FuncGraphPtr &func_graph, std::vector<KernelGraphPtr> *all_out_graph, DeviceType device_target,
+  const backend::BackendJitConfig &backend_jit_config) {
   auto graph = NewPynativeKernelGraph();
-  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, graph);
+  ConstructKernelGraphInner(func_graph, all_out_graph, device_target, backend_jit_config, graph);
   return graph;
 }
 
 void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
                                                std::vector<KernelGraphPtr> *all_out_graph, DeviceType device_target,
+                                               const backend::BackendJitConfig &backend_jit_config,
                                                const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(all_out_graph);
@@ -2323,6 +2360,7 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
   }
   MS_LOG(INFO) << "Create graph: " << graph->graph_id();
   graph->set_device_target(device_target);
+  graph->set_backend_jit_config(backend_jit_config);
   // Create parameter
   for (const auto &node : func_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(node);
@@ -2356,7 +2394,7 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
       // Create child kernel graph according ValueNode<FuncGraph>
       FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(node);
       auto child_kernel_graph = front_backend_graph_map_.find(child_graph.get()) == front_backend_graph_map_.end()
-                                  ? ConstructKernelGraph(child_graph, all_out_graph, device_target)
+                                  ? ConstructKernelGraph(child_graph, all_out_graph, device_target, backend_jit_config)
                                   : front_backend_graph_map_[child_graph.get()];
       (void)child_kernel_graphs.emplace_back(std::weak_ptr<KernelGraph>(child_kernel_graph));
       (void)CreateValueNodeKernelGraph(node, graph.get());
@@ -2461,6 +2499,11 @@ void HandleGraphSimpleAttr(const nlohmann::json &graph_json, KernelGraph *graph)
   }
   // set summary_node of graph
   graph->set_summary_node_exist(graph_json[kSummaryNodeExist]);
+  if (graph_json.contains(kBackendJitConfig)) {
+    backend::BackendJitConfig backend_jit_config;
+    backend_jit_config.from_json(graph_json[kBackendJitConfig]);
+    graph->set_backend_jit_config(backend_jit_config);
+  }
   if (graph_json.contains(kStartLabel)) {
     auto start_label = context.FindBackNodeByBackName(graph_json[kStartLabel]);
     if (start_label) {
@@ -2803,11 +2846,12 @@ void UpdateDefaultParamForFrontParameter(const KernelGraphPtr &kernel_graph) {
                     << " front node:" << (front_node == nullptr ? "null" : front_node->DebugString());
       continue;
     }
-    if (front_parameters.find(front_node) == front_parameters.end() ||
-        front_node->cast<ParameterPtr>()->has_default()) {
+    const auto &front_parameter = front_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(front_parameter);
+    if (front_parameters.find(front_parameter) == front_parameters.end() || front_parameter->has_default()) {
       continue;
     }
-    front_node->cast<ParameterPtr>()->set_default_param(parameter->cast<ParameterPtr>()->default_param());
+    front_parameter->set_default_param(parameter->cast<ParameterPtr>()->default_param_raw());
     MS_LOG(INFO) << "After load parameter:" << parameter->DebugString()
                  << " set default value to front node:" << front_node->DebugString();
   }
@@ -2926,7 +2970,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
       kernel_graph = kernel_graph_iter->second;
       MS_EXCEPTION_IF_NULL(kernel_graph);
     }
-    ++graph_sum_;
+    graph_sum_ = std::max(graph_sum_, static_cast<uint32_t>(graph_json[kGraphId]) + 1);
     graphs_[graph_json[kGraphId]] = kernel_graph;
     all_out_graph.push_back(kernel_graph);
 
@@ -3104,7 +3148,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
   return {all_out_graph->front()};
 }
 
-int LoadGraphForCompileCache(std::vector<vector<KernelGraphPtr>> *graph_ids_for_root) {
+int LoadGraphForCompileCache(std::vector<std::vector<KernelGraphPtr>> *graph_ids_for_root) {
   MS_LOG(INFO) << "Use compile cache to load kernel graph ids from backinfo json.";
   auto &context = CompileCacheContext::GetInstance();
   auto func_graph = context.FrontGraph();
@@ -3180,7 +3224,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
   auto cache_path = context.GetBackendGraphCachePath(frontend_graph);
   std::string json_path = cache_path + kJsonSuffix;
   std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> graph_ids_node_name;
-  std::vector<vector<KernelGraphPtr>> root_sub_graphs;
+  std::vector<std::vector<KernelGraphPtr>> root_sub_graphs;
   nlohmann::json model_json;
   if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
     MS_LOG(INFO) << "Disable thread load by backend config. Start to load mindir by compile "
@@ -3489,12 +3533,6 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
   auto FindEqu = [graph, outputs, this](const AnfNodePtr &out) -> AnfNodePtr {
     auto backend_anf = graph->GetBackendAnfByFrontAnf(out);
     if (backend_anf != nullptr) {
-      auto context_ptr = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(context_ptr);
-      if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-        return backend_anf;
-      }
-
       MS_EXCEPTION_IF_NULL(out);
       auto out_func_graph = out->func_graph();
       MS_EXCEPTION_IF_NULL(out_func_graph);
@@ -3502,6 +3540,8 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
       if (out_func_graph_manager == nullptr) {
         return backend_anf;
       }
+      auto context_ptr = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(context_ptr);
       if (!context_ptr->IsKByKExecutorMode()) {
         HandleInternalOutput(out, backend_anf, out_func_graph_manager, graph);
       }
@@ -3566,10 +3606,11 @@ void CopyCNodeInfo(const FuncGraphPtr &func_graph, const uint32_t &target_graph_
     // some check
     MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->MutableKernelMod() == nullptr,
                                "Inline ERROR: " + ori_node->DebugString() + ", kernel mod is not nullptr");
-    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->output_address_list().empty(),
-                               "Inline ERROR: " + ori_node->DebugString() + ", output_address_list is not empty");
-    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->workspace_address_list().empty(),
-                               "Inline ERROR: " + ori_node->DebugString() + ", workspace_address_list is not empty");
+    MS_EXCEPTION_IF_CHECK_FAIL(kernel_info->output_kernel_tensor_list().empty(),
+                               "Inline ERROR: " + ori_node->DebugString() + ", output_kernel_tensor_list is not empty");
+    MS_EXCEPTION_IF_CHECK_FAIL(
+      kernel_info->workspace_kernel_tensor_list().empty(),
+      "Inline ERROR: " + ori_node->DebugString() + ", workspace_kernel_tensor_list is not empty");
 
     auto new_kernel_info = std::make_shared<device::KernelInfo>();
     auto builder = std::make_shared<kernel::KernelBuildInfo::KernelBuildInfoBuilder>(
@@ -3632,18 +3673,31 @@ void UpdateConditionNodePair(const KernelGraphPtr &kernel_graph, const KernelGra
 }  // namespace
 
 AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph,
-                                    const AnfNodePtrList &func_graph_args, const ScopePtr &scope,
+                                    const AnfNodePtrList &func_graph_args, const CNodePtr &call_node,
                                     const uint32_t &target_graph_id,
                                     const std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> &ref_map,
                                     const KernelGraphPtr &graph, bool is_switch_inline) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(target_func_graph);
+  if (func_graph->isa<KernelGraph>()) {
+    const auto &sub_kernel_graph = func_graph->cast<KernelGraphPtr>();
+    MS_EXCEPTION_IF_NULL(sub_kernel_graph);
+    MS_LOG(INFO) << "subgraph: " << sub_kernel_graph->ToString()
+                 << ", is dynamic shape:" << sub_kernel_graph->is_dynamic_shape();
+    MS_LOG(INFO) << "graph: " << graph->ToString() << ", is dynamic shape:" << graph->is_dynamic_shape();
+    if (sub_kernel_graph->is_dynamic_shape()) {
+      graph->SetGraphDynamicAttr(true);
+    }
+  }
   KernelGraphPtr target_kernel_graph = nullptr;
   if (target_func_graph->isa<KernelGraph>()) {
     target_kernel_graph = target_func_graph->cast<KernelGraphPtr>();
   }
   Cloner cloner({}, false);
+  MS_EXCEPTION_IF_NULL(call_node);
+  MS_EXCEPTION_IF_NULL(call_node->input(0));
+  auto scope = call_node->input(0)->scope();
   if (scope != nullptr) {
     cloner.set_scope(scope);
   }
@@ -3667,8 +3721,10 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
       auto new_cnode = new_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(new_cnode);
       auto prim = common::AnfAlgo::GetCNodePrimitive(new_cnode);
+      MS_EXCEPTION_IF_NULL(prim);
       new_cnode->set_input(0, NewValueNode(std::make_shared<Primitive>(prim->name())));
       common::AnfAlgo::CopyNodeAttrs(ori_node, new_cnode);
+      new_cnode->set_attrs(call_node->attrs());
     }
     // Add sub graph kernel for switch inline kernel graph.
     if (new_node->isa<CNode>() && target_kernel_graph != nullptr && is_switch_inline) {

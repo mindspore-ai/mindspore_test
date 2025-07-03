@@ -13,25 +13,18 @@
 # limitations under the License.
 # ============================================================================
 """Test basic operation with one stage"""
-import sys  
 import pytest 
 import numpy as np
 from mindspore import Tensor
 from mindspore import context
-from mindspore.common.api import jit, jit_class
+from mindspore.common.api import jit_class
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+from tests.st.pi_jit.share.utils import pi_jit_with_config
         
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
-    "compile_by_trace": True,
     "print_bb": False,
-    "MAX_INLINE_DEPTH": 10,
     "allowed_inline_modules": ["mindspore"],  # buildsubgraph
 }
 
@@ -53,7 +46,7 @@ def test_create_jit_class_instance():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = UserDefinedNet(x)
         return a.val
@@ -70,7 +63,7 @@ def test_create_jit_class_instance_2():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = UserDefinedNet(x)
         return a.val
@@ -87,7 +80,7 @@ def test_create_jit_class_instance_3():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = UserDefinedNet(x)
         return a.val + 1
@@ -97,7 +90,6 @@ def test_create_jit_class_instance_3():
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
-@pytest.mark.skip(reason="Fix after adjust guard for getattr")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_call_jit_class_method():
     """
@@ -105,7 +97,7 @@ def test_call_jit_class_method():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = UserDefinedNet(x)
         return a.func(x)
@@ -122,7 +114,7 @@ def test_call_jit_class_method_2():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = UserDefinedNet(x)
         return a.func(x)
@@ -142,7 +134,7 @@ def test_create_jit_class_in_subgraph():
     def inner_foo(x):
         return UserDefinedNet(x)
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = inner_foo(x)
         return a.val
@@ -162,7 +154,7 @@ def test_create_jit_class_in_subgraph_2():
     def inner_foo(x):
         return UserDefinedNet(x)
 
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo(x):
         a = inner_foo(x)
         return a.val
@@ -178,7 +170,6 @@ class UserDefinedTuple(tuple):
         return "UserDefinedTuple(" + str(list(self)) + ")"
 
 
-@pytest.mark.skip(reason="Jit handle instance with subclass of tuple wrong, fix later")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_subclass_tuple_jit_class():
     """
@@ -186,7 +177,7 @@ def test_create_subclass_tuple_jit_class():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo():
         a = UserDefinedTuple((1, 2, 3, 4))
         return isinstance(a, tuple)
@@ -202,7 +193,7 @@ def test_create_subclass_tuple_jit_class_2():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
+    @pi_jit_with_config(jit_config=cfg)
     def foo():
         a = UserDefinedTuple((1, 2, 3, 4))
         return isinstance(a, UserDefinedTuple)

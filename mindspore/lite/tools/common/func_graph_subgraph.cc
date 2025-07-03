@@ -28,6 +28,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "infer/cxx_api/partial_fusion.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::lite {
 int SubGraph::Init(const std::set<CNodePtr> &head_nodes) {

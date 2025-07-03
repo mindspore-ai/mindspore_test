@@ -20,14 +20,15 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 #include "infer/ops_func_impl/prompt_flash_attention.h"
 
 namespace mindspore {
-using mindspore::transform::FASInputLayoutMode;
+using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace prompt_flash_attention {
+using TensorParams = device::ascend::TensorParams;
 
 class PromptFlashAttentionAscend : public AclnnKernelMod {
  public:
@@ -99,6 +100,7 @@ class PromptFlashAttentionAscend : public AclnnKernelMod {
           input_layout_string, num_key_value_heads_value, sparse_mode_value, inner_precise_value, outputs[kIndex0]);
   }
 };
+}  // namespace prompt_flash_attention
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_PROMPT_FLASH_ATTENTION_ACLNN_KERNEL_MOD_H_

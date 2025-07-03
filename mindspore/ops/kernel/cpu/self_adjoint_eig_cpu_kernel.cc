@@ -17,10 +17,11 @@
 #include "kernel/cpu/self_adjoint_eig_cpu_kernel.h"
 #include <algorithm>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Dense"
 
 namespace mindspore::kernel {
+namespace self_adjoint_eig_cpu {
 constexpr auto kSelfAdjointEig = "SelfAdjointEig";
 constexpr const size_t kInputsNum = 1;
 constexpr const size_t kOutputsNum = 2;
@@ -171,4 +172,5 @@ std::vector<KernelAttr> SelfAdjointEigCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, SelfAdjointEig, SelfAdjointEigCpuKernelMod);
+}  // namespace self_adjoint_eig_cpu
 }  // namespace mindspore::kernel

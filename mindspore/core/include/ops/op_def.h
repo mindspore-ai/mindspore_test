@@ -21,37 +21,9 @@
 #include <memory>
 #include <unordered_map>
 #include "ir/dtype/type_id.h"
+#include "ir/dtype/op_dtype.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 namespace mindspore::ops {
-
-enum OP_DTYPE : int64_t {
-  DT_BEGIN = 0,
-  DT_BOOL,
-  DT_INT,
-  DT_FLOAT,
-  DT_NUMBER,
-  DT_TENSOR,
-  DT_STR,
-  DT_ANY,
-  DT_TUPLE_BOOL,
-  DT_TUPLE_INT,
-  DT_TUPLE_FLOAT,
-  DT_TUPLE_NUMBER,
-  DT_TUPLE_TENSOR,
-  DT_TUPLE_STR,
-  DT_TUPLE_ANY,
-  DT_LIST_BOOL,
-  DT_LIST_INT,
-  DT_LIST_FLOAT,
-  DT_LIST_NUMBER,
-  DT_LIST_TENSOR,
-  DT_LIST_STR,
-  DT_LIST_ANY,
-  DT_TYPE,
-  DT_NONE,
-  DT_END,
-};
-
 struct OpInputArg {
   std::string arg_name_;
   OP_DTYPE arg_dtype_;
@@ -92,7 +64,6 @@ class OpDefRegHelper {
   ~OpDefRegHelper() = default;
 };
 
-#define REGISTER_PRIMITIVE_OP_DEF(op_name, op_def) \
-  static const OpDefRegHelper op_def_helper_##op_name(#op_name, op_def);
+#define REGISTER_PRIMITIVE_OP_DEF(op_name, op_def) static const OpDefRegHelper op_def_helper_##op_name(#op_name, op_def)
 }  // namespace mindspore::ops
 #endif

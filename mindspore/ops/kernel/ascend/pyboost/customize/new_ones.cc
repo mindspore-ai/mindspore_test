@@ -17,13 +17,13 @@
 #include "kernel/ascend/pyboost/customize/new_ones.h"
 #include "kernel/ascend/pyboost/auto_generate/ones.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr NewOnesAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                             const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype) {
+tensor::TensorPtr NewOnesAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor,
+                                         const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype) {
   OpRunner::InferOpOutput(op, input_tensor, size, dtype);
   // No need to convert input
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

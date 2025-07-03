@@ -25,6 +25,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {

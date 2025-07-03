@@ -17,6 +17,7 @@
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/flatten_parameter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 using mindspore::ops::kNameFlatten;
 using mindspore::schema::PrimitiveType_Flatten;
 

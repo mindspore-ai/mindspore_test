@@ -19,8 +19,10 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 #include "debug/data_dump/device_statistic/statistic_kernel.h"
 #include "op_def/nn_op_name.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 
@@ -28,14 +30,14 @@ namespace datadump {
 
 inline const std::set<TypeId> overflow_supported_dtype{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
 
-class CheckOverflowKernel : public StatisticKernel {
+class BACKEND_COMMON_EXPORT CheckOverflowKernel : public StatisticKernel {
  public:
   explicit CheckOverflowKernel(const DeviceContext *device_context)
       : StatisticKernel(device_context, kAllFiniteOpName, overflow_supported_dtype) {}
 
-  vector<KernelTensor *> CheckInputs(vector<KernelTensor *> inputs);
+  std::vector<KernelTensor *> CheckInputs(std::vector<KernelTensor *> inputs);
   DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
-  DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
+  KernelTensorPtr LaunchKernelAsync(std::vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
 };
 
 }  // namespace datadump

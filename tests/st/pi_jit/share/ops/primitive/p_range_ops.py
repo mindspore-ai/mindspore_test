@@ -20,14 +20,14 @@ class OpsRangeFactory():
         self.start = start
         self.limit = limit
         self.delta = delta
-        self.input_dtype = dtype
-        self.input_dtype = common.dtype.pytype_to_dtype(dtype)
+        self.dtype = dtype
+        self.input_dtype = common.dtype.pytype_to_dtype(self.dtype)
         self.out_grad_np = None
-        if self.input_dtype == np.float16:
+        if self.dtype == np.float16:
             self.loss = 1e-3
-        elif self.input_dtype in (np.float32, np.complex64):
+        elif self.dtype in (np.float32, np.complex64):
             self.loss = 1e-4
-        elif self.input_dtype in (np.float64, np.complex128):
+        elif self.dtype in (np.float64, np.complex128):
             self.loss = 1e-5
         else:
             self.loss = 0
@@ -42,11 +42,11 @@ class OpsRangeFactory():
 
     def forward_cmp(self):
         ps_net = Range0(self.maxlen)
-        jit(ps_net.construct, mode="PSJit")(self.start_ms, self.limit_ms, self.delta_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.start_ms, self.limit_ms, self.delta_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Range0(self.maxlen)
-        jit(pi_net.construct, mode="PIJit")(self.start_ms, self.limit_ms, self.delta_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.start_ms, self.limit_ms, self.delta_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)

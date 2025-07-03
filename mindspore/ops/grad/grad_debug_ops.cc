@@ -14,34 +14,48 @@
  * limitations under the License.
  */
 #include "frontend/expander/bprop/bprop_irbuilder.h"
-#include "include/common/utils/utils.h"
-#include "frontend/expander/bprop/common_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "grad/grad_utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradDebugOps)
 REG_BPROP_BUILDER("ScalarSummary").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto tag = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
+  auto tag = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
   return {tag, ib->OutZeros(x)};
 });
 
 REG_BPROP_BUILDER("TensorSummary").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto tag = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
+  auto tag = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
   return {tag, ib->OutZeros(x)};
 });
 
 REG_BPROP_BUILDER("ImageSummary").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto tag = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
+  auto tag = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
   return {tag, ib->OutZeros(x)};
 });
 
 REG_BPROP_BUILDER("HistogramSummary").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
-  auto tag = ib->GetInput(kIndex0);
-  auto x = ib->GetInput(kIndex1);
+  auto tag = ib->GetInput(i0);
+  auto x = ib->GetInput(i1);
   return {tag, ib->OutZeros(x)};
+});
+
+REG_BPROP_BUILDER("VmapStackAssign").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  const auto &all_inputs = ib->GetInputs();
+  NodePtrList gradients;
+  std::transform(all_inputs.begin(), all_inputs.end() - i2, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+  return gradients;
+});
+
+REG_BPROP_BUILDER("VmapUnstackAssign").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+  const auto &all_inputs = ib->GetInputs();
+  NodePtrList gradients;
+  std::transform(all_inputs.begin(), all_inputs.end() - i2, std::back_inserter(gradients),
+                 [&ib](const NodePtr &node) { return ib->OutZeros(node); });
+  return gradients;
 });
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

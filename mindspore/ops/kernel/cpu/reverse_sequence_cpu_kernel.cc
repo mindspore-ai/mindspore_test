@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/reverse_sequence_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace reverse_sequence_cpu {
 namespace {
 constexpr size_t input_num_ = 2;
 constexpr size_t output_num_ = 1;
@@ -245,5 +246,6 @@ std::vector<KernelAttr> ReverseSequenceCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ReverseSequence, ReverseSequenceCpuKernelMod);
+}  // namespace reverse_sequence_cpu
 }  // namespace kernel
 }  // namespace mindspore

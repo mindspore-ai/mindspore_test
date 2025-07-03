@@ -16,11 +16,14 @@
 #include "mindspore/ops/op_def/op_enum.h"
 
 #include <algorithm>
+#include <cctype>
+#include <string>
 #include <utility>
 
 #include "mindapi/base/types.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/format.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
@@ -207,6 +210,10 @@ REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
 REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAttentionKVCacheQuantMode::DEFAULT},
                                                             {"PERTOKEN", PagedAttentionKVCacheQuantMode::PERTOKEN}})
 
+// PagedAttentionMaskMode
+REG_STRING_TO_ENUM_COMMON(mask_mode, StrToEnumMap{{"MASK_DEFAULT", PagedAttentionMaskMode::MASK_DEFAULT},
+                                                  {"TRAPEZOIDAL", PagedAttentionMaskMode::TRAPEZOIDAL}})
+
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});
 
@@ -215,11 +222,26 @@ REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP
                                                    {"BITFLIP_DESIGNED", FlipMode::BITFLIP_DESIGNED},
                                                    {"MULTIPLY", FlipMode::MULTIPLY},
                                                    {"MULTIPLY_MAX", FlipMode::MULTIPLY_MAX}});
+
+// LinalgQrMode
+REG_STRING_TO_ENUM_SPECIAL(mode, StrToEnumMap{{"REDUCED", LinalgQrMode::REDUCED},
+                                              {"COMPLETE", LinalgQrMode::COMPLETE},
+                                              {"R", LinalgQrMode::R}});
+
+// FlipMode
+REG_STRING_TO_ENUM_SPECIAL(approximate, StrToEnumMap{{"NONE", Approximate::NONE}, {"TANH", Approximate::TANH}});
+
+// Device
+StrToEnumMap StrToDeviceMap = {{"Ascend", Device::DEVICE_ASCEND},
+                               {"npu", Device::DEVICE_NPU_LOWER},
+                               {"CPU", Device::DEVICE_CPU},
+                               {"cpu", Device::DEVICE_CPU_LOWER}};
+REG_STRING_TO_ENUM_SPECIAL(device, StrToDeviceMap);
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {
   const auto &string_to_enum_map = reg_string_to_enum_helper.GetValues(arg_name);
-  const auto enum_val_iter = string_to_enum_map.find(StrToUpper(enum_string));
+  const auto enum_val_iter = string_to_enum_map.find(arg_name == "device" ? enum_string : StrToUpper(enum_string));
   if (enum_val_iter == string_to_enum_map.end()) {
     MS_EXCEPTION(ValueError) << "Failed to convert the value \"" << enum_string << "\" of input '" << arg_name
                              << "' of '" << op_name << "' to enum.";

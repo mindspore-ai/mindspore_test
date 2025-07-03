@@ -18,14 +18,14 @@
 
 #include <memory>
 #include <vector>
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::kernel::pyboost {
-void TileAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor,
+void TileAscendCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_x_tensor,
                          const ValueTuplePtr &dims) {
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_x_tensor, dims);

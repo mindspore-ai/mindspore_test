@@ -19,7 +19,7 @@
 @Desc  : parser test function.
 """
 import logging
-from mindspore import jit_class
+from mindspore import jit_class, Tensor, Parameter
 
 log = logging.getLogger("test")
 log.setLevel(level=logging.ERROR)
@@ -196,6 +196,15 @@ def test_list_fn(y):
 
 # Test:resolve function
 def get_resolve_fn(x, y):
+    return test_f(x, y)
+
+
+# Test:resolve function with parameter
+para_a = Parameter(Tensor(1))
+
+
+def get_resolve_fn_with_parameter(x, y):
+    x = x + para_a
     return test_f(x, y)
 
 

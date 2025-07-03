@@ -17,10 +17,11 @@
 #include <string>
 
 #include "kernel/cpu/argmin_with_value_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace argmin_with_value_cpu {
 namespace {
 constexpr size_t kArgMinWithValueInputsNum = 3;
 constexpr size_t kArgMinWithValueOutputsNum = 2;
@@ -255,5 +256,6 @@ std::vector<KernelAttr> ArgMinWithValueCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ArgMinWithValue, ArgMinWithValueCpuKernelMod);
+}  // namespace argmin_with_value_cpu
 }  // namespace kernel
 }  // namespace mindspore

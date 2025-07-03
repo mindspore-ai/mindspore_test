@@ -46,7 +46,8 @@ BaseShapePtr AddcmulFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr AddcmulFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kFloat64, kInt32, kFloat64, kInt8, kUInt8, kInt64};
+  const std::set<TypePtr> valid_types = {kBFloat16, kFloat16, kFloat32, kFloat64, kInt32,
+                                         kFloat64,  kInt8,    kUInt8,   kInt64};
   auto input_type = input_args[kInputIndex0]->GetType();
   auto tensor1_type = input_args[kInputIndex1]->GetType();
   auto tensor2_type = input_args[kInputIndex2]->GetType();

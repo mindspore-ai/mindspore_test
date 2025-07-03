@@ -89,10 +89,13 @@ void ConvertValueNodes(const KernelGraphPtr &graph, const device::DeviceContext 
     if (!AnfAlgo::OutputAddrExist(value_node, 0, false)) {
       MS_LOG(EXCEPTION) << "ValueNode " << value_node->DebugString() << " has no DeviceAddress";
     }
-    auto node_address = AnfAlgo::GetMutableOutputAddr(value_node, 0, false);
-    auto cloned_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(node_address, device_context);
-    auto edge =
-      std::make_shared<Edge>(EdgeType::kValueNodeEdge, node_address, cloned_address, std::make_pair(value_node, 0));
+    auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, 0, false);
+    MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+    auto node_address = node_kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(node_address);
+    auto cloned_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(node_kernel_tensor, device_context);
+    auto edge = std::make_shared<Edge>(EdgeType::kValueNodeEdge, node_kernel_tensor, cloned_kernel_tensor,
+                                       std::make_pair(value_node, 0));
     (*address_to_edge)[node_address.get()] = edge;
   }
 }
@@ -107,11 +110,13 @@ std::vector<EdgePtr> ConvertGraphInputs(const KernelGraphPtr &graph, const devic
   for (size_t i = 0; i < inputs.size(); ++i) {
     const auto &input = inputs[i];
     MS_EXCEPTION_IF_NULL(input);
-    auto node_address = AnfAlgo::GetMutableOutputAddr(input, 0);
-    MS_EXCEPTION_IF_NULL(node_address);
+    auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input, 0, false);
+    MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+    auto node_address = node_kernel_tensor->device_address();
 
-    auto cloned_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(node_address, device_context);
-    auto edge = std::make_shared<Edge>(EdgeType::kParameterEdge, nullptr, cloned_address, std::make_pair(input, 0));
+    auto cloned_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(node_kernel_tensor, device_context);
+    auto edge =
+      std::make_shared<Edge>(EdgeType::kParameterEdge, nullptr, cloned_kernel_tensor, std::make_pair(input, 0));
     (*address_to_edge)[node_address.get()] = edge;
     graph_inputs_edges.push_back(edge);
   }
@@ -161,7 +166,9 @@ std::vector<EdgePtr> ConvertSingleOpOutputEdges(const CNodePtr &node, const devi
   output_edges.reserve(output_num);
 
   for (size_t i = 0; i < output_num; ++i) {
-    auto node_address = AnfAlgo::GetMutableOutputAddr(node, i, false);
+    auto node_kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, i, false);
+    MS_EXCEPTION_IF_NULL(node_kernel_tensor);
+    auto node_address = node_kernel_tensor->device_address();
     // For ref node.
     auto iter = address_to_edge->find(node_address.get());
     if (iter != address_to_edge->end()) {
@@ -170,8 +177,8 @@ std::vector<EdgePtr> ConvertSingleOpOutputEdges(const CNodePtr &node, const devi
       continue;
     }
 
-    auto clone_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(node_address, device_context);
-    auto edge = std::make_shared<Edge>(EdgeType::kOpOutputEdge, nullptr, clone_address, std::make_pair(node, i));
+    auto cloned_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(node_kernel_tensor, device_context);
+    auto edge = std::make_shared<Edge>(EdgeType::kOpOutputEdge, nullptr, cloned_kernel_tensor, std::make_pair(node, i));
     output_edges.push_back(edge);
     (*address_to_edge)[node_address.get()] = edge;
   }
@@ -213,14 +220,14 @@ SimpleGraphPtr IrConverter::Convert(const std::string &name, const KernelGraphPt
                                        std::move(graph_outputs_edges), std::move(all_edges));
 }
 
-Edge::Edge(mindspore::pynative::EdgeType type, device::DeviceAddressPtr address,
-           device::DeviceAddressPtr origin_address, session::KernelWithIndex node_with_index)
+Edge::Edge(mindspore::pynative::EdgeType type, KernelTensorPtr kernel_tensor, KernelTensorPtr origin_kernel_tensor,
+           session::KernelWithIndex node_with_index)
     : type_(type),
       id_(MakeEdgeId()),
       ignore_h2d_(false),
       is_grad_(false),
-      address_(std::move(address)),
-      origin_address_(std::move(origin_address)),
+      kernel_tensor_(std::move(kernel_tensor)),
+      origin_kernel_tensor_(std::move(origin_kernel_tensor)),
       node_with_index_(std::move(node_with_index)) {}
 
 SingleOp::SingleOp(PrimitivePtr primitive, CNodePtr kernel, std::vector<EdgePtr> inputs, std::vector<EdgePtr> outputs)

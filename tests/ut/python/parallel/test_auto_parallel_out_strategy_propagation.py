@@ -22,6 +22,8 @@ from mindspore.nn import Cell
 from mindspore.ops import operations as P
 
 from mindspore.parallel import set_op_strategy_config
+from mindspore.parallel.shard import Layout
+from parallel.utils.utils import check_layout_config
 import pytest
 
 def test_out_strategy_propagate1():
@@ -460,3 +462,290 @@ def test_sharding_strategy_save_and_load3():
         set_op_strategy_config(mode="LOAD", path="/tmp/strategy.yaml")
     with pytest.raises(KeyError):
         set_op_strategy_config(mode="READ", path="/tmp/strategy.json")
+
+def test_sharding_strategy_save_and_load4():
+    """
+    Feature: test strategy can be saved and loaded when ops has layout
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: when the mode is set to SAVE, the config json file requires to be generated; when the type is set to
+    LOAD, the strategy requires to be loaded the same as the SAVEd strategy .
+    """
+    case_name = "test_sharding_strategy_save_and_load4"
+    ir_graph_path = f"./ir/{case_name}"
+
+    class NetForSaveAndLoad(Cell):
+        def __init__(self, mul_weight1, mul_weight2, in_layout1=None, in_layout2=None,
+                     out_layout1=None, out_layout2=None):
+            super().__init__()
+            self.matmul1 = P.MatMul()
+            self.matmul2 = P.MatMul()
+            if in_layout1:
+                self.matmul1 = self.matmul1.shard(in_strategy=in_layout1, out_strategy=out_layout1)
+            if in_layout2:
+                self.matmul2 = self.matmul2.shard(in_strategy=in_layout2, out_strategy=out_layout2)
+            self.add1 = P.Add()
+            self.add2 = P.Add()
+            self.add3 = P.Add()
+            self.mul_weight1 = Parameter(mul_weight1, "w1")
+            self.mul_weight2 = Parameter(mul_weight2, "w2")
+
+        def construct(self, x, b1, b2, b3):
+            out = self.add1(x, b1)
+            out1 = self.matmul1(out, self.mul_weight1)
+            out = self.add2(out1, b2)
+            out2 = self.matmul2(out, self.mul_weight2)
+            out = self.add3(out2, b3)
+            return out
+
+    def compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2):
+        x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        b1 = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        w1 = Tensor(np.ones([32, 8]), dtype=ms.float32)
+        b2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+        w2 = Tensor(np.ones([8, 16]), dtype=ms.float32)
+        b3 = Tensor(np.ones([64, 16]), dtype=ms.float32)
+
+        net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
+        net.set_train()
+        _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
+        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        in_layout_cfg1 = (
+            "in_layout: ({'device_matrix': (2, 2, 2, 2), 'tensor_map': ((3, 0), 2), 'interleaved_parallel': true, "
+            "'alias_name': (dp, mp, sp, interleaved_parallel)}, {'device_matrix': (2, 2, 2, 2), 'tensor_map': (2, 1), "
+            "'interleaved_parallel': true, 'alias_name': (dp, mp, sp, interleaved_parallel)})"
+        )
+        out_layout_cfg1 = (
+            "out_layout: ({'device_matrix': (2, 2, 2, 2), 'tensor_map': ((3, 0, 2), 1), 'interleaved_parallel': true, "
+            "'alias_name': (dp, mp, sp, interleaved_parallel)"
+        )
+        in_layout_cfg2 = (
+            "in_layout: ({'device_matrix': (2, 2, 2, 2), 'tensor_map': ((3, 0, 2), 1), 'interleaved_parallel': true, "
+            "'alias_name': (dp, mp, sp, interleaved_parallel)}, {'device_matrix': (2, 2, 2, 2), 'tensor_map': (1, -1), "
+            "'interleaved_parallel': true, 'alias_name': (dp, mp, sp, interleaved_parallel)})"
+        )
+        out_layout_cfg2 = (
+            "out_layout: ({'device_matrix': (2, 2, 2, 2), 'tensor_map': ((3, 0, 2, 1), -1), "
+            "'interleaved_parallel': true, 'alias_name': (dp, mp, sp, interleaved_parallel)})"
+        )
+        para1 = "(out1) = PrimFunc_MatMul"
+        para2 = "(out2) = PrimFunc_MatMul"
+        check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
+        check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+
+    layout = Layout((2, 2, 2, 2), ("dp", "mp", "sp", "interleaved_parallel"))
+    in_layout1 = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp", "sp"))
+    out_layout1 = (layout(("dp", "interleaved_parallel", "mp"), "sp"),)
+    in_layout2 = (layout(("dp", "interleaved_parallel", "mp"), "sp"), layout("sp", "None"))
+    out_layout2 = (layout(("dp", "interleaved_parallel", "mp", "sp"), "None"),)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+
+    assert os.path.exists("/tmp/strategy.json")
+    ms.reset_auto_parallel_context()
+
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    ms.reset_auto_parallel_context()
+    os.remove("/tmp/strategy.json")
+
+def test_sharding_strategy_save_and_load5():
+    """
+    Feature: test strategy can be saved and loaded when ops has layout
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: when the mode is set to SAVE, the config json file requires to be generated; when the type is set to
+    LOAD, the strategy requires to be loaded the same as the SAVEd strategy .
+    """
+    case_name = "test_sharding_strategy_save_and_load5"
+    ir_graph_path = f"./ir/{case_name}"
+
+    class NetForSaveAndLoad(Cell):
+        def __init__(self, mul_weight1, mul_weight2, in_layout1=None, in_layout2=None,
+                     out_layout1=None, out_layout2=None):
+            super().__init__()
+            self.matmul1 = P.MatMul()
+            self.matmul2 = P.MatMul()
+            if in_layout1:
+                self.matmul1 = self.matmul1.shard(in_strategy=in_layout1, out_strategy=out_layout1)
+            if in_layout2:
+                self.matmul2 = self.matmul2.shard(in_strategy=in_layout2, out_strategy=out_layout2)
+            self.add1 = P.Add()
+            self.add2 = P.Add()
+            self.add3 = P.Add()
+            self.mul_weight1 = Parameter(mul_weight1, "w1")
+            self.mul_weight2 = Parameter(mul_weight2, "w2")
+
+        def construct(self, x, b1, b2, b3):
+            out = self.add1(x, b1)
+            out1 = self.matmul1(out, self.mul_weight1)
+            out = self.add2(out1, b2)
+            out2 = self.matmul2(out, self.mul_weight2)
+            out = self.add3(out2, b3)
+            return out
+
+    def compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2):
+        x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        b1 = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        w1 = Tensor(np.ones([32, 8]), dtype=ms.float32)
+        b2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+        w2 = Tensor(np.ones([8, 16]), dtype=ms.float32)
+        b3 = Tensor(np.ones([64, 16]), dtype=ms.float32)
+
+        net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
+        net.set_train()
+        _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
+        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        in_layout_cfg1 = (
+            "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': (2, 1), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (1, 0), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        out_layout_cfg1 = (
+            "out_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1), 0), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)"
+        )
+        in_layout_cfg2 = (
+            "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1), 0), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (0, -1), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        out_layout_cfg2 = (
+            "out_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1, 0), -1), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        para1 = "(out1) = PrimFunc_MatMul"
+        para2 = "(out2) = PrimFunc_MatMul"
+        check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
+        check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+
+    layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
+    in_layout1 = (layout("dp", "mp"), layout("mp", "sp"))
+    out_layout1 = (layout(("dp", "mp"), "sp"),)
+    in_layout2 = (layout(("dp", "mp"), "sp"), layout("sp", "None"))
+    out_layout2 = (layout(("dp", "mp", "sp"), "None"),)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+
+    assert os.path.exists("/tmp/strategy.json")
+    ms.reset_auto_parallel_context()
+
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    ms.reset_auto_parallel_context()
+    os.remove("/tmp/strategy.json")
+
+def test_sharding_strategy_save_and_load6():
+    """
+    Feature: test strategy can be saved and loaded when ops has layout and fully_use_devices = True
+    Description: the sharding strategy would be saved or loaded according to the set_op_strategy_config
+    Expectation: when the mode is set to SAVE, the config json file requires to be generated; when the type is set to
+    LOAD, the strategy requires to be loaded the same as the SAVEd strategy .
+    """
+    case_name = "test_sharding_strategy_save_and_load6"
+    ir_graph_path = f"./ir/{case_name}"
+
+    class NetForSaveAndLoad(Cell):
+        def __init__(self, mul_weight1, mul_weight2, in_layout1=None, in_layout2=None,
+                     out_layout1=None, out_layout2=None):
+            super().__init__()
+            self.matmul1 = P.MatMul()
+            self.matmul2 = P.MatMul()
+            if in_layout1:
+                self.matmul1 = self.matmul1.shard(in_strategy=in_layout1, out_strategy=out_layout1)
+            if in_layout2:
+                self.matmul2 = self.matmul2.shard(in_strategy=in_layout2, out_strategy=out_layout2)
+            self.add1 = P.Add()
+            self.add2 = P.Add()
+            self.add3 = P.Add()
+            self.mul_weight1 = Parameter(mul_weight1, "w1")
+            self.mul_weight2 = Parameter(mul_weight2, "w2")
+
+        def construct(self, x, b1, b2, b3):
+            out = self.add1(x, b1)
+            out1 = self.matmul1(out, self.mul_weight1)
+            out = self.add2(out1, b2)
+            out2 = self.matmul2(out, self.mul_weight2)
+            out = self.add3(out2, b3)
+            return out
+
+    def compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2):
+        x = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        b1 = Tensor(np.ones([64, 32]), dtype=ms.float32)
+        w1 = Tensor(np.ones([32, 8]), dtype=ms.float32)
+        b2 = Tensor(np.ones([64, 8]), dtype=ms.float32)
+        w2 = Tensor(np.ones([8, 16]), dtype=ms.float32)
+        b3 = Tensor(np.ones([64, 16]), dtype=ms.float32)
+
+        net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
+        net.set_train()
+        _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
+        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        in_layout_cfg1 = (
+            "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': (2, 1), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (1, 0), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        out_layout_cfg1 = (
+            "out_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1), 0), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)"
+        )
+        in_layout_cfg2 = (
+            "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1), 0), 'interleaved_parallel': false, "
+            "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (0, -1), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        out_layout_cfg2 = (
+            "out_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': ((2, 1, 0), -1), "
+            "'interleaved_parallel': false, 'alias_name': (dp, mp, sp)})"
+        )
+        para1 = "(out1) = PrimFunc_MatMul"
+        para2 = "(out2) = PrimFunc_MatMul"
+        check_layout_config(para1, file, in_layout_cfg1, out_layout_cfg1)
+        check_layout_config(para2, file, in_layout_cfg2, out_layout_cfg2)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
+    ms.set_algo_parameters(fully_use_devices=True)
+    set_op_strategy_config(mode="SAVE", path="/tmp/strategy.json")
+
+    layout = Layout((2, 2, 2), ("dp", "mp", "sp"))
+    in_layout1 = (layout("dp", "mp"), layout("mp", "sp"))
+    out_layout1 = (layout(("dp", "mp"), "sp"),)
+    in_layout2 = (layout(("dp", "mp"), "sp"), layout("sp", "None"))
+    out_layout2 = (layout(("dp", "mp", "sp"), "None"),)
+    if os.path.exists("/tmp/strategy.json"):
+        os.remove("/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+
+    assert os.path.exists("/tmp/strategy.json")
+    ms.reset_auto_parallel_context()
+
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
+                                      search_mode="sharding_propagation")
+    ms.set_algo_parameters(fully_use_devices=True)
+    set_op_strategy_config(mode="LOAD", path="/tmp/strategy.json")
+    compile_and_get_strategies(in_layout1, in_layout2, out_layout1, out_layout2)
+    ms.reset_auto_parallel_context()
+    os.remove("/tmp/strategy.json")

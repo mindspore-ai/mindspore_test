@@ -24,12 +24,14 @@
 #include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
 namespace mindspore {
 namespace lite {
 namespace {
 constexpr auto kNameInputNum = 1;
 }  // namespace
-
+using mindspore::ops::kNameSiLU;
+SiLUMapper::SiLUMapper() : PrimitiveMapper(kNameSiLU) {}
 STATUS SiLUMapper::Mapper(const CNodePtr &cnode) {
   CHECK_NULL_RETURN(cnode);
   if (cnode->size() != kNameInputNum) {

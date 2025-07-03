@@ -23,14 +23,15 @@
 #include <complex>
 #include <string>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 namespace mindspore {
 constexpr size_t kInputNum = 1;
 constexpr size_t kOutputNum = 1;
 namespace kernel {
+namespace fft_with_size_cpu {
 class FFTWithSizeCpuKernelMod : public NativeCpuKernelMod {
  public:
   FFTWithSizeCpuKernelMod() = default;
@@ -62,6 +63,7 @@ class FFTWithSizeCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> raw_checked_signal_size_;
   std::vector<int64_t> x_shape_;
 };
+}  // namespace fft_with_size_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_FFTWITHSIZE_CPU_KERNEL_H_

@@ -19,8 +19,8 @@
 #include <functional>
 #include <string>
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

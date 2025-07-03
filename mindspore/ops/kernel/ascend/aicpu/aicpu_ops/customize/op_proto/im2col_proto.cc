@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ccsrc/transform/graph_ir/custom_op_proto/cust_array_ops.h"
+#include "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/custom_op_proto/cust_array_ops.h"
 #include "op_proto/inc/transformation_ops.h"
 #include "register/op_impl_registry.h"
 #include "utils/util.h"
@@ -23,7 +23,7 @@ namespace {
 static bool CheckListEmptyAndValue(const std::string &op_name, const std::vector<int64_t> &list,
                                    const std::string &attr_name) {
   if (list.size() < 1) {
-    OP_LOGE(op_name.c_str(), "The %s dose not have enough elements(%lu)!", attr_name.c_str(), list.size());
+    OP_LOGE(op_name.c_str(), "The %s does not have enough elements(%lu)!", attr_name.c_str(), list.size());
     return false;
   }
   return true;
@@ -43,7 +43,7 @@ CUST_IMPLEMT_VERIFIER(Im2col, CustIm2colVerify) {
   std::vector<int64_t> ksize;
   op.GetAttr("ksizes", ksize);
   if (ksize.size() < 2) {
-    OP_LOGE(TbeGetName(op).c_str(), "The ksizes dose not have enough elements(%lu)!", ksize.size());
+    OP_LOGE(TbeGetName(op).c_str(), "The ksizes does not have enough elements(%lu)!", ksize.size());
     return GRAPH_FAILED;
   }
 

@@ -17,10 +17,11 @@
 #include "kernel/cpu/irfft_double_cpu_kernel.h"
 #include <algorithm>
 #include "ops_utils/op_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace irfft_double_cpu {
 namespace {
 constexpr float kDoubleFactor = 2.0;
 constexpr int kOnsideDivisor = 2;
@@ -128,5 +129,6 @@ std::vector<KernelAttr> IRFFTDoubleCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IRFFTDouble, IRFFTDoubleCpuKernelMod);
+}  // namespace irfft_double_cpu
 }  // namespace kernel
 }  // namespace mindspore

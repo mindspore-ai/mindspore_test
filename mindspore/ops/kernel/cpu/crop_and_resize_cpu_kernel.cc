@@ -15,11 +15,12 @@
  */
 
 #include "kernel/cpu/crop_and_resize_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/crop_and_resize.h"
 
 namespace mindspore {
 namespace kernel {
+namespace crop_and_resize_cpu {
 bool CropAndResizeCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), INPUT_NUM, kernel_name_);
@@ -370,16 +371,6 @@ std::vector<std::pair<KernelAttr, CropAndResizeCpuKernelMod::CropAndResizeFunc>>
       .AddOutputAttr(kNumberTypeFloat32),
     &CropAndResizeCpuKernelMod::LaunchKernel<uint16_t>}};
 
-void CropAndResizeCpuKernelMod::InitFunc(const CNodePtr &kernel_node) {
-  auto kernel_attr = GetKernelAttrFromNode(kernel_node);
-  auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
-  if (!is_match) {
-    MS_LOG(EXCEPTION) << "CropAndResize does not support this kernel data type: " << kernel_attr;
-  }
-
-  kernel_func_ = func_list_[index].second;
-}
-
 std::vector<KernelAttr> CropAndResizeCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
   (void)std::transform(func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
@@ -389,5 +380,6 @@ std::vector<KernelAttr> CropAndResizeCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, CropAndResize, CropAndResizeCpuKernelMod);
+}  // namespace crop_and_resize_cpu
 }  // namespace kernel
 }  // namespace mindspore

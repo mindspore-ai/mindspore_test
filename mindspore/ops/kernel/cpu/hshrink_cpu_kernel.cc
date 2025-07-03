@@ -16,12 +16,13 @@
 
 #include "kernel/cpu/hshrink_cpu_kernel.h"
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/errorcode.h"
 #include "kernel/cpu/nnacl/fp32/activation_fp32.h"
 
 namespace mindspore {
 namespace kernel {
+namespace hshrink_cpu {
 namespace {
 constexpr size_t kHShrinkInputsNum = 2;
 constexpr size_t kHShrinkOutputsNum = 1;
@@ -82,5 +83,6 @@ bool HShrinkCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, cons
 std::vector<KernelAttr> HShrinkCpuKernelMod::GetOpSupport() { return kernel_attr; }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, HShrink, HShrinkCpuKernelMod);
+}  // namespace hshrink_cpu
 }  // namespace kernel
 }  // namespace mindspore

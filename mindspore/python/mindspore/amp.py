@@ -99,12 +99,12 @@ def _grad_scale(scale, grad):
     return grad * scale.astype(grad.dtype)
 
 
-@jit
+@jit(backend="ms_backend")
 def _grad_scale_map(scale_value, inputs):
     return _hypermap(_partial(_grad_scale, scale_value), inputs)
 
 
-@jit
+@jit(backend="ms_backend")
 def _grad_unscale_map(scale_value, inputs):
     return _hypermap(_partial(_grad_unscale, scale_value), inputs)
 
@@ -116,7 +116,7 @@ def _overflow(inputs):
     return 1 - status.all()
 
 
-@jit
+@jit(backend="ms_backend")
 def _all_finite(inputs, check_overflow_mode, enable_allfinite):
     """all finite check"""
     if _ascend_target():
@@ -325,12 +325,12 @@ class StaticLossScaler(LossScaler):
 
 class DynamicLossScaler(LossScaler):
     r"""
-    Dynamic Loss scale class.
+    Manager for dynamically adjusting the loss scaling factor.
 
-    Dynamic loss scaling tries to determine the largest loss scale value that
-    will keep gradients finite. It does this by increasing the loss scale every
-    `scale_window` steps by `factor` if the grads remain finite, otherwise it reduces
-    the loss scale by `1 / factor` and resets the counter.
+    Dynamic loss scaling attempts to determine the largest loss scale `scale_value` while keeping
+    the gradients finite. If the gradients remain finite for `scale_window` consecutive steps,
+    it increases the loss scale `scale_value` by `scale_factor`, otherwise it decreases the loss
+    scale `scale_value` by `1 / scale_factor` and resets the counter.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

@@ -1,0 +1,37 @@
+narrow_view:
+    description: |
+        Obtains a tensor of a specified length at a specified start position along a specified axis.
+
+        Args:
+            input (Tensor): the tensor to narrow.
+            dim (int): the axis along which to narrow.
+            start (Union[int, Tensor[int]]): the starting dimension.
+            length (int): the distance to the ending dimension.
+
+        Returns:
+            output (Tensors) - The narrowed tensor.
+
+        Raises:
+            ValueError: the rank of `input` is 0.
+            ValueError: the value of `dim` is out the range [-input.ndim, input.ndim).
+            ValueError: the value of `start` is out the range [-input.shape[dim], input.shape[dim]].
+            ValueError: the value of `length` is out the range [0, input.shape[dim]-start].
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import ops
+            >>> from mindspore.ops.auto_generate import NarrowView
+            >>> from mindspore import Tensor
+            >>> x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
+            >>> output = NarrowView()(x, 0, 0, 2)
+            >>> print(output)
+            [[ 1 2 3]
+             [ 4 5 6]]
+            >>> output = NarrowView()(x, 1, 1, 2)
+            >>> print(output)
+            [[ 2 3]
+             [ 5 6]
+             [ 8 9]]

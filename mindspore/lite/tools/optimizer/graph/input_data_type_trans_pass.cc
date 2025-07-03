@@ -27,6 +27,9 @@
 #include "src/common/log_adapter.h"
 #include "nnacl/op_base.h"
 #include "src/common/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::opt {
 namespace {

@@ -16,10 +16,10 @@
 
 #include <vector>
 #include "infer/ops_func_impl/inplace_scatter_value.h"
-#include "op_def/auto_generate/gen_ops_name.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {
@@ -32,7 +32,5 @@ std::vector<TypeId> InplaceScatterValueFuncImpl::InferType(const PrimitivePtr &p
                                                            const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetType()};
 }
-
-REGISTER_SIMPLE_INFER(kNameInplaceScatterValue, InplaceScatterValueFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

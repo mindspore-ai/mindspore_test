@@ -1,18 +1,13 @@
-import sys
 import dis
-import sys  
-import pytest 
+import types
+import pytest
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 from mindspore import Tensor, jit, context, ops
 import mindspore.common.dtype as mstype
 import numpy as np
-from .share.utils import match_array
+from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+from tests.st.pi_jit.share.utils import assert_no_graph_break
 
 def kwf(*vargs, p=-1, **kwvargs):
     return (p, vargs, kwvargs)
@@ -49,8 +44,7 @@ class Obj:
     def func(self):
         return 1
 
-
-@jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+@jit(capture_mode="bytecode") # One-stage will fix it later
 def func(self, x):
     tpe = kw_inline_test()
     lst = list(tpe)
@@ -98,7 +92,7 @@ class UserDict:
         return self.item[k]
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def dict_test(self: dict, **kwvargs):
     seq = (("k2", 1), ("k3", 2))
     self.update()
@@ -126,7 +120,7 @@ def test_dict_update():
     assert a == b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def test_creat_builtins_instance():
     """
     Feature: Builtin Instances Test
@@ -153,7 +147,7 @@ def test_creat_builtins_instance():
     return c, d, e, f, g, h, i, k, l, m, n, o, p, q
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def slice_test(x):
     # NOTE: mindspore can't resolve call 'slice' class
     a = x[slice(None)]
@@ -181,7 +175,7 @@ def test_slice():
     match_array(e, f, 0)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def builtin_func_test(x, *args):
     a = len(x)
     b = abs(x)
@@ -224,7 +218,7 @@ def test_attr(intep):
     Description: For user defined tensor attribute and method attribute is PSJit unsupported
     Expectation: The results should match for both modes.
     """
-    @jit(mode="PIJit", jit_config={"interpret_captured_code": intep})
+    @pi_jit_with_config(jit_config={"interpret_captured_code": intep})
     def attr_access(x):
         return relu(x), x.astype.__self__, x.attr
 
@@ -284,17 +278,18 @@ class MyTuple(MyDict):
         return iter(self.__dict__.values())
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('test_user_defined_dict', [True, False])
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('test_user_defined_dict', [False, True])
 def test_unpack_call(test_user_defined_dict):
     """
     Feature: Test unpack call
     Description: For user defined dict and tuple, support break graph to avoid unpack the sequence
     Expectation: The results should match for both modes.
     """
+    x=Tensor([1])
     kwargs = MyDict()
-    setattr(kwargs, "k1", "keyword1")
-    setattr(kwargs, "k2", "keyword2")
+    setattr(kwargs, "k1", x)
+    setattr(kwargs, "k2", x)
 
     args = MyTuple(kwargs.keys())
     if not test_user_defined_dict:
@@ -302,7 +297,7 @@ def test_unpack_call(test_user_defined_dict):
         kwargs = dict(kwargs)
 
     def results_offer(a, b, k1, k2):
-        return {a: k1, b: k2}
+        return {a: k1, b: k2 + x}
 
     def forward2(*args, **kwargs):
         return results_offer(*args, **kwargs)
@@ -310,18 +305,22 @@ def test_unpack_call(test_user_defined_dict):
     def forward1(*args, **kwargs):
         return forward2(*args, **kwargs)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def unpack_call():
         return forward1(*args, **kwargs)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def unpack_call2():
         return forward1(1, 2, k1=1, k2=2)
 
     res1 = unpack_call()
     res2 = unpack_call2()
-    assert {**res1} == {**kwargs}
-    assert res2 == {1: 1, 2: 2}
+    assert {**res1} == {"k1": x, "k2": x + x}
+    assert res2 == {1: 1, 2: 2 + x}
+    assert_no_graph_break(unpack_call2)
+    jcr = get_code_extra(getattr(unpack_call, "__wrapped__", unpack_call))
+    assert jcr is not None
+    assert jcr['break_count_'] < 2
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -352,7 +351,7 @@ def test_super_call():
 
     instance = Test()
     exceted = super_call(instance)
-    result = jit(fn=super_call, mode="PIJit")(instance)
+    result = jit(function=super_call, capture_mode="bytecode")(instance)
 
     assert exceted == result
 
@@ -389,7 +388,7 @@ def test_mix_0(mode: int):
     Expectation: The results should match for both modes.
     """
 
-    @jit(mode="PIJit", jit_config={"kEnableEliminateUnusedOperation": True, "loop_unrolling": True})
+    @pi_jit_with_config(jit_config={"loop_unrolling": True})
     def inner_func(mode):
         index = 1 if mode else 0
         x = [Tensor([1]), 1]
@@ -403,3 +402,78 @@ def test_mix_0(mode: int):
     result = inner_func(mode)
 
     assert excepted == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_infer_self_conflict():
+    """
+    Feature: Test type infer
+    Description: Got correct self of method
+    Expectation: The results should match for both modes.
+    """
+    class Test:
+        def __init__(self, x):
+            self.x = x
+
+        def calc(self, x):
+            return x + self.x
+
+        @jit(capture_mode="bytecode")
+        def func(self, x):
+            m1 = types.MethodType(calc, x) # method from class instantiation
+            m2 = x.calc                    # method from attribute
+            m3 = self.calc                 # method from descriptor
+            return m1(x) + m2(x) + m3(x)
+
+    global calc
+    calc = Test.calc
+
+    x = Tensor([1])
+    x.x = 0
+    test = Test(1)
+    x.calc = test.calc
+    result = test.func(x)
+    excepted = Tensor([5])
+
+    assert result == excepted
+
+    del calc
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_builtin_attr():
+    """
+    Feature: Test after grad resolve
+    Description: Got no graph break
+    Expectation: The results should match for both modes.
+    """
+    @jit(capture_mode="bytecode")
+    def fn(x, y):
+        return "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
+    assert result == excepted
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_code_generate():
+    """
+    Feature: Test code generate with local reuse
+    Description: The local variable 'r' refacted by post operations of graph.
+                 must be mark tow same local and same alive between 'r' and refacted variable
+    Expectation: The results should match for both modes.
+    """
+    @jit(capture_mode="bytecode")
+    def fn(x, y):
+        y = "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+        r = {'y' : y}
+        return r
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
+    assert result == excepted

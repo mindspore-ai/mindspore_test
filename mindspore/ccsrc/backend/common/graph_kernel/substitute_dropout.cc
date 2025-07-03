@@ -18,14 +18,15 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/tensor.h"
-#include "kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 namespace graphkernel {

@@ -22,9 +22,7 @@ import mindspore.ops as ops
 from mindspore import log
 from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
-from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
-from mindspore.ops import functional as F
 from mindspore import nn
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.nn.cell import Cell
@@ -103,10 +101,10 @@ class LossBase(Cell):
         if reduction == 'none':
             self.reduce = False
 
-        self.reduce_mean = P.ReduceMean()
-        self.reduce_sum = P.ReduceSum()
-        self.mul = P.Mul()
-        self.cast = P.Cast()
+        self.reduce_mean = ops.ReduceMean()
+        self.reduce_sum = ops.ReduceSum()
+        self.mul = ops.Mul()
+        self.cast = ops.Cast()
 
     def get_axis(self, x):
         """
@@ -115,9 +113,9 @@ class LossBase(Cell):
         Args:
             x (Tensor): Tensor of any shape.
         """
-        shape = F.shape(x)
-        length = F.tuple_len(shape)
-        perm = F.make_range(0, length)
+        shape = ops.shape(x)
+        length = ops.tuple_len(shape)
+        perm = ops.make_range(0, length)
         return perm
 
     def get_loss(self, x, weights=1.0):
@@ -127,7 +125,8 @@ class LossBase(Cell):
         Args:
             x (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of
                 additional dimensions.
-            weights (Union[float, Tensor]): Optional `Tensor` whose rank is either 0, or the same rank as inputs,
+            weights (Union[float, Tensor], optional): Weights. When `weights` is a Tensor,
+                the rank is either 0, or the same rank as inputs,
                 and must be broadcastable to inputs (i.e., all dimensions must be either `1`,
                 or the same as the corresponding inputs dimension). Default: ``1.0`` .
 
@@ -167,9 +166,9 @@ class _Loss(LossBase):
 @constexpr(check=False)
 def _check_is_tensor(param_name, input_data, cls_name):
     """Internal function, used to check whether the input data is Tensor."""
-    if input_data is not None and not isinstance(F.typeof(input_data), mstype.TensorType):
+    if input_data is not None and not isinstance(ops.typeof(input_data), mstype.TensorType):
         raise TypeError(f"For '{cls_name}', the '{param_name}' must be '{mstype.TensorType}', "
-                        f"but got '{F.typeof(input_data)}'")
+                        f"but got '{ops.typeof(input_data)}'")
 
 
 class L1Loss(LossBase):
@@ -242,7 +241,7 @@ class L1Loss(LossBase):
         self.reduction = reduction
 
     def construct(self, logits, labels):
-        return F.l1_loss(logits, labels, self.reduction)
+        return ops.l1_loss(logits, labels, self.reduction)
 
 
 class L1LossExt(LossBase):
@@ -388,7 +387,7 @@ class MSELoss(LossBase):
     def construct(self, logits, labels):
         _check_is_tensor('logits', logits, self.cls_name)
         _check_is_tensor('labels', labels, self.cls_name)
-        x = F.square(logits - labels)
+        x = ops.square(logits - labels)
         return self.get_loss(x)
 
 
@@ -447,7 +446,7 @@ class RMSELoss(LossBase):
     def __init__(self):
         """Initialize RMSELoss."""
         super(RMSELoss, self).__init__()
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
         self.MSELoss = MSELoss()
 
     def construct(self, logits, label):
@@ -457,7 +456,7 @@ class RMSELoss(LossBase):
         _check_rmseloss_dtype(logits_dtype, not_supported_dtype, 'RMSELoss')
         _check_rmseloss_dtype(label_dtype, not_supported_dtype, "RMSELoss")
 
-        rmse_loss = F.sqrt(self.MSELoss(logits, label))
+        rmse_loss = ops.sqrt(self.MSELoss(logits, label))
 
         return rmse_loss
 
@@ -531,7 +530,7 @@ class MAELoss(LossBase):
     def __init__(self, reduction='mean'):
         """Initialize MAELoss."""
         super(MAELoss, self).__init__(reduction)
-        self.abs = P.Abs()
+        self.abs = ops.Abs()
 
     def construct(self, logits, label):
         _check_is_tensor('logits', logits, self.cls_name)
@@ -617,7 +616,8 @@ class MarginRankingLoss(LossBase):
 
 class SmoothL1Loss(LossBase):
     r"""
-    SmoothL1 loss function, if the absolute error element-wise between the predicted value and the target value
+    SmoothL1 loss function. Compare the error value element-wise and
+    if the absolute error between the predicted value and the target value
     is less than the set threshold `beta`, the square term is used, otherwise the absolute error term is used.
 
     Given two input :math:`x,\  y`, the SmoothL1Loss can be described as follows:
@@ -667,11 +667,13 @@ class SmoothL1Loss(LossBase):
 
           - Ascend: float16, float32, bfloat16.
           - CPU/GPU: float16, float32, float64.
+
         - **labels** (Tensor) - Ground truth data.
 
           - CPU/Ascend: has the same shape as the `logits`,
             `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
           - GPU: has the same shape and dtype as the `logits`.
+
     Outputs:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`.
         Otherwise the shape of output tensor is :math:`()`.
@@ -704,7 +706,7 @@ class SmoothL1Loss(LossBase):
         super(SmoothL1Loss, self).__init__(reduction)
         self.beta = beta
         self.reduction = reduction
-        self.smooth_l1_loss = P.SmoothL1Loss(self.beta, self.reduction)
+        self.smooth_l1_loss = ops.SmoothL1Loss(self.beta, self.reduction)
 
     def construct(self, logits, labels):
         return self.smooth_l1_loss(logits, labels)
@@ -732,16 +734,19 @@ class SoftMarginLoss(LossBase):
             - ``'sum'``: the output elements will be summed.
 
     Inputs:
-        - **logits** (Tensor) - Predict data. Data type must be float16 or float32.
-        - **labels** (Tensor) - Ground truth data, with the same type and shape as `logits`.
+        - **logits** (Tensor) - Predict data. Data type must be float16, float32,
+          bfloat16 (Among them, the Atlas training series products do not support bfloat16).
+        - **labels** (Tensor) - Ground truth data, with the same shape as `logits`.
+          In GE mode, the data type should be the same as `logits`.
 
     Outputs:
-        Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
+        Tensor or Scalar, if `reduction` is ``'none'``, its shape is the same as `logits`.
         Otherwise, a scalar value will be returned.
 
     Raises:
         TypeError: If `logits` or `labels` is not a Tensor.
-        TypeError: If dtype of `logits` or `labels` is neither float16 nor float32.
+        TypeError: If dtype of `logits` or `labels` is not float16, float32,
+                   bfloat16 (Among them, the Atlas training series products do not support bfloat16).
         ValueError: If shape of `logits` is not the same as `labels`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
@@ -762,10 +767,10 @@ class SoftMarginLoss(LossBase):
 
     def __init__(self, reduction='mean'):
         super(SoftMarginLoss, self).__init__()
-        self.soft_margin_loss = P.SoftMarginLoss(reduction)
+        self.reduction = reduction
 
     def construct(self, logits, labels):
-        return self.soft_margin_loss(logits, labels)
+        return ops.soft_margin_loss(logits, labels, self.reduction)
 
 
 class SoftmaxCrossEntropyWithLogits(LossBase):
@@ -813,8 +818,8 @@ class SoftmaxCrossEntropyWithLogits(LossBase):
 
     Raises:
         TypeError: If `sparse` is not a bool.
-        TypeError: If `sparse` is True and dtype of `labels` is neither int32 nor int64.
-        TypeError: If `sparse` is False and dtype of `labels` is neither float16 not float32.
+        TypeError: If `sparse` is ``True`` and dtype of `labels` is neither int32 nor int64.
+        TypeError: If `sparse` is ``False`` and dtype of `labels` is neither float16 not float32.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
     Supported Platforms:
@@ -849,12 +854,12 @@ class SoftmaxCrossEntropyWithLogits(LossBase):
         super(SoftmaxCrossEntropyWithLogits, self).__init__(reduction)
         self.sparse = validator.check_bool(sparse, "sparse", self.cls_name)
         self.reduction = reduction
-        self.softmax_cross_entropy = P.SoftmaxCrossEntropyWithLogits()
-        self.one_hot = P.OneHot()
+        self.softmax_cross_entropy = ops.SoftmaxCrossEntropyWithLogits()
+        self.one_hot = ops.OneHot()
         self.on_value = Tensor(1.0, mstype.float32)
         self.off_value = Tensor(0., mstype.float32)
         self.is_cpugpu = context.get_context('device_target') in ["CPU", "GPU"]
-        self.sparse_softmax_cross_entropy = P.SparseSoftmaxCrossEntropyWithLogits()
+        self.sparse_softmax_cross_entropy = ops.SparseSoftmaxCrossEntropyWithLogits()
 
     def construct(self, logits, labels):
         _check_is_tensor('logits', logits, self.cls_name)
@@ -863,7 +868,7 @@ class SoftmaxCrossEntropyWithLogits(LossBase):
             if self.reduction == 'mean':
                 x = self.sparse_softmax_cross_entropy(logits, labels)
                 return x
-            labels = self.one_hot(labels, F.shape(logits)[-1], self.on_value, self.off_value)
+            labels = self.one_hot(labels, ops.shape(logits)[-1], self.on_value, self.off_value)
         x = self.softmax_cross_entropy(logits, labels)[0]
         return self.get_loss(x)
 
@@ -893,8 +898,8 @@ class DiceLoss(LossBase):
     :math:`pred` represent `logits`, :math:`true` represent `labels` .
 
     Args:
-        smooth (float): A term added to the denominator to improve numerical stability. Should be greater than 0.
-                        Default: ``1e-5`` .
+        smooth (float, optional): A term added to the denominator to improve numerical stability.
+            Should be greater than 0. Default: ``1e-5`` .
 
     Inputs:
         - **logits** (Tensor) - Input predicted value. The data type must be float16 or float32.
@@ -927,7 +932,7 @@ class DiceLoss(LossBase):
         """Initialize DiceLoss."""
         super(DiceLoss, self).__init__()
         self.smooth = validator.check_positive_float(smooth, "smooth")
-        self.reshape = P.Reshape()
+        self.reshape = ops.Reshape()
 
     def construct(self, logits, label):
         _check_is_tensor('logits', logits, self.cls_name)
@@ -938,11 +943,12 @@ class DiceLoss(LossBase):
         if label.dtype == mstype.uint8:
             raise TypeError(f"For '{self.cls_name}', the dtype of 'labels' can not be uint8.")
         intersection = self.reduce_sum(self.mul(logits.view(-1), label.view(-1)))
-        unionset = self.reduce_sum(self.mul(logits.view(-1), logits.view(-1))) + \
-                   self.reduce_sum(self.mul(label.view(-1), label.view(-1)))
+        unionset_part1 = self.reduce_sum(self.mul(logits.view(-1), logits.view(-1)))
+        unionset_part2 = self.reduce_sum(self.mul(label.view(-1), label.view(-1)))
+        unionset = ops.add(unionset_part1, unionset_part2)
 
-        single_dice_coeff = (2 * intersection) / (unionset + self.smooth)
-        dice_loss = 1 - single_dice_coeff
+        single_dice_coeff = (2 * intersection) / ops.add(unionset, self.smooth)
+        dice_loss = ops.sub(1, single_dice_coeff)
 
         return dice_loss
 
@@ -1041,7 +1047,7 @@ class MultiClassDiceLoss(LossBase):
         if self.activation is not None and not isinstance(self.activation, Cell):
             raise TypeError(f"For '{self.cls_name}', the 'activation' must be str or Cell, "
                             f"but got {type(self.activation)}.")
-        self.reshape = P.Reshape()
+        self.reshape = ops.Reshape()
 
     def construct(self, logits, label):
         _check_is_tensor('logits', logits, self.cls_name)
@@ -1058,7 +1064,7 @@ class MultiClassDiceLoss(LossBase):
                 dice_loss = self.binarydiceloss(logits[:, i], label[:, i])
                 if self.weights is not None:
                     _check_weights(self.weights.shape[0], label.shape[1], self.cls_name)
-                    dice_loss *= self.weights[i]
+                    dice_loss = dice_loss * self.weights[i]
                 total_loss += dice_loss
 
         return total_loss / label.shape[1]
@@ -1153,31 +1159,31 @@ class SampledSoftmaxLoss(LossBase):
         self.sampled_values = sampled_values
         self.remove_accidental_hits = remove_accidental_hits
         self.seed = seed
-        self.sampler = P.UniformCandidateSampler(
+        self.sampler = ops.UniformCandidateSampler(
             num_true,
             num_sampled,
             True,
             num_classes,
             seed,
             remove_accidental_hits)
-        self.cast = P.Cast()
-        self.reshape = P.Reshape()
-        self.shape = P.Shape()
-        self.exp = P.Exp()
-        self.log = P.Log()
-        self.slice_op = P.Slice()
-        self.matmul = P.MatMul(False, True)
-        self.gather_v2 = P.Gather()
-        self.reduce_max_true = P.ReduceMax(True)
-        self.reduce_sum = P.ReduceSum()
-        self.reduce_sum_true = P.ReduceSum(True)
-        self.concat_dim0 = P.Concat(0)
-        self.concat_dim1 = P.Concat(1)
-        self.ones_like = P.OnesLike()
-        self.zeros_like = P.ZerosLike()
-        self.mul = P.Mul()
-        self.expand_dims = P.ExpandDims()
-        self.dtype = P.DType()
+        self.cast = ops.Cast()
+        self.reshape = ops.Reshape()
+        self.shape = ops.Shape()
+        self.exp = ops.Exp()
+        self.log = ops.Log()
+        self.slice_op = ops.Slice()
+        self.matmul = ops.MatMul(False, True)
+        self.gather_v2 = ops.Gather()
+        self.reduce_max_true = ops.ReduceMax(True)
+        self.reduce_sum = ops.ReduceSum()
+        self.reduce_sum_true = ops.ReduceSum(True)
+        self.concat_dim0 = ops.Concat(0)
+        self.concat_dim1 = ops.Concat(1)
+        self.ones_like = ops.OnesLike()
+        self.zeros_like = ops.ZerosLike()
+        self.mul = ops.Mul()
+        self.expand_dims = ops.ExpandDims()
+        self.dtype = ops.DType()
 
     def construct(self, weights, biases, labels, logits):
         _check_is_tensor('weights', weights, self.cls_name)
@@ -1385,7 +1391,7 @@ class TripletMarginWithDistanceLoss(LossBase):
                         "'ndim' of the input must be positive, "
                         f"but got {d.ndim}"
                     )
-                return P.LpNorm(axis=1, p=2)(d)
+                return ops.LpNorm(axis=1, p=2)(d)
 
             self.distance_function = pairwise_distance
         else:
@@ -1393,8 +1399,8 @@ class TripletMarginWithDistanceLoss(LossBase):
         self.swap = swap
         self.reduction = reduction
         self.margin = margin
-        self.minimum = P.Minimum()
-        self.maximum = P.Maximum()
+        self.minimum = ops.Minimum()
+        self.maximum = ops.Maximum()
 
     def construct(self, x, positive, negative):
         _check_is_tensor("x", x, self.cls_name)
@@ -1478,8 +1484,8 @@ class PoissonNLLLoss(LossBase):
         self.log_input = log_input
         self.full = full
         self.eps = eps
-        self.maximum = P.Maximum()
-        self.cast = P.Cast()
+        self.maximum = ops.Maximum()
+        self.cast = ops.Cast()
 
     def construct(self, input, target):
         _check_is_tensor('input', input, self.cls_name)
@@ -1492,7 +1498,7 @@ class PoissonNLLLoss(LossBase):
         if self.full:
             target = self.maximum(target, self.eps)
             stirling_term = (target > 1) * ((target + 0.5) * target.log() - target + get_half_ln_2_pi())
-            loss += F.masked_fill(stirling_term, target <= 1, F.cast(0, stirling_term.dtype))
+            loss += ops.masked_fill(stirling_term, target <= 1, ops.cast(0, stirling_term.dtype))
         out = self.get_loss(loss)
         return out
 
@@ -1562,7 +1568,7 @@ class MultiLabelSoftMarginLoss(LossBase):
         self.reduction = reduction
 
     def construct(self, x, target):
-        return F.multilabel_soft_margin_loss(x, target, self.weight, self.reduction)
+        return ops.multilabel_soft_margin_loss(x, target, self.weight, self.reduction)
 
 
 class MultiMarginLoss(LossBase):
@@ -1647,7 +1653,7 @@ class MultiMarginLoss(LossBase):
         if not weight_one:
             _check_is_tensor('weight', weight, self.cls_name)
         else:
-            weight = F.fill(x.dtype, x.astype('float32')[0].shape, 1)
+            weight = ops.fill(x.dtype, x.astype('float32')[0].shape, 1)
         loss = self.multi_margin_loss(x, target, weight)
         return loss
 
@@ -1726,7 +1732,7 @@ class BCELoss(LossBase):
         self.weight = weight
 
     def construct(self, logits, labels):
-        return F.binary_cross_entropy(logits, labels, self.weight, self.reduction)
+        return ops.binary_cross_entropy(logits, labels, self.weight, self.reduction)
 
 
 class CosineEmbeddingLoss(LossBase):
@@ -1785,8 +1791,8 @@ class CosineEmbeddingLoss(LossBase):
     def __init__(self, margin=0.0, reduction="mean"):
         """Initialize CosineEmbeddingLoss."""
         super(CosineEmbeddingLoss, self).__init__(reduction)
-        self.reduce_sum = P.ReduceSum()
-        self.maximum = P.Maximum()
+        self.reduce_sum = ops.ReduceSum()
+        self.maximum = ops.Maximum()
         validator.check_value_type("margin", margin, [float], self.cls_name)
         self.margin = validator.check_float_range(margin, -1.0, 1.0, validator.INC_BOTH, "margin", self.cls_name)
 
@@ -1798,16 +1804,16 @@ class CosineEmbeddingLoss(LossBase):
         # if labels > 0, 1-cosine(logits_x1, logits_x2)
         # else, max(0, cosine(logits_x1, logits_x2)-margin)
         prod_sum = self.reduce_sum(logits_x1 * logits_x2, (1,))
-        square1 = self.reduce_sum(F.square(logits_x1), (1,))
-        square2 = self.reduce_sum(F.square(logits_x2), (1,))
-        denom = F.sqrt(square1) * F.sqrt(square2)
+        square1 = self.reduce_sum(ops.square(logits_x1), (1,))
+        square2 = self.reduce_sum(ops.square(logits_x2), (1,))
+        denom = ops.sqrt(square1) * ops.sqrt(square2)
         cosine = prod_sum / denom
 
         pos_value = 1.0 - cosine
         neg_value = self.maximum(cosine - self.margin, 0.0)
-        zeros = F.zeros_like(cosine)
-        pos_part = F.select(labels == 1, pos_value, zeros)
-        neg_part = F.select(labels == -1, neg_value, zeros)
+        zeros = ops.zeros_like(cosine)
+        pos_part = ops.select(labels == 1, pos_value, zeros)
+        neg_part = ops.select(labels == -1, neg_value, zeros)
         output_unreduced = pos_part + neg_part
 
         return self.get_loss(output_unreduced)
@@ -2081,12 +2087,12 @@ class FocalLoss(LossBase):
         if isinstance(weight, Tensor) and weight.ndim != 1:
             raise ValueError(f"For '{self.cls_name}', the dimension of 'weight' must be 1, but got {weight.ndim}.")
         self.weight = weight
-        self.expand_dims = P.ExpandDims()
-        self.gather_d = P.GatherD()
-        self.squeeze = P.Squeeze(axis=1)
-        self.tile = P.Tile()
-        self.cast = P.Cast()
-        self.dtype = P.DType()
+        self.expand_dims = ops.ExpandDims()
+        self.gather_d = ops.GatherD()
+        self.squeeze = ops.Squeeze(axis=1)
+        self.tile = ops.Tile()
+        self.cast = ops.Cast()
+        self.dtype = ops.DType()
         self.logsoftmax = nn.LogSoftmax(1)
 
     def construct(self, logits, labels):
@@ -2110,7 +2116,7 @@ class FocalLoss(LossBase):
             log_probability = self.gather_d(log_probability, 1, self.cast(labelss, mindspore.int32))
             log_probability = self.squeeze(log_probability)
 
-        probability = F.exp(log_probability)
+        probability = ops.exp(log_probability)
 
         if self.weight is not None:
             convert_weight = self.weight[None, :, None]
@@ -2120,7 +2126,7 @@ class FocalLoss(LossBase):
                 convert_weight = self.squeeze(convert_weight)
             log_probability = log_probability * convert_weight
 
-        weight = F.pows(-1 * probability + 1.0, self.gamma)
+        weight = ops.pows(-1 * probability + 1.0, self.gamma)
         if labels.shape[1] == 1:
             loss = (-1 * weight * log_probability).mean(axis=1)
         else:
@@ -2217,7 +2223,7 @@ class HuberLoss(LossBase):
         self.delta = delta
 
     def construct(self, logits, labels):
-        return F.huber_loss(logits, labels, self.reduction, self.delta)
+        return ops.huber_loss(logits, labels, self.reduction, self.delta)
 
 
 class TripletMarginLoss(LossBase):
@@ -2315,8 +2321,8 @@ class TripletMarginLoss(LossBase):
     def construct(self, x, positive, negative, margin=1.):
         if self.margin != 1.0:
             margin = self.margin
-        return F.triplet_margin_loss(x, positive, negative, margin=margin, p=self.p,
-                                     eps=self.eps, swap=self.swap, reduction=self.reduction)
+        return ops.triplet_margin_loss(x, positive, negative, margin=margin, p=self.p,
+                                       eps=self.eps, swap=self.swap, reduction=self.reduction)
 
 
 class NLLLoss(LossBase):
@@ -2398,7 +2404,7 @@ class NLLLoss(LossBase):
         self.reduction = reduction
 
     def construct(self, logits, labels):
-        return F.nll_loss(logits, labels, self.weight, self.ignore_index, self.reduction)
+        return ops.nll_loss(logits, labels, self.weight, self.ignore_index, self.reduction)
 
 
 @constexpr
@@ -2560,7 +2566,7 @@ class CrossEntropyLoss(LossBase):
                                     logits.dtype, labels.dtype,
                                     self.cls_name)
 
-        return F.cross_entropy(logits, labels, self.weight, self.ignore_index, self.reduction, self.label_smoothing)
+        return ops.cross_entropy(logits, labels, self.weight, self.ignore_index, self.reduction, self.label_smoothing)
 
 
 class KLDivLoss(LossBase):
@@ -2571,7 +2577,7 @@ class KLDivLoss(LossBase):
     the updating formulas of KLDivLoss algorithm are as follows,
 
     .. math::
-        L(x, target) = target \cdot (\log target - x)
+        L(x, target) = target \cdot (\log target - \log x)
 
     Then,
 
@@ -2636,7 +2642,7 @@ class KLDivLoss(LossBase):
     def construct(self, logits, labels):
         _check_is_tensor('logits', logits, self.cls_name)
         _check_is_tensor('labels', labels, self.cls_name)
-        return F.kl_div(logits, labels, self.reduction)
+        return ops.kl_div(logits, labels, self.reduction)
 
 
 @_primexpr
@@ -2745,11 +2751,11 @@ class CTCLoss(LossBase):
             if targets.ndim == 1:
                 targets = targets.expand_dims(0)
             log_probs = log_probs.expand_dims(-2)
-            neg_log_hood, _ = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, self.reduction,
-                                         self.zero_infinity)
+            neg_log_hood, _ = ops.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank,
+                                           self.reduction, self.zero_infinity)
             return neg_log_hood.squeeze(axis=0)
-        neg_log_hood, _ = F.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, self.reduction,
-                                     self.zero_infinity)
+        neg_log_hood, _ = ops.ctc_loss(log_probs, targets, input_lengths, target_lengths, self.blank, self.reduction,
+                                       self.zero_infinity)
         return neg_log_hood
 
 
@@ -2865,7 +2871,7 @@ class HingeEmbeddingLoss(LossBase):
     where :math:`L = \{l_1,\dots,l_N\}^\top`.
 
     Args:
-        margin (float, int): Threshold defined by Hinge Embedding Loss :math:`margin`.
+        margin (float, int, optional): Threshold defined by Hinge Embedding Loss :math:`margin`.
             Represented as :math:`\Delta` in the formula. Default: ``1.0`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .

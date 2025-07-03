@@ -44,14 +44,14 @@ def test_joinedstr_basic_variable_gpu():
     assert out == f"res: {result_tensor}"
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_joinedstr_basic_variable_ascend():
     """
     Feature: Support joinedstr.
     Description: Support joinedstr.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def joined_net(x, y):
         if (x > 2 * y).all():
             res = f"res: {2 * y}"
@@ -66,7 +66,7 @@ def test_joinedstr_basic_variable_ascend():
 
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_joinedstr_basic_variable_2():
     """
@@ -74,7 +74,7 @@ def test_joinedstr_basic_variable_2():
     Description: Support joinedstr.
     Expectation: No exception.
     """
-    @jit
+    @jit(backend="ms_backend")
     def joined_net(x, y):
         if (x > 2 * y).all():
             res = f"{2 * y}"

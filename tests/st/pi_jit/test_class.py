@@ -1,14 +1,9 @@
-import sys  
 import pytest 
 from mindspore import jit, jit_class
 from mindspore import context
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class StaticTestCall():
     def __init__(self):
@@ -63,20 +58,20 @@ class MSTestMethod():
         return self.id
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def call_class():
     net = StaticTestCall()
     res = net(2)
     return res
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_attribute():
     net = StaticTestAttribute()
     return net.a * net.b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_attribute2():
     net = StaticTestAttribute()
     net.a = 3
@@ -84,7 +79,7 @@ def class_attribute2():
     return net.a * net.b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_method():
     net = StaticTestMethod(1)
     return net.func()

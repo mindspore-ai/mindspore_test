@@ -20,7 +20,7 @@ mindspore.mint.amin
         - 如果 `dim` 为 `()`，并且 `keepdim` 为 `False`，则输出为一个零维Tensor，表示输入 `input` 中所有元素最小值。
         - 如果 `dim` 为 `1`，并且 `keepdim` 为 `False`，则输出shape为 :math:`(input.shape[0], input.shape[2], ..., input.shape[n])`。
         - 如果 `dim` 为 `(1, 2)`，并且 `keepdim` 为 `False`，则输出shape为 :math:`(input.shape[0], input.shape[3], ..., input.shape[n])`。
-       
+
     异常：
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - `dim` 不是int或tuple(int)或list(int)。

@@ -22,8 +22,8 @@ argmin_ext:
         Examples:
             >>> import numpy as np
             >>> from mindspore import Tensor
-            >>> from mindspore import mint
+            >>> from mindspore import ops
             >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-            >>> output = mint.argmin(x, dim=-1)
+            >>> output = ops.auto_generate.argmin_ext(x, dim=-1)
             >>> print(output)
             [0 1 2]

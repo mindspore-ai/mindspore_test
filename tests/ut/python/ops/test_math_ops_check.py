@@ -179,7 +179,7 @@ raise_set = [
     ('CumProd1', {
         'block': (CumProdNet(),
                   {'exception': TypeError, 'error_keywords': ['CumProd']}),
-        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool)), 1],
+        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool_)), 1],
         'skip': ['backward']}),
     # type of axis in float, not int
     ('CumProd2', {
@@ -218,16 +218,16 @@ raise_set = [
     ('CumSum1', {
         'block': (CumSumNet(axis=1),
                   {'exception': TypeError, 'error_keywords': ['CumSum']}),
-        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool))],
+        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool_))],
         'skip': ['backward']}),
     # type of axis in float, not int
     ('CumSum2', {
         'block': (CumSumNet(axis=1.0),
                   {'exception': TypeError, 'error_keywords': ['CumSum']}),
-        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool))],
+        'desc_inputs': [Tensor(np.ones([2, 3, 5]).astype(np.bool_))],
         'skip': ['backward']}),
 
-    # intput is not tuple or list
+    # input is not tuple or list
     ('AddN1', {
         'block': (P.AddN(),
                   {'exception': TypeError, 'error_keywords': ['AddN']}),

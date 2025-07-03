@@ -25,7 +25,7 @@ from mindspore.ops.composite.multitype_ops.mod_impl import mod
 from mindspore.ops.composite.multitype_ops.getitem_impl import getitem
 from mindspore.ops.composite.multitype_ops.setitem_impl import setitem
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
-from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like
+from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like, _ones_like_for_grad
 from mindspore.ops.composite.multitype_ops.equal_impl import equal
 from mindspore.ops.composite.multitype_ops.not_equal_impl import not_equal
 from mindspore.ops.composite.multitype_ops.less_impl import less
@@ -44,6 +44,13 @@ from mindspore.ops.composite.multitype_ops.right_shift_impl import right_shift
 from mindspore.ops.composite.multitype_ops.uadd_impl import uadd
 from mindspore.ops.composite.multitype_ops.in_impl import in_
 from mindspore.ops.composite.multitype_ops.not_in_impl import not_in_
+from mindspore.ops.composite.multitype_ops.invert_impl import invert
+from mindspore.ops.composite.multitype_ops.add_impl import augassign_add
+from mindspore.ops.composite.multitype_ops.sub_impl import augassign_sub
+from mindspore.ops.composite.multitype_ops.mul_impl import augassign_mul
+from mindspore.ops.composite.multitype_ops.div_impl import augassign_div
+from mindspore.ops.composite.multitype_ops.floordiv_impl import augassign_floordiv
+
 __all__ = [
     'add',
     'sub',
@@ -73,5 +80,12 @@ __all__ = [
     'left_shift',
     'right_shift',
     'in_',
-    'not_in_'
+    'not_in_',
+    'invert',
+    '_ones_like_for_grad',
+    'augassign_add',
+    'augassign_sub',
+    'augassign_mul',
+    'augassign_div',
+    'augassign_floordiv'
 ]

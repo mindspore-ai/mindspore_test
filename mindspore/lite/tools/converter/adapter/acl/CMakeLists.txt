@@ -17,8 +17,7 @@ set(ACL_SRC ${ACL_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/acl_pass.cc)
 
 set(ENABLE_ACL on)
 set(MODE_ASCEND_ACL off)
-add_subdirectory(${TOP_DIR}/mindspore/ccsrc/transform/graph_ir _mindspore_transform_graph_ir_obj)
-add_subdirectory(${TOP_DIR}/mindspore/ccsrc/transform/symbol _mindspore_transform_symbol_obj)
+add_subdirectory(${TOP_DIR}/mindspore/ccsrc/backend/ge_backend/graph_ir _mindspore_transform_graph_ir)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cxx_api_lite/cxx_api mslite_shared_lib)
 
 
@@ -29,4 +28,4 @@ target_link_libraries(ascend_pass_plugin mslite_shared_lib)
 add_dependencies(ascend_pass_plugin mslite_shared_lib)
 add_dependencies(ascend_pass_plugin fbs_inner_src)
 add_dependencies(ascend_pass_plugin mindspore_converter)
-target_link_libraries(ascend_pass_plugin mindspore_converter)
+target_link_libraries(ascend_pass_plugin mindspore_converter lite_src_common_mid)

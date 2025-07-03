@@ -16,9 +16,9 @@
 
 #include "infer/ops_func_impl/avg_pool2d_grad.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
 namespace mindspore {
 namespace ops {
@@ -38,14 +38,14 @@ TypePtr AvgPool2DGradFuncImpl::InferType(const PrimitivePtr &primitive,
 
 ShapeArray AvgPool2DGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(input_values.at(kIndex1));
-  const auto &image = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  const auto &image = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(image);
   return {image->shape()};
 }
 
 TypePtrList AvgPool2DGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(input_values.at(kIndex0));
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   return {input->Dtype()};
 }

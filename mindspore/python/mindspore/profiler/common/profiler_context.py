@@ -30,7 +30,9 @@ from mindspore.profiler.common.constant import (
     DeviceTarget,
     ProfilerLevel,
     ProfilerActivity,
-    AicoreMetrics
+    AicoreMetrics,
+    ExportType,
+    HostSystem
 )
 from mindspore.profiler.common.profiler_output_path import ProfilerOutputPath
 from mindspore.profiler.common.profiler_parameters import ProfilerParameters
@@ -59,23 +61,41 @@ class ProfilerContext:
         self._mode: str = AnalysisMode.SYNC_MODE.value
         self._pretty: bool = False
         self._profiler_path_mgr: ProfilerOutputPath = None
+        self._on_trace_ready_output_path = None
         self._jit_level: Optional[str] = ""
-        self._context_mode: Optional[int] = -1
 
         self._init_device_target()
         self._init_device_id()
         self._init_rank_id()
-        self._init_context_mode()
+        self._init_jit_level()
 
     def set_params(self, **kwargs):
         """
         Set profiler parameters and paths
         """
+        # output_path and on_trace_ready cannot be set at the same time. If both are set,
+        # only paths in on_trace_ready take effect
+        if self._on_trace_ready_output_path:
+            final_path = self._on_trace_ready_output_path
+            if "output_path" in kwargs:
+                logger.warning(f"Both on_trace_ready path and output_path are provided. "
+                               f"The on_trace_ready path takes effect. Final path is {final_path}")
+            kwargs["output_path"] = final_path
+
         self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
-        self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(
-            device_id=int(self._device_id), rank_id=int(self._rank_id)
-        )
+        self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(rank_id=int(self._rank_id))
+
         self._profiler_path_mgr.output_path = self._profiler_params_mgr.output_path
+
+    @property
+    def on_trace_ready_output_path(self) -> str:
+        """Get the on trace ready output path."""
+        return self._on_trace_ready_output_path
+
+    @on_trace_ready_output_path.setter
+    def on_trace_ready_output_path(self, value: str):
+        """Set the tensorboard profile path to on trace ready output path."""
+        self._on_trace_ready_output_path = value
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -91,7 +111,6 @@ class ProfilerContext:
             "step_list": self._step_list,
             "mode": self._mode,
             "jit_level": self._jit_level,
-            "context_mode": self._context_mode
         }
 
     def load_offline_profiler_params(self, profiler_parameters: Dict[str, Any]) -> None:
@@ -105,10 +124,14 @@ class ProfilerContext:
             if param in profiler_parameters:
                 if param == "profiler_level":
                     value = ProfilerLevel(profiler_parameters[param])
-                elif param == "aicore_metrics":
+                elif param == "aic_metrics":
                     value = AicoreMetrics(profiler_parameters[param])
                 elif param == "activities":
                     value = [ProfilerActivity(activity) for activity in profiler_parameters[param]]
+                elif param == "export_type":
+                    value = [ExportType(export_type) for export_type in profiler_parameters[param]]
+                elif param == "host_sys":
+                    value = [HostSystem(host_sys) for host_sys in profiler_parameters[param]]
                 elif param == "schedule":
                     continue
                 else:
@@ -267,6 +290,16 @@ class ProfilerContext:
         return self._profiler_params_mgr.mstx
 
     @property
+    def mstx_domain_include(self) -> List[str]:
+        """Get the mstx domain include from ProfilerParameters."""
+        return self._profiler_params_mgr.mstx_domain_include
+
+    @property
+    def mstx_domain_exclude(self) -> List[str]:
+        """Get the mstx domain exclude from ProfilerParameters."""
+        return self._profiler_params_mgr.mstx_domain_exclude
+
+    @property
     def data_simplification(self) -> bool:
         """Get the data simplification from ProfilerParameters."""
         return self._profiler_params_mgr.data_simplification
@@ -279,6 +312,11 @@ class ProfilerContext:
                            f"but got {type(value)}, reset to True.")
             value = True
         self._profiler_params_mgr.data_simplification = value
+
+    @property
+    def record_shapes(self) -> bool:
+        """Get the record shapes from ProfilerParameters."""
+        return self._profiler_params_mgr.record_shapes
 
     @property
     def device_target(self) -> str:
@@ -396,19 +434,6 @@ class ProfilerContext:
         return self._profiler_params_mgr.is_set_schedule
 
     @property
-    def context_mode(self) -> int:
-        return self._context_mode
-
-    @context_mode.setter
-    def context_mode(self, value: int) -> None:
-        """Set context mode value."""
-        if not isinstance(value, int):
-            logger.warning(f"For profiler, the parameter context_mode must be int, "
-                           f"but got {type(value)}, reset to -1.")
-            value = -1
-        self._context_mode = value
-
-    @property
     def jit_level(self) -> str:
         return self._jit_level
 
@@ -464,13 +489,10 @@ class ProfilerContext:
         if not self._rank_id or not self._rank_id.isdigit():
             self._rank_id = "0"
 
-    def _init_context_mode(self):
+    def _init_jit_level(self):
         """
         Initialize the jit level.
         """
-        if context.get_context("mode") == context.GRAPH_MODE:
-            jit_config = context.get_jit_config()
-            self._jit_level = jit_config.get("jit_level", "")
-            ProfilerInfo().jit_level = self._jit_level
-        ProfilerInfo().context_mode = context.get_context("mode")
-        self._context_mode = context.get_context("mode")
+        jit_config = context.get_jit_config()
+        self._jit_level = jit_config.get("jit_level", "")
+        ProfilerInfo().jit_level = self._jit_level

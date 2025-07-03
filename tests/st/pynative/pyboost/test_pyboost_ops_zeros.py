@@ -22,6 +22,8 @@ from mindspore.common.api import _pynative_executor
 import test_utils
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 @test_utils.run_with_cell
 def zeros_forward_func(size, dtype):
@@ -194,4 +196,3 @@ def test_zeros_backward_dynamic_rank(context_mode):
         size = Tensor(np.array([[2, 3], [4, 5]]).astype(np.int64))
         _ = test_cell(size, ms.int32)
         _pynative_executor.sync()
-

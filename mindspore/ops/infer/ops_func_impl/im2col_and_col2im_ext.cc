@@ -23,6 +23,8 @@
 #include "infer/ops_func_impl/col2im_grad.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {
@@ -179,7 +181,7 @@ void Col2ImCheckInputLength(const PrimitivePtr &primitive, const std::vector<int
 }  // namespace
 
 ShapeArray Im2ColExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_shape = input_tensor->shape();
   Im2ColAndCol2ImCommonCheckShape(primitive, input_shape, no_batch_rank_, batch_rank_);
@@ -218,7 +220,7 @@ ShapeArray Im2ColExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList Im2ColExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }
@@ -399,7 +401,7 @@ int32_t Col2ImExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray Col2ImExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   const auto &input_shape = input_tensor->shape();
   Im2ColAndCol2ImCommonCheckShape(primitive, input_shape, no_batch_rank_, batch_rank_);
@@ -434,7 +436,7 @@ ShapeArray Col2ImExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList Col2ImExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   return {input_tensor->Dtype()};
 }

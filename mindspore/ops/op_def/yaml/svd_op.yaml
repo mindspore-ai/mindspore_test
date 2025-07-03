@@ -1,0 +1,22 @@
+#operator svd
+svd:
+    args:
+        input:
+            dtype: tensor
+        full_matrices:
+            dtype: bool
+            default: False
+            prim_init: True
+        compute_uv:
+            dtype: bool
+            default: True
+            prim_init: True
+    returns:
+        s:
+            dtype: tensor
+        u:
+            dtype: tensor
+        v:
+            dtype: tensor
+    function:
+        disable: True

@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace array_len_cpu {
 class ArrayLenCpuKernelMod : public NativeCpuKernelMod {
  public:
   ArrayLenCpuKernelMod() = default;
@@ -43,6 +44,7 @@ class ArrayLenCpuKernelMod : public NativeCpuKernelMod {
  private:
   ShapeVector input_shape_;
 };
+}  // namespace array_len_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif

@@ -111,8 +111,8 @@ def test_equal_op_infervalue(context_mode):
     """
     ms.context.set_context(mode=context_mode)
     out = equal_infervalue_func1()
-    expect_out = np.array([True, True, False]).astype(np.bool)
+    expect_out = np.array([True, True, False]).astype(np.bool_)
     np.testing.assert_array_equal(out.asnumpy(), expect_out)
     out = equal_infervalue_func2()
-    expect_out = np.array([True, False, False]).astype(np.bool)
+    expect_out = np.array([True, False, False]).astype(np.bool_)
     np.testing.assert_array_equal(out.asnumpy(), expect_out)

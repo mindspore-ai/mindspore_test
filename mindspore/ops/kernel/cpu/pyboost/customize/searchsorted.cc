@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/searchsorted.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/searchsorted.h"
 #include <memory>
 #include <utility>
-#include "mindspore/ops/kernel/common/pyboost/customize/searchsorted.h"
+#include "mindspore/ccsrc/pyboost/customize/searchsorted.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr SearchSortedCPUCustomize(const std::shared_ptr<OpRunner> &op,
-                                               const BaseTensorPtr &sorted_sequence, const BaseTensorPtr &values,
-                                               const std::optional<BaseTensorPtr> &sorter, const Int64ImmPtr &dtype,
-                                               const BoolImmPtr &right) {
+tensor::TensorPtr SearchSortedCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &sorted_sequence,
+                                           const TensorPtr &values, const std::optional<TensorPtr> &sorter,
+                                           const Int64ImmPtr &dtype, const BoolImmPtr &right) {
   return SearchSortedCustomizeCall(op, sorted_sequence, values, sorter, dtype, right);
 }
 }  // namespace pyboost

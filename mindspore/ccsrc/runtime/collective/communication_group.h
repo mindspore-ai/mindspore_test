@@ -24,12 +24,13 @@
 #include <sstream>
 #include <algorithm>
 #include "pybind11/pybind11.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace device {
 // The communication group for collecive operations. All of the collective communication happens within one specified
 // communication group. MindSpore uses 'hccl_world_group' or 'nccl_world_group' as the default group.
-class CommunicationGroup {
+class BACKEND_COMMON_EXPORT CommunicationGroup {
  public:
   explicit CommunicationGroup(const std::string &name, const std::vector<uint32_t> &group_ranks, uint32_t global_rank,
                               uint32_t local_group_rank, uint32_t local_group_size);
@@ -48,6 +49,11 @@ class CommunicationGroup {
   // Return the root rank's information and its size. Normally this is used for collective libraries on the device side.
   // For NCCL group, it returns a pointer to 'ncclUniqueId'. For HCCL group, it returns a pointer to 'HcclRootInfo'.
   virtual void *GenerateRootInfo(size_t *root_info_size) { return nullptr; }
+
+  virtual bool SetGlobalCommInfo(uint32_t master_ip, uint32_t master_port, uint32_t total_rank_size, uint32_t node_rank,
+                                 uint32_t local_rank_size) {
+    return true;
+  }
 
   // Get group or global rank for the given rank.
   uint32_t GetGroupRank(uint32_t global_rank);

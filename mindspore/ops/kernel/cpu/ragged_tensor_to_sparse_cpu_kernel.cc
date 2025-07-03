@@ -18,9 +18,10 @@
 #include <algorithm>
 #include <cstdio>
 #include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 namespace mindspore {
 namespace kernel {
+namespace ragged_tensor_to_sparse_cpu {
 namespace {
 constexpr int64_t kRaggedTensorToSparseOutputsNum = 3;
 constexpr int64_t kRaggedTensorToSparseInputsNum = 2;
@@ -284,5 +285,6 @@ bool RaggedTensorToSparseCpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, RaggedTensorToSparse, RaggedTensorToSparseCpuKernelMod);
+}  // namespace ragged_tensor_to_sparse_cpu
 }  // namespace kernel
 }  // namespace mindspore

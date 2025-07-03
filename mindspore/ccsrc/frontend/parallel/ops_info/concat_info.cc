@@ -48,6 +48,7 @@ Status ConcatInfo::GetAttrs() {
   axis_ = LongToSize(axis);
 
   auto prim = GetCNodePrimitive(cnode_);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }

@@ -33,6 +33,7 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/anf_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::ops {
 namespace {

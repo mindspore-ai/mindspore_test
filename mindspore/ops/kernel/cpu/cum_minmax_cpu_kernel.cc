@@ -18,11 +18,12 @@
 #include <algorithm>
 #include <utility>
 #include <functional>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "kernel/cpu/utils/cpu_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cum_minmax_cpu {
 namespace {
 constexpr size_t kCumInputsNum = 2;
 constexpr size_t kCumOutputsNum = 2;
@@ -293,5 +294,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Cummin,
                                  []() { return std::make_shared<CumMinMaxCpuKernelMod>(CUMMIN); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Cummax,
                                  []() { return std::make_shared<CumMinMaxCpuKernelMod>(CUMMAX); });
+}  // namespace cum_minmax_cpu
 }  // namespace kernel
 }  // namespace mindspore

@@ -48,6 +48,7 @@ using DeviceContextKey = device::DeviceContextKey;
 using DeviceContextManager = device::DeviceContextManager;
 using CollectiveCommunicationLib = device::CollectiveCommunicationLib;
 using CommunicationGroupPtr = device::CommunicationGroupPtr;
+using GroupOptions = device::GroupOptions;
 
 // Data types for creating communication groups function.
 
@@ -65,17 +66,10 @@ using GroupToResultMap = std::unordered_map<std::string, std::pair<bool, std::st
 // Interval of initializing each communicator in queue is 300 milliseconds.
 const uint32_t kInitCommInterval = 300;
 
-// This the config passed to 'CreateCommunicationGroup' method. It controls initialization mode for communication group.
-struct CreateGroupConfig {
-  bool async = false;      // Whether creating communication group asynchonizely.
-  bool submit_now = true;  // For sync manner, this key means whether submit init task immediately for this group. If
-                           // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
-};
-
 // The collective communication API.
 // MindSpore uses OpenMPI on CPU, NCCL on GPU, HCCL on Ascend, to achieve distributed training.
 // Besides, MindSpore also has its own communication library which is implemented on the CPU side.
-class BACKEND_EXPORT CollectiveManager {
+class BACKEND_COMMON_EXPORT CollectiveManager {
  public:
   ~CollectiveManager();
   DISABLE_COPY_AND_ASSIGN(CollectiveManager);
@@ -89,10 +83,21 @@ class BACKEND_EXPORT CollectiveManager {
 
   // Create communication group.
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
-                                const CreateGroupConfig &config = {});
+                                const GroupOptions &config = {});
 
   // Destroy the communication group.
   bool DestroyCommunicationGroup(const std::string &group_name);
+
+  void RemoveGroupInfoForARF(const std::string &group_name);
+
+  // Destroy device communication group for resume training.
+  bool DestroyDeviceSideCommunicationGroup(const std::string &group_name);
+
+  // Call HcclSetGlobalCommInfo to pass necessary info in world group.
+  void SetGlobalCommInfo(CommunicationGroupPtr group, const std::string &group_name);
+
+  // Get the inner comm name of the specified group.
+  std::string GetCommName(const std::string &group_name);
 
   // Get the rank id of this process in the specified group.
   uint32_t GetRankId(const std::string &group_name);
@@ -132,14 +137,25 @@ class BACKEND_EXPORT CollectiveManager {
   // Return collective manager is initialized.
   bool initialized() const { return inited_.load(); }
   std::unordered_map<std::string, std::vector<uint32_t>> get_group_map() { return group_map_; }
+  std::vector<std::pair<std::string, std::vector<uint32_t>>> get_group_info() { return group_infos_; }
 
   CollectiveCommunicationLib *device_comm_lib() { return device_comm_lib_instance_; }
+
+  void CacheInitedGroups(const std::string &name);
+  void ClearCacheInitedGroups();
+  size_t InitedGroupSize();
 
   // Initialize and finalize Dummy communication lib.
   bool InitializeDummyCommLib();
   bool FinalizeDummyCommLib();
 
   bool ResumeHcclComm();
+
+  // clean unique if after group build success when using ARF
+  void ClearUniqueID(const std::string &group_name);
+
+  // switch network interface card between the primary and the secondary NIC.
+  bool CommSwitchNic(const std::vector<uint32_t> &global_ranks, const std::vector<bool> &use_backup);
 
   // Return whether initializing global comm asynchronizely.
   bool IsAsyncInitGlobalComm();
@@ -185,6 +201,10 @@ class BACKEND_EXPORT CollectiveManager {
 
   // This method will consume the tasks in init_comm_task_queue_.
   void RunInitCommTasks();
+
+  // Set distributed meta data to libmindspore_core.so so that low level modules can access distributed meta data while
+  // bypassing CollectiveManager module.
+  void SetDistributedMeta();
 
   std::atomic_bool inited_;
   std::atomic_bool finalized_;
@@ -263,6 +283,9 @@ class BACKEND_EXPORT CollectiveManager {
   mutable std::mutex init_result_mutex_;
   std::condition_variable result_blocker_;
   GroupToResultMap group_name_to_result_;
+  std::vector<std::pair<std::string, std::vector<uint32_t>>> group_infos_;
+  mutable std::mutex cache_mutes_;
+  std::vector<std::string> inited_groups_;
 };
 
 // For scheduler node, CollectiveManager is not initialized. Return 0 as rank id.

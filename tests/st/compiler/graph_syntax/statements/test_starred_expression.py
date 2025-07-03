@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """ test graph starred expression. """
-import pytest
 from mindspore import context, jit, Tensor, nn
 from tests.mark_utils import arg_mark
 
@@ -520,3 +519,20 @@ def test_starred_expression_dict_non_literal():
     arg_dict = {"a": 1, "b": 2}
     out = net(arg_dict)
     assert out == {"a": 3, "b": 2, ("d", "e"): 4}
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_starred_expression_as_output():
+    """
+    Feature: Support starred expression.
+    Description: Support starred expression in graph mode.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y, z):
+            args = [x, y, z]
+            return (0, *args)
+
+    net = Net()
+    out = net(Tensor(1), Tensor(2), Tensor(3))
+    assert out[1] == 1 and out[2] == 2 and out[3] == 3

@@ -17,10 +17,11 @@
 #include "kernel/cpu/prelu_cpu_kernel.h"
 #include <utility>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace prelu_cpu {
 bool PReluCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   constexpr size_t input_num = 2;
   constexpr size_t output_num = 1;
@@ -56,6 +57,9 @@ int PReluCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
 
   input_length_ = std::accumulate(input_shape.begin(), input_shape.end(), size_t(1), std::multiplies<>());
+  if (input_shape.size() > 1) {
+    MS_EXCEPTION_IF_ZERO("The input shape cannot be 0.", input_shape[kIndex0] * input_shape[kIndex1]);
+  }
   per_channel_length_ =
     input_shape.size() <= 1 ? input_length_ : input_length_ / (input_shape[kIndex0] * input_shape[kIndex1]);
   weight_length_ = weight_shape[0];
@@ -99,5 +103,6 @@ bool PReluCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, 
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, PReLU, PReluCpuKernelMod);
+}  // namespace prelu_cpu
 }  // namespace kernel
 }  // namespace mindspore

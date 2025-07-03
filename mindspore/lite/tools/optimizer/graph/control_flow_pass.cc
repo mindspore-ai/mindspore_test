@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@
 #include "tools/common/node_util.h"
 #include "nnacl/op_base.h"
 #include "include/registry/converter_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 namespace mindspore::opt {
 void ControlFlowPass::ReplaceNode(const FuncGraphPtr &fg,
@@ -501,6 +505,7 @@ int ControlFlowPass::ProcessWhileOp(const FuncGraphPtr &fg, const std::set<AnfNo
                                                 after_partial_cnode};
   auto switch_cnode = cond_fg->NewCNode(switch_node_inputs);
   MS_CHECK_TRUE_MSG(switch_cnode != nullptr, RET_ERROR, "NewCnode failed");
+  MS_EXCEPTION_IF_NULL(cond_fg->get_attr("graph_name"));
   switch_cnode->set_fullname_with_scope("while-Switch-" + cond_fg->get_attr("graph_name")->ToString());
 
   // insert call node
@@ -601,11 +606,8 @@ int ControlFlowPass::CreateIfPartialNode(const FuncGraphPtr &fg, const size_t &i
     then_partial_cnode_inputs.push_back(item);
     auto new_parameter = then_fg->add_parameter();
     MS_CHECK_TRUE_MSG(new_parameter != nullptr, RET_FAILED, "new_parameter is nullptr");
-    if (index == kIfThenIndex) {
-      new_parameter->set_name(item->fullname_with_scope() + "_then_fg_parameter");
-    } else {
-      new_parameter->set_name(item->fullname_with_scope() + "_else_fg_parameter");
-    }
+    auto then_fg_name_postfix = index == kIfThenIndex ? "_then_fg_parameter" : "_else_fg_parameter";
+    new_parameter->set_name(item->fullname_with_scope() + then_fg_name_postfix);
     new_parameter->set_abstract(item->abstract());
     visited_nodes_and_after_partial_inputs_replace_pairs[item] = new_parameter;
     then_nodes_used_by_after_partial.push_back(new_parameter);
@@ -642,6 +644,7 @@ int ControlFlowPass::CreateIfPartialNode(const FuncGraphPtr &fg, const size_t &i
   // insert partial node
   auto after_partial_cnode = then_fg->NewCNode(after_partial_cnode_inputs);
   MS_CHECK_TRUE_MSG(after_partial_cnode != nullptr, RET_FAILED, "NewCNode failed");
+  MS_CHECK_TRUE_MSG(after_fg->get_attr("graph_name") != nullptr, RET_FAILED, "Get graph_name failed.");
   auto after_fg_name = after_fg->get_attr("graph_name")->ToString();
   after_partial_cnode->set_fullname_with_scope("partial_" + after_fg_name);
 

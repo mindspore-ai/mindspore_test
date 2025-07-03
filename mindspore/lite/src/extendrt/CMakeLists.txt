@@ -23,6 +23,10 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
         ${CMAKE_CURRENT_SOURCE_DIR}/kernel/nnacl/nnacl_lib.cc
         )
 
+    set(MSLITE_GRAPH_KERNEL_FLAGS_SRC
+        ${CCSRC_DIR}/backend/common/graph_kernel/graph_kernel_flags.cc
+        )
+
     set(MSLITE_EXTEND_DEFAULT_KERNEL_LIB_SRC
             ${CMAKE_CURRENT_SOURCE_DIR}/kernel/default/cnode_infer_manager.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/kernel/default/kernel_mod_kernel.cc
@@ -33,6 +37,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
     set(MSLITE_EXTEND_RUNTIME_SRC
         ${MSLITE_KERNEL_PLUGIN}
         ${MSLITE_EXTEND_NNACL_KERNEL_LIB_SRC}
+        ${MSLITE_GRAPH_KERNEL_FLAGS_SRC}
         ${MSLITE_EXTEND_DEFAULT_KERNEL_LIB_SRC}
         ${CMAKE_CURRENT_SOURCE_DIR}/kernel/kernel_selector/kernel_selector.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/subgraph_kernel.cc
@@ -103,9 +108,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_layernorm_kernel.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_gather_kernel.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/delegate/ascend_native/ascend_native_encoder_kernel.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/hccl_adapter.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/converter.cc
-                ${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/all_to_all_v_calc_param.cc
+                ${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/hccl_adapter.cc
                 ${CCSRC_DIR}/utils/config_manager.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/mock/ge_mock.cc
                 ${CMAKE_CURRENT_SOURCE_DIR}/mock/transform_mock.cc
@@ -120,8 +123,8 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             endif()
             target_link_libraries(ascend_native_plugin ${ASCEND_NATIVE_KERNELS_IMPL} ascend_native_mid)
             set(ASCEND_TOOLKIT_PLUGIN_PATH ${ASCEND_TOOLKIT_RUNTIME_PATH}/plugin/opskernel)
-            include_directories(${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter)
-            add_subdirectory(${CCSRC_DIR}/plugin/device/ascend/hal/hccl_adapter/plugin build)
+            include_directories(${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/)
+            add_subdirectory(${CCSRC_DIR}/plugin/res_manager/ascend/hccl_adapter/plugin build)
         endif()
     endif()
 
@@ -181,8 +184,8 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
             set(CPU_KERNEL_OBJECT_COUNT 0)
             add_subdirectory(${OPS_DIR}/kernel/cpu lite_kernel_mod)
             foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
-                target_link_libraries(mindspore-extendrt _mindspore_ops_cpu_kernel_obj_${number})
-                target_link_libraries(mindspore-extendrt_static _mindspore_ops_cpu_kernel_obj_${number})
+                target_link_libraries(mindspore-extendrt _mindspore_ops_cpu_kernel_obj)
+                target_link_libraries(mindspore-extendrt_static _mindspore_ops_cpu_kernel_obj)
             endforeach()
         endif()
 

@@ -45,7 +45,6 @@ class GPUKernelRuntime : public KernelRuntime {
   bool Init() override;
   void ReleaseDeviceRes() override;
   void ClearGraphRuntimeResource(uint32_t graph_id) override;
-  void AssignMemory(const session::KernelGraph &graph) override;
   bool Run(const session::KernelGraph &graph, bool is_task_sink) override;
   bool RunDynamicKernelAsync(const session::KernelGraph &graph) override { return true; }
   DeviceType GetTargetDeviceType() const override { return DeviceType::kGPU; }

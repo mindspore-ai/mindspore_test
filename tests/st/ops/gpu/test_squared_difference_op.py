@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -114,7 +113,7 @@ def test_broadcast_bool():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     np.random.seed(42)
     net = SquaredDifference()
-    input_x = np.random.rand(1, 4, 1, 2).astype(np.bool)
+    input_x = np.random.rand(1, 4, 1, 2).astype(np.bool_)
     input_y = np.random.uniform(10, 20, (3, 1, 5, 1)).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
     diff = input_x - input_y
@@ -129,7 +128,7 @@ def test_nobroadcast_bool():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     np.random.seed(42)
     net = SquaredDifference()
-    input_x = np.random.rand(3, 4, 5, 2).astype(np.bool)
+    input_x = np.random.rand(3, 4, 5, 2).astype(np.bool_)
     input_y = np.random.rand(3, 4, 5, 2).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
     diff = input_x - input_y
@@ -271,8 +270,8 @@ def test_broadcast_type_error():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     np.random.seed(42)
     net = SquaredDifference()
-    input_x = np.random.randint(20, 30, (1, 2)).astype(np.bool)
-    input_y = np.random.rand(3, 1, 5, 1).astype(np.bool)
+    input_x = np.random.randint(20, 30, (1, 2)).astype(np.bool_)
+    input_y = np.random.rand(3, 1, 5, 1).astype(np.bool_)
     try:
         net(Tensor(input_x), Tensor(input_y))
     except TypeError:

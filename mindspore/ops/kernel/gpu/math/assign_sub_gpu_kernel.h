@@ -25,7 +25,7 @@
 #include <map>
 #include <utility>
 #include <iostream>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "include/curand.h"
 #include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"

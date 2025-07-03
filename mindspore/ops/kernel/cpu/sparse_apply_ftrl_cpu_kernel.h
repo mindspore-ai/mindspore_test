@@ -25,8 +25,9 @@
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                   public MatchKernelHelper<FusedSparseFtrlCpuKernelMod> {
+namespace sparse_apply_ftrl_cpu {
+class FusedSparseFtrlCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
+                                    public MatchKernelHelper<FusedSparseFtrlCpuKernelMod> {
  public:
   FusedSparseFtrlCpuKernelMod() = default;
   ~FusedSparseFtrlCpuKernelMod() override = default;
@@ -62,8 +63,8 @@ class BACKEND_EXPORT FusedSparseFtrlCpuKernelMod : public SparseOptimizerCpuKern
                     const std::vector<kernel::KernelTensor *> &) const;
 };
 
-class BACKEND_EXPORT SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKernelMod,
-                                                   public MatchKernelHelper<SparseApplyFtrlCpuKernelMod> {
+class SparseApplyFtrlCpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
+                                    public MatchKernelHelper<SparseApplyFtrlCpuKernelMod> {
  public:
   SparseApplyFtrlCpuKernelMod() = default;
   ~SparseApplyFtrlCpuKernelMod() override = default;
@@ -100,6 +101,7 @@ class BACKEND_EXPORT SparseApplyFtrlCpuKernelMod : public SparseOptimizerCpuKern
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &) const;
 };
+}  // namespace sparse_apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

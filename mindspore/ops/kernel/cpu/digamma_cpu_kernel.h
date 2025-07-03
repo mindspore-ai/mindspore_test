@@ -21,11 +21,12 @@
 #include <map>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace digamma_cpu {
 class DigammaCpuKernelMod : public NativeCpuKernelMod {
  public:
   DigammaCpuKernelMod() = default;
@@ -49,6 +50,7 @@ class DigammaCpuKernelMod : public NativeCpuKernelMod {
   int64_t input_tensor_size_;
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace digamma_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DIGAMMA_CPU_KERNEL_H_

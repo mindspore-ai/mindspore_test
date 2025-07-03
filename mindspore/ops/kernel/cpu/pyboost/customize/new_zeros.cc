@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/new_zeros.h"
-#include "kernel/cpu/pyboost/auto_generate/zeros.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/new_zeros.h"
+#include "mindspore/ops/kernel/cpu/pyboost/auto_generate/zeros.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                          const ValueTuplePtr &size, const std::optional<Int64ImmPtr> &dtype) {
+void NewZerosCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const ValueTuplePtr &size,
+                          const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "NewZeros Call start";
 
   auto device_context = op->device_context();

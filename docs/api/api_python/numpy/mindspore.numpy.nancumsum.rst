@@ -4,8 +4,8 @@ mindspore.numpy.nancumsum
 .. py:function:: mindspore.numpy.nancumsum(a, axis=None, dtype=None)
 
     返回给定轴上数组元素的累积和，将NaN(非数值)视为零。
-    
-    遇到NaN时，累积和不变，数组中的NaN将替换为零。 
+
+    遇到NaN时，累积和不变，数组中的NaN将替换为零。
     对于全是NaN或为空的切片，返回零。
 
     .. note::

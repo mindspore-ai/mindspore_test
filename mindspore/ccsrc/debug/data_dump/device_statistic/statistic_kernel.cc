@@ -19,19 +19,23 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "backend/common/backend_common_callback.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/data_dump/device_statistic/mem_manager.h"
 #include "include/common/debug/common.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
 
 namespace datadump {
 
-TensorPtr SyncDeviceToHostTensor(DeviceAddressPtr device_addr) {
-  if (!device_addr) {
+TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
+  if (!kernel_tensor) {
     return nullptr;
   }
-  auto kernel_tensor = device_addr->kernel_tensor();
   MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_addr = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_addr);
   auto dtype_id = kernel_tensor->dtype_id();
   const auto &shape_vec = kernel_tensor->GetShapeVector();
 
@@ -43,25 +47,8 @@ TensorPtr SyncDeviceToHostTensor(DeviceAddressPtr device_addr) {
   return out_tensor;
 }
 
-DeviceAddressPtr StatisticKernel::GenerateDeviceAddress(const size_t &mem_size, const TypeId &dtype_id,
-                                                        const ShapeVector &shape, const ValuePtr &value) {
-  auto addr = device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex);
-  MS_EXCEPTION_IF_NULL(addr);
-
-  auto tensor = std::make_shared<kernel::KernelTensor>(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
-                                                       device_context_->device_context_key().device_name_,
-                                                       device_context_->device_context_key().device_id_);
-  tensor->set_stream_id(kDefaultStreamIndex);
-  tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
-  tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
-  if (value) {
-    tensor->SetValue(value);
-  }
-  return device_context_->device_res_manager_->CreateDeviceAddress(tensor);
-}
-
-DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
-                                                            const vector<KernelTensor *> &outputs) {
+KernelTensorPtr StatisticKernel::GetWorkSpaceDeviceAddress(const std::vector<KernelTensor *> &inputs,
+                                                           const std::vector<KernelTensor *> &outputs) {
   auto ret = kernel_mod_->Resize(inputs, outputs);
   if (ret) {
     MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
@@ -71,46 +58,45 @@ DeviceAddressPtr StatisticKernel::GetWorkSpaceDeviceAddress(const vector<KernelT
     MS_VLOG(VL_DUMP) << "Statistic kernel name is " << kernel_name_ << ", workspace size is " << work_space[0]
                      << ", input shape is " << inputs[0]->GetShapeVector() << ", dtype is "
                      << TypeIdToString(inputs[0]->dtype_id());
-    return runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    return DumpMemManager::GetInstance().GetWorkSpaceTensor(device_context_, stream_id_, work_space[0]);
   }
   return nullptr;
 }
 
-DeviceAddressPtr StatisticKernel::GetOutputDeviceAddress(TypeId dtype_id) {
-  ShapeVector shape_vec = {};
-  return GenerateDeviceAddress(UnitSizeInBytes(dtype_id), dtype_id, shape_vec);
+KernelTensorPtr StatisticKernel::GetOutputDeviceAddress(TypeId dtype_id) {
+  return DumpMemManager::GetInstance().GetOutputTensor(device_context_, stream_id_, dtype_id);
 }
 
-vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
-  return vector<KernelTensorPtr>();
+std::vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
+  return std::vector<KernelTensorPtr>();
 }
 
-vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id) {
+std::vector<KernelTensorPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
   stream_id_ = stream_id;
-  vector<KernelTensor *> inputs{input};
+  std::vector<KernelTensor *> inputs{input};
   auto extra_inputs = GetExtraInputsDeviceAddress(input);
-  vector<DeviceAddressPtr> res;
+  std::vector<KernelTensorPtr> res;
   std::transform(extra_inputs.begin(), extra_inputs.end(), std::back_inserter(inputs),
                  [](const auto &extra_input) { return extra_input.get(); });
-  auto output_addr = GetOutputDeviceAddress(input->dtype_id());
-  vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
+  auto output_kernel_tensor = GetOutputDeviceAddress(input->dtype_id());
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+  std::vector<KernelTensor *> outputs{output_kernel_tensor.get()};
 
-  MS_EXCEPTION_IF_NULL(output_addr);
   MS_EXCEPTION_IF_NULL(kernel_mod_);
 
   void *stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto workspace_addr = GetWorkSpaceDeviceAddress(inputs, outputs);
+  auto workspace_kernel_tensor = GetWorkSpaceDeviceAddress(inputs, outputs);
   // in low precision mode, workspace is about 1-13KB.
   // don't use memreuse capture workspace mem.
   if (!DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode()) {
-    res.emplace_back(workspace_addr);
+    res.emplace_back(workspace_kernel_tensor);
   }
-  res.emplace_back(output_addr);
-  vector<KernelTensor *> workspace;
-  if (workspace_addr) {
-    workspace.emplace_back(workspace_addr->kernel_tensor().get());
+  res.emplace_back(output_kernel_tensor);
+  std::vector<KernelTensor *> workspace;
+  if (workspace_kernel_tensor) {
+    workspace.emplace_back(workspace_kernel_tensor.get());
   }
   MS_VLOG(VL_DUMP) << "Start launch statistic kernel, kernel name is " << kernel_name_ << ", stream id is "
                    << stream_id_;

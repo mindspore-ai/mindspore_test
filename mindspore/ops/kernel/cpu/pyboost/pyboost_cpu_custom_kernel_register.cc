@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
+#include "mindspore/ops/kernel/cpu/pyboost/pyboost_cpu_custom_kernel_register.h"
 
 namespace mindspore {
 namespace kernel {

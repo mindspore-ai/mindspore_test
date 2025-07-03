@@ -15,10 +15,11 @@
  */
 
 #include "kernel/cpu/tensor_shape_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace tensor_shape_cpu {
 namespace {
 constexpr size_t kTensorShapeOutputNum = 1;
 }  // namespace
@@ -80,4 +81,5 @@ std::vector<KernelAttr> TensorShapeCpuKernelMod::GetOpSupport() {
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, DynamicShape, TensorShapeCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TensorShape, TensorShapeCpuKernelMod);
+}  // namespace tensor_shape_cpu
 }  // namespace mindspore::kernel

@@ -75,12 +75,12 @@ class SetDynamicShapeAttrDeco : public ExpanderDecorator {
 /**
  * Get the Expander which is used to expand a cnode to a funcgraph which composite same function with core ops.
  */
-BACKEND_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init);
+BACKEND_COMMON_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init);
 
 /**
  * Get the Expander which is used to expand a cnode to a funcgraph which composite same function with core ops.
  */
-BACKEND_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, bool abstract = true);
+BACKEND_COMMON_EXPORT ExpanderPtr GetExpander(const AnfNodePtr &node, bool abstract = true);
 
 bool IsComplexOp(const AnfNodePtr &node);
 }  // namespace mindspore::graphkernel

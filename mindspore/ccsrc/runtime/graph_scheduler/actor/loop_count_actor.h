@@ -56,11 +56,15 @@ class LoopCountActor : public DebugAwareActor {
   ~LoopCountActor() override = default;
 
   // The callback waits for the memory manager actor to finish all the message processing.
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
+  void OnMemoryAllocFinish(OpContext<KernelTensor> *const context) override;
 
   // The debug related operation interface.
-  void SendDebugReq(OpContext<DeviceTensor> *const context) override;
-  void SendProfilerReq(OpContext<DeviceTensor> *const context);
+  void SendDebugReq(OpContext<KernelTensor> *const context) override;
+  void SendProfilerReq(OpContext<KernelTensor> *const context);
+  void HandleNotifyMessage(OpContext<KernelTensor> *const context, const AID &from_aid) override;
+  void HandleNotifyOnePhase(OpContext<KernelTensor> *const context);
+  void HandleNotifyTwoPhase(OpContext<KernelTensor> *const context);
+  void RealRun(OpContext<KernelTensor> *const context);
 
   // Get the member.
   size_t loop_count() const { return loop_count_; }
@@ -71,14 +75,14 @@ class LoopCountActor : public DebugAwareActor {
   void ResetState() { current_count_ = 0; }
 
  protected:
-  void Run(OpContext<DeviceTensor> *const context) override;
-  void SendOutput(OpContext<DeviceTensor> *const context) override;
+  void Run(OpContext<KernelTensor> *const context) override;
+  void SendOutput(OpContext<KernelTensor> *const context) override;
 
  private:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
 
-  void IncreaseLoopCount(OpContext<DeviceTensor> *const context);
+  void IncreaseLoopCount(OpContext<KernelTensor> *const context);
 
   // Graph name of GraphCompilerInfo. For example, kernel_graph_0-3.
   std::string graph_name_;
@@ -93,6 +97,7 @@ class LoopCountActor : public DebugAwareActor {
   // The actors which need be handled separately by loop count actor.
   AID data_prepare_aid_;
   std::vector<AID> entrance_aids_;
+  std::vector<AID> first_control_aids_;
 
   // The execution strategy for executing actor.
   // In pipeline mode,  sync stream for every step.
@@ -100,6 +105,8 @@ class LoopCountActor : public DebugAwareActor {
 
   // Only need sync stream in DR scenarios.
   bool is_need_sync_stream_{true};
+  // Input num of signal message.
+  std::vector<AID> notify_messages_;
 };
 
 using LoopCountActorPtr = std::shared_ptr<LoopCountActor>;

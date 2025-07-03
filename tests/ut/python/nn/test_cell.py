@@ -183,7 +183,7 @@ def test_exceptions():
         def construct(self, *inputs):
             pass
 
-    with pytest.raises(TypeError):
+    with pytest.raises(KeyError):
         ModError1(t)
 
     class ModError2(nn.Cell):

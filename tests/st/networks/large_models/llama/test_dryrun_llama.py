@@ -108,6 +108,7 @@ def run_llama_pipeline():
     task_trainer.config.runner_config.epochs = 1
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
+    ms.set_auto_parallel_context(pipeline_stages=2)
     task_trainer.set_parallel_config(data_parallel=1,
                                      model_parallel=2,
                                      pipeline_stage=2,

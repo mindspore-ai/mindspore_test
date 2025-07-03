@@ -17,10 +17,11 @@
 #include "kernel/cpu/tril_indices_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace tril_indices_cpu {
 bool TrilIndicesCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   row_ = GetValue<int64_t>(primitive_->GetAttr("row"));
@@ -88,5 +89,6 @@ std::vector<KernelAttr> TrilIndicesCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, TrilIndices, TrilIndicesCpuKernelMod);
+}  // namespace tril_indices_cpu
 }  // namespace kernel
 }  // namespace mindspore

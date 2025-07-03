@@ -28,6 +28,7 @@
 #include "op_def/op_enum.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 
 namespace mindspore {
 namespace ops {
@@ -493,21 +494,21 @@ TypePtrList IncreFlashAttentionFuncImpl::InferType(const PrimitivePtr &primitive
   if (input_values[kIncreFlashAttentionInputQuantScale2] != mindspore::kNone) {
     return {kInt8};
   }
-  if (input_values[kIncreFlashAttentionInputKvPaddingSize]->isa<tensor::BaseTensor>()) {
+  if (input_values[kIncreFlashAttentionInputKvPaddingSize]->isa<tensor::Tensor>()) {
     const auto &kv_padding_size_tensor =
-      input_values[kIncreFlashAttentionInputKvPaddingSize]->cast<tensor::BaseTensorPtr>();
+      input_values[kIncreFlashAttentionInputKvPaddingSize]->cast<tensor::TensorPtr>();
     const std::set<TypePtr> kv_padding_size_valid_types = {kInt64};
     (void)CheckAndConvertUtils::CheckTypeValid("kv_padding_size", kv_padding_size_tensor->Dtype(),
                                                kv_padding_size_valid_types, primitive->name());
   }
-  const auto &query_tensor = input_values[kIncreFlashAttentionInputQueryIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &query_tensor = input_values[kIncreFlashAttentionInputQueryIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(query_tensor);
   return {query_tensor->Dtype()};
 }
 
 ShapeArray IncreFlashAttentionFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                    const ValuePtrList &input_values) const {
-  const auto &query_tensor = input_values[kIncreFlashAttentionInputQueryIndex]->cast<tensor::BaseTensorPtr>();
+  const auto &query_tensor = input_values[kIncreFlashAttentionInputQueryIndex]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(query_tensor);
   return {query_tensor->shape()};
 }

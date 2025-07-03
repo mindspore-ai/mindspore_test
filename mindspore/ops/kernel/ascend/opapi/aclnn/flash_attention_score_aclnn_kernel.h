@@ -20,13 +20,14 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
-#include "transform/graph_ir/op_adapter_base.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
+#include "plugin/res_manager/ascend/op_adapter/op_adapter_base.h"
 
 namespace mindspore {
-using mindspore::transform::FASInputLayoutMode;
+using mindspore::device::ascend::FASInputLayoutMode;
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace flash_attention_score {
+using TensorParams = device::ascend::TensorParams;
 
 class FlashAttentionScoreAscend : public AclnnKernelMod {
  public:
@@ -46,6 +47,7 @@ class FlashAttentionScoreAscend : public AclnnKernelMod {
     }
     return true;
   }
+  std::vector<size_t> GetUseLessOutputIdx() const override { return {kIndex2}; };
 
  protected:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
@@ -136,6 +138,7 @@ class FlashAttentionScoreAscend : public AclnnKernelMod {
     return is_increased && seq_list[num - 1] == t_shape[0];
   }
 };
+}  // namespace flash_attention_score
 }  // namespace kernel
 }  // namespace mindspore
 

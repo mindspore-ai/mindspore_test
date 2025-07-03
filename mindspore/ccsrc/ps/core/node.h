@@ -38,6 +38,7 @@
 #include "ps/core/communicator/tcp_client.h"
 #include "ps/core/communicator/tcp_server.h"
 #include "ps/core/file_configuration.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace ps {
@@ -45,7 +46,7 @@ namespace core {
 constexpr int kTimeoutInSeconds = 30;
 constexpr int kCommTimeoutInSeconds = 10;
 constexpr int kCommTimeoutInThreeSeconds = 3;
-class Node {
+class BACKEND_COMMON_EXPORT Node {
  public:
   Node()
       : is_ready_(false),
@@ -114,7 +115,7 @@ class Node {
   ClusterState current_cluster_state_;
 
   // Configuration file,The format is as follows
-  //{
+  // {
   // "recovery": {
   //      "storage_type": 1,
   //      "storge_file_path": "/home/cds/config.json"

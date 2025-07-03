@@ -21,6 +21,8 @@
 #include "include/registry/converter_context.h"
 #include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_o.h"
 
 namespace mindspore {
 namespace lite {
@@ -60,6 +62,8 @@ STATUS AddAttrAxisToLastInput(const CNodePtr &cnode, int64_t axis) {
 }
 }  // namespace
 
+using mindspore::ops::kNameOneHot;
+OneHotMapper::OneHotMapper() : PrimitiveMapper(kNameOneHot) {}
 // in ascend graph ir, OneHot' attribute 'axis' is of input_to_attr type, but in
 // lite's OneHot, it's an attribute. so we need to add it as the last input here.
 STATUS OneHotMapper::Mapper(const CNodePtr &cnode) {

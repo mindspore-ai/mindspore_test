@@ -17,6 +17,7 @@
 #include "nnacl/layer_norm_parameter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/layer_norm_fusion.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 using mindspore::ops::kBeginNormAxis;
 using mindspore::ops::kBeginParamsAxis;
 using mindspore::ops::kElementwiseAffine;

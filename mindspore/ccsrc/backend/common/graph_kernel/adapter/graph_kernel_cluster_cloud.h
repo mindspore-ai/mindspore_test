@@ -24,6 +24,7 @@ class StaticShapeCluster : public GraphKernelCluster {
   StaticShapeCluster() = default;
   ~StaticShapeCluster() override = default;
   static std::vector<PrimitivePtr> GetClusterOps();
+  static bool CanClusterableOp(const AnfNodePtr &node, const std::vector<PrimitivePtr> &op_list);
 
  protected:
   std::vector<PrimitivePtr> GetClusterableOpList() override;

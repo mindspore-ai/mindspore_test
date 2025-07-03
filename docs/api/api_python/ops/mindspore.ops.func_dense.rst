@@ -10,12 +10,12 @@ mindspore.ops.dense
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
-        - 在PyNative模式下，如果 `bias` 不是1D， `input` 不可以大于6D。
+        - 在Ascend硬件平台下，设置PYNATIVE或KBK模式时，如果 `bias` 不是1D， `input` 不可以大于6D。
 
     参数：
         - **input** (Tensor) - 输入Tensor，shape是 :math:`(*, in\_channels)`，其中 :math:`*` 表示任意的附加维度。
         - **weight** (Tensor) - 输入Tensor的权重，shape是 :math:`(out\_channels, in\_channels)` 或 :math:`(in\_channels)`。
-        - **bias** (Tensor，可选) - 添加在输出结果的偏差，shape是 :math:`(out\_channels)` 或 :math:`()`。默认值：``None`` ，偏差为0。
+        - **bias** (Tensor，可选) - 添加在输出结果的偏差，shape是 :math:`(out\_channels)` 或 :math:`()`。默认 ``None`` ，偏差为0。
 
     返回：
         输出结果，shape由 `input` 和 `weight` 的shape决定。
@@ -24,4 +24,4 @@ mindspore.ops.dense
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - `weight` 不是Tensor。
         - **TypeError** - `bias` 不是Tensor。
-        - **RuntimeError** - 在PyNative模式下， `bias` 不是1D且 `input` 大于6D。
+        - **RuntimeError** - 在Ascend硬件平台下，设置PYNATIVE或KBK模式时， `bias` 不是1D且 `input` 大于6D。

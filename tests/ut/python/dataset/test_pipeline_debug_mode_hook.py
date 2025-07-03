@@ -21,10 +21,6 @@ import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 import mindspore.dataset.debug as dbg
 
-# Need to run all these tests in separate processes since
-# the global configuration setting of debug_mode may impact other tests running in parallel.
-pytestmark = pytest.mark.forked
-
 
 @pytest.mark.parametrize("debug_mode_flag, debug_hook_list",
                          [(True, [dbg.PrintMetaDataHook()]),

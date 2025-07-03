@@ -32,16 +32,15 @@ from mindspore.ops.primitive import PrimitiveWithCheck
 from mindspore.ops.primitive import prim_attr_register
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore._c_expression import pyboost_all_finite
-from mindspore.common._stub_tensor import _convert_stub
 from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, GLU, ReLU, ReLU6, Dense, Tanh,
                              Elu, Sigmoid, Softmax, SoftplusExt, HSwish, HSigmoid, AvgPool, BiasAdd,
                              NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm, IncreFlashAttention, MSELossExt,
                              GridSampler3D, GridSampler2D, LayerNorm, LayerNormExt, HShrink, AdamWeightDecay, Dropout,
-                             ApplyRotaryPosEmb, PagedAttention, PagedAttentionMask, ReshapeAndCache,
+                             ApplyRotaryPosEmb, GroupTopk, PagedAttention, PagedAttentionMask, ReshapeAndCache,
                              FlashAttentionScore, PromptFlashAttention, Embedding, UpsampleNearest1D, UpsampleNearest2D,
                              UpsampleNearest3D, UpsampleTrilinear3D,
-                             UpsampleBilinear2D, UpsampleLinear1D,
-                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink,
+                             SoftMarginLoss, UpsampleBilinear2D, UpsampleLinear1D,
+                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, AdaptiveMaxPool2D,
                              SmoothL1Loss)
 from .manually_defined import BatchNorm
 
@@ -246,78 +245,6 @@ class AdaptiveAvgPool2D(Primitive):
                 validator.check_number(f"output_size[{i}]", size, 0, validator.GE, self.name)
 
         self.output_size = tuple(-1 if val is None else val for val in self.output_size)
-        self.add_prim_attr('output_size', self.output_size)
-
-
-class AdaptiveMaxPool2D(Primitive):
-    r"""
-    Performs 2D adaptive max pooling on a multi-plane input signal.
-
-    Refer to :func:`mindspore.ops.adaptive_max_pool2d` for more details.
-
-    Args:
-        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
-            or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
-            If it is None, it means the output size is the same as the input size.
-
-    Inputs:
-        - **input_x** (Tensor) - The input of AdaptiveMaxPool2D, which is a 3D or 4D tensor,
-          with float16, float32 or float64 data type.
-
-    Outputs:
-        Tensor, with the same type as the `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> # case 1: output_size=(None, 2)
-        >>> input_x = Tensor(np.array([[[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-        ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-        ...                             [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]]]), mindspore.float32)
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D((None, 2))
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[2. 3.]
-           [5. 6.]
-           [8. 9.]]
-          [[2. 3.]
-           [5. 6.]
-           [8. 9.]]
-          [[2. 3.]
-           [5. 6.]
-           [8. 9.]]]]
-        >>> # case 2: output_size=2
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D(2)
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[5. 6.]
-           [8. 9.]]
-          [[5. 6.]
-           [8. 9.]]
-          [[5. 6.]
-           [8. 9.]]]]
-        >>> # case 3: output_size=(1, 2)
-        >>> adaptive_max_pool_2d = ops.AdaptiveMaxPool2D((1, 2))
-        >>> output = adaptive_max_pool_2d(input_x)
-        >>> print(output[0])
-        [[[[8. 9.]]
-          [[8. 9.]]
-          [[8. 9.]]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, output_size):
-        """Initialize AdaptiveMaxPool2D."""
-        validator.check_value_type("output_size", output_size, [int, tuple], self.name)
-        if isinstance(output_size, tuple):
-            validator.check_int(len(output_size), 2, validator.EQ,
-                                'length of output_size', self.name)
-        self.output_size = (output_size, output_size) if isinstance(self.output_size, int) else output_size
-        self.output_size = (-1 if self.output_size[0] is None else self.output_size[0],
-                            -1 if self.output_size[1] is None else self.output_size[1])
-        for size in self.output_size:
-            validator.check_number("output_size", size, -1, validator.GE, None)
         self.add_prim_attr('output_size', self.output_size)
 
 
@@ -883,13 +810,13 @@ class Conv2D(Primitive):
 
     Inputs:
         - **x** (Tensor) - Input tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or
-          :math:`(N, H_{in}, W_{in}, C_{in}, )` depending on `data_format` .
+          :math:`(N, H_{in}, W_{in}, C_{in})` depending on `data_format` .
         - **weight** (Tensor) - The convolutional kernel value, it should has shape
           :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]}, \text{kernel_size[1]})` .
 
     Outputs:
         Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`
-        or :math:`(N, H_{out}, W_{out}, C_{out}, )`.
+        or :math:`(N, H_{out}, W_{out}, C_{out})`.
         To see how different pad modes affect the output shape, please refer to
         :class:`mindspore.nn.Conv2d` for more details.
 
@@ -2055,17 +1982,18 @@ class Conv2DTranspose(Conv2DBackpropInput):
               If this mode is set, `pad` must be greater than or equal to 0.
 
             Please refer to :class:`mindspore.nn.Conv2dTranspose` for more specifications about `pad_mode`.
-        pad (Union[int, tuple[int]]): The pad value to be filled. Default: ``0`` . If `pad` is an integer, the paddings
-                    of top, bottom, left and right are the same, equal to pad. If `pad` is a tuple of four integers,
-                    the padding of top, bottom, left and right equal to pad[0], pad[1], pad[2], and pad[3]
-                    correspondingly.
-        pad_list (Union[str, None]): The pad list like (top, bottom, left, right). Default: ``None`` .
-        mode (int): Modes for different convolutions. The value is currently not used. Default: ``1`` .
-        stride (Union[int, tuple[int]]): The stride to be applied to the convolution filter. Default: ``1`` .
-        dilation (Union[int, tuple[int]]): Specifies the dilation rate to be used for the dilated convolution.
+        pad (Union[int, tuple[int]], optional): The pad value to be filled. Default: ``0`` .
+            If `pad` is an integer, the paddings
+            of top, bottom, left and right are the same, equal to pad. If `pad` is a tuple of four integers,
+            the padding of top, bottom, left and right equal to pad[0], pad[1], pad[2], and pad[3]
+            correspondingly.
+        pad_list (Union[str, None], optional): The pad list like (top, bottom, left, right). Default: ``None`` .
+        mode (int, optional): Modes for different convolutions. The value is currently not used. Default: ``1`` .
+        stride (Union[int, tuple[int]], optional): The stride to be applied to the convolution filter. Default: ``1`` .
+        dilation (Union[int, tuple[int]], optional): Specifies the dilation rate to be used for the dilated convolution.
             Default: ``1`` .
-        group (int): Splits input into groups. Default: ``1`` .
-        data_format (str): The format of input and output data. It should be ``'NHWC'`` or ``'NCHW'`` .
+        group (int, optional): Splits input into groups. Default: ``1`` .
+        data_format (str, optional): The format of input and output data. It should be ``'NHWC'`` or ``'NCHW'`` .
             Default is ``'NCHW'`` .
 
     Inputs:
@@ -2133,7 +2061,7 @@ class SoftmaxCrossEntropyWithLogits(Primitive):
         - **labels** (Tensor) - Ground truth labels, with shape :math:`(N, C)`, has the same data type with `logits`.
 
     Outputs:
-        Tuple of 2 tensors(loss, dlogits), the `loss` shape is :math:`(N,)`,
+        Tuple of 2 tensors( `loss` , `dlogits` ), the `loss` shape is :math:`(N,)`,
         and the `dlogits` with the same shape as `logits`.
 
     Raises:
@@ -2167,7 +2095,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
     r"""
     Computes the softmax cross-entropy value between logits and sparse encoding labels.
 
-    Sets input logits as `X`, input label as `Y`, output as `loss`. Then,
+    Sets input logits as `X`, input label as `Y`, output as `loss`. The formula is as follows:
 
     .. math::
         \begin{array}{ll} \\
@@ -2177,7 +2105,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
         \end{array}
 
     Args:
-        is_grad (bool): If ``True`` , this operation returns the computed gradient. Default: ``False`` .
+        is_grad (bool, optional): If ``True`` , this operation returns the computed gradient. Default: ``False`` .
 
     Inputs:
         - **logits** (Tensor) - Input logits, with shape :math:`(N, C)`. Data type must be float16 or float32.
@@ -2185,7 +2113,7 @@ class SparseSoftmaxCrossEntropyWithLogits(Primitive):
           Data type must be int32 or int64.
 
     Outputs:
-        Tensor, if `is_grad` is False, the output tensor is the value of loss which is a scalar tensor;
+        Tensor, if `is_grad` is ``False``, the output tensor is the value of loss;
         if `is_grad` is ``True`` , the output tensor is the gradient of input with the same shape as `logits`.
 
     Raises:
@@ -2284,10 +2212,10 @@ class ApplyMomentum(Primitive):
     Refer to :class:`mindspore.nn.Momentum` for more details about the formula and usage.
 
     Args:
-        use_locking (bool): Whether to enable a lock to protect the variable and accumulation tensors
+        use_locking (bool, optional): Whether to enable a lock to protect the variable and accumulation tensors
                             from being updated. Default: ``False`` .
-        use_nesterov (bool): Enable Nesterov momentum. Default: ``False`` .
-        gradient_scale (float): The scale of the gradient. Default: ``1.0`` .
+        use_nesterov (bool, optional): Enable Nesterov momentum. Default: ``False`` .
+        gradient_scale (float, optional): The scale of the gradient. Default: ``1.0`` .
 
     Inputs:
         - **variable** (Union[Parameter, Tensor]) - Weights to be updated. Data type must be float64, int64, float,
@@ -2422,63 +2350,6 @@ class MultiMarginLoss(Primitive):
 
     def __call__(self, x, target, weight=None):
         return super().__call__(x, target, weight)
-
-
-class SoftMarginLoss(Primitive):
-    r"""
-    SoftMarginLoss operation.
-
-    Creates a criterion that optimizes a two-class classification
-    logistic loss between input tensor :math:`x` and target tensor :math:`y`
-    (containing 1 or -1).
-
-    .. math::
-        \text{loss}(x, y) = \sum_i \frac{\log(1 + \exp(-y[i]*x[i]))}{\text{x.nelement}()}
-
-    where :math:`x.nelement()` is the number of elements of x.
-
-    Args:
-        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
-            ``'sum'`` . Default: ``'mean'`` .
-
-            - ``'none'``: no reduction will be applied.
-            - ``'mean'``: compute and return the mean of elements in the output.
-            - ``'sum'``: the output elements will be summed.
-
-    Inputs:
-        - **logits** (Tensor) - Predict data. Data type must be float16 or float32.
-        - **labels** (Tensor) - Ground truth data, with the same type and shape as `logits`.
-
-    Outputs:
-        Tensor or Scalar, if `reduction` is ``"none"``, its shape is the same as `logits`.
-        Otherwise, a scalar value will be returned.
-
-    Raises:
-        TypeError: If `logits` or `labels` is not a Tensor.
-        TypeError: If dtype of `logits` or `labels` is neither float16 nor float32.
-        ValueError: If shape of `logits` is not the same as `labels`.
-        ValueError: If `reduction` is not one of ``"none"`` , ``"mean"`` or ``"sum"`` .
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> loss = ops.SoftMarginLoss()
-        >>> logits = Tensor(np.array([[0.3, 0.7], [0.5, 0.5]]), mindspore.float32)
-        >>> labels = Tensor(np.array([[-1, 1], [1, -1]]), mindspore.float32)
-        >>> output = loss(logits, labels)
-        >>> print(output)
-        0.6764238
-    """
-
-    @prim_attr_register
-    def __init__(self, reduction="mean"):
-        """Initialize SoftMarginLoss"""
-        self.init_prim_io_names(inputs=['predict', 'label'], outputs=['loss'])
-        self.reduction = validator.check_string(reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
 
 
 class L2Loss(Primitive):
@@ -2744,12 +2615,12 @@ class ApplyRMSProp(PrimitiveWithInfer):
     :math:`\eta` represents `learning_rate`. :math:`\nabla Q_{i}(w)` represents `grad`.
 
     .. warning::
-        Note that in dense implementation of this algorithm, "mean_square" and "moment" will update even if "grad" is 0,
-        but in this sparse implementation, "mean_square" and "moment" will not update
-        in iterations during which "grad" is 0.
+        Note that in dense implementation of this algorithm, `mean_square` and `moment` will update even if `grad` is 0,
+        but in this sparse implementation, `mean_square` and `moment` will not update
+        in iterations during which `grad` is 0.
 
     Args:
-        use_locking (bool): Whether to enable a lock to protect the variable and accumulation tensors
+        use_locking (bool, optional): Whether to enable a lock to protect the variable and accumulation tensors
                             from being updated. Default: ``False`` .
 
     Inputs:
@@ -3407,7 +3278,7 @@ class ComputeAccidentalHits(Primitive):
     the weight is FLOAT_MAX. FLOAT_MAX indicates the max value in the type of Float
 
     Args:
-        num_true (int): The number of target classes per training example. Default: ``1`` .
+        num_true (int, optional): The number of target classes per training example. Default: ``1`` .
 
     Inputs:
         - **true_classes** (Tensor) - The target classes. With data type of int64
@@ -4212,7 +4083,7 @@ class KLDivLoss(Primitive):
           or ``'sum'``.
 
     Args:
-        reduction (str): Specifies the reduction to be applied to the output.
+        reduction (str, optional): Specifies the reduction to be applied to the output.
             Default: ``'mean'`` .
 
             - ``'none'``: no reduction will be applied.
@@ -4233,7 +4104,7 @@ class KLDivLoss(Primitive):
         TypeError: If neither `logits` nor `labels` is a Tensor.
         TypeError: If dtype of `logits` or `labels` is not currently supported.
         ValueError: If shape of `logits` is not the same as `labels`.
-        RuntimeError: If `logits` or `labels` is a scalar when `reduction` is 'batchmean'.
+        RuntimeError: If `logits` or `labels` is a scalar when `reduction` is ``'batchmean'``.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -4710,9 +4581,10 @@ class SparseApplyAdagradV2(Primitive):
     Args:
         lr (float): Learning rate.
         epsilon (float): A small value added for numerical stability.
-        use_locking (bool): If ``True`` , the `var` and `accum` tensors will be protected from being updated.
+        use_locking (bool, optional): If ``True`` , the `var` and `accum` tensors will be protected from being updated.
             Default: ``False`` .
-        update_slots (bool): If ``True`` , the computation logic will be different to `False`. Default: ``True`` .
+        update_slots (bool, optional): If ``True`` , the computation logic will be different to `False`.
+            Default: ``True`` .
 
     Inputs:
         - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.
@@ -4801,8 +4673,8 @@ class ApplyProximalAdagrad(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): If ``True`` , the var and accumulation tensors will be protected from being updated.
-            Default: ``False`` .
+        use_locking (bool, optional): If ``True`` , the var and accumulation tensors will be protected
+            from being updated. Default: ``False`` .
 
     Inputs:
         - **var** (Union[Parameter, Tensor]) - Variable to be updated. The data type must be float16 or float32.
@@ -5699,7 +5571,7 @@ class Dropout3D(PrimitiveWithInfer):
     Dropout3D can improve the independence between channel feature maps.
 
     Args:
-        keep_prob (float): The keep probability of a channel, between 0 and 1, e.g. `keep_prob` = 0.8,
+        keep_prob (float, optional): The keep probability of a channel, between 0 and 1, e.g. `keep_prob` = 0.8,
             means dropping out 20% of channels. Default: ``0.5`` .
 
     Inputs:
@@ -5751,12 +5623,14 @@ class CTCLoss(Primitive):
     such that the length of target series must be less than or equal to the length of input.
 
     Args:
-        preprocess_collapse_repeated (bool): If ``True`` , repeated labels will be collapsed prior to the CTC
+        preprocess_collapse_repeated (bool, optional): If ``True`` , repeated labels will be collapsed prior to the CTC
                                              calculation. Default: ``False`` .
-        ctc_merge_repeated (bool): If ``False`` , during CTC calculation, repeated non-blank labels will not be merged
+        ctc_merge_repeated (bool, optional): If ``False`` , during CTC calculation,
+                                   repeated non-blank labels will not be merged
                                    and these labels will be interpreted as individual ones. This is a simplified
                                    version of CTC. Default: ``True`` .
-        ignore_longer_outputs_than_inputs (bool): If ``True`` , sequences with longer outputs than inputs will be
+        ignore_longer_outputs_than_inputs (bool, optional): If ``True`` ,
+                                                  sequences with longer outputs than inputs will be
                                                   ignored. Default: ``False`` .
 
     Inputs:
@@ -6330,10 +6204,7 @@ class AvgPool3D(Primitive):
 
     Typically the input is of shape :math:`(N, C, D_{in}, H_{in}, W_{in})`, AvgPool3D outputs
     regional average in the :math:`(D_{in}, H_{in}, W_{in})`-dimension. Given kernel size
-    :math:`ks = (d_{ker}, h_{ker}, w_{ker})` and stride :math:`s = (s_0, s_1, s_2)`, the operation is as follows.
-
-    .. warning::
-        "kernel_size" is in the range [1, 255]. "strides" is in the range [1, 63].
+    :math:`ks = (d_{ker}, h_{ker}, w_{ker})` and stride :math:`s = (s_0, s_1, s_2)`, the operation is as follows:
 
     .. math::
         \text{output}(N_i, C_j, d, h, w) =
@@ -6344,12 +6215,13 @@ class AvgPool3D(Primitive):
         This interface currently does not support Atlas A2 training series products.
 
     Args:
-        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the average value,
+        kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the average value,
             is an int number that represents depth, height and width are both kernel_size, or a tuple
-            of three int numbers that represent depth, height and width respectively. Default: ``1`` .
-        strides (Union[int, tuple[int]]): The distance of kernel moving, an int number that represents
+            of three int numbers that represent depth, height and width respectively.
+            Default: ``1`` . The value range is: [1, 255].
+        strides (Union[int, tuple[int]], optional): The distance of kernel moving, an int number that represents
             the depth, height and width of movement are both strides, or a tuple of three int numbers that
-            represent depth, height and width of movement respectively. Default: ``1`` .
+            represent depth, height and width of movement respectively. Default: ``1`` . The value range is: [1, 63].
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
 
@@ -6366,16 +6238,18 @@ class AvgPool3D(Primitive):
               in the depth, height and width dimension is determined by the `pad` parameter.
               If this mode is set, `pad` must be greater than or equal to 0.
 
-        pad (Union(int, tuple[int], list[int])): The pad value to be filled. Default: ``0`` . If `pad` is an integer,
+        pad (Union(int, tuple[int], list[int]), optional): The pad value to be filled. Default: ``0`` .
+            If `pad` is an integer,
             the paddings of head, tail, top, bottom, left and right are the same, equal to pad.
             If `pad` is a tuple of six integers, the padding of head, tail, top, bottom, left and right equal to
             pad[0], pad[1], pad[2], pad[3], pad[4] and pad[5] correspondingly.
-        ceil_mode (bool): If ``True`` , ceil instead of floor to compute the output shape. Default: ``False`` .
-        count_include_pad (bool): If ``True`` , averaging calculation will include the zero-padding.
+        ceil_mode (bool, optional): If ``True`` , ceil instead of floor to compute the output shape.
+            Default: ``False`` .
+        count_include_pad (bool, optional): If ``True`` , averaging calculation will include the zero-padding.
             Default: ``True`` .
-        divisor_override (int): If specified, it will be used as divisor in the averaging calculation,
+        divisor_override (int, optional): If specified, it will be used as divisor in the averaging calculation,
             otherwise kernel_size will be used. Default: ``0`` .
-        data_format (str) : The optional value for data format. Currently only support ``'NCDHW'`` .
+        data_format (str, optional): The optional value for data format. Currently only support ``'NCDHW'`` .
             Default: ``'NCDHW'`` .
 
     Inputs:
@@ -6559,39 +6433,8 @@ class Conv3D(Primitive):
 
     Outputs:
         Tensor, the value that applied 3D convolution. The shape is :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`.
-
-        `pad_mode` is ``"same"``:
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lceil{\frac{D_{in}}{\text{stride[0]}}} \right \rceil \\
-                H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[1]}}} \right \rceil \\
-                W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[2]}}} \right \rceil \\
-            \end{array}
-
-        `pad_mode` is ``"valid"``:
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
-                {\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
-                {\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
-                {\text{stride[2]}} + 1} \right \rfloor \\
-            \end{array}
-
-        `pad_mode` is ``"pad"``:
-
-        .. math::
-            \begin{array}{ll} \\
-                D_{out} = \left \lfloor{\frac{D_{in} + pad[0] + pad[1] - (\text{dilation[0]} - 1) \times
-                \text{kernel_size[0]} - 1 }{\text{stride[0]}} + 1} \right \rfloor \\
-                H_{out} = \left \lfloor{\frac{H_{in} + pad[2] + pad[3] - (\text{dilation[1]} - 1) \times
-                \text{kernel_size[1]} - 1 }{\text{stride[1]}} + 1} \right \rfloor \\
-                W_{out} = \left \lfloor{\frac{W_{in} + pad[4] + pad[5] - (\text{dilation[2]} - 1) \times
-                \text{kernel_size[2]} - 1 }{\text{stride[2]}} + 1} \right \rfloor \\
-            \end{array}
+        To see how different pad modes affect the output shape, please refer to
+        :class:`mindspore.nn.Conv3d` for more details.
 
     Raises:
         TypeError: If `out_channel` or `group` is not an int.
@@ -6980,9 +6823,9 @@ class CTCLossV2(Primitive):
             and its correlated gradient to zero. Default: ``False`` .
 
     Inputs:
-        - **log_probs** (Tensor) - A tensor of shape :math:`(T, N, C)`, where :math:`T` is input length, :math:`N` is
+        - **log_probs** (Tensor) - A 3D tensor of shape :math:`(T, N, C)`, where :math:`T` is input length, :math:`N` is
           batch size and :math:`C` is number of classes (including blank). Supported dtypes: float32, float64.
-        - **targets** (Tensor) - A tensor of shape :math:`(N, S)`, where :math:`S` is max target length,
+        - **targets** (Tensor) - A 2D tensor of shape :math:`(N, S)`, where :math:`S` is max target length,
           means the target sequences. Supported dtypes: int32, int64.
         - **input_lengths** (Union(Tuple, Tensor)) - A tuple or Tensor of shape :math:`(N)`.
           It means the lengths of the input. Supported dtypes: int32, int64.
@@ -7053,7 +6896,7 @@ class CTCLossV2Grad(Primitive):
 
     Args:
         blank (int): The blank label. Default: ``0`` .
-        reduction (string): Apply specific reduction method to the output. Currently only support 'none'.
+        reduction (str): Apply specific reduction method to the output. Currently only support 'none'.
             Default: ``"none"`` .
         zero_infinity (bool): Whether to set infinite loss and correlation gradient to zero. Default: ``False`` .
 
@@ -7276,8 +7119,8 @@ class Conv3DTranspose(Primitive):
         self.format = validator.check_string(data_format, ['NCDHW'], 'format', self.name)
         self.add_prim_attr('data_format', self.format)
 
-        self.output_padding = _check_3d_int_or_tuple('output_padding', output_padding, self.name,
-                                                     allow_five=False, ret_five=True, greater_zero=False)
+        self.output_padding = _check_3d_int_or_tuple('output_padding', output_padding, self.name, allow_five=False,
+                                                     ret_five=True, greater_zero=False, pad_value=0)
         output_padding_ = (self.output_padding[2], self.output_padding[3], self.output_padding[4])
         if self.pad_mode != 'pad' and output_padding_ != (0, 0, 0):
             raise ValueError(f"For '{self.name}', the 'output_padding' must be zero or (0, 0, 0) "
@@ -7527,9 +7370,8 @@ class ApplyAdagradDA(Primitive):
         >>> global_step = Tensor(2, mstype.int32)
         >>> output = net(grad, lr, l1, l2, global_step)
         >>> print(output)
-        (Tensor(shape=[2, 2], dtype=Float32, value=
-        [[-7.39064650e-04, -1.36888528e-03],
-         [-5.96988888e-04, -1.42478070e-03]]))
+        [[-0.00073906 -0.00136889]
+         [-0.00059699 -0.00142478]]
     """
 
     __mindspore_signature__ = (
@@ -8058,7 +7900,7 @@ class ApplyAdamWithAmsgradV2(Primitive):
 
     Args:
         use_locking (bool): If ``True`` , updating of the `var`, `m`, and `v` tensors will
-            be protected by a lock; Otherwise the behavior is undefined, but may exhibit less contention.
+            be protected by a lock; Otherwise some contention may occur.
             Default: ``False`` .
 
     Inputs:
@@ -8606,13 +8448,13 @@ class TripletMarginLoss(Primitive):
         - **margin** (Tensor) - Make a margin between the positive pair and the negative pair.
 
     Outputs:
-        Union[Tensor, Scalar], if `reduction` is ``"none"``, its shape is :math:`(N)`.
+        Union[Tensor, Scalar], if `reduction` is ``"none"``, a Ten sor will be returned with a shape of :math:`(N)`.
         Otherwise, a scalar value will be returned.
 
     Raises:
-        TypeError: If `x` or `positive` or `negative` or `margin` is not a Tensor.
-        TypeError: If dtype of `x` or `positive` or `negative` is not BasicType.
-        TypeError: If dtype of `x`, `positive` and `negative` is not the same.
+        TypeError: If `x`, `positive`, `negative`, or `margin` is not a Tensor.
+        TypeError: If dtype of `x`, `positive`, or `negative` is not BasicType.
+        TypeError: If dtypes of `x`, `positive` and `negative` are not the same.
         TypeError: If `margin` is not float32.
         TypeError: If `p` is not an int.
         TypeError: If `eps` is not a float.
@@ -8622,7 +8464,7 @@ class TripletMarginLoss(Primitive):
         ValueError: If the dimension of input `x` or `positive` or `negative`
           is bigger than or equal to 8.
         ValueError: If length of shape of `margin` is not 0.
-        ValueError: If shape of `x`, `positive` and `negative` cannot broadcast.
+        ValueError: If shapes of `x`, `positive` and `negative` cannot broadcast.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
 
     Supported Platforms:
@@ -9415,4 +9257,4 @@ class AllFinite(Primitive):
                     "in the current environment does not support AllFinite.")
 
     def __call__(self, *args):
-        return _convert_stub(pyboost_all_finite(self, args))
+        return pyboost_all_finite(self, args)

@@ -16,14 +16,14 @@ mindspore.ops.multilabel_margin_loss
     :math:`y \in \left\{0, \; \cdots , \; \text{y.size}(0) - 1\right\}`, \
     :math:`0 \leq y[j] \leq \text{x.size}(0)-1`, \
     并且 :math:`i \neq y[j]` 对于所有 :math:`i` 和 :math:`j` 。
-    :math:`y` 和 :math:`x` shape必须相同。
+    :math:`y` 和 :math:`x` 的shape必须相同。
     该标准仅考虑从前方开始的连续非负目标块。这允许不同的样本具有不同数量的目标类别。
 
     参数：
         - **input** (Tensor) - 预测值。上述公式中的 :math:`x` ，shape为 :math:`(C)` 或 :math:`(N, C)`，其中 :math:`N`
           为批量大小，:math:`C` 为类别数。数据类型必须为：float16或float32。
         - **target** (Tensor) - 真实标签，上述公式中的 :math:`y` ，shape与 `input` 相同，数据类型必须为int32，标签目标由-1填充。
-        - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
+        - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认 ``'mean'`` 。
 
           - ``'none'``：不应用规约方法。
           - ``'mean'``：计算输出元素的平均值。

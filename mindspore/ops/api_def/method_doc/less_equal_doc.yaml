@@ -2,38 +2,4 @@ less_equal:
   description: |
     less_equal(other) -> Tensor
 
-    Computes the boolean value of :math:`self <= other` element-wise.
-
-    .. math::
-        out_{i} =\begin{cases}
-            & \text{True,    if } self_{i}<=other_{i} \\
-            & \text{False,   if } self_{i}>other_{i}
-            \end{cases}
-
-    .. note::
-        - Inputs of `self` and `other` comply with the implicit type conversion rules to make the data types
-          consistent.
-        - When `other` is scalar, it could only be a constant.
-
-    Args:
-        other (Union[Tensor, Number, bool]): A Number or a bool or a tensor whose data type is 
-            number or bool\_.
-
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-
-    Raises:
-        TypeError: If neither `self` nor `other` is a Tensor, number.Number or bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([1, 2, 3]), mindspore.int32)
-        >>> other = Tensor(np.array([1, 1, 4]), mindspore.int32)
-        >>> output = x.less_equal(other)
-        >>> print(output)
-        [ True False  True]
+    For details, please refer to :func:`mindspore.ops.less_equal`.

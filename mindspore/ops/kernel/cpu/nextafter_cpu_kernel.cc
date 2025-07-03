@@ -17,10 +17,11 @@
 #include "kernel/cpu/nextafter_cpu_kernel.h"
 #include <cmath>
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nextafter_cpu {
 namespace {
 constexpr size_t kNextAfterInputsNum = 2;
 constexpr size_t kNextAfterOutputsNum = 1;
@@ -66,5 +67,6 @@ const std::vector<std::pair<KernelAttr, NextAfterCpuKernelMod::KernelRunFunc>> &
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NextAfter, NextAfterCpuKernelMod);
+}  // namespace nextafter_cpu
 }  // namespace kernel
 }  // namespace mindspore

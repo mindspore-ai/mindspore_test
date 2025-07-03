@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -39,7 +39,10 @@ def copy_backward_func(x, y):
     return ops.grad(copy_forward_func, grad_position=(0, 1))(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_copy_std(mode):
     """
@@ -63,11 +66,11 @@ def test_copy_std(mode):
         output_z = copy_forward_func(ms.Tensor(x), ms.Tensor(z))
         output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
     else:
-        output_y = (jit(copy_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
-        output_y_grad = (jit(copy_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(y))
+        output_y = (jit(copy_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
+        output_y_grad = (jit(copy_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(y))
 
-        output_z = (jit(copy_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(z))
-        output_z_grad = (jit(copy_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), ms.Tensor(z))
+        output_z = (jit(copy_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
+        output_z_grad = (jit(copy_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x), ms.Tensor(z))
     np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
     np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
 
@@ -75,7 +78,37 @@ def test_copy_std(mode):
     np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_copy_cpu_inplace_feature():
+    """
+    Feature: inplace features.
+    Description: test copy forward .
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    expect = np.array([0, 6, 5, 6]).astype(np.int64).reshape((2, 2))
+    inputs = [
+        [ms.Tensor([[1, 2], [3, 4]]), ms.Tensor([[5, 6], [5, 6]])],
+        [ms.Tensor([[1, 2], [3, 4]]), ms.Tensor([[5., 6.], [5., 6.]])],
+        [ms.Tensor([[1, 2], [3, 4]]), ms.Tensor([5, 6])],
+        [ms.Tensor([[1, 2], [3, 4]]), ms.Tensor([5., 6.])],
+    ]
+    for param in inputs:
+        x = param[0]
+        y = param[1]
+        z = x.copy_(y)
+        x[0][0] = 0
+        np.testing.assert_equal(expect, x.asnumpy())
+        np.testing.assert_equal(expect, z.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
 def test_copy_dynamic_shape():
     """
     Feature: dynamic shape forward, backward features.

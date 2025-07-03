@@ -118,12 +118,12 @@ class AdaMax(Optimizer):
               <https://www.mindspore.cn/docs/en/master/api_python/mindspore.nn.html#learningrateschedule-class>`_
               with step as the input to get the learning rate of current step.
 
-        beta1 (float): The exponential decay rate for the 1st moment estimations. Should be in range (0.0, 1.0).
-                       Default: ``0.9`` .
-        beta2 (float): The exponential decay rate for the 2nd moment estimations. Should be in range (0.0, 1.0).
-                       Default: ``0.999`` .
-        eps (float): Term added to the denominator to improve numerical stability. Should be greater than 0.
-                     Default: ``1e-08`` .
+        beta1 (float, optional): The exponential decay rate for the 1st moment estimations.
+            Should be in range (0.0, 1.0). Default: ``0.9`` .
+        beta2 (float, optional): The exponential decay rate for the 2nd moment estimations.
+            Should be in range (0.0, 1.0). Default: ``0.999`` .
+        eps (float, optional): Term added to the denominator to improve numerical stability. Should be greater than 0.
+            Default: ``1e-08`` .
 
         weight_decay (Union[float, int, Cell]): Weight decay (L2 penalty). Default: ``0.0`` .
 
@@ -134,7 +134,8 @@ class AdaMax(Optimizer):
             - Cell: Weight decay is dynamic. During training, the optimizer calls the instance of
               the Cell with step as the input to get the weight decay value of current step.
 
-        loss_scale (float): A floating point value for the loss scale. Should be greater than 0. In general, use the
+        loss_scale (float, optional): A floating point value for the loss scale. Should be greater than 0.
+            In general, use the
             default value. Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
             `FixedLossScaleManager` is set to ``False`` , then this value needs to be the same as the `loss_scale` in
             `FixedLossScaleManager`. Refer to class :class:`mindspore.amp.FixedLossScaleManager` for more details.

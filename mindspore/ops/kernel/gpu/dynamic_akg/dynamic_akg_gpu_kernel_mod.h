@@ -25,10 +25,10 @@
 #include <memory>
 #include <utility>
 #include "kernel/gpu/dynamic_akg/dynamic_utils.h"
-#include "kernel/kernel.h"
+#include "common/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
 #include "kernel/gpu/akg/akg_gpu_kernel_mod.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

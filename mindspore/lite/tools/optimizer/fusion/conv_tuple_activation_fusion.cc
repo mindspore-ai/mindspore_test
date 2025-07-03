@@ -24,6 +24,9 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 const BaseRef ConvTupleActivationFusion::DefinePattern() const {
@@ -72,6 +75,7 @@ const AnfNodePtr ConvTupleActivationFusion::Process(const FuncGraphPtr &func_gra
   auto conv_node = tuple_cnode->input(1);
   if (conv_node != nullptr && conv_node->isa<CNode>()) {
     auto conv_cnode = conv_node->cast<CNodePtr>();
+    MS_CHECK_TRUE_RET(conv_cnode != nullptr, nullptr);
     if (IsMarkedTrainOp(conv_cnode)) {
       return nullptr;
     }

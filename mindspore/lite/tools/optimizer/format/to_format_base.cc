@@ -27,6 +27,12 @@
 #include "tools/common/tensor_util.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_w.h"
 
 using mindspore::lite::NHWC_SHAPE;
 namespace mindspore {
@@ -211,6 +217,10 @@ bool ToFormatBase::DecideWhetherHandleGraphInput(const FuncGraphPtr &func_graph,
       continue;
     }
     auto post_cnode = post_node->cast<CNodePtr>();
+    if (post_cnode == nullptr) {
+      MS_LOG(ERROR) << "post_cnode is nullptr.";
+      return false;
+    }
     auto prim = GetValueNode<PrimitivePtr>(post_cnode->input(0));
     MS_ERROR_IF_NULL_W_RET_VAL(prim, false);
     if (prim->GetAttr(ops::kFormat) != nullptr) {
@@ -485,6 +495,7 @@ STATUS ToFormatBase::ConvWeightFormatTrans(const FuncGraphPtr &graph, std::set<A
     }
     auto cnode = node->cast<CNodePtr>();
     if (CheckPrimitiveType(node, prim::kPrimIf) || CheckPrimitiveType(node, prim::kPrimWhile)) {
+      MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
       auto sub_func_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
       if (sub_func_graph == nullptr) {
         lite::ReturnCode::GetSingleReturnCode()->UpdateReturnCode(lite::RET_NULL_PTR);

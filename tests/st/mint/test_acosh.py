@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, mint, jit, JitConfig
+from mindspore import ops, mint, jit
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -41,7 +41,7 @@ def acosh_backward_func(x):
     return ops.grad(acosh_forward_func, (0,))(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_acosh_std(mode):
     """
@@ -57,8 +57,8 @@ def test_acosh_std(mode):
         output = acosh_forward_func(ms.Tensor(x))
         output_grad = acosh_backward_func(ms.Tensor(x))
     else:
-        output = (jit(acosh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(acosh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(acosh_forward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(acosh_backward_func, backend="ms_backend", jit_level="O0"))(ms.Tensor(x))
 
     np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
@@ -94,8 +94,8 @@ def test_acosh_bfloat16(mode):
         output = acosh_forward_func(ms.Tensor(x, dtype=ms.bfloat16))
         output_grad = acosh_backward_func(ms.Tensor(x, dtype=ms.bfloat16))
     else:
-        output = (jit(acosh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
-        output_grad = (jit(acosh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x, dtype=ms.bfloat16))
+        output = (jit(acosh_forward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
+        output_grad = (jit(acosh_backward_func, jit_level="O0"))(ms.Tensor(x, dtype=ms.bfloat16))
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
     np.allclose(output_grad.float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

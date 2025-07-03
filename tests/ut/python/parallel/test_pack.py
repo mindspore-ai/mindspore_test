@@ -258,7 +258,7 @@ def test_pack_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = Net1(_w1, _w2, 0)
     compile_net1(net)
@@ -270,7 +270,7 @@ def test_pack_auto_parallel_axis1():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = Net1(_w1, _w2, 1)
     compile_net1(net)
@@ -283,7 +283,7 @@ def test_pack_auto_parallel_3_tensor():
     Expectation: compile success
     """
     context.set_auto_parallel_context(dataset_strategy="full_batch")
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = Net2(_w1, _w2, _w3)
     compile_net2(net)
@@ -309,7 +309,7 @@ def test_pack_auto_constant():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=0)
     net = PackConstantNet1(dense_in_channel=64, dense_out_channel=4, axis=0, shape=(8, 8),
                            strategy=((8, 1), (8, 1), (8, 1), (8, 1), (8, 1), (8, 1), (8, 1), (8, 1)))

@@ -1,7 +1,7 @@
 
 .. py:class:: mindspore.mindrecord.CsvToMR(source, destination, columns_list=None, partition_number=1)
 
-    将CSV格式数据集转换为MindRecord格式数据集。
+    将CSV格式数据集转换为MindRecord格式的数据集。
 
     参数：
         - **source** (str) - 待转换的CSV文件路径。

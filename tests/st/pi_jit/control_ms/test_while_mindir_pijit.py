@@ -14,23 +14,16 @@
 # ============================================================================
 """test while with mindir in PIJit and pynative mode"""
 import os
+import pytest
 import numpy as np
-import sys  
-import pytest 
-
 import mindspore.nn as nn
 from mindspore import context, jit
 from mindspore.common.tensor import Tensor
 from mindspore.train.serialization import export, load
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 class SingleWhileNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         x += 1
         while x < y:
@@ -39,6 +32,7 @@ class SingleWhileNet(nn.Cell):
         return y
 
 
+@pytest.mark.skip(reason="Jit pipeline only supports one stage while one stage do not support loading mindir.")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_jit_function_while():
     """
@@ -61,7 +55,7 @@ def test_jit_function_while():
     graph = load(mindir_name)
     loaded_net = nn.GraphCell(graph)
 
-    @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+    @jit(capture_mode="bytecode") # One-stage will fix it later
     def run_graph(x, y):
         outputs = loaded_net(x, y)
         return outputs
@@ -71,7 +65,7 @@ def test_jit_function_while():
 
 
 class SingleWhileInlineNet(nn.Cell):
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         x += 1
         while x < y:

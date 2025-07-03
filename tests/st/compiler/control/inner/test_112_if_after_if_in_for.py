@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 from mindspore import context
 from mindspore import Tensor, nn
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 
+context.set_context(jit_config={"jit_level": "O0"})
 grad_all = C.GradOperation(get_all=True)
 
 
@@ -134,9 +134,8 @@ def control_flow_if_after_if_in_for(input_net, x, expect1, expect2):
     assert graph_backward_res == expect2
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for():
     """
     Feature: Control flow
@@ -146,15 +145,11 @@ def test_if_after_if_in_for():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(14, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    with pytest.raises(RuntimeError) as info:
-        control_flow_if_after_if_in_for(IfAfterIfInForNet, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    control_flow_if_after_if_in_for(IfAfterIfInForNet, x, expect1, expect2)
 
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_01():
     """
     Feature: Control flow
@@ -164,14 +159,11 @@ def test_if_after_if_in_for_01():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(14, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    with pytest.raises(RuntimeError) as info:
-        control_flow_if_after_if_in_for(IfAfterIfInForNet1, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    control_flow_if_after_if_in_for(IfAfterIfInForNet1, x, expect1, expect2)
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_02():
     """
     Feature: Control flow
@@ -181,14 +173,11 @@ def test_if_after_if_in_for_02():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(14, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    with pytest.raises(RuntimeError) as info:
-        control_flow_if_after_if_in_for(IfAfterIfInForNet2, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    control_flow_if_after_if_in_for(IfAfterIfInForNet2, x, expect1, expect2)
 
-@case_register.level1
-@case_register.target_gpu
-@case_register.target_ascend
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu',], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_if_after_if_in_for_03():
     """
     Feature: Control flow
@@ -198,7 +187,4 @@ def test_if_after_if_in_for_03():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(11, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    with pytest.raises(RuntimeError) as info:
-        control_flow_if_after_if_in_for(IfAfterIfInForNet3, x, expect1, expect2)
-    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
-            in str(info.value))
+    control_flow_if_after_if_in_for(IfAfterIfInForNet3, x, expect1, expect2)

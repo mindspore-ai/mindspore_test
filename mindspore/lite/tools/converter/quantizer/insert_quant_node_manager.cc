@@ -40,6 +40,12 @@
 #include "infer/cxx_api/mat_mul_fusion.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/dtype.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::lite::quant {
 namespace {
@@ -629,6 +635,7 @@ int InsertQuantNodeManager::InsertBackwardCastNode(const FuncGraphPtr &graph, co
   auto node_users = manager->node_users()[cnode];
   for (auto &node_user : node_users) {
     auto output_cnode = node_user.first->cast<CNodePtr>();
+    MS_CHECK_TRUE_MSG(output_cnode != nullptr, RET_ERROR, "output_cnode is nullptr!");
     quant::QuantType post_quant_type;
     if (GetQuantType(output_cnode, &post_quant_type) != RET_OK) {
       MS_LOG(ERROR) << "Get quant type failed, cnode name: " << output_cnode->fullname_with_scope();
@@ -861,19 +868,13 @@ int InsertQuantNodeManager::InsertAscendAntiQuantNode(const FuncGraphPtr &func_g
 
   // Insert cast node
   CNodePtr cast_cnode = nullptr;
+  auto is_gather = opt::CheckPrimitiveType(cnode, prim::kPrimGather);
+  AnfNodePtr specify_input = is_gather ? cnode : input_node;
   if (ascend_backend == "910b") {
     MS_LOG(INFO) << "The ascend_backend is 910b, it will insert antiquant node";
-    if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-      cast_cnode = NewAscendAntiQuantCNode(func_graph, cnode, dst_dtype);
-    } else {
-      cast_cnode = NewAscendAntiQuantCNode(func_graph, input_node, dst_dtype);
-    }
+    cast_cnode = NewAscendAntiQuantCNode(func_graph, specify_input, dst_dtype);
   } else {
-    if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-      cast_cnode = NewCastNode(func_graph, cnode, dst_dtype);
-    } else {
-      cast_cnode = NewCastNode(func_graph, input_node, dst_dtype);
-    }
+    cast_cnode = NewCastNode(func_graph, specify_input, dst_dtype);
   }
 
   CHECK_NULL_RETURN(cast_cnode);
@@ -935,12 +936,7 @@ int InsertQuantNodeManager::InsertAscendAntiQuantNode(const FuncGraphPtr &func_g
     return RET_ERROR;
   }
 
-  AnfNodeIndexSet node_user;
-  if (opt::CheckPrimitiveType(cnode, prim::kPrimGather)) {
-    node_user = node_map[cnode];
-  } else {
-    node_user = node_map[input_node];
-  }
+  AnfNodeIndexSet node_user = node_map[specify_input];
   for (const auto &user : node_user) {
     manager->SetEdge(user.first, user.second, mul_cnode);
   }
@@ -1128,6 +1124,8 @@ CNodePtr InsertQuantNodeManager::NewAscendAntiQuantCNode(const FuncGraphPtr &fun
 
 CNodePtr InsertQuantNodeManager::NewMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_1,
                                             const AnfNodePtr &input_2) {
+  MS_CHECK_TRUE_MSG(input_1 != nullptr, nullptr, "input_1 is nullptr.");
+  MS_CHECK_TRUE_MSG(input_2 != nullptr, nullptr, "input_2 is nullptr.");
   auto prim_c = std::make_shared<ops::MulFusion>();
   MS_CHECK_TRUE_MSG(prim_c != nullptr, nullptr, "prim_c is nullptr.");
   auto prim = prim_c->GetPrim();
@@ -1146,6 +1144,8 @@ CNodePtr InsertQuantNodeManager::NewMulNode(const FuncGraphPtr &func_graph, cons
 
 CNodePtr InsertQuantNodeManager::NewAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_1,
                                             const AnfNodePtr &input_2) {
+  MS_CHECK_TRUE_MSG(input_1 != nullptr, nullptr, "input_1 is nullptr.");
+  MS_CHECK_TRUE_MSG(input_2 != nullptr, nullptr, "input_2 is nullptr.");
   auto prim_c = std::make_shared<ops::AddFusion>();
   MS_CHECK_TRUE_MSG(prim_c != nullptr, nullptr, "prim_c is nullptr.");
   auto prim = prim_c->GetPrim();

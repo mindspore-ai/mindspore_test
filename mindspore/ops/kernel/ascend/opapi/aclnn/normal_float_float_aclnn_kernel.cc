@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/normal_float_float_aclnn_kernel.h"
+#include "utils/value_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace normal_float_float {
 void NormalFloatFloatAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
-  mean_ = transform::ConvertKernelTensor<float>(inputs[kIndex0]);
-  std_ = transform::ConvertKernelTensor<float>(inputs[kIndex1]);
-  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto mean_scalar = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
+  auto std_scalar = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
+  mean_ = GetScalarCastValue<float>("NormalFloatFloat", mean_scalar);
+  std_ = GetScalarCastValue<float>("NormalFloatFloat", std_scalar);
+  seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   GetWorkspaceForResize(mean_, std_, seed_, offset_, outputs[0]);
 }
 
@@ -35,5 +39,6 @@ bool NormalFloatFloatAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(NormalFloatFloat, NormalFloatFloatAscend);
+}  // namespace normal_float_float
 }  // namespace kernel
 }  // namespace mindspore

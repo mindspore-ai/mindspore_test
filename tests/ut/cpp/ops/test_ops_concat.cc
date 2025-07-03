@@ -18,6 +18,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::ops {
 namespace {
@@ -146,12 +147,12 @@ TEST_P(TestConcatInferValue, dyn_shape_infer_value) {
   abstract::AbstractBasePtrList input_args = {tensors, axis};
   auto value_opt = abstract::InferValueByFuncImpl(prim::kPrimConcat, input_args);
   if (!value_opt.has_value()) {
-    MS_LOG(ERROR) << "Tile have no infer value implement!";
+    MS_LOG(ERROR) << "Concat have no infer value implement!";
     ASSERT_TRUE(false);
   }
   auto infer_out = value_opt.value();
   if (infer_out == nullptr) {
-    MS_LOG(ERROR) << "Tile can not infer value with inputs: " << input_args;
+    MS_LOG(ERROR) << "Concat can not infer value with inputs: " << input_args;
     ASSERT_TRUE(false);
   }
   auto infer_tensor = infer_out->cast<tensor::TensorPtr>();

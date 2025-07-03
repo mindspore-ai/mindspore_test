@@ -281,7 +281,7 @@ BaseShapePtr UpsampleForwardInferShape(const PrimitivePtr &primitive, const std:
 
 ShapeArray UpsampleForwardInferShape(const PrimitivePtr &primitive, const std::vector<ValuePtr> &input_values,
                                      const size_t image_rank) {
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &input = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input);
   const auto &input_shape = input->shape();
   UpsampleCheckInputShape(primitive, input_shape, image_rank);
@@ -298,7 +298,7 @@ BaseShapePtr UpsampleBackwardInferShape(const PrimitivePtr &primitive, const std
 
 ShapeArray UpsampleBackwardInferShape(const PrimitivePtr &primitive, const std::vector<ValuePtr> &input_values,
                                       const size_t image_rank) {
-  const auto &dout = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dout = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dout);
   const auto &dout_shape = dout->shape();
   auto input_shape = InferShapeFromOriginSizeArg(primitive, input_values.at(kIndex1), image_rank);

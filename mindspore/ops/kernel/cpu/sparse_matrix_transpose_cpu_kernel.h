@@ -27,11 +27,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_matrix_transpose_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 
@@ -66,6 +67,7 @@ class SparseMatrixTransposeCpuKernelMod : public NativeCpuKernelMod {
   TypeId indiceT_{kTypeUnknown};
   TypeId valueT_{kTypeUnknown};
 };
+}  // namespace sparse_matrix_transpose_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

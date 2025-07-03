@@ -23,13 +23,13 @@ void KernelResizeActor::Init() {
   KernelActor::Init();
 
   // Erase output and workspace device tensors which is released by kernel actor.
-  size_t input_num = input_device_tensors_.size();
+  size_t input_num = input_kernel_tensors_.size();
   if (memory_free_list_.size() > input_num) {
     memory_free_list_.erase(memory_free_list_.begin() + input_num, memory_free_list_.end());
   }
 }
 
-void KernelResizeActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
   MS_EXCEPTION_IF_NULL(input_data->data_);
   MS_EXCEPTION_IF_NULL(context);
@@ -38,22 +38,21 @@ void KernelResizeActor::RunOpData(OpData<DeviceTensor> *const input_data, OpCont
   // Without verifying that the device pointer for device tensor is empty, the kernel before the KernelActor phase
   // may not have started memory allocate and launch.
   auto can_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << can_run
-                << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
-                << " input index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
-                << ", origin ref count:" << input_data->data_->original_ref_count()
-                << ", current ref count:" << input_data->data_->ref_count()
-                << ", dynamic ref count:" << input_data->data_->dynamic_ref_count()
-                << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR_MSG)
+    << "Actor(" << GetAID().Name() << ") receive the input op data and check running condition:" << can_run
+    << ", sequential num:" << sequential_num << ", the input data:" << input_data->data_
+    << " input index:" << input_data->index_ << ", size:" << input_data->data_->GetSize()
+    << ", flag:" << input_data->data_->flag() << " user data:" << input_data->data_->user_data();
 
   if (can_run) {
     Run(context);
   }
 }
 
-void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::Run(OpContext<KernelTensor> *const context) {
   try {
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kKernelResize, GetAID().Name());
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel Resize actor:" << GetAID() << " start run.";
     // 1. Collect the inputs from input data.
     const auto &data_iter = input_op_datas_.find(context->sequential_num_);
     if (data_iter != input_op_datas_.end()) {
@@ -63,7 +62,7 @@ void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
     }
 
     // Collect the inputs from device tensor store.
-    FetchInputByTensorStore(&input_device_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
+    FetchInputByTensorStore(&input_launch_tensors_, &input_kernel_tensors_, &input_kernel_tensors_for_infer_,
                             &memory_free_list_, context);
 
     if (!device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false)) {
@@ -84,9 +83,10 @@ void KernelResizeActor::Run(OpContext<DeviceTensor> *const context) {
   EraseInput(context);
   SendMemoryFreeReq(context);
   SendOutput(context);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Kernel Resize actor:" << GetAID() << " end run.";
 }
 
-void KernelResizeActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
+void KernelResizeActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   if (memory_free_list_.size() > 0) {
     MemoryManagerActor::GetInstance()->FreeMemory(&memory_free_list_, device_contexts_[0], context, GetAID());
   }

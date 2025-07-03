@@ -12,11 +12,10 @@ mindspore.dtype
 
         from mindspore import dtype as mstype
 
-Numeric Type
+Basic Data Type
 ^^^^^^^^^^^^^^^
 
-Currently, MindSpore supports ``int`` type, ``uint`` type, ``float`` type and ``complex`` type.
-The following table lists the details.
+MindSpore supports the following base data types:
 
 ==============================================   =============================
 Definition                                        Description

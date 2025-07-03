@@ -23,3 +23,9 @@ mindspore.utils
 .. autofunction:: mindspore.utils.dryrun.set_simulation
 
 .. autofunction:: mindspore.utils.dryrun.mock
+
+.. autofunction:: mindspore.utils.sdc_detect_start
+
+.. autofunction:: mindspore.utils.sdc_detect_stop
+
+.. autofunction:: mindspore.utils.get_sdc_detect_result

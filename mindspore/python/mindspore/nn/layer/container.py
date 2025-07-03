@@ -648,7 +648,7 @@ class CellDict(_CellDictBase, Cell):
         Remove key from the CellDict and return its cell.
 
         Args:
-            key (string): key to pop from the CellDict.
+            key (str): key to pop from the CellDict.
 
         Raises:
             KeyError: If `key` not exist in CellDict when attempt to access cell.

@@ -19,10 +19,11 @@
 #include <memory>
 #include <random>
 #include "mindspore/ops/infer/cauchy.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cauchy_cpu {
 namespace {
 constexpr size_t kCauchyOutputNum = 1;
 }  // namespace
@@ -64,5 +65,6 @@ std::vector<KernelAttr> CauchyCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Cauchy, CauchyCpuKernelMod);
+}  // namespace cauchy_cpu
 }  // namespace kernel
 }  // namespace mindspore

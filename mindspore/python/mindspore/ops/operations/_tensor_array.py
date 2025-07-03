@@ -33,7 +33,7 @@ class TensorArray(PrimitiveWithInfer):
         element_shape (tuple[int]): the shape of each tensor in a TensorArray.
         dynamic_size (bool): If true the TensorArray can increase the size. Default: ``True``.
         size (int): The size of the TensorArray if dynamic_size = False.
-        name (string): the name of this TensorArray. Default: "TA".
+        name (str): the name of this TensorArray. Default: "TA".
 
     Inputs:
         None.

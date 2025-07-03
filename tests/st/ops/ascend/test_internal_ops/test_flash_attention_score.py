@@ -16,6 +16,7 @@
 import os
 import numpy as np
 import math
+import pytest
 
 import mindspore as ms
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
@@ -76,6 +77,7 @@ class FlashAttentionScoreTest:
         ipt: input of one testcase or dict of testcases
         '''
         self.mode = mode
+        self.ctx_mode = ipt.get('ctx_mode', context.GRAPH_MODE)
 
         self.names = list()  # testcases name list
         self.i_test_dict = dict()
@@ -149,7 +151,7 @@ class FlashAttentionScoreTest:
 
         if "ASCEND_HOME_PATH" not in os.environ:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-        context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+        context.set_context(mode=self.ctx_mode, device_target="Ascend")
         context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
         self.net = net_function(**i_init)
 
@@ -523,13 +525,15 @@ description = {
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_sd():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_sd(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op in BNSD.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BNSD",
         "b": 2,
@@ -550,13 +554,15 @@ def test_flash_attention_score_sd():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_bnsd_64():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_bnsd_64(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op in BNSD end embed 64.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BNSD",
         "b": 2,
@@ -577,13 +583,15 @@ def test_flash_attention_score_bnsd_64():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_bsh():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_bsh(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op in BSH.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float32",
         "layout": "BSH",
         "b": 2,
@@ -604,13 +612,15 @@ def test_flash_attention_score_bsh():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_bsh_mask():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_bsh_mask(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op in BSH with attn_mask.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BSH",
         "b": 2,
@@ -631,13 +641,15 @@ def test_flash_attention_score_bsh_mask():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_bsh_mask_alibi():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_bsh_mask_alibi(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op with alibi_mask.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float32",
         "layout": "BSH",
         "b": 2,
@@ -658,13 +670,15 @@ def test_flash_attention_score_bsh_mask_alibi():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_fa_bsh_small():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_fa_bsh_small(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op in BSH with small shape.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BSH",
         "b": 2,
@@ -685,13 +699,15 @@ def test_flash_attention_score_fa_bsh_small():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_d256_amask_fp16():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_d256_amask_fp16(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op with embed 256 with attn_mask.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BSH",
         "b": 2,
@@ -712,13 +728,15 @@ def test_flash_attention_score_d256_amask_fp16():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_d256_low_tri_bf16():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_d256_low_tri_bf16(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op with low-trangle mask in bfloat16.
     Expectation: the result is correct
     """
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float32",
         "layout": "BSH",
         "b": 2,
@@ -739,7 +757,8 @@ def test_flash_attention_score_d256_low_tri_bf16():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_flash_attention_score_dynamic():
+@pytest.mark.parametrize('ctx_mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_flash_attention_score_dynamic(ctx_mode):
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
     Description: test FlashAttentionScore op with low-trangle mask in float16.
@@ -748,6 +767,7 @@ def test_flash_attention_score_dynamic():
     i_test_dict = dict()
 
     i_test = {
+        "ctx_mode": ctx_mode,
         "type": "float16",
         "layout": "BSH",
         "b": 1,

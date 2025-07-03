@@ -1,0 +1,49 @@
+kthvalue:
+    description: |
+        Calculates the kth smallest value along given dim specified by `dim` of the input
+        tensor, and returns a tuple of (`values`, `indices`) where `values` contains the k-th smallest element
+        and `indices` provides the index of each corresponding element.
+    
+        Args:
+            input (Tensor): The input tensor, can be any dimension. Set the shape of input tensor as
+                :math:`(input_1, input_2, ..., input_N)`.
+            k (int): Specifies the k-th smallest element to retrieve.
+            dim (int, optional): The dimension along which to find the k-th smallest value. Default: ``-1`` .
+            keepdim (bool, optional): Whether to reduce dimension, if ``True`` , the output will keep same dimension with the
+                input, the output will reduce dimension if ``False`` . Default: ``False`` .
+
+        Returns:
+            A tuple consisting of `values` and `indices`.
+
+            - **values** (Tensor) - The k-th smallest value of input tensor, with the same dtype as `input`.
+
+              -If `keepdim` is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ..., input_{dim-1}, 1, input_{dim+1}, ..., input_N)`.
+              -If `keepdim` is ``False`` , the shape is :math:`(input_1, input_2, ..., input_{dim-1}, input_{dim+1}, ..., input_N)` .
+
+            - **indices** (Tensor) - The `indices` for the k-th smallest value of the input tensor, it has the same shape as `values` with dtype of int64.
+                
+        Raises:
+            TypeError: If `k` or `dim` is not an int.
+            TypeError: If `keepdim` is not a bool.
+            TypeError: If dtype of `input` is not supported.
+            ValueError: If `input` is an empty Tensor.
+            RuntimeError: If `k` is not in the proper range.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input_x = Tensor(np.array([[1.01, 2.02, 3.03], [1.04, 2.05, 3.06]]), mindspore.float32)
+            >>> out = ops.auto_generate.kthvalue(input_x, 2, 1, False)
+            >>> print(out)
+            (Tensor(shape=[2], dtype=Float32, value= [ 2.01999998e+00,  2.04999995e+00]), Tensor(shape=[2], dtype=Int64, value= [1, 1]))
+            >>> out1 = ops.auto_generate.kthvalue(input_x, 2, 1, True)
+            >>> print(out1)
+            (Tensor(shape=[2, 1], dtype=Float32, value=
+            [[ 2.01999998e+00],
+             [ 2.04999995e+00]]), Tensor(shape=[2, 1], dtype=Int64, value=
+            [[1],
+             [1]]))

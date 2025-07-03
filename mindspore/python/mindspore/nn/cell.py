@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,36 +15,87 @@
 """cell"""
 from __future__ import absolute_import
 
-import gc
+__all__ = [
+    "register_cell_buffer_registration_hook",
+]
+
 import inspect
 import os
 import time
-from collections import OrderedDict
-import numpy
+import warnings
+import itertools
+from collections import OrderedDict, namedtuple
+from typing import (
+    Dict,
+    Optional,
+    Callable,
+    List,
+    Tuple,
+    Iterator,
+    Any,
+    TypeVar,
+    Mapping
+)
 
+import weakref
+import mindspore as ms
 from mindspore._checkparam import args_type_check, check_hook_fn
 from mindspore.common._auto_dynamic import is_auto_dynamic, convert_inputs_to_dynamic
 from mindspore import log as logger
-from mindspore.common.parameter import PARAMETER_NAME_DEFAULT
 from mindspore.common.hook_handle import HookHandle
-from mindspore.context import ParallelMode
 from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, \
-    _no_grad
-from mindspore.common.api import _generate_branch_control_input, _convert_python_data, _get_args_for_run_predict
+    _no_grad, _get_mutable_flags
+from mindspore.common.api import _convert_python_data
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
-from mindspore.common.parameter import Parameter, ParameterTuple
+from mindspore.common.parameter import _Buffer, Parameter, ParameterTuple, _is_parameter_generated
 from mindspore.common.tensor import Tensor
-from mindspore.ops.operations import Cast
 from mindspore.ops.primitive import Primitive
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.parallel.shard import Shard
+from mindspore.parallel._utils import _init_auto_parallel_context, _clear_auto_parallel_context
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
-from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
+from mindspore.common.jit_config import JitConfig
+
+_global_buffer_registration_hooks: Dict[int, Callable] = OrderedDict()
+_EXTRA_STATE_KEY_SUFFIX = "_extra_state"
+
+
+class _IncompatibleKeys(namedtuple("IncompatibleKeys", ["missing_keys", "unexpected_keys"]),):
+    def __repr__(self):
+        if not self.missing_keys and not self.unexpected_keys:
+            return "<All keys matched successfully>"
+        return super().__repr__()
+
+    __str__ = __repr__
+
+
+def register_cell_buffer_registration_hook(hook: Callable[..., None],):
+    r"""Register a buffer registration hook common to all cells.
+
+    .. warning ::
+
+        This adds global state to the `nn.Cell` cell
+
+    The hook will be called every time :func:`register_buffer` is invoked.
+    It should have the following signature::
+
+        hook(cell, name, buffer) -> None or new buffer
+
+    The hook can modify the input or return a single modified value in the hook.
+
+    Returns:
+        A handle that can be used to remove the added hook by calling
+        `handle.remove()`.
+    """
+    from mindspore.utils.hooks import _RemovableHandle
+    handle = _RemovableHandle(_global_buffer_registration_hooks)
+    _global_buffer_registration_hooks[handle.id] = hook
+    return handle
 
 
 class Cell(Cell_):
@@ -60,7 +111,7 @@ class Cell(Cell_):
     .. note::
         Cell is the inference mode by default. For a class that inherits a Cell,
         if the training and inference have different structures, the subclass performs the inference branch by default.
-        To set the training mode, refer to `mindspore.nn.Cell.set_train` .
+        To set the training mode, refer to :func:`mindspore.nn.Cell.set_train` .
 
     .. warning::
         In the subclass of Cell, it's not allowed to define a method named 'cast' and not allowed to define an attribute
@@ -104,84 +155,93 @@ class Cell(Cell_):
     IGNORE_LIST = ['_scope', '_cell_init_args', '_auto_prefix', '_cells', '_params', '_create_time',
                    '_func_graph_flags', '_parameter_layout_dict', '_params_list', '_phase', '_bprop_debug',
                    '_forward_pre_hook', '_forward_hook', '_backward_pre_hook', '_backward_hook',
-                   '_cell_backward_pre_hook', '_cell_backward_hook', '_is_run', '_param_prefix',
-                   '_attr_synced', 'pynative', 'requires_grad', 'cell_type',
-                   '_parameters_forward_hook', '_parameters_backward_hook']
+                   '_cell_backward_pre_hook', '_cell_backward_hook', '_param_prefix', 'requires_grad', 'cell_type']
     total_instance_count = 0
+    _buffers: Dict[str, Optional[Tensor]]
+    global_cells = weakref.WeakKeyDictionary()
+    _no_auto_lazy_inline = True
+
+    def __new__(class_, *args, **kwargs):
+        # Use class_ to avoid name conflicts with input args and kwargs.
+        this = Cell_.__new__(class_, *args, **kwargs)
+        if Cell._no_auto_lazy_inline:
+            return this
+
+        Cell.global_cells[this] = (class_, args, kwargs)
+        return this
 
     def __init__(self, auto_prefix=True, flags=None):
         Cell_.__init__(self, self._cell_tag)
         Cell.total_instance_count += 1
-        self.instance_count = Cell.total_instance_count
-        self._params = OrderedDict()
-        self._cells = OrderedDict()
-        self._params_list = OrderedDict()
-        self._primitives = OrderedDict()
-        self.training = False
-        self.requires_grad = False
-        self.pynative = False
-        self._attr_synced = False
-        self._param_prefix = ''
-        self._auto_prefix = auto_prefix
-        self._scope = None
-        self._phase = 'train'
-        self._parameter_layout_dict = {}
-        self._parallel_parameter_name_list = ()
-        self._parallel_parameter_merge_net_dict = {}
-        self._create_time = int(time.time() * 1e9)
-        self.arguments_key = ""
-        self.compile_cache = set()
-        self.phase_cache = dict()
+        super().__setattr__("_params", OrderedDict())
+        super().__setattr__("_cells", OrderedDict())
+        super().__setattr__("_buffers", {})
+        super().__setattr__("_params_list", OrderedDict())
+        super().__setattr__("_primitives", OrderedDict())
+
+        super().__setattr__("_lazy_non_persistent_buffers_set", None)
+        super().__setattr__("_lazy_state_dict_hooks", None)
+        super().__setattr__("_lazy_state_dict_pre_hooks", None)
+        super().__setattr__("_lazy_load_state_dict_pre_hooks", None)
+        super().__setattr__("_lazy_load_state_dict_post_hooks", None)
+        super().__setattr__("training", False)
+        super().__setattr__("requires_grad", False)
+        super().__setattr__("is_top_cell", False)
+        super().__setattr__("_param_prefix", '')
+        super().__setattr__("_auto_prefix", auto_prefix)
+        super().__setattr__("_scope", None)
+        super().__setattr__("_phase", 'train')
+        super().__setattr__("_parameter_layout_dict", None)
+        super().__setattr__("_parallel_parameter_name_list", None)
+        super().__setattr__("_parallel_parameter_merge_net_dict", None)
+        super().__setattr__("_create_time", int(time.time() * 1e9))
+        super().__setattr__("arguments_key", "")
+        super().__setattr__("_compile_cache", None)
+        super().__setattr__("_phase_cache", None)
         cells_compile_cache[id(self)] = self.compile_cache
-        self.parameter_broadcast_done = False
-        self._id = 1
-        self.exist_names = set("")
-        self.exist_objs = set()
-        self._recompute_cell = None
-        self.mixed_precision_type = None
-        self.sig = inspect.signature(self.construct)
+        super().__setattr__("_id", 1)
+        super().__setattr__("_exist_objs", None)
+        super().__setattr__("_exist_names", None)
+        super().__setattr__("_recompute_cell", None)
+        super().__setattr__("mixed_precision_type", None)
+        super().__setattr__("_lazy_construct_sig", None)
+        super().__setattr__("_jit_graph_name", '')
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
         if os.getenv('GC_COLLECT_IN_CELL') == '1':
             logger.warning("The convenient environment 'GC_COLLECT_IN_CELL' is deprecated from version 2.5 "
                            "and will be removed in a future version.")
-            gc.collect()
 
         if flags:
             self.add_flags(**flags)
-        self._bprop_debug = False
+        super().__setattr__("_bprop_debug", False)
 
         # hook
-        self._forward_pre_hook = OrderedDict()
-        self._forward_hook = OrderedDict()
-        self._backward_pre_hook = OrderedDict()
-        self._cell_backward_pre_hook = None
-        self._backward_hook = OrderedDict()
-        self._cell_backward_hook = None
-        self._is_recursion_hook = False
+        super().__setattr__("_lazy_forward_pre_hook", None)
+        super().__setattr__("_lazy_forward_hook", None)
+        super().__setattr__("_lazy_backward_pre_hook", None)
+        super().__setattr__("_lazy_backward_hook", None)
+        super().__setattr__("_lazy_forward_pre_hook_with_kwargs", None)
+        super().__setattr__("_lazy_forward_hook_with_kwargs", None)
+        super().__setattr__("_cell_backward_pre_hook", None)
+        super().__setattr__("_cell_backward_hook", None)
+        super().__setattr__("_is_recursion_hook", False)
 
-        # parameters hook
-        self._parameters_forward_hook = None
-        self._parameters_backward_hook = None
-
-        self.cell_type = None
-        self.cast = Cast()
-        self._has_config_recompute = False
-        self._user_parameters = []
-        self._dynamic_shape_inputs = None
-        self._compile_args = None
-        self.saved_dynamic_shape = None
-        self._jit_config_dict = dict()
-        self.grad_ops_label = False
-        self.ge_sync_data = False
-        self._is_check_and_refresh = False
-        self._amp_level = ""
-        self._init_flag = False
-        self._shard_fn = None
-        self.has_bprop = False
+        super().__setattr__("cell_type", None)
+        super().__setattr__("_has_config_recompute", False)
+        super().__setattr__("_lazy_user_parameters", None)
+        super().__setattr__("_dynamic_shape_inputs", None)
+        super().__setattr__("_has_mutable_args_list", None)
+        super().__setattr__("_jit_config_dict", dict())
+        super().__setattr__("grad_ops_label", False)
+        super().__setattr__("_is_check_and_refresh", False)
+        super().__setattr__("_amp_level", "")
+        super().__setattr__("_init_flag", False)
+        super().__setattr__("_shard_fn", None)
+        super().__setattr__("has_bprop", False)
         if hasattr(self, "bprop"):
-            self.has_bprop = True
+            super().__setattr__("has_bprop", True)
 
     def __getstate__(self):
         base = Cell_.__getstate__(self)
@@ -191,7 +251,6 @@ class Cell(Cell_):
         base, dict_ = state
         Cell_.__setstate__(self, base)
         self.__dict__ = dict_
-        self._attr_synced = False
 
     def __bool__(self):
         return True
@@ -206,8 +265,135 @@ class Cell(Cell_):
         return self._create_time
 
     @property
+    def _non_persistent_buffers_set(self):
+        """_non_persistent_buffers_set"""
+        if self._lazy_non_persistent_buffers_set is None:
+            super().__setattr__("_lazy_non_persistent_buffers_set", set())
+        return self._lazy_non_persistent_buffers_set
+
+    @property
+    def _state_dict_hooks(self):
+        """_state_dict_hooks"""
+        if self._lazy_state_dict_hooks is None:
+            super().__setattr__("_lazy_state_dict_hooks", OrderedDict())
+        return self._lazy_state_dict_hooks
+
+    @property
+    def _state_dict_pre_hooks(self):
+        """_state_dict_pre_hooks"""
+        if self._lazy_state_dict_pre_hooks is None:
+            super().__setattr__("_lazy_state_dict_pre_hooks", OrderedDict())
+        return self._lazy_state_dict_pre_hooks
+
+    @property
+    def _load_state_dict_pre_hooks(self):
+        """_load_state_dict_pre_hooks"""
+        if self._lazy_load_state_dict_pre_hooks is None:
+            super().__setattr__("_lazy_load_state_dict_pre_hooks", OrderedDict())
+        return self._lazy_load_state_dict_pre_hooks
+
+    @property
+    def _load_state_dict_post_hooks(self):
+        """_load_state_dict_post_hooks"""
+        if self._lazy_load_state_dict_post_hooks is None:
+            super().__setattr__("_lazy_load_state_dict_post_hooks", OrderedDict())
+        return self._lazy_load_state_dict_post_hooks
+
+    @property
+    def compile_cache(self):
+        """compile_cache"""
+        if self._compile_cache is None:
+            super().__setattr__("_compile_cache", set())
+        return self._compile_cache
+
+    @property
+    def phase_cache(self):
+        """phase_cache"""
+        if self._phase_cache is None:
+            super().__setattr__("_phase_cache", dict())
+        return self._phase_cache
+
+    @property
+    def _forward_pre_hook(self):
+        """_forward_pre_hook"""
+        if self._lazy_forward_pre_hook is None:
+            super().__setattr__("_lazy_forward_pre_hook", OrderedDict())
+        return self._lazy_forward_pre_hook
+
+    @property
+    def _forward_hook(self):
+        """_forward_hook"""
+        if self._lazy_forward_hook is None:
+            super().__setattr__("_lazy_forward_hook", OrderedDict())
+        return self._lazy_forward_hook
+
+    @property
+    def _backward_pre_hook(self):
+        """_backward_pre_hook"""
+        if self._lazy_backward_pre_hook is None:
+            super().__setattr__("_lazy_backward_pre_hook", OrderedDict())
+        return self._lazy_backward_pre_hook
+
+    @property
+    def _backward_hook(self):
+        """_backward_hook"""
+        if self._lazy_backward_hook is None:
+            super().__setattr__("_lazy_backward_hook", OrderedDict())
+        return self._lazy_backward_hook
+
+    @property
+    def _forward_pre_hook_with_kwargs(self):
+        """_backward_hook"""
+        if self._lazy_forward_pre_hook_with_kwargs is None:
+            super().__setattr__("_lazy_forward_pre_hook_with_kwargs", OrderedDict())
+        return self._lazy_forward_pre_hook_with_kwargs
+
+    @property
+    def _forward_hook_with_kwargs(self):
+        """_backward_hook"""
+        if self._lazy_forward_hook_with_kwargs is None:
+            super().__setattr__("_lazy_forward_hook_with_kwargs", OrderedDict())
+        return self._lazy_forward_hook_with_kwargs
+
+    @property
+    def _user_parameters(self):
+        """_user_parameters"""
+        if self._lazy_user_parameters is None:
+            super().__setattr__("_lazy_user_parameters", [])
+        return self._lazy_user_parameters
+
+    @_user_parameters.setter
+    def _user_parameters(self, value):
+        """_user_parameters"""
+        if not isinstance(value, list):
+            raise TypeError(f"For 'Cell', the property '_user_parameters' must be list type, "
+                            f"but got type {type(value)}.")
+        self._lazy_user_parameters = value
+
+    @property
     def cell_init_args(self):
         return self._cell_init_args
+
+    @property
+    def exist_names(self):
+        """
+        Get exist parameter names adding by tuple or list of parameter.
+        """
+        if self._exist_names is None:
+            super().__setattr__("_exist_names", set(""))
+        return self._exist_names
+
+    @property
+    def exist_objs(self):
+        if self._exist_objs is None:
+            super().__setattr__("_exist_objs", set())
+        return self._exist_objs
+
+    @property
+    def _construct_sig(self):
+        if self._lazy_construct_sig is None:
+            super().__setattr__("_lazy_construct_sig", inspect.signature(self.construct))
+        return self._lazy_construct_sig
 
     @property
     def param_prefix(self):
@@ -237,11 +423,6 @@ class Cell(Cell_):
     def bprop_debug(self):
         """
         Get whether cell custom bprop debug is enabled.
-
-        Tutorial Examples:
-            - `Custom Neural Network Layers - Custom Cell Reverse
-              <https://mindspore.cn/docs/en/master/model_train/custom_program/network_custom.html
-              #custom-cell-reverse>`_
         """
         return self._bprop_debug
 
@@ -307,6 +488,8 @@ class Cell(Cell_):
         `parameter_layout_dict` represents the tensor layout of a parameter, which is inferred by shard strategy and
         distributed operator information.
         """
+        if self._parameter_layout_dict is None:
+            super().__setattr__("_parameter_layout_dict", {})
         return self._parameter_layout_dict
 
     @property
@@ -322,6 +505,8 @@ class Cell(Cell_):
 
     @property
     def parallel_parameter_name_list(self):
+        if self._parallel_parameter_name_list is None:
+            super().__setattr__("_parallel_parameter_name_list", ())
         return self._parallel_parameter_name_list
 
     @parallel_parameter_name_list.setter
@@ -358,8 +543,6 @@ class Cell(Cell_):
             raise ValueError("For 'Cell', the property 'pipeline_stage' "
                              "can not be less than 0, but got {}".format(value))
         self._pipeline_stage = value
-        for item in self.trainable_params():
-            item.add_pipeline_stage(value)
 
     @property
     def pipeline_segment(self):
@@ -378,6 +561,8 @@ class Cell(Cell_):
 
     @property
     def parallel_parameter_merge_net_dict(self):
+        if self._parallel_parameter_merge_net_dict is None:
+            super().__setattr__("_parallel_parameter_merge_net_dict", {})
         return self._parallel_parameter_merge_net_dict
 
     @parallel_parameter_merge_net_dict.setter
@@ -395,6 +580,374 @@ class Cell(Cell_):
     def enable_backward_hook(self):
         return self._enable_backward_hook
 
+    @jit_forbidden_register
+    def register_buffer(
+            self, name: str, tensor: Optional[Tensor], persistent: bool = True
+    ) -> None:
+        r"""Add a buffer to the cell.
+
+        This is typically used to register a buffer that should not to be
+        considered a model parameter. For example, BatchNorm's `running_mean`
+        is not a parameter, but is part of the cell's state. Buffers, by
+        default, are persistent and will be saved alongside parameters. This
+        behavior can be changed by setting `persistent` to ``False`` . The
+        only difference between a persistent buffer and a non-persistent buffer
+        is that the latter will not be a part of this cell's :attr:`state_dict` .
+
+        Buffers can be accessed as attributes using given names.
+
+        Args:
+            name (str): name of the buffer. The buffer can be accessed
+                from this cell using the given name.
+            tensor (Tensor): Buffer to be registered. If ``None`` ,
+                the buffer is not included in the cell's :attr:`state_dict` .
+            persistent (bool, optional): Whether the buffer is part of this cell's :attr:`state_dict`. Default ``True``.
+
+        Examples:
+            >>> import mindspore
+            ...
+            >>> class Net(mindspore.nn.Cell):
+            ...    def __init__(self):
+            ...        super().__init__()
+            ...        self.register_buffer("buffer0", mindspore.tensor([1, 2, 3]))
+            ...
+            ...    def construct(self, x):
+            ...        return x + self.net_buffer
+            ...
+            >>> net = Net()
+            >>> net.register_buffer("buffer0", mindspore.tensor([4, 5, 6]))
+            >>> print(net.buffer0)
+            [4 5 6]
+        """
+
+        if "_buffers" not in self.__dict__:
+            raise AttributeError("cannot assign buffer before Cell.__init__() call")
+        if not isinstance(name, str):
+            raise TypeError(
+                f"buffer name should be a string.But got this type: {type(name)}"
+            )
+        if "." in name:
+            raise KeyError('buffer name can\'t contain "."')
+        if name == "":
+            raise KeyError('buffer name can\'t be empty string ""')
+        if hasattr(self, name) and name not in self._buffers:
+            raise KeyError(f"attribute '{name}' already exists")
+        if tensor is not None and not isinstance(tensor, Tensor):
+            raise TypeError(
+                f"cannot assign '{type(tensor)}' object to buffer '{name}' "
+                "(mindspore Tensor or None required)"
+            )
+        for hook in _global_buffer_registration_hooks.values():
+            output = hook(self, name, tensor)
+            if output is not None:
+                tensor = output
+        if tensor is not None:
+            tensor._is_buffer = True
+        self._buffers[name] = tensor
+        if persistent:
+            self._non_persistent_buffers_set.discard(name)
+        else:
+            self._non_persistent_buffers_set.add(name)
+
+    @jit_forbidden_register
+    def get_buffer(self, target: str) -> "Tensor":
+        """Return the buffer given by `target` if it exists, otherwise throw an error.
+
+        See the docstring for `get_sub_cell` for a more detailed
+        explanation of this method's functionality as well as how to
+        correctly specify `target` .
+
+        Args:
+            target (str): The fully-qualified string name of the buffer
+                to look for. (See `get_sub_cell` for how to specify a
+                fully-qualified string.)
+
+        Returns:
+            Tensor
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetC(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_c", mindspore.tensor([0, 0, 0]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_c
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self, net_c):
+            ...         super().__init__()
+            ...         self.net_c = net_c
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_c(x) + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_c = NetC()
+            >>> net_b = NetB(net_c)
+            >>> net_a = NetA(net_b)
+            >>> buffer_c = net_a.get_buffer("net_b.net_c.buffer_c")
+            >>> print(f'buffer_c is {buffer_c}')
+            buffer_c is [0 0 0]
+
+        """
+        cell_path, _, buffer_name = target.rpartition(".")
+
+        cell = self.get_sub_cell(cell_path)
+
+        if not hasattr(cell, buffer_name):
+            raise AttributeError(
+                cell._get_name() + " has no attribute `" + buffer_name + "`"
+            )
+
+        buffer = getattr(cell, buffer_name)
+
+        if buffer_name not in cell._buffers:
+            raise AttributeError("`" + buffer_name + "` is not a buffer")
+
+        return buffer
+
+    @jit_forbidden_register
+    def named_buffers(
+            self, prefix: str = "", recurse: bool = True, remove_duplicate: bool = True
+    ) -> Iterator[Tuple[str, Tensor]]:
+        r"""Return an iterator over cell buffers, yielding both the name of the buffer as well as the buffer itself.
+
+        Args:
+            prefix (str, optional): prefix to prepend to all buffer names. Default ``""``.
+            recurse (bool, optional): if ``True`` , then yields buffers of this cell
+                and all sub cells. Otherwise, yields only buffers that
+                are direct members of this cell. Default ``True``.
+            remove_duplicate (bool, optional): Whether to remove the duplicated buffers in the result. Default ``True``.
+
+        Returns:
+            Iterator[Tuple[str, Tensor]], an iterator of tuple containing the name and buffer.
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>>
+            >>> for name, buffer in net_a.named_buffers():
+            ...     print(f'buffer name is {name}, buffer is {buffer}')
+            buffer name is buffer_a, buffer is [4 5 6]
+            buffer name is net_b.buffer_b, buffer is [1 2 3]
+
+        """
+        gen = self._named_members(
+            lambda cell: cell._buffers.items(),
+            prefix=prefix,
+            recurse=recurse,
+            remove_duplicate=remove_duplicate,
+        )
+        yield from gen
+
+    @jit_forbidden_register
+    def buffers(self, recurse: bool = True) -> Iterator[Tensor]:
+        r"""Return an iterator over cell buffers.
+
+        Args:
+            recurse (bool, optional): If ``True`` , then yields buffers of this cell
+                and all sub cells. Otherwise, yields only buffers that
+                are direct members of this cell. Default ``True``.
+
+        Returns:
+            Iterator[Tensor], an iterator of buffer.
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_b = NetB()
+            >>> net_a = NetA(net_b)
+            >>>
+            >>> for buffer in net_a.buffers():
+            ...     print(f'buffer is {buffer}')
+            buffer is [4 5 6]
+            buffer is [1 2 3]
+
+        """
+        for _, buf in self.named_buffers(recurse=recurse):
+            yield buf
+
+    def _named_members(self, get_members_fn, prefix="", recurse=True, remove_duplicate: bool = True):
+        r"""Help yield various names + members of cells."""
+        memo = set()
+        cells = (
+            self.cells_and_names(name_prefix=prefix)
+            if recurse
+            else [(prefix, self)]
+        )
+        for cell_prefix, cell in cells:
+            members = get_members_fn(cell)
+            for k, v in members:
+                if v is None or v in memo:
+                    continue
+                if remove_duplicate:
+                    memo.add(v)
+                name = cell_prefix + ("." if cell_prefix else "") + k
+                yield name, v
+
+    @jit_forbidden_register
+    def get_sub_cell(self, target: str) -> "Cell":
+        """Return the sub cell given by `target` if it exists, otherwise throw an error.
+
+        For example, let's say you have an ``nn.Cell`` ``A`` that
+        looks like this:
+
+        .. code-block:: text
+
+            A(
+                (net_b): NetB(
+                    (net_c): NetC(
+                        (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+                    )
+                    (dense): Dense(in_features=100, out_features=200, bias=True)
+                )
+            )
+
+        (The diagram shows an ``nn.Cell`` ``A``. ``A`` has a nested
+        sub cell ``net_b``, which itself has two sub cells ``net_c``
+        and ``dense``. ``net_c`` then has a sub cell ``conv``.)
+
+        To check whether we have the ``dense`` sub cell, we
+        would call `get_sub_cell("net_b.dense")`. To check whether
+        we have the ``conv`` sub cell, we would call
+        `get_sub_cell("net_b.net_c.conv")`.
+
+        The runtime of ``get_sub_cell`` is bounded by the degree
+        of cell nesting in `target`. A query against
+        `name_cells` achieves the same result, but it is O(N) in
+        the number of transitive cells. So, for a simple check to see
+        if some sub cells exist, ``get_sub_cell`` should always be
+        used.
+
+        Args:
+            target (str): The fully-qualified string name of the sub cell
+                to look for. (See above example for how to specify a
+                fully-qualified string.)
+
+        Returns:
+            Cell
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetC(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_c", mindspore.tensor([0, 0, 0]))
+            ...         self.dense_c = mindspore.nn.Dense(5, 3)
+            ...
+            ...     def construct(self, x):
+            ...         return self.dense_c(x) + self.buffer_c
+            ...
+            ...
+            >>> class NetB(mindspore.nn.Cell):
+            ...     def __init__(self, net_c):
+            ...         super().__init__()
+            ...         self.net_c = net_c
+            ...         self.register_buffer("buffer_b", mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_c(x) + self.buffer_b
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self, net_b):
+            ...         super().__init__()
+            ...         self.net_b = net_b
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...
+            ...     def construct(self, x):
+            ...         return self.net_b(x) + self.buffer_a
+            ...
+            ...
+            >>> net_c = NetC()
+            >>> net_b = NetB(net_c)
+            >>> net_a = NetA(net_b)
+            >>> net_c = net_a.get_sub_cell("net_b.net_c")
+            >>> print(f'net_c is {net_c}')
+            net_c is NetC(
+                (dense_c): Dense(input_channels=5, output_channels=3, has_bias=True)
+            )
+
+        """
+        if target == "":
+            return self
+
+        atoms: List[str] = target.split(".")
+        cell = self
+
+        for item in atoms:
+            if not hasattr(cell, item):
+                raise AttributeError(
+                    cell._get_name() + " has no " "attribute `" + item + "`"
+                )
+
+            cell = getattr(cell, item)
+
+            if not isinstance(cell, Cell):
+                raise AttributeError("`" + item + "` is not " "an nn.Cell")
+
+        return cell
+
     def get_func_graph_proto(self):
         """Return graph binary proto."""
         exec_id = ".".join([self.phase, str(self.create_time), str(id(self))])
@@ -405,6 +958,10 @@ class Cell(Cell_):
             params = self.__dict__['_params']
             if name in params:
                 return params[name]
+        if '_buffers' in self.__dict__:
+            buffers = self.__dict__['_buffers']
+            if name in buffers:
+                return buffers[name]
         if '_cells' in self.__dict__:
             cells = self.__dict__['_cells']
             if name in cells:
@@ -423,57 +980,28 @@ class Cell(Cell_):
         if hasattr(self, "compile_cache") and self.compile_cache:
             _cell_graph_executor.del_net_res(self, self.compile_cache)
         Cell.total_instance_count -= 1
+        Cell.global_cells.pop(self, None)
 
     def __delattr__(self, name):
         if name in self._params:
             del self._params[name]
+        elif name in self._buffers:
+            del self._buffers[name]
         elif name in self._cells:
             del self._cells[name]
         elif '_params_list' in self.__dict__ and name in self._params_list:
             del self._params_list[name]
         else:
             object.__delattr__(self, name)
-        self._attr_synced = False
-
-    def _cast_mixed_precision_inputs(self, inputs, dst_type):
-        """Cast input for mixed precision"""
-        res = list()
-        for item in inputs:
-            if isinstance(item, tuple):
-                res.append(self._cast_mixed_precision_inputs(item, dst_type))
-            elif isinstance(item, float):
-                res.append(self.cast(item, dst_type))
-            elif hasattr(item, "dtype") and item.dtype in \
-                    {mstype.float16, mstype.float32, mstype.float64, mstype.bfloat16} and item.dtype != dst_type:
-                res.append(self.cast(item, dst_type))
-            else:
-                res.append(item)
-        return tuple(res)
 
     def cast_inputs(self, inputs, dst_type):
         """
         Cast inputs to specified type.
 
-        Args:
-            inputs (tuple[Tensor]): The cell inputs.
-            dst_type (mindspore.dtype): The specified data type.
-
-        returns:
-            tuple[Tensor], the result with destination data type.
+        .. warning::
+            This interface will be deprecated in future versions.
         """
-        res = list()
-        for item in inputs:
-            if isinstance(item, tuple):
-                res.append(self.cast_inputs(item, dst_type))
-            else:
-                res.append(self.cast(item, dst_type))
-        return tuple(res)
-
-    def _do_parameter_broadcast(self):
-        if context.get_auto_parallel_context("parallel_mode") == ParallelMode.DATA_PARALLEL:
-            if not self.parameter_broadcast_done:
-                _pynative_executor.parameter_broadcast(self, self.phase)
-                self.parameter_broadcast_done = True
+        logger.warning(f"'cast_inputs' will be deprecated in future versions.")
 
     def run_construct(self, cast_inputs, kwargs):
         """
@@ -494,29 +1022,29 @@ class Cell(Cell_):
         output = self._run_construct(cast_inputs, kwargs)
         return output
 
-    def _run_construct(self, *inputs, **kwargs):
+    def _run_construct(self, *args, **kwargs):
         """Run the construct function"""
         if self._forward_pre_hook:
-            inputs = self._run_forward_pre_hook(inputs)
+            args, kwargs = self._run_forward_pre_hook(args, kwargs)
 
         if self._shard_fn is not None:
-            output = self._shard_fn(*inputs, **kwargs)
+            output = self._shard_fn(*args, **kwargs)
         elif _pynative_executor.requires_grad():
             if self._backward_hook:
-                output = self._backward_hook_construct(*inputs, **kwargs)
+                output = self._backward_hook_construct(*args, **kwargs)
             elif self._recompute_cell is not None:
-                output = self._recompute_cell(*inputs, **kwargs)
+                output = self._recompute_cell(*args, **kwargs)
             elif self.has_bprop:
-                output = self._call_custom_bprop(*inputs, **kwargs)
+                output = self._call_custom_bprop(*args, **kwargs)
             else:
-                output = self.construct(*inputs, **kwargs)
+                output = self.construct(*args, **kwargs)
         else:
-            output = self.construct(*inputs, **kwargs)
+            output = self.construct(*args, **kwargs)
 
         if self._forward_hook:
-            output = self._run_forward_hook(inputs, output)
+            output = self._run_forward_hook(args, kwargs, output)
 
-        if self._backward_pre_hook:
+        if self._backward_pre_hook and _pynative_executor.requires_grad():
             output = self._run_backward_pre_hook(output)
 
         return output
@@ -552,6 +1080,7 @@ class Cell(Cell_):
                             f"{default_args} default argument, total {positional_args + default_args}, "
                             f"but got {len(args)}.")
 
+    # pylint: disable=E0203
     def _hook_fn_registered(self):
         '''Hook function in graph mode'''
         # Check super().__init__() in graph mode.
@@ -600,6 +1129,89 @@ class Cell(Cell_):
         for prim in all_prims:
             prim.add_prim_attr("strategy_gen_mode", "data_parallel")
 
+    def offload(self, backward_prefetch="Auto"):
+        """
+        Set the cell offload. All primitive ops in the cell will be set offload. For the intermediate
+        activations calculated by these primitive ops, we will not save them in the forward pass, but
+        offload them and onload them in the backward pass.
+
+        Note:
+            - If Cell.offload is called, the mode should be set to "GRAPH_MODE".
+            - If Cell.offload is called, lazyinline should be enabled.
+
+        Args:
+            backward_prefetch(Union[str, int], optional): The timing for prefetching activations in advance in backward
+                                                          pass. Default: ``"Auto"``. If set it to ``"Auto"``, framework
+                                                          will start to prefetch activations one operator in advance.
+                                                          If set it to a positive int value, framework will start to
+                                                          prefetch activations ``backward_prefetch`` operators in
+                                                          advance, such as 1, 20, 100.
+        Examples:
+            >>> import mindspore.nn as nn
+            >>> from mindspore import ops
+            >>> from mindspore.common import Tensor, Parameter
+            >>> from mindspore.common.lazy_inline import lazy_inline
+            >>>
+            >>> class Block(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Block, self).__init__()
+            ...         self.transpose1 = ops.Transpose()
+            ...         self.transpose2 = ops.Transpose()
+            ...         self.transpose3 = ops.Transpose()
+            ...         self.transpose4 = ops.Transpose()
+            ...         self.real_div1 = ops.RealDiv()
+            ...         self.real_div2 = ops.RealDiv()
+            ...         self.batch_matmul1 = ops.BatchMatMul()
+            ...         self.batch_matmul2 = ops.BatchMatMul()
+            ...         self.softmax = ops.Softmax(-1)
+            ...         self.expand_dims = ops.ExpandDims()
+            ...         self.sub = ops.Sub()
+            ...         self.y = Parameter(Tensor(np.ones((1024, 128, 128)).astype(np.float32)))
+            ...     def construct(self, x):
+            ...         transpose1 = self.transpose1(x, (0, 2, 1, 3))
+            ...         real_div1 = self.real_div1(transpose1, Tensor(2.37891))
+            ...         transpose2 = self.transpose2(x, (0, 2, 3, 1))
+            ...         real_div2 = self.real_div2(transpose2, Tensor(2.37891))
+            ...         batch_matmul1 = self.batch_matmul1(real_div1, real_div2)
+            ...         expand_dims = self.expand_dims(self.y, 1)
+            ...         sub = self.sub(Tensor([1.0]), expand_dims)
+            ...         soft_max = self.softmax(sub)
+            ...         transpose3 = self.transpose3(x, (0, 2, 1, 3))
+            ...         batch_matmul2 = self.batch_matmul2(soft_max[0], transpose3)
+            ...         transpose4 = self.transpose4(batch_matmul2, (0, 2, 1, 3))
+            ...         return transpose4
+            >>>
+            >>> class OuterBlock(nn.Cell):
+            ...     @lazy_inline
+            ...     def __init__(self):
+            ...         super(OuterBlock, self).__init__()
+            ...         self.block = Block()
+            ...     def construct(self, x):
+            ...         return self.block(x)
+            >>>
+            >>> class Nets(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Nets, self).__init__()
+            ...         self.blocks = nn.CellList()
+            ...         for _ in range(3):
+            ...             b = OuterBlock()
+            ...             b.offload()
+            ...             self.blocks.append(b)
+            ...     def construct(self, x):
+            ...         out = x
+            ...         for i in range(3):
+            ...             out = self.blocks[i](out)
+            ...         return out
+        """
+        if context._get_mode() == context.PYNATIVE_MODE:
+            raise ValueError("The Cell offload does not support PyNative mode now.")
+        if isinstance(backward_prefetch, str):
+            Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', self.cls_name)
+        else:
+            Validator.check_non_negative_int(backward_prefetch)
+        for prim in self._get_prims_recursively():
+            prim._offload(backward_prefetch=backward_prefetch)
+
     def shard(self, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
         """
         Defining the input and output layouts of this cell and the parallel strategies of remaining ops will be
@@ -608,13 +1220,13 @@ class Cell(Cell_):
         strategy for others will be set by sharding propagation.
         in_strategy and out_strategy define the input and output layout respectively.
         in_strategy/out_strategy should be a tuple, each element of which corresponds to the desired layout of
-        this input/output, which can refer to the description of `mindspore.ops.Primitive.shard`.
+        this input/output, which can refer to the description of :func:`mindspore.ops.Primitive.shard`.
         The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
         Note:
-            If Cell.shard is called, the parallel mode in `set_auto_parallel_context` (parallel_mode) will be set to
-            "auto_parallel" and the search mode (search_mode) to "sharding_propagation".
-            If the input contain Parameter, its strategy should be set in `in_strategy`.
+            - It is valid only in semi auto parallel or auto parallel mode.
+              In other parallel modes, strategies set here will be ignored.
+            - If the input contain Parameter, its strategy should be set in `in_strategy`.
 
         Args:
             in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple. Tuple
@@ -628,7 +1240,7 @@ class Cell(Cell_):
                                                 If the parameter name is incorrect or the corresponding parameter
                                                 has been set, the parameter setting will be ignored.
                                                 Default: ``None`` .
-            device (string): Select a certain device target. It is not in use right now.
+            device (str): Select a certain device target. It is not in use right now.
                              Support [ ``"CPU"`` , ``"GPU"`` , ``"Ascend"`` ]. Default: ``"Ascend"`` .
             level (int): Option for parallel strategy infer algorithm, namely the object function, maximize computation
                          over communication ratio, maximize speed performance, minimize memory usage etc. It is not in
@@ -660,35 +1272,12 @@ class Cell(Cell_):
             ...     x = self.block2_shard(x)
             ...     return x
         """
-        if context.get_auto_parallel_context("parallel_mode") not in ["auto_parallel", "semi_auto_parallel"]:
-            raise AssertionError(f"Cell shard only supports auto parallel or semi_auto_parallel "
-                                 f"Please check the parallel mode in parallel context.")
-
+        if ms.communication.management.get_group_size() == 1:
+            return self
         shard_fn = Shard()
         fn = shard_fn(self, in_strategy, out_strategy, parameter_plan, device, level)
         self._shard_fn = fn
         return fn
-
-    def auto_cast_inputs(self, inputs):
-        """
-        Auto cast inputs in mixed precision scenarios.
-
-        Args:
-            inputs (tuple): the inputs of construct.
-
-        Returns:
-            Tuple, the inputs after data type cast.
-        """
-        msg = f"'auto_cast_inputs' is deprecated from version 2.0 and will be removed in a future version."
-        logger.warning(msg)
-        cast_inputs = inputs
-        mixed_type = self.get_mixed_precision_type()
-        if mixed_type == MixedPrecisionType.FP16:
-            cast_inputs = self._cast_mixed_precision_inputs(inputs, mstype.float16)
-        if mixed_type == MixedPrecisionType.FP32:
-            cast_inputs = self._cast_mixed_precision_inputs(inputs, mstype.float32)
-
-        return cast_inputs
 
     def _init_check(self):
         for param in self.get_parameters(expand=False):
@@ -702,10 +1291,16 @@ class Cell(Cell_):
             self._is_check_and_refresh = True
 
     def _predict(self, *args, **kwargs):
+        '''Graph executor for predict'''
         if not hasattr(self, "phase"):
             return False, None
         if (self.phase == "prefill" or self.phase == 'increment') and self.phase in self.phase_cache:
-            new_args = _get_args_for_run_predict(self, args, kwargs, self._compile_args)
+            new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, True)
+            if self.jit_config_dict:
+                jit_config_dict = self.jit_config_dict
+            else:
+                jit_config_dict = JitConfig().jit_config_dict
+            _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
             res = _cell_graph_executor._graph_executor(tuple(new_args), self.phase_cache[self.phase])
             res = _convert_python_data(res)
             return True, res
@@ -715,7 +1310,7 @@ class Cell(Cell_):
         # Run in Graph mode.
         if context._get_mode() == context.GRAPH_MODE and os.getenv("MS_JIT") != '0':
             if kwargs:
-                bound_arguments = self.sig.bind(*args, **kwargs)
+                bound_arguments = self._construct_sig.bind(*args, **kwargs)
                 bound_arguments.apply_defaults()
                 args = bound_arguments.args
                 kwargs = bound_arguments.kwargs
@@ -766,7 +1361,8 @@ class Cell(Cell_):
         """
         Process cell info before call construct
         """
-        if self.requires_grad:
+        if self.requires_grad and (not _pynative_executor.grad_flag() or _pynative_executor.high_order()):
+            self.is_top_cell = True
             _pynative_executor.set_grad_flag(True)
             _pynative_executor.new_graph(self, *args, **kwargs)
         elif self._dynamic_shape_inputs is not None:
@@ -780,8 +1376,9 @@ class Cell(Cell_):
         """
         Process cell info after call construct
         """
-        if self.requires_grad:
+        if self.requires_grad and self.is_top_cell:
             _pynative_executor.end_graph(self, output, *args, **kwargs)
+            self.is_top_cell = False
         elif self._dynamic_shape_inputs is not None:
             _pynative_executor.set_cell_use_dynamic_shape_process(False)
 
@@ -795,83 +1392,45 @@ class Cell(Cell_):
         """
         with _no_grad():
             output = self.construct(*args, **kwargs)
-        _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
-        return output
+        return _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
 
     def _add_attr(self, name, value):
         if name and name[:2] != '__' and name not in Cell.IGNORE_LIST:
             super(Cell, self)._add_attr(name, value)
 
-    def _sync_attr_for_compile(self):
-        """Sync the attr to c++ object."""
-        if self._attr_synced:
-            return
-        cells = self.__dict__.get('_cells')
-        for key in cells:
-            cell = cells[key]
-            cell._sync_attr_for_compile()
-            self._add_attr(key, cell)
-        params = self.__dict__.get('_params')
-        for key in params:
-            if '.' in key:
-                continue
-            param = params[key]
-            self._add_attr(key, param)
-        params_list = self.__dict__.get('_params_list')
-        for key in params_list:
-            params_list_item = params_list[key]
-            self._add_attr(key, params_list_item)
-        for key in self.__dict__:
-            value = self.__dict__[key]
-            self._add_attr(key, value)
-        self._attr_synced = True
-
-    def _set_attr_for_parameter(self, name, value):
-        """Set attr for parameter."""
-        cells = self.__dict__.get('_cells')
-        params = self.__dict__.get('_params')
-        if params is None:
-            raise AttributeError("For 'Cell', can not assign params before Cell.__init__() is called.")
-        if name in self.__dict__:
-            if self.__dict__[name] is not None:
-                raise TypeError(f"For 'Cell', the {name} should not be Parameter.")
-            del self.__dict__[name]
-        if cells and name in cells:
-            raise TypeError(f"For 'Cell', the {name} must be Cell, but got Parameter.")
-        self.insert_param_to_cell(name, value)
-
-    def _set_attr_for_parameter_tuple(self, name, value):
-        """Set attr for parameter in ParameterTuple."""
-        params = self.__dict__.get('_params')
-        params_list = self.__dict__.get('_params_list')
-        if params is None:
-            raise AttributeError("For 'Cell', can not assign params before Cell.__init__() is called.")
-        exist_names = set("")
-        exist_objs = set()
-        for item in value:
-            if item in exist_objs:
-                # If there are multiple identical objects, their names only check once.
-                continue
-            exist_objs.add(item)
-            if item.name == PARAMETER_NAME_DEFAULT:
-                logger.warning("For 'Cell', the parameter definition is deprecated.\n"
-                               "Please set a unique name for the parameter in ParameterTuple '{}'.".format(value))
-                item.name = item.name + "$" + str(self._id)
-                self._id += 1
-            self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
-            if item.name in exist_names:
-                raise ValueError("The value {} , its name '{}' already exists. "
-                                 "Please set a unique name for the parameter.".format(value, item.name))
-            exist_names.add(item.name)
-
-        if context._get_mode() == context.PYNATIVE_MODE:
+    def _set_attr_for_param_or_param_tuple(self, name, value):
+        """Set attr for param and tensor."""
+        if isinstance(value, Parameter):
             if name in self.__dict__:
                 del self.__dict__[name]
-            if name in params:
-                del params[name]
-            params_list[name] = value
-        else:
-            object.__setattr__(self, name, value)
+            self.insert_param_to_cell(name, value)
+        elif isinstance(value, ParameterTuple):
+            exist_names = set("")
+            exist_objs = set()
+            for item in value:
+                if item in exist_objs:
+                    # If there are multiple identical objects, their names only check once.
+                    continue
+                exist_objs.add(item)
+                if _is_parameter_generated(item.name):
+                    item.name = "Parameter$" + str(self._id)
+                    self._id += 1
+                if item.name in exist_names:
+                    raise ValueError("The value {} , its name '{}' already exists. "
+                                     "Please set a unique name for the parameter.".format(value, item.name))
+                exist_names.add(item.name)
+                self.insert_param_to_cell(item.name, item, check_name_contain_dot=False)
+
+            if context._get_mode() == context.PYNATIVE_MODE:
+                if name in self.__dict__:
+                    del self.__dict__[name]
+                params = self.__dict__.get('_params')
+                if name in params:
+                    del params[name]
+                params_list = self.__dict__.get('_params_list')
+                params_list[name] = value
+            else:
+                object.__setattr__(self, name, value)
 
     def _set_attr_for_parameter_in_list_or_tuple(self, name, value):
         """Set attr for parameter in list or tuple."""
@@ -880,28 +1439,19 @@ class Cell(Cell_):
                 # If there are multiple identical objects, their names only check once.
                 continue
             self.exist_objs.add(item)
-            if item.name == PARAMETER_NAME_DEFAULT:
-                item.name = item.name + "$" + str(self._id)
-                self._id += 1
             if item.name in self.exist_names:
-                raise ValueError("The value {} , its name '{}' already exists. "
-                                 "Please set a unique name for the parameter.".format(value, item.name))
+                raise ValueError(f"The value {value} , its name '{item.name}' already exists. "
+                                 "Please set a unique name for the parameter.")
             self.exist_names.add(item.name)
         object.__setattr__(self, name, value)
 
     def _set_attr_for_cell(self, name, value):
         """Set attr for cell."""
-        cells = self.__dict__.get('_cells')
-        params = self.__dict__.get('_params')
-        if cells is None:
-            raise AttributeError("For 'Cell', can not assign cells before Cell.__init__() is called.")
         if name in self.__dict__:
             del self.__dict__[name]
-        if params and name in params:
-            raise TypeError(f"For 'Cell', the {name} must be Parameter, but got Cell.")
         if self._auto_prefix:
             value.update_parameters_name(name + '.')
-        cells[name] = value
+        self.insert_child_to_cell(name, value)
         if hasattr(self, '_cell_init_args'):
             self.cell_init_args += str({name: value})
 
@@ -914,30 +1464,57 @@ class Cell(Cell_):
         else:
             self.insert_param_to_cell(name, None)
 
-    def __setattr__(self, name, value):
-        cells = self.__dict__.get('_cells')
+    def _set_attr_for_object(self, name, value):
+        """Set attr for py object."""
         params = self.__dict__.get('_params')
-        if isinstance(value, Parameter):
-            self._set_attr_for_parameter(name, value)
-        elif isinstance(value, ParameterTuple):
-            self._set_attr_for_parameter_tuple(name, value)
-        elif isinstance(value, (list, tuple)) and value and _check_param_list_tuple(value):
+        if params is not None and name in params:
+            if value is not None:
+                if isinstance(value, Tensor):
+                    params[name].set_data(value)
+                    return
+                raise TypeError(
+                    f"Parameter '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a parameter.")
+            params[name] = None
+            return
+        cells = self.__dict__.get('_cells')
+        if cells is not None and name in cells:
+            if value is not None:
+                raise TypeError(
+                    f"Sub cell '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a cell.")
+            cells[name] = None
+            return
+        buffers = self.__dict__.get('_buffers')
+        if buffers is not None and name in buffers:
+            if value is not None:
+                raise TypeError(
+                    f"Buffer '{name}' already exists in network, "
+                    f"can not assign this type: '{type(value)}' as a buffer.")
+            buffers[name] = None
+            return
+        object.__setattr__(self, name, value)
+
+    def __setattr__(self, name, value):
+        if isinstance(value, (Parameter, ParameterTuple)):
+            self._set_attr_for_param_or_param_tuple(name, value)
+        elif _is_parameter_list_or_tuple(value):
             self._set_attr_for_parameter_in_list_or_tuple(name, value)
         elif isinstance(value, Cell):
             self._set_attr_for_cell(name, value)
-        elif params and name in params:
-            self._set_attr_for_params(name, value)
-        elif cells and name in cells:
-            if value is not None:
-                raise TypeError(f"For 'Cell', the type of {name} must be cell, but got {type(value).__name__}.")
-            self._cells[name] = None
-        else:
-            if isinstance(value, Primitive):
-                value.set_prim_instance_name(name)
-                self._primitives[name] = value
+        elif isinstance(value, _Buffer):
+            if name in self.__dict__:
+                del self.__dict__[name]
+            self.register_buffer(name, value)
+        elif isinstance(value, Primitive):
+            value.set_prim_instance_name(name)
+            self._primitives[name] = value
             object.__setattr__(self, name, value)
-        if name not in Cell.IGNORE_LIST:
-            self._attr_synced = False
+        else:
+            self._set_attr_for_object(name, value)
+
+    def _get_name(self):
+        return self.__class__.__name__
 
     def extend_repr(self):
         """
@@ -951,37 +1528,28 @@ class Cell(Cell_):
         return self.__repr__()
 
     def __repr__(self):
-        extra_str = self.extend_repr()
-        info_str = self.__class__.__name__ + '<'
-        if self._cells:
-            sub_str = '\n'
-            if extra_str:
-                sub_str += '{}\n'.format(self.extend_repr())
-            for key, value in self._cells.items():
-                sub_str += '({}): {}\n'.format(key, repr(value))
-            sub_str = sub_str.replace('\n', '\n  ') + '>'
-            info_str += sub_str
-        else:
-            info_str += extra_str + '>'
-        return info_str
+        extra_lines = []
+        extend_repr = self.extend_repr()
+        # empty string will be split into list ['']
+        if extend_repr:
+            extra_lines = extend_repr.split("\n")
+        child_lines = []
+        for key, cell in self._cells.items():
+            cell_str = repr(cell)
+            cell_str = _addindent(cell_str, 2)
+            child_lines.append("(" + key + "): " + cell_str)
+        lines = extra_lines + child_lines
 
-    def load_parameter_slice(self, params):
-        """
-        Replace parameters with sliced tensors by parallel strategies.
+        main_str = self._get_name() + "("
+        if lines:
+            # simple one-liner info, which most builtin Modules will use
+            if len(extra_lines) == 1 and not child_lines:
+                main_str += extra_lines[0]
+            else:
+                main_str += "\n  " + "\n  ".join(lines) + "\n"
 
-        Note:
-            This interface is deprecated.
-        """
-        logger.warning("'load_parameter_slice' function is deprecated.")
-
-    def set_parallel_input_with_inputs(self, *inputs):
-        """
-        Slice inputs tensors by parallel strategies.
-
-        Note:
-            This interface is deprecated.
-        """
-        logger.warning("'set_parallel_input_with_inputs' function is deprecated.")
+        main_str += ")"
+        return main_str
 
     def set_inputs(self, *inputs, **kwargs):
         """
@@ -1117,7 +1685,6 @@ class Cell(Cell_):
             _cell_graph_executor._graph_executor.check_argument_consistency(compile_args, args, "set_inputs")
             self._check_parameter_consistency(compile_args, args)
             Validator.check_symbolic_shape(compile_args, args)
-            self.saved_dynamic_shape = compile_args
             return compile_args
         return args
 
@@ -1129,9 +1696,12 @@ class Cell(Cell_):
             args (tuple): Args of the Cell object.
             kwargs (dict): Kwargs of the Cell object.
         """
-        self._compile_args = self._get_compile_args(args)
-        _cell_graph_executor.compile(self, *self._compile_args, phase=self.phase,
+        _init_auto_parallel_context(self)
+        compile_args = self._get_compile_args(args)
+        self._has_mutable_args_list = _get_mutable_flags(compile_args)
+        _cell_graph_executor.compile(self, *compile_args, phase=self.phase,
                                      jit_config_dict=self._jit_config_dict, **kwargs)
+        _clear_auto_parallel_context(self)
 
     def compile_and_run(self, *args, **kwargs):
         """
@@ -1148,24 +1718,13 @@ class Cell(Cell_):
             Object, the result of executing.
         """
         self.compile(*args, **kwargs)
-        self.add_flags(ge_sync_data=False)
-        new_args = _get_args_for_run(self, args, kwargs, self._compile_args)
+        new_args = _get_args_for_run(self, args, kwargs, self._has_mutable_args_list, False)
+        if self.jit_config_dict:
+            jit_config_dict = self.jit_config_dict
+        else:
+            jit_config_dict = JitConfig().jit_config_dict
+        _cell_graph_executor._graph_executor.set_jit_config(jit_config_dict)
         return _cell_graph_executor(self, *new_args, phase=self.phase)
-
-    def auto_parallel_compile_and_run(self):
-        """
-        Whether or not to execute compile and run in 'AUTO_PARALLEL' or 'SEMI_AUTO_PARALLEL' mode.
-
-        Note:
-            This interface is deprecated.
-        """
-        logger.warning("'auto_parallel_compile_and_run' function is deprecated.")
-
-    def exec_checkpoint_graph(self):
-        """Executes GE saving checkpoint graph operation."""
-        logger.warning("'exec_checkpoint_graph' function is deprecated.")
-        self.add_flags(ge_sync_data=True)
-        _cell_graph_executor(self, phase='save')
 
     def insert_param_to_cell(self, param_name, param, check_name_contain_dot=True):
         """
@@ -1212,34 +1771,9 @@ class Cell(Cell_):
         if not isinstance(param, Parameter) and param is not None:
             raise TypeError(f"For 'insert_param_to_cell', the argument 'param' must be 'Parameter' if not None, "
                             f"but got {type(param)}.")
-        if isinstance(param, Parameter) and param.name == PARAMETER_NAME_DEFAULT:
+        if isinstance(param, Parameter) and _is_parameter_generated(param.name):
             param.name = param_name
         self._params[param_name] = param
-
-    def cast_param(self, param):
-        """
-        Cast parameter according to auto mix precision level in pynative mode.
-
-        This interface is currently used in the case of auto mix precision and usually needs not to be used explicitly.
-
-        Args:
-            param (Parameter): Parameters, the type of which should be cast.
-
-        Returns:
-            Parameter, the input parameter with type automatically cast.
-        """
-        msg = f"'cast_param' is deprecated from version 2.0 and will be removed in a future version."
-        logger.warning(msg)
-        mixed_type = self.get_mixed_precision_type()
-        if mixed_type != MixedPrecisionType.NOTSET:
-            if mixed_type == MixedPrecisionType.FP32:
-                param.set_cast_dtype(mstype.float32)
-            elif mixed_type == MixedPrecisionType.FP16:
-                param.set_cast_dtype(mstype.float16)
-        elif hasattr(param, "set_cast_dtype"):
-            # retest dtype
-            param.set_cast_dtype()
-        return param
 
     def insert_child_to_cell(self, child_name, child_cell):
         """
@@ -1262,9 +1796,9 @@ class Cell(Cell_):
             >>> net2 = nn.Dense(2, 2)
             >>> net1.insert_child_to_cell("child", net2)
             >>> print(net1)
-            ReLU<
-              (child): Dense<input_channels=2, output_channels=2, has_bias=True>
-              >
+            ReLU(
+              (child): Dense(input_channels=2, output_channels=2, has_bias=True)
+            )
         """
         if not isinstance(child_name, str):
             raise TypeError(f"For 'insert_child_to_cell', the type of parameter 'child_name' must be str, "
@@ -1300,27 +1834,19 @@ class Cell(Cell_):
         """
         Remove the redundant parameters.
 
-        This interface usually needs not to be used explicitly.
+        .. warning::
+            This interface will be deprecated in future versions.
         """
-        cells = self.cells_and_names()
-        for _, cell in cells:
-            params = cell._params.items()
-            for param_name, param in list(params):
-                if param.name not in self.parallel_parameter_name_list:
-                    cell._params.pop(param_name)
-                    logger.info("remove the redundant parameter: %s", param.name)
-                    continue
-            cell_dict = cell.__dict__
-            for key in cell_dict:
-                if isinstance(cell_dict[key], ParameterTuple):
-                    param_tuple = cell_dict[key]
-                    new_param_tuple = []
-                    for param in param_tuple:
-                        if param.name not in self.parallel_parameter_name_list:
-                            logger.info("remove the redundant parameter: %s in ParameterTuple", param.name)
-                            continue
-                        new_param_tuple.append(param)
-                    cell.__dict__[key] = ParameterTuple(new_param_tuple)
+        logger.warning(f"'remove_redundant_parameters' will be deprecated in future versions.")
+
+    def _get_cell_parallel_mode(self):
+        """Determine whether the current cell is in parallel mode."""
+        is_parallel_mode = False
+        for _, param in self.parameters_and_names():
+            if param.param_info.is_param_init:
+                is_parallel_mode = True
+                break
+        return is_parallel_mode
 
     def init_parameters_data(self, auto_parallel_mode=False):
         """
@@ -1328,7 +1854,7 @@ class Cell(Cell_):
 
         Note:
             trainable_params() and other similar interfaces may return different parameter instance after
-            `init_parameters_data`, do not save these results.
+            `init_parameters_data`. It is not recommended to save these results.
 
         Args:
             auto_parallel_mode (bool): If running in auto_parallel_mode. Default: ``False`` .
@@ -1366,9 +1892,15 @@ class Cell(Cell_):
 
         # replace all original usage.
         cells = self.cells_and_names()
+        is_parallel_mode = self._get_cell_parallel_mode()
+
         for _, cell in cells:
             params = cell._params.items()
             for param_name, param in params:
+                if param.param_info.is_pipeline_shared_param:
+                    continue
+                if is_parallel_mode and not param.sliced:
+                    continue
                 if not auto_parallel_mode:
                     cell._params[param_name] = _updata(param)
                     continue
@@ -1380,6 +1912,10 @@ class Cell(Cell_):
                     param_tuple = cell_dict[key]
                     new_param_tuple = []
                     for param in param_tuple:
+                        if param.param_info.is_pipeline_shared_param:
+                            continue
+                        if is_parallel_mode and not param.sliced:
+                            continue
                         if not auto_parallel_mode:
                             new_param_tuple.append(_updata(param))
                             continue
@@ -1687,7 +2223,7 @@ class Cell(Cell_):
             ...         return x
             >>> net = Net()
             >>> print(net.cells())
-            odict_values([Dense<input_channels=2, output_channels=2, has_bias=True>])
+            odict_values([Dense(input_channels=2, output_channels=2, has_bias=True)])
         """
         return self.name_cells().values()
 
@@ -1748,7 +2284,7 @@ class Cell(Cell_):
             ...         return x
             >>> net = Net()
             >>> print(net.name_cells())
-            OrderedDict([('dense', Dense<input_channels=2, output_channels=2, has_bias=True>)])
+            OrderedDict([('dense', Dense(input_channels=2, output_channels=2, has_bias=True))])
         """
         value_set = set()
         cells = OrderedDict()
@@ -1789,10 +2325,10 @@ class Cell(Cell_):
             ...     if isinstance(cell, nn.Dense):
             ...         cell.weight.set_data(initializer(One(), cell.weight.shape, cell.weight.dtype))
             >>> net.apply(func)
-            SequentialCell<
-              (0): Dense<input_channels=2, output_channels=2, has_bias=True>
-              (1): Dense<input_channels=2, output_channels=2, has_bias=True>
-              >
+            SequentialCell(
+              (0): Dense(input_channels=2, output_channels=2, has_bias=True)
+              (1): Dense(input_channels=2, output_channels=2, has_bias=True)
+            )
             >>> print(net[0].weight.asnumpy())
             [[1. 1.]
              [1. 1.]]
@@ -1832,9 +2368,6 @@ class Cell(Cell_):
         if not hasattr(self, "_func_graph_flags"):
             self._func_graph_flags = {}
         self._func_graph_flags.update({**flags})
-        if context._get_mode() == context.PYNATIVE_MODE and self._func_graph_flags.get("output_no_recompute"):
-            raise TypeError("Recompute is not supported in PyNative mode currently, you can use "
-                            "'context.set_context(mode=context.GRAPH_MODE)' or @jit to set graph mode.")
         self.__dict__.update({**flags})
         self._add_mixed_precision_flag(**flags)
         return self
@@ -1927,8 +2460,8 @@ class Cell(Cell_):
             >>>
             >>> net = nn.Conv2d(120, 240, 4, has_bias=False, weight_init='normal')
             >>> net.to_float(mstype.float16)
-            Conv2d<input_channels=120, output_channels=240, kernel_size=(4, 4), stride=(1, 1), pad_mode=same,
-            padding=0, dilation=(1, 1), group=1, has_bias=False, weight_init=normal, bias_init=None, format=NCHW>
+            Conv2d(input_channels=120, output_channels=240, kernel_size=(4, 4), stride=(1, 1), pad_mode=same,
+            padding=0, dilation=(1, 1), group=1, has_bias=False, weight_init=normal, bias_init=None, format=NCHW)
         """
         if dst_type not in (mstype.float16, mstype.float32, mstype.bfloat16):
             raise ValueError("For 'to_float', the argument 'dst_type' must be mstype.float32, mstype.float16 or "
@@ -2020,15 +2553,6 @@ class Cell(Cell_):
         self.add_flags_recursive(broadcast_flag=mode)
         return self
 
-    def set_auto_parallel(self):
-        """
-        Set the cell to auto parallel mode.
-
-        Note:
-            This interface is deprecated.
-        """
-        logger.warning("'set_auto_parallel' function is deprecated.")
-
     def set_jit_config(self, jit_config):
         """
         Set jit config for cell.
@@ -2074,25 +2598,38 @@ class Cell(Cell_):
             raise ValueError(f"Negative 'fusion_size' {fusion_size} is invalid.")
         Tensor._flatten_tensors(self.trainable_params(), fusion_size)  # pylint: disable=W0212
 
-    def register_forward_pre_hook(self, hook_fn):
+    def register_forward_pre_hook(self, hook_fn, with_kwargs=False):
         """
         Register forward pre hook function for Cell object.
 
+        The hook will be called before :func:`mindspore.nn.Cell.construct` is invoked.
+
+        The hook function should be one of the following signatures:
+
+        - `hook_fn(cell, args) -> None or new_args` , when `with_kwargs` is ``Flase`` .
+        - `hook_fn(cell, args, kwargs) -> None or (new_args, new_kwargs)` , when `with_kwargs` is ``True`` .
+
+        where:
+
+        - `cell` (Cell): Cell object on which the hook is registered.
+        - `args` (tuple): Positional arguments passed to the `construct` function.
+        - `kwargs` (dict): Keyword arguments passed to the `construct` function. Only passed to `hook_fn` when
+          `with_kwargs` is ``True`` .
+
         Note:
-            - The `register_forward_pre_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - 'hook_fn' must be defined as the following code.
-              `cell` is the object of registered Cell. `inputs` is the forward
-              input objects passed to the Cell. The 'hook_fn' can modify the forward input objects by returning new
-              forward input objects.
-            - It should have the following signature:
-              hook_fn(cell, inputs) -> new input objects or none.
-            - In order to prevent running failed when switching to graph mode, it is not recommended to write it in the
-              `construct` function of Cell object. In the pynative mode, if the `register_forward_pre_hook` function is
-              called in the `construct` function of the Cell object, a hook function will be added at each run time of
-              Cell object.
+            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
+            - The `hook_fn` can modify the forward inputs by returning new inputs. If `with_kwargs` is ``Flase`` , a
+              single value (whick will be wrapped into a tuple unless already a tuple) or a tuple of args should be
+              returned. If `with_kwargs` is ``True`` , both `args` and `kwargs` should be returned.
+            - In order to prevent running failed when switching to graph mode, it is not recommended to call it in the
+              `construct` function of Cell object.
+            - In the pynative mode, if this method is called inside the `construct` function of the Cell object, a
+              `hook_fn` will be added at each run time of Cell object.
 
         Args:
             hook_fn (function): Python function. Forward pre hook function.
+            with_kwargs (bool, optional): Specifies whether hook_fn will be passed the kwargs given to the `construct`
+                function. Default: ``False`` .
 
         Returns:
             A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
@@ -2133,62 +2670,67 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_forward_pre_hook", hook_fn):
-            return HookHandle()
-        handle = HookHandle(self._forward_pre_hook)
+        check_hook_fn(hook_fn)
+        handle = HookHandle(self._forward_pre_hook, extra_dict=self._forward_pre_hook_with_kwargs)
         self._forward_pre_hook[handle.handle_id] = hook_fn
+        if with_kwargs:
+            self._forward_pre_hook_with_kwargs[handle.handle_id] = True
         return handle
 
-    def _run_forward_pre_hook(self, inputs):
+    def _run_forward_pre_hook(self, args, kwargs):
         """
         Running forward pre hook function registered on Cell object.
-
-        Args:
-            inputs: The input objects of cell object.
-
-        Returns:
-            - **outputs** - New input objects or none.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
         """
-        forward_pre_hook_inputs = inputs
-        for fn in self._forward_pre_hook.values():
-            ret = fn(self, forward_pre_hook_inputs)
-            if ret is not None:
-                if not isinstance(ret, tuple):
-                    forward_pre_hook_inputs = (ret,)
-                else:
-                    forward_pre_hook_inputs = ret
+        for hook_id, hook_fn in self._forward_pre_hook.items():
+            if hook_id in self._forward_pre_hook_with_kwargs:
+                ret = hook_fn(self, args, kwargs)
+                if ret is not None:
+                    if isinstance(ret, tuple) and len(ret) == 2:
+                        args, kwargs = ret
+                    else:
+                        raise RuntimeError(
+                            "forward pre hook with kwargs must return None or a tuple of (new_args, new_kwargs), "
+                            f"but got {ret}"
+                        )
+            else:
+                ret = hook_fn(self, args)
+                if ret is not None:
+                    if not isinstance(ret, tuple):
+                        ret = (ret,)
+                    args = ret
+        return args, kwargs
 
-        if isinstance(inputs, tuple):
-            if not isinstance(forward_pre_hook_inputs, tuple):
-                forward_pre_hook_inputs = (forward_pre_hook_inputs,)
-            if len(forward_pre_hook_inputs) != len(inputs):
-                raise TypeError(
-                    "The forward pre hook return value size is {} not equal to input size {}".format(
-                        len(forward_pre_hook_inputs), len(inputs)))
-        return forward_pre_hook_inputs
-
-    def register_forward_hook(self, hook_fn):
+    def register_forward_hook(self, hook_fn, with_kwargs=False):
         """
-        Set the Cell forward hook function.
+        Register forward hook function for Cell object.
+
+        This hook will be called after :func:`mindspore.nn.Cell.construct` has computed an output.
+
+        The hook function should be one of the following signatures:
+
+        - `hook_fn(cell, args, output) -> None or new_output` , when `with_kwargs` is ``False`` .
+        - `hook_fn(cell, args, kwargs, output) -> None or new_output` , when `with_kwargs` is ``True`` .
+
+        where:
+
+        - `cell` (Cell): Cell object on which the hook is registered.
+        - `args` (tuple): Positional arguments passed to the `construct` function.
+        - `kwargs` (dict): Keyword arguments passed to the `construct` function. Only passed to `hook_fn` when
+          `with_kwargs` is ``True`` .
+        - `output`: Output generated by the `construct` function.
 
         Note:
-            - The `register_forward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - 'hook_fn' must be defined as the following code.
-              `cell` is the object of registered Cell. `inputs` is the forward
-              input objects passed to the Cell. `output` is the forward output object of the Cell. The 'hook_fn' can
-              modify the forward output object by returning new forward output object.
-            - It should have the following signature:
-              hook_fn(cell, inputs, output) -> new output object or none.
-            - In order to prevent running failed when switching to graph mode, it is not recommended to write it in the
-              `construct` function of Cell object. In the pynative mode, if the `register_forward_hook` function is
-              called in the `construct` function of the Cell object, a hook function will be added at each run time of
-              Cell object.
+            - The feature does not take effect in graph mode or in PyNative mode with functions decorated by jit.
+            - The `hook_fn` can modify the forward outputs by returning new outputs.
+            - In order to prevent running failed when switching to graph mode, it is not recommended to call it in the
+              `construct` function of Cell object.
+            - In the pynative mode, if this method is called inside the `construct` function of the Cell object, a
+              `hook_fn` will be added at each run time of Cell object.
 
         Args:
             hook_fn (function): Python function. Forward hook function.
+            with_kwargs (bool, optional): Specifies whether hook_fn will be passed the kwargs given to the `construct`
+                function. Default: ``False`` .
 
         Returns:
             A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
@@ -2233,40 +2775,25 @@ class Cell(Cell_):
             return HookHandle()
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_forward_hook", hook_fn):
-            return HookHandle()
-        handle = HookHandle(self._forward_hook)
+        check_hook_fn(hook_fn)
+        handle = HookHandle(self._forward_hook, extra_dict=self._forward_hook_with_kwargs)
         self._forward_hook[handle.handle_id] = hook_fn
+        if with_kwargs:
+            self._forward_hook_with_kwargs[handle.handle_id] = True
         return handle
 
-    def _run_forward_hook(self, inputs, output):
+    def _run_forward_hook(self, args, kwargs, output):
         """
         Running forward hook function registered on Cell object.
-
-        Args:
-            inputs: The input objects of Cell object.
-            output: The output object of Cell object.
-
-        Returns:
-            - **output** - New output object or none.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
         """
-        forward_hook_output = output
-        for fn in self._forward_hook.values():
-            ret = fn(self, inputs, forward_hook_output)
+        for hook_id, hook_fn in self._forward_hook.items():
+            if hook_id in self._forward_hook_with_kwargs:
+                ret = hook_fn(self, args, kwargs, output)
+            else:
+                ret = hook_fn(self, args, output)
             if ret is not None:
-                forward_hook_output = ret
-
-        if isinstance(output, tuple):
-            if not isinstance(forward_hook_output, tuple):
-                forward_hook_output = (forward_hook_output,)
-            if len(forward_hook_output) != len(output):
-                raise TypeError(
-                    "The forward hook return value size is {} not equal to output size {}".format(
-                        len(forward_hook_output), len(output)))
-        return forward_hook_output
+                output = ret
+        return output
 
     def register_backward_pre_hook(self, hook_fn):
         """
@@ -2324,8 +2851,7 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_backward_pre_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._backward_pre_hook)
         self._backward_pre_hook[handle.handle_id] = hook_fn
         if self._cell_backward_pre_hook is None:
@@ -2360,6 +2886,526 @@ class Cell(Cell_):
                     "The backward pre hook return value size is {} not equal to output size {}".format(
                         len(ret), len(outputs)))
         return ret
+
+    def get_extra_state(self) -> Any:
+        """Return any extra state to include in the cell's state_dict.
+
+        This function is called from ``state_dict``.
+        Implement this and a corresponding ``set_extra_state`` for your cell
+        if you need to store extra state.
+
+        Note that extra state should be picklable to ensure working serialization
+        of the state_dict. Only provide backwards compatibility guarantees
+        for serializing tensors; other objects may break backwards compatibility if
+        their serialized pickled form changes.
+
+        Returns:
+            object, any extra state to store in the cell's state_dict.
+        """
+        raise RuntimeError(
+            "Reached a code path in Cell.get_extra_state() that should never be called."
+
+        )
+
+    def set_extra_state(self, state: Any) -> None:
+        """Set extra state contained in the loaded `state_dict`.
+
+        This function is called from `load_state_dict` to handle any extra state
+        found within the `state_dict`. Implement this function and a corresponding
+        `get_extra_state` for your cell if you need to store extra state within its
+        `state_dict`.
+
+        Args:
+            state (dict): Extra state from the `state_dict`.
+        """
+        raise RuntimeError(
+            "Reached a code path in Cell.set_extra_state() that should never be called."
+        )
+
+    @jit_forbidden_register
+    def register_state_dict_post_hook(self, hook):
+        r"""Register a post-hook for the :func:`mindspore.nn.Cell.state_dict` method.
+
+        It should have the following signature:
+
+        hook(cell, state_dict, prefix, local_metadata) -> None
+
+        The registered hooks can modify the ``state_dict`` inplace.
+
+        Args:
+            hook (Callable): The hook function after `state_dict` is called.
+
+        Returns:
+            A handle that can be used to remove the added hook by calling
+            `handle.remove()`.
+        """
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._state_dict_hooks)
+        self._state_dict_hooks[handle.id] = hook
+        return handle
+
+    @jit_forbidden_register
+    def register_state_dict_pre_hook(self, hook):
+        r"""Register a pre-hook for the :func:`mindspore.nn.Cell.state_dict` method.
+
+        It should have the following signature:
+
+        hook(cell, prefix, keep_vars) -> None
+
+        The registered hooks can be used to perform pre-processing before the `state_dict`
+        call is made.
+
+        Args:
+            hook (Callable): The hook function before `state_dict` is called.
+
+        Returns:
+            A handle that can be used to remove the added hook by calling
+            `handle.remove()`.
+
+        Examples:
+            >>> import mindspore
+            ...
+            ...
+            >>> class NetA(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_a", mindspore.tensor([1, 2, 3]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_a + self.param_a
+            ...
+            ...
+            >>> def _add_extra_param(cell, prefix, keep_vars):
+            ...     cell._params["extra_param"] = mindspore.Parameter(mindspore.tensor([4, 5, 6]))
+            ...
+            ...
+            >>> net = NetA()
+            >>> handle = net.register_state_dict_pre_hook(_add_extra_param)
+            >>> net_state_dict = net.state_dict()
+            >>> handle.remove()
+            >>> print("extra_param" in net_state_dict)
+            True
+        """
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._state_dict_pre_hooks)
+        self._state_dict_pre_hooks[handle.id] = hook
+        return handle
+
+    def _save_to_state_dict(self, destination, prefix, keep_vars):
+        r"""Save cell state to the `destination` dictionary.
+
+        The `destination` dictionary will contain the state
+        of the cell, but not its descendants. This is called on every
+        sub cell in :func:`mindspore.nn.Cell.state_dict`.
+
+        In rare cases, subclasses can achieve class-specific behavior by
+        overriding this method with custom logic.
+
+        Args:
+            destination (dict): a dict where state will be stored
+            prefix (str): the prefix for parameters and buffers used in this
+                cell
+        """
+        for name, param in self._params.items():
+            if param is not None:
+                destination[prefix + name] = param
+        for name, buf in self._buffers.items():
+            if buf is not None and name not in self._non_persistent_buffers_set:
+                destination[prefix + name] = buf
+        extra_state_key = prefix + _EXTRA_STATE_KEY_SUFFIX
+        if (
+                getattr(self.__class__, "get_extra_state", Cell.get_extra_state)
+                is not Cell.get_extra_state
+        ):
+            destination[extra_state_key] = self.get_extra_state()
+
+    # The user can pass an optional arbitrary mappable object to `state_dict`, in which case `state_dict` returns
+    # back that same object. But if they pass nothing, an `OrderedDict` is created and returned.
+    T_destination = TypeVar("T_destination", bound=Dict[str, Any])
+
+    @jit_forbidden_register
+    def state_dict(self, *args, destination=None, prefix="", keep_vars=False):
+        r"""Return a dictionary containing references to the whole state of the cell.
+
+        Both parameters and persistent buffers (e.g. running averages) are
+        included. Keys are corresponding parameter and buffer names.
+        Parameters and buffers set to ``None`` are not included.
+
+        .. note::
+            The returned object is a shallow copy. It contains references
+            to the cell's parameters and buffers.
+
+        .. warning::
+            - Currently ``state_dict()`` also accepts positional arguments for
+              ``destination``, ``prefix`` and ``keep_vars`` in order. However,
+              this is being deprecated and keyword arguments will be enforced in
+              future releases.
+
+            - Please avoid the use of argument ``destination`` as it is not
+              designed for end-users.
+
+        Args:
+            destination (dict, optional): If provided, the state of cell will
+                be updated into the dict and the same object is returned.
+                Otherwise, an ``OrderedDict`` will be created and returned.
+                Default: ``None``.
+            prefix (str, optional): A prefix added to parameter and buffer
+                names to compose the keys in state_dict. Default: ``''``.
+            keep_vars (bool, optional): Whether the state_dict returns a copy. Default: ``False`` , returns a reference.
+
+        Returns:
+            Dict, a dictionary containing a whole state of the cell.
+
+        Examples:
+            >>> import mindspore
+            >>> class Model(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_a + self.param_a
+            ...
+            ...
+            >>> model = Model()
+            >>> print(model.state_dict())
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
+        """
+        if args:
+            # DeprecationWarning is ignored by default
+            warnings.warn(
+                "Positional args are being deprecated, use kwargs instead. Refer to "
+                "https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html"
+                " for details.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            if destination is None:
+                destination = args[0]
+            if len(args) > 1 and prefix == "":
+                prefix = args[1]
+            if len(args) > 2 and keep_vars is False:
+                keep_vars = args[2]
+        if destination is not None and not isinstance(destination, dict):
+            raise TypeError(f"The type of destination must be OrderedDict, but got {type(destination)}")
+        if not isinstance(prefix, str):
+            raise TypeError(f"The type of prefix must be string, but got {type(prefix)}")
+        if not isinstance(keep_vars, bool):
+            raise TypeError(f"The type of keep_vars must be bool, but got {type(keep_vars)}")
+
+        if destination is None:
+            destination = OrderedDict()
+            destination._metadata = OrderedDict()
+
+        local_metadata = {}
+        if hasattr(destination, "_metadata"):
+            destination._metadata[prefix[:-1]] = local_metadata
+
+        for hook in self._state_dict_pre_hooks.values():
+            hook(self, prefix, keep_vars)
+        self._save_to_state_dict(destination, prefix, keep_vars)
+        for name, cell in self._cells.items():
+            if cell is not None:
+                cell.state_dict(
+                    destination=destination,
+                    prefix=prefix + name + ".",
+                    keep_vars=keep_vars,
+                )
+        for hook in self._state_dict_hooks.values():
+            hook_result = hook(self, destination, prefix, local_metadata)
+            if hook_result is not None:
+                raise RuntimeError("state_dict post-hook must return None")
+        return destination
+
+    @jit_forbidden_register
+    def register_load_state_dict_pre_hook(self, hook):
+        r"""Register a pre-hook to be run before cell's :func:`mindspore.nn.Cell.load_state_dict` is called.
+
+        It should have the following signature:
+
+        hook(cell, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs) -> None
+
+        Args:
+            hook (Callable): The hook function before `load_state_dict` is called.
+
+        Returns:
+            A handle that can be used to remove the added hook by calling
+            `handle.remove()`.
+        """
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._load_state_dict_pre_hooks)
+        self._load_state_dict_pre_hooks[handle.id] = hook
+        return handle
+
+    @jit_forbidden_register
+    def register_load_state_dict_post_hook(self, hook):
+        r"""Register a post-hook to be run after cell's :func:`mindspore.nn.Cell.load_state_dict` is called.
+
+        It should have the following signature:
+
+        hook(cell, incompatible_keys) -> None
+
+        The ``cell`` argument is the current cell that this hook is registered
+        on, and the ``incompatible_keys`` argument is a ``NamedTuple`` consisting
+        of attributes ``missing_keys`` and ``unexpected_keys``. ``missing_keys``
+        is a ``list`` of ``str`` containing the missing keys and
+        ``unexpected_keys`` is a ``list`` of ``str`` containing the unexpected keys.
+
+        The given incompatible_keys can be modified inplace if needed.
+
+        Note that the checks performed when calling :func:`load_state_dict` with
+        ``strict=True`` are affected by modifications the hook makes to
+        ``missing_keys`` or ``unexpected_keys``, as expected. Additions to either
+        set of keys will result in an error being thrown when ``strict=True``, and
+        clearing out both missing and unexpected keys will avoid an error.
+
+        Args:
+            hook (Callable): The hook function after `load_state_dict` is called.
+
+        Returns:
+            A handle that can be used to remove the added hook by calling
+            `handle.remove()`.
+        """
+        from mindspore.utils.hooks import _RemovableHandle
+        handle = _RemovableHandle(self._load_state_dict_post_hooks)
+        self._load_state_dict_post_hooks[handle.id] = hook
+        return handle
+
+    def _load_from_state_dict(
+            self,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+    ):
+        r"""Copy parameters and buffers from :attr:`state_dict` into only this cell, but not its descendants.
+
+        This is called on every sub cell
+        in :func:`mindspore.nn.Cell.load_state_dict`. Metadata saved for this
+        cell in input :attr:`state_dict` is provided as :attr:`local_metadata`.
+        For state dicts without metadata, :attr:`local_metadata` is empty.
+        Subclasses can achieve class-specific backward compatible loading using
+        the version number at `local_metadata.get("version", None)`.
+
+        .. note::
+            :attr:`state_dict` is not the same object as the input
+            :attr:`state_dict` to :func:`mindspore.nn.Cell.load_state_dict`. So
+            it can be modified.
+
+        Args:
+            state_dict (dict): a dict containing parameters and
+                persistent buffers.
+            prefix (str): the prefix for parameters and buffers used in this
+                cell
+            local_metadata (dict): a dict containing the metadata for this cell.
+                See
+            strict (bool): whether to strictly enforce that the keys in
+                :attr:`state_dict` with :attr:`prefix` match the names of
+                parameters and buffers in this cell
+            missing_keys (list of str): if ``strict=True``, add missing keys to
+                this list
+            unexpected_keys (list of str): if ``strict=True``, add unexpected
+                keys to this list
+            error_msgs (list of str): error messages should be added to this
+                list, and will be reported together in
+                :func:`mindspore.nn.Cell.load_state_dict`
+        """
+        for hook in self._load_state_dict_pre_hooks.values():
+            hook(
+                self,
+                state_dict,
+                prefix,
+                local_metadata,
+                strict,
+                missing_keys,
+                unexpected_keys,
+                error_msgs,
+            )
+
+        persistent_buffers = {
+            k: v
+            for k, v in self._buffers.items()
+            if k not in self._non_persistent_buffers_set
+        }
+        local_name_params = itertools.chain(
+            self._params.items(), persistent_buffers.items()
+        )
+        local_state = {k: v for k, v in local_name_params if v is not None}
+
+        for name, param in local_state.items():
+            key = prefix + name
+            if key in state_dict:
+                input_param = state_dict[key]
+                if not isinstance(input_param, Tensor):
+                    error_msgs.append(
+                        f'While copying the parameter named "{key}", '
+                        "expected Tensor or Tensor-like object from checkpoint but "
+                        f"received {type(input_param)}"
+                    )
+                    continue
+
+                if input_param.shape != param.shape:
+                    # local shape should match the one in checkpoint
+                    error_msgs.append(
+                        f"size mismatch for {key}: copying a param with shape {input_param.shape} from checkpoint, "
+                        f"the shape in current model is {param.shape}."
+                    )
+                    continue
+                try:
+                    param.assign_value(Tensor(input_param.asnumpy(), dtype=param.dtype))
+                except Exception as ex:  # pylint: disable=W0703
+                    error_msgs.append(
+                        f'While copy the parameter named "{key}", '
+                        f"whose shape in the model are {param.shape} and "
+                        f"whose shape in the checkpoint are {input_param.shape}, "
+                        f"an exception occurred : {ex.args}."
+                    )
+            elif strict:
+                missing_keys.append(key)
+
+        extra_state_key = prefix + _EXTRA_STATE_KEY_SUFFIX
+        if getattr(self.__class__, "set_extra_state", Cell.set_extra_state) is not Cell.set_extra_state:
+            if extra_state_key in state_dict:
+                self.set_extra_state(state_dict[extra_state_key])
+            elif strict:
+                missing_keys.append(extra_state_key)
+        elif strict and (extra_state_key in state_dict):
+            unexpected_keys.append(extra_state_key)
+
+        if strict:
+            for key in state_dict.keys():
+                if key.startswith(prefix) and key != extra_state_key:
+                    input_name = key[len(prefix):].split(".", 1)
+                    # Must be cell if it have attributes
+                    if len(input_name) > 1:
+                        if input_name[0] not in self._cells:
+                            unexpected_keys.append(key)
+                    elif input_name[0] not in local_state:
+                        unexpected_keys.append(key)
+
+    @jit_forbidden_register
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True):
+        r"""Copy parameters and buffers from :attr:`state_dict` into this cell and its descendants.
+
+        If :attr:`strict` is ``True``, then
+        the keys of :attr:`state_dict` must exactly match the keys returned
+        by this cell's :func:`mindspore.nn.Cell.state_dict` function.
+
+        Args:
+            state_dict (dict): A dict containing parameters and
+                persistent buffers.
+            strict (bool, optional): Whether to strictly enforce that the keys
+                in input `state_dict` match the keys returned by this cell's
+                :func:`mindspore.nn.Cell.state_dict` function. Default ``True`` .
+
+        Returns:
+            A namedtuple with ``missing_keys`` and ``unexpected_keys`` fields,
+
+            - `missing_keys` is a list of str containing any keys that are expected
+              by this cell but missing from the provided ``state_dict``.
+
+            - `unexpected_keys` is a list of str containing the keys that are not
+              expected by this cell but present in the provided ``state_dict``.
+
+        Note:
+            If `strict` is ``True`` and a parameter or buffer is registered as ``None``, but its corresponding key
+            exists in :attr:`state_dict`, and :func:`mindspore.nn.Cell.load_state_dict` will raise a ``RuntimeError``.
+
+        Examples:
+            >>> import mindspore
+            >>> import os
+            >>> class Model(mindspore.nn.Cell):
+            ...     def __init__(self):
+            ...         super().__init__()
+            ...         self.register_buffer("buffer_a", mindspore.tensor([4, 5, 6]))
+            ...         self.param_a = mindspore.Parameter(mindspore.tensor([1, 2, 3]))
+            ...
+            ...     def construct(self, x):
+            ...         return x + self.buffer_a + self.param_a
+            ...
+            ...
+            >>> model = Model()
+            >>> print(model.state_dict())
+            >>> mindspore.save_checkpoint(model.state_dict(), './model_state_dict_ckpt')
+            >>> new_model = Model()
+            >>> new_model.load_state_dict(mindspore.load_checkpoint('./model_state_dict_ckpt'))
+            >>> print(new_model.state_dict())
+            >>> os.remove('./model_state_dict_ckpt')
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
+            OrderedDict([('param_a', Parameter (name=param_a, shape=(3,), dtype=Int64, requires_grad=True)), \
+            ('buffer_a', Tensor(shape=[3], dtype=Int64, value= [4, 5, 6]))])
+        """
+        if not isinstance(state_dict, Mapping):
+            raise TypeError(
+                f"Expected state_dict to be dict-like, got {type(state_dict)}."
+            )
+
+        missing_keys: List[str] = []
+        unexpected_keys: List[str] = []
+        error_msgs: List[str] = []
+
+        # copy state_dict so _load_from_state_dict can modify it
+        metadata = getattr(state_dict, "_metadata", None)
+        state_dict = OrderedDict(state_dict)
+        if metadata is not None:
+            # mypy isn't aware that "_metadata" exists in state_dict
+            state_dict._metadata = metadata  # type: ignore[attr-defined]
+
+        def load(cell, local_state_dict, prefix=""):
+            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            cell._load_from_state_dict(
+                local_state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs,
+            )
+            for name, child in cell._cells.items():
+                if child is not None:
+                    child_prefix = prefix + name + "."
+                    child_state_dict = {k: v for k, v in local_state_dict.items() if k.startswith(child_prefix)}
+                    load(child, child_state_dict, child_prefix)  # noqa: F821
+
+            # Note that the hook can modify missing_keys and unexpected_keys.
+            incompatible_keys = _IncompatibleKeys(missing_keys, unexpected_keys)
+            for hook in cell._load_state_dict_post_hooks.values():
+                out = hook(cell, incompatible_keys)
+                if out is not None:
+                    raise RuntimeError(
+                        "Hooks registered with ``register_load_state_dict_post_hook`` are not"
+                        "expected to return new values, if incompatible_keys need to be modified,"
+                        "it should be done inplace."
+                    )
+
+        load(self, state_dict)
+        del load
+
+        if strict:
+            if unexpected_keys:
+                error_msgs.insert(
+                    0,
+                    "Unexpected key(s) in state_dict: {}. ".format(
+                        ", ".join(f'"{k}"' for k in unexpected_keys)
+                    ),
+                )
+            if missing_keys:
+                error_msgs.insert(
+                    0,
+                    "Missing key(s) in state_dict: {}. ".format(
+                        ", ".join(f'"{k}"' for k in missing_keys)
+                    ),
+                )
+
+        if error_msgs:
+            raise RuntimeError(
+                "Error(s) in loading state_dict for {}:\n\t{}".format(
+                    self.__class__.__name__, "\n\t".join(error_msgs)
+                )
+            )
+        return _IncompatibleKeys(missing_keys, unexpected_keys)
 
     def register_backward_hook(self, hook_fn):
         """
@@ -2420,8 +3466,7 @@ class Cell(Cell_):
         """
         if context._get_mode() == context.GRAPH_MODE:
             return HookHandle()
-        if not check_hook_fn("register_backward_hook", hook_fn):
-            return HookHandle()
+        check_hook_fn(hook_fn)
         handle = HookHandle(self._backward_hook)
         self._backward_hook[handle.handle_id] = hook_fn
         if self._cell_backward_hook is None:
@@ -2496,12 +3541,6 @@ class Cell(Cell_):
         for param in params:
             param.set_param_ps(init_in_server)
 
-    @deprecated("1.8", "set_param_fl")
-    def set_param_fl(self, push_to_server=False, pull_from_server=False, requires_aggr=True):
-        params = self.parameters_and_names()
-        for param in params:
-            param[1].set_param_fl(push_to_server, pull_from_server, requires_aggr)
-
     def set_comm_fusion(self, fusion_type, recurse=True):
         """
         Set `comm_fusion` for all the parameters in this cell. Please refer to the description of
@@ -2565,8 +3604,9 @@ class Cell(Cell_):
         if not self._has_config_recompute:
             self._has_config_recompute = True
         else:
-            raise RuntimeError("The recompute interface can be configured only once."
-                               " When the parent cell is configured, the child cell should not be configured")
+            logger.info("The recompute interface can be configured only once."
+                        " When the parent cell is configured, the child cell should not be configured")
+            return
         self._set_recompute_scope(mode)
         if mode and not output_recompute:
             self.add_flags(output_no_recompute=True)
@@ -2606,18 +3646,13 @@ class Cell(Cell_):
         """
         if context.get_context("mode") == context.PYNATIVE_MODE:
             self._recompute_cell = recompute_registry.get()(self.construct)
-            self._add_recompute_flag()
-            return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))
-        if 'parallel_optimizer_comm_recompute' in kwargs.keys():
-            if (kwargs.get('parallel_optimizer_comm_recompute', False) and
-                    context.get_auto_parallel_context("pipeline_stages") > 1):
+        if 'parallel_optimizer_comm_recompute' in kwargs:
+            if kwargs.get('parallel_optimizer_comm_recompute', False):
                 logger.warning("Currently, the communication operator allgathers introduced by optimizer shard "
-                               "are not support recomputation in pipeline parallel.")
-            elif context.get_auto_parallel_context("pipeline_stages") == 1:
-                self._parallel_optimizer_comm_recompute(kwargs.get('parallel_optimizer_comm_recompute', False))
+                               "is replaced with zero3.")
         if 'recompute_slice_activation' in kwargs:
             self._recompute_slice_activation(kwargs.get('recompute_slice_activation', False))
 
@@ -2626,38 +3661,6 @@ class Cell(Cell_):
                 raise ValueError("For 'recompute', keyword '%s' is not recognized! "
                                  "the key kwargs must be 'mp_comm_recompute', "
                                  "'parallel_optimizer_comm_recompute', 'recompute_slice_activation'" % key)
-
-    @deprecated("2.3", "infer_param_pipeline_stage")
-    def infer_param_pipeline_stage(self):
-        """
-        Infer pipeline stages of all parameters in the cell.
-
-        Note:
-            - The interface is deprecated from version 2.3 and will be removed in a future version.
-
-        Returns:
-            The params belong to current stage in pipeline parallel.
-
-        Raises:
-            RuntimeError: If there is a parameter does not belong to any stage.
-        """
-        from mindspore.parallel._utils import _get_global_rank, _get_device_num
-        logger.warning(f"This interface may be deleted in the future.")
-        stage_num = context.get_auto_parallel_context("pipeline_stages")
-        device_num = _get_device_num()
-        rank_id = _get_global_rank()
-        per_stage_devices = device_num // stage_num
-        current_stage = rank_id // per_stage_devices
-        params = []
-        for param in self.trainable_params():
-            if not param._pipeline_stage_list:  # pylint: disable=W0212
-                raise RuntimeError("For 'infer_param_pipeline_stage', the parameter {} does not belong to any stage, "
-                                   "please check whether the cell where the param locates has been set "
-                                   "'pipeline_stage'. Otherwise, the parameter should use 'add_pipeline_stage' "
-                                   "to add its stage information".format(param.name))
-            if current_stage in param._pipeline_stage_list:
-                params.append(param)
-        return params
 
     def place(self, role, rank_id):
         """
@@ -2688,19 +3691,6 @@ class Cell(Cell_):
         for op in all_ops:
             op.place(role, rank_id)
 
-    def _mixed_precision_cast(self, inputs):
-        mixed_type = self.get_mixed_precision_type()
-        if mixed_type == MixedPrecisionType.NOTSET:
-            return inputs
-        if mixed_type == MixedPrecisionType.FP16:
-            cast_type = mstype.float16
-        elif mixed_type == MixedPrecisionType.BF16:
-            cast_type = mstype.bfloat16
-        else:
-            cast_type = mstype.float32
-        cast_inputs = self._cast_mixed_precision_inputs(inputs, cast_type)
-        return cast_inputs
-
     def _get_attr_from_cell(self, network):
         if not isinstance(network, Cell):
             return
@@ -2709,103 +3699,12 @@ class Cell(Cell_):
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
 
-    def _add_recompute_flag(self):
+    def _set_jit_graph_name(self, key):
         """
-        Set pynative cell recomputed.
+        Set jit graph name.
         """
-        if not self._has_config_recompute:
-            self._has_config_recompute = True
-        else:
-            logger.info("The recompute interface can be configured only once."
-                        " If the parent cell is configured, the child cell should not be configured")
-        for cell in self.cells():
-            cell._add_recompute_flag()
+        self._jit_graph_name = key
 
-    def _register_parameters_hook(self, forward_hook=None, backward_hook=None, all=False):
-        """
-        Register the forward hook for parameters and register the backward hook for the corresponding gradient.
-
-        .. warning::
-            This is an experimental prototype that is subject to change and/or deletion.
-
-        Note:
-            - The `_register_parameters_hook(forward_hook, backward_hook)` only work in graph mode
-            - The `forward_hook` must be defined as the following code.
-              `parameters`: the tuple of the trainble parameters of the Cell, each element in the tuple shuould be
-               in the format of `(param_name, Parameter)`.
-            - The `forward_hook` should have the following signature:
-              forward_hook(parameters) -> None.
-            - The `backward_hook` must be defined as the following code.
-              `gradients`: the tuple of the gradients corresponding to the trainble parameters of the Cell, each
-               element in the tuple shuould be in the format of `(param_name, gradient)`.
-            - The `backward_hook` should have the following signature:
-              backward_hook(parameters) -> New gradients.
-
-        Args:
-            forward_hook (function, optional): Python function or ``None``, Forward hook function. Default: ``None``
-            backward_hook (function, optional): Python function or ``None``, Backward hook function. Default ``None``
-            all (bool, optional): bool, whether to set hooks for all sub cells recursively. Default: ``False``
-
-        Returns:
-            None
-
-        Raises:
-            RuntimeError: If the `forward_hook` or `backward_hook ` has unspoorted syntax under GRAPH MODE.
-            TypeError: If the `forward_hook` or `backward_hook` is not defined as required.
-
-        Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore as ms
-            >>> from mindspore import Tensor, nn, ops, Parameter
-            >>>
-            >>> ms.set_context(mode=ms.GRAPH_MODE)
-            >>> def parameter_hook(parameters):
-            ...     print("--- enter parameter hook ---")
-            ...     for name, param in parameters:
-            ...         print (name, param)
-            ...     print("--- leave parameter hook ---")
-            ...
-            >>> def gradient_hook(gradients):
-            ...     print("--- enter gradient hook ---")
-            ...     outs = []
-            ...     for name, gradient in gradients:
-            ...         print(name, gradient)
-            ...         outs.append(gradient * 2) # double gradient
-            ...     print("--- leave gradient hook ---")
-            ...     return outs
-            ...
-            >>> class Net(nn.Cell):
-            ...     def __init__(self)
-            ...         super(Net, self).__init__()
-            ...         self.w = Parameter(Tensor(np.array([3.0], np.float32)), name='w')
-            ...     def construct(self, x):
-            ...         return self.w * x
-            ...
-            >>> grad = ops.GradOperation(get_by_list=True)
-            >>> net = Net()
-            >>> net._register_parameters_hook(forward_hook=parameter_hook, backward_hook=gradient_hook)
-            >>> x = Tensor(np.array([4.0]).astype(np.float32))
-            >>> output = grad(net, net.trainable_params())(x)
-            --- enter parameter hook ---
-            w
-            Tensor(shape=[1], dtype=Float32, value=[ 3.00000000e+00])
-            --- leave parameter hook ---
-            --- enter gradient hook ---
-            w
-            Tensor(shape=[1], dtype=Float32, value=[ 4.00000000e+00])
-            --- leave gradient hook ---
-            >>> print("doubled grad: ", output)
-            doubled grad: (Tensor(shape=[1], dtype=Float32, value=[ 8.00000000e+00]),)
-        """
-        if not all:
-            self._parameters_forward_hook = forward_hook
-            self._parameters_backward_hook = backward_hook
-        else:
-            for _, cell in self.cells_and_names():
-                cell._parameters_forward_hook = forward_hook
-                cell._parameters_backward_hook = backward_hook
 
 class GraphCell(Cell):
     """
@@ -2820,12 +3719,10 @@ class GraphCell(Cell):
             The key is the parameter name whose type is str, and the value is a Tensor or Parameter.
             If the parameter exists in the graph according to the name, update it's value.
             If the parameter does not exist, ignore it. Default: ``None`` .
-        obf_random_seed (Union[int, None]): The random seed used for dynamic obfuscation. "dynamic obfuscation" is
-            used for model protection, which can refer to :func:`mindspore.obfuscate_model`. If the input `graph` is
-            a func_graph loaded from a mindir file obfuscated with `obf_random_seed` , then `obf_random_seed` should be
-            provided. `obf_random_seed` should be in (0, 9223372036854775807]. default: ``None`` .
+        obf_random_seed (Union[int, None]): The random seed used for dynamic obfuscation, which is not supported now.
 
     Raises:
+        NotImplementedError: Dynamic structure obfuscation is not supported now.
         TypeError: If the `graph` is not a FuncGraph.
         TypeError: If the `params_init` is not a dict.
         TypeError: If the key of the `params_init` is not a str.
@@ -2855,20 +3752,12 @@ class GraphCell(Cell):
 
     def __init__(self, graph, params_init=None, obf_random_seed=None):
         super(GraphCell, self).__init__(auto_prefix=True)
+        if obf_random_seed is not None:
+            raise NotImplementedError("Dynamic structure obfuscation is not supported now.")
         if not isinstance(graph, FuncGraph):
             raise TypeError(f"For 'GraphCell', the argument 'graph' must be a FuncGraph loaded from MindIR, "
                             f"but got type {type(graph)}.")
         self.graph = graph
-        self.obf_random_seed = obf_random_seed
-        if obf_random_seed is not None:
-            if not isinstance(obf_random_seed, int):
-                raise TypeError("'obf_random_seed' must be int, but got {}.".format(type(obf_random_seed)))
-            int_64_max = 9223372036854775807
-            if obf_random_seed <= 0 or obf_random_seed > int_64_max:
-                raise ValueError(
-                    "'obf_random_seed' must be larger than 0, and less or equal than int64 ({}),"
-                    "but got {}.".format(int_64_max, obf_random_seed))
-            self._branch_control_input = _generate_branch_control_input(self.obf_random_seed)
         params_init = {} if params_init is None else params_init
         if not isinstance(params_init, dict):
             raise TypeError(f"For 'GraphCell', the argument 'params_init' must be a dict, but got {type(params_init)}.")
@@ -2888,19 +3777,30 @@ class GraphCell(Cell):
     def __call__(self, *args, **kwargs):
         self.phase = "graph_load_from_mindir"
         self._add_attr("graph_load_from_mindir", self.graph)
-        if not self.obf_random_seed:
-            return self.compile_and_run(*args, **kwargs)
-        append_input = Tensor((numpy.ones((1,)) * self._branch_control_input).astype(numpy.int32))
-        return self.compile_and_run(*args, append_input, **kwargs)
+        return self.compile_and_run(*args, **kwargs)
 
 
-def _check_param_list_tuple(value):
+def _is_parameter_list_or_tuple(value):
     """
     Check the type of input in list or tuple is Parameter.
     :param value: list or tuple.
     :return: The types of all inputs are parameter.
     """
-    for item in value:
-        if not isinstance(item, Parameter):
-            return False
-    return True
+    if isinstance(value, (list, tuple)) and value:
+        for item in value:
+            if not isinstance(item, Parameter):
+                return False
+        return True
+    return False
+
+
+def _addindent(s_, num_spaces):
+    s = s_.split("\n")
+    # don't do anything for single-line stuff
+    if len(s) == 1:
+        return s_
+    first = s.pop(0)
+    s = [(num_spaces * " ") + line for line in s]
+    s = "\n".join(s)
+    s = first + "\n" + s
+    return s

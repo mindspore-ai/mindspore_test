@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace square {
 
 void SquareAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
@@ -31,5 +32,6 @@ bool SquareAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Square, SquareAscend);
+}  // namespace square
 }  // namespace kernel
 }  // namespace mindspore

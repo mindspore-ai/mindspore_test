@@ -18,12 +18,13 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace affine_grid_cpu {
 namespace {
 constexpr size_t kRowNum2 = 2;
 constexpr size_t kRowNum3 = 3;
@@ -256,5 +257,6 @@ std::vector<KernelAttr> AffineGridCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AffineGrid, AffineGridCpuKernelMod);
+}  // namespace affine_grid_cpu
 }  // namespace kernel
 }  // namespace mindspore

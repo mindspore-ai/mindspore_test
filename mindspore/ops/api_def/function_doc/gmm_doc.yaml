@@ -1,0 +1,80 @@
+gmm:
+    description: |
+        gmm(x, weight, bias=None, group_list=None, group_type=0, group_list_type=0) -> tuple[Tensor]
+
+        Grouping matrix multiplication.
+
+        .. warning::
+            - This is an experimental API that is subject to change or deletion.
+            - `group_type` must be a constant.
+            - Only support on Atlas A2 training series.
+            - When the type of `group_list` is tuple[int] or list[int], it should a non-negative non-decreasing sequence,
+              indicating indexes of each group along the split axis. In this scenario, the arg `group_list_type` is useless.
+
+        .. note::
+            - When `group_type` is 2, the tensors in `x` must be non-continuous tensors which has
+              been transposed.
+            - Only when `group_type` is 0 and `bias` is None, the reverse derivative is supported,
+              which is implemented by ops.function.math_func.gmm_backward or through automatic differentiation.
+
+        Args:
+            x (tuple[Tensor]): The first tensors to be multiplied, whose num should be 1.
+            weight (tuple[Tensor]): The second tensors to be multiplied, whose num should be 1.
+            bias (tuple[Tensor], optional): Biases added to outputs, whose num should be 1.
+                The shape of each tensor in `bias` should be :math: `(group_list.shape[0], n)`
+                or :math: `(len(group_list), n)`. In the training scenario, the bias only supports None.
+                Default: ``None`` .
+            group_list (Union[Tensor, list[int], tuple[int]], optional): 1-D Tensor, list[int]
+                or tuple[int], indicating indexes or sizes of each group along the split axis.
+                When `group_list` is list[int] or tuple[int], it's length should be less than or equal to 128.
+                When `group_list` is a Tensor, it's size should be less than or equal to 1024.
+                Supported dtypes: int64.
+                Default: ``None`` .
+
+                - If `group_list_type` is 0, it must be  a non-negative non-decreasing sequence.
+                  And when `group_type` is 0, the last element in `group_list` should be equal to
+                  the first dimension of the tensor in `x` . When `group_type` is 2, the last element
+                  in `group_list` should be equal to the second dimension of the tensor in `x` .
+
+                - If `group_list_type` is 1, the value in `group_list` are the sizes of each group.
+            group_type (int, optional): Represents the axes that need to be grouped. For example,
+                :math: `C[m,n] = A[m,k] \times B[k,n]`. Default: ``0`` .
+
+                - If `group_type` is 0, it means that the m-axis is grouped, meaning that the shape
+                  of each tensor in `x` should be :math: `(m, k)` , the shape of each tensor in `weight`
+                  should be :math: `(group_list.shape[0], k, n)` or :math: `(len(group_list), k, n)`,
+                  and the shape of each tensor in result would be :math: `(m, n)` .
+
+                - If `group_type` is 2, it means that the k-axis is grouped, meaning that
+                  the shape of each tensor in `x` should be :math: `(m, k)`, the shape of each
+                  tensor in `weight` should be :math: `(k, n)`, and the shape of each tensor
+                  in result would be :math: `(group_list.shape[0], m, n)` or :math: `(len(group_list), m, n)`.
+            group_list_type (int, optional): If it's 0, the value in `group_list` are the cumsum
+                result of the size of each group. If it's 1, the value in `group_list` are the size
+                of each group. Default: ``0`` .
+
+        `x` , `weight` and `bias` only support the following 3 type combinations:
+
+        - x: float16, weight: float16, bias: float16
+        - x: bfloat16, weight: bfloat16, bias: float32
+        - x: float32, weight: float32, bias: float32
+
+        Returns:
+            tuple[Tensor], the results of grouping matrix multiplication.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.random.uniform(0,1, (10, 20)).astype(np.float32))
+            >>> weight = Tensor(np.random.uniform(0,1, (4, 20, 8)).astype(np.float32))
+            >>> group_list = Tensor([2, 4, 2, 2])
+            >>> y = ops.function.math_func.gmm([x,], [weight,], group_list=group_list, group_list_type=1)
+            >>> print(y[0].shape)
+            >>> (10, 8)
+            >>> group_list = [2, 6, 8, 10]
+            >>> y = ops.function.math_func.gmm([x,], [weight,], group_list=group_list, group_list_type=0)
+            >>> print(y[0].shape)
+            >>> (10, 8)

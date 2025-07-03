@@ -17,3 +17,4 @@ ones_like_ext:
         Ascend: OnesLikeExtAscend
         CPU: None
         GPU: None
+    non-differentiable: True

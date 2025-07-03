@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test_ascend_control_sink """
-from tests.st.compiler.control.cases_register import case_register
+from tests.mark_utils import arg_mark
 import numpy as np
 import mindspore.nn as nn
 import mindspore as ms
@@ -24,6 +24,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 
+ms.set_context(jit_config={"jit_level": "O0"})
 
 class ControlSimpleIf(nn.Cell):
     def __init__(self):
@@ -229,8 +230,7 @@ def cell_list_in_while_by_while():
     return out
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_if():
     """
     Feature: Control flow
@@ -249,8 +249,7 @@ def test_simple_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_if_with_assign():
     """
     Feature: Control flow
@@ -267,8 +266,7 @@ def test_simple_if_with_assign():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_in_if():
     """
     Feature: Control flow
@@ -283,8 +281,7 @@ def test_if_in_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_if_by_if_by_if():
     """
     Feature: Control flow
@@ -293,8 +290,8 @@ def test_if_by_if_by_if():
     """
     x = np.array(2.345678).astype(np.float32)
     y = np.array(1.234567).astype(np.float32)
-    cond1 = np.array(True).astype(np.bool)
-    cond2 = np.array(False).astype(np.bool)
+    cond1 = np.array(True).astype(np.bool_)
+    cond2 = np.array(False).astype(np.bool_)
     input_shape = (127, 7, 53, 31)
     input_data = np.random.randn(*input_shape).astype(np.float32)
     net = ControlIfbyIfbyIf()
@@ -303,16 +300,15 @@ def test_if_by_if_by_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_simple_while():
     """
     Feature: Control flow
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = np.array(True).astype(np.bool)
-    y = np.array(False).astype(np.bool)
+    x = np.array(True).astype(np.bool_)
+    y = np.array(False).astype(np.bool_)
     input_shape = (127, 7, 53, 31)
     input_data = np.random.randn(*input_shape).astype(np.float32)
     net = ControlSimpleWhile()
@@ -321,8 +317,7 @@ def test_simple_while():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mixed_while_if():
     """
     Feature: Control flow
@@ -340,8 +335,7 @@ def test_mixed_while_if():
     assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
 
 
-@case_register.level1
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_and_or_operation():
     """
     Feature: Control flow
@@ -363,11 +357,10 @@ def test_and_or_operation():
     net = NotOperation()
     output = net(Tensor(x))
     expect = not np.sum(x)
-    assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
+    assert output == expect
 
 
-@case_register.level0
-@case_register.target_ascend
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_control_flow_ref():
     """
     Feature: Control flow graph sinking scenarios.

@@ -4,7 +4,8 @@ adaptive_avg_pool1d:
     input:
       dtype: tensor
     output_size:
-      dtype: int
+      dtype: tuple[int]
+      type_cast: int, list[int]
   returns:
     output:
       dtype: tensor

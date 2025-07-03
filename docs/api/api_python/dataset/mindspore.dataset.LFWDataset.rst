@@ -22,9 +22,9 @@ mindspore.dataset.LFWDataset
         - **shuffle** (bool, 可选) - 是否混洗数据集。默认值： ``None`` 。下表中会展示不同参数配置的预期行为。
         - **decode** (bool, 可选) - 是否对读取的图片进行解码操作。默认值： ``False`` ，不解码。
         - **sampler** (Sampler, 可选) - 指定从数据集中选取样本的采样器。默认值： ``None`` 。下表中会展示不同配置的预期行为。
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - `dataset_dir` 路径下不包含数据文件。
@@ -43,7 +43,7 @@ mindspore.dataset.LFWDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于LFW数据集：**
-    
+
     LFW（Labelled Faces in the Wild）数据集是人脸识别领域最常用和广泛的开放数据集之一，
     它由美国马萨诸塞理工学院的Gary B. Huang等人于2007年发布。该数据集包含13,233个人的\
     近50,000张图像，这些图像来自互联网上不同来源的人物照片，并包含了不同的姿势、光照、

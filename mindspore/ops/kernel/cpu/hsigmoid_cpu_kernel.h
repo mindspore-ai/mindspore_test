@@ -22,10 +22,11 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore::kernel {
+namespace hsigmoid_cpu {
 constexpr auto kUnknown = "Unknown";
 
 class HSigmoidCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<HSigmoidCpuKernelMod> {
@@ -57,6 +58,7 @@ class HSigmoidCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   std::string kernel_type_{kUnknown};
   const size_t max_dims_{7};
 };
+}  // namespace hsigmoid_cpu
 }  // namespace mindspore::kernel
 
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_HSIGMOID_CPU_KERNEL_H_

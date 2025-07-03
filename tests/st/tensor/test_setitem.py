@@ -13,14 +13,923 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-import copy
+from tests.st.pi_jit.share.utils import get_code_extra, has_graph
 
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
+
+
+def assert_executed_by_graph_mode(func, x, index, value):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    if jcr is not None:
+        assert jcr['stat'] == 'GRAPH_CALLABLE', f"ms_x: {x}, index: {index}, value: {value}"
+        assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}, '\
+                                         f"ms_x: {x}, index: {index}, value: {value}"
+        assert has_graph(jcr), f"ms_x: {x}, index: {index}, value: {value}"
+
+
+def is_index_need_skip(index, skip_list):
+    """cheeck if index need skip, used for debug"""
+    def check_index_same(index, to_skip):
+        if type(to_skip) != type(index):  # pylint: disable=unidiomatic-typecheck
+            return False
+        if isinstance(to_skip, Tensor):
+            result = (index == to_skip).all()
+        elif isinstance(to_skip, (tuple, list)):
+            result = all(check_index_same(index[i], to_skip[i]) for i in range(len(to_skip)))
+        else:
+            result = index == to_skip
+        return bool(result)
+
+    for to_skip in skip_list:
+        if check_index_same(index, to_skip):
+            return True
+
+    return False
+
+
+def setitem_check_indexing(x, index, value, np_expected, capture_mode=None):
+    """getitem run and check"""
+    if capture_mode is None:
+        def func(ms_x, index, value):
+            ms_x[index] = value
+            return ms_x
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def func(ms_x, index, value):
+            ms_x[index] = value
+            return ms_x
+
+    ms_output = func(x, index, value)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(func, x, index, value)
+
+    assert np.allclose(np_expected, ms_output.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                          f"expected:{np_expected} {np_expected.shape}, " \
+                                                          f"ms_output:{ms_output} {ms_output.shape}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
+def test_setitem(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem
+    Expectation: success
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    # Basic index
+    basic_indices = [0, slice(0, 1), True, False, None, ..., (0, 2, ...), [0, 1]]
+    for index in basic_indices:
+        np_x = np.arange(2*3*4).reshape(2, 3, 4)
+        ms_x = Tensor(np_x)
+        value = -1
+        np_x[index] = value
+        setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Basic index with float value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = [0, 1]
+    value = -1.0
+    np_x[index] = value
+    setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Basic index with tensor value
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    index = 0
+    value = Tensor([[[-1, -1, -1, -1]]])
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
+    setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+    # Numpy index
+    if capture_mode is None:
+        numpy_indices = [np.array(0), np.array(True), np.array(False), (np.array(0), np.array(1)), np.array([0, 1])]
+        for index in numpy_indices:
+            np_x = np.arange(2*3*4).reshape(2, 3, 4)
+            ms_x = Tensor(np_x)
+            value = -1
+            np_x[index] = value
+            setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Tensor index
+    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
+    np_indices = [0, True, False, slice(0, 2), [0, 1]]
+    for index, np_index in zip(tensor_indices, np_indices):
+        np_x = np.arange(2*3*4).reshape(2, 3, 4)
+        ms_x = Tensor(np_x)
+        value = -1
+        np_x[np_index] = value
+        setitem_check_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Tuple index
+    tuple_index = (0, None, ...)
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    value = -1
+    np_expected = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
+                            [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
+    setitem_check_indexing(ms_x, tuple_index, value, np_expected, capture_mode)
+
+    # Fancy index
+    fancy_indices = [([0, 1], [0, 1]),
+                     (Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], 0, [0, 1]),
+                     (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+                     (0, [0, 1], [0, 1]),
+                     (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], slice(0, 2), [0, 1]),
+                     (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+                     ([0, 1], True, [0, 1]),
+                     (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+                     ([0, 1], None, [0, 1]),
+                     (Tensor([0, 1]), None, Tensor([0, 1])),
+                     ([0, 1], ..., [0, 1]),
+                     (Tensor([0, 1]), ..., Tensor([0, 1])),
+                     (Tensor([0]), Tensor(0), slice(0, 4, 2))]
+    np_expecteds = [np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, -1, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, -1, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, -1, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, -1, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [-1, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, -1, 18, 19], [20, -1, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [-1, 9, 10, 11]],
+                              [[12, -1, 14, 15], [16, -1, 18, 19], [20, -1, 22, 23]]]),
+                    np.array([[[-1, 1, -1, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])]
+    for index, np_expected in zip(fancy_indices, np_expecteds):
+        ms_x = Tensor(np.arange(2*3*4).reshape(2, 3, 4))
+        value = -1
+        setitem_check_indexing(ms_x, index, value, np_expected, capture_mode)
+
+
+def setitem_check_iadd_indexing(x, index, value, np_expected, capture_mode=None):
+    """getitem run and check"""
+    if capture_mode is None:
+        def func(ms_x, index, value):
+            ms_x[index] += value
+            return ms_x
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def func(ms_x, index, value):
+            ms_x[index] += value
+            return ms_x
+
+    ms_output = func(x, index, value)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(func, x, index, value)
+
+    assert np.allclose(np_expected, ms_output.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                          f"expected:{np_expected} {np_expected.shape}, " \
+                                                          f"ms_output:{ms_output} {ms_output.shape}"
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
+def test_setitem_with_iadd(capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem with iadd
+    Expectation: success
+    """
+
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    # Basic index
+    basic_indices = [0, slice(0, 1), True, False, None, ..., (0, slice(0, 2), True), (slice(0, 2), None, ...), [0, 1]]
+    for index in basic_indices:
+        np_x = np.arange(2*3*4).reshape(2, 3, 4)
+        ms_x = Tensor(np_x)
+        value = -1
+        np_x[index] += value
+        setitem_check_iadd_indexing(ms_x, index, value, np_x, capture_mode)
+
+    # Tuple index
+    tuple_index = (0, None, ...)
+    np_x = np.arange(2*3*4).reshape(2, 3, 4)
+    ms_x = Tensor(np_x)
+    value = -1
+    np_expected = np.array([[[-1, 0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10]],
+                            [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
+    setitem_check_iadd_indexing(ms_x, tuple_index, value, np_expected, capture_mode)
+
+    # Fancy index
+    fancy_indices = [([0, 1], [0, 1]),
+                     (Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], 0, [0, 1]),
+                     (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+                     (0, [0, 1], [0, 1]),
+                     (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], slice(0, 2), [0, 1]),
+                     (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+                     ([0, 1], True, [0, 1]),
+                     (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+                     ([0, 1], None, [0, 1]),
+                     (Tensor([0, 1]), None, Tensor([0, 1])),
+                     ([0, 1], ..., [0, 1]),
+                     (Tensor([0, 1]), ..., Tensor([0, 1]))]
+    np_expecteds = [np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 4, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [4, 4, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 16, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 16, 18, 19], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
+                              [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [7, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 16, 18, 19], [20, 20, 22, 23]]]),
+                    np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [7, 9, 10, 11]],
+                              [[12, 12, 14, 15], [16, 16, 18, 19], [20, 20, 22, 23]]])]
+    for index, np_expected in zip(fancy_indices, np_expecteds):
+        ms_x = Tensor(np.arange(2*3*4).reshape(2, 3, 4))
+        value = -1
+        setitem_check_iadd_indexing(ms_x, index, value, np_expected, capture_mode)
+
+
+class NetSetitem(nn.Cell):
+
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+
+    def construct(self, x):
+        x = ops.abs(x)
+        x[self.index] = self.value
+        return x
+
+
+def setitem_check_grad(x, index, value, np_expected, capture_mode=None):
+    """getitem run and check"""
+    if capture_mode is None:
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+
+    net = NetSetitem(index, value)
+    ms_grad = grad_func(net, x)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(net.construct, x, index, value)
+
+    assert np.allclose(np_expected, ms_grad.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                        f"expected:{np_expected} {np_expected.shape}, " \
+                                                        f"ms_grad:{ms_grad} {ms_grad.shape}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+def test_setitem_grad(capture_mode):
+    """
+    Feature: tensor setitem grad
+    Description: Verify the result of tensor setitem grad1
+    Expectation: success
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    # Base index
+    base_indices = [0, slice(0, 2), True, False, ..., None, [0, 1]]
+    np_expecteds = [np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]])]
+    for index, np_expected in zip(base_indices, np_expecteds):
+        ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+        value = -1
+        setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Basic index with float value
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    index = [0, 1]
+    value = -1.0
+    np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                            [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]])
+    setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Basic index with tensor value
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    index = 0
+    value = Tensor([[[-1, -1, -1, -1]]])
+    np_expected = np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                            [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]])
+    setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Tensor index
+    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
+    value = -1
+    np_expecteds = [np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]]])]
+    for index, np_expected in zip(tensor_indices, np_expecteds):
+        setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Tuple index
+    tuple_indices = [(0, slice(0, 2), True), (0, None, ...)]
+    value = -1
+    np_expecteds = [np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [1., 1., 1., 1.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]]),
+                    np.array([[[0., 0., 0., 0.,], [0., 0., 0., 0.,], [0., 0., 0., 0.,]],
+                              [[1., 1., 1., 1.,], [1., 1., 1., 1.,], [1., 1., 1., 1.,]]])]
+    for index, np_expected in zip(tuple_indices, np_expecteds):
+        setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+    # Fancy index
+    fancy_indices = [([0, 1], [0, 1]),
+                     (Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], 0, [0, 1]),
+                     (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+                     (0, [0, 1], [0, 1]),
+                     (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+                     ([0, 1], slice(0, 2), [0, 1]),
+                     (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+                     ([0, 1], True, [0, 1]),
+                     (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+                     ([0, 1], None, [0, 1]),
+                     (Tensor([0, 1]), None, Tensor([0, 1])),
+                     ([0, 1], ..., [0, 1]),
+                     (Tensor([0, 1]), ..., Tensor([0, 1])),
+                     (Tensor([0]), Tensor(0), slice(0, 4, 2))]
+    value = -1
+    np_expecteds = [
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [1., 0., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [1., 0., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 0., 0., 0.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [0., 0., 0., 0.], [1., 1., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [0., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 0., 1., 1.]]]),
+        np.array([[[0., 1., 1., 1.], [0., 1., 1., 1.], [0., 1., 1., 1.]],
+                  [[1., 0., 1., 1.], [1., 0., 1., 1.], [1., 0., 1., 1.]]]),
+        np.array([[[0., 1., 0., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                  [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])]
+    for index, np_expected in zip(fancy_indices, np_expecteds):
+        setitem_check_grad(ms_x, index, value, np_expected, capture_mode)
+
+
+class NetSetitemIadd(nn.Cell):
+
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+
+    def construct(self, x):
+        x = ops.abs(x)
+        x[self.index] += self.value
+        return x
+
+
+def setitem_check_iadd_grad(x, index, value, np_expected, capture_mode=None):
+    """getitem run and check"""
+    if capture_mode is None:
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+
+    net = NetSetitemIadd(index, value)
+    ms_grad = grad_func(net, x)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(net.construct, x, index, value)
+
+    assert np.allclose(np_expected, ms_grad.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                        f"expected:{np_expected} {np_expected.shape}, " \
+                                                        f"ms_grad:{ms_grad} {ms_grad.shape}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast', 'bytecode'])
+@pytest.mark.parametrize(
+    'index',
+    [
+        # 0-3: base index
+        slice(0, 2),
+        False,
+        ...,
+        [0, 1],
+        # 4-5: tensor index
+        slice(Tensor(0), Tensor(2)),
+        Tensor([0, 1]),
+        # 6-9: fancy index
+        ([0, 1], [0, 1]),
+        (Tensor([0, 1]), Tensor([0, 1])),
+        ([0, 1], ..., [0, 1]),
+        (Tensor([0, 1]), ..., Tensor([0, 1])),
+    ],
+)
+def test_setitem_grad_with_iadd(capture_mode, index):
+    """
+    Feature: tensor setitem grad
+    Description: Verify the result of tensor setitem grad with iadd
+    Expectation: success
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    np_expected = np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                            [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    value = -1
+    setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast',
+                                          pytest.param('bytecode', marks=pytest.mark.skip(reason="Unsupported now"))])
+@pytest.mark.parametrize(
+    'index',
+    [
+        # 0-2: base index
+        0,
+        True,
+        None,
+        # 3-5: tensor index
+        Tensor(0),
+        Tensor(True),
+        Tensor(False),
+        # 6-7: tuple index
+        (0, None, ...),
+        (0, slice(0, 2), True),
+        # 8-17: fancy index
+        ([0, 1], 0, [0, 1]),
+        (Tensor([0, 1]), Tensor(0), Tensor([0, 1])),
+        (0, [0, 1], [0, 1]),
+        (Tensor(0), Tensor([0, 1]), Tensor([0, 1])),
+        ([0, 1], slice(0, 2), [0, 1]),
+        (Tensor([0, 1]), slice(0, 2), Tensor([0, 1])),
+        ([0, 1], True, [0, 1]),
+        (Tensor([0, 1]), Tensor(True), Tensor([0, 1])),
+        ([0, 1], None, [0, 1]),
+        (Tensor([0, 1]), None, Tensor([0, 1])),
+    ],
+)
+def test_setitem_grad_with_iadd_jit_invalid(capture_mode, index):
+    """
+    Feature: tensor setitem grad
+    Description: Verify the result of tensor setitem grad with iadd
+    Expectation: Raise exception
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+
+    np_expected = np.array([[[0., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]],
+                            [[1., 1., 1., 1.], [1., 1., 1., 1.], [1., 1., 1., 1.]]])
+    ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+    value = -1
+    if capture_mode is None:
+        setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
+    else:
+        with pytest.raises(RuntimeError) as err:
+            setitem_check_iadd_grad(ms_x, index, value, np_expected, capture_mode)
+        assert "When performing an in-place operation on an object generated by a view operation, " \
+                "it is currently not supported to compute gradients for the " \
+                "other inputs of this in-place operator" in str(err.value)
+
+
+class NetSetitemImul(nn.Cell):
+
+    def __init__(self, index, value):
+        super().__init__()
+        self.index = index
+        self.value = value
+
+    def construct(self, x):
+        x = ops.abs(x)
+        x[self.index] *= self.value
+        return x
+
+
+def setitem_check_imul_grad(x, index, value, np_expected, capture_mode=None):
+    """getitem run and check"""
+    if capture_mode is None:
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+    else:
+        @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+        def grad_func(net, x):
+            return ms.grad(net)(x)
+
+    net = NetSetitemImul(index, value)
+    ms_grad = grad_func(net, x)
+
+    if capture_mode == 'bytecode':
+        assert_executed_by_graph_mode(net.construct, x, index, value)
+
+    assert np.allclose(np_expected, ms_grad.asnumpy()), f"ms_x: {x}, index: {index}, value: {value}, " \
+                                                        f"expected:{np_expected} {np_expected.shape}, " \
+                                                        f"ms_grad:{ms_grad} {ms_grad.shape}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', [None, 'ast'])
+def test_setitem_grad_with_imul(capture_mode):
+    """
+    Feature: tensor setitem grad
+    Description: Verify the result of tensor setitem grad with imul
+    Expectation: success
+    """
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    if capture_mode is not None:
+        os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    iadd_indices = [True, None]
+    np_expected = np.array([[[0., 3., 3., 3.], [3., 3., 3., 3.], [3., 3., 3., 3.]],
+                            [[3., 3., 3., 3.], [3., 3., 3., 3.], [3., 3., 3., 3.]]])
+    for index in iadd_indices:
+        ms_x = Tensor(np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32))
+        value = 3
+        if capture_mode is None:
+            setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
+        else:
+            with pytest.raises(RuntimeError) as err:
+                setitem_check_imul_grad(ms_x, index, value, np_expected, capture_mode)
+            assert "When performing an in-place operation on an object generated by a view operation, " \
+                   "it is currently not supported to compute gradients for the " \
+                   "other inputs of this in-place operator" in str(err.value)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode, capture_mode', [(ms.GRAPH_MODE, 'ast'), (ms.GRAPH_MODE, 'bytecode'),
+                                                (ms.PYNATIVE_MODE, 'ast')])
+def test_setitem_exception(mode, capture_mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem exception
+    Expectation: success
+    """
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
+    ms_x = Tensor(np_x)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func1(x): x[2, 0, 0] = -1; return x
+    with pytest.raises(IndexError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[2, 0, 0] = -1
+        else:
+            _ = func1(ms_x)
+    assert "is out of bounds" in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func2(x): x[0, 0, 0, 0] = -1; return x
+    with pytest.raises(IndexError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0, 0, 0, 0] = -1
+        else:
+            _ = func2(ms_x)
+    assert "too many indices" in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func3(x): x[0, 't'] = -1; return x
+    with pytest.raises(IndexError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0, 't'] = -1
+        else:
+            _ = func3(ms_x)
+    assert "Invalid tensor index type" in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func4(x): x[0:3:-1] = -1; return x
+    with pytest.raises(ValueError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0:3:-1] = -1
+        else:
+            _ = func4(ms_x)
+    assert "slice step must be positive" in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func5(x): x[0] = (1, 2, 3); return x
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0] = (1, 2, 3)
+        else:
+            _ = func5(ms_x)
+    assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func6(x): x[0] = [1, 2, 3]; return x
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0] = [1, 2, 3]
+        else:
+            _ = func6(ms_x)
+    assert "the type of value can only be bool, int, float or Tensor." in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func7(x): x[0] = -1; return x
+    ms_x = Tensor(0)
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0] = -1
+        else:
+            _ = func7(ms_x)
+    assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func8(x): ms_x[0:1] = -1; return ms_x
+    with pytest.raises(TypeError) as exc:
+        if mode == ms.PYNATIVE_MODE:
+            ms_x[0:1] = -1
+        else:
+            _ = func8(ms_x)
+    assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+
+class IndexDynamicShapeNet(nn.Cell):
+    def construct(self, x, index, value):
+        x = ops.abs(x)
+        x[0:2, index] = value
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+@pytest.mark.parametrize('x_shape', [(3, 3, None), (3, 3, 3)])
+@pytest.mark.parametrize('index_shape', [(2, None), (2, 2)])
+@pytest.mark.parametrize('value_shape', [(None,), (1,)])
+def test_setitem_index_dynamic_shape_test(capture_mode, x_shape, index_shape, value_shape):
+    """
+    Feature: tensor setitem with index dynamic shape
+    Description: Verify the result of tensor setitem with index dynamic shape
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index, value):
+        return net(x, index, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index, value):
+        return ms.grad(net)(x, index, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[-1., -1., -1.], [-1., -1., -1.], [6., 7., 8.]],
+                          [[-1., -1., -1.], [-1., -1., -1.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 0., 0.], [0., 0., 0.], [1., 1., 1.]],
+                        [[0., 0., 0.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicShapeNet()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index = Tensor([[0, 1], [0, 1]])
+    value = Tensor(-1, ms.float32)
+    x_dyn = Tensor(shape=x_shape, dtype=ms.float32) if None in x_shape else ms_x
+    index_dyn = Tensor(shape=index_shape, dtype=ms.int64) if None in index_shape else index
+    value_dyn = Tensor(shape=value_shape, dtype=ms.float32) if None in value_shape else value
+    net.set_inputs(x_dyn, index_dyn, value_dyn)
+
+    ms_result = func(net, ms_x, index, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+class IndexDynamicRankNet(nn.Cell):
+    def construct(self, x, index1, index2, cond, value):
+        x = ops.abs(x)
+        if cond:
+            index = index1
+        else:
+            index = index2
+        x[0:2, index] = value
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+def test_setitem_index_dynamic_rank_test(capture_mode):
+    """
+    Feature: tensor setitem with index dynamic rank
+    Description: Verify the result of tensor setitem with index dynamic rank
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index1, index2, cond, value):
+        return net(x, index1, index2, cond, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index1, index2, cond, value):
+        return ms.grad(net)(x, index1, index2, cond, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[0., 1., 2.], [-1., -1., -1.], [6., 7., 8.]],
+                          [[9., 10., 11.], [-1., -1., -1.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 1., 1.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [0., 0., 0.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicRankNet()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index1 = Tensor([1])
+    index2 = Tensor([[0, 1], [0, 1]])
+    cond = Tensor(True)
+    value = Tensor(-1, ms.float32)
+    ms_result = func(net, ms_x, index1, index2, cond, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index1, index2, cond, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+
+class IndexDynamicRank2Net(nn.Cell):
+    def construct(self, x, index1, index2, value):
+        x = ops.abs(x)
+        mask = index1 == index2
+        index = index1[mask]
+        value = value[mask]
+        x[0:1, index] = value
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('capture_mode', ['ast', 'bytecode'])
+def test_setitem_index_dynamic_rank_test2(capture_mode):
+    """
+    Feature: tensor setitem with index dynamic rank
+    Description: Verify the result of tensor setitem with index dynamic rank
+    Expectation: success
+    """
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def func(net, x, index1, index2, value):
+        return net(x, index1, index2, value)
+
+    @ms.jit(capture_mode=capture_mode, jit_level="O0", backend="ms_backend")
+    def grad_func(net, x, index1, index2, value):
+        return ms.grad(net)(x, index1, index2, value)
+
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    pt_result = np.array([[[0., 1., 2.], [3., 4., 5.], [-3., -3., -3.]],
+                          [[9., 10., 11.], [12., 13., 14.], [15., 16., 17.]],
+                          [[18., 19., 20.], [21., 22., 23.], [24., 25., 26.]]])
+    pt_grad = np.array([[[0., 1., 1.], [1., 1., 1.], [0., 0., 0.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
+                        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]])
+
+    net = IndexDynamicRank2Net()
+    ms_x = Tensor(np.arange(3 * 3 * 3).reshape((3, 3, 3)).astype(np.float32))
+    index1 = Tensor([0, 1, 2])
+    index2 = Tensor([1, 2, 2])
+    value = Tensor([-1, -2, -3], ms.float32)
+    ms_result = func(net, ms_x, index1, index2, value)
+    assert np.allclose(pt_result, ms_result.asnumpy()), f"pt_result: {pt_result}, " \
+                                                        f"ms_result: {ms_result.asnumpy()}"
+
+    ms_grad = grad_func(net, ms_x, index1, index2, value)
+    assert np.allclose(pt_grad, ms_grad.asnumpy()), f"pt_grad: {pt_grad}, " \
+                                                    f"ms_grad: {ms_grad.asnumpy()}"
+
+
+class NetWithIndexAndMul(nn.Cell):
+    def construct(self, x):
+        a = ms.mint.zeros_like(x)
+        a[:, 0:1] = 1
+        b = x * a
+        return b
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_setitem_with_mul(mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of network with mul after setitem.
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    os.environ["MS_DEV_TENSOR_INDEX_BOOST"] = '1'
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+
+    ms_x = Tensor([[0, 0], [2, 0]])
+    net = NetWithIndexAndMul()
+    ms_y = net(ms_x)
+    np_expect = np.array([[0, 0], [2, 0]])
+    assert np.allclose(np_expect, ms_y.asnumpy()), f"np_expect:{np_expect}, ms_y:{ms_y}"
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_setitem_graph_mode(mode):
+    """
+    Feature: tensor setitem
+    Description: Verify the result of tensor setitem in graph mode
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = '1'
+    np_x = np.arange(2 * 3).reshape((2, 3)).astype(np.float32)
+    ms_x = Tensor(np_x)
+    ms_x[0] = -1
+    np_expect = np.array([[-1, -1, -1], [3, 4, 5]]).astype(np.float32)
+    assert np.allclose(np_expect, ms_x.asnumpy()), f"np_expect:{np_expect}, ms_x:{ms_x}"
 
 
 class NetIndexBool(nn.Cell):
@@ -73,1034 +982,3 @@ def test_setitem_index_none(mode):
     x_np = np.arange(6 * 7 * 8 * 9).reshape((6, 7, 8, 9)).astype(np.float32)
     x_np[None] *= 3
     assert np.allclose(x_np, x.asnumpy())
-
-
-def do_copy(x):
-    if isinstance(x, Tensor):
-        return x.copy()
-    return copy.deepcopy(x)
-
-def tensor_setitem_func(x):
-    y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14 = \
-        do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), \
-        do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x)
-    y0[0] = -1
-    y1[0:2] = -1
-    y2[True] = -1
-    y3[False] = -1
-    y4[None] = -1
-    y5[...] = -1
-    y6[0, 0:2, True] = -1
-    y7[0:2, None, ...] = -1
-    y8[[0, 1]] = -1
-    y9[[0, 1]] = -1.0
-    y10[np.array(0)] = -1
-    y11[np.array(True)] = -1
-    y12[np.array(False)] = -1
-    y13[np.array(0), np.array(1)] = -1
-    y14[np.array([0, 1])] = -1
-    return y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE,])
-def test_setitem_refactor(mode):
-    """
-    Feature: tensor setitem
-    Description: Verify the result of tensor setitem with refactor codes
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    # basic index
-    np_y = tensor_setitem_func(np_x)
-    ms_y = tensor_setitem_func(ms_x)
-    for i in range(len(np_y)):
-        assert np.allclose(
-            np_y[i], ms_y[i].asnumpy()), f"idx:{i}, np_y:{np_y[i]} {np_y[i].shape}, ms_y:{ms_y[i]} {ms_y[i].shape}"
-    # tensor index
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_x[0] = -1
-    ms_x[Tensor(0)] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_x[True] = -1
-    ms_x[Tensor(True)] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_x[False] = -1
-    ms_x[Tensor(False)] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_x[0:2] = -1
-    ms_x[Tensor(0):Tensor(2)] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_x[[0, 1]] = -1
-    ms_x[Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    # tuple index
-    np_x = np.array([[[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]],
-                     [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, None, ...]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    # fancy index
-    np_x = np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, -1, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], 0, [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor(0), Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [4, -1, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[0, [0, 1], [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, -1, 14, 15], [16, -1, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], 0:2, [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), 0:2, Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], True, [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor(True), Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, -1, -1, -1], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [-1, -1, -1, -1], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], None, [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), None, Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [-1, 5, 6, 7], [-1, 9, 10, 11]],
-                     [[12, -1, 14, 15], [16, -1, 18, 19], [20, -1, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], ..., [0, 1]] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), ..., Tensor([0, 1])] = -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-
-def tensor_setitem_with_add_func(x):
-    y0, y1, y2, y3, y4, y5, y6, y7, y8 = do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), \
-                                         do_copy(x), do_copy(x), do_copy(x)
-    y0[0] += -1
-    y1[0:2] += -1
-    y2[True] += -1
-    y3[False] += -1
-    y4[None] += -1
-    y5[...] += -1
-    y6[0, 0:2, True] += -1
-    y7[0:2, None, ...] += -1
-    y8[[0, 1]] += -1
-    return y0, y1, y2, y3, y4, y5, y6, y7, y8
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE,])
-def test_setitem_with_add_refactor(mode):
-    """
-    Feature: tensor setitem
-    Description: Verify the result of tensor setitem with add with refactor codes
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    np_x = np.arange(2 * 3 * 4).reshape(2, 3, 4)
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    np_y = tensor_setitem_with_add_func(np_x)
-    ms_y = tensor_setitem_with_add_func(ms_x)
-    for i in range(len(np_y)):
-        assert np.allclose(
-            np_y[i], ms_y[i].asnumpy()), f"idx:{i}, np_y:{np_y[i]} {np_y[i].shape}, ms_y:{ms_y[i]} {ms_y[i].shape}"
-
-    # tuple index
-    np_x = np.array([[[-1, 0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10]],
-                     [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, None, ...]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    # fancy index
-    np_x = np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 12, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], 0, [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor(0), Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [4, 4, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[0, [0, 1], [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 12, 14, 15], [16, 16, 18, 19], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], 0:2, [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), 0:2, Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], True, [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), Tensor(True), Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 0, 1, 2], [4, 5, 6, 7], [8, 9, 10, 11]],
-                     [[12, 13, 14, 15], [15, 16, 17, 18], [20, 21, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], None, [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), None, Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-    np_x = np.array([[[-1, 1, 2, 3], [3, 5, 6, 7], [7, 9, 10, 11]],
-                     [[12, 12, 14, 15], [16, 16, 18, 19], [20, 20, 22, 23]]])
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[[0, 1], ..., [0, 1]] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-    ms_x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4))
-    ms_x[Tensor([0, 1]), ..., Tensor([0, 1])] += -1
-    assert np.allclose(np_x, ms_x.asnumpy()), f"np_x:{np_x} {np_x.shape}, ms_x:{ms_x} {ms_x.shape}"
-
-
-class Net_setitem_index_grad1(nn.Cell):
-    def construct(self, x, i):
-        x = ops.abs(x)
-        # basic index
-        if i == 0:
-            x[0] = -1
-        if i == 1:
-            x[0:2] = -1
-        if i == 2:
-            x[True] = -1
-        if i == 3:
-            x[False] = -1
-        if i == 4:
-            x[None] = -1
-        if i == 5:
-            x[...] = -1
-        if i == 6:
-            x[0, 0:2, True] = -1
-        if i == 7:
-            x[0:2, None, ...] = -1
-        if i == 8:
-            x[[0, 1]] = -1
-        if i == 9:
-            x[[0, 1]] = -1.0
-        # tensor index
-        if i == 10:
-            x[Tensor(0)] = -1
-        if i == 11:
-            x[Tensor(True)] = -1
-        if i == 12:
-            x[Tensor(False)] = -1
-        if i == 13:
-            x[Tensor(0):Tensor(2)] = -1
-        if i == 14:
-            x[Tensor([0, 1])] = -1
-        # tuple index
-        if i == 15:
-            x[0, 0:2, True] = -1
-        if i == 16:
-            x[[0, None, ...]] = -1
-        # fancy index
-        if i == 17:
-            x[[0, 1], [0, 1]] = -1
-        if i == 18:
-            x[Tensor([0, 1]), Tensor([0, 1])] = -1
-        if i == 19:
-            x[[0, 1], 0, [0, 1]] = -1
-        if i == 20:
-            x[Tensor([0, 1]), Tensor(0), Tensor([0, 1])] = -1
-        if i == 21:
-            x[0, [0, 1], [0, 1]] = -1
-        if i == 22:
-            x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])] = -1
-        if i == 23:
-            x[[0, 1], 0:2, [0, 1]] = -1
-        if i == 24:
-            x[Tensor([0, 1]), 0:2, Tensor([0, 1])] = -1
-        if i == 25:
-            x[[0, 1], True, [0, 1]] = -1
-        if i == 26:
-            x[Tensor([0, 1]), Tensor(True), Tensor([0, 1])] = -1
-        if i == 27:
-            x[[0, 1], None, [0, 1]] = -1
-        if i == 28:
-            x[Tensor([0, 1]), None, Tensor([0, 1])] = -1
-        if i == 29:
-            x[[0, 1], ..., [0, 1]] = -1
-        if i == 30:
-            x[Tensor([0, 1]), ..., Tensor([0, 1])] = -1
-        return x
-
-
-pt_y0 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[1., 1., 1., 1.,],
-          [1., 1., 1., 1.,],
-          [1., 1., 1., 1.,]]]
-pt_y0_np = np.array(pt_y0)
-
-pt_y1 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y1_np = np.array(pt_y1)
-
-pt_y2 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y2_np = np.array(pt_y2)
-
-pt_y3 = [[[0., 1., 1., 1.,],
-          [1., 1., 1., 1.,],
-          [1., 1., 1., 1.,]],
-         [[1., 1., 1., 1.,],
-          [1., 1., 1., 1.,],
-          [1., 1., 1., 1.,]]]
-pt_y3_np = np.array(pt_y3)
-
-pt_y4 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y4_np = np.array(pt_y4)
-
-pt_y5 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y5_np = np.array(pt_y5)
-
-pt_y6 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [1., 1., 1., 1.,]],
-         [[1., 1., 1., 1.,],
-          [1., 1., 1., 1.,],
-          [1., 1., 1., 1.,]]]
-pt_y6_np = np.array(pt_y6)
-
-pt_y7 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y7_np = np.array(pt_y7)
-
-pt_y8 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y8_np = np.array(pt_y8)
-
-pt_y9 = [[[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]],
-         [[0., 0., 0., 0.,],
-          [0., 0., 0., 0.,],
-          [0., 0., 0., 0.,]]]
-pt_y9_np = np.array(pt_y9)
-
-pt_y10 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y10_np = np.array(pt_y10)
-
-pt_y11 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]],
-          [[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]]]
-pt_y11_np = np.array(pt_y11)
-
-pt_y12 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y12_np = np.array(pt_y12)
-
-pt_y13 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]],
-          [[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]]]
-pt_y13_np = np.array(pt_y13)
-
-pt_y14 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]],
-          [[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]]]
-pt_y14_np = np.array(pt_y14)
-
-pt_y15 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y15_np = np.array(pt_y15)
-
-pt_y16 = [[[0., 0., 0., 0.,],
-           [0., 0., 0., 0.,],
-           [0., 0., 0., 0.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y16_np = np.array(pt_y16)
-
-pt_y17 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y17_np = np.array(pt_y17)
-
-pt_y18 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y18_np = np.array(pt_y18)
-
-pt_y19 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y19_np = np.array(pt_y19)
-
-pt_y20 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y20_np = np.array(pt_y20)
-
-pt_y21 = [[[0., 1., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y21_np = np.array(pt_y21)
-
-pt_y22 = [[[0., 1., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y22_np = np.array(pt_y22)
-
-pt_y23 = [[[0., 1., 1., 1.,],
-           [0., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y23_np = np.array(pt_y23)
-
-pt_y24 = [[[0., 1., 1., 1.,],
-           [0., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_y24_np = np.array(pt_y24)
-
-pt_y25 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y25_np = np.array(pt_y25)
-
-pt_y26 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y26_np = np.array(pt_y26)
-
-pt_y27 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y27_np = np.array(pt_y27)
-
-pt_y28 = [[[0., 0., 0., 0.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [0., 0., 0., 0.,],
-           [1., 1., 1., 1.,]]]
-pt_y28_np = np.array(pt_y28)
-
-pt_y29 = [[[0., 1., 1., 1.,],
-           [0., 1., 1., 1.,],
-           [0., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 0., 1., 1.,]]]
-pt_y29_np = np.array(pt_y29)
-
-pt_y30 = [[[0., 1., 1., 1.,],
-           [0., 1., 1., 1.,],
-           [0., 1., 1., 1.,]],
-          [[1., 0., 1., 1.,],
-           [1., 0., 1., 1.,],
-           [1., 0., 1., 1.,]]]
-pt_y30_np = np.array(pt_y30)
-
-pt_result1 = [pt_y0_np, pt_y1_np, pt_y2_np, pt_y3_np, pt_y4_np, pt_y5_np, pt_y6_np, pt_y7_np, pt_y8_np, pt_y9_np,
-              pt_y10_np, pt_y11_np, pt_y12_np, pt_y13_np, pt_y14_np, pt_y15_np, pt_y16_np, pt_y17_np, pt_y18_np,
-              pt_y19_np, pt_y20_np, pt_y21_np, pt_y22_np, pt_y23_np, pt_y24_np, pt_y25_np, pt_y26_np, pt_y27_np,
-              pt_y28_np, pt_y29_np, pt_y30_np]
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE,])
-def test_setitem_refactor_grad1(mode):
-    """
-    Feature: tensor setitem grad
-    Description: Verify the result of tensor setitem grad1 with refactor cpp codes
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-
-    k = 31
-    for i in range(k):
-        x_np = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
-
-        net = Net_setitem_index_grad1()
-        net.set_inputs()
-        ms_grad_func = ms.grad(net)
-
-        ms_x = Tensor(x_np)
-        ms_grad = ms_grad_func(ms_x, i)
-
-        assert np.allclose(pt_result1[i], ms_grad.asnumpy(
-            )), f"i:{i}, pt_x.grad:{pt_result1[i]} {pt_result1[i].shape}, ms_grad:{ms_grad} {ms_grad.shape}"
-
-
-
-class Net_setitem_index_grad2(nn.Cell):
-    def construct(self, x, i):
-        x = ops.abs(x)
-        # basic index
-        if i == 0:
-            x[0] += -1
-        if i == 1:
-            x[0:2] += -1
-        if i == 2:
-            x[True] += -1
-        if i == 3:
-            x[False] += -1
-        if i == 4:
-            x[None] += -1
-        if i == 5:
-            x[...] += -1
-        if i == 6:
-            x[0, 0:2, True] += -1
-        if i == 7:
-            x[0:2, None, ...] += -1
-        if i == 8:
-            x[[0, 1]] += -1
-        if i == 9:
-            x[[0, 1]] += -1.0
-        # tensor index
-        if i == 10:
-            x[Tensor(0)] += -1
-        if i == 11:
-            x[Tensor(True)] += -1
-        if i == 12:
-            x[Tensor(False)] += -1
-        if i == 13:
-            x[Tensor(0):Tensor(2)] += -1
-        if i == 14:
-            x[Tensor([0, 1])] += -1
-        # tuple index
-        if i == 15:
-            x[0, 0:2, True] += -1
-        if i == 16:
-            x[[0, None, ...]] += -1
-        # fancy index
-        if i == 17:
-            x[[0, 1], [0, 1]] += -1
-        if i == 18:
-            x[Tensor([0, 1]), Tensor([0, 1])] += -1
-        if i == 19:
-            x[[0, 1], 0, [0, 1]] += -1
-        if i == 20:
-            x[Tensor([0, 1]), Tensor(0), Tensor([0, 1])] += -1
-        if i == 21:
-            x[0, [0, 1], [0, 1]] += -1
-        if i == 22:
-            x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])] += -1
-        if i == 23:
-            x[[0, 1], 0:2, [0, 1]] += -1
-        if i == 24:
-            x[Tensor([0, 1]), 0:2, Tensor([0, 1])] += -1
-        if i == 25:
-            x[[0, 1], True, [0, 1]] += -1
-        if i == 26:
-            x[Tensor([0, 1]), Tensor(True), Tensor([0, 1])] += -1
-        if i == 27:
-            x[[0, 1], None, [0, 1]] += -1
-        if i == 28:
-            x[Tensor([0, 1]), None, Tensor([0, 1])] += -1
-        if i == 29:
-            x[[0, 1], ..., [0, 1]] += -1
-        if i == 30:
-            x[Tensor([0, 1]), ..., Tensor([0, 1])] += -1
-        if i == 31:
-            x[True] *= 3
-        if i == 32:
-            x[None] *= 3
-        return x
-
-
-pt_yy0 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy0_np = np.array(pt_yy0)
-
-pt_yy1 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy1_np = np.array(pt_yy1)
-
-pt_yy2 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy2_np = np.array(pt_yy2)
-
-pt_yy3 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy3_np = np.array(pt_yy3)
-
-pt_yy4 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy4_np = np.array(pt_yy4)
-
-pt_yy5 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy5_np = np.array(pt_yy5)
-
-pt_yy6 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy6_np = np.array(pt_yy6)
-
-pt_yy7 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy7_np = np.array(pt_yy7)
-
-pt_yy8 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy8_np = np.array(pt_yy8)
-
-pt_yy9 = [[[0., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]],
-          [[1., 1., 1., 1.,],
-           [1., 1., 1., 1.,],
-           [1., 1., 1., 1.,]]]
-pt_yy9_np = np.array(pt_yy9)
-
-pt_yy10 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy10_np = np.array(pt_yy10)
-
-pt_yy11 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy11_np = np.array(pt_yy11)
-
-pt_yy12 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy12_np = np.array(pt_yy12)
-
-pt_yy13 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy13_np = np.array(pt_yy13)
-
-pt_yy14 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy14_np = np.array(pt_yy14)
-
-pt_yy15 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy15_np = np.array(pt_yy15)
-
-pt_yy16 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy16_np = np.array(pt_yy16)
-
-pt_yy17 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy17_np = np.array(pt_yy17)
-
-pt_yy18 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy18_np = np.array(pt_yy18)
-
-pt_yy19 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy19_np = np.array(pt_yy19)
-
-pt_yy20 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy20_np = np.array(pt_yy20)
-
-pt_yy21 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy21_np = np.array(pt_yy21)
-
-pt_yy22 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy22_np = np.array(pt_yy22)
-
-pt_yy23 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy23_np = np.array(pt_yy23)
-
-pt_yy24 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy24_np = np.array(pt_yy24)
-
-pt_yy25 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy25_np = np.array(pt_yy25)
-
-pt_yy26 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy26_np = np.array(pt_yy26)
-
-pt_yy27 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy27_np = np.array(pt_yy27)
-
-pt_yy28 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy28_np = np.array(pt_yy28)
-
-pt_yy29 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy29_np = np.array(pt_yy29)
-
-pt_yy30 = [[[0., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]],
-           [[1., 1., 1., 1.,],
-            [1., 1., 1., 1.,],
-            [1., 1., 1., 1.,]]]
-pt_yy30_np = np.array(pt_yy30)
-
-pt_yy31 = [[[0., 3., 3., 3.,],
-            [3., 3., 3., 3.,],
-            [3., 3., 3., 3.,]],
-           [[3., 3., 3., 3.,],
-            [3., 3., 3., 3.,],
-            [3., 3., 3., 3.,]]]
-pt_yy31_np = np.array(pt_yy31)
-
-pt_yy32 = [[[0., 3., 3., 3.,],
-            [3., 3., 3., 3.,],
-            [3., 3., 3., 3.,]],
-           [[3., 3., 3., 3.,],
-            [3., 3., 3., 3.,],
-            [3., 3., 3., 3.,]]]
-pt_yy32_np = np.array(pt_yy32)
-
-pt_result2 = [pt_yy0_np, pt_yy1_np, pt_yy2_np, pt_yy3_np, pt_yy4_np, pt_yy5_np, pt_yy6_np, pt_yy7_np,
-              pt_yy8_np, pt_yy9_np, pt_yy10_np, pt_yy11_np, pt_yy12_np, pt_yy13_np, pt_yy14_np, pt_yy15_np,
-              pt_yy16_np, pt_yy17_np, pt_yy18_np, pt_yy19_np, pt_yy20_np, pt_yy21_np, pt_yy22_np, pt_yy23_np,
-              pt_yy24_np, pt_yy25_np, pt_yy26_np, pt_yy27_np, pt_yy28_np, pt_yy29_np, pt_yy30_np, pt_yy31_np,
-              pt_yy32_np]
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE,])
-def test_setitem_refactor_grad2(mode):
-    """
-    Feature: tensor setitem grad
-    Description: Verify the result of tensor setitem grad2 with refactor cpp codes
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-
-    k = len(pt_result2)
-    for i in range(k):
-        x_np = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
-
-        net = Net_setitem_index_grad2()
-        net.set_inputs()
-        ms_grad_func = ms.grad(net)
-
-        ms_x = Tensor(x_np)
-        ms_grad = ms_grad_func(ms_x, i)
-
-        assert np.allclose(pt_result2[i], ms_grad.asnumpy(
-            )), f"i:{i}, pt_x.grad:{pt_result2[i]} {pt_result2[i].shape}, ms_grad:{ms_grad} {ms_grad.shape}"
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE,])
-def test_setitem_refactor_exception(mode):
-    """
-    Feature: tensor setitem
-    Description: Verify the result of tensor setitem exception with refactor codes
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-
-    np_x = np.arange(2 * 3 * 4).reshape((2, 3, 4)).astype(np.float32)
-    ms_x = Tensor(np_x)
-
-    with pytest.raises(IndexError) as exc:
-        ms_x[2, 0, 0] = -1
-    assert "is out of bounds for dimension" in str(exc.value)
-
-    with pytest.raises(IndexError) as exc:
-        ms_x[0, 0, 0, 0] = -1
-    assert "too many indices for tensor with dimension size" in str(exc.value)
-
-    with pytest.raises(IndexError) as exc:
-        ms_x[0, 't'] = -1
-    assert "Invalid tensor index type" in str(exc.value)
-
-    with pytest.raises(ValueError) as exc:
-        ms_x[0:3:-1] = -1
-    assert "slice step must be positive" in str(exc.value)
-
-    with pytest.raises(TypeError) as exc:
-        ms_x[0] = (1, 2, 3)
-    assert "Can't assign a <class 'tuple'> to a Float32" in str(exc.value)
-
-    with pytest.raises(TypeError) as exc:
-        ms_x[0] = [1, 2, 3]
-    assert "Can't assign a <class 'list'> to a Float32" in str(exc.value)
-
-    ms_x = Tensor(0)
-    with pytest.raises(TypeError) as exc:
-        ms_x[0] = -1
-    assert "Invalid index of a 0-dim tensor." in str(exc.value)
-
-    with pytest.raises(TypeError) as exc:
-        ms_x[0:1] = -1
-    assert "Invalid index of a 0-dim tensor." in str(exc.value)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE,])
-def test_setitem_graph_mode(mode):
-    """
-    Feature: tensor setitem
-    Description: Verify the result of tensor setitem in graph mode
-    Expectation: success
-    """
-    ms.set_context(mode=mode)
-    np_x = np.arange(2 * 3).reshape((2, 3)).astype(np.float32)
-    ms_x = Tensor(np_x)
-    ms_x[0] = -1
-    np_expect = np.array([[-1, -1, -1], [3, 4, 5]]).astype(np.float32)
-    assert np.allclose(np_expect, ms_x.asnumpy()), f"np_expect:{np_expect}, ms_x:{ms_x}"

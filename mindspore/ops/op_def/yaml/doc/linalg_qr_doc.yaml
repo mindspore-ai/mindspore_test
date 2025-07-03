@@ -1,0 +1,44 @@
+linalg_qr:
+    description: |
+        Orthogonal decomposition of the input :math:`A = QR`.
+
+        Where `A` is an input tensor, a dimension is at least 2, and `A` may be represented as a product
+        form of an orthogonal matrix `Q` and an upper triangular matrix `R`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            A (Tensor): The calculated matrix, `A` is at least two-dimensional.
+            mode (str, optional): Matrix decomposition mode. The options are ``reduced``,
+                ``complete``, and ``r``. The default value is ``reduced``.
+
+                - ``"reduced"``: For input :math:`A(*, m, n)` output simplified size :math:`Q(*, m, k)`, :math:`R(*, k, n)`, where k is the minimum value of m and n.
+                - ``"complete"``: For input :math:`A(*, m, n)` output full-size :math:`Q(*, m, m)`, :math:`R(*, m, n)`.
+                - ``"r"``: Only :math:`R(*, k, n)` in the reduced scenario is calculated, where k is the minimum value of m and n, and Q is returned as an empty tensor.
+
+        Returns:
+            - **Q** (Tensor) - The shape is :math:`Q(*, m, k)` or :math:`(*, m, n)`, has the same dtype as `A`.
+            - **R** (Tensor) - The shape is :math:`Q(*, k, n)` or :math:`(*, m, n)`, has the same dtype as `A`.
+
+        Raises:
+            TypeError: If `A` is not a Tensor.
+            TypeError: If the dtype of `A` is not the float32.
+            ValueError: If `A` is not empty and its dimension is less than 2 dimensions.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.array([[1.0, 1.0, 2.0, 4.0], [1.0, 1.0, 2.0, 4.0]]), mindspore.float32)
+            >>> output = ops.auto_generate.linalg_qr(x)
+            >>> print(output)
+            (Tensor(shape=[2, 2], dtype=Float32, value=
+            [[-7.07106829e-01, -7.07106769e-01],
+            [-7.07106769e-01,  7.07106829e-01]]),
+            Tensor(shape=[2, 4], dtype=Float32, value=
+            [[-1.41421354e+00, -1.41421354e+00, -2.82842731e+00, -5.65685463e+00],
+            [ 0.00000000e+00,  3.42285418e-08,  0.00000000e+00,  0.00000000e+00]]))

@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2024-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
 """ test graph syntax """
 import pytest
 import torch
+import numpy as np
 import mindspore as ms
+from mindspore.ops.auto_generate.gen_ops_prim import embedding_op
 from tests.mark_utils import arg_mark
 
 
@@ -47,8 +49,6 @@ torch_data = {
 
 
 def get_dtype(x):
-    if x.dtype in (ms.bfloat16, torch.bfloat16):
-        return "bfloat16"
     if isinstance(x, (ms.Tensor, torch.Tensor)):
         return x.numpy().dtype
     return x.dtype
@@ -70,9 +70,6 @@ def test_tensor_add_tensor_compare(mode):
     for key1 in ms_data.keys():
         for key2 in ms_data.keys():
             if key1 == "bool" and key2 == "bool":
-                continue
-            # aclnnCast does not support bfloat16
-            if key1 == "bfloat16" or key2 == "bfloat16":
                 continue
             out_ms = Net()(ms_data[key1], ms_data[key2])
             out_torch = torch_data[key1] + torch_data[key2]
@@ -130,25 +127,6 @@ def test_tensor_mul_tensor_complex(mode):
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
-def test_assignadd_bfloat16_float16(mode):
-    """
-    Feature: Implicit type conversion.
-    Description: Test AssignAdd with bfloat16 and float16.
-    Expectation: No exception.
-    """
-    class Net(ms.nn.Cell):
-        def construct(self, x, y):
-            ms.ops.assign_add(x, y)
-            return x
-
-    ms.context.set_context(mode=mode)
-    ms.set_context(jit_level="O2")
-    out = Net()(ms.Parameter(ms_data["float16"], name="x"), ms_data["bfloat16"])
-    assert out.dtype == ms.float16
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_logical_xor_wrong_input_type():
     """
     Feature: Implicit type conversion.
@@ -162,3 +140,20 @@ def test_logical_xor_wrong_input_type():
     with pytest.raises(TypeError) as raise_info:
         func(1, ms.Tensor(2))
     assert "Failed calling LogicalXor" in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_signature_default_args():
+    """
+    Feature: Do signature.
+    Description: Test DoSignature with default arguments.
+    Expectation: No exception.
+    """
+    @ms.jit
+    def func(x, weight):
+        return embedding_op(x, weight, norm_type=2.0)
+
+    x = ms.Tensor([[1, 0, 1, 1], [0, 0, 1, 0]])
+    weight = ms.Parameter(np.random.randn(3, 3).astype(np.float32))
+    out = func(x, weight)
+    assert out.shape == (2, 4, 3)

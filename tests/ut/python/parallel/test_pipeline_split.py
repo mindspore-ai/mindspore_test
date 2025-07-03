@@ -26,7 +26,8 @@ from mindspore.ops import operations as P
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.train import Model
-from mindspore.nn.wrap.cell_wrapper import PipelineCell, MicroBatchInterleaved, _MicroBatch, Cell
+from mindspore.nn import PipelineCell, MicroBatchInterleaved
+from mindspore.nn.wrap.cell_wrapper import Cell, _MicroBatch
 from mindspore import lazy_inline
 from mindspore import ParameterTuple
 
@@ -178,7 +179,6 @@ class PipelineSplit(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
 
     def construct(self, x, label):
         x = self.cell(x)
@@ -189,7 +189,6 @@ class PipelineSplitLazyInline(nn.Cell):
     def __init__(self, strategy1, strategy2, dtype=ms.float32):
         super().__init__()
         self.cell = Net(strategy1, strategy2, dtype=dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
 
     def construct(self, x, label):
         x = self.cell(x)
@@ -200,7 +199,6 @@ class PipelineSplit2(nn.Cell):
         super().__init__()
         self.param = Parameter(initializer("zeros", [64, 64]), name="param")
         self.cell = Net(strategy1, strategy2, self.param, dtype)
-        self.cell.block[0].matmul.add_prim_attr("parameter_start", 0)
 
     def construct(self, x, label):
         x = self.cell(x)
@@ -245,7 +243,7 @@ def test_pipeline_split_no_end():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineDupCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -261,7 +259,7 @@ def test_pipeline_split_stage0():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -276,7 +274,7 @@ def test_pipeline_split_stage1():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -291,7 +289,7 @@ def test_pipeline_split_shared_parameter_stage0():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit2(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -306,7 +304,7 @@ def test_pipeline_split_shared_parameter_stage1():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit2(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -345,7 +343,7 @@ def test_pipeline_split_stage0_opt_shard():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -399,7 +397,7 @@ def test_pipeline_split_stage1_opt_shard():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -414,7 +412,7 @@ def test_pipeline_split_shared_parameter_stage0_opt_shard():
     strategy1 = ((1, 1), (1, 16))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit2(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -429,7 +427,7 @@ def test_pipeline_split_shared_parameter_stage1_opt_shard():
     strategy1 = ((16, 1), (1, 1))
     strategy2 = ((8, 1), (1, 1))
     net = PipelineCell(PipelineSplit2(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -450,7 +448,7 @@ def test_pipeline_split_with_micro_batch_interleaved_stage0():
     strategy2 = ((8, 1), (1, 1))
     micro_batch_interleaved = 2
     net = PipelineCell(MicroBatchInterleaved(PipelineSplit(strategy1, strategy2), micro_batch_interleaved), 4)
-    params = net.network.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -471,7 +469,7 @@ def test_pipeline_split_with_micro_batch_interleaved_stage1():
     strategy2 = ((8, 1), (1, 1))
     micro_batch_interleaved = 2
     net = PipelineCell(MicroBatchInterleaved(PipelineSplit(strategy1, strategy2), micro_batch_interleaved), 4)
-    params = net.network.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -492,7 +490,7 @@ def test_pipeline_split_shared_parameter_with_micro_batch_interleaved_stage0_opt
     strategy2 = ((8, 1), (1, 1))
     micro_batch_interleaved = 2
     net = PipelineCell(MicroBatchInterleaved(PipelineSplit2(strategy1, strategy2), micro_batch_interleaved), 4)
-    params = net.network.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -513,7 +511,7 @@ def test_pipeline_split_shared_parameter_with_micro_batch_interleaved_stage1_opt
     strategy2 = ((8, 1), (1, 1))
     micro_batch_interleaved = 2
     net = PipelineCell(MicroBatchInterleaved(PipelineSplit2(strategy1, strategy2), micro_batch_interleaved), 4)
-    params = net.network.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -532,7 +530,7 @@ def run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1):
         net = PipelineCell(MicroBatchInterleaved(pipeline_net, micro_batch_interleaved), 4)
     else:
         net = PipelineCell(pipeline_net, 4)
-    params = net.infer_param_pipeline_stage()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -654,6 +652,108 @@ class TestPipelineSplitWithNoOptimizer:
         self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (32, 64)>) -> (<Tensor[Float32], (32, 64)>)',
                               target_count=2)
 
+    def test_pipeline_zero2_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero2.
+        Description: Zero2 means sharding accu grad.
+        Expectation: Two parallel optimizer reduce_scatter by virtual assign add.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level2"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (4, 64)>)',
+                              target_count=2)
+        self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
+                              target_count=2)
+
+    def test_pipeline_zero3_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero3.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (4, 64)>) -> (<Tensor[Float16], (64, 64)>)',
+                              target_count=3)
+
+    def test_pipeline_zero3_lazy_inline_tp(self):
+        """
+        Feature: Test Pipeline with zero3.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((8, 1), (1, 2))
+        strategy2 = ((8, 1), (1, 2))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (8, 32)>) -> (<Tensor[Float16], (64, 32)>)',
+                              target_count=3)
+
+    def test_pipeline_zero2_not_full_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero2, not full split.
+        Description: Zero2 means sharding accu grad.
+        Expectation: Two parallel optimizer reduce_scatter by virtual assign add.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_weight_shard_size": 2,
+                                                                     "optimizer_level": "level2"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (64, 64)>) -> (<Tensor[Float32], (32, 64)>)',
+                              target_count=2)
+        self.cat_fp16_from_ir(pattern='_grad_accumulation_shard_grad_VirtualAssignAdd',
+                              target_count=2)
+
+    def test_pipeline_zero3_not_full_lazy_inline(self):
+        """
+        Feature: Test Pipeline with zero3, not full split.
+        Description: Zero3 means recomputing parallel optimizer allgather.
+        Expectation: Three all_gather.
+        """
+        context.reset_auto_parallel_context()
+        context.set_auto_parallel_context(device_num=32, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_weight_shard_size": 2,
+                                                                     "optimizer_level": "level3"})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((16, 1), (1, 1))
+        strategy2 = ((8, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='(<Tensor[Float16], (32, 64)>) -> (<Tensor[Float16], (64, 64)>)',
+                              target_count=3)
+
+
     def test_pipeline_parallel_optimizer_cannot_split_lazy_inline(self):
         """
         Feature: Test Pipeline with Mirror Operator, when enabled the micro batch interleave.
@@ -687,7 +787,7 @@ def test_pipeline_split_stage0_device_num_48():
     strategy1 = ((3, 8), (8, 1))
     strategy2 = ((24, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[0].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -708,7 +808,7 @@ def test_pipeline_split_stage1_device_num_48():
     strategy1 = ((3, 8), (8, 1))
     strategy2 = ((24, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -731,7 +831,7 @@ def test_pipeline_split_stage1_device_num_48_fine_graint_interleaved():
     strategy1 = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp", "None"))
     strategy2 = ((24, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 4)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -756,7 +856,7 @@ def test_pipeline_split_stage1_device_num_48_fine_graint_interleaved_full_recomp
     net = PipelineCell(PipelineSplitLazyInline(strategy1, strategy2), 4)
     net.network.cell.block[0].recompute()
     net.network.cell.block[1].recompute()
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)
@@ -777,7 +877,7 @@ def test_pipeline_split_stage1_shape_is_not_divisible_by_micro_size():
     strategy1 = ((3, 8), (8, 1))
     strategy2 = ((24, 1), (1, 1))
     net = PipelineCell(PipelineSplit(strategy1, strategy2), 7)
-    params = net.network.cell.block[1].trainable_params()
+    params = net.network.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
     model = Model(net, optimizer=optimizer)

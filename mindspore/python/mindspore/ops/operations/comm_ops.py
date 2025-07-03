@@ -55,10 +55,10 @@ class ReduceOp:
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
-            This example should be run with multiple devices.
+            This example should be run with 2 devices.
 
         >>> import numpy as np
         >>> import mindspore
@@ -144,7 +144,7 @@ class AllReduce(Primitive):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -234,7 +234,7 @@ class Reduce(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method without any third-party
             or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -247,13 +247,13 @@ class Reduce(PrimitiveWithInfer):
         >>> # Launch 4 processes.
         >>> init()
         >>> class ReduceNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(Net, self).__init__()
-        >>>         self.reduce = ops.Reduce(dest_rank=1)
-        >>>
-        >>>     def construct(self, x):
-        >>>         out = self.reduce(x)
-        >>>         return out
+        ...     def __init__(self):
+        ...         super(ReduceNet, self).__init__()
+        ...         self.reduce = ops.Reduce(dest_rank=1)
+        ...
+        ...     def construct(self, x):
+        ...         out = self.reduce(x)
+        ...         return out
         >>> input = Tensor(np.ones([2, 8]).astype(np.float32))
         >>> net = ReduceNet()
         >>> output = net(input)
@@ -300,7 +300,7 @@ class AllGather(PrimitiveWithInfer):
 
     Outputs:
         Tensor. If the number of devices in the group is N,
-        then the shape of output is :math:`(N, x_1, x_2, ..., x_R)`.
+        then the shape of output is :math:`(N*x_1, x_2, ..., x_R)`.
 
     Raises:
         TypeError: If `group` is not a str.
@@ -318,7 +318,7 @@ class AllGather(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -541,7 +541,7 @@ class ReduceScatter(Primitive):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -679,7 +679,7 @@ class Broadcast(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -883,7 +883,7 @@ class AlltoAll(PrimitiveWithInfer):
         split_count (int): On each process, divide blocks into split_count number.
         split_dim (int): On each process, split blocks along the split_dim.
         concat_dim (int): On each process, gather the received blocks along the concat_dimension.
-        group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` .
 
     Inputs:
         - **input_x** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
@@ -909,7 +909,7 @@ class AlltoAll(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 8 devices.
@@ -957,25 +957,8 @@ class AlltoAll(PrimitiveWithInfer):
         self.concat_dim = concat_dim
         self.add_prim_attr('group', _get_group(group))
         self.add_prim_attr('no_eliminate', True)
-
-    def infer_shape(self, x_shape):
-        rank_size = get_group_size(_get_group(self.group))
-        if self.split_count != rank_size:
-            raise ValueError(f"For '{self.name}', the 'split_count' must be equal to 'rank_size', "
-                             f"but got 'split_count': {self.split_count}, 'rank_size': {rank_size}.")
-        if x_shape[self.split_dim] >= 0 and x_shape[self.split_dim] % self.split_count != 0:
-            raise ValueError(f"For '{self.name}', the 'x_shape[self.split_dim]' must be divisible by 'split_count', "
-                             f"but got 'x_shape[self.split_dim]' {x_shape[self.split_dim]}, "
-                             f"'split_count' {self.split_count}.")
-        if x_shape[self.concat_dim] >= 0:
-            x_shape[self.concat_dim] = x_shape[self.concat_dim] * self.split_count
-        if x_shape[self.split_dim] >= 0:
-            x_shape[self.split_dim] = int(x_shape[self.split_dim] / self.split_count)
-        return x_shape
-
-    def infer_dtype(self, x_dtype):
-        check_collective_target_dtype('x', x_dtype, self.name)
-        return x_dtype
+        self.rank_size = get_group_size(_get_group(group))
+        self.add_prim_attr('rank_size', self.rank_size)
 
 
 class NeighborExchangeV2(Primitive):
@@ -1031,7 +1014,7 @@ class NeighborExchangeV2(Primitive):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1054,7 +1037,7 @@ class NeighborExchangeV2(Primitive):
         ...     def construct(self, x):
         ...         out = self.neighbor_exchangev2(x)
         ...         return out
-        ... class Net1(nn.Cell):
+        >>> class Net1(nn.Cell):
         ...     def __init__(self):
         ...         super(Net1, self).__init__()
         ...         self.neighbor_exchangev2 = ops.NeighborExchangeV2(send_rank_ids=[0, -1, -1, -1, -1, -1, -1, -1],
@@ -1070,16 +1053,19 @@ class NeighborExchangeV2(Primitive):
         >>> init()
         >>> rank_id = int(os.getenv("RANK_ID"))
         >>> if (rank_id % 2 == 0):
-        >>>     input_x = ms.Tensor(np.ones([1, 1, 2, 2]), dtype = ms.float32)
-        >>>     net = Net0()
-        >>>     output = net(input_x)
-        >>>     print(output)
-        >>> else:
-        >>>     input_x = ms.Tensor(np.ones([1, 1, 2, 2]) * 2, dtype = ms.float32)
-        >>>     net = Net1()
-        >>>     output = net(input_x)
-        >>>     print(output)
+        ...     input_x = ms.Tensor(np.ones([1, 1, 2, 2]), dtype = ms.float32)
+        ...     net = Net0()
+        ...     output = net(input_x)
+        ...     print(output)
+        ... else:
+        ...     input_x = ms.Tensor(np.ones([1, 1, 2, 2]) * 2, dtype = ms.float32)
+        ...     net = Net1()
+        ...     output = net(input_x)
+        ...     print(output)
+        rank 0:
         [[[[1. 1.], [1. 1.], [2. 2.]]]]
+        rank 1:
+        [[[[1. 1.], [2. 2.], [2. 2.]]]]
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - NeighborExchangeV2
@@ -1114,7 +1100,7 @@ class NeighborExchangeV2(Primitive):
 
 class CollectiveScatter(Primitive):
     r"""
-    Scatter tensor evently across the processes in the specified communication group.
+    Scatter input data evently across the processes in the specified communication group.
 
     Note:
         The interface behavior only support Tensor input and scatter evenly.
@@ -1148,7 +1134,7 @@ class CollectiveScatter(Primitive):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1161,12 +1147,12 @@ class CollectiveScatter(Primitive):
         >>> # Launch 2 processes.
         >>> init()
         >>> class CollectiveScatterNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(CollectiveScatter, self).__init__()
-        >>>         self.collective_scatter = ops.CollectiveScatter(src_rank=0)
-        >>>
-        >>>     def construct(self, x):
-        >>>         return self.collective_scatter(x)
+        ...     def __init__(self):
+        ...         super(CollectiveScatterNet, self).__init__()
+        ...         self.collective_scatter = ops.CollectiveScatter(src_rank=0)
+        ...
+        ...     def construct(self, x):
+        ...         return self.collective_scatter(x)
         >>>
         >>> input = Tensor(np.arange(8).reshape([4, 2]).astype(np.float32))
         >>> net = CollectiveScatterNet()
@@ -1233,7 +1219,7 @@ class CollectiveGather(Primitive):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 4 devices.
@@ -1309,7 +1295,7 @@ class Barrier(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1322,12 +1308,12 @@ class Barrier(PrimitiveWithInfer):
         >>> # Launch 4 processes.
         >>> init()
         >>> class BarrierNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(BarrierNet, self).__init__()
-        >>>         self.barrier = ops.Barrier()
-        >>>
-        >>>     def construct(self):
-        >>>         self.barrier()
+        ...     def __init__(self):
+        ...         super(BarrierNet, self).__init__()
+        ...         self.barrier = ops.Barrier()
+        ...
+        ...     def construct(self):
+        ...         self.barrier()
         >>> net = BarrierNet()
         >>> net()
 
@@ -1354,10 +1340,10 @@ class Send(PrimitiveWithInfer):
     Send tensors to the specified dest_rank.
 
     Note:
-        Send and Receive must be used in combination and have same sr_tag.
+        Send and Receive must be used in combination and have same `sr_tag`.
 
     Args:
-        sr_tag (int): The tag to identify the send/recv message. The message will
+        sr_tag (int): The tag to identify the send/recv message. The message sent by this operator will
                       be received by the Receive op with the same "sr_tag".
         dest_rank (int): A required integer identifying the destination rank.
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``.
@@ -1383,31 +1369,53 @@ class Send(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
 
+        >>> import os
         >>> import numpy as np
+        >>> import mindspore.ops as ops
         >>> import mindspore.nn as nn
+        >>> import mindspore as ms
         >>> from mindspore.communication import init
         >>> from mindspore import Tensor
-        >>> from mindspore import ops
         >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
         >>> init()
+        >>>
         >>> class SendNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(SendNet, self).__init__()
-        >>>         self.depend = ops.Depend()
-        >>>         self.send = ops.Send(sr_tag=0, dest_rank=8, group="hccl_world_group")
+        ...     def __init__(self):
+        ...         super(SendNet, self).__init__()
+        ...         self.depend = ops.Depend()
+        ...         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
+        ...
+        ...     def construct(self, x):
+        ...         out = self.depend(x, self.send(x))
+        ...         return out
         >>>
-        >>>     def construct(self, x):
-        >>>         out = self.depend(x, self.send(x))
-        >>>         return out
+        >>> class ReceiveNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super(ReceiveNet, self).__init__()
+        ...         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
+        ...                                 group="hccl_world_group")
+        ...
+        ...     def construct(self):
+        ...         out = self.recv()
+        ...         return out
         >>>
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> net = Net()
-        >>> output = net(input_)
+        >>> if __name__ == "__main__":
+        ...     rank_id = os.environ["RANK_ID"]
+        ...     rank_size = os.environ["RANK_SIZE"]
+        ...     if rank_id == "0":
+        ...         input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...         send_net = SendNet()
+        ...         output = send_net(input_)
+        ...     else:
+        ...         recv_net = ReceiveNet()
+        ...         output = recv_net()
+        ...         print(output.asnumpy())
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Send
@@ -1435,11 +1443,11 @@ class Receive(PrimitiveWithInfer):
     Receive tensors from src_rank.
 
     Note:
-        Send and Receive must be used in combination and have same sr_tag.
+        Send and Receive must be used in combination and have same `sr_tag`.
 
     Args:
-        sr_tag (int): A required integer identifying the send/recv message tag. The message will
-                      will be send by the Send op with the same "sr_tag".
+        sr_tag (int): A required integer identifying the send/recv message tag. This operator will receive the tensor
+            sent by the Send operator with the same `sr_tag` tag.
         src_rank (int): A required integer identifying the source rank.
         shape (list[int]): A required list identifying the shape of the tensor to be received.
         dtype (Type): A required Type identifying the type of the tensor to be received. The supported types:
@@ -1452,7 +1460,7 @@ class Receive(PrimitiveWithInfer):
         Tensor, output has the same shape as the Tensor sent by `Send` operation.
 
     Raises:
-        TypeError: If `group` is not a str.
+        TypeError: If `src_rank` is not an int or `group` is not a str.
         RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails.
         ValueError: If the local rank id of the calling process in the group
                     is larger than the group's rank size.
@@ -1467,30 +1475,53 @@ class Receive(PrimitiveWithInfer):
             For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
             without any third-party or configuration file dependencies.
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
 
+        >>> import os
         >>> import numpy as np
+        >>> import mindspore.ops as ops
         >>> import mindspore.nn as nn
+        >>> import mindspore as ms
         >>> from mindspore.communication import init
         >>> from mindspore import Tensor
-        >>> from mindspore import ops
         >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
         >>> init()
+        >>>
+        >>> class SendNet(nn.Cell):
+        ...     def __init__(self):
+        ...         super(SendNet, self).__init__()
+        ...         self.depend = ops.Depend()
+        ...         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
+        ...
+        ...     def construct(self, x):
+        ...         out = self.depend(x, self.send(x))
+        ...         return out
+        >>>
         >>> class ReceiveNet(nn.Cell):
-        >>>     def __init__(self):
-        >>>         super(ReceiveNet, self).__init__()
-        >>>         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
-        >>>                               group="hccl_world_group")
+        ...     def __init__(self):
+        ...         super(ReceiveNet, self).__init__()
+        ...         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32,
+        ...                                 group="hccl_world_group")
+        ...
+        ...     def construct(self):
+        ...         out = self.recv()
+        ...         return out
         >>>
-        >>>     def construct(self):
-        >>>         out = self.recv()
-        >>>         return out
-        >>>
-        >>> net = Net()
-        >>> output = net()
+        >>> if __name__ == "__main__":
+        ...     rank_id = os.environ["RANK_ID"]
+        ...     rank_size = os.environ["RANK_SIZE"]
+        ...     if rank_id == "0":
+        ...         input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        ...         send_net = SendNet()
+        ...         output = send_net(input_)
+        ...     else:
+        ...         recv_net = ReceiveNet()
+        ...         output = recv_net()
+        ...         print(output.asnumpy())
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Receive
@@ -1701,10 +1732,10 @@ class _VirtualAssignKvCache(PrimitiveWithInfer):
         self.add_prim_attr('order_enforce_skip', True)
         self.add_prim_attr('side_effect_backprop_mem', True)
 
-    def infer_shape(self, x_shape, y_shape, kv_equal_shape):
+    def infer_shape(self, x_shape, y_shape, kv_equal_shape=None):
         return x_shape
 
-    def infer_dtype(self, x_dtype, y_dtype, kv_equal_dtype):
+    def infer_dtype(self, x_dtype, y_dtype, kv_equal_dtype=None):
         return x_dtype
 virtual_assign_kv_cache = _VirtualAssignKvCache()
 
@@ -1845,7 +1876,7 @@ class BatchISendIRecv(PrimitiveWithInfer):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
@@ -1924,28 +1955,29 @@ class BatchISendIRecv(PrimitiveWithInfer):
 
 class AlltoAllV(PrimitiveWithInfer):
     """
-    AllToAll which support uneven split.
+    AllToAllV which support uneven scatter and gather compared with AllToAll.
 
     Note:
-        - Only support flatten tensor as input. input tensor should be flattened and
-          concatenated before call this primitive.
+        Only support flatten tensor as input. input tensor should be flattened and
+        concatenated before call this primitive.
 
     Args:
-        send_numel_list(Union[tuple[int], list[int]]): split numel to scatter to different remote rank.
-        recv_numel_list(Union[tuple[int], list[int]]): split numel to gather from different remote rank.
-        group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
-          means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
-        TODO:
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
+            means ``"hccl_world_group"`` in Ascend.
+        block_size (int, optional): The basic units for scatter and gather numel by `send_numel_list`
+            and `recv_numel_list`.
+            Default: ``1``.
 
     Inputs:
         - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
+        - **send_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to scatter to different remote rank.
+          The actual distributed data numel is :math:`(send_numel_list * block_size * input_x.dtype)`.
+        - **recv_numel_list** (Union[tuple[int], list[int], Tensor]) - split numel to gather from different remote rank.
+          The actual aggregated data numel is :math:`(recv_numel_list * block_size * input_x.dtype)`.
 
     Outputs:
-        Tensor. flattened and concatenated tensor gather from remote ranks.
-        If gather result is empty, it will return a Tensor with value 0, which has no actual meaning.
-
-    Raises:
-        TypeError: If 'send_numel_list'  or 'recv_numel_list' is not type of tuple and list.
+        Tensor, flattened and concatenated tensor gather from remote ranks.
+        If gather result is empty, it will return a Tensor with shape `()`, and value has no actual meaning.
 
     Supported Platforms:
         ``Ascend``
@@ -1958,16 +1990,14 @@ class AlltoAllV(PrimitiveWithInfer):
             without any third-party or configuration file dependencies.
 
             Please see the `msrun start up
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/msrun_launcher.html>`_
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
             for more details.
 
             This example should be run with 2 devices.
 
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import ops
         >>> import mindspore.nn as nn
         >>> from mindspore.communication import init, get_rank
+        >>> from mindspore.ops import AlltoAllV
         >>> from mindspore import Tensor
         >>>
         >>> init()
@@ -1975,20 +2005,22 @@ class AlltoAllV(PrimitiveWithInfer):
         >>> class Net(nn.Cell):
         ...     def __init__(self):
         ...         super(Net, self).__init__()
-        ...         if rank == 0:
-        ...             self.all_to_all = ops.AlltoAllV([1, 2], [1, 2])
-        ...         else:
-        ...             self.all_to_all = ops.AlltoAllV([2, 1], [2, 1])
+        ...         self.all_to_all = AlltoAllV()
         ...
-        ...     def construct(self, x):
-        ...         return self.all_to_all(x)
-        ...
+        ...     def construct(self, x, send_numel_list, recv_numel_list):
+        ...         return self.all_to_all(x, send_numel_list, recv_numel_list)
+        >>> send_numel_list = []
+        >>> recv_numel_list = []
         >>> if rank == 0:
-        >>>    send_tensor = Tensor([0, 1, 2.])
+        ...    send_tensor = Tensor([0, 1, 2.])
+        ...    send_numel_list = [1, 2]
+        ...    recv_numel_list = [1, 2]
         >>> elif rank == 1:
-        >>>    send_tensor = Tensor([3, 4, 5.])
+        ...    send_tensor = Tensor([3, 4, 5.])
+        ...    send_numel_list = [2, 1]
+        ...    recv_numel_list = [2, 1]
         >>> net = Net()
-        >>> output = net(send_tensor)
+        >>> output = net(send_tensor, send_numel_list, recv_numel_list)
         >>> print(output)
         rank 0:
         [0. 3. 4]
@@ -1998,15 +2030,185 @@ class AlltoAllV(PrimitiveWithInfer):
     """
 
     @prim_attr_register
-    def __init__(self, send_numel_list, recv_numel_list, group=None, split_sizes_empty=False):
-        validator.check_value_type("send_numel_list", send_numel_list, [tuple, list], self.name)
-        validator.check_value_type("recv_numel_list", recv_numel_list, [tuple, list], self.name)
+    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP, block_size=1):
         self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
-        self.send_numel_list = send_numel_list
-        self.recv_numel_list = recv_numel_list
-        self.split_sizes_empty = split_sizes_empty
         self.rank_size = get_group_size(self.group)
-
         self.add_prim_attr('group', self.group)
-        self.add_prim_attr('send_numel_list', send_numel_list)
-        self.add_prim_attr('recv_numel_list', recv_numel_list)
+        validator.check_value_type("block_size", block_size, [int], self.name)
+        self.add_prim_attr('block_size', self.block_size)
+
+
+class AllGatherV(PrimitiveWithInfer):
+    """
+    Gathers uneven tensors from the specified communication group and returns the tensor which is all gathered.
+
+    Note:
+        Only support flatten tensor as input. input tensor should be flattened and
+        concatenated before call this primitive.
+
+    Args:
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
+            means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+
+    Inputs:
+        - **input_x** (Tensor) - One-dimensional tensor to be gathered, with the shape :math:`(x_1)`.
+        - **output_split_sizes** (Union[tuple[int], list[int], Tensor]) - One-dimensional tensor, a list of the
+          amount of data gathered by all ranks. The basic unit is the data type of Tensor.
+
+    Outputs:
+        Tensor. flattened and concatenated tensor gather from remote ranks.
+        If gather result is empty, it will return a Tensor with shape `()`, and value has no actual meaning.
+
+    Raises:
+        RuntimeError: Device target is invalid, backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> import mindspore as ms
+        >>> from mindspore.ops import AllGatherV
+        >>> import mindspore.nn as nn
+        >>> from mindspore.communication import init, get_rank
+        >>> from mindspore import Tensor
+        >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> init()
+        >>> class Net(nn.Cell):
+        ...     def __init__(self):
+        ...         super(Net, self).__init__()
+        ...         self.allgatherv = AllGatherV()
+        ...
+        ...     def construct(self, x, output_split_sizes):
+        ...         return self.allgatherv(x, output_split_sizes)
+        ...
+        >>> rank = get_rank()
+        >>> data = [i for i in range(rank + 3)]
+        >>> input_x = Tensor(data)
+        >>> output_split_sizes = [3, 4]
+        >>> net = Net()
+        >>> output = net(input_x, output_split_sizes)
+        >>> print(output)
+        [0 1 2 0 1 2 3]
+
+    Tutorial Examples:
+        - `Distributed Set Communication Primitives - AllGatherV
+          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#allgatherv>`_
+
+    """
+
+    @prim_attr_register
+    def __init__(self, group=GlobalComm.WORLD_COMM_GROUP):
+        """Initialize AllGatherV."""
+        self.group = _get_group(group)
+        validator.check_value_type('group', self.group, (str,), self.name)
+        self.rank = get_rank(self.group)
+        self.rank_size = get_group_size(self.group)
+        validator.check('rank', self.rank, 'rank_size', self.rank_size, validator.LT, self.name)
+        self.add_prim_attr('rank_size', self.rank_size)
+        self.add_prim_attr('group', self.group)
+        self.add_prim_attr('mean_flag', False)
+        self.rank_id = get_rank(_get_group(self.group))
+        self.add_prim_attr('rank_id', self.rank_id)
+
+
+class ReduceScatterV(PrimitiveWithInfer):
+    r"""
+    Reduces and scatters uneven tensors from the specified communication group
+    and returns the tensor which is reduced and scattered.
+
+    Note:
+        Only support flatten tensor as input. The input tensor should be flattened and
+        concatenated before call this primitive.
+
+    Args:
+        op (str, optional): Specifies an operation used for element-wise reductions,
+            like SUM, MIN and MAX, currently PROD is not supported. Default: ``ReduceOp.SUM`` .
+        group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
+            means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+
+    Inputs:
+        - **input_x** (Tensor) - One-dimensional tensor to be distributed, with the shape :math:`(x_1)`.
+        - **input_split_sizes** (Union[tuple[int], list[int], Tensor]) - One-dimensional tensor, a list of
+          received data volumes for all ranks. The basic unit is the data type of Tensor. The value is not
+          verified, and the user guarantees its correctness.
+
+    Outputs:
+        Tensor. Reduces and scatters tensor from remote ranks.
+        If the result is empty, it will return a Tensor with shape `()`, and value has no actual meaning.
+
+    Raises:
+        RuntimeError: Device target is invalid, backend is invalid, or distributed initialization fails.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/tutorials/en/master/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor
+        >>> from mindspore.communication import init, get_rank
+        >>> from mindspore.ops import ReduceOp
+        >>> import mindspore.nn as nn
+        >>> from mindspore.ops.operations.comm_ops import ReduceScatterV
+        >>>
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> init()
+        >>> class Net(nn.Cell):
+        ...     def __init__(self):
+        ...         super(Net, self).__init__()
+        ...         self.reducescatterv = ReduceScatterV(ReduceOp.SUM)
+        ...
+        ...     def construct(self, x, input_split_sizes):
+        ...         return self.reducescatterv(x, input_split_sizes)
+        ...
+        >>> rank = get_rank()
+        >>> input_x = Tensor([0, 1, 2.0])
+        >>> input_split_sizes = [2, 1]
+        >>> net = Net()
+        >>> output = net(input_x, input_split_sizes)
+        >>> print(output)
+        rank 0:
+        [0. 2.]
+        rank 1:
+        [4.]
+
+    Tutorial Examples:
+        - `Distributed Set Communication Primitives - ReduceScatterV
+          <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#reducescatterv>`_
+
+    """
+
+    @prim_attr_register
+    def __init__(self, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
+        """Initialize ReduceScatterV."""
+        validator.check_value_type('op', op, (type(ReduceOp.SUM),), self.name)
+        self.group = _get_group(group)
+        validator.check_value_type('group', self.group, (str,), self.name)
+        self.op = op
+        self.rank_size = get_group_size(self.group)
+        self.add_prim_attr('rank_size', self.rank_size)
+        self.add_prim_attr('group', self.group)
+        self.rank_id = get_rank(_get_group(self.group))
+        self.add_prim_attr('rank_id', self.rank_id)

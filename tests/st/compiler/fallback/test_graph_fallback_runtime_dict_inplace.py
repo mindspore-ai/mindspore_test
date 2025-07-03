@@ -16,13 +16,13 @@
 import pytest
 import numpy as np
 
-from mindspore import context
 from mindspore import Tensor
-from mindspore import jit, jit_class, nn, ops
+from mindspore import jit, jit_class, nn, ops, context
 from tests.mark_utils import arg_mark
 
 
 context.set_context(mode=context.GRAPH_MODE)
+context.set_context(jit_level='O0')
 
 global_dict_1 = {"1": 1}
 
@@ -36,7 +36,7 @@ def test_global_dict_used_in_graph():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         return global_dict_1
 
@@ -96,7 +96,7 @@ def test_global_dict_as_graph_input():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(dict_input):
         return dict_input
 
@@ -151,7 +151,7 @@ def test_dict_inplace_with_attribute():
     Description: support dict inplace ops.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self, x):
             super(Net, self).__init__()
@@ -173,7 +173,7 @@ def test_dict_inplace_with_attribute_2():
     Description: support dict inplace ops.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self, x):
             super(Net, self).__init__()
@@ -234,7 +234,7 @@ def test_dict_inplace_setitem_3():
     Expectation: No exception.
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(dict_input, list_input):
         dict_input["b"] = list_input
         return dict_input
@@ -255,7 +255,7 @@ def test_dict_inplace_setitem_with_attribute():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self, x):
             super(Net, self).__init__()
@@ -282,7 +282,7 @@ def test_dict_inplace_setitem_with_attribute_2():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     @jit_class
     class AttrClass():
         def __init__(self, x):
@@ -346,6 +346,7 @@ def test_dict_getitem_after_setitem():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -373,6 +374,7 @@ def test_dict_getitem_after_setitem_2():
     Description: Dict after inplace operation should keep object not changed.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class DcitNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -402,7 +404,7 @@ def test_dict_inplace_setitem_with_dict_getitem():
     Description: There is dict getitem after inplace operation.
     Expectation: No exception.
     """
-
+    context.set_context(jit_level='O0')
     class DictNet(nn.Cell):
         def construct(self, x):
             for key in x:
@@ -411,6 +413,7 @@ def test_dict_inplace_setitem_with_dict_getitem():
 
     x = {0: Tensor([0]), 1: Tensor([1])}
     ms_out = DictNet()(x)
+    # pylint: disable=E1102
     ms_grad = ops.grad(DictNet())(x)
 
     assert ms_out == Tensor([2])

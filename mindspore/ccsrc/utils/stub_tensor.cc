@@ -18,7 +18,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/stub_tensor.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "include/common/profiler.h"
+#include "debug/profiler/profiler.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
@@ -414,71 +414,6 @@ void FlattenStubNode(const StubNodePtr &node, std::vector<StubNodePtr> *flatten_
   } else {
     flatten_stub_nodes->push_back(node);
   }
-}
-
-py::object StubNodeToPyObject(const StubNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  if (node->isa<TensorNode>()) {
-    auto tensor = node->cast<std::shared_ptr<TensorNode>>();
-    return py::cast(tensor);
-  } else if (node->isa<SequenceNode>()) {
-    auto seq = node->cast<std::shared_ptr<SequenceNode>>();
-    MS_EXCEPTION_IF_NULL(seq);
-    auto abs = node->ToAbstract();
-    MS_EXCEPTION_IF_NULL(abs);
-
-    auto &elements = seq->Elements();
-    py::tuple out(elements.size());
-    for (size_t i = 0; i < elements.size(); ++i) {
-      out[i] = StubNodeToPyObject(elements[i]);
-    }
-    if (abs->isa<abstract::AbstractTuple>()) {
-      return out;
-    } else if (abs->isa<abstract::AbstractList>()) {
-      return out.cast<py::list>();
-    } else {
-      MS_LOG(EXCEPTION) << "The abstract of SequenceNode should be AbstractTuple or AbstractList, but got: "
-                        << abs->ToString();
-    }
-  } else if (node->isa<StringNode>()) {
-    MS_LOG(DEBUG) << "Begin wait value for stub string node.";
-    const auto &value = node->WaitValue();
-    MS_LOG(DEBUG) << "End wait value for stub string node.";
-    MS_EXCEPTION_IF_NULL(value);
-    const auto &string_value = value->cast<StringImmPtr>();
-    if (!string_value) {
-      MS_LOG(EXCEPTION) << "Expect a StringImm in stub string node, but got: " << value->ToString();
-    }
-    py::str res = string_value->value();
-    return res;
-  } else if (node->isa<ScalarNode>()) {
-    MS_LOG(DEBUG) << "Begin wait value for stub scalar node.";
-    const auto &value = node->WaitValue();
-    MS_LOG(DEBUG) << "End wait value for stub scalar node.";
-    MS_EXCEPTION_IF_NULL(value);
-    const auto &scalar_value = value->cast<ScalarPtr>();
-    if (scalar_value) {
-      return ScalarPtrToPyData(scalar_value);
-    }
-    const auto &tensor = value->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
-    return CheckAndConvertToScalar(tensor, node->ToAbstract());
-  }
-  MS_EXCEPTION(NotSupportError) << "Unsupported stub node: " << node->ToString() << " to py::object.";
-}
-
-void RegStubNodes(const py::module *m) {
-  (void)py::class_<StubNode, std::shared_ptr<StubNode>>(*m, "StubNode");
-  (void)py::class_<TensorNode, StubNode, std::shared_ptr<TensorNode>>(*m, "TensorNode")
-    .def("get_value", &TensorNode::GetValue, "get output value of async stub.")
-    .def("get_shape", &TensorNode::GetShape, "get output shape of async stub.")
-    .def("get_dtype", &TensorNode::GetDtype, "get output dtype of async stub.");
-  (void)py::class_<SequenceNode, StubNode, std::shared_ptr<SequenceNode>>(*m, "SequenceNode")
-    .def("get_elements", &SequenceNode::GetElements, "get the elements of async stub_seq.");
-  (void)py::class_<AnyTypeNode, StubNode, std::shared_ptr<AnyTypeNode>>(*m, "AnyTypeNode")
-    .def("get_real_node", &AnyTypeNode::GetRealNode, "get the real StubNode");
-  (void)py::class_<NoneTypeNode, StubNode, std::shared_ptr<NoneTypeNode>>(*m, "NoneTypeNode")
-    .def("get_real_value", &NoneTypeNode::GetRealValue, "get the real value");
 }
 }  // namespace stub
 }  // namespace mindspore

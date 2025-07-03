@@ -1,19 +1,19 @@
 mindspore.ops.Custom
 =====================
 
-.. py:class:: mindspore.ops.Custom(func, bprop=None, out_dtype=None, func_type="hybrid", out_shape=None, reg_info=None)
+.. py:class:: mindspore.ops.Custom(func, out_shape=None, out_dtype=None, func_type="pyfunc", bprop=None, reg_info=None)
 
     `Custom` 算子是MindSpore自定义算子的统一接口。用户可以利用该接口自行定义MindSpore内置算子库尚未包含的算子。
-    根据输入函数的不同，你可以创建多个自定义算子，并且把它们用在神经网络中。
-    关于自定义算子的详细说明和介绍，包括参数的正确书写，见 `自定义算子教程 <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/op_custom.html>`_ 。
+    根据输入函数的不同，用户可以创建多个自定义算子，并将其应用于神经网络中。
+    关于自定义算子的详细说明和介绍，包括参数的正确书写，请参见 `自定义算子教程 <https://www.mindspore.cn/tutorials/zh-CN/master/custom_program/op_custom.html>`_ 。
 
     .. warning::
-        - 这是一个实验性API，后续可能修改或删除。
+        这是一个实验性API，后续可能修改或删除。
 
     .. note::
         不同自定义算子的函数类型（func_type）支持的平台类型不同。每种类型支持的平台如下：
 
-        - "aot": ["GPU", "CPU"，"Ascend"].
+        - "aot": ["GPU", "CPU", "Ascend"].
         - "pyfunc": ["CPU"].
         - "julia": ["CPU"].
 
@@ -28,7 +28,7 @@ mindspore.ops.Custom
 
                a) GPU/CPU（仅Linux）平台
 
-               "aot"意味着提前编译，在这种情况下，Custom直接启动用户定义的"xxx.so"文件作为操作符。用户需要提前将手写的"xxx.cu"/"xxx.cc"文件编译成"xxx.so"，并提供文件路径和函数名。
+               "aot"意味着提前编译。在这种情况下，Custom直接启动用户定义的"xxx.so"文件作为操作符。用户需要提前将手写的"xxx.cu"/"xxx.cc"文件编译成"xxx.so"，并提供文件路径和函数名。
 
                - "xxx.so"文件生成：
 
@@ -54,7 +54,7 @@ mindspore.ops.Custom
                  - `stream(void *)` : 流指针，仅在CUDA文件中使用。
                  - `extra(void *)` : 用于进一步扩展。
 
-                 返回值（int）:
+                 返回值（int）：
 
                  - 0: 如果这个AOT内核成功执行，MindSpore将继续运行。
                  - 其他值: MindSpore将引发异常并退出。
@@ -71,11 +71,11 @@ mindspore.ops.Custom
 
                b) Ascend平台
 
-               在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom_ascendc.html>`_。
-               在入参 `func` 中传入算子的名字, 根据 `infer shape` 函数的实现方式，存在以下两种使用方式：
+               在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/tutorials/zh-CN/master/custom_program/operation/op_custom_ascendc.html>`_。
+               在入参 `func` 中传入算子的名字。根据infer函数的实现方式，存在以下两种使用方式：
 
-               - **python infer**：若算子的infer shape是python实现，即通过 `out_shape` 参数传入infer shape函数，则指定 `func="CustomName"` 。
-               - **c++ infer**：若算子的infer shape通过c++实现，则在func中传入infer shape实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom` 。
+               - **Python infer**：若算子的infer函数是Python实现，即通过 `out_shape` 和 `out_dtype` 参数传入infer shape和infer type函数，则指定 `func="CustomName"` 。
+               - **C++ infer**：若算子的infer函数通过C++实现，则在func中传入infer shape或infer type实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom"` 。
 
             2. 对于"julia"：
 
@@ -90,17 +90,17 @@ mindspore.ops.Custom
                      Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
 
                  例如：Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia")
-        - **out_shape** (Union[function, list, tuple]) - 自定义算子的输入的形状或者输出形状的推导函数。默认值： ``None`` 。
-        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]]) - 自定义算子的输入的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
-        - **func_type** (str) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。
-        - **bprop** (function) - 自定义算子的反向函数。默认值： ``None``。
-        - **reg_info** (Union[str, dict, list, tuple]) - 自定义算子的算子注册信息。默认值： ``None`` 。
+        - **out_shape** (Union[function, list, tuple], 可选) - 自定义算子的输出的形状或者输出形状的推导函数。默认值： ``None`` 。
+        - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]], 可选) - 自定义算子的输出的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
+        - **func_type** (str, 可选) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。默认值： ``"pyfunc"``。
+        - **bprop** (function, 可选) - 自定义算子的反向函数。默认值： ``None``。
+        - **reg_info** (Union[str, dict, list, tuple], 可选) - 自定义算子的算子注册信息。默认值： ``None`` 。
 
     输入：
         - **input** (Union(tuple, list)) - 输入要计算的Tensor。
 
     输出：
-        Tensor。自定义算子的计算结果。
+        Tensor，自定义算子的计算结果。
 
     异常：
         - **TypeError** - 如果输入 `func` 不合法，或者 `func` 对应的注册信息类型不对。

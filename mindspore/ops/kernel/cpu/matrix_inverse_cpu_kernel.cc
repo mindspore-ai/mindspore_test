@@ -16,13 +16,14 @@
 
 #include "kernel/cpu/matrix_inverse_cpu_kernel.h"
 #include <map>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "Eigen/Core"
 #include "Eigen/LU"
 #include "mindspore/ops/infer/matrix_inverse.h"
 
 namespace mindspore {
 namespace kernel {
+namespace matrix_inverse_cpu {
 namespace {
 constexpr size_t kInputSize = 1;
 constexpr size_t kOutputSize = 1;
@@ -131,5 +132,6 @@ void MatrixInverseCpuKernelMod::LaunchMatrixInverse(const std::vector<KernelTens
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MatrixInverse, MatrixInverseCpuKernelMod);
+}  // namespace matrix_inverse_cpu
 }  // namespace kernel
 }  // namespace mindspore

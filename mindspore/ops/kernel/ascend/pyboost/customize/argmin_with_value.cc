@@ -20,16 +20,17 @@
 #include <string>
 #include <tuple>
 
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> ArgMinWithValueAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const Int64ImmPtr &axis,
-  const BoolImmPtr &keep_dims) {
+std::tuple<tensor::TensorPtr, tensor::TensorPtr> ArgMinWithValueAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                                                const TensorPtr &input_tensor,
+                                                                                const Int64ImmPtr &axis,
+                                                                                const BoolImmPtr &keep_dims) {
   OpRunner::InferOpOutput(op, input_tensor, axis, keep_dims);
   // Convert ValuePtr to c++ scalar
   auto axis_imm = GetValue<int64_t>(axis);

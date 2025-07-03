@@ -5,7 +5,7 @@ mindspore.numpy.square
 
     逐元素返回输入的平方。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。 在GPU上，支持的dtype为np.float16和np.float32。
 
     参数：

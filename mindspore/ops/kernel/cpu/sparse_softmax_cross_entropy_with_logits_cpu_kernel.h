@@ -21,12 +21,13 @@
 #include <memory>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "infer/sparse_softmax_cross_entropy_with_logits.h"
 
 namespace mindspore {
 namespace kernel {
+namespace sparse_softmax_cross_entropy_with_logits_cpu {
 class SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod : public NativeCpuKernelMod {
  public:
   SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod() = default;
@@ -68,6 +69,7 @@ class SparseSoftmaxCrossEntropyWithLogitsCpuKernelMod : public NativeCpuKernelMo
   size_t batch_size_{0};
   ParallelSearchInfo grad_parallel_search_info_;
 };
+}  // namespace sparse_softmax_cross_entropy_with_logits_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

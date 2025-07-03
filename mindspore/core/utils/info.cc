@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,51 +86,24 @@ std::string Location::DebugString() const {
   return ss.str();
 }
 
-// Generate debug information for the location node .
-// print the file name, line no and column no, and part of the content
-std::string Location::ToString(SourceLineTip tip, int start_line) {
-  std::stringstream debug_info_ss;
-  std::stringstream section_debug_info_ss;
-  char *file_out;
-  if (tip != kSourceSectionTipNextLineHere) {
-    // For example,
-    // the location is from {line 9, column 4}, to {line 15, column 20}:
-    //     In file /x/xxx/x.py:9~15, 4~20
-    // If in single line, from {line 9, column 4}, to {line 9, column 20}:
-    //     In file /x/xxx/x.py:9, 4~20
-    debug_info_ss << "In file " << file_name_ << ":" << line_;
-    if (line_ <= 0) {
-      return debug_info_ss.str();
-    }
-    if (line_end_ > line_) {
-      debug_info_ss << "~" << line_end_;
-    }
-    debug_info_ss << ", " << column_ << "~" << column_end_ << std::endl;
-    // Use line_str_ as cache.
-    if (!line_str_.empty()) {
-      debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
-      return debug_info_ss.str();
-    }
-  } else {  // tip == kSourceSectionTipNextLineHere
-    section_debug_info_ss << "In file " << file_name_ << ":" << line_ << std::endl;
-  }
-
+bool Location::ReadSectionDebugInfoFromFile(SourceLineTip tip, int start_line,
+                                            std::stringstream &section_debug_info_ss) {
   // Start read the specific line. Optimize here by seekg().
   auto path = FileUtils::GetRealPath(file_name_.c_str());
   if (!path.has_value()) {
     MS_LOG(WARNING) << "The file '" << file_name_ << "' may not exists.";
-    return debug_info_ss.str();
+    return false;
   }
   FILE *file = fopen(path.value().c_str(), "r");
   if (file == NULL) {
     MS_LOG(WARNING) << "Failed to open file '" << file_name_ << "'.";
-    return debug_info_ss.str();
+    return false;
   }
   // Read the lines one by one.
   constexpr auto line_str_size = 4096;
   char *line = new char[line_str_size];
   int line_num = 0;
-  file_out = fgets(line, line_str_size, file);
+  char *file_out = fgets(line, line_str_size, file);
   if (strlen(line) != line_str_size - 1 || line[strlen(line) - 1] == '\n') {
     line[strcspn(line, "\n")] = '\0';
   } else {
@@ -149,9 +122,50 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     }
   }
   fclose(file);
-  // Store the line string as cache.
+
   line_str_ = line;
   delete[] line;
+
+  return true;
+}
+
+// Generate debug information for the location node .
+// print the file name, line no and column no, and part of the content
+std::string Location::ToString(SourceLineTip tip, int start_line) {
+  std::stringstream debug_info_ss;
+  std::stringstream section_debug_info_ss;
+  if (tip != kSourceSectionTipNextLineHere) {
+    // For example,
+    // the location is from {line 9, column 4}, to {line 15, column 20}:
+    //     In file /x/xxx/x.py:9~15, 4~20
+    // If in single line, from {line 9, column 4}, to {line 9, column 20}:
+    //     In file /x/xxx/x.py:9, 4~20
+    debug_info_ss << "In file " << file_name_ << ":" << line_;
+    if (line_ <= 0) {
+      return debug_info_ss.str();
+    }
+    if (line_end_ > line_) {
+      debug_info_ss << "~" << line_end_;
+    }
+    if (column_ != 0 && column_end_ != 0) {
+      debug_info_ss << ", " << column_ << "~" << column_end_;
+    }
+    debug_info_ss << std::endl;
+    // Use line_str_ as cache.
+    if (!line_str_.empty()) {
+      debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
+      return debug_info_ss.str();
+    }
+  } else {  // tip == kSourceSectionTipNextLineHere
+    section_debug_info_ss << "In file " << file_name_ << ":" << line_ << std::endl;
+  }
+
+  bool success = ReadSectionDebugInfoFromFile(tip, start_line, section_debug_info_ss);
+  if (!success) {
+    return debug_info_ss.str();
+  }
+
+  // Store the line string as cache.
   if (tip == kSourceSectionTipNextLineHere) {
     section_debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
     return section_debug_info_ss.str();
@@ -255,6 +269,8 @@ TraceContextPtr TraceManager::CurrentContextInfo() {
   }
   return nullptr;
 }
+
+const std::vector<TraceContext> &TraceManager::trace_context_stack() { return trace_context_stack_; }
 
 bool TraceManager::DebugTrace(const LocationPtr &location) {
   if (location == nullptr) {
@@ -422,10 +438,10 @@ void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoP
 void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
-  bool loc_not_set = callee_debug_info->real_loc().empty();
   if (caller_debug_info == nullptr || callee_debug_info == nullptr) {
     return;
   }
+  bool loc_not_set = callee_debug_info->real_loc().empty();
   const auto caller_debug_infos = GetDebugInfoList(caller_debug_info);
   const auto callee_debug_infos = GetDebugInfoList(callee_debug_info);
   if (callee_debug_infos.size() == 1) {  // New inserted node, not by parser.

@@ -24,6 +24,8 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::lite::quant {
 namespace {

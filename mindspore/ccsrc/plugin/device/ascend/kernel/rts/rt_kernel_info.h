@@ -25,8 +25,8 @@
 #include <vector>
 #include <utility>
 #include "ir/dtype.h"
-#include "kernel/kernel_build_info.h"
-#include "kernel/kernel.h"
+#include "common/kernel_build_info.h"
+#include "common/kernel.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

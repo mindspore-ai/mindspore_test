@@ -16,33 +16,24 @@
 
 #include "infer/ops_func_impl/searchsorted.h"
 
-#include <complex>
 #include <memory>
 #include <vector>
 #include <map>
 
-#include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
-#include "abstract/ops/op_infer.h"
-#include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
 #include "base/base.h"
-#include "base/float16.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
-#include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "mindapi/base/type_id.h"
-#include "mindapi/helper.h"
-#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -134,15 +125,15 @@ TypePtrList SearchSortedFuncImpl::InferType(const PrimitivePtr &primitive, const
 ShapeArray SearchSortedFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(primitive);
 
-  auto sequence_tensor_ptr = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  auto sequence_tensor_ptr = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(sequence_tensor_ptr);
   auto sequence_shape = sequence_tensor_ptr->shape();
 
-  auto values_tensor_ptr = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  auto values_tensor_ptr = input_values[kInputIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(values_tensor_ptr);
   auto values_shape = values_tensor_ptr->shape();
 
-  auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+  auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::TensorPtr>();
   if (sorter_tensor_ptr != nullptr) {
     MS_CHECK_VALUE(sorter_tensor_ptr->Dtype()->type_id() == kNumberTypeInt64,
                    "For '" + primitive->name() + "' sorter type should be Int64");

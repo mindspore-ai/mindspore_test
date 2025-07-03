@@ -28,11 +28,11 @@
 #include "include/common/utils/utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
+#include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
+#include "plugin/res_manager/ascend/mem_manager/ascend_memory_manager.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
@@ -101,10 +101,10 @@ HcclKernel::HcclKernel()
       comm_(nullptr),
       use_lccl_{false} {}
 
-bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
+bool IsSupportLccl(const std::string &group_name, const std::string &kernel_name,
                    const std::unordered_set<std::string> &lccl_enabled_groups) {
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::EnableLccl();
+  bool enable_lccl = device::ascend::AscendHalManager::GetInstance().EnableLccl();
   std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName,   kBroadcastOpName,
                                                  kAllGatherOpName, kMatMulAllReduceOpName, kBarrierOpName};
   if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
@@ -135,8 +135,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
-                                           kMatMulAllReduceOpName};
+  static std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
+                                                  kReduceScatterVOpName, kMatMulAllReduceOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
     if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";
@@ -154,13 +154,13 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
+  if (common::GetEnv(kSimulationLevel).empty()) {
     // Before calling each hccl operator, we need to wait for communicator to be initialized.
     distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_);
 #ifdef ENABLE_INTERNAL_KERNELS
     std::unordered_set<std::string> lccl_enabled_groups =
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
-    use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
+    use_lccl_ = IsSupportLccl(group_, kernel_name_, lccl_enabled_groups);
     if (use_lccl_) {
       LoadLcclLibrary();
     } else {
@@ -317,8 +317,11 @@ void HcclKernel::LoadHcclLibrary() {
     MS_EXCEPTION_IF_NULL(comm_);
     primitive_->set_attr(kAttrComm, MakeValue<int64_t>(reinterpret_cast<int64_t>(comm_)));
   }
+  hccl_inner_comm_name_ = AscendCollectiveCommLib::GetInstance().CommName(group_);
   primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("HCCL"));
 }
+
+bool HcclKernel::NeedReGetHcom() { return mindspore::UCEException::GetInstance().rebuild_group_flag(); }
 
 #ifdef ENABLE_INTERNAL_KERNELS
 void HcclKernel::LoadLcclLibrary() {

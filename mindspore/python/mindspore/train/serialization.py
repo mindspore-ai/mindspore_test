@@ -27,19 +27,18 @@ import stat
 import atexit
 import threading
 from threading import Thread, RLock
-from multiprocessing import Pool, active_children
+from multiprocessing import active_children
 import multiprocessing as mp
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from io import BytesIO
+from functools import partial
 
 import math
 import sys
 import time
-import google
 import numpy as np
-
-from safetensors.numpy import save_file, load_file
-from safetensors import safe_open
+from safetensors.numpy import save_file
+import google
 
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
@@ -53,37 +52,34 @@ from mindspore.log import vlog_print
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
+from mindspore.common import np_dtype
 from mindspore.common.api import _cell_graph_executor as _executor
-from mindspore.common.api import _MindsporeFunctionExecutor
+from mindspore.common.api import _JitExecutor
 from mindspore.common.api import _get_parameter_layout
-from mindspore.common.api import _generate_branch_control_input
 from mindspore.common.initializer import initializer, One
 from mindspore.common.parameter import Parameter, _offload_if_config
 from mindspore.common.tensor import Tensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.common._utils import is_shape_unknown
 from mindspore.common.file_system import FileSystem, _register_basic_file_system, _register_mindio_file_system
 from mindspore.communication.management import get_rank, get_group_size
 from mindspore.experimental import MapParameter
 from mindspore.ops import Cast
 from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_parameter_broadcast
-from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
-from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
-from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
-    _get_device_num
-from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
-from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
-    _restore_group_info_list, _get_param_list_when_first_dim_sharded
+from mindspore.parallel._tensor import _reshape_param_data
+from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
-from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _get_device_num_from_strategy, \
-    _extract_pipeline_stage_num
+from mindspore.parallel.checkpoint_transform import restore_group_info_list as new_restore_group_info_list
+from mindspore.parallel.checkpoint_transform import load_distributed_checkpoint as new_load_distributed_checkpoint
+from mindspore.parallel.checkpoint_transform import merge_sliced_parameter as new_merge_sliced_parameter
+from mindspore.parallel.checkpoint_transform import build_searched_strategy as new_build_searched_strategy
+from mindspore.parallel.transform_safetensors import _fast_safe_open
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
-from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
+from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
-from ..ops.operations._opaque_predicate_registry import add_opaque_predicate, clean_funcs
 
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
@@ -94,11 +90,16 @@ tensor_to_np_type = {"Int8": np.int8, "UInt8": np.uint8, "Int16": np.int16, "UIn
                      "Int32": np.int32, "UInt32": np.uint32, "Int64": np.int64, "UInt64": np.uint64,
                      "Float16": np.float16, "Float32": np.float32, "Float64": np.float64, "Bool": np.bool_, "str": "U"}
 
+if hasattr(np_dtype, "bfloat16"):
+    tensor_to_np_type["BFloat16"] = np_dtype.bfloat16
+
 np_type_convert = {"int32": np.int32, "float32": np.float32, "float16": np.float16, "float64": np.float64}
 
 mindir_to_tensor_type = {1: mstype.float32, 2: mstype.uint8, 3: mstype.int8, 4: mstype.uint16,
                          5: mstype.int16, 6: mstype.int32, 7: mstype.int64, 10: mstype.float16,
                          11: mstype.float64, 12: mstype.uint32, 13: mstype.uint64}
+
+safetensors_to_mstype = {'Int4': mstype.qint4x2}
 
 _ckpt_mutex = RLock()
 
@@ -153,22 +154,28 @@ atexit.register(_async_save_close)
 
 def _get_cur_rank_dp(parameter_layout_dict):
     """ Get dp and tp from layout dict. """
-    pp_num = _get_auto_parallel_context("pipeline_stages")
-    dev_num = _get_device_num()
     global_rank = get_rank()
-    pipe_size = dev_num // pp_num
-    initial_rank = (global_rank // pipe_size) * pipe_size
-    parameter_redundancy_dict = get_parameter_redundancy(
-        parameter_layout_dict, initial_rank)
+    parameter_redundancy_dict = get_parameter_redundancy(parameter_layout_dict)
     value_len = sys.maxsize
     min_value = ()
+    min_value_set = set()
     for key, value in parameter_redundancy_dict.items():
-        if "accu_grads" in key or "inputs" in key:
+        if key.startswith("accu_grads") or key.startswith("inputs"):
             continue
         for item in value:
-            if len(item) < value_len and global_rank in item:
+            if global_rank not in item:
+                continue
+            # if item is subset of min_value_set, update min_value_set and min_value
+            if len(item) < value_len:
+                if min_value_set and not set(item).issubset(min_value_set):
+                    return (global_rank,)
                 value_len = len(item)
+                min_value_set = set(item)
                 min_value = item
+            # if value is not smaller than len of min_value len,
+            # check if min_value_set is subset of current item
+            elif not min_value_set.issubset(set(item)):
+                return (global_rank,)
     return min_value
 
 
@@ -188,7 +195,7 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
         cur_strategy_path (str): strategy file path for current rank.
 
     Returns:
-        - new_ckpt_file (String), if found available checkpoint file , return it.
+        - new_ckpt_file (str), if found available checkpoint file , return it.
         - None, if not found available checkpoint, return None.
 
     Examples:
@@ -203,6 +210,9 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
         >>> ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, strategy_file)
         >>> print(ckpt_file_new)
     """
+    cur_rank = get_rank()
+    if f"rank_{str(cur_rank)}" in cur_ckpt_path and os.path.isfile(cur_ckpt_path):
+        return cur_ckpt_path
     dp = _get_cur_rank_dp(cur_strategy_path)
     pattern = r'rank_\d+'
     for i in dp:
@@ -264,10 +274,7 @@ def _update_param(param, new_param, strict_load):
 
         if param.data.dtype != new_param.data.dtype:
             if _type_convert(param, new_param, strict_load):
-                if new_param.data.dtype == mstype.bfloat16:
-                    new_tensor = cpu_cast(new_param.data, param.data.dtype)
-                else:
-                    new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
+                new_tensor = Tensor(new_param.data.asnumpy(), param.data.dtype)
                 param.set_data(new_tensor, param.sliced)
                 return
 
@@ -305,7 +312,7 @@ def _update_param(param, new_param, strict_load):
 def _type_convert(param, new_param, strict_load):
     """Whether to convert parameter's type during load checkpoint into network."""
     float_type = (mstype.float16, mstype.float32, mstype.float64, mstype.bfloat16)
-    int_type = (mstype.int8, mstype.int16, mstype.int32, mstype.int64)
+    int_type = (mstype.int8, mstype.int16, mstype.int32, mstype.int64, mstype.qint4x2)
     if not strict_load and ({param.data.dtype, new_param.data.dtype}.issubset(float_type) or
                             {param.data.dtype, new_param.data.dtype}.issubset(int_type)):
         logger.warning(f"The type of {new_param.name}:{new_param.data.dtype} in 'parameter_dict' is different from "
@@ -351,13 +358,15 @@ def _save_weight(checkpoint_dir, model_name, iteration, params):
 
 
 def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False, crc_check=False,
-               format="ckpt"):
+               format="ckpt", remove_redundancy=None):
     """Execute the process of saving checkpoint into file."""
     try:
         with _ckpt_mutex:
             file_name_list = list(os.path.splitext(ckpt_file_name))
             file_name_list[1] = file_name_list[1].replace(f".{format}", ".tmp")
             tmp_name = ''.join(file_name_list)
+            if _ckpt_fs.backend == "mindio":
+                tmp_name = ckpt_file_name
             if os.path.exists(ckpt_file_name):
                 os.chmod(ckpt_file_name, stat.S_IWUSR)
                 os.remove(ckpt_file_name)
@@ -365,7 +374,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 os.chmod(tmp_name, stat.S_IWUSR)
                 os.remove(tmp_name)
             if format == "ckpt":
-                ckpt_save_time_start = time.time()
+                ckpt_total_io_time = 0
                 with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
                     plain_data = None
                     if enc_key is not None:
@@ -373,29 +382,32 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
 
                     crc_num = 0
                     for name, value in data_list.items():
-                        if name == "random_op":
-                            _write_random_seed(name, value, f)
-                            continue
                         if value[0] == "mapparameter":
                             _write_mapparameter(name, value, f, map_param_inc)
                             continue
                         if value[0] == "offload_parameter":
                             new_value = value[1:]
                             new_value[2] = value[3]
-                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data)
+                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data, ckpt_total_io_time)
                             _offload_if_config(value[3])
                             continue
                         if value[1] == "str":
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], np.ndarray):
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                            crc_num, ckpt_total_io_time = _write_parameter_data(name, value, f, enc_key, plain_data,
+                                                                                crc_num, crc_check,
+                                                                                ckpt_total_io_time)
                             continue
                         if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
                             _write_hugeparameter(name, value, f)
                             continue
 
-                        crc_num = _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                        crc_num, ckpt_total_io_time = _write_parameter_bytes_data(name, value, f, enc_key, plain_data,
+                                                                                  crc_num, crc_check,
+                                                                                  ckpt_total_io_time)
 
                     if enc_key is not None:
                         plain_data.seek(0)
@@ -406,15 +418,25 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             block_data = plain_data.read(max_block_size)
                     if crc_check:
                         f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
-                ckpt_save_time_end = time.time()
-                cost_time = ckpt_save_time_end - ckpt_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           f"Save ckpt io cost time:{ckpt_total_io_time}.")
+
             elif format == "safetensors":
                 save_dict = {}
                 crc_num = 0
+                meta_data = {"format": "ms"}
+                if remove_redundancy is not None and isinstance(remove_redundancy, bool):
+                    meta_data["remove_redundancy"] = str(remove_redundancy)
                 for name in sorted(data_list.keys()):
                     value = data_list[name]
-                    save_dict[name] = value[2].asnumpy()
+                    if isinstance(value[2], np.ndarray):
+                        if value[1] == str(mstype.qint4x2):
+                            meta_data[name] = str(mstype.qint4x2)
+                        save_dict[name] = value[2]
+                    else:
+                        if value[2].dtype == mstype.qint4x2:
+                            meta_data[name] = str(mstype.qint4x2)
+                        save_dict[name] = value[2].asnumpy()
 
                     if crc_check:
                         crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
@@ -422,17 +444,19 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             bytes(save_dict[name]), crc_num)
                 safetensors_save_time_start = time.time()
                 if crc_check:
-                    save_file(save_dict, tmp_name, metadata={
-                        "crc_num": str(crc_num)})
+                    meta_data.update({"crc_num": str(crc_num)})
+                if save_dict:
+                    save_file(save_dict, tmp_name, metadata=meta_data)
                 else:
                     save_file(save_dict, tmp_name)
+
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors io cost time:{cost_time}.")
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
-            else:
+            elif _ckpt_fs.backend != "mindio":
                 os.rename(tmp_name, ckpt_file_name)
             os.chmod(ckpt_file_name, stat.S_IRUSR)
     except BaseException as e:
@@ -441,19 +465,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
         raise e
 
 
-def _write_random_seed(name, value, f):
-    """Write random op into protobuf file."""
-    checkpoint_list = Checkpoint()
-    param_value = checkpoint_list.value.add()
-    param_value.tag = name
-    param_tensor = param_value.tensor
-    param_tensor.dims.extend(0)
-    param_tensor.tensor_type = "random_op"
-    param_tensor.tensor_content = value
-    f.write(checkpoint_list.SerializeToString())
-
-
-def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter data into protobuf file."""
     data_size = value[2].nbytes / 1024
     if data_size > SLICE_SIZE:
@@ -475,14 +487,18 @@ def _write_parameter_data(name, value, f, enc_key, plain_data, crc_num=0, crc_ch
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
-def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False):
+def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, crc_check=False, ckpt_total_io_time=0):
     """Write parameter bytes data into protobuf file."""
     bytes_value = value[2].get_bytes()
     chunk_size = 1024 * SLICE_SIZE
@@ -500,11 +516,15 @@ def _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num=0, 
             output_data = checkpoint_list.SerializeToString()
             if crc_check:
                 crc_num = binascii.crc32(output_data, crc_num)
+            io_start_time = time.time()
             f.write(output_data)
+            io_end_time = time.time()
+            io_cost_time = io_end_time - io_start_time
+            ckpt_total_io_time += io_cost_time
         else:
             plain_data.write(checkpoint_list.SerializeToString())
 
-    return crc_num
+    return crc_num, ckpt_total_io_time
 
 
 def _write_mapparameter(name, value, f, map_param_inc=False):
@@ -568,7 +588,7 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
     return ckpt_file_name
 
 
-def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
+def _check_load_checkpoint_unsupported_param(format, dec_key, dec_mode):
     """check load checkpoint unsupported param"""
     if format != "safetensors":
         return
@@ -583,15 +603,13 @@ def _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode):
                              f"be set to default value '{default_value}', but got '{current_value}'.")
 
 
-def _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
-                                             global_step_num=None):
+def _check_save_checkpoint_unsupported_param(format, enc_key, enc_mode, map_param_inc=False, global_step_num=None):
     """check save checkpoint unsupported param"""
     if format != "safetensors":
         return
     default_params = {
         "enc_key": None,
         "enc_mode": "AES-GCM",
-        "async_save": False,
         "map_param_inc": False,
         "global_step_num": None
     }
@@ -615,11 +633,11 @@ def _check_async_save(async_save):
 
 
 def _async_process_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_param_inc=False,
-                        crc_check=False, format="ckpt", cond=None):
+                        crc_check=False, format="ckpt", cond=None, remove_redundancy=None):
     """Check whether the process is pulled up successfully, execute the process of saving checkpoint into file."""
     with cond:
         cond.notify()
-    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+    _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
 
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
@@ -633,15 +651,18 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
 
     Args:
         save_obj (Union[Cell, list, dict]): The object to be saved. The data type can be :class:`mindspore.nn.Cell`,
-            list, or dict. If a list, it can be the returned value of `Cell.trainable_params()`, or a list of dict
-            elements(each element is a dictionary, like [{"name": param_name, "data": param_data},...], the type of
-            `param_name` must be string, and the type of `param_data` must be parameter or Tensor); If dict,
-            it can be the returned value of `mindspore.load_checkpoint()`.
+            list, or dict.
+
+            - If a list, it can be the returned value of `Cell.trainable_params()`, or a list of dict
+              elements(each element is a dictionary, like [{"name": param_name, "data": param_data},...], the type of
+              `param_name` must be string, and the type of `param_data` must be parameter or Tensor).
+            - If dict, it can be the returned value of :func:`mindspore.load_checkpoint`.
+
         ckpt_file_name (str): Checkpoint file name. If the file name already exists, it will be overwritten.
         integrated_save (bool): Whether to integrated save in automatic model parallel scene. Default: ``True`` .
-        async_save (Union[bool, str]): Whether to use asynchronous saving of the checkpoint file, if True,
-                                    the asynchronous thread is used by default. If the type is string,
-                                    the method of asynchronous saving, it can be "process" or "thread".
+        async_save (Union[bool, str], optional): Whether to use asynchronous saving of the checkpoint file or
+                                    safetensors file, if True, the asynchronous thread is used by default. If the type
+                                    is string, the method of asynchronous saving, it can be "process" or "thread".
                                     Default: ``False`` .
         append_dict (dict): Additional information that needs to be saved. The key of dict must be str, the value
                             of dict must be one of int, float, bool, string, Parameter or Tensor. Default: ``None`` .
@@ -652,9 +673,12 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                         Default: ``"AES-GCM"`` .
         choice_func (function) : A function for saving custom selected parameters. The input value of `choice_func` is
                                  a parameter name in string type, and the returned value is a bool.
-                                 If returns ``True`` , the Parameter that matching the custom condition will be saved.
-                                 If returns ``False`` , the Parameter that not matching the custom condition will not
-                                 be saved. Default: ``None`` .
+                                 Default: ``None`` .
+
+                                 - If returns ``True`` , the Parameter that matching the custom condition will be saved.
+                                 - If returns ``False`` , the Parameter that not matching the custom condition will not
+                                   be saved.
+
         crc_check (bool) : Whether to perform crc32 calculation when saving checkpoint and save the calculation
             result to the file. Default: ``False`` .
         format (str): Format of the output file, can be "ckpt" or "safetensors". Default: "ckpt".
@@ -693,6 +717,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_save_time = time.time()
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
     async_save = _check_async_save(async_save)
@@ -703,12 +728,17 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_save_checkpoint_upsupported_param(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
+    remove_redundancy = kwargs.get('remove_redundancy', None)
+    remove_redundancy = Validator.check_isinstance("remove_redundancy", remove_redundancy, (type(None), bool))
+    _check_save_checkpoint_unsupported_param(format, enc_key, enc_mode, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
         with mindspore.hal.StreamCtx(s1):
             save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+            for k_name, value in append_dict.items():
+                if isinstance(value, (Tensor, Parameter)):
+                    append_dict[k_name] = Tensor(Tensor_.move_to(value, "CPU", False))
         s1.synchronize()
     else:
         save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
@@ -729,16 +759,6 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     data_list_np = OrderedDict()
     with _ckpt_mutex:
         for param in save_obj:
-            if param["name"] == "random_op":
-                if os.getenv("AITURBO") == "1":
-                    data_list_np["random_op"] = []
-                    data_list_np["random_op"].append(param["data"])
-                    if crc_check:
-                        bytes_value = bytes(data_list_np[key][0])
-                        data_list_np[key].append(binascii.crc32(bytes_value))
-                else:
-                    data_list["random_op"] = param["data"]
-                continue
             key = param["name"]
             data_list[key] = []
             data_list_np[key] = []
@@ -779,9 +799,11 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"] if async_save != "process" else param["data"].asnumpy()
+                    data = param["data"] if async_save is False else param["data"].asnumpy()
                     data_list[key].append(data)
 
+    from mindspore.profiler import mstx
+    range_id = mstx.range_start('save_checkpoint', None)
     if os.getenv("AITURBO") == "1":
         from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
         ckpt_name = os.path.basename(ckpt_file_name)
@@ -800,7 +822,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                 while process_flag:
                     process = ctx.Process(target=_async_process_save,
                                           args=(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check,
-                                                format, cond), daemon=True, name="asyn_save_ckpt")
+                                                format, cond, remove_redundancy), daemon=True, name="asyn_save_ckpt")
                     process.start()
                     with cond:
                         wait_flag = cond.wait(timeout=5)
@@ -813,13 +835,39 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
             data_copy = copy.deepcopy(data_list)
             _wait_async_thread_save_ckpt()
             thr = Thread(target=_exec_save,
-                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
+                         args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format,
+                               remove_redundancy),
                          name="asyn_save_ckpt")
             thr.start()
     else:
-        _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+        _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format, remove_redundancy)
 
+    mstx.range_end(range_id)
     logger.info("Saving checkpoint process is finished.")
+    end_save_time = time.time()
+    save_checkpoint_cost_time = end_save_time - start_save_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save checkpoint cost time {save_checkpoint_cost_time}.")
+
+
+def _handle_shared_param_for_pipeline_parallel(save_obj):
+    """ Remove shared param for save_obj """
+    filtered_save_obj = []
+    for param_dict in save_obj:
+        cur_param = param_dict['data']
+        if isinstance(cur_param, Parameter):
+            if not cur_param.param_info.is_pipeline_shared_param:
+                filtered_save_obj.append(param_dict)
+        else:
+            filtered_save_obj.append(param_dict)
+    return filtered_save_obj
+
+
+def _is_auto_parallel_mode(save_obj):
+    """Check if in auto parallel mode by verifying parameter initialization."""
+    for _, param in save_obj.parameters_and_names():
+        if param.param_info.is_param_init:
+            return True
+    return False
 
 
 def _convert_list_to_param_list(save_obj, choice_func):
@@ -860,10 +908,13 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     """Convert a dict of Parameter to param_list."""
     param_list = []
     for (key, value) in save_obj.items():
-        if isinstance(key, str) and isinstance(value, (Parameter, str)):
+        if isinstance(key, str):
             if choice_func is not None and not choice_func(key):
                 continue
-            each_param = {"name": key, "data": value}
+            if isinstance(value, np.ndarray):
+                each_param = {"name": key, "data": Parameter(Tensor.from_numpy(value))}
+            if isinstance(value, (Parameter, str)) or _is_buffer_type(value):
+                each_param = {"name": key, "data": value}
             param_list.append(each_param)
         else:
             raise TypeError(f"For save_checkpoint, when save_obj is made up by dict, the key should be str and"
@@ -872,15 +923,15 @@ def _convert_dict_to_param_dict(save_obj, choice_func):
     return param_list
 
 
-def _convert_cell_param_and_names_to_dict(save_obj, choice_func):
+def _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode):
     """Convert cell.parameters_and_names to OrderedDict."""
     param_dict = OrderedDict()
+    is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
     for _, param in save_obj.parameters_and_names():
-        not_sliced = not param.sliced
-        is_graph_mode = context.get_context('mode') == context.GRAPH_MODE
         # All parameters are initialized immediately under PyNative mode, skip this judgement.
-        judgment = not_sliced or param.has_init
-        if is_graph_mode and _is_in_auto_parallel_mode() and judgment:
+        if param.param_info.is_pipeline_shared_param:
+            continue
+        if is_parallel_mode and is_graph_mode and (not param.sliced or param.has_init):
             continue
         if choice_func is not None and not choice_func(param.name):
             continue
@@ -898,17 +949,12 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     sync_pipeline_shared_parameters(save_obj)
     param_list = []
     parameter_layout_dict = save_obj.parameter_layout_dict
-    if _is_in_auto_parallel_mode() and not parameter_layout_dict:
+    is_parallel_mode = _is_auto_parallel_mode(save_obj)
+    if is_parallel_mode and not parameter_layout_dict:
         parameter_layout_dict = _get_parameter_layout()
-    if not _is_in_auto_parallel_mode():
+    if not is_parallel_mode:
         save_obj.init_parameters_data()
-    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func)
-    if append_dict and "random_op" in append_dict:
-        phase = 'train' + '.' + str(save_obj.create_time) + '.' + str(id(save_obj)) + '.' + save_obj.arguments_key
-        if phase in save_obj.compile_cache and _executor.has_compiled(phase):
-            random_byte = _executor._graph_executor.get_random_status(phase)
-            param_list.append({"name": "random_op", "data": random_byte})
-            append_dict.pop("random_op")
+    param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode)
     for (key, value) in param_dict.items():
         each_param = {"name": key}
         if isinstance(value, MapParameter):
@@ -931,15 +977,14 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_data.append(str(param_tensor.dtype))
             param_data.append(value.key)
         else:
-            param_data = value.data
             if append_dict and "__exception_save__" in append_dict:
                 param_data = Tensor(Tensor_.move_to(value, "CPU", False))
+            else:
+                param_data = Tensor(value.data)
 
             # in automatic model parallel scenario, some parameters were split to all the devices,
             # which should be combined before saving
             if key in parameter_layout_dict:
-                if not append_dict or "__exception_save__" not in append_dict:
-                    param_data = Tensor(value.data)
                 param_data = _get_merged_param_data(save_obj, parameter_layout_dict, key, param_data,
                                                     integrated_save)
 
@@ -950,11 +995,14 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
 
 def _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func):
     """Convert a save_obj to param_list."""
-    if isinstance(save_obj, list):
-        return _convert_list_to_param_list(save_obj, choice_func)
+    if isinstance(save_obj, (list, dict)):
+        if isinstance(save_obj, list):
+            save_obj = _convert_list_to_param_list(save_obj, choice_func)
 
-    if isinstance(save_obj, dict):
-        return _convert_dict_to_param_dict(save_obj, choice_func)
+        if isinstance(save_obj, dict):
+            save_obj = _convert_dict_to_param_dict(save_obj, choice_func)
+
+        return _handle_shared_param_for_pipeline_parallel(save_obj)
 
     return _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_func)
 
@@ -985,11 +1033,8 @@ def _check_append_dict(append_dict):
     return append_dict
 
 
-def _check_load_obfuscate(**kwargs):
-    if 'obf_func' in kwargs.keys():
-        customized_func = _check_customized_func(kwargs.get('obf_func'))
-        clean_funcs()
-        add_opaque_predicate(customized_func.__name__, customized_func)
+def _is_buffer_type(value):
+    if isinstance(value, Tensor) and getattr(value, "_is_buffer", False):
         return True
     return False
 
@@ -1006,20 +1051,18 @@ def load(file_name, **kwargs):
         kwargs (dict): Configuration options dictionary.
 
             - dec_key (bytes): Byte-type key used for decryption. The valid length is 16, 24, or 32.
-            - dec_mode (Union[str, function]): Specifies the decryption mode, to take effect when dec_key is set.
+            - dec_mode (Union[str, function], optional):
+              Specifies the decryption mode, to take effect when dec_key is set.
 
               - Option: 'AES-GCM', 'AES-CBC', 'SM4-CBC' or customized decryption. Default: ``'AES-GCM'``.
               - For details of using the customized decryption, please check the `tutorial
                 <https://mindspore.cn/mindarmour/docs/en/master/model_encrypt_protection.html>`_.
 
-            - obf_func (function): A python function used for loading obfuscated MindIR model, which can refer to
-              `obfuscate_model()
-              <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.obfuscate_model.html>`_.
-
     Returns:
         GraphCell, a compiled graph that can executed by `GraphCell`.
 
     Raises:
+        NotImplementedError: Dynamic model structure obfuscation is no longer supported.
         ValueError: MindIR file does not exist or `file_name` is not a string.
         RuntimeError: Failed to parse MindIR file.
 
@@ -1046,6 +1089,8 @@ def load(file_name, **kwargs):
         - `Saving and Loading the Model - Saving and Loading MindIR
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-mindir>`_
     """
+    if 'obf_func' in kwargs.keys():
+        raise NotImplementedError("Dynamic model structure obfuscation is no longer supported.")
     if not isinstance(file_name, str):
         raise ValueError("For 'load', the argument 'file_name' must be string, but "
                          "got {}.".format(type(file_name)))
@@ -1056,9 +1101,6 @@ def load(file_name, **kwargs):
         raise ValueError("For 'load', the argument 'file_name'(MindIR file) does not exist, "
                          "please check whether the 'file_name' is correct.")
     file_name = os.path.realpath(file_name)
-
-    # set customized functions for dynamic obfuscation
-    obfuscated = _check_load_obfuscate(**kwargs)
 
     logger.info("Execute the process of loading mindir.")
     if 'dec_key' in kwargs.keys():
@@ -1072,9 +1114,9 @@ def load(file_name, **kwargs):
             else:
                 dec_mode = Validator.check_isinstance('dec_mode', kwargs.get('dec_mode'), str)
         graph = load_mindir(file_name, dec_key=dec_key, key_len=len(dec_key), dec_mode=dec_mode,
-                            decrypt=dec_func, obfuscated=obfuscated)
+                            decrypt=dec_func)
     else:
-        graph = load_mindir(file_name, obfuscated=obfuscated)
+        graph = load_mindir(file_name)
 
     if graph is None:
         if _is_cipher_file(file_name):
@@ -1141,199 +1183,54 @@ def _check_param_type(param_config, key, target_type, requested):
     if key in param_config:
         if not isinstance(param_config[key], target_type):
             raise TypeError("The type of {} must be {}, but got {}.".format(key, target_type, type(param_config[key])))
-        if key == 'obf_random_seed':
-            if param_config[key] > INT_64_MAX or param_config[key] <= 0:
-                raise ValueError(
-                    "'obf_random_seed' must be in (0, INT_64_MAX({})], but got {}.".format(INT_64_MAX,
-                                                                                           param_config[key]))
         return param_config[key]
     if requested:
         raise ValueError("The parameter {} is requested, but not got.".format(key))
-    if key == "obf_random_seed":
-        return 0
     return None
 
 
-def _check_customized_func(customized_func):
-    """ check customized function of dynamic obfuscation """
-    if not callable(customized_func):
-        raise TypeError(
-            "'customized_func' must be a function, but not got {}.".format(type(customized_func)))
-    # test customized_func
-    try:
-        func_result = customized_func(1.0, 1.0)
-    except Exception as ex:
-        raise TypeError("customized_func must be a function with two inputs, but got exception: {}".format(ex))
-    else:
-        if not isinstance(func_result, bool):
-            raise TypeError("Return value of customized_func must be boolean, but got: {}".format(type(func_result)))
-    return customized_func
-
-
-def _check_obfuscate_params(obf_config):
-    """Check obfuscation parameters, including obf_random_seed, obf_ratio, customized_func"""
-    if 'obf_random_seed' not in obf_config.keys() and 'customized_func' not in obf_config.keys():
-        raise ValueError(
-            "At least one of 'obf_random_seed' or 'customized_func' must be set in obf_config, but got None of them.")
-    obfuscate_type = _check_param_type(obf_config, "type", str, False)
-    if obfuscate_type not in (None, "dynamic"):
-        raise ValueError("Only 'dynamic' type is supported by now, but got {}.".format(obfuscate_type))
-    if ('obf_ratio' in obf_config) and isinstance(obf_config['obf_ratio'], str):
-        if obf_config['obf_ratio'] not in ["small", "medium", "large"]:
-            raise ValueError("'obf_ratio' can only be 'small', 'medium', 'large' or float, but got {}.".format(
-                obf_config['obf_ratio']))
-        ratio_dict = {"small": 0.1, "medium": 0.3, "large": 0.6}
-        obf_config['obf_ratio'] = ratio_dict.get(obf_config['obf_ratio'])
-    obf_ratio = _check_param_type(obf_config, "obf_ratio", float, True)
-    if (obf_ratio <= 0) or (obf_ratio > 1):
-        raise ValueError("'obf_ratio' must be in (0, 1] if it is a float, but got {}.".format(obf_config['obf_ratio']))
-    customized_funcs = []
-    if 'customized_func' in obf_config.keys():
-        device_target = context.get_context('device_target')
-        if device_target in ["GPU", "Ascend"]:
-            raise ValueError(
-                "Customized func mode only support 'device_target'='CPU, but got {}.".format(device_target))
-        customized_funcs.append(_check_customized_func(obf_config['customized_func']))
-    obf_random_seed = _check_param_type(obf_config, "obf_random_seed", int, False)
-    return obf_ratio, customized_funcs, obf_random_seed
-
-
-def obfuscate_model(obf_config, **kwargs):
-    """
-    Obfuscate a model of MindIR format. Obfuscation means changing the struct of a network without affecting its
-    predict correctness. The obfuscated model can prevent attackers from stealing the model.
-
-    Args:
-        obf_config (dict): obfuscation config.
-
-            - type (str): The type of obfuscation, only 'dynamic' is supported until now.
-            - original_model_path (str): The path of MindIR format model that need to be obfuscated. If the original
-              model is encrypted, then enc_key and enc_mode should be provided.
-            - save_model_path (str): The path to save the obfuscated model.
-            - model_inputs (list(Tensor)): The inputs of the original model, the values of Tensor can be random, which
-              is the same as using :func:`mindspore.export`.
-            - obf_ratio (Union(float, str)): The ratio of nodes in original model that would be obfuscated. `obf_ratio`
-              should be in range of (0, 1] or in ["small", "medium", "large"]. "small", "medium" and "large" are
-              correspond to 0.1, 0.3, and 0.6 respectively.
-            - customized_func (function): A python function used for customized function mode, which used for control
-              the switch branch of obfuscation structure. The outputs of customized_func should be boolean and const (
-              Reference to 'my_func()' in
-              `tutorials <https://www.mindspore.cn/mindarmour/docs/en/master/dynamic_obfuscation_protection.html>`_).
-              This function needs to ensure that its result is constant for any input. Users can refer to opaque
-              predicates. If customized_func is set, then it should be passed to :func:`mindspore.load` interface
-              when loading obfuscated model.
-            - obf_random_seed (int): Obfuscation random seed, which should be in (0, 9223372036854775807]. The
-              structure of obfuscated models corresponding to different random seeds is different. If
-              `obf_random_seed` is set, then it should be passed to :class:`mindspore.nn.GraphCell`
-              interface when loading
-              obfuscated model. It should be noted that at least one of `customized_func` or `obf_random_seed` should
-              be set, and the latter mode would be applied if both of them are set.
-
-        kwargs (dict): Configuration options dictionary.
-
-            - enc_key (bytes): Byte type key used for encryption. The valid length is 16, 24, or 32.
-            - enc_mode (str): Specifies the encryption mode, to take effect when dec_key is set.
-              Options: ``'AES-GCM'`` | ``'AES-CBC'`` | ``'SM4-CBC'``. Default: ``'AES-GCM'``.
-
-    Raises:
-        TypeError: If `obf_config` is not a dict.
-        ValueError: If `enc_key` is passed and `enc_mode` is not in ["AES-GCM", "AES-CBC", "SM4-CBC"].
-        ValueError: If `original_model_path` is not provided in `obf_config`.
-        ValueError: If the model saved in `original_model_path` has been obfuscated.
-        ValueError: If `save_model_path` is not provided in `obf_config`.
-        ValueError: If `obf_ratio` is not provided in `obf_config`.
-        ValueError: If both `customized_func` and `obf_random_seed` are not provided in `obf_config`.
-        ValueError: If `obf_random_seed` is not in (0, 9223372036854775807].
-        ValueError: If `original_model_path` does not exist or `original_model_path` does not end with '.mindir'.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> import numpy as np
-        >>> # Download ori_net.mindir
-        >>> # https://gitee.com/mindspore/mindspore/blob/master/tests/ut/python/mindir/ori_net.mindir
-        >>> input1 = ms.Tensor(np.ones((1, 1, 32, 32)).astype(np.float32))
-        >>> obf_config = {'original_model_path': "./net.mindir",
-        ...          'save_model_path': "./obf_net",
-        ...          'model_inputs': [input1, ],
-        ...          'obf_ratio': 0.1, 'obf_random_seed': 173262358423}
-        >>> ms.obfuscate_model(obf_config)
-        >>> obf_func = ms.load("obf_net.mindir")
-        >>> obf_net = nn.GraphCell(obf_func, obf_random_seed=173262358423)
-        >>> print(obf_net(input1).asnumpy())
-    """
-    if not isinstance(obf_config, dict):
-        raise TypeError("'obf_config' must be a dict, but got {}.".format(type(obf_config)))
-    file_path = _check_param_type(obf_config, "original_model_path", str, True)
-    if not file_path.endswith(".mindir"):
-        raise ValueError("For 'obfuscate_model', the argument 'file_path'(MindIR file) should end with '.mindir', "
-                         "please input the correct 'file_path'.")
-    if not os.path.exists(file_path):
-        raise ValueError("For 'obfuscate_model', the argument 'file_path'(MindIR file) does not exist, "
-                         "please check whether the 'file_path' is correct.")
-    saved_path = _check_param_type(obf_config, "save_model_path", str, True)
-    model_inputs = _check_param_type(obf_config, "model_inputs", list, True)
-    for item in model_inputs:
-        if not isinstance(item, Tensor):
-            raise TypeError("The item in 'model_inputs' must be Tensor, but got {}.".format(type(item)))
-        if -1 in item.shape:
-            raise ValueError(
-                "Dynamic shape input is not supported now, but got the shape of inputs: {}.".format(item.shape))
-    obf_ratio, customized_funcs, obf_random_seed = _check_obfuscate_params(obf_config)
-    if customized_funcs and obf_random_seed > 0:
-        logger.warning("Although 'customized_func' and 'obf_random_seed' are set, the 'obf_random_seed' mode would be"
-                       " applied, remember to set 'obf_random_seed' when loading obfuscated model.")
-
-    if obf_random_seed == 0:  # apply customized_func mode
-        clean_funcs()
-        for func in customized_funcs:
-            add_opaque_predicate(func.__name__, func)
-        branch_control_input = 0
-    else:  # apply password mode
-        branch_control_input = _generate_branch_control_input(obf_random_seed)
-
-    if 'enc_key' in kwargs.keys():
-        enc_key = Validator.check_isinstance('enc_key', kwargs.get('enc_key'), bytes)
-        enc_mode = "AES-GCM"
-        if 'enc_mode' in kwargs.keys():
-            enc_mode = Validator.check_isinstance('enc_mode', kwargs.get('enc_mode'), str)
-            if enc_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
-                raise ValueError(
-                    "Only MindIR files that encrypted with 'AES-GCM', 'AES-CBC' or 'SM4-CBC' is supported for"
-                    "obfuscate_model(), but got {}.".format(enc_mode))
-        obf_graph = dynamic_obfuscate_mindir(file_name=file_path, obf_ratio=obf_ratio,
-                                             branch_control_input=branch_control_input, dec_key=enc_key,
-                                             key_len=len(enc_key),
-                                             dec_mode=enc_mode)
-    else:
-        obf_graph = dynamic_obfuscate_mindir(file_name=file_path, obf_ratio=obf_ratio,
-                                             branch_control_input=branch_control_input)
-
-    obf_net = nn.GraphCell(obf_graph)
-    if obf_random_seed != 0:
-        append_y_tensor = Tensor(np.ones((1, 1)).astype(np.int32))
-        model_inputs += [append_y_tensor]
-    export(obf_net, *model_inputs, file_name=saved_path, file_format="MINDIR", **kwargs)
+def _check_remove_redundancy(remove_redundancy, f):
+    """Check whether remove_redundancy is consistent with the safetensors file."""
+    if f.metadata() is not None and "remove_redundancy" in f.metadata().keys():
+        if f.metadata()["remove_redundancy"] == "True" and not remove_redundancy:
+            logger.warning("For 'load_checkpoint', the safetensors file is deduplicated, "
+                           "but remove_redundancy is set to False.")
+            return True
+        if f.metadata()["remove_redundancy"] == "False" and remove_redundancy:
+            logger.warning("For 'load_checkpoint', the safetensors file is non-deduplicated, "
+                           "but remove_redundancy is set to True.")
+            return False
+    return remove_redundancy
 
 
 def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
-                          dec_mode, crc_check, format):
+                          dec_mode, crc_check, format, remove_redundancy):
     """load parameter into parameter_dict"""
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
-        with safe_open(ckpt_file_name, framework='np') as f:
+        with _fast_safe_open(ckpt_file_name, framework='np') as f:
             cal_crc_num = 0
-            sf_load_time_start = time.time()
+            total_io_cost_time = 0
             for k in sorted(f.keys()):
                 if crc_check:
                     cal_crc_num = binascii.crc32(bytes(k, encoding='utf-8'), cal_crc_num)
                     cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
                 if choice_func is not None and not choice_func(k):
                     continue
-                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
-            sf_load_time_end = time.time()
-            cost_time = sf_load_time_end - sf_load_time_start
-            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
+                io_start_time = time.time()
+                value = f.get_tensor(k)
+                io_end_time = time.time()
+                io_cost_time = io_end_time - io_start_time
+                total_io_cost_time += io_cost_time
+                if f.metadata() is not None and k in f.metadata().keys():
+                    sf_dtype = f.metadata()[k]
+                    ms_dtype = safetensors_to_mstype[sf_dtype]
+                    parameter_dict[k] = Parameter(Tensor(value, dtype=ms_dtype))
+                else:
+                    parameter_dict[k] = Parameter(Tensor.from_numpy(value))
+            remove_redundancy = _check_remove_redundancy(remove_redundancy, f)
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       f"Load safetensors io cost time:{total_io_cost_time}.")
             if crc_check:
                 if f.metadata() is None or f.metadata().get("crc_num") is None:
                     logger.warning(
@@ -1344,7 +1241,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     if cal_crc_num != crc_num:
                         raise ValueError("For 'load_checkpoint', the crc check has failed. "
                                          "Please check whether the ckpt file is damaged.")
-        return
+        return remove_redundancy
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
         param_data_list = []
@@ -1357,9 +1254,6 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
             logger.warning("For load_checkpoint, this parameter `filter_prefix` will be deprecated, "
                            "please use `choice_func` instead.")
         for element_id, element in enumerate(checkpoint_list.value):
-            if element.tag == "random_op":
-                parameter_dict["random_op"] = element.tensor.tensor_content
-                continue
             if not _whether_load_param(specify_prefix, filter_prefix, element.tag):
                 continue
             if specify_prefix is None and filter_prefix is None and \
@@ -1397,6 +1291,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                     _offload_if_config(parameter)
 
         logger.info("Loading checkpoint files process is finished.")
+        return remove_redundancy
 
     except BaseException as e:
         logger.critical("Failed to load the checkpoint file '%s'.", ckpt_file_name)
@@ -1411,38 +1306,40 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     Load checkpoint info from a specified file.
 
     Note:
-        - `specify_prefix` and `filter_prefix` do not affect each other.
-        - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - `specify_prefix` and `filter_prefix` are in the process of being deprecated,
-          `choice_func` is recommended instead.
+          `choice_func` is recommended instead. `specify_prefix` and `filter_prefix` do not affect each other.
           And using either of those two args will override `choice_func` at the same time.
+        - If none of the parameters are loaded from checkpoint file, it will throw ValueError.
         - When loading a checkpoint that has removed redundancy, the network should be compiled.
+        - When `net` is not None, it will verify whether the `remove_redundancy` parameter matches the
+          deduplication flag in the loaded safetensors file. If they are different, load the file according to
+          the deduplication flag in the file.
 
     Args:
         ckpt_file_name (str): Checkpoint file name.
-        net (Cell): The network where the parameters will be loaded. Default: ``None`` .
-        strict_load (bool): Whether to strict load the parameter into net. If ``False`` , it will load parameter
-                            into net when parameter name's suffix in checkpoint file is the same as the
+        net (Cell, optional): The network where the parameters will be loaded. Default: ``None`` .
+        strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` , it will load
+                            parameter into net when parameter name's suffix in checkpoint file is the same as the
                             parameter in the network. When the types are inconsistent perform type conversion
                             on the parameters of the same type, such as float32 to float16. Default: ``False`` .
-        filter_prefix (Union[str, list[str], tuple[str]]): Deprecated(see `choice_func`). Parameters starting with the
-            filter_prefix will not be loaded. Default: ``None`` .
-        dec_key (Union[None, bytes]): Byte type key used for decryption. If the value is ``None`` , the decryption
-                                      is not required. Default: ``None`` .
-        dec_mode (str): This parameter is valid only when dec_key is not set to ``None`` . Specifies the decryption
-                        mode, currently supports ``"AES-GCM"`` and ``"AES-CBC"`` and ``"SM4-CBC"`` .
+        filter_prefix (Union[str, list[str], tuple[str]], optional): Deprecated(see `choice_func`).
+            Parameters starting with the filter_prefix will not be loaded. Default: ``None`` .
+        dec_key (Union[None, bytes], optional): Byte type key used for decryption. If the value is ``None`` ,
+                                      the decryption is not required. Default: ``None`` .
+        dec_mode (str, optional): This parameter is valid only when dec_key is not set to ``None`` . Specifies the
+                        decryption mode, currently supports ``"AES-GCM"`` and ``"AES-CBC"`` and ``"SM4-CBC"`` .
                         Default: ``"AES-GCM"`` .
-        specify_prefix (Union[str, list[str], tuple[str]]): Deprecated(see `choice_func`). Parameters starting with the
-            specify_prefix will be loaded. Default: ``None`` .
-        choice_func (Union[None, function]) : Input value of the function is a Parameter name of type string,
+        specify_prefix (Union[str, list[str], tuple[str]], optional): Deprecated(see `choice_func`).
+            Parameters starting with the specify_prefix will be loaded. Default: ``None`` .
+        choice_func (Union[None, function], optional) : Input value of the function is a Parameter name of type string,
             and the return value is a bool. If returns ``True`` , the Parameter
             that matches the custom condition will be loaded. If returns ``False`` , the Parameter that
             matches the custom condition will be removed. Default: ``None`` .
-        crc_check (bool) : Whether to perform crc32 validation when loading checkpoint. Default: ``False`` .
-        remove_redundancy (bool): Whether to enable loading of checkpoint saved with redundancy removal.
+        crc_check (bool, optional) : Whether to perform crc32 validation when loading checkpoint. Default: ``False`` .
+        remove_redundancy (bool, optional): Whether to enable loading of checkpoint saved with redundancy removal.
             Redundancy removal refers to eliminating redundant data in data parallelism mode. Default: ``False`` , means
             redundant-free loading is not enabled.
-        format (str): Format of the input file, can be "ckpt" or "safetensors". Default: "ckpt".
+        format (str, optional): Format of the input file, can be "ckpt" or "safetensors". Default: "ckpt".
 
     Returns:
         Dict, key is parameter name, value is a Parameter or string. When the `append_dict` parameter of
@@ -1487,6 +1384,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    start_load_time = time.time()
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
@@ -1494,7 +1392,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
     crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
-    _check_load_checkpoint_upsupported_param(format, dec_key, dec_mode)
+    _check_load_checkpoint_unsupported_param(format, dec_key, dec_mode)
     logger.info("Execute the process of loading checkpoint files.")
 
     parameter_dict = {}
@@ -1520,8 +1418,8 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
                                      f"passed the CRC check and has been corrupted.")
                 parameter_dict[key] = Parameter(Tensor(value[0]), name=key)
     else:
-        _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
-                              dec_mode, crc_check, format)
+        remove_redundancy = _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix,
+                                                  choice_func, dec_key, dec_mode, crc_check, format, remove_redundancy)
 
     if not parameter_dict:
         raise ValueError(f"The loaded parameter dict is empty after filter or specify, please check whether "
@@ -1535,6 +1433,9 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         _warm_up_host_cache_post_process(is_worker, net_dict, warm_up_dict)
 
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Load checkpoint is finished.")
+    end_load_time = time.time()
+    load_checkpoint_cost_time = end_load_time - start_load_time
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load checkpoint cost time {load_checkpoint_cost_time}.")
     return parameter_dict
 
 
@@ -1554,7 +1455,7 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
           And using either of those two args will override `choice_func` at the same time.
 
     Args:
-        ckpt_file_name (str): Checkpoint file name.
+        ckpt_file_name (str): Checkpoint file name. The file extension must be `ckpt` or `safetensors` .
         net (Cell, optional): The network where the parameters will be loaded. Default: ``None`` .
         strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` , it will load
                                       parameter into net when parameter name's suffix in checkpoint file is the
@@ -1612,10 +1513,11 @@ def load_checkpoint_async(ckpt_file_name, net=None, strict_load=False, filter_pr
         >>> model.train(2, dataset)
         >>> print("param dict len: ", len(param_dict), flush=True)
     """
+    format = "safetensors" if ckpt_file_name.endswith(".safetensors") else "ckpt"
     from concurrent.futures import ThreadPoolExecutor
     executor = ThreadPoolExecutor(max_workers=2)
     param_dict_future = executor.submit(load_checkpoint, ckpt_file_name, net, strict_load, filter_prefix,
-                                        dec_key, dec_mode, specify_prefix, choice_func)
+                                        dec_key, dec_mode, specify_prefix, choice_func, format=format)
     return ParamDictFuture(executor, param_dict_future)
 
 
@@ -1703,7 +1605,7 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
                 pb_content = f.read()
                 ckpt_load_time_end = time.time()
                 cost_time = ckpt_load_time_end - ckpt_load_time_start
-                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt cost time:{cost_time}.")
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt io cost time:{cost_time}.")
 
         else:
             pb_content = _decrypt(ckpt_file_name, dec_key, len(dec_key), dec_mode)
@@ -1764,9 +1666,22 @@ def _check_load_param_into_net(net, parameter_dict):
         msg = ("For 'load_param_into_net', the argument 'parameter_dict' should be a dict, "
                "but got {}.".format(type(parameter_dict)))
         raise TypeError(msg)
-    if "random_op" in parameter_dict.keys():
-        net._add_attr("random_op_snapshot", parameter_dict["random_op"])
-        parameter_dict.pop("random_op")
+    for key, value in parameter_dict.items():
+        if not isinstance(key, str) or not isinstance(value, (Parameter, str, list)):
+            logger.critical("Load parameters into net failed.")
+            msg = ("For 'parameter_dict', the element in the argument 'parameter_dict' should be a "
+                   "'str' and 'Parameter' , but got {} and {}.".format(type(key), type(value)))
+            raise TypeError(msg)
+
+
+def _check_remove_redundancy_net(net):
+    """Check whether the network is compiled with the remove_redundancy feature."""
+    if get_group_size() == 1:
+        raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
+                        f"in parallel scenarios, but got stand_alone.")
+    if not net.compile_cache and not net.parameter_layout_dict:
+        raise ValueError("When loading a parameter dict that has removed redundancy, "
+                         "the network should be compiled.")
 
 
 def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundancy=False):
@@ -1774,17 +1689,18 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     Load parameters into network, return parameter list that are not loaded in the network.
 
     Note:
-        - When loading a parameter dict that has removed redundancy, the network should be compiled.
+        When loading a parameter dict that has removed redundancy, the network should be compiled.
 
     Args:
         net (Cell): The network where the parameters will be loaded.
         parameter_dict (dict): The dictionary generated by load checkpoint file,
                                it is a dictionary consisting of key: parameters's name, value: parameter.
-        strict_load (bool): Whether to strict load the parameter into net. If ``False`` , it will load parameter
+        strict_load (bool, optional): Whether to strict load the parameter into net. If ``False`` ,
+                            it will load parameter
                             into net when parameter name's suffix in checkpoint file is the same as the
                             parameter in the network. When the types are inconsistent perform type conversion
                             on the parameters of the same type, such as float32 to float16. Default: ``False`` .
-        remove_redundancy (bool): Whether to enable loading of checkpoint saved with redundancy removal.
+        remove_redundancy (bool, optional): Whether to enable loading of checkpoint saved with redundancy removal.
             Redundancy removal refers to eliminating redundant data in data parallelism mode. Default: ``False`` , means
             redundant-free loading is not enabled.
 
@@ -1812,19 +1728,17 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
     _check_load_param_into_net(net, parameter_dict)
-    for key, value in parameter_dict.items():
-        if not isinstance(key, str) or not isinstance(value, (Parameter, str, list)):
-            logger.critical("Load parameters into net failed.")
-            msg = ("For 'parameter_dict', the element in the argument 'parameter_dict' should be a "
-                   "'str' and 'Parameter' , but got {} and {}.".format(type(key), type(value)))
-            raise TypeError(msg)
 
     strict_load = Validator.check_bool(strict_load)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
     logger.info("Execute the process of loading parameters into net.")
     param_not_load = []
+    param_loaded = set()
     ckpt_not_load = list(parameter_dict.keys())
+    is_parallel_mode = _is_auto_parallel_mode(net)
     for _, param in net.parameters_and_names():
+        if param.param_info.is_pipeline_shared_param:
+            continue
         if param.name in parameter_dict:
             if isinstance(param, MapParameter):
                 param.import_data(parameter_dict[param.name])
@@ -1837,37 +1751,31 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
             if hasattr(param, "init_param") and not param.init_param:
                 param.init_param = True
             ckpt_not_load.remove(param.name)
+            param_loaded.add(param.name)
         else:
+            if param.name.startswith("accu_grads"):
+                continue
+            if param.param_info.is_pipeline_shared_param:
+                continue
+            if is_parallel_mode and not param.sliced:
+                continue
             param_not_load.append(param.name)
 
     if param_not_load and not strict_load:
         _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_load)
+
+    if remove_redundancy:
+        _check_remove_redundancy_net(net)
+        param_layout = net.parameter_layout_dict
+        _single_parameter_broadcast(net, param_layout, param_not_load, param_loaded)
 
     logger.info("Loading parameters into net is finished.")
     if param_not_load:
         logger.warning("For 'load_param_into_net', "
                        "{} parameters in the 'net' are not loaded, because they are not in the "
                        "'parameter_dict', please check whether the network structure is consistent "
-                       "when training and loading checkpoint. Another possibility is that "
-                       "the redundant loading is not enabled, but the loaded checkpoint is saved with "
-                       "redundancy removed. ".format(len(param_not_load)))
+                       "when training and loading checkpoint.".format(len(param_not_load)))
         logger.warning("{} are not loaded.".format(param_not_load))
-    if remove_redundancy:
-        parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        if parallel_mode == "stand_alone":
-            raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
-                            f"in parallel scenarios, but got {parallel_mode}.")
-        if not net.compile_cache and not net.parameter_layout_dict:
-            raise ValueError("When loading a parameter dict that has removed redundancy, "
-                             "the network should be compiled.")
-        param_layout = net.parameter_layout_dict
-        rank_id = get_rank()
-        device_num = _get_device_num()
-        stage_num = _get_auto_parallel_context("pipeline_stages")
-        chunk_size = device_num // stage_num
-        initial_rank = (rank_id // chunk_size) * chunk_size
-        _single_parameter_broadcast(net, param_layout, rank_id, initial_rank)
-
     return param_not_load, ckpt_not_load
 
 
@@ -1974,9 +1882,10 @@ def _save_graph(network, file_name):
         file_name (str): Graph file name into which the graph will be saved.
     """
     logger.info("Execute the process of saving graph.")
-
     file_name = os.path.realpath(file_name)
     graph_pb = network.get_func_graph_proto()
+    if os.path.isfile(file_name) and graph_pb:
+        os.remove(file_name)
     if graph_pb:
         with open(file_name, "wb") as f:
             os.chmod(file_name, stat.S_IRUSR | stat.S_IWUSR)
@@ -2050,9 +1959,6 @@ def _get_merged_param_data(net, parameter_layout_dict, param_name, param_data, i
             elif opt_shard_group:
                 allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
                                                    tuple(after_reshape_slice_shape))
-        elif opt_shard_group and context.get_auto_parallel_context("optimizer_weight_shard_aggregated_save"):
-            allgather_net = get_allgather_cell(opt_shard_group, False, do_reshape,
-                                               tuple(after_reshape_slice_shape))
         net.parallel_parameter_merge_net_dict[param_name] = allgather_net
     if allgather_net:
         param_data = allgather_net(param_data)
@@ -2106,27 +2012,6 @@ def export(net, *inputs, file_name, file_format, **kwargs):
 
             - dataset (Dataset): Specifies the preprocessing method of the dataset, which is used to import the
               preprocessing of the dataset into MindIR.
-
-            - obf_config (dict): obfuscation config.
-
-              - type (str): The type of obfuscation, only 'dynamic' is supported until now.
-              - obf_ratio (float, str): The ratio of nodes in original model that would be obfuscated. `obf_ratio`
-                should be in range of (0, 1] or in ["small", "medium", "large"]. "small", "medium" and "large" are
-                correspond to 0.1, 0.3, and 0.6 respectively.
-              - customized_func (function): A python function used for customized function mode, which used for control
-                the switch branch of obfuscation structure. The outputs of customized_func should be boolean and const (
-                Reference to 'my_func()' in
-                `tutorials <https://www.mindspore.cn/mindarmour/docs/en/master/dynamic_obfuscation_protection.html>`_).
-                This function needs to ensure that its result is constant for any input. Users can refer to opaque
-                predicates. If customized_func is set, then it should be passed to `load()` interface when loading
-                obfuscated model.
-              - obf_random_seed (int): Obfuscation random seed, which should be in (0, 9223372036854775807]. The
-                structure of obfuscated models corresponding to different random seeds is different. If
-                `obf_random_seed` is set, then it should be passed
-                to :class:`mindspore.nn.GraphCell` interface when loading
-                obfuscated model. It should be noted that at least one of `customized_func` or `obf_random_seed` should
-                be set, and the latter mode would be applied if both of them are set.
-
             - incremental (bool): export MindIR incrementally.
 
             - custom_func (function): Functions for custom defined export policies. This function will be used to
@@ -2160,6 +2045,8 @@ def export(net, *inputs, file_name, file_format, **kwargs):
         - `Saving and Loading the Model - Saving and Loading MindIR
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-mindir>`_
     """
+    if 'obf_func' in kwargs.keys():
+        raise NotImplementedError("Dynamic model structure obfuscation is no longer supported.")
     old_ms_jit_value = context.get_context("jit_syntax_level")
     context.set_context(jit_syntax_level=mindspore.STRICT)
 
@@ -2241,8 +2128,6 @@ def _export(net, file_name, file_format, *inputs, **kwargs):
     It is an internal conversion function. Export the MindSpore prediction model to a file in the specified format.
     """
     logger.info("exporting model file:%s format:%s.", file_name, file_format)
-    if "obf_config" in kwargs and file_format != "MINDIR":
-        raise ValueError(f"Dynamic obfuscation only support for MindIR format, but got {file_format} format.")
     if "custom_func" in kwargs and file_format != "MINDIR" and kwargs["custom_func"] is not None:
         raise ValueError(f"Currently only support custom_func for MindIR format, but got {file_format} format.")
     if file_format == 'AIR':
@@ -2362,7 +2247,7 @@ def _get_data_file(is_encrypt, kwargs, data_file_name):
     if is_encrypt():
         place_holder_data = _encrypt(place_holder_data, len(place_holder_data), kwargs["enc_key"],
                                      len(kwargs["enc_key"]), kwargs["enc_mode"])
-    parameter_size = (offset / 1024)
+    parameter_size = offset / 1024
     try:
         f = open(data_file_name, "wb")
         f.write(place_holder_data)
@@ -2404,9 +2289,11 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
     external_local = os.path.join(file_prefix + "_variables", "data_" + str(index))
     data_file_name = os.path.join(dirname, external_local)
     f, parameter_size, offset = _get_data_file(is_encrypt, kwargs, data_file_name)
+
+    round = 0
+    names = []
+
     try:
-        round = 0
-        names = []
         for param_proto in model.graph.parameter:
             name = param_proto.name[param_proto.name.find(":") + 1:]
             names.append((name, param_proto))
@@ -2456,14 +2343,13 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
         os.chmod(data_file_name, stat.S_IRUSR)
 
 
-def _msfunc_info(net, *inputs):
+def _msfunc_info(net, jit_executor, *inputs):
     """Get mindir stream and parameter dict of ms_function"""
     # pylint: disable=protected-access
     net_dict = OrderedDict()
-    _ms_func_executor = _MindsporeFunctionExecutor(net, time.time() * 1e9)
-    graph_id = _ms_func_executor.compile(net.__name__, *inputs)
-    mindir_stream = _executor._get_func_graph_proto(net, graph_id, 'mind_ir')
-    params = _ms_func_executor._graph_executor.get_params(graph_id)
+    graph_id = jit_executor.compile(net.__name__, *inputs)
+    mindir_stream = jit_executor._get_func_graph_proto(net, graph_id, 'mind_ir')
+    params = jit_executor._graph_executor.get_params(graph_id)
     for name, value in params.items():
         net_dict[name] = Parameter(value, name=name)
     return mindir_stream, net_dict
@@ -2475,53 +2361,21 @@ def _cell_info(net, incremental, *inputs):
     graph_id, _ = _executor.compile(net, *inputs, phase=phase_name, do_convert=False)
     # pylint: disable=protected-access
     mindir_stream = _executor._get_func_graph_proto(net, graph_id, 'mind_ir', incremental=incremental)
-    # clean obfuscation config to prevent the next call
-    _executor.obfuscate_config = None
-
     net_dict = net.parameters_dict()
     return mindir_stream, net_dict
 
 
-def _set_obfuscate_config(**kwargs):
-    """Set obfuscation config for executor."""
-    logger.warning("Obfuscate model.")
-    if 'enc_mode' in kwargs.keys():
-        enc_mode = Validator.check_isinstance('enc_mode', kwargs.get('enc_mode'), str)
-        if enc_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
-            raise ValueError(
-                "Only MindIR files that encrypted with 'AES-GCM', 'AES-CBC' or 'SM4-CBC' is supported for"
-                "obfuscation, but got {}.".format(enc_mode))
-    obf_ratio, customized_funcs, obf_random_seed = _check_obfuscate_params(kwargs.get('obf_config'))
-    if customized_funcs and obf_random_seed > 0:
-        logger.warning("Although 'customized_func' and 'obf_random_seed' are set, the 'obf_random_seed' mode would be"
-                       " applied, remember to set 'obf_random_seed' when loading obfuscated model.")
-
-    if obf_random_seed == 0:  # apply customized_func mode
-        device_target = context.get_context('device_target')
-        if device_target in ["GPU", "Ascend"]:
-            raise ValueError(
-                "Customized func mode only support 'device_target'='CPU, but got {}.".format(device_target))
-        clean_funcs()
-        for func in customized_funcs:
-            add_opaque_predicate(func.__name__, func)
-    _executor.obfuscate_config = {'obf_ratio': obf_ratio, 'obf_random_seed': obf_random_seed}
-
-
 def _save_mindir(net, file_name, *inputs, **kwargs):
     """Save MindIR format file."""
-    # set obfuscate configs
-    if 'obf_config' in kwargs.keys():
-        _set_obfuscate_config(**kwargs)
-        for item in inputs:
-            if -1 in item.shape:
-                raise ValueError(
-                    "Dynamic shape input is not supported now, but got the shape of inputs: {}.".format(item.shape))
+    executor = _executor
+    if not isinstance(net, nn.Cell):
+        executor = _JitExecutor(net, time.time() * 1e9)
 
     incremental = kwargs.get('incremental', False)
 
     model = mindir_model()
     if not isinstance(net, nn.Cell):
-        mindir_stream, net_dict = _msfunc_info(net, *inputs)
+        mindir_stream, net_dict = _msfunc_info(net, executor, *inputs)
     else:
         mindir_stream, net_dict = _cell_info(net, incremental, *inputs)
     model.ParseFromString(mindir_stream)
@@ -2594,8 +2448,10 @@ def _save_together(net_dict, model):
         if name in net_dict.keys():
             data_total += sys.getsizeof(net_dict[name].data.get_bytes()) / 1024
         else:
-            raise ValueError("The parameter '{}' is not belongs to any cell,"
-                             "the data of parameter cannot be exported.".format(param_proto.name))
+            raise ValueError("There's a mindspore.Parameter that wasn't created in nn.Cell, and mindspore.export() "
+                             f"does not support exporting such Parameters. The parameter name is: {name}.\n"
+                             "You can find the supported syntax range for mindspore.export() at the following link:\n"
+                             "https://www.mindspore.cn/tutorials/zh-CN/master/beginner/save_load.html")
         if data_total > TOTAL_SAVE:
             return False
     return True
@@ -2762,566 +2618,6 @@ def parse_print(print_file_name):
     return tensor_list
 
 
-def _merge_param_with_strategy(sliced_data, parameter_name, strategy, is_even):
-    """
-    Merge data slices to one tensor with whole data when strategy is not None.
-
-    Args:
-        sliced_data (list[numpy.ndarray]): Data slices in order of rank_id.
-        parameter_name (str): Name of parameter.
-        strategy (dict): Parameter slice strategy.
-        is_even (bool): Slice manner that True represents slicing evenly and False represents slicing unevenly.
-
-    Returns:
-        Tensor, the merged Tensor which has the whole data.
-
-    Raises:
-        ValueError: Failed to merge.
-    """
-    layout = strategy.get(parameter_name)
-    try:
-        dev_mat = list(layout.dev_matrix[0].dim)
-        tensor_map = list(layout.tensor_map[0].dim)
-        param_split_shape = list(layout.param_split_shape[0].dim)
-        field_size = int(layout.field)
-    except BaseException as e:
-        raise ValueError(f"{e.__str__()}. For 'merge_sliced_parameter'"
-                         f", please make sure that 'strategy' is correct.") from e
-
-    device_count = 1
-    for dim in dev_mat:
-        device_count *= dim
-
-    if len(sliced_data) != device_count:
-        raise ValueError(f"For 'merge_sliced_parameter', the length of 'sliced_parameters' should be equal to "
-                         f"device_count. The length of 'sliced_parameters' is {len(sliced_data)}, but "
-                         f"device_count is {device_count}.")
-
-    if not param_split_shape:
-        if not is_even:
-            raise ValueError("For 'merge_sliced_parameter', the shape of every parameter in 'sliced_parameters' "
-                             "should be the same when slice manner is even.")
-
-        all_gather_tensor = Tensor(np.concatenate(sliced_data))
-
-        if field_size > 0:
-            merged_tensor = _reshape_param_data_with_weight(all_gather_tensor, dev_mat, field_size)
-        else:
-            merged_tensor = _reshape_param_data(all_gather_tensor, dev_mat, tensor_map)
-
-    else:
-        tensor_strategy = _get_tensor_strategy(dev_mat, tensor_map)
-
-        slice_count = 1
-        for dim in tensor_strategy:
-            slice_count *= dim
-
-        if len(param_split_shape) != slice_count:
-            raise ValueError(f"For 'merge_sliced_parameter', the param_split_shape length in 'strategy' should be "
-                             f"{slice_count}, but got {len(param_split_shape)}.")
-
-        tensor_slices_new = list(range(slice_count))
-        tensor_slices = sliced_data
-        for i in range(device_count):
-            slice_index = int(_get_tensor_slice_index(dev_mat, tensor_strategy, tensor_map, i))
-            if tensor_slices[i].shape[0] != param_split_shape[slice_index]:
-                raise ValueError(f"For 'merge_sliced_parameter', the slice {slice_index} should be "
-                                 f"{param_split_shape[slice_index]} in 0 axis, but got "
-                                 f"{tensor_slices[i].shape[0]}.")
-            tensor_slices_new[slice_index] = np.array(tensor_slices[i])
-
-        dim_len = len(tensor_strategy)
-        for i in range(dim_len):
-            ele_count = int(len(tensor_slices_new) / tensor_strategy[dim_len - 1 - i])
-            tensor_slices_new_inner = []
-            for j in range(ele_count):
-                new_tensor = tensor_slices_new[j * tensor_strategy[dim_len - 1 - i]]
-                for k in range(j * tensor_strategy[dim_len - 1 - i] + 1,
-                               (j + 1) * tensor_strategy[dim_len - 1 - i]):
-                    new_tensor = np.concatenate((new_tensor, tensor_slices_new[k]), axis=dim_len - 1 - i)
-                tensor_slices_new_inner.insert(len(tensor_slices_new_inner), np.array(new_tensor))
-            tensor_slices_new = tensor_slices_new_inner
-        merged_tensor = Tensor(tensor_slices_new[0])
-
-    return merged_tensor
-
-
-def restore_group_info_list(group_info_file_name):
-    """
-    Build rank list, the checkpoint of ranks in the rank list has the same contents with the local rank
-    who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
-    environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
-
-    Args:
-        group_info_file_name (str): Name of group information file.
-
-    Returns:
-        List, the rank list.
-
-    Raises:
-        ValueError: group information file is incorrect.
-        TypeError: `group_info_file_name` is not str.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> ms.restore_list = restore_group_info_list("./group_info.pb")
-    """
-    if not isinstance(group_info_file_name, str):
-        raise TypeError(f"For 'restore_group_info_list', the argument 'group_info_file_name' should be str, "
-                        f"but got {type(group_info_file_name)}.")
-
-    if not os.path.isfile(group_info_file_name):
-        raise ValueError(f"For 'restore_group_info_list', no such group information file: {group_info_file_name}.")
-
-    if os.path.getsize(group_info_file_name) == 0:
-        raise ValueError("For 'restore_group_info_list', the group information file should not be empty.")
-
-    return _restore_group_info_list(group_info_file_name)
-
-
-def build_searched_strategy(strategy_filename):
-    """
-    Build strategy of every parameter in network. Used in the case of distributed inference.
-
-    Args:
-        strategy_filename (str): Name of strategy file.
-
-    Returns:
-        Dict, whose key is parameter name and value is slice strategy of this parameter.
-
-    Raises:
-        ValueError: Strategy file is incorrect.
-        TypeError: `strategy_filename` is not a string.
-
-    Examples:
-        >>> import mindspore as ms
-        >>> strategy = ms.build_searched_strategy("./strategy_train.ckpt")
-    """
-    return _build_searched_strategy(strategy_filename)
-
-
-def merge_sliced_parameter(sliced_parameters, strategy=None):
-    """
-    Merge parameter slices into one parameter. Used in the case of distributed inference.
-
-    Args:
-        sliced_parameters (list[Parameter]): Parameter slices in order of rank id.
-        strategy (Optional[dict]): Parameter slice strategy, whose key is parameter name and
-            value is slice strategy of this parameter. If strategy is None, just merge
-            parameter slices in 0 axis order. Default: ``None``.
-
-    Returns:
-        Parameter, the merged parameter which has the whole data.
-
-    Raises:
-        ValueError: Failed to merge.
-        TypeError: The sliced_parameters is incorrect or strategy is not dict.
-        KeyError: The parameter name is not in keys of strategy.
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor, Parameter
-        >>>
-        >>> sliced_parameters = [
-        ...                      Parameter(Tensor(np.array([0.00023915, 0.00013939, -0.00098059])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00015815, 0.00015458, -0.00012125])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00042165, 0.00029692, -0.00007941])),
-        ...                                "network.embedding_table"),
-        ...                      Parameter(Tensor(np.array([0.00084451, 0.00089960, -0.00010431])),
-        ...                                "network.embedding_table")]
-        >>> merged_parameter = ms.merge_sliced_parameter(sliced_parameters)
-        >>> print(merged_parameter)
-        Parameter (name=network.embedding_table, shape=(12,), dtype=Float64, requires_grad=True)
-    """
-    if not isinstance(sliced_parameters, list):
-        raise TypeError(f"For 'merge_sliced_parameter', the argument 'sliced_parameters' should be list, "
-                        f"but got {type(sliced_parameters)}.")
-
-    if not sliced_parameters:
-        raise ValueError("For 'merge_sliced_parameter', the argument 'sliced_parameters' should not be empty.")
-
-    if strategy and not isinstance(strategy, dict):
-        raise TypeError(f"For 'merge_sliced_parameter', the argument 'strategy' should be dict, "
-                        f"but got {type(strategy)}.")
-
-    try:
-        parameter_name = sliced_parameters[0].name
-        parameter_shape = sliced_parameters[0].data.shape
-        parameter_shape_length = len(parameter_shape)
-    except BaseException as e:
-        raise TypeError(e.__str__() + f" For 'merge_sliced_parameter', the element in 'sliced_parameters' should be "
-                                      f"'Parameter', but got {type(sliced_parameters[0])} at index 0.") from e
-
-    is_even = True
-    for index, parameter in enumerate(sliced_parameters):
-        if not isinstance(parameter, Parameter):
-            raise TypeError(f"For 'merge_sliced_parameter', the element in 'sliced_parameters' should be 'Parameter', "
-                            f"but got {type(parameter)} at index {index}.")
-
-        if parameter.name != parameter_name \
-                or len(parameter.data.shape) != parameter_shape_length \
-                or parameter.data.shape[1:] != parameter_shape[1:]:
-            raise ValueError(f"For 'merge_sliced_parameter', please make sure that the elements in 'slice_parameters'"
-                             f" have the same name, dimension length and shape except 0 axis. The name, dimension "
-                             f"length, shape except 0 axis should be {parameter_name}, {parameter_shape_length}, "
-                             f"{parameter_shape[1:]}, but got name: {parameter.name}, dimension length: "
-                             f"{len(parameter.data.shape)}, shape except 0 axis: {parameter.data.shape[1:]} "
-                             f"at index {index}.")
-
-        if parameter.data.shape != parameter_shape:
-            is_even = False
-
-    layerwise_parallel = sliced_parameters[0].layerwise_parallel
-    requires_grad = sliced_parameters[0].requires_grad
-    sliced_data = []
-    for parameter in sliced_parameters:
-        if parameter.data.dtype == mstype.bfloat16:
-            sliced_data.append(cpu_cast(parameter.data, mstype.float32).asnumpy())
-        else:
-            sliced_data.append(parameter.data.asnumpy())
-
-    if not strategy:
-        merged_tensor = Tensor(np.concatenate(sliced_data))
-        merged_parameter = Parameter(merged_tensor, parameter_name, requires_grad, layerwise_parallel)
-
-    else:
-        if parameter_name not in strategy.keys():
-            raise KeyError(f"For 'merge_sliced_parameter', the parameter name {parameter_name} should be a key in "
-                           f"the 'strategy'. Please check 'sliced_parameter' and 'strategy'.")
-        merged_tensor = _merge_param_with_strategy(sliced_data, parameter_name, strategy, is_even)
-        merged_parameter = Parameter(merged_tensor, parameter_name, requires_grad, layerwise_parallel)
-
-    return merged_parameter
-
-
-def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
-                           output_format, name_map, return_param_dict):
-    """gather transform tasks"""
-    tasks = []
-    for rank in range(0, dst_device_num):
-        tasks.append(
-            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map,
-             return_param_dict))
-    return tasks
-
-
-def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
-                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
-                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
-                                output_format='safetensors', name_map=None, max_process_num=64,
-                                return_param_dict=False):
-    """
-    Load checkpoint into net for distributed predication. Used in the case of distributed inference.
-
-    Note:
-        `output_format` will only take effect when `format` is set to `safetensors` and `network` is set to `None`.
-
-    Args:
-        network (Cell): Network for distributed predication, When the format is `safetensors`, the network parameter
-                        can be left blank or passed as None, and the interface will execute save mode.
-        checkpoint_filenames (list[str]): The name of Checkpoint files in order of rank id. Default: ``None`` .
-        predict_strategy (Union[dict, str]): Strategy of predication process. It means that using one device to predict
-                                 when setting predict_strategy as None. Default: ``None`` .
-        train_strategy_filename (str): The filename of training strategy protocol buffer file.
-                                       When train_strategy_filename is None, the training strategy file will be
-                                       obtained from context.get_auto_parallel_context("strategy_ckpt_load_file").
-                                       Therefore, the training strategy file needs to be specified
-                                       in at least one of them. Default: ``None`` .
-        strict_load (bool): Whether to strict load the parameter into net. If ``False`` , it will load parameter
-                            into net when parameter name's suffix in checkpoint file is the same as the
-                            parameter in the network. When the types are inconsistent, perform type conversion
-                            on the parameters of the same type, such as float32 to float16. Default: ``False`` .
-        dec_key (Union[None, bytes]): Byte type key used for decryption. If the value is ``None`` , the decryption
-                                      is not required. Default: ``None`` .
-        dec_mode (str): This parameter is valid only when dec_key is not set to ``None`` . Specifies the decryption
-                        mode, currently supports ``'AES-GCM'`` , ``'AES-CBC'``  and ``'SM4-CBC'`` .
-                        Default: ``'AES-GCM'`` .
-        format (str): Input weight format to be loaded into the network.
-                      It can be set to either "ckpt" or "safetensors". Default: "ckpt".
-        unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
-                                       Default: ``None`` .
-        dst_safetensors_dir (str): In the save mode scenario, the save directory for weights.
-        rank_id (int): The logical sequence number of the card. In non save mode, it is automatically obtained
-                       globally by initializing the network; In save mode, save the file according to the input
-                       sequence number. If it is not input, save the entire file.
-        output_format (str, optional): Control the format of the output checkpoint after conversion.
-            It can be set to either "ckpt" or "safetensors". Default: "safetensors".
-        name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
-            dictionary before loading or saving the segmented weights into the network. Default: None.
-        max_process_num (int): Maximum number of processes. Default: 64.
-        return_param_dict (bool): Whether to return the param_dict. Default: ``False``.
-
-    Raises:
-        TypeError: The type of inputs do not match the requirements.
-        ValueError: Failed to load checkpoint into net.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        .. note::
-            Before running the following examples, you need to configure the communication environment variables.
-
-            For the Ascend devices, users need to prepare the rank table, set rank_id and device_id.
-            Please see the `rank table startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/rank_table.html>`_
-            for more details.
-
-            For the GPU devices, users need to prepare the host file and mpi, please see the `mpirun startup
-            <https://www.mindspore.cn/docs/en/master/model_train/parallel/mpirun.html>`_ .
-
-            For the CPU device, users need to write a dynamic cluster startup script, please see the `Dynamic Cluster
-            Startup <https://www.mindspore.cn/docs/en/master/model_train/parallel/dynamic_cluster.html>`_ .
-
-        >>> import os
-        >>> import numpy as np
-        >>> import mindspore as ms
-        >>> import mindspore.dataset as ds
-        >>> from mindspore import nn, ops, train
-        >>> from mindspore.communication import init
-        >>>
-        >>> step_per_epoch = 4
-        >>> device_num = 8
-        >>>
-        >>> # Define the network structure.
-        >>> class Net(nn.Cell):
-        ...     def __init__(self, matmul_size, strategy=None):
-        ...         super().__init__()
-        ...         matmul_np = np.full(matmul_size, 0.5, dtype=np.float32)
-        ...         self.matmul_weight = ms.Parameter(ms.Tensor(matmul_np))
-        ...         self.matmul = ops.MatMul()
-        ...         self.neg = ops.Neg()
-        ...         if strategy is not None:
-        ...             self.matmul.shard(strategy)
-        ...
-        ...     def construct(self, inputs):
-        ...         x = self.matmul(inputs, self.matmul_weight)
-        ...         x = self.neg(x)
-        ...         return x
-        >>>
-        >>> # Create dataset.
-        >>> def get_dataset(*inputs):
-        ...     def generate():
-        ...         for _ in range(step_per_epoch):
-        ...             yield inputs
-        ...     return generate
-        >>>
-        >>> # Train network and save distributed checkpoint.
-        >>> def train_net():
-        ...     ms.set_context(mode=ms.GRAPH_MODE)
-        ...     init()
-        ...     np.random.seed(1)
-        ...     input_data = np.random.rand(16, 96).astype(np.float32)
-        ...     label_data = np.random.rand(16, 16).astype(np.float32)
-        ...     fake_dataset = get_dataset(input_data, label_data)
-        ...     dataset = ds.GeneratorDataset(fake_dataset, ["input", "label"])
-        ...
-        ...     # Set parallel strategy.
-        ...     strategy = ((1, 4), (4, 1))
-        ...     ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, device_num=device_num,
-        ...                                  strategy_ckpt_save_file="./train_strategy.ckpt")
-        ...     network = Net(matmul_size=(96, 16), strategy=strategy)
-        ...     net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
-        ...     net_loss = nn.SoftmaxCrossEntropyWithLogits(reduction="mean")
-        ...     model = ms.Model(network=network, loss_fn=net_loss, optimizer=net_opt)
-        ...     ckpt_config = train.CheckpointConfig(keep_checkpoint_max=1, integrated_save=False)
-        ...     global_rank_id = int(os.getenv("RANK_ID"))
-        ...     ckpt_path = "./rank_{}_ckpt".format(global_rank_id)
-        ...     ckpt_callback = train.ModelCheckpoint(prefix="parallel", directory=ckpt_path, config=ckpt_config)
-        ...     model.train(epoch=2, train_dataset=dataset, callbacks=[ckpt_callback], dataset_sink_mode=False)
-        ...     ms.reset_auto_parallel_context()
-        >>>
-        >>> # Load distributed checkpoint and test.
-        >>> def load_model():
-        ...     ms.set_context(mode=ms.GRAPH_MODE)
-        ...     init()
-        ...     ms.set_auto_parallel_context(full_batch=True, parallel_mode="semi_auto_parallel",
-        ...                                  strategy_ckpt_load_file="./train_strategy.ckpt", device_num=device_num)
-        ...     predict_data = ms.Tensor(np.random.randn(128, 96).astype(np.float32))
-        ...     network = Net(matmul_size=(96, 16))
-        ...     model = ms.Model(network)
-        ...     predict_layout = model.infer_predict_layout(ms.Tensor(predict_data))
-        ...     ckpt_file_list = ["./rank_{}_ckpt/parallel-2_4.ckpt".format(i) for i in range(0, device_num)]
-        ...     ms.load_distributed_checkpoint(network, ckpt_file_list, predict_layout)
-        ...     predict_result = model.predict(predict_data)
-        ...     print(predict_result)
-        >>>
-        >>> train_net()
-        >>> load_model()
-        [[-7.3259363 -7.497216  -7.398196  ... -7.374962  -7.204874  -7.234935 ]
-        [ 3.362938   3.3535435  3.3832688 ...  3.4263954  3.279045   3.3202887]
-        ...
-        [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
-    """
-    if format not in ['safetensors', 'ckpt'] or output_format not in ['safetensors', 'ckpt']:
-        raise ValueError(
-            f"For 'load_distributed_checkpoint', 'format' and 'output_format' "
-            f"must be 'ckpt' or 'safetensors', but got {format}.")
-
-    if format == 'safetensors':
-        if unified_safetensors_dir is None:
-            raise ValueError(f"For 'load_distributed_checkpoint', 'unified_safetensors_dir' can not be None "
-                             f"when format is 'safetensors'.")
-        unsupport_param = [checkpoint_filenames, train_strategy_filename, dec_key]
-        for param in unsupport_param:
-            if param is not None:
-                raise ValueError(f"For 'load_distributed_checkpoint', {param} must be None "
-                                 f"when format is 'safetensors'.")
-        if strict_load or dec_mode != 'AES-GCM':
-            raise ValueError(f"For 'load_distributed_checkpoint', strict_load and dec_mode must be default "
-                             f"when format is 'safetensors'.")
-        if network is not None:
-            try:
-                rank_id = get_rank()
-            except RuntimeError:
-                rank_id = 0
-                logger.warning(f"Get rank failed, default loading weight for rank 0.")
-            param_dict = _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map,
-                 return_param_dict))
-            return param_dict
-        if dst_safetensors_dir is None:
-            raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
-                             f"when network is None.")
-        if rank_id is not None:
-            _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                 rank_id, output_format, name_map, return_param_dict))
-        else:
-            dst_strategy_dict = _build_searched_strategy(predict_strategy)
-            dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
-            dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
-            dst_device_num = dst_stage_device_num * dst_stage_num
-            tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                           dst_device_num, output_format, name_map, return_param_dict)
-            with Pool(processes=max_process_num) as pool:
-                list(pool.imap(_load_parallel_checkpoint, tasks))
-        return True
-
-    network = Validator.check_isinstance("network", network, nn.Cell)
-    _check_checkpoint_file(checkpoint_filenames)
-    _check_predict_strategy(predict_strategy)
-
-    dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
-    dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
-
-    if train_strategy_filename is None:
-        train_strategy_filename = context.get_auto_parallel_context("strategy_ckpt_load_file")
-    _train_strategy = build_searched_strategy(train_strategy_filename)
-    train_strategy = _convert_to_list(_train_strategy)
-
-    train_dev_count = 1
-    ckpt_file_len = len(checkpoint_filenames)
-    for dim in train_strategy[list(train_strategy.keys())[0]][0]:
-        train_dev_count *= dim
-    if train_dev_count != ckpt_file_len:
-        raise ValueError(f"For 'Load_distributed_checkpoint', the length of 'checkpoint_filenames' should be "
-                         f"equal to the device count of training process. "
-                         f"But got the length of 'checkpoint_filenames'"
-                         f" is {ckpt_file_len} and the device count is {train_dev_count}.")
-    rank_list = _infer_rank_list(train_strategy, predict_strategy)
-
-    param_total_dict = defaultdict(dict)
-    for file_index, file_name in enumerate(checkpoint_filenames):
-        ckpt_dict = load_checkpoint(file_name, dec_key=dec_key, dec_mode=dec_mode)
-        for param_name, param in ckpt_dict.items():
-            param_total_dict[param_name][file_index] = param
-
-    param_dict = {}
-    param_not_in_strategy = []
-    param_not_in_ckpt = []
-    for _, param in network.parameters_and_names():
-        sliced_params = []
-        if param.name not in rank_list.keys():
-            param_not_in_strategy.append(param.name)
-            continue
-        if param.name not in param_total_dict:
-            param_not_in_ckpt.append(param.name)
-            continue
-
-        param_rank = rank_list.get(param.name)[0]
-        skip_merge_split = rank_list.get(param.name)[1]
-        shard_stride = train_strategy.get(param.name)[4]
-        tensor_map = train_strategy.get(param.name)[1]
-        first_dim_shard_idx = tensor_map[0] if tensor_map else -1
-        device_arrangement = train_strategy.get(param.name)[0]
-        first_dim_shard_size = 1
-        if first_dim_shard_idx >= 0:
-            first_dim_shard_size = device_arrangement[-1 - first_dim_shard_idx]
-        if train_strategy.get(param.name)[5]:
-            repeat_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5] / first_dim_shard_size)
-        else:
-            repeat_size = 0
-        for rank in param_rank:
-            param_total_list = list(range(0, ckpt_file_len))
-            if first_dim_shard_size != 1:
-                param_total_list = _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_shard_idx, rank)
-            if repeat_size > 0:
-                shard_size = shard_stride * train_strategy.get(param.name)[5]
-                rank_index = param_total_list.index(rank)
-                start = rank_index // shard_size * shard_size
-                param_total_list = param_total_list[start:start + shard_size]
-            if shard_stride > 0:
-                param_stride = []
-                # merge pre parameter
-                param_index = param_total_list[0:param_total_list.index(rank) + 1][::-1][::shard_stride]
-                param_index.extend(param_total_list[param_total_list.index(rank):][::shard_stride])
-                param_index = list(set(param_index))
-                param_index.sort()
-                for rank_num in param_index:
-                    if param_total_dict[param.name][rank_num].data.dtype == mstype.bfloat16:
-                        param_stride.append(
-                            cpu_cast(param_total_dict[param.name][rank_num].data, mstype.float32).asnumpy())
-                    else:
-                        param_stride.append(param_total_dict[param.name][rank_num].data.asnumpy())
-
-                sliced_param = Parameter(Tensor(np.concatenate(param_stride)), name=param.name)
-            else:
-                sliced_param = param_total_dict[param.name][rank]
-
-            sliced_params.append(sliced_param)
-        if skip_merge_split:
-            split_param = sliced_params[0]
-        else:
-            param_unique_strategy = _remove_repeated_slices(train_strategy[param.name])
-            _param_unique_strategy = _convert_to_layout(param.name, param_unique_strategy)
-            split_param = _merge_and_split(sliced_params, _param_unique_strategy, predict_strategy)
-        opt_shard_group = predict_strategy[param.name][5] if predict_strategy else None
-        if opt_shard_group:
-            if split_param.data.dtype == mstype.bfloat16:
-                data = cpu_cast(split_param.data, mstype.float32).asnumpy()
-            else:
-                data = split_param.data.asnumpy()
-            rank = get_rank(opt_shard_group)
-            size = get_group_size(opt_shard_group)
-            try:
-                data_slice = np.split(data, size)[rank]
-            except BaseException as e:
-                logger.critical("Failed to load opt shard slice in load distributed checkpoint for {}. Data shape is {}"
-                                " and group is {}".format(param.name, split_param.data.shape, opt_shard_group))
-                raise RuntimeError(e.__str__() + f"\nFor 'load_distributed_checkpoint', failed to load opt shard slice"
-                                                 f" in load distributed checkpoint for {param.name}. Data shape is "
-                                                 f"{split_param.data.shape} and group is {opt_shard_group}.") from e
-            split_param = Parameter(Tensor(data_slice), param.name,
-                                    split_param.requires_grad, split_param.layerwise_parallel)
-        param_dict[param.name] = split_param
-
-    if param_not_in_strategy:
-        logger.warning("For 'load_distributed_checkpoint', {} parameters in network are not in the slice strategy, "
-                       "you can check whether 'predict_strategy' or 'train_strategy_filename' is correct."
-                       .format(param_not_in_strategy))
-    if param_not_in_ckpt:
-        logger.warning("For 'load_distributed_checkpoint', {} parameters in network and slice strategy but not in "
-                       "the checkpoint file, please check whether 'checkpoint_filenames' is correct."
-                       .format(param_not_in_ckpt))
-
-    load_param_into_net(network, param_dict, strict_load=strict_load)
-    return True
-
-
 def async_ckpt_thread_status():
     """
     Get the status of asynchronous save checkpoint thread.
@@ -3344,69 +2640,6 @@ def async_ckpt_thread_status():
                    "and will be removed in a future version.")
     thr_list = threading.enumerate()
     return True in [ele.getName() == "asyn_save_ckpt" for ele in thr_list]
-
-
-def _check_predict_strategy(predict_strategy):
-    """Check predict strategy."""
-
-    def _check_int_list(arg):
-        if not isinstance(arg, list):
-            return False
-        for item in arg:
-            if not isinstance(item, int):
-                return False
-        return True
-
-    if predict_strategy is None:
-        return
-
-    flag = True
-    predict_strategy = Validator.check_isinstance("predict_strategy", predict_strategy, dict)
-    for key in predict_strategy.keys():
-        if not isinstance(key, str) or not isinstance(predict_strategy[key], (list, tuple)) \
-                or len(predict_strategy[key]) < 4:
-            flag = False
-        dev_matrix, tensor_map, param_split_shape, field_size = predict_strategy[key][:4]
-        if not _check_int_list(dev_matrix) or not _check_int_list(tensor_map) or \
-                not (_check_int_list(param_split_shape) or not param_split_shape) or \
-                not (isinstance(field_size, int) and field_size == 0):
-            flag = False
-
-    if not flag:
-        raise ValueError(f"For 'load_distributed_checkpoint', the argument 'predict_strategy' is dict, "
-                         f"the key of it must be string, and the value of it must be list or tuple that "
-                         f"the first four elements must be dev_matrix (list[int]), tensor_map (list[int]), "
-                         f"param_split_shape (list[int]) and field_size (int, which value is 0)."
-                         f"Please check whether 'predict_strategy' is correct.")
-
-
-def _check_checkpoint_file(checkpoint_filenames):
-    """Check checkpoint file name."""
-    for index, filename in enumerate(checkpoint_filenames):
-        if not isinstance(filename, str) or not os.path.exists(filename) \
-                or filename[-5:] != ".ckpt" or os.path.getsize(filename) == 0:
-            raise ValueError(f"For 'load_distributed_checkpoint', please check 'checkpoint_filenames', and "
-                             f"make sure the {filename} at index {index} is a valid checkpoint file, it must "
-                             f"be a string ending with '.ckpt', and the checkpoint file it represents must "
-                             f"be exist and not empty.")
-
-
-def _merge_and_split(sliced_params, train_strategy, predict_strategy):
-    """Merge sliced parameter and split it according to the predict strategy."""
-    merged_param = merge_sliced_parameter(sliced_params, train_strategy)
-    if predict_strategy is None:
-        return merged_param
-    param_name = merged_param.name
-    tensor_layout = predict_strategy[param_name]
-    rank = get_rank()
-    split_tensor = _load_tensor(merged_param.data, tensor_layout[0], tensor_layout[1], rank_id=rank)
-    requires_grad = merged_param.requires_grad
-    layerwise_parallel = merged_param.layerwise_parallel
-    if merged_param.data.dtype == mstype.bfloat16:
-        split_param = Parameter(Tensor(split_tensor, mstype.bfloat16), param_name, requires_grad, layerwise_parallel)
-    else:
-        split_param = Parameter(split_tensor, param_name, requires_grad, layerwise_parallel)
-    return split_param
 
 
 def _calculation_net_size(net):
@@ -3504,28 +2737,35 @@ def convert_model(mindir_file, convert_file, file_format):
         export(net, *net_input, file_name=convert_file, file_format=file_format)
 
 
-def _transform_tensor_to_numpy(path, name_map=None):
-    return _load_and_transform(path, name_map, mindspore.load_checkpoint, lambda v, new_name: v.asnumpy())
+def _load_ckpt_to_new_name_map(path, name_map=None):
+    return _load_and_transform(path, name_map, mindspore.load_checkpoint, None)
 
 
-def _transform_numpy_to_tensor(path, name_map=None):
-    return _load_and_transform(path, name_map, load_file, lambda v, new_name: mindspore.Parameter(v, name=new_name))
+def _load_sf_to_new_name_map(path, name_map=None):
+    load_func = partial(mindspore.load_checkpoint, format="safetensors")
+    return _load_and_transform(path, name_map, load_func, None)
 
 
 def _process_file(file_info):
     cur_ckpt_path, name_map, save_path, file = file_info
-    param_dict_numpy = _transform_tensor_to_numpy(cur_ckpt_path, name_map)
+    if name_map is not None:
+        param_dict = _load_ckpt_to_new_name_map(cur_ckpt_path, name_map)
+    else:
+        param_dict = mindspore.load_checkpoint(cur_ckpt_path)
     safetensors_filename = file.replace(".ckpt", ".safetensors")
     dst_file = os.path.join(save_path, safetensors_filename)
-    save_file(param_dict_numpy, dst_file)
+    mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
 
 
 def _process_file_safetensors(file_info):
     cur_safe_path, name_map, save_path, file = file_info
-    param_dict_tensor = _transform_numpy_to_tensor(cur_safe_path, name_map)
+    if name_map is not None:
+        param_dict = _load_sf_to_new_name_map(cur_safe_path, name_map)
+    else:
+        param_dict = mindspore.load_checkpoint(cur_safe_path, format="safetensors")
     ckpt_filename = file.replace(".safetensors", ".ckpt")
     dst_file = os.path.join(save_path, ckpt_filename)
-    mindspore.save_checkpoint(param_dict_tensor, dst_file)
+    mindspore.save_checkpoint(param_dict, dst_file)
 
 
 def _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map):
@@ -3636,10 +2876,14 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        param_dict_numpy = _transform_tensor_to_numpy(file_path, name_map)
+        if name_map is not None:
+            param_dict = _load_ckpt_to_new_name_map(file_path, name_map)
+        else:
+            param_dict = mindspore.load_checkpoint(file_path)
+
         safetensors_filename = os.path.basename(file_path).replace(".ckpt", ".safetensors")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), safetensors_filename)
-        save_file(param_dict_numpy, dst_file)
+        mindspore.save_checkpoint(param_dict, dst_file, format='safetensors')
 
 
 def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
@@ -3698,7 +2942,43 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
         if save_path and not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok=True)
 
-        param_dict_tensor = _transform_numpy_to_tensor(file_path, name_map)
+        if name_map is not None:
+            param_dict = _load_sf_to_new_name_map(file_path, name_map)
+        else:
+            param_dict = mindspore.load_checkpoint(file_path, format="safetensors")
+
         ckpt_filename = os.path.basename(file_path).replace(".safetensors", ".ckpt")
         dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), ckpt_filename)
-        mindspore.save_checkpoint(param_dict_tensor, dst_file)
+        mindspore.save_checkpoint(param_dict, dst_file)
+
+
+def restore_group_info_list(group_info_file_name):
+    """
+    Build rank list, the checkpoint of ranks in the rank list has the same contents with the local rank
+    who saves the `group_info_file_name`. To save the group info file, please export GROUP_INFO_FIL
+    environment variables like "export GROUP_INFO_FILE=/data/group_info.pb".
+    """
+    return new_restore_group_info_list(group_info_file_name)
+
+
+def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
+                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
+                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
+                                output_format='safetensors', name_map=None, max_process_num=64,
+                                return_param_dict=False):
+    """ Load checkpoint into net for distributed predication. Used in the case of distributed inference. """
+    new_load_distributed_checkpoint(network, checkpoint_filenames, predict_strategy,
+                                    train_strategy_filename, strict_load, dec_key, dec_mode,
+                                    format, unified_safetensors_dir, dst_safetensors_dir, rank_id,
+                                    output_format, name_map, max_process_num,
+                                    return_param_dict)
+
+
+def merge_sliced_parameter(sliced_parameters, strategy=None):
+    """ Merge parameter slices into one parameter. Used in the case of distributed inference. """
+    return new_merge_sliced_parameter(sliced_parameters, strategy)
+
+
+def build_searched_strategy(strategy_filename):
+    """ Build strategy of every parameter in network. Used in the case of distributed inference. """
+    return new_build_searched_strategy(strategy_filename)

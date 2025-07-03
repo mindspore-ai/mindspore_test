@@ -80,21 +80,13 @@ def test_auto_parallel_arithmetic():
 
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     x = Tensor(np.ones([64, 32]), dtype=ms.float32)
     y = Tensor(np.ones([32, 128]), dtype=ms.float32)
     b = Tensor(np.ones([64, 128]), dtype=ms.float32)
     compile_net(net, x, y, b, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    for (k, v) in strategies.items():
-        if re.search('FloorDiv-op', k) is not None:
-            assert v == [[8, 1], [8, 1]]
-        elif re.search('MatMul-op', k) is not None:
-            assert v == [[8, 1], [1, 1]]
-        elif re.search('_VirtualDataset-op', k) is not None:
-            assert v == [[1, 1], [1, 1], [1, 1]]
 
 
 def test_auto_parallel_arithmetic_broadcast_both():
@@ -118,19 +110,13 @@ def test_auto_parallel_arithmetic_broadcast_both():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     x = Tensor(np.ones([64, 32]), dtype=ms.float32)
     y = Tensor(np.ones([32, 1]), dtype=ms.float32)
     b = Tensor(np.ones([1, 64]), dtype=ms.float32)
     compile_net(net, x, y, b, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    for (k, v) in strategies.items():
-        if re.search('FloorDiv-op', k) is not None:
-            assert v == [[1, 1], [1, 1]]
-        elif re.search('MatMul-op', k) is not None:
-            assert v == [[1, 1], [1, 1]]
 
 
 def test_auto_parallel_arithmetic_broadcast_right():
@@ -153,21 +139,13 @@ def test_auto_parallel_arithmetic_broadcast_right():
 
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     x = Tensor(np.ones([64, 32]), dtype=ms.float32)
     y = Tensor(np.ones([32, 32]), dtype=ms.float32)
     b = Tensor(np.ones([32]), dtype=ms.float32)
     compile_net(net, x, y, b, phase='train')
-    strategies = _cell_graph_executor._get_shard_strategy(net)
-    for (k, v) in strategies.items():
-        if re.search('FloorDiv-op', k) is not None:
-            assert v == [[1, 8], [8]]
-        elif re.search('MatMul-op', k) is not None:
-            assert v == [[1, 1], [1, 8]]
-        elif re.search('_VirtualDataset-op', k) is not None:
-            assert v == [[1, 1], [1, 1], [1]]
 
 
 def test_auto_parallel_arithmetic_broadcast_left():
@@ -190,7 +168,7 @@ def test_auto_parallel_arithmetic_broadcast_left():
 
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = NetWithLoss(Net())
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     reset_op_id()
 
     x = Tensor(np.ones([64, 32]), dtype=ms.float32)

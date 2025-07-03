@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -27,6 +27,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_slice_cpu {
 bool NormalizeSliceInfoCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -175,5 +176,6 @@ std::vector<KernelAttr> NormalizeSliceInfoCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, NormalizeSlice, NormalizeSliceInfoCpuKernelMod);
+}  // namespace normalize_slice_cpu
 }  // namespace kernel
 }  // namespace mindspore

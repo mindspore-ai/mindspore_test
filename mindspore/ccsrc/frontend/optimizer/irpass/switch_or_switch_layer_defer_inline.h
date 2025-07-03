@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ class PartialDeferInline : public AnfVisitor {
       return nullptr;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     constexpr auto func_index = 1;
     auto func_abs = cnode->input(func_index)->abstract();
     MS_EXCEPTION_IF_NULL(func_abs);
@@ -55,11 +56,14 @@ class SwitchDeferInline : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto cnode = node->cast<CNodePtr>();
-    auto true_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(cnode->input(2)->abstract());
+    MS_EXCEPTION_IF_NULL(cnode);
+    constexpr size_t true_index = 2;
+    auto true_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(cnode->input(true_index)->abstract());
     if (true_abstract != nullptr) {
       *(true_abstract->func_graph()->indirect()) = true;
     }
-    auto false_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(cnode->input(3)->abstract());
+    constexpr size_t false_index = 3;
+    auto false_abstract = dyn_cast<abstract::FuncGraphAbstractClosure>(cnode->input(false_index)->abstract());
     if (false_abstract != nullptr) {
       *(false_abstract->func_graph()->indirect()) = true;
     }
@@ -72,7 +76,9 @@ class SwitchLayerDeferInline : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto cnode = node->cast<CNodePtr>();
-    auto tuple = dyn_cast<abstract::AbstractTuple>(cnode->input(2)->abstract());
+    MS_EXCEPTION_IF_NULL(cnode);
+    constexpr size_t layers_index = 2;
+    auto tuple = dyn_cast<abstract::AbstractTuple>(cnode->input(layers_index)->abstract());
     if (tuple == nullptr) {
       return nullptr;
     }

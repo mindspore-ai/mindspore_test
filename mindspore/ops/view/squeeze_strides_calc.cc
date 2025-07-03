@@ -24,15 +24,11 @@ namespace {
 constexpr size_t kSqueezeCalcInputsNum = 2;
 constexpr auto kSqueezedNum = 1;
 }  // namespace
-TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
-      !inputs[1]->isa<ValueSequence>()) {
-    return {};
-  }
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor);
-  const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
-  auto old_tensor_info = GetOldTensorInfo(tensor);
+TensorStorageInfoPtrList SqueezeBasicTypeCalc(const PrimitivePtr &prim,
+                                              const mindspore::tensor::TensorPtr &input_tensor,
+                                              const std::vector<int64_t> &axis) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   auto oldShape = old_tensor_info->old_shape;
   auto oldStrides = old_tensor_info->old_strides;
   auto oldStorageOffset = old_tensor_info->old_offset;
@@ -74,6 +70,17 @@ TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector
   auto newStorageInfo = std::make_shared<TensorStorageInfo>(
     newShape, newStrides, oldStorageOffset, old_tensor_info->ori_shape, old_tensor_info->ori_strides, is_contiguous);
   return {newStorageInfo};
+}
+
+TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::Tensor>() ||
+      !inputs[1]->isa<ValueSequence>()) {
+    return {};
+  }
+  auto tensor = inputs[kInputIndex0]->cast<tensor::TensorPtr>();
+  MS_EXCEPTION_IF_NULL(tensor);
+  const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
+  return SqueezeBasicTypeCalc(prim, tensor, axis);
 }
 REG_VIEW_STRIDES_CALC_FUN(Squeeze, SqueezeCalc);
 }  // namespace mindspore::ops

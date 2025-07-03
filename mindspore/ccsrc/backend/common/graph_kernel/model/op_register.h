@@ -25,7 +25,7 @@
 
 namespace mindspore::graphkernel::inner {
 using CreatorFunc = std::function<PrimOpPtr(const std::string &)>;
-class BACKEND_EXPORT OpRegistry {
+class BACKEND_COMMON_EXPORT OpRegistry {
  public:
   static OpRegistry &Instance() {
     static OpRegistry instance{};

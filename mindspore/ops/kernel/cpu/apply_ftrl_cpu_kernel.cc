@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_ftrl_cpu {
 namespace {
 constexpr size_t kApplyFtrlInputsNum = 8;
 constexpr size_t kApplyFtrlOutputsNum = 1;
@@ -212,29 +213,31 @@ bool ApplyFtrlCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
   return true;
 }
 
-#define ADD_KERNEL_FTRL(input_dtype)           \
-  {                                            \
-    KernelAttr()                               \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddInputAttr(kNumberType##input_dtype)  \
-      .AddOutputAttr(kNumberType##input_dtype) \
-      .AddOutInRef(0, 0)                       \
+#define APPLY_FTRL_ADD_KERNEL_FTRL(input_dtype) \
+  {                                             \
+    KernelAttr()                                \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddInputAttr(kNumberType##input_dtype)   \
+      .AddOutputAttr(kNumberType##input_dtype)  \
+      .AddOutInRef(0, 0)                        \
   }
 
 std::vector<KernelAttr> ApplyFtrlCpuKernelMod::GetOpSupport() {
   static std::vector<KernelAttr> support_list = {
-    ADD_KERNEL_FTRL(Float32), ADD_KERNEL_FTRL(Float16), ADD_KERNEL_FTRL(Float64),   ADD_KERNEL_FTRL(Int8),
-    ADD_KERNEL_FTRL(Int16),   ADD_KERNEL_FTRL(Int64),   ADD_KERNEL_FTRL(UInt8),     ADD_KERNEL_FTRL(UInt16),
-    ADD_KERNEL_FTRL(UInt32),  ADD_KERNEL_FTRL(UInt64),  ADD_KERNEL_FTRL(Complex64), ADD_KERNEL_FTRL(Complex128)};
+    APPLY_FTRL_ADD_KERNEL_FTRL(Float32), APPLY_FTRL_ADD_KERNEL_FTRL(Float16),   APPLY_FTRL_ADD_KERNEL_FTRL(Float64),
+    APPLY_FTRL_ADD_KERNEL_FTRL(Int8),    APPLY_FTRL_ADD_KERNEL_FTRL(Int16),     APPLY_FTRL_ADD_KERNEL_FTRL(Int64),
+    APPLY_FTRL_ADD_KERNEL_FTRL(UInt8),   APPLY_FTRL_ADD_KERNEL_FTRL(UInt16),    APPLY_FTRL_ADD_KERNEL_FTRL(UInt32),
+    APPLY_FTRL_ADD_KERNEL_FTRL(UInt64),  APPLY_FTRL_ADD_KERNEL_FTRL(Complex64), APPLY_FTRL_ADD_KERNEL_FTRL(Complex128)};
   return support_list;
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyFtrl, ApplyFtrlCpuKernelMod);
+}  // namespace apply_ftrl_cpu
 }  // namespace kernel
 }  // namespace mindspore

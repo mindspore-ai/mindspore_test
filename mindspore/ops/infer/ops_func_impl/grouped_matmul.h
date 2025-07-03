@@ -18,32 +18,41 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_H_
 
 #include <set>
+#include <string>
 #include "infer/ops_func_impl/grouped_matmul_base.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
+class OPS_API GroupedMatmulFuncImpl final : public GroupedMatmulBaseFuncImpl {
  public:
   GroupedMatmulFuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.group_list = 7;
-    idxes_.split_item = 8;
-    idxes_.group_type = 9;
+    idxes_.split_item_offset = -4;
+    idxes_.group_type_offset = -3;
+    idxes_.transpose_a_offset = -2;
+    idxes_.transpose_b_offset = -1;
   }
   ~GroupedMatmulFuncImpl() = default;
 
-  std::set<int64_t> GetValueDependArgIndices() const override {
-    return {static_cast<int64_t>(this->idxes_.group_list)};
-  }
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
  protected:
   void FetchGroupInfo(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+
+  int64_t FetchGroupListIndex(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   int64_t FetchGroupListSize(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
 
   int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                  int64_t group_type) const override;
+
+  bool GetTransposeValue(const InferInfoPtrList &input_infos, int64_t transpose_index) const override;
+
+ private:
+  bool EnableInternal(const std::string &op_name) const;
+
+  int64_t group_list_offset_{-5};
 };
 }  // namespace ops
 }  // namespace mindspore

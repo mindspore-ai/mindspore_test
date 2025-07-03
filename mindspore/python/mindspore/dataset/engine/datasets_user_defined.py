@@ -1,4 +1,4 @@
-# Copyright 2019-2024 Huawei Technologies Co., Ltd
+# Copyright 2019-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,35 +18,37 @@ You can define your own dataset loading class, and use GeneratorDataset to help 
 After declaring the dataset object, you can further apply dataset operations
 (e.g. filter, skip, concat, map, batch) on it.
 """
+import atexit
 import builtins
 import copy
 import errno
 import itertools
 import math
-import os
-import signal
-import time
-from types import GeneratorType
 import multiprocessing
+import os
+import platform
 import queue
-from functools import partial
+import signal
 import subprocess
 import threading
-import platform
-import psutil
+import time
+import weakref
+from functools import partial
+from types import GeneratorType
+
+import dill
 import numpy as np
+import psutil
 
 import mindspore._c_dataengine as cde
-
-from mindspore.common import Tensor
 from mindspore import log as logger
-
-from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
+from mindspore.common import Tensor
 from . import samplers
+from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
 from .queue import _SharedQueue
 from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
-    get_enable_watchdog, get_debug_mode, get_seed, set_seed
+    get_enable_watchdog, get_debug_mode, get_seed, set_seed, get_multiprocessing_start_method
 from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
 from ..core.validator_helpers import type_check
@@ -218,33 +220,33 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
         self.ppid = os.getpid()
         self.pids = []
+        self.thread_ids = []
         self.check_interval = get_multiprocessing_timeout_interval()  # the interval of check queue's size
 
-        # Event for end of epoch
         if self.multi_process is True:
+            multiprocessing.set_start_method(get_multiprocessing_start_method(), True)
+            # Event for end of epoch
             try:
                 self.eof = multiprocessing.Event()
             except Exception:
                 raise RuntimeError("Init multiprocessing.Event() failed, This might be caused by insufficient shm,"
                                    + " and the recommended shm size is at least 5 GB.")
-        else:
-            self.eof = threading.Event()
-        # Create workers
 
-        # get default queue size and adjust queue size per worker if there are large # workers
-        queue_size = get_prefetch_size()
-        queue_size = min(queue_size, queue_size * 4 // self.num_worker)
-        queue_size = max(2, queue_size)
+            # Create workers
+            # get default queue size and adjust queue size per worker if there are large # workers
+            queue_size = get_prefetch_size()
+            queue_size = min(queue_size, queue_size * 4 // self.num_worker)
+            queue_size = max(2, queue_size)
 
-        if self.multi_process and get_enable_shared_mem():
-            # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
-            # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
-            # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
-            _check_shm_usage(self.num_worker, queue_size, 0, self.max_rowsize)
-        self.count = multiprocessing.Value('i', 0)
-        for worker_id in range(self.num_worker):
-            if self.multi_process is True:
+            if get_enable_shared_mem():
+                # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
+                # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
+                # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
+                _check_shm_usage(self.num_worker, queue_size, 0, self.max_rowsize)
+            self.count = multiprocessing.Value('i', 0)
+            for worker_id in range(self.num_worker):
                 try:
+                    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
                     worker = _GeneratorWorkerMp(self.dataset, self.eof, self.max_rowsize, queue_size, self.ppid,
                                                 self.count, worker_id)
                     worker.daemon = True
@@ -264,16 +266,43 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     raise RuntimeError("Failed to launch multiprocessing of GeneratorDataset: {0}".format(e))
                 self.pids.append(worker.pid)
                 self.need_join = True
-            else:
-                worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
-                worker.daemon = True
-                self.need_join = True
-            self.workers.append(worker)
+                self.workers.append(worker)
+            multiprocessing.set_start_method("fork", True)
 
-        if self.multi_process:
             logger.info("Launch generator worker process(es): {}".format([worker.pid for worker in self.workers]))
             if platform.system().lower() != 'windows':
                 self._launch_monitor()
+        else:
+            self.eof = threading.Event()
+            for worker_id in range(self.num_worker):
+                worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
+                worker.daemon = True
+                self.need_join = True
+                worker.start()
+                self.thread_ids.append(worker.ident)
+                self.workers.append(worker)
+
+        # Register a termination function using weakref to avoid the object from unable to properly destruct.
+        atexit.register(lambda cleanup: cleanup()() if cleanup() is not None else None,
+                        weakref.WeakMethod(self.terminate))
+
+    def get_worker_ids(self):
+        """
+        Get dict of worker's ids
+
+        Returns:
+            dict of strings
+        """
+        if not self.is_mp_enabled():
+            return {}
+        worker_ids = {}
+        if self.multi_process is True:
+            worker_ids["is_thread"] = False
+            worker_ids["worker_id"] = self.pids
+        else:
+            worker_ids["is_thread"] = True
+            worker_ids["worker_id"] = self.thread_ids
+        return worker_ids
 
     def terminate(self):
         self._stop_subprocess()
@@ -337,12 +366,12 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 start_time = int(time.time())
                 wait_count = 1
                 while self.workers[i % self.num_worker].res_queue.empty():
+                    time.sleep(0.1)
                     if self.eof.is_set():
                         logger.warning("Generator receives a termination signal, stop waiting for data "
                                        "from subprocess.")
                         self._stop_subprocess()
                         return
-                    time.sleep(0.1)
                     wait_count = self._interval_log(i, start_time, wait_count)
                 result = self.workers[i % self.num_worker].get()
                 if isinstance(result, ExceptionHandler):
@@ -451,9 +480,9 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
     def _stop_subprocess(self):
         """Only the main process can call join. All the sub-process / sub-thread will be stopped."""
         if self.need_join is True and self.ppid == os.getpid():
+            self.need_join = False
             # abort the monitor first
             self._abort_monitor()
-            self.need_join = False
 
             # waiting for the sub-process stop
             for w in self.workers:
@@ -472,12 +501,18 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     except Exception:  # pylint: disable=W0703
                         # Block all errors when join
                         continue
+                elif not self.multi_process:
+                    w.join(timeout=5)
 
             if self.multi_process is True:
                 self._release_fd()
 
             self.workers.clear()
             self.workers = None
+            # Under independent processes, the GeneratorDataset pulls up multiple processes in a spawn manner, and
+            # after the use case exits normally, there will be a warning: UserWarning: resource_tracker: There appear
+            # to be %d leaked semaphore objects to clean up at shutdown.
+            self.eof = None
 
     def _abort_monitor(self):
         """Deregister workers monitored by the watch dog and join clean process."""
@@ -503,10 +538,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
     def __deepcopy__(self, memodict, exclude=()):
         self.__init__(self.dataset, self.num_worker, self.multi_process, self.max_rowsize)
-
-
-def _subprocess_handle(eof, signum, frame):
-    threading.Thread(target=eof.set()).start()
 
 
 def _ignore_sigint(is_multiprocessing):
@@ -539,7 +570,6 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
 
     if is_multiprocessing:
         result_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
-        signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))
 
         # init the random seed and np.random seed for the subprocess
         if get_seed() != 5489:
@@ -691,6 +721,25 @@ class _GeneratorWrapper:
         return next(self.generator_new)
 
 
+class _PickleGeneratorSource:
+    """Starting multiple processes in spawn mode requires pickling source object in GeneratorDataset."""
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+    def __getitem__(self, index):
+        return self.dataset[index]
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getstate__(self):
+        state = dill.dumps(self.dataset)
+        return state
+
+    def __setstate__(self, state):
+        self.dataset = dill.loads(state)
+
+
 class GeneratorDataset(MappableDataset, UnionBaseDataset):
     """
     A source dataset that generates data from Python by invoking Python data source each epoch.
@@ -717,10 +766,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         column_names (Union[str, list[str]], optional): List of column names of the dataset. Default: ``None`` .
             Users are required to provide either column_names or schema.
         column_types (list[mindspore.dtype], optional): List of column data types of the dataset. Default: ``None`` .
-            If provided, sanity check will be performed on generator output.
+            If provided, sanity check will be performed on generator output (deprecated in future version).
         schema (Union[str, Schema], optional): Data format policy, which specifies the data types and shapes of the data
             column to be read. Both JSON file path and objects constructed by :class:`mindspore.dataset.Schema` are
-            acceptable. Default: ``None`` .
+            acceptable (deprecated in future version). Default: ``None`` .
         num_samples (int, optional): The number of samples to be included in the dataset.
             Default: ``None`` , all images.
         num_parallel_workers (int, optional): Number of worker threads/subprocesses used to
@@ -731,8 +780,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             input is required. Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             Random accessible input is required. When this argument is specified, `num_samples` reflects the maximum
-            sample number of per shard. Used in `data parallel training <https://www.mindspore.cn/docs/en/master/
-            model_train/parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            sample number of per shard. Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` .
             This argument must be specified only when `num_shards` is also specified.
             Random accessible input is required.
@@ -740,9 +789,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             option could be beneficial if the Python operation is computational heavy. Default: ``True``.
         max_rowsize(int, optional): Maximum size of data (in MB) that is used for shared memory
             allocation to copy data between processes, the total occupied shared memory will increase as
-            ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to -1,
+            ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to ``-1``,
             shared memory will be dynamically allocated with the actual size of data. This is only used if
-            ``python_multiprocessing`` is set to True. Default: ``None`` , allocate shared memory dynamically.
+            ``python_multiprocessing`` is set to ``True``. Default: ``None`` , allocate shared memory dynamically
+            (deprecated in future version).
         batch_sampler (Iterable, optional): Similar to `sampler` , but returns a batch of indices at a time, the
             corresponding data will be combined into a batch. Mutually exclusive with `num_samples` , `shuffle` ,
             `num_shards` , `shard_id` and `sampler` . Default: ``None`` , do not use batch sampler.
@@ -782,15 +832,35 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           (such as Pandas, Numpy or PyArrow objects) for member variables, or load less metadata in member variables,
           or configure `python_multiprocessing=False` to use multi-threading mode.
 
-          There are several classes/functions that can help you reduce the size of member variables, and you can choose
-          to use them:
+          You can use the following classes/functions to reduce the size of member variables:
 
-          1. :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
+          :class:`mindspore.dataset.utils.LineReader`: Use this class to initialize your text file object in the
           `__init__` function. Then read the file content based on the line number of the object with the `__getitem__`
           function.
 
-        - Input `source` accepts user-defined Python functions (PyFuncs), Do not add network computing operators from
-          mindspore.nn and mindspore.ops or others into this `source` .
+        - Input `source` accepts user-defined Python functions (PyFuncs), and sets the multiprocessing start method
+          to `spawn` mode by ds.config.set_multiprocessing_start_method("spawn") with `python_ multiprocessing=True`
+          and `num_parallel_workers>1` supports adding network computing operators from mindspore.nn and mindspore.ops
+          or others into this `source`, otherwise adding to the `source` is not supported.
+        - When the user defined dataset by `source` calls the DVPP operator during dataset loading and processing,
+          the supported scenarios are as follows:
+
+          +---------------+----------------------------+----------------------------+----------------------------+
+          |               |                            |                     Multiprocessing                     |
+          |               |       Multithreading       +----------------------------+----------------------------+
+          |               |                            |           spawn            |            fork            |
+          +===============+============================+============================+============================+
+          |Independent    |Data Processing: support    |Data Processing: support    |Data Processing: support    |
+          |               |                            |                            |                            |
+          |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+          |               |training: not support       |training: support           |training: not support       |
+          +---------------+----------------------------+----------------------------+----------------------------+
+          |Non-independent|Data Processing: support    |Data Processing: support    |Data Processing: support    |
+          |               |                            |                            |                            |
+          |process mode   |Data Processing + Network   |Data Processing + Network   |Data Processing + Network   |
+          |               |training: support           |training: support           |training: not support       |
+          +---------------+----------------------------+----------------------------+----------------------------+
+
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
@@ -873,7 +943,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.source = _GeneratorWrapper(self.source)
 
         self.prepared_source = None  # source to be sent to C++
-        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True:
+        if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True and \
+           get_multiprocessing_start_method() == "fork":
             self.num_parallel_workers = 1
             logger.warning(
                 "Input 'source' of 'GeneratorDataset' includes network computing operators like in mindspore.nn, "
@@ -911,30 +982,12 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
         # Move get dataset_size by len from parse to here, because self.source will
         # lose attribution of '__len__' after deepcopy.
-        self._calculate_source_length()
+        self.source_len = len(self.source) if hasattr(self.source, "__len__") else -1
 
         self.max_rowsize = max_rowsize if max_rowsize is not None else -1
         self.sample_fn = None
         # Ignore batch_info in the input parameter.
         self.collate_fn = (lambda *args: collate_fn(*args[:-1])) if collate_fn is not None else None
-
-    def _calculate_source_length(self):
-        """Calculate the source length according to the source and sampler."""
-        self.source_len = -1  # unknown
-        if hasattr(self.source, "__len__"):
-            self.source_len = len(self.source)
-
-            # if user defined sampler, update the self.source_len
-            if isinstance(self.sampler, samplers.Sampler) or hasattr(self.sampler, "__iter__"):
-                if self.sampler.child_sampler is not None:
-                    raise RuntimeError("GeneratorDataset does not support user defined sampler with child sampler yet.")
-                if self.sampler.num_samples is not None:
-                    self.source_len = self.sampler.num_samples
-                elif hasattr(self.sampler, "__len__"):
-                    self.source_len = len(self.sampler)
-                else:
-                    # counting on a copied sampler to prevent changing the random state of the original one
-                    self.source_len = len(list(copy.deepcopy(self.sampler)))
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:
@@ -993,6 +1046,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
             if self.num_parallel_workers > 1 and not get_debug_mode():
                 self.__validate_memory_usage()
+                # Starting multiple processes in spawn mode requires pickling source object
+                self.source = _PickleGeneratorSource(self.source)
 
                 sample_fn = SamplerFn(self.source, self.num_parallel_workers, self.python_multiprocessing,
                                       self.max_rowsize)
@@ -1139,8 +1194,8 @@ class NumpySlicesDataset(GeneratorDataset):
             Default: ``None`` , expected order behavior shown in the table below.
         num_shards (int, optional): Number of shards that the dataset will be divided into. Default: ``None`` .
             When this argument is specified, `num_samples` reflects the max sample number of per shard.
-            Used in `data parallel training <https://www.mindspore.cn/docs/en/master/model_train/
-            parallel/data_parallel.html#data-parallel-mode-loads-datasets>`_ .
+            Used in `data parallel training <https://www.mindspore.cn/tutorials/en/master/
+            parallel/data_parallel.html#loading-datasets>`_ .
         shard_id (int, optional): The shard ID within `num_shards` . Default: ``None`` . This argument must be
             specified only when `num_shards` is also specified.
 

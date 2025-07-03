@@ -64,17 +64,17 @@ TypePtr AddLayerNormGradFuncImpl::InferType(const PrimitivePtr &prim,
 }
 
 ShapeArray AddLayerNormGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dx_tensor);
   const auto &dx_shape = dx_tensor->shape();
-  const auto &gamma_tensor = input_values[kInputIndex5]->cast<tensor::BaseTensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex5]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   const auto &gamma_shape = gamma_tensor->shape();
   return {dx_shape, gamma_shape, gamma_shape};
 }
 
 TypePtrList AddLayerNormGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &dx_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(dx_tensor);
   return {dx_tensor->Dtype(), std::make_shared<TensorType>(kFloat32), std::make_shared<TensorType>(kFloat32)};
 }

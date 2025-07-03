@@ -22,7 +22,7 @@
 #include "include/api/types.h"
 #include "include/api/status.h"
 #include "ir/func_graph.h"
-#include "include/transform/graph_ir/types.h"
+#include "backend/ge_backend/graph_ir/types.h"
 #include "ge/ge_ir_build.h"
 #include "cxx_api/model/acl/acl_model_options.h"
 
@@ -37,8 +37,9 @@ class MS_API ModelConverter {
   void set_options(const std::weak_ptr<AclModelOptions> &options) { options_ = options; }
 
  private:
-  transform::DfGraphPtr ConvertFuncGraphToAIR(const FuncGraphPtr &anf_graph) const;
-  Buffer BuildAirModel(const transform::DfGraphPtr &graph, const std::map<std::string, std::string> &init_options,
+  backend::ge_backend::DfGraphPtr ConvertFuncGraphToAIR(const FuncGraphPtr &anf_graph) const;
+  Buffer BuildAirModel(const backend::ge_backend::DfGraphPtr &graph,
+                       const std::map<std::string, std::string> &init_options,
                        const std::map<std::string, std::string> &build_options) const;
   Buffer LoadAscendIRInner(const Buffer &model_data);
   Status SaveModel(const ge::ModelBufferData &model) const;

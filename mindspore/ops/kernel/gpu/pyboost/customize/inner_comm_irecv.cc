@@ -15,8 +15,8 @@
  */
 
 #include "kernel/gpu/pyboost/customize/inner_comm_irecv.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ccsrc/pyboost/pyboost_utils.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +26,7 @@ void InnerCommIrecvGPUCustomize(const std::shared_ptr<OpRunner> &op, const Int64
   // Create Fake tensor for irecv
   auto shape_vector = ConvertValueTupleToVector<int64_t>(shape);
   auto dtype_id = GetValue<int64_t>(dtype);
-  auto input_tensor = std::make_shared<tensor::BaseTensor>(static_cast<TypeId>(dtype_id), shape_vector);
+  auto input_tensor = std::make_shared<tensor::Tensor>(static_cast<TypeId>(dtype_id), shape_vector);
 
   auto pre_func = [op, input_tensor]() {
     OpRunner::InferOpOutput(op, input_tensor);

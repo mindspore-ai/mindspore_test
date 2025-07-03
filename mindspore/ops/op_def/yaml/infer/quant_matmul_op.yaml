@@ -1,0 +1,48 @@
+#operator quant_matmul
+quant_matmul:
+  args:
+    x1:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    scale:
+      dtype: tensor
+    offset:
+      dtype: tensor
+      default: None
+    pertoken_scale:
+      dtype: tensor
+      default: None
+    bias:
+      dtype: tensor
+      default: None
+    output_dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    x1_dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    x2_dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    pertoken_scale_dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    scale_dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+    group_sizes:
+      dtype: tuple[int]
+      type_cast: list[int]
+      default: None
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: QuantMatmulAscend

@@ -18,10 +18,11 @@
 #include <vector>
 #include <utility>
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace embedding_dense_backward {
 
 class EmbeddingDenseBackwardAscend : public AclnnKernelMod {
  public:
@@ -38,6 +39,7 @@ class EmbeddingDenseBackwardAscend : public AclnnKernelMod {
   uint64_t padding_idx_{0xFFFFFFFF};
   bool scale_grad_by_freq_{false};
 };
+}  // namespace embedding_dense_backward
 }  // namespace kernel
 }  // namespace mindspore
 

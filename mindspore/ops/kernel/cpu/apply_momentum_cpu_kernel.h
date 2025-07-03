@@ -20,12 +20,13 @@
 #include <vector>
 #include <map>
 #include "mindspore/ops/infer/apply_momentum.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
-class BACKEND_EXPORT ApplyMomentumCpuKernelMod : public NativeCpuKernelMod {
+namespace apply_momentum_cpu {
+class ApplyMomentumCpuKernelMod : public NativeCpuKernelMod {
  public:
   ApplyMomentumCpuKernelMod() = default;
   ~ApplyMomentumCpuKernelMod() override = default;
@@ -45,6 +46,7 @@ class BACKEND_EXPORT ApplyMomentumCpuKernelMod : public NativeCpuKernelMod {
 
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace apply_momentum_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

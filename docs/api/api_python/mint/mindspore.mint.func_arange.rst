@@ -3,7 +3,7 @@ mindspore.mint.arange
 
 .. py:function:: mindspore.mint.arange(start=0, end=None, step=1, *, dtype=None)
 
-    创建一个从 `start` 开始， `end` 结束（不含），步长为 `step` 序列（一维张量）。
+    创建一个从 `start` 开始到 `end` 结束（不含）、步长为 `step` 的序列（一维张量）。
 
     参数：
         - **start** (Union[float, int]，可选) - 序列起始值，默认值： ``0`` 。

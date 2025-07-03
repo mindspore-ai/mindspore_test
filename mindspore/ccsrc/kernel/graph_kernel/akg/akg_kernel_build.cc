@@ -32,7 +32,8 @@
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {
@@ -157,7 +158,7 @@ bool AkgKernelBuilder::SingleOpParallelBuild(const std::vector<AnfNodePtr> &anf_
       if (is_custom_node) {
         // in this case, the cnode is a CustomOp (no matter whether graph kernel mode is enabled or not)
         // generate the fused json for the single kernel cnode
-        if (!graph_kernel_json_generator.CollectFusedJsonWithSingleKernel(cnode)) {
+        if (!graph_kernel_json_generator.CollectFusedJsonWithSingleKernel(cnode, build_func_)) {
           MS_EXCEPTION(UnknownError) << "Collect op info failed. op[" << anf_node->fullname_with_scope() << "].";
         }
       } else {

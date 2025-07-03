@@ -44,10 +44,10 @@ PYBIND_REGISTER(SamplerObj, 1, ([](const py::module *m) {
 PYBIND_REGISTER(DistributedSamplerObj, 2, ([](const py::module *m) {
                   (void)py::class_<DistributedSamplerObj, SamplerObj, std::shared_ptr<DistributedSamplerObj>>(
                     *m, "DistributedSamplerObj", "to create a DistributedSamplerObj")
-                    .def(py::init([](int64_t num_shards, int64_t shard_id, bool shuffle, int64_t num_samples,
-                                     uint32_t seed, int64_t offset, bool even_dist) {
+                    .def(py::init([](int64_t num_shards, int64_t shard_id, dataset::ShuffleMode shuffle_mode,
+                                     int64_t num_samples, uint32_t seed, int64_t offset, bool even_dist) {
                       std::shared_ptr<DistributedSamplerObj> sampler = std::make_shared<DistributedSamplerObj>(
-                        num_shards, shard_id, shuffle, num_samples, seed, offset, even_dist);
+                        num_shards, shard_id, shuffle_mode, num_samples, seed, offset, even_dist);
                       THROW_IF_ERROR(sampler->ValidateParams());
                       return sampler;
                     }));
@@ -78,9 +78,10 @@ PYBIND_REGISTER(PKSamplerObj, 2, ([](const py::module *m) {
 PYBIND_REGISTER(RandomSamplerObj, 2, ([](const py::module *m) {
                   (void)py::class_<RandomSamplerObj, SamplerObj, std::shared_ptr<RandomSamplerObj>>(
                     *m, "RandomSamplerObj", "to create a RandomSamplerObj")
-                    .def(py::init([](bool replacement, int64_t num_samples, bool reshuffle_each_epoch) {
-                      std::shared_ptr<RandomSamplerObj> sampler =
-                        std::make_shared<RandomSamplerObj>(replacement, num_samples, reshuffle_each_epoch);
+                    .def(py::init([](bool replacement, int64_t num_samples, bool reshuffle_each_epoch,
+                                     dataset::ShuffleMode shuffle_mode) {
+                      std::shared_ptr<RandomSamplerObj> sampler = std::make_shared<RandomSamplerObj>(
+                        replacement, num_samples, reshuffle_each_epoch, shuffle_mode);
                       THROW_IF_ERROR(sampler->ValidateParams());
                       return sampler;
                     }));

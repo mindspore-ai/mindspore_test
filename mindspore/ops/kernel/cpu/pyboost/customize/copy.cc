@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "kernel/cpu/pyboost/customize/copy.h"
-#include "kernel/common/pyboost/customize/op_common.h"
+#include "mindspore/ops/kernel/cpu/pyboost/customize/copy.h"
+#include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
 
-tensor::BaseTensorPtr CopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor) {
+tensor::TensorPtr CopyCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "Call start";
   return CopyCustomizeCall(op, input_tensor);
 }

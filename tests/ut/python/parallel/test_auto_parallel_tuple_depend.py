@@ -81,7 +81,7 @@ def test_virtual_dataset_3_input():
             out = self.matmul2(out, b)
             return out
 
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming")
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     net = GradWrap(NetWithLoss(Net()))
     x = Tensor(np.ones([128, 32]), dtype=ms.float32)

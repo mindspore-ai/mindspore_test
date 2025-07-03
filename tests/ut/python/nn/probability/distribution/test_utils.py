@@ -22,9 +22,8 @@ from mindspore.nn.cell import Cell
 from mindspore import context
 from mindspore import dtype
 from mindspore import Tensor
-from mindspore.common.parameter import Parameter
 from mindspore.nn.probability.distribution._utils.utils import set_param_type, \
-    cast_to_tensor, CheckTuple, CheckTensor
+    CheckTuple, CheckTensor
 
 def test_set_param_type():
     """
@@ -76,32 +75,6 @@ def test_set_param_type():
     assert ans10 == dtype.float32
     ans11 = set_param_type(dict11, dtype.float32)
     assert ans11 == dtype.float32
-
-def test_cast_to_tensor():
-    """
-    Test cast_to_tensor.
-    """
-    with pytest.raises(ValueError):
-        cast_to_tensor(None, dtype.float32)
-    with pytest.raises(TypeError):
-        cast_to_tensor(True, dtype.float32)
-    with pytest.raises(TypeError):
-        cast_to_tensor({'a': 1, 'b': 2}, dtype.float32)
-    with pytest.raises(TypeError):
-        cast_to_tensor('tensor', dtype.float32)
-
-    ans1 = cast_to_tensor(Parameter(Tensor(0.1, dtype=dtype.float32), 'param'))
-    assert isinstance(ans1, Parameter)
-    ans2 = cast_to_tensor(np.array(1.0).astype(np.float32))
-    assert isinstance(ans2, Tensor)
-    ans3 = cast_to_tensor([1.0, 2.0])
-    assert isinstance(ans3, Tensor)
-    ans4 = cast_to_tensor(Tensor(0.1, dtype=dtype.float32), dtype.float32)
-    assert isinstance(ans4, Tensor)
-    ans5 = cast_to_tensor(0.1, dtype.float32)
-    assert isinstance(ans5, Tensor)
-    ans6 = cast_to_tensor(1, dtype.float32)
-    assert isinstance(ans6, Tensor)
 
 class Net(Cell):
     """

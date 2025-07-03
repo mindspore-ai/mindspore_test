@@ -3,7 +3,7 @@ unique_consecutive:
   args:
     input:
       dtype: tensor
-    return_idx:
+    return_inverse:
       dtype: bool
       prim_init: True
       default: False
@@ -11,7 +11,7 @@ unique_consecutive:
       dtype: bool
       prim_init: True
       default: False
-    axis:
+    dim:
       dtype: int
       prim_init: True
       default: None

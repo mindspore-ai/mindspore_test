@@ -139,7 +139,7 @@ def test_fallback_sum_with_x_unsupported_operand_type_error_1():
     Description: Test sum() in graph mode when input x is list of list
     Expectation: TypeError.
     """
-    @jit
+    @jit(backend="ms_backend")
     def foo():
         x = sum([[1, 2], [3, 4]])
         return x

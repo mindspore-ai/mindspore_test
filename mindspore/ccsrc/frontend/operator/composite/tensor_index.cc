@@ -33,8 +33,16 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
@@ -54,6 +62,7 @@ IndexHandleLevel TensorIndex::PreHandleIndex(const AbstractBasePtr &data, const 
     MS_LOG(DEBUG) << "The tuple index is constant.";
     return IndexHandleLevel::kHandleByConstFold;
   }
+  MS_EXCEPTION_IF_NULL(tuple_abs);
   if (tuple_abs->size() >= kMaxTensorIndexDimNums) {
     MS_EXCEPTION(IndexError) << "The size of tuple index must in the range of [0, 8] if tensor shape is dynamic.";
   }
@@ -64,6 +73,7 @@ IndexHandleLevel TensorIndex::PreHandleIndex(const AbstractBasePtr &data, const 
 // Parse slice to start, stop, step
 AnfNodePtrList TensorIndex::ParseSlice(const AnfNodePtr &index_node, const abstract::AbstractSlicePtr &abs_slice_ptr,
                                        std::vector<int64_t> *init_by_one, bool is_need_convert_to_scalar) {
+  MS_EXCEPTION_IF_NULL(abs_slice_ptr);
   auto slice_info_abs = {abs_slice_ptr->start(), abs_slice_ptr->stop(), abs_slice_ptr->step()};
   const std::vector<string> &slice_str = {kSliceStart, kSliceStop, kSliceStep};
   AnfNodePtrList slice_nodes;
@@ -73,7 +83,9 @@ AnfNodePtrList TensorIndex::ParseSlice(const AnfNodePtr &index_node, const abstr
       if (IsAnyValue(slice_abs)) {
         auto res_node = res_graph_->NewCNode({NewValueNode(prim::kPrimSliceGetItem), index_node, NewValueNode(str)});
         if (is_need_convert_to_scalar && slice_abs->isa<abstract::AbstractTensor>()) {
-          return res_graph_->NewCNode({NewValueNode(prim::kPrimTensorToScalar), res_node});
+          auto cast_node = res_graph_->NewCNode(
+            {NewValueNode(prim::kPrimCast), res_node, NewValueNode(MakeValue(static_cast<int64_t>(kNumberTypeInt64)))});
+          return res_graph_->NewCNode({NewValueNode(prim::kPrimTensorToScalar), cast_node});
         }
         return res_node;
       }
@@ -281,12 +293,15 @@ AnfNodePtr TensorIndex::SequenceIndexToTensor(const AnfNodePtr &data_node, const
                                               int64_t expand_dims_mask, bool *empty_sequence) {
   auto prim = std::make_shared<Primitive>(kPrimNormalizeTupleIndex->name());
   AnfNodePtr new_index_node = sequence_index_node;
-  *empty_sequence = dyn_cast<abstract::AbstractSequence>(sequence_index_abs)->empty();
+  auto abstract_sequence = dyn_cast<abstract::AbstractSequence>(sequence_index_abs);
+  MS_EXCEPTION_IF_NULL(abstract_sequence);
+  *empty_sequence = abstract_sequence->empty();
   if (*empty_sequence) {
     return NewValueNode(SizeToLong(0));
   }
   auto list_index_val_abs = sequence_index_abs->cast<abstract::AbstractSequencePtr>();
   // Handle bool list index
+  MS_EXCEPTION_IF_NULL(list_index_val_abs);
   const AbstractBasePtrList &list_index_val_ele = list_index_val_abs->elements();
   if (std::all_of(list_index_val_ele.begin(), list_index_val_ele.end(),
                   [](const AbstractBasePtr &x) { return x->BuildType()->type_id() == kNumberTypeBool; })) {
@@ -811,13 +826,13 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTensorNext(const AnfNodePtr &data_
         {tensor_index_transfer_node, new_tensor_index, broad_cast_shape_node, final_shape_node, new_index_shape_node});
     } else {
       auto new_slice_shape_node = tuple_index_info_node[kIndex4 + slice_index_count];
-      new_tensor_index = NewCNode({MakeReshapeNode(), new_tensor_index, new_slice_shape_node}, res_graph_);
-      new_tensor_index = NewCNode({broadcast_to_node, new_tensor_index, final_shape_node}, res_graph_);
+      new_tensor_index = res_graph_->NewCNodeInOrder({MakeReshapeNode(), new_tensor_index, new_slice_shape_node});
+      new_tensor_index = res_graph_->NewCNodeInOrder({broadcast_to_node, new_tensor_index, final_shape_node});
       slice_index_count += 1;
     }
     if (!IsDynamicRank(data_shape_) || !has_ellipsis) {
       new_tensor_index =
-        res_graph_->NewCNode({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
+        res_graph_->NewCNodeInOrder({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
     }
     (void)new_normalized_tensors.emplace_back(new_tensor_index);
   }
@@ -892,7 +907,9 @@ void TensorIndexSetitem::SetItemBySlice(const AnfNodePtr &data_node, const AnfNo
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), slice_to_indices_node, NewValueNode(SizeToLong(i))}));
   }
   auto new_value_node = value_node;
-  auto type_id = dyn_cast<abstract::AbstractTensor>(data)->element()->BuildType();
+  auto data_abstract_tensor = dyn_cast<abstract::AbstractTensor>(data);
+  MS_EXCEPTION_IF_NULL(data_abstract_tensor);
+  auto type_id = data_abstract_tensor->element()->BuildType();
   if (value->isa<abstract::AbstractTensor>()) {
     auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
     ValueNodePtr cast_vnode = NewValueNode(cast);
@@ -1186,9 +1203,9 @@ AnfNodePtr TensorIndex::ExpandDimsByTupleIndex(const AnfNodePtr &input_data_node
       normalize_dim_index_prim->set_attr(kAttrExpandDimsCnt, MakeValue(SizeToLong(expand_dims_cnt)));
       normalize_dim_index_prim->set_attr(kAttrTupleIndexAxis, MakeValue(SizeToLong(i)));
       auto normalize_dim_index_node = NewValueNode(normalize_dim_index_prim);
-      auto normalize_axis_cnode = res_graph_->NewCNode({normalize_dim_index_node, data_node});
+      auto normalize_axis_cnode = res_graph_->NewCNodeInOrder({normalize_dim_index_node, data_node});
       expand_dims_cnt -= 1;
-      data_node = res_graph_->NewCNode({MakeExpandDimsNode(), data_node, normalize_axis_cnode});
+      data_node = res_graph_->NewCNodeInOrder({MakeExpandDimsNode(), data_node, normalize_axis_cnode});
     }
   }
   return data_node;
@@ -1214,6 +1231,7 @@ FuncGraphPtr HandleBoolTensor::GenerateFuncGraph(const AbstractBasePtrList &args
 
   std::vector<AnfNodePtr> non_zero_shape_list{NewValueNode(kPrimMakeTuple)};
   tensor::TensorPtr zero_shape_tensor_index = std::make_shared<tensor::Tensor>(kNumberTypeInt32, ShapeVector({0}));
+  MS_EXCEPTION_IF_NULL(tuple_abs_ptr);
   for (size_t i = 0; i < tuple_abs_ptr->size(); i++) {
     const auto &index_abs = tuple_abs_ptr->elements()[i];
     AnfNodePtr new_index_node =

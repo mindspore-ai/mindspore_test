@@ -35,8 +35,21 @@
 #include "tools/graph_kernel/converter/preprocess_weight.h"
 #include "tools/graph_kernel/common/utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/kernel/kernel_build_info.h"
+#include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
 namespace mindspore::graphkernel {
 AnfNodePtr FixFormatDeco::Run(const AnfNodePtr &node) {
@@ -146,7 +159,9 @@ AnfNodePtr InferValueDeco::Run(const AnfNodePtr &node) {
 }
 
 AnfNodePtr PoolLayoutDeco::Run(const AnfNodePtr &node) {
+  MS_CHECK_TRUE_MSG(node != nullptr, nullptr, "node is a nullptr.");
   auto cnode = QuickCloneCNode(node);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cnode is a nullptr.");
   auto prev_node = AnfUtils::VisitKernel(node->cast<CNodePtr>()->input(1), 0).first;
   if (prev_node != nullptr) {
     auto sub_graph = GetCNodeFuncGraph(prev_node);

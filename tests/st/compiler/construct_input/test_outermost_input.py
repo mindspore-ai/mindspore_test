@@ -26,6 +26,8 @@ import mindspore.ops as ops
 from mindspore import context
 from tests.mark_utils import arg_mark
 
+context.set_context(jit_level='O0')
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_teardown():
@@ -641,3 +643,58 @@ def test_empty_tuple_input():
     x = ms.Tensor([1])
     out = test_net(x, ())
     assert out.shape == (1,)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_as_input_and_used_in_function():
+    """
+    Feature: Support all types of input for the top cell.
+    Description: Pass cell as input.
+    Expectation: No exception.
+    """
+
+    class LayerNorm(Cell):
+        def __init__(self, features, eps=1e-06):
+            super(LayerNorm, self).__init__()
+            self.a_2 = Parameter(ops.ones(features))
+            self.b_2 = Parameter(ops.zeros(features))
+            self.eps = eps
+
+        def forward(self, x):
+            mean = x.mean(-1, keep_dims=True)
+            std = x.std(axis=None, ddof=-1, keepdims=True)
+            return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+
+        def construct(self, x):
+            mean = x.mean(-1, keep_dims=True)
+            std = x.std(axis=None, ddof=-1, keepdims=True)
+            return self.a_2 * (x - mean) / (std + self.eps) + self.b_2
+
+    class ReLU(Cell):
+        def __init__(self):
+            super(ReLU, self).__init__()
+            self.relu = ops.ReLU()
+
+        def forward(self, x):
+            return self.relu(x)
+
+        def construct(self, *inputs):
+            return self.forward(*inputs)
+
+    class TestNet(Cell):
+        def __init__(self, size, dropout):
+            super(TestNet, self).__init__()
+            self.dropout = nn.Dropout(dropout)
+            self.norm = LayerNorm(size)
+
+        def construct(self, x, sublayer):
+            return x + self.dropout(sublayer(self.norm(x)))
+
+    context.set_context(mode=context.GRAPH_MODE)
+    def run():
+        block = ReLU()
+        x = Tensor(np.ones((4, 4, 4, 4)).astype(np.float32))
+        net = TestNet(4, 0.5)
+        out = net(x, block)
+        assert np.allclose(x.asnumpy(), out.asnumpy())
+    run()

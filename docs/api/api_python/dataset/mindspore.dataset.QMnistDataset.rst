@@ -10,14 +10,14 @@ mindspore.dataset.QMnistDataset
     参数：
         - **dataset_dir** (str) - 包含数据集文件的根目录路径。
         - **usage** (str, 可选) - 指定数据集的子集，可取值为 ``'train'`` 、 ``'test'`` 、 ``'test10k'`` 、 ``'test50k'`` 、 ``'nist'`` 或 ``'all'`` 。默认值： ``None`` ，读取所有子集。
-        - **compat** (bool, 可选) - 若为 ``True`` ，指定每个样本的标签是类别号，否则指定标签是完整的QMNIST信息。默认值： ``True`` ，标签为类别号。
+        - **compat** (bool, 可选) - 指定每个样本的标签信息。若为 ``True`` ，指定每个样本的标签是类别号，否则指定标签是完整的QMNIST信息。默认值： ``True`` ，标签为类别号。
         - **num_samples** (int, 可选) - 指定从数据集中读取的样本数。默认值： ``None`` ，读取所有样本。
         - **num_parallel_workers** (int, 可选) - 指定读取数据的工作线程数。默认值： ``None`` ，使用全局默认线程数(8)，也可以通过 :func:`mindspore.dataset.config.set_num_parallel_workers` 配置全局线程数。
         - **shuffle** (bool, 可选) - 是否混洗数据集。默认值： ``None`` 。下表中会展示不同参数配置的预期行为。
         - **sampler** (Sampler, 可选) - 指定从数据集中选取样本的采样器。默认值： ``None`` 。下表中会展示不同配置的预期行为。
-        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/data_parallel.html#数据并行模式加载数据集>`_ 的时候使用。
+        - **num_shards** (int, 可选) - 指定分布式训练时将数据集进行划分的分片数。默认值： ``None`` 。指定此参数后， `num_samples` 表示每个分片的最大样本数。一般在 `数据并行模式训练 <https://www.mindspore.cn/tutorials/zh-CN/master/parallel/data_parallel.html#数据集加载>`_ 的时候使用。
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
-        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
+        - **cache** (:class:`~.dataset.DatasetCache`, 可选) - 单节点数据缓存服务，用于加快数据集处理，详情请阅读 `单节点数据缓存 <https://www.mindspore.cn/tutorials/zh-CN/master/dataset/cache.html>`_ 。默认值： ``None`` ，不使用缓存。
 
     异常：
         - **RuntimeError** - `dataset_dir` 路径下不包含数据文件。
@@ -37,7 +37,7 @@ mindspore.dataset.QMnistDataset
     .. include:: mindspore.dataset.sampler.rst
 
     **关于QMNIST数据集：**
-    
+
     QMNIST 数据集是从 NIST Special Database 19 中的原始数据生成的，目的是尽可能地匹配 MNIST 预处理。
     研究人员试图生成额外的 50k 类似 MNIST 数据的图像。在QMNIST论文中，作者给出了重建过程，并使用匈牙利算法来找到原始 MNIST 样本与其重建样本之间的最佳匹配。
 

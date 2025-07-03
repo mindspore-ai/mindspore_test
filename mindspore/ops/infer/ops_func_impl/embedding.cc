@@ -83,11 +83,11 @@ int32_t EmbeddingFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 }
 
 ShapeArray EmbeddingFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  auto input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = input_values[kIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_shape = input_tensor->shape();
 
-  auto weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  auto weight_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(weight_tensor);
   auto &weight_shape = weight_tensor->shape();
 
@@ -110,7 +110,7 @@ ShapeArray EmbeddingFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
 }
 
 TypePtrList EmbeddingFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  auto weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  auto weight_tensor = input_values[kIndex1]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(weight_tensor);
   return {weight_tensor->Dtype()};
 }

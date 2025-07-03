@@ -535,5 +535,44 @@ TEST_F(TestAbstractDynamicMemPool, test_common_malloc_from_persistent) {
   mem_pool->FreeTensorMem(common_memory);
   mem_pool->FreeTensorMem(more_memory);
 }
+
+/// Feature: test release free blocks for abstract dynamic mem pool.
+/// Description: test release free blocks.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestAbstractDynamicMemPool, test_release_free_blocks) {
+  auto mem_pool = std::make_shared<LinearDynamicMemPoolWithoutVmm>();
+  std::vector<void *> addrs;
+  for (size_t i = 0; i < 10; i++) {
+    (void)addrs.emplace_back(mem_pool->AllocTensorMem(kGBToByte));
+  }
+  EXPECT_EQ(mem_pool->TotalMemStatistics(), kGBToByte * 10);
+  mem_pool->FreeTensorMem(addrs[0]);
+  mem_pool->FreeTensorMem(addrs[9]);
+  EXPECT_EQ(mem_pool->TotalMemStatistics(), kGBToByte * 10);
+  EXPECT_EQ(mem_pool->TotalUsedMemStatistics(), kGBToByte * 8);
+  size_t release_size = mem_pool->ReleaseFreeBlocks();
+  EXPECT_EQ(release_size, kGBToByte * 2);
+  EXPECT_EQ(mem_pool->TotalMemStatistics(), kGBToByte * 8);
+  EXPECT_EQ(mem_pool->TotalUsedMemStatistics(), kGBToByte * 8);
+}
+
+/// Feature: test empty cache for abstract dynamic mem pool.
+/// Description: test empty cache.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestAbstractDynamicMemPool, test_empty_cache) {
+  auto mem_pool = std::make_shared<LinearDynamicMemPool>();
+  std::vector<void *> addrs;
+  for (size_t i = 0; i < 10; i++) {
+    (void)addrs.emplace_back(mem_pool->AllocTensorMem(kGBToByte));
+  }
+  for (size_t i = 0; i < 10; i++) {
+    mem_pool->FreeTensorMem(addrs[i]);
+  }
+  EXPECT_EQ(mem_pool->TotalMemStatistics(), kGBToByte * 10);
+  EXPECT_EQ(mem_pool->TotalUsedMemStatistics(), 0);
+  // Empty cache is not directly implements in memory pool.
+  size_t expected_size = -1L;
+  EXPECT_EQ(mem_pool->EmptyCache(), expected_size);
+}
 }  // namespace device
 }  // namespace mindspore

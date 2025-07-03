@@ -1,0 +1,15 @@
+take:
+  args:
+    input:
+      dtype: tensor
+    indices:
+        dtype: tensor    
+    axis:
+        dtype: int
+        default: None
+    mode:
+        dtype: str
+        default: "'clip'"
+  returns:
+    output:
+      dtype: tensor

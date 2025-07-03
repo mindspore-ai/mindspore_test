@@ -84,7 +84,7 @@ class HausdorffDistance(Metric):
     :math:`h(A, B)` is not equal to :math:`h(B, A)`. :math:`H(A, B)` is the two-way Hausdorff distance.
 
     Args:
-        distance_metric (string): Three distance measurement methods are supported:
+        distance_metric (str): Three distance measurement methods are supported:
                     ``"euclidean"`` (Euclidean Distance) ,  ``"chessboard"`` (Chessboard Distance, Chebyshev Distance)
                     or  ``"taxicab"`` (Taxicab Distance, Manhattan Distance). Default: ``"euclidean"`` .
         percentile (float): Floating point numbers between 0 and 100. Specify the percentile parameter to get the
@@ -270,9 +270,9 @@ class HausdorffDistance(Metric):
 
         Raises:
             ValueError: If the number of the inputs is not 3.
-            TypeError: If the data type of label_idx is not int or float.
-            ValueError: If the value of label_idx is not in y_pred or y.
-            ValueError: If y_pred and y have different shapes.
+            TypeError: If the data type of `label_idx` is not int or float.
+            ValueError: If the value of `label_idx` is not in `y_pred` or `y`.
+            ValueError: If `y_pred` and `y` have different shapes.
         """
         self._is_update = True
 

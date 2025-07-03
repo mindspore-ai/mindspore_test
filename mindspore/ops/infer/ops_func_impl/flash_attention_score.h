@@ -18,8 +18,11 @@
 
 #include <vector>
 #include <set>
+#include <map>
+#include <string>
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace ops {
@@ -62,6 +65,11 @@ enum FlashAttentionScoreSparseMode : int64_t {
   kSparseDilated,
   kSparseBlockLocal,
 };
+const std::map<int64_t, std::string> layoutMap = {
+  {ops::FASInputLayoutMode::BSH, "BSH"}, {ops::FASInputLayoutMode::BNSD, "BNSD"},
+  {ops::FASInputLayoutMode::SBH, "SBH"}, {ops::FASInputLayoutMode::BSND, "BSND"},
+  {ops::FASInputLayoutMode::TND, "TND"}, {ops::FASInputLayoutMode::TH, "TH"},
+  {ops::FASInputLayoutMode::NSD, "NSD"}, {ops::FASInputLayoutMode::SH, "SH"}};
 class OPS_API FlashAttentionScoreFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

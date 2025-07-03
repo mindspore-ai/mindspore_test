@@ -23,6 +23,7 @@
 #include "mindspore/ops/infer/padding.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/padding_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
 namespace mindspore {
 namespace kernel {

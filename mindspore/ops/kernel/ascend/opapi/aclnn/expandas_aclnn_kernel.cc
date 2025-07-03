@@ -17,6 +17,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace expandas {
 void ExpandAsAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
   other_shape = inputs[kIndex1]->GetShapeVector();
@@ -31,5 +32,6 @@ bool ExpandAsAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(ExpandAs, ExpandAsAclnnKernelMod);
+}  // namespace expandas
 }  // namespace kernel
 }  // namespace mindspore

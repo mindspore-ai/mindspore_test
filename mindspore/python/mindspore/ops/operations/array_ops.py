@@ -32,17 +32,17 @@ from mindspore._checkparam import _check_3d_int_or_tuple
 from mindspore.common import dtype as mstype
 from mindspore.common._decorator import deprecated
 from mindspore.common import Tensor, CSRTensor, COOTensor
-from mindspore._c_expression import Tensor as Tensor_
+from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import COOTensor as COOTensor_
 from ..auto_generate import (
-    ExpandDims, Reshape, TensorShape, Transpose, Gather, OnesLike, ZerosLike,
+    ExpandDims, Reshape, TensorShape, Transpose, TransposeView, Gather, OnesLike, ZerosLike,
     Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
     ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice)
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -183,8 +183,7 @@ def _check_infer_attr_reduce(axis, keep_dims, prim_name):
 
 class Expand(Primitive):
     """
-    :class:`mindspore.ops.Expand` will be deprecated in the future.
-    Please use :class:`mindspore.ops.BroadcastTo` instead.
+    This interface will be deprecated in the future, and use :class:`mindspore.ops.BroadcastTo` instead.
     """
 
     @deprecated("2.1", "BroadcastTo", False)
@@ -274,7 +273,7 @@ class Im2Col(Primitive):
     each sliding `ksizes`- sized block within the spatial dimensions
     of input `x` into a column (i.e., last dimension) of a 4-D output
     tensor of shape :math:`(N, C, \prod(\text{kernel_size}), L)`, where
-    :math:`C \times \prod(\text{kernel_size})` is the total number of values
+    :math:`C \times \prod(\text{kernel_size})` is the total number of elements
     within each block (a block has :math:`\prod(\text{kernel_size})` spatial
     locations each containing a `C`-channeled vector), and :math:`L` is
     the total number of such blocks:
@@ -1170,7 +1169,7 @@ class TupleToArray(PrimitiveWithInfer):
 
     Inputs:
         - **input_x** (tuple) - A tuple of numbers. These numbers have the same type.
-          The shape is :math:`(N,*)` where :math:`*` means any number of additional dimensions.
+          The shape is :math:`(N,)`.
 
     Outputs:
         Tensor, if the input tuple contains `N` numbers, then the shape of the output tensor is :math:`(N,)`.
@@ -1803,9 +1802,9 @@ class Unstack(Primitive):
     Refer to :func:`mindspore.ops.unstack` for more details.
 
     Args:
-        axis (int): Dimension along which to unpack. Default: ``0`` .
+        axis (int, optional): Dimension along which to unpack. Default: ``0`` .
             Negative values wrap around. The range is [-R, R).
-        num (Union[None, int]): The number of output tensors.
+        num (Union[None, int], optional): The number of output tensors.
             Automatically inferred by input_x and axis if ``None`` . Default: ``None`` .
 
     Inputs:
@@ -2114,7 +2113,7 @@ class ScatterNdUpdate(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``True`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``True`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
@@ -2245,7 +2244,7 @@ class ScatterMin(_ScatterOpDynamic):
     when `updates` does not support conversion to the data type required by `input_x`.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
@@ -2307,7 +2306,7 @@ class ScatterAdd(Primitive):
         This is an in-place update operator. Therefore, the `input_x` will be updated after the operation is completed.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock.
+        use_locking (bool, optional): Whether to protect the assignment by a lock.
             If ``True`` , `input_x` will be protected by the lock.
             Otherwise, the calculation result is undefined. Default: ``False`` .
 
@@ -2427,7 +2426,7 @@ class ScatterSub(Primitive):
     the relatively highest priority data type.
 
     Args:
-        use_locking (bool): Whether to protect the assignment by a lock. Default: ``False`` .
+        use_locking (bool, optional): Whether to protect the assignment by a lock. Default: ``False`` .
 
     Inputs:
         - **input_x** (Union[Parameter, Tensor]) - The target tensor, with data type of Parameter or Tensor.
@@ -3038,7 +3037,7 @@ class ScatterNdDiv(_ScatterNdOp):
 
 class ScatterNdMax(_ScatterNdOp):
     r"""
-    Applies sparse maximum to individual values or slices in a tensor.
+    Computes sparse maximum to individual values or slices in a tensor.
 
     Using given values to update parameter value through the maximum operation, along with the input indices.
     This operation outputs the `input_x` after the update is done, which makes it convenient to use the updated value.
@@ -3588,7 +3587,7 @@ class ReverseSequence(PrimitiveWithInfer):
 
     Args:
         seq_dim (int): The dimension where reversal is performed. Required.
-        batch_dim (int): The input is sliced in this dimension. Default: ``0`` .
+        batch_dim (int, optional): The input is sliced in this dimension. Default: ``0`` .
 
     Inputs:
         - **x** (Tensor) - The input to reverse, supporting all number types including bool.
@@ -3839,10 +3838,11 @@ class EmbeddingLookup(Primitive):
     `offset`.
 
     Inputs:
-        - **input_params** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-          This represents a Tensor slice, instead of the entire Tensor. Currently, the dimension is restricted to be 2.
-        - **input_indices** (Tensor) - The shape of tensor is :math:`(y_1, y_2, ..., y_S)`.
-          Specifies the indices of elements of the original Tensor. Values can be out of range of `input_params`,
+        - **input_params** (Tensor) - a Tensor slice, the shape is :math:`(x_1, x_2, ..., x_R)`.
+          Currently, the dimension is restricted to be 2.
+        - **input_indices** (Tensor) - Specifies the indices of elements of the original Tensor.
+          The shape is :math:`(y_1, y_2, ..., y_S)`.
+          Values can be out of range of `input_params`,
           and the exceeding part will be filled with 0 in the output. Values do not support negative and the result
           is undefined if values are negative. The data type should be int32 or int64.
         - **offset** (int) - Specifies the offset value of this `input_params` slice. Thus the real indices
@@ -4069,7 +4069,8 @@ class TensorScatterUpdate(_TensorScatterOp):
     r"""
     Creates a new tensor by updating the positions in `input_x` indicated by
     `indices`, with values from `update`. This operation is almost equivalent to using
-    `mindspore.ops.ScatterNdUpdate` , except that the updates are applied on `input_x` instead of a zero tensor.
+    :class:`mindspore.ops.ScatterNdUpdate` , except that the updates are applied on output `Tensor`
+    instead of `input_x`.
 
     `indices` must have rank at least 2, the last axis is the depth of each index
     vectors. For each index vector, there must be a corresponding value in `update`. If
@@ -4231,12 +4232,25 @@ class TensorScatterSub(Primitive):
     r"""
     Creates a new tensor by subtracting the values from the positions in `input_x` indicated by
     `indices`, with values from `updates`. When multiple values are provided for the same
-    index, the result of the update will be to subtract these values respectively. This operation is almost
+    index, the result of the update will subtract these values respectively. This operation is almost
     equivalent to using :class:`mindspore.ops.ScatterNdSub` , except that the updates are applied on output `Tensor`
     instead of input `Parameter`.
 
-    .. math::
-        output\left [indices  \right ] = input\_x- update
+    .. code-block:: python
+
+        # Iterate through all index
+        for i in range(indices.shape[0]):
+            for j in range(indices.shape[1]):
+                ...
+                for k in range(indices.shape[-2]):  # The last dimension is coordinate dimension
+                    # Get current index combination
+                    index_tuple = (i, j, ..., k)
+                    # Get target position
+                    target_index = indices[index_tuple]
+                    # Get corresponding update value
+                    update_value = updates[index_tuple]
+                    # Perform subtraction operation
+                    output[target_index] -= update_value
 
     Refer to :func:`mindspore.ops.tensor_scatter_sub` for more details.
 
@@ -5523,7 +5537,7 @@ class AffineGrid(Primitive):
 
     Args:
         align_corners (bool, optional): Geometrically, each pixel of input is viewed as a squqre instead of dot.
-            If True, consider extremum -1 and 1 referring to the centers of the pixels rather than pixel corners.
+            If ``True``, consider extremum -1 and 1 referring to the centers of the pixels rather than pixel corners.
             The default value is ``False`` , extremum -1 and 1 refer to the corners of the pixels, so that sampling is
             irrelevant to resolution of the image. Default: ``False`` .
 
@@ -5535,7 +5549,7 @@ class AffineGrid(Primitive):
           or :math:`(N, C, D, H, W)` for 3D grid.
 
     Outputs:
-        Tensor, a tensor whose data type is same as 'theta', and the shape is :math:`(N, H, W, 2)` for 2D grid
+        Tensor, a tensor whose data type is same as `theta`, and the shape is :math:`(N, H, W, 2)` for 2D grid
         or :math:`(N, D, H, W, 3)` for 3D grid.
 
     Supported Platforms:
@@ -5744,7 +5758,7 @@ class TopK(Primitive):
           - CPU: all numeric types.
 
         - **k** (Union(Tensor, int)) - The number of top elements to be computed along the last dimension.
-          If `k` is a Tensor, the supported dtype is int32 and it should be 0-D or 1-D with shape :math:`(1, )` .
+          The supported dtype is int32 and it should be 0-D or 1-D Tensor with shape :math:`(1, )` .
 
     Outputs:
         A tuple consisting of `values` and `indexes`.

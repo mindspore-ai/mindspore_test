@@ -20,11 +20,12 @@
 #include <vector>
 #include <map>
 
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace convert_to_dynamic_cpu {
 class ConvertToDynamicCpuKernelMod : public NativeCpuKernelMod {
  public:
   ConvertToDynamicCpuKernelMod() = default;
@@ -42,6 +43,7 @@ class ConvertToDynamicCpuKernelMod : public NativeCpuKernelMod {
  private:
   int64_t input_size_;
 };
+}  // namespace convert_to_dynamic_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

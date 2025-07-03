@@ -193,7 +193,7 @@ def test_incre_flash_attention_semi_auto_parallel(input_layout, strategys):
     compile_net(net, inputs)
 
 @pytest.mark.parametrize('input_layout', ['BSH', 'BNSD'])
-@pytest.mark.parametrize('search_mode', ['sharding_propagation', 'dynamic_programming', 'recursive_programming'])
+@pytest.mark.parametrize('search_mode', ['sharding_propagation', 'sharding_propagation', 'recursive_programming'])
 def test_incre_flash_attention_auto_parallel(input_layout, search_mode):
     """
     Feature: test IncreFlashAttention auto parallel

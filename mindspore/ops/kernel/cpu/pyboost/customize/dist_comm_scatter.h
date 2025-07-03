@@ -23,12 +23,12 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &other_tensor,
+void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const TensorPtr &other_tensor,
                                  const ValueTuplePtr &scatter_list, const Int64ImmPtr &rank_size,
                                  const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group);
 }  // namespace pyboost

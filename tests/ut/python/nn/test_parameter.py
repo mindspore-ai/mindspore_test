@@ -185,11 +185,6 @@ def test_scalar_parameter_update():
     fp32_p.set_data(fp16)
     fp32_p.set_data(bool_)
 
-    # updata_by_tensor
-    fp16_p = Parameter(fp16, 'fp16')
-    with pytest.raises(TypeError):
-        fp16_p.set_data(fp32)
-
 
 def test_parameter_lazy_init():
     # support lazy init in SEMI_AUTO_PARALLEL mode
@@ -211,14 +206,8 @@ def test_parameter_lazy_init():
     # Call init_data() after set_data is set.
     para = Parameter(initializer('ones', [1, 2, 3], mstype.float32), 'test2')
     assert isinstance(para.data, Tensor)
-    # expect type error when not init
-    with pytest.raises(TypeError):
-        para.set_data(Tensor(np.zeros((1, 2, 3))))
     # init then assign
     para = para.init_data()
-    # check the type
-    with pytest.raises(TypeError):
-        para.set_data(Tensor(np.zeros((1, 2, 3))))
     # expect different shape ok
     para.set_data(Tensor(np.zeros((1, 2)).astype(np.float32)))
     # expect change ok
@@ -276,6 +265,18 @@ def test_parameter_init_from_tensor():
     assert np.allclose(param.asnumpy(), np.array([1]))
     tensor.asnumpy()[0] = 2
     assert np.allclose(param.asnumpy(), np.array([2]))
+
+
+def test_parameter_set_data():
+    """
+    Feature: Parameter set_data.
+    Description: Set_data's data has higher precision than the parameter.
+    Expectation: The two Parameter's data are the same.
+    """
+    para_a = Parameter(Tensor([1, 2, 3], dtype=mstype.float32), 'a')
+    para_b = Parameter(Tensor([1, 2, 3], dtype=mstype.float64), 'b')
+    para_a.set_data(para_b)
+    assert np.allclose(para_a.asnumpy(), para_b.asnumpy())
 
 
 def test_parameter_copy():

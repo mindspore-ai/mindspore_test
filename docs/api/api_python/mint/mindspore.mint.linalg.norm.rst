@@ -27,14 +27,14 @@ mindspore.mint.linalg.norm
         这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **A** (Tensor) - shape为 :math:`(*, n)` 或者 :math:`(*, m, n)` 的Tensor，其中*是零个或多个batch维度。
-        - **ord** (Union[int, float, inf, -inf, 'fro', 'nuc'], 可选) - 范数的计算模式。行为参考上表。默认值： ``None`` 。
+        - **A** (Tensor) - shape为 :math:`(*, n)` 或者 :math:`(*, m, n)` 的Tensor。其中*是零个或多个batch维度。
+        - **ord** (Union[int, float, inf, -inf, 'fro', 'nuc'], 可选) - 范数的计算模式。行为模式参考上表。默认值： ``None`` 。
         - **dim** (Union[int, Tuple(int)], 可选) - 计算向量范数或矩阵范数的维度。默认值： ``None`` 。
 
           - 当 `dim` 为int时，会按向量范数计算。
           - 当 `dim` 为一个二元组时，会按矩阵范数计算。
-          - 当 `dim` 为None且 `ord` 为None，`A` 将会被展平为1D并计算向量的2-范数。
-          - 当 `dim` 为None且 `ord` 不为None，`A` 必须为1D或者2D。
+          - 当 `dim` 为 ``None`` 且 `ord` 为 ``None``，`A` 将会被展平为1D并计算向量的2-范数。
+          - 当 `dim` 为 ``None`` 且 `ord` 不为 ``None``，`A` 必须为1D或者2D。
 
         - **keepdim** (bool) - 输出Tensor是否保留原有的维度。默认值： ``False`` 。
 
@@ -54,4 +54,4 @@ mindspore.mint.linalg.norm
 
     .. note::
         动态shape、动态rank和可变输入不支持在 `图模式(mode=mindspore.GRAPH_MODE)
-        <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
+        <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 下执行。

@@ -18,19 +18,6 @@
 
 namespace mindspore {
 
-bool CheckStoull(uint64_t *const output_digit, const std::string &input_str) {
-  try {
-    *output_digit = std::stoull(input_str);
-  } catch (const std::out_of_range &oor) {
-    MS_LOG(ERROR) << "Out of Range error: " << oor.what() << " when parse " << input_str;
-    return false;
-  } catch (const std::invalid_argument &ia) {
-    MS_LOG(ERROR) << "Invalid argument: " << ia.what() << " when parse " << input_str;
-    return false;
-  }
-  return true;
-}
-
 bool CheckStoul(size_t *const output_digit, const std::string &input_str) {
   try {
     *output_digit = std::stoul(input_str);
@@ -44,22 +31,4 @@ bool CheckStoul(size_t *const output_digit, const std::string &input_str) {
   return true;
 }
 
-bool CheckStoi(int64_t *const output_digit, const std::string &input_str) {
-  try {
-    *output_digit = std::stoi(input_str);
-  } catch (const std::out_of_range &oor) {
-    MS_LOG(ERROR) << "Out of Range error: " << oor.what() << " when parse " << input_str;
-    return false;
-  } catch (const std::invalid_argument &ia) {
-    MS_LOG(ERROR) << "Invalid argument: " << ia.what() << " when parse " << input_str;
-    return false;
-  }
-  return true;
-}
-
-void CheckStringMatch(size_t start, size_t end, std::string *matched_str, const std::string &input_str) {
-  if (start != std::string::npos && end != std::string::npos && end > start && start + 1 < input_str.length()) {
-    *matched_str = input_str.substr(start + 1, end - (start + 1));
-  }
-}
 }  // namespace mindspore

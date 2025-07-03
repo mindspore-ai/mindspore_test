@@ -23,12 +23,13 @@
 #include <functional>
 
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace avg_pool1d {
 namespace {
 std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape) {
   if (shape.empty()) {
@@ -132,5 +133,6 @@ bool AvgPool1DAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(AvgPool1D, AvgPool1DAscend);
+}  // namespace avg_pool1d
 }  // namespace kernel
 }  // namespace mindspore

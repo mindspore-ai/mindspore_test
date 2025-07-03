@@ -39,7 +39,7 @@ struct DelegateGraphInfo {
 class GraphSinkSession : public InferSession {
  public:
   GraphSinkSession() = default;
-  explicit GraphSinkSession(std::shared_ptr<device::GraphExecutor> graph_executor) {
+  explicit GraphSinkSession(std::shared_ptr<LiteGraphExecutor> graph_executor) {
     graph_executor_ = std::dynamic_pointer_cast<mindspore::LiteGraphExecutor>(graph_executor);
   }
   ~GraphSinkSession() override;

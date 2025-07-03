@@ -16,7 +16,6 @@
 #include "pipeline/jit/pi/utils/allocator.h"
 #include <vector>
 #include "pipeline/jit/pi/graph_capture/cfg.h"
-#include "pipeline/jit/pi/graph_capture/loop.h"
 
 namespace mindspore {
 namespace pijit {
@@ -29,10 +28,6 @@ Allocator::~Allocator() {
     delete i;
   }
   node_pool_.clear();
-  for (LoopInfo *i : loop_pool_) {
-    delete i;
-  }
-  loop_pool_.clear();
 }
 
 InstrNode *Allocator::NewInstrNode(int op, int arg) { return NewNode<InstrNode>(op, arg); }

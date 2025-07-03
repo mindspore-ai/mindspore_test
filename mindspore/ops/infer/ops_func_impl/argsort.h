@@ -22,13 +22,11 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ArgSortFuncImpl : public OpFuncImpl {
+class OPS_API ArgSortFuncImpl final : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
-  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore

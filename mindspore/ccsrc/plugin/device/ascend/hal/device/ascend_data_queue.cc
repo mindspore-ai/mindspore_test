@@ -23,15 +23,15 @@
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "runtime/device/kernel_runtime.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/acl_tdt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
-#include "transform/symbol/acl_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
+#include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -65,7 +65,7 @@ bool GetAclDataType(const std::string &str_type, aclDataType *acl_type) {
 }
 
 void CheckRtRetWithError(aclError error, const std::string &msg) {
-  if (error != ACL_ERROR_NONE) {
+  if (error != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Rt error: " << msg << " | Error number: " << error;
   }
 }
@@ -215,7 +215,7 @@ AscendTdtQueue::AscendTdtQueue(const std::string &channel_name) : DataQueue(chan
   device_id_ = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
   aclError ret = CALL_ASCEND_API(aclrtSetDevice, device_id_);
-  if (ret != ACL_ERROR_NONE) {
+  if (ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Acl open device " << device_id_ << " failed.";
   }
 
@@ -283,7 +283,7 @@ AscendTdtQueue::~AscendTdtQueue() {
     DataQueueMgr::GetInstance().Free(channel_name_);
   }
   aclError rt_ret = CALL_ASCEND_API(aclrtResetDevice, device_id_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Reset device " << device_id_ << " failed.";
   }
 }

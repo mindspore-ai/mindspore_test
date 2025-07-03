@@ -116,15 +116,6 @@ Status GroupedMatmulInfo::InferOperatorVectorValueForShapeValue(const TensorInfo
     mirror_ops->emplace_back(mirror_op);
     return SUCCESS;
   }
-  if (is_auto_parallel_) {
-    if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-      MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                   << " failed in auto parallel mode, "
-                      "this error can be ignored in parallel strategies searching step";
-      return FAILED;
-    }
-    return SUCCESS;
-  }
 
   Group mirror_group;
   if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
@@ -172,15 +163,6 @@ Status GroupedMatmulInfo::InferOperatorVectorListForShapeList(const TensorInfoBa
       MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << input_idx;
       mirror_ops.emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
       continue;
-    }
-    if (is_auto_parallel_) {
-      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
-        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
-                     << " failed in auto parallel mode, "
-                        "this error can be ignored in parallel strategies searching step";
-        return FAILED;
-      }
-      return SUCCESS;
     }
 
     Group mirror_group;
@@ -452,8 +434,7 @@ Status GroupedMatmulInfo::InferForwardCommunication() {
 
   MS_LOG(INFO) << name_ << ": Need push_back op num: " << outputs_shape_new_.size();
   for (size_t i = 0; i < outputs_shape_new_.size(); i++) {
-    Operator op;
-    op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
+    Operator op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
     forward_op_.push_back(op);
   }
 

@@ -18,11 +18,12 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/max_unpool2d_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/grad/max_unpool2d_grad.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool2d_grad_cpu {
 namespace {
 constexpr size_t kMaxUnpool2DGradInputsNum = 3;
 constexpr size_t kMaxUnpool2DGradOutputsNum = 1;
@@ -297,5 +298,6 @@ std::vector<KernelAttr> MaxUnpool2DGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxUnpool2DGrad, MaxUnpool2DGradCpuKernelMod);
+}  // namespace max_unpool2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

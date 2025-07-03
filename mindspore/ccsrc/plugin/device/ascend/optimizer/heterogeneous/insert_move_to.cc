@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,10 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/offload_context.h"
-#include "pybind_api/ir/tensor_py.h"
+#include "frontend/ir/tensor_py.h"
 
 namespace mindspore {
 namespace opt {
-constexpr auto kMoveToNpuStr = "NPU";
-constexpr auto kMoveToCpuStr = "CPU";
-constexpr auto kMoveToDiskStr = "Disk";
 constexpr auto kParamterDiskUserDataName = "parameter_device";
 
 bool InsertMoveTo::Run(const FuncGraphPtr &graph) {
@@ -53,6 +50,15 @@ void InsertMoveTo::Init(const FuncGraphPtr &graph) {
   kernel_graph_ = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph_);
   kernel_graph_->SetExecOrderByDefault();
+  manager_ = kernel_graph_->manager();
+  MS_EXCEPTION_IF_NULL(manager_);
+}
+
+bool InsertMoveTo::BackendInlineNode(const CNodePtr &node) {
+  return common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartialInline) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCall) ||
+         common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallInline);
 }
 
 void InsertMoveTo::CollectOffloadedParameter() {
@@ -60,6 +66,9 @@ void InsertMoveTo::CollectOffloadedParameter() {
   for (size_t execution_idx = 0; execution_idx < execution_order.size(); ++execution_idx) {
     auto cnode = execution_order[execution_idx];
     MS_EXCEPTION_IF_NULL(cnode);
+    if (BackendInlineNode(cnode)) {
+      continue;
+    }
     const size_t input_size = common::AnfAlgo::GetInputTensorNum(cnode);
     for (size_t idx = 1; idx <= input_size; ++idx) {
       auto kernel_with_idx = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(idx), 0, true);
@@ -76,7 +85,7 @@ void InsertMoveTo::CollectOffloadedParameter() {
       if (meta_tensor == nullptr) {
         continue;
       }
-      const auto &user_data = meta_tensor->user_data<tensor::TensorPy::TensorPyUserData>(kParamterDiskUserDataName);
+      const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParamterDiskUserDataName);
       if (user_data == nullptr) {
         continue;
       }
@@ -111,13 +120,13 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
   const auto following_node = kernel_graph_->execution_order()[pre_load_execution_order_r];
   MS_EXCEPTION_IF_NULL(following_node);
 
-  const MoveToInfo to_d_info{kMoveToNpuStr, parameter, info.user_node_, info.input_index_, pre_node, following_node};
+  const MoveToInfo to_d_info{kToNpu, parameter, info.user_node_, info.input_index_, pre_node, following_node};
 
   auto move_to_d_node = MoveToUtils::InsertMoveTo(kernel_graph_, to_d_info);
   MS_LOG(INFO) << "Add MoveTo node[" << move_to_d_node->DebugString() << "] for " << info.input_index_ << "th input of "
                << info.user_node_->fullname_with_scope() << ".";
 
-  if (info.offload_device_ == kMoveToDiskStr) {
+  if (info.offload_device_ == kToDisk) {
     const auto load_lead = load_lead_dh_ + load_lead_hf_;
     const auto l = info.execution_order_ > load_lead ? info.execution_order_ - load_lead : 0;
     const auto l_node = kernel_graph_->execution_order()[l];
@@ -126,7 +135,7 @@ CNodePtr InsertMoveTo::InsertParamMoveTo(const ParameterPtr &parameter, const Of
     const auto r_node = kernel_graph_->execution_order()[r];
     MS_EXCEPTION_IF_NULL(r_node);
 
-    const MoveToInfo to_h_info{kMoveToCpuStr, parameter, move_to_d_node, 1, l_node, r_node};
+    const MoveToInfo to_h_info{kToCpu, parameter, move_to_d_node, 1, l_node, r_node};
 
     const auto move_to_h_node = MoveToUtils::InsertMoveTo(kernel_graph_, to_h_info);
     MS_LOG(INFO) << "Add MoveTo node[" << move_to_h_node->DebugString() << "] for " << info.input_index_
@@ -155,6 +164,7 @@ void InsertMoveTo::InsertParamMoveAssign(const ParameterPtr &parameter, const Of
 }
 
 bool InsertMoveTo::HandleParameter() {
+  constexpr size_t kReuseThreshold = 100;
   CollectOffloadedParameter();
   if (offloaded_parameters_.empty()) {
     return false;
@@ -176,14 +186,25 @@ bool InsertMoveTo::HandleParameter() {
     auto parameter = iter.first;
     MS_EXCEPTION_IF_NULL(parameter);
     auto parameter_abstract = parameter->abstract();
+    CNodePtr move_to = nullptr;
+    size_t pre_user_idx = kIndex0;
+    OffloadParamInfo last_size_effect_user;
     for (const auto &user : iter.second) {
-      auto move_to = InsertParamMoveTo(parameter, user);
+      if (move_to == nullptr || user.execution_order_ - pre_user_idx > kReuseThreshold) {
+        move_to = InsertParamMoveTo(parameter, user);
+      } else {
+        manager_->SetEdge(user.user_node_, SizeToInt(user.input_index_), move_to);
+      }
+      pre_user_idx = user.execution_order_;
       if (user.side_effect_) {
-        kernel_graph_->ReplaceRefPair({parameter, 0}, {move_to, 0});
-        MoveToInfo move_to_info{user, move_to, parameter};
-        move_assign_to_insert.emplace_back(move_to_info);
+        last_size_effect_user = user;
       }
       changed = true;
+    }
+    if (last_size_effect_user.user_node_ != nullptr) {
+      kernel_graph_->ReplaceRefPair({parameter, 0}, {move_to, 0});
+      MoveToInfo move_to_info{last_size_effect_user, move_to, parameter};
+      move_assign_to_insert.emplace_back(move_to_info);
     }
   }
   for (const auto &item : move_assign_to_insert) {

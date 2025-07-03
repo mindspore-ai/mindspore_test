@@ -19,4 +19,4 @@ mindspore.nn.TransformerEncoder
         Tensor。Tensor的shape和dtype与 `src` 一致。
 
     异常：
-        - **AssertionError** - 如果 `src_key_padding_mask` 不是布尔或浮点类型。
+        - **AssertionError** - 如果 `src_key_padding_mask` 不是bool或float类型。

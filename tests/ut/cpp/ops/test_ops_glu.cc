@@ -34,14 +34,21 @@ class GluCaseGenerator {
     add_case({2}, kNumberTypeFloat16, 1);         // dim out of range
     add_case({2, 3, 8}, kNumberTypeFloat16, -4);  // dim out of range
     add_case({2, 3, 8}, kNumberTypeFloat16, 3);   // dim out of range
+    add_case({2, 3, 8}, kNumberTypeFloat16, 1);   // shape[dim] odd
+    add_case({2, 3, 9}, kNumberTypeFloat16, -1);  // shape[dim] odd
+    add_case({3, 2, 8}, kNumberTypeFloat16, 0);   // shape[dim] odd
     // Dynamic shape
     add_case({-1, -1}, kNumberTypeBFloat16, 1, {-1, -1});
     add_case({-1, -1}, kNumberTypeBFloat16, -2, {-1, -1});
     add_case({-1, -1}, kNumberTypeBFloat16, -3);  // dim out of range
     add_case({-1, -1}, kNumberTypeBFloat16, 2);   // dim out of range
+    add_case({-1, 3}, kNumberTypeBFloat16, 1);    // shape[dim] odd
+    add_case({-1, 3}, kNumberTypeBFloat16, -1);   // shape[dim] odd
+    add_case({-1, 5}, kNumberTypeBFloat16, -2, {-1, 5});
     add_case({4, -1}, kNumberTypeBFloat16, -2, {2, -1});
     add_case({4, -1}, kNumberTypeBFloat16, 1, {4, -1});
     add_case({4, 2}, kNumberTypeBFloat16, kValueAny, {-1, -1});
+    add_case({4, 3}, kNumberTypeBFloat16, kValueAny, {-1, -1});
     // Dynamic rank
     add_case({-2}, kNumberTypeBFloat16, 2, {-2});
     add_case({-2}, kNumberTypeBFloat16, -2, {-2});
@@ -51,9 +58,7 @@ class GluCaseGenerator {
 
  private:
   GeneralInferParamGenerator generator;
-  void add_case(ShapeVector &&self, TypeId dtype, int64_t dim) {
-    add_case(std::move(self), dtype, CreateScalar(dim));
-  }
+  void add_case(ShapeVector &&self, TypeId dtype, int64_t dim) { add_case(std::move(self), dtype, CreateScalar(dim)); }
   void add_case(ShapeVector &&self, TypeId dtype, int64_t dim, ShapeVector &&out) {
     add_case(std::move(self), dtype, CreateScalar(dim), std::move(out));
   }

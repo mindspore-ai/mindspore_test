@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/hash_map.h"
+#include "include/common/utils/utils.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 
@@ -107,6 +108,12 @@ class GkUtils {
   static std::vector<PrimitivePtr> FilterExcludedOps(const std::vector<PrimitivePtr> &ops);
 
   /**
+   * @brief Check if the node to be fused level <= target_level, if not, print warning.
+   */
+  static void CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel> &ops_with_level,
+                           unsigned int target_level);
+
+  /**
    * @brief Check whether graphkernel supports the node
    */
   static bool IsKeepBasicNode(const AnfNodePtr &node);
@@ -133,12 +140,13 @@ class GkUtils {
   /**
    * @brief Get manager of func graph. If there is no manager, a new one will be created.
    */
-  static FuncGraphManagerPtr GetFuncGraphManager(const FuncGraphPtr &func_graph);
+  BACKEND_COMMON_EXPORT static FuncGraphManagerPtr GetFuncGraphManager(const FuncGraphPtr &func_graph);
 
   /**
    * @brief Update func graph manager. Do nothing if the manager is nullptr.
    */
-  static void UpdateFuncGraphManager(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph);
+  BACKEND_COMMON_EXPORT static void UpdateFuncGraphManager(const FuncGraphManagerPtr &mng,
+                                                           const FuncGraphPtr &func_graph);
 
   /**
    * @brief Get op's prim by op name.
@@ -168,6 +176,16 @@ class GkUtils {
   static AnfNodePtrList GetGraphKernelNodes(const FuncGraphPtr &func_graph);
 
   static bool UseAkgCceLib(const AnfNodePtr &node);
+
+  /**
+   * @brief Return True if node is inplace op(Assign) and its input is view op.
+   */
+  static bool InplaceWithViewInputs(const AnfNodePtr &node);
+
+  /**
+   * @brief Return True if node output shape contains zero.
+   */
+  static bool IsShapeZero(const AnfNodePtr &node);
 };
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_UTILS_H_

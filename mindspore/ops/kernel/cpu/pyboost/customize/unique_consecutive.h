@@ -23,13 +23,13 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> UniqueConsecutiveCPUCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BoolImmPtr &return_inverse,
+std::tuple<tensor::TensorPtr, tensor::TensorPtr, tensor::TensorPtr> UniqueConsecutiveCPUCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &input_tensor, const BoolImmPtr &return_inverse,
   const BoolImmPtr &return_counts, const std::optional<Int64ImmPtr> &dim);
 
 }  // namespace pyboost

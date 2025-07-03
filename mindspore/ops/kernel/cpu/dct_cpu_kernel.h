@@ -20,13 +20,14 @@
 #include <vector>
 #include <complex>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
+namespace dct_cpu {
 class DCTCpuKernelMod : public NativeCpuKernelMod {
  public:
   DCTCpuKernelMod() = default;
@@ -73,6 +74,7 @@ class DCTCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> tensor_shape_;
   std::vector<int64_t> calculate_shape_;
 };
+}  // namespace dct_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_DCT_CPU_KERNEL_H_

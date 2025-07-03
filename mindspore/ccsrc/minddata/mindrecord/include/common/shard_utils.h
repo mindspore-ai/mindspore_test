@@ -166,6 +166,20 @@ enum LoadMode {
   kSlow = 2   // >100,000,000 samples, don't cache meta data which is too large
 };
 
+inline std::string LoadModeToStr(LoadMode load_mode) {
+  switch (load_mode) {
+    case LoadMode::kFast:
+      return "Fast";
+    case LoadMode::kLazy:
+      return "Lazy";
+    case LoadMode::kSlow:
+      return "Slow";
+    default:
+      MS_LOG(ERROR) << "Invalid load mode: " << load_mode;
+      return "Invalid load mode.";
+  }
+}
+
 /// \brief parallel convert from vector<py::bytes> to vector<vector<uint8_t>>
 const uint32_t kParallelConvert = 4;
 

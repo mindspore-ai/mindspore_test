@@ -21,11 +21,12 @@
 #include <map>
 #include <utility>
 #include <string>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adam_cpu {
 class AdamCpuKernelMod : public NativeCpuKernelMod {
  public:
   AdamCpuKernelMod() = default;
@@ -65,6 +66,7 @@ class AdamCpuKernelMod : public NativeCpuKernelMod {
   int64_t batch_rank_{0};
   int64_t batch_size_{1};
 };
+}  // namespace adam_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

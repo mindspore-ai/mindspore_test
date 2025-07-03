@@ -21,12 +21,12 @@ def hypermap_add_in_dynamic(para_a, para_b, para_c):
     """Add function."""
     return para_a + para_b + para_c
 
-@jit
+@jit(backend="ms_backend")
 def hypermap_in_dynamic(para_a, para_b, para_c, para_d):
     """Multiply tuple by mutable and add again."""
     return ops.HyperMap()(hypermap_add_in_dynamic, para_a * para_d, para_b * para_d, para_c * para_d)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_hypermap_in_dynamic_normal_tuple():
     """
     Feature: hypermap of dynamic tuple
@@ -54,7 +54,7 @@ def test_hypermap_in_dynamic_normal_list():
     output = hypermap_in_dynamic(list_a, list_b, list_c, mutable_d)
     assert output == [3, 6, 3, 6, 3, 6]
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_hypermap_in_dynamic_tensor_tuple():
     """
     Feature: hypermap of dynamic tensor tuple

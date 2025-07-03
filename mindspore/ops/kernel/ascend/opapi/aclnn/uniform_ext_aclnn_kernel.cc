@@ -22,14 +22,15 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace uniform_ext {
 double GetDoubleFromTensor(KernelTensor *tensor) {
   auto dtype_id = tensor->dtype_id();
   switch (dtype_id) {
@@ -52,8 +53,8 @@ void UniformExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs) {
   a_ = GetDoubleFromTensor(inputs[kIndex1]);
   b_ = GetDoubleFromTensor(inputs[kIndex2]);
-  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
+  seed_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  offset_ = static_cast<uint64_t>(device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
 
   GetWorkspaceForResize(outputs[kIndex0], a_, b_, seed_, offset_);
 }
@@ -63,7 +64,7 @@ bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                                 inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
-  if (status != ACL_ERROR_NONE) {
+  if (status != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "UniformExtAscend Launch and call rtMemcpyAsync failed, ret = 0x" << status;
   }
   RunOp(stream_ptr, workspace, outputs[kIndex0], a_, b_, seed_, offset_);
@@ -71,5 +72,6 @@ bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UniformExt, UniformExtAscend);
+}  // namespace uniform_ext
 }  // namespace kernel
 }  // namespace mindspore

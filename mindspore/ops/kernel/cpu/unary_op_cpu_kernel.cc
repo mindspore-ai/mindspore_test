@@ -22,9 +22,12 @@
 #include <algorithm>
 #include <memory>
 #include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore {
 namespace kernel {
+namespace unary_op_cpu {
 namespace {
 template <typename T, typename S>
 void Real(const T *input, S *output, size_t start, size_t end) {
@@ -218,5 +221,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Imag,
                                  []() { return std::make_shared<UnaryOpCpuKernelMod>(prim::kPrimImag->name()); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Conj,
                                  []() { return std::make_shared<UnaryOpCpuKernelMod>(prim::kPrimConj->name()); });
+}  // namespace unary_op_cpu
 }  // namespace kernel
 }  // namespace mindspore

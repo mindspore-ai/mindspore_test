@@ -77,7 +77,7 @@ def test_neg_complex():
     x0 = Tensor(x0_np)
     neg_net = NetNeg()
     output0 = neg_net(x0)
-    expect0 = np.asarray(np.complex(-3.0 - 5.0j), dtype=np.complex64)
+    expect0 = np.asarray(np.complex_(-3.0 - 5.0j), dtype=np.complex64)
     assert np.allclose(output0.asnumpy(), expect0)
 
 

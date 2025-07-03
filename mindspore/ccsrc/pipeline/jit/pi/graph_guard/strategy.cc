@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@
 #include <map>
 #include <set>
 #include "pybind11/pybind11.h"
-#include "pybind_api/ir/primitive_py.h"
+#include "frontend/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/executor/jit_executor_py.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "include/common/utils/tensor_py.h"
 
 namespace mindspore {
 namespace pijit {
@@ -66,25 +67,6 @@ static bool CompareOptCodeByCount(OptCodePtr a, OptCodePtr b) {
   }
 }
 
-void ShrinkCodeSet(OptCodeSet *set, OptCodePtr target) {
-  OptCodeSet match;
-  OptCodeSet mismatch;
-  auto guard_target = target->GetGuard();
-  for (size_t i = set->size(); i != 0;) {
-    i--;
-    auto item = set->at(i);
-    auto guard_item = item->GetGuard();
-    if (guard_target->MatchShape(guard_item)) {
-      match.insert(match.begin(), item);
-    } else {
-      mismatch.insert(mismatch.begin(), item);
-    }
-  }
-  set->clear();
-  set->insert(set->begin(), mismatch.begin(), mismatch.end());
-  set->insert(set->end(), match.begin(), match.end());
-}
-
 static constexpr int64_t kDynamicShapeLimitCount = 3;
 
 void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_count, bool enable_dynamicshape,
@@ -105,9 +87,6 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
     if (limit_count > 0) {
       if (set.size() > (size_t)limit_count) {
         OptCodeSet toDel;
-        if (enable_dynamicshape) {
-          ShrinkCodeSet(&set, except);
-        }
         toDel.insert(toDel.begin(), set.begin() + limit_count, set.end());
         for (auto item : toDel) {
           hub->DelOptTarget(item);
@@ -115,11 +94,8 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
       }
     }
     if (limit_size > 0) {
-      auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+      auto graph_executor = pipeline::GetExecutor();
       OptCodeSet toDel;
-      if (enable_dynamicshape) {
-        ShrinkCodeSet(&set, except);
-      }
       for (auto item : set) {
         if (limit_size == 0) {
           toDel.push_back(item);
@@ -127,6 +103,7 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
         std::string phase = item->GetPhase();
         if (phase.size() > 0) {
           FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
+          MS_EXCEPTION_IF_NULL(ms_func_graph);
           int node_count = SizeToInt(ms_func_graph->nodes().size());
           for (auto fg : ms_func_graph->func_graphs_used_total()) {
             node_count += SizeToInt(fg->nodes().size());
@@ -149,42 +126,16 @@ constexpr int64_t kMaxCalcDim = 1;
 constexpr int64_t kCompareDim = std::numeric_limits<int64_t>::max();
 
 static OptStrategy::CalcKind TensorComputable(PyObject *obj, ssize_t max_dim) {
-  if (py::isinstance<mindspore::tensor::Tensor>(obj) || py::isinstance<mindspore::tensor::MetaTensor>(obj)) {
-    auto tensor_ptr = py::cast<mindspore::tensor::MetaTensorPtr>(obj);
-    auto shape = tensor_ptr->shape();
-    if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
-      return OptStrategy::CalcKind::kCalcValue;
-    }
+  ShapeVector shape;
+  if (tensor::IsTensorPy(obj)) {
+    auto tensorPtr = tensor::ConvertToTensor(obj);
+    shape = tensorPtr->shape();
   }
-  return OptStrategy::CalcKind::kCalcShape;
-}
 
-static OptStrategy::CalcKind StubTensorComputable(PyObject *obj, ssize_t max_dim) {
-  auto stub = PyObject_GetAttrString(obj, "stub");
-  if (stub != nullptr && stub != Py_None) {
-    auto pyObj = py::cast<py::object>(stub);
-    auto ptr = pyObj.cast<mindspore::stub::StubNodePtr>();
-    auto base = ptr->ToAbstract();
-    auto shape = base->BuildShape()->cast<abstract::ShapePtr>();
-    Py_DECREF(stub);
-    if (shape && !shape->IsDynamic()) {
-      if (!std::any_of(shape->shape().begin(), shape->shape().end(),
-                       [max_dim](const int64_t dim) { return dim > max_dim; })) {
-        return OptStrategy::CalcKind::kCalcValue;
-      }
-    } else {
-      return OptStrategy::CalcKind::kCalcUnsupported;
-    }
-  } else {
-    obj = PyObject_GetAttrString(obj, "tensor");
-    auto pyObj = py::cast<py::object>(obj);
-    Py_DECREF(obj);
-    auto tensor_ptr = pyObj.cast<mindspore::tensor::TensorPtr>();
-    auto shape = tensor_ptr->shape();
-    if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
-      return OptStrategy::CalcKind::kCalcValue;
-    }
+  if (!std::any_of(shape.begin(), shape.end(), [max_dim](const int64_t dim) { return dim > max_dim; })) {
+    return OptStrategy::CalcKind::kCalcValue;
   }
+
   return OptStrategy::CalcKind::kCalcShape;
 }
 
@@ -202,8 +153,6 @@ static OptStrategy::CalcKind ObjectComputable(PyObject *obj, ssize_t max_dim = k
     return OptStrategy::CalcKind::kCalcValue;
   } else if (IsTensorPyObject(obj)) {
     return TensorComputable(obj, max_dim);
-  } else if (IsStubTensor(py::cast<py::object>(obj))) {
-    return StubTensorComputable(obj, max_dim);
   } else {
     return OptStrategy::CalcKind::kCalcUnsupported;
   }
@@ -252,6 +201,10 @@ OptStrategy::CalcKind MakeCalcStrategyByCompare(int bytecode, int opargs, const 
   }
 }
 
+OptStrategy::CalcKind MakeCalcStrategyByGetItem(int bytecode, int opargs, const PyObjectArray &objs) {
+  return IsTensorPyObject(objs[0]) ? OptStrategy::CalcKind::kCalcUnsupported : OptStrategy::CalcKind::kCalcValue;
+}
+
 static std::map<int, CheckPyObjectFunc> kBytecodeStrategy = {
   {UNARY_POSITIVE, MakeCalcStrategyByObject},
   {UNARY_NEGATIVE, MakeCalcStrategyByObject},
@@ -283,8 +236,7 @@ static std::map<int, CheckPyObjectFunc> kBytecodeStrategy = {
   {INPLACE_MODULO, MakeInplaceCalcStrategyByObject},
   {BINARY_MATRIX_MULTIPLY, MakeCalcStrategyByMatMul},
   {INPLACE_MATRIX_MULTIPLY, MakeInplaceCalcStrategyByObject},
-  {BINARY_SUBSCR,
-   [](int bytecode, int opargs, const PyObjectArray &objs) { return OptStrategy::CalcKind::kCalcValue; }},
+  {BINARY_SUBSCR, MakeCalcStrategyByGetItem},
   {COMPARE_OP, MakeCalcStrategyByCompare},
 };
 

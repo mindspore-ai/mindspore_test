@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 import os
-import sys
 import ast
 import re
 import hashlib
@@ -39,15 +38,15 @@ from mindspore import nn
 from mindspore import ops
 from mindspore import context
 from mindspore import tensor
-from mindspore.common.api import _MindsporeFunctionExecutor
+from mindspore.common.api import _JitExecutor
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
-from mindspore.common._register_for_adapter import ms_adapter_registry
-from mindspore._checkparam import is_stub_tensor
 from .namespace import Namespace, ModuleNamespace, ClosureNamespace, ClassMemberNamespace
-from .resources import parse_object_map, ops_symbol_map, convert_object_map, convert_class_to_function_map, trope_ns
+from .resources import (parse_object_map, parse_augassign_object_map, ops_symbol_map, convert_object_map,
+                        convert_class_to_function_map, trope_ns)
 from .resources import SYMBOL_UNDEFINE, constant_fold_functions
+from .jit_fallback_modules.check_utils import third_party_checker
 from ...common.api import _convert_python_data
 
 # Define resolve type
@@ -62,6 +61,7 @@ RESOLVE_TYPE_NUMPY_FLOAT_NUMBER = 7     # Resolve numpy float number.
 RESOLVE_TYPE_NUMPY_BOOL_NUMBER = 8      # Resolve numpy bool number.
 RESOLVE_TYPE_TUPLE = 9                  # Resolve builtin tuple type.
 RESOLVE_TYPE_LIST = 10                  # Resolve builtin list type.
+RESOLVE_TYPE_BUILTIN_METHOD = 11        # Resolve builtin type.
 RESOLVE_TYPE_INVALID = 0xFF             # Resolve invalid.
 
 # Define the class instance detail type
@@ -70,7 +70,6 @@ CLASS_INSTANCE_TYPE_CELL = 0            # Class instance type is Cell
 CLASS_INSTANCE_TYPE_PRIMITIVE = 1       # Class instance type is Primitive
 CLASS_INSTANCE_TYPE_NUMPY_ARRAY = 2     # Class instance type is Numpy Array
 CLASS_INSTANCE_TYPE_TENSOR = 3          # Class instance type is Tensor
-CLASS_INSTANCE_TYPE_ADAPTER_TENSOR = 4  # Class instance type is Adapter Tensor
 CLASS_INSTANCE_TYPE_INVALID = 0xFF
 
 # Ast main type
@@ -97,12 +96,6 @@ SYNTAX_UNSUPPORTED_INTERNAL_TYPE = 1   # Unsupported internal type
 SYNTAX_UNSUPPORTED_EXTERNAL_TYPE = 2   # Unsupported external type
 SYNTAX_HYBRID_TYPE = 3                 # Hybrid type
 SYNTAX_UNSUPPORTED_NAMESPACE = 4       # Unsupported namespace
-
-# Module source location
-MODULE_FROM_MINDSPORE = 0
-MODULE_FROM_THIRDPARTY = 1
-MODULE_FROM_USER_WORKSPACE = 2
-
 
 # Process expr statement white list
 # Add as needed, eg: "clear", "extend", "insert", "remove", "reverse"
@@ -137,21 +130,7 @@ _fallback_unsupported_python_builtin_type = (
     compile, eval, exec
 )
 
-_modules_from_mindspore = (
-    "mindspore", "msadapter", "mindocr", "mindyolo", "mindnlp", "mindcv", "mindspore_rec", "mindaudio", "mindone",
-    "mindspore_rl", "mindformers", "mindpet", "mindpose", "mindface", "mindsearch", "mindinsight", "mindelec",
-    "mindflow", "mindsponge", "mindearth", "sciai", "mindquantum", "mindarmour", "mindpandas", "mindvision",
-    "mindspore_gl", "mindspore_federated", "mindspore_gs", "mindspore_serving", "mindspore_xai", "mindspore_hub",
-    "ringmo_framework", "troubleshooter", "mindtorch", "mindchemistry",
-)
-
 _global_params = {}
-
-
-def _convert_map():
-    """Get convert object map"""
-    adapter_convert_map = ms_adapter_registry.convert_map
-    return adapter_convert_map if adapter_convert_map else convert_object_map
 
 
 def create_slice_obj(start, end, step):
@@ -271,9 +250,8 @@ def resolve_symbol(namespace, symbol):
             return resolve_
 
         # If need trope the obj
-        convert_map = _convert_map()
-        if resolve_ in convert_map:
-            resolve_ = convert_map.get(resolve_)
+        if resolve_ in convert_object_map:
+            resolve_ = convert_object_map.get(resolve_)
             logger.debug("Convert resolve: %r", resolve_)
     except Exception as e:
         if isinstance(e, NotImplementedError):
@@ -283,10 +261,10 @@ def resolve_symbol(namespace, symbol):
         logger.debug("Resolve type is invalid, namespace: %s, symbol: %s",
                      namespace.__str__(), symbol)
 
-    if isinstance(resolve_, _MindsporeFunctionExecutor):
-        logger.debug("Resolve class _MindsporeFunctionExecutor, resolve fn instead.")
+    if isinstance(resolve_, _JitExecutor):
+        logger.debug("Resolve class _JitExecutor, resolve fn instead.")
         resolve_ = resolve_.fn
-    logger.debug(f"Found '{symbol}' in {namespace.__str__()}, resolved: {resolve_} / {type(resolve_)}")
+    logger.debug("Found '%s' in %s, resolved: %s / %s", symbol, namespace, resolve_, type(resolve_))
     return resolve_
 
 
@@ -325,7 +303,8 @@ def get_object_key(obj):
     logger.debug("obj_key: %s, obj_id: %s", obj_key, obj_id)
 
     # Method has same id of different instance
-    if isinstance(obj, types.MethodType):
+    if isinstance(obj, types.MethodType) or \
+        (isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__):
         method_instance = obj.__self__
         instance_id = "%s_ID%d" % (str(method_instance.__class__.__name__), id(method_instance))
         if isinstance(method_instance, (tuple, list, dict)):
@@ -400,6 +379,8 @@ def get_obj_type(obj):
         obj_type = RESOLVE_TYPE_NUMPY_FLOAT_NUMBER
     elif _is_numpy_bool_number(obj):
         obj_type = RESOLVE_TYPE_NUMPY_BOOL_NUMBER
+    elif isinstance(obj, types.BuiltinMethodType) and obj.__qualname__.split('.')[0] == Tensor.__name__:
+        obj_type = RESOLVE_TYPE_BUILTIN_METHOD
     else:
         obj_type = RESOLVE_TYPE_INVALID
     return obj_type
@@ -501,7 +482,7 @@ def convert_class_to_function(cls_str, cls_obj):
                          f"supported in 'construct' or @jit decorated function. Try to create {cls_str} "
                          f"instances external such as initialized in the method '__init__' before assigning. "
                          f"For more details, please refer to "
-                         f"https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/overview.html \n")
+                         f"https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html \n")
     return convert_class_to_function_map.get(cls_str)
 
 
@@ -608,28 +589,6 @@ def is_class_type(cls):
     return isinstance(cls, type)
 
 
-def get_adapter_tensor_attr(name):
-    """Get the method or @property modified function of the class, excluding those inherited from parent class."""
-    cls = ms_adapter_registry.tensor
-    properties = [key for key, value in vars(cls).items() if isinstance(value, property)]
-    if name in properties:
-        return getattr(cls, name).fget, True
-    methods = [key for key, value in vars(cls).items() if inspect.isfunction(value)]
-    if name in methods:
-        return getattr(cls, name), False
-    return None, False
-
-
-def is_adapter_tensor_class(cls):
-    """Check if cls is adapter tensor type."""
-    return cls in (Tensor, ms_adapter_registry.tensor)
-
-
-def is_adapter_parameter_class(cls):
-    """Check if cls is adapter parameter type."""
-    return cls in (Parameter, ms_adapter_registry.parameter)
-
-
 def get_ms_class_name(cls):
     """Get the name of the class instance decorated with jit_class."""
     if isinstance(cls, type):
@@ -708,6 +667,14 @@ def get_ast_namespace_symbol(obj):
     return ops_info
 
 
+def get_ast_augassign_namespace_symbol(obj):
+    """Get obj type and namespace and symbol."""
+    # Get symbol from object map.
+    ops_info = parse_augassign_object_map.get(type(obj), SYMBOL_UNDEFINE)
+    logger.debug("ops info: %r", ops_info)
+    return ops_info
+
+
 def get_operation_symbol(obj):
     """Get obj operation symbol."""
     ops_symbol = ops_symbol_map.get(type(obj), SYMBOL_UNDEFINE)
@@ -720,6 +687,7 @@ def get_operation_namespace_symbol(var: str):
     ops_info = (trope_ns, var)
     logger.debug("get operation ops info: %r", ops_info)
     return ops_info
+
 
 def get_ast_type(node):
     """Get the ast type."""
@@ -825,32 +793,6 @@ def get_arg_spec_and_default_values(func):
     return arg_spec, defaults
 
 
-def _convert_stub_tensor(data):
-    """Convert stub tensor output to tensor"""
-    if is_stub_tensor(data):
-        return data.stub_sync()
-    if isinstance(data, tuple):
-        # Handle namedtuple since its type is tuple.
-        if hasattr(data, "_fields"):
-            type_name = data.__class__.__name__
-            data_dict = data._asdict()
-            fields = data_dict.keys()
-            return namedtuple(type_name, fields)(**_convert_stub_tensor(data_dict))
-        return tuple(_convert_stub_tensor(x) for x in data)
-    if data.__class__ is list:
-        # Keep the list object not change.
-        for i in range(len(data)):
-            data[i] = _convert_stub_tensor(data[i])
-        return data
-    if data.__class__ is dict:
-        # Keep the dict object not change.
-        keys = tuple(data.keys())
-        for key in keys:
-            data[_convert_stub_tensor(key)] = _convert_stub_tensor(data.pop(key))
-        return data
-    return data
-
-
 def eval_script(exp_str, params):
     """Evaluate a python expression."""
     if not isinstance(params, tuple):
@@ -864,7 +806,6 @@ def eval_script(exp_str, params):
     try:
         local_params = _convert_python_data(local_params)
         res = eval(exp_str, global_params, local_params)
-        res = _convert_stub_tensor(res)
     except Exception as e:
         error_info = f"When eval '{exp_str}' by using JIT Fallback feature, an error occurred: " + str(e)
         logger.debug(error_info)
@@ -929,133 +870,13 @@ def check_is_subclass(target_object, parent):
     return False
 
 
-class ThirdPartyLibraryChecker:
-    """
-    Check if a module or function is from third-party libraries.
-
-    Rules for detecting third-party libraries:
-
-    1. The mindspore module and its suite are not third-party libraries.
-
-    2. Python built-in modules and python standard libraries are third-party libraries.
-
-    3. Modules with module names provided by MS_JIT_IGNORE_MODULES are treated as third-party
-       libraries, but those provided by MS_JIT_MODULES are not.
-
-    4. Third-party libraries have 'site-packages' in their installation path.
-    """
-    def __init__(self):
-        self.user_workspace_dir = self.get_top_level_module_path(os.getcwd())
-        self.python_builtin_dir = os.path.realpath(os.path.dirname(os.__file__))
-
-    @staticmethod
-    def get_jit_modules():
-        """Modules in jit_modules require jit."""
-        jit_modules = []
-        # Get jit modules from environment variable.
-        env_modules = os.getenv('MS_JIT_MODULES')
-        if env_modules is not None:
-            jit_modules = env_modules.split(',')
-        return jit_modules
-
-    @staticmethod
-    def get_jit_ignore_modules():
-        """Modules in jit_ignore_modules do not need jit."""
-        jit_ignore_modules = []
-        # Get jit ignore modules from environment variable.
-        env_modules = os.getenv('MS_JIT_IGNORE_MODULES')
-        if env_modules is not None:
-            jit_ignore_modules = env_modules.split(',')
-        # sys.builtin_module_names do not need jit.
-        jit_ignore_modules.extend(sys.builtin_module_names)
-        return jit_ignore_modules
-
-    @staticmethod
-    def is_mindspore_related_module(module):
-        """Check if module is mindspore module or its suite."""
-        module_leftmost_name = module.__name__.split('.')[0]
-        return module_leftmost_name in _modules_from_mindspore
-
-    def get_top_level_module_path(self, module_path):
-        """Get the path of the top level package of the current working directory."""
-        module_abspath = os.path.realpath(module_path)
-        upper_path = os.path.realpath(os.path.dirname(module_abspath))
-        if module_abspath == upper_path:
-            return module_abspath
-        # Check whether __init__.py exists in the upper directory.
-        init_path = os.path.join(upper_path, '__init__.py')
-        # If the path does not exist or is accessed without permission, os.path.isfile returns false.
-        if os.path.isfile(init_path):
-            module_abspath = self.get_top_level_module_path(upper_path)
-        return module_abspath
-
-    def is_third_party_module(self, module):
-        """Check if module is a third-party library."""
-        module_leftmost_name = module.__name__.split('.')[0]
-        # Modules in jit_ignore_modules are treated as third-party libraries, such as sys.builtin_module_names.
-        jit_ignore_modules = self.get_jit_ignore_modules()
-        if module_leftmost_name in jit_ignore_modules:
-            logger.debug(f"Found third-party module '{module_leftmost_name}' in jit_ignore_modules.")
-            return True
-        # Modules in jit_modules require jit and they are considered to be in user workspace.
-        jit_modules = self.get_jit_modules()
-        if module_leftmost_name in jit_modules:
-            logger.debug(f"Found user-defined module '{module_leftmost_name}' in jit_modules.")
-            return False
-        # A modules without __file__ attribute is considered to be in user workspace.
-        if not hasattr(module, '__file__'):
-            return False
-        module_path = os.path.realpath(module.__file__)
-        # Python builtin modules are treated as third-party libraries.
-        if module_path.startswith(self.python_builtin_dir):
-            logger.debug(f"Found python builtin module '{module.__name__}', which is a third-party module.")
-            return True
-        # Check if module is under user workspace directory.
-        if module_path.startswith(self.user_workspace_dir):
-            logger.debug(f"Found module '{module.__name__}' in user_workspace_dir: {self.user_workspace_dir}")
-            return False
-        # Third-party modules are under site-packages.
-        split_path = module_path.split(os.path.sep)
-        result = "site-packages" in split_path
-        if result:
-            logger.debug(f"Found third-party module '{module.__name__}' in path '{module_path}'")
-        return result
-
-    def get_module_source_location(self, module):
-        """Get the source location of the module."""
-        if self.is_mindspore_related_module(module):
-            return MODULE_FROM_MINDSPORE
-        if self.is_third_party_module(module):
-            return MODULE_FROM_THIRDPARTY
-        return MODULE_FROM_USER_WORKSPACE
-
-    def is_third_party_module_or_function(self, value):
-        """Check if value is from a third-party library."""
-        if inspect.ismodule(value):
-            module = value
-        elif (isinstance(value, types.FunctionType) and not hasattr(value, "__jit_function__")) or \
-            (isinstance(value, types.MethodType) and not hasattr(value.__func__, "__jit_function__")):
-            value_hashable = True
-            try:
-                hash(value)
-            except TypeError:
-                value_hashable = False
-            if value_hashable and value in _convert_map():
-                return False
-            module = inspect.getmodule(value)
-            if module is None:
-                return False
-        else:
-            return False
-        return self.get_module_source_location(module) == MODULE_FROM_THIRDPARTY
-
-
-third_party_checker = ThirdPartyLibraryChecker()
-
-
 def is_from_third_party_library(value):
     """Check if value is from a third-party library."""
-    return third_party_checker.is_third_party_module_or_function(value)
+    return third_party_checker.is_from_third_party_module(value)
+
+
+def convert_to_mutable(object):
+    return mutable(object)
 
 
 def get_const_abs(obj):
@@ -1083,16 +904,6 @@ def get_method_info(obj):
         return None, None
     class_name_and_method_name = obj.__qualname__.split('.')
     return class_name_and_method_name[0], class_name_and_method_name[1]
-
-
-def is_ms_tensor_method(obj):
-    """Check if the obj is a method of MindSpore Tensor"""
-    if not hasattr(obj, '__name__') or not hasattr(Tensor, obj.__name__):
-        return False
-    fn = inspect.unwrap(obj.__func__ if isinstance(obj, types.MethodType) else obj)
-    tensor_method = getattr(Tensor, obj.__name__)
-    tensor_method = tensor_method.__func__ if hasattr(tensor_method, "__func__") else tensor_method
-    return fn == tensor_method
 
 
 def can_constant_fold(obj):
@@ -1131,7 +942,7 @@ class Parser:
     @staticmethod
     def is_unsupported_namespace(value):
         """To check if not supported for namespace"""
-        unsupported = isinstance(value, _builtin_function_or_method_type) and value not in _convert_map()
+        unsupported = isinstance(value, _builtin_function_or_method_type) and value not in convert_object_map
         logger.debug(f"'{value}' unsupported: {unsupported}.")
         if unsupported and value in _fallback_unsupported_python_builtin_type:
             raise TypeError(f"'{value}' is not supported both in JIT Fallback and graph mode.")
@@ -1149,17 +960,7 @@ class Parser:
         """To check if is class Tensor type"""
         if value == Tensor:
             return CLASS_INSTANCE_TYPE_TENSOR
-        if issubclass(value, ms_adapter_registry.tensor):
-            return CLASS_INSTANCE_TYPE_ADAPTER_TENSOR
         return CLASS_INSTANCE_TYPE_INVALID
-
-    @staticmethod
-    def get_adapter_convert_function(class_object):
-        """Get convert function for adapter tensor"""
-        class_object_name = class_object.__name__
-        if class_object_name in ms_adapter_registry.convert_adapter_tensor_map:
-            return ms_adapter_registry.convert_adapter_tensor_map[class_object_name]
-        return None
 
     @staticmethod
     def is_unsupported_internal_type(value):
@@ -1169,8 +970,6 @@ class Parser:
         if value == Tensor:
             logger.debug(f"Found unsupported internal type: '{value}'.")
             return True
-        if ms_adapter_registry.is_registered and issubclass(value, ms_adapter_registry.tensor):
-            return True
         return False
 
     @staticmethod
@@ -1179,7 +978,7 @@ class Parser:
         # The value may not be supported to do ConvertData such as api 'mutable',
         # and we get its converted object from python.
         if inspect.isfunction(value) and value in (mutable,):
-            return _convert_map().get(value)
+            return convert_object_map.get(value)
         return value
 
     def get_syntax_support_type(self, value):
@@ -1206,31 +1005,38 @@ class Parser:
                              "the code 'def __init__(self, combine_fn=lambda x: x + 1):' rewritten as\n"
                              "'def __init__(self, combine_fn=\nlambda x: x + 1\n):' will solve the problem.")
 
+    def save_source_code(self, attr_name, source_lines):
+        """Save cell and func source code to support run graph mode with pyc or so."""
+        if '/mindspore/' in self.filename or '\\mindspore\\' in self.filename:
+            return
+        if getattr(self.fn, attr_name, None) == source_lines:
+            return
+        if not os.access(self.filename, os.W_OK):
+            raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
+        with open(self.filename, 'a') as f:
+            logger.debug(f"setattr for {self.fn}, attr: {attr_name}, value: {source_lines}")
+            f.write(f"\n# Set source attribute for function {self.function_name} "
+                    f"to support run so or pyc file in Graph Mode."
+                    f"\nsetattr({self.function_name}, '{attr_name}', {source_lines})\n")
+            setattr(self.fn, attr_name, source_lines)
+
     def parse(self):
         """Parse the function or method."""
         logger.debug("fn: %r", self.fn)
         if isinstance(self.fn, (types.FunctionType, types.MethodType)) or \
            type(self.fn).__name__ == 'cython_function_or_method':
-            attr = 'source'
+            attr_name = 'source'
             try:
                 source_lines = inspect.getsourcelines(self.fn)
-                if context.get_context('support_binary') and \
-                   '/mindspore/' not in self.filename and '\\mindspore\\' not in self.filename and \
-                   (not hasattr(self.fn, attr) or getattr(self.fn, attr) != source_lines):
-                    if not os.access(self.filename, os.W_OK):
-                        raise PermissionError(f"Don't have the write permission on the file {self.filename}.")
-                    with open(self.filename, 'a') as f:
-                        f.write(f"\n# Set source attribute for function {self.function_name} "
-                                f"to support run so or pyc file in Graph Mode."
-                                f"\nsetattr({self.function_name}, '{attr}', {source_lines})\n")
-                        setattr(self.fn, attr, source_lines)
+                if context.get_context('support_binary') or os.getenv('MS_SUPPORT_BINARY', None) == '1':
+                    self.save_source_code(attr_name, source_lines)
             except (OSError, TypeError) as e:
-                if hasattr(self.fn, attr):
-                    source_lines = getattr(self.fn, attr)
+                if hasattr(self.fn, attr_name):
+                    source_lines = getattr(self.fn, attr_name)
+                elif e.__str__() == "could not get source code":
+                    raise OSError(f"Mindspore can not compile temporary source code in terminal. "
+                                  f"Please write source code to a python file and run the file.")
                 else:
-                    if e.__str__() == "could not get source code":
-                        raise OSError(f"Mindspore can not compile temporary source code in terminal. "
-                                      f"Please write source code to a python file and run the file.")
                     raise e
             self.lines, self.line_offset = source_lines
             original_src = ''.join(self.lines)
@@ -1241,7 +1047,7 @@ class Parser:
                 self.col_offset = \
                     len(original_src.split('\n')[0]) - len(src.split('\n')[0])
                 logger.debug("Get source: %s", src)
-                if not hasattr(self.fn, attr):
+                if not hasattr(self.fn, attr_name):
                     self.check_lambda(src)
                 try:
                     ast_tokens = asttokens.ASTTokens(src, parse=True)

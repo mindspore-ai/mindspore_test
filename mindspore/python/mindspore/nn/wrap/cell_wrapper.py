@@ -31,15 +31,12 @@ from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import _primexpr
-from mindspore.ops import composite as C
-from mindspore.ops import functional as F
-from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import _VirtualDataset
 from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
 from mindspore.utils import ExitByRequest
 
-_get_datatype = C.MultitypeFuncGraph("_get_datatype")
+_get_datatype = ops.MultitypeFuncGraph("_get_datatype")
 
 
 @_get_datatype.register("Tensor")
@@ -53,10 +50,10 @@ def _tensors_get_datatype(param):
     Returns:
         mstype, the datatype of parameter.
     """
-    return F.dtype(param)
+    return ops.dtype(param)
 
 
-_cast_datatype = C.MultitypeFuncGraph("_cast_datatype")
+_cast_datatype = ops.MultitypeFuncGraph("_cast_datatype")
 
 
 @_cast_datatype.register("TypeType", "Tensor")
@@ -71,7 +68,7 @@ def _tensors_cast_datatype(datatype, param):
     Returns:
         Tensor, the parameter after operation.
     """
-    return F.cast(param, datatype)
+    return ops.cast(param, datatype)
 
 
 class WithLossCell(Cell):
@@ -195,7 +192,7 @@ class WithGradCell(Cell):
         self.network = network
         self.loss_fn = loss_fn
         self.weights = ParameterTuple(network.trainable_params())
-        self.grad = C.GradOperation(get_by_list=True, sens_param=(sens is not None))
+        self.grad = ops.GradOperation(get_by_list=True, sens_param=(sens is not None))
         self.sens = sens
         if loss_fn is None:
             self.network_with_loss = network
@@ -303,7 +300,7 @@ class ForwardValueAndGrad(Cell):
         self.get_all = get_all
         self.get_by_list = get_by_list
         self.sens_param = sens_param
-        self.grad = C.GradOperation(get_all=self.get_all, get_by_list=self.get_by_list, sens_param=self.sens_param)
+        self.grad = ops.GradOperation(get_all=self.get_all, get_by_list=self.get_by_list, sens_param=self.sens_param)
         self._get_attr_from_cell(network)
 
     def construct(self, *inputs):
@@ -329,9 +326,11 @@ class TrainOneStepCell(Cell):
     Args:
         network (Cell): The training network. The network only supports single output.
         optimizer (Union[Cell]): Optimizer for updating the network parameters.
-        sens (numbers.Number): The scaling number to be filled as the input of backpropagation. Default value is
+        sens (numbers.Number, optional): The scaling number to be filled as the input of backpropagation.
+            Default value is
             ``None`` , which is ``1.0`` .
-        return_grad (bool): Whether to return gradient. If ``True``, it will return the gradient in the form of a dict
+        return_grad (bool, optional): Whether to return gradient. If ``True``,
+            it will return the gradient in the form of a dict
             while returning loss. The key of the dict is the parameter name corresponding to the gradient, and value
             is the gradient value. Default value is ``False`` .
 
@@ -383,8 +382,8 @@ class TrainOneStepCell(Cell):
         self.network.set_grad()
         self.optimizer = optimizer
         self.weights = self.optimizer.parameters
-        self.grad = C.GradOperation(get_by_list=True, sens_param=True)
-        self.grad_no_sens = C.GradOperation(get_by_list=True)
+        self.grad = ops.GradOperation(get_by_list=True, sens_param=True)
+        self.grad_no_sens = ops.GradOperation(get_by_list=True)
         self.sens = sens
         if self.sens == 0:
             raise ValueError("The input argument of 'sens' can not be 0.")
@@ -426,12 +425,12 @@ class TrainOneStepCell(Cell):
         if not self.sense_flag:
             return self._no_sens_impl(*inputs)
         loss = self.network(*inputs)
-        sens = F.fill(loss.dtype, loss.shape, self.sens)
+        sens = ops.fill(loss.dtype, loss.shape, self.sens)
         grads = self.grad(self.network, self.weights)(*inputs, sens)
         grads = self.grad_reducer(grads)
         if self.use_graceful_exit:
             grads = self.graceful_exit.exit_by_request(grads, self.init_param, self.exit_param)
-        loss = F.depend(loss, self.optimizer(grads))
+        loss = ops.depend(loss, self.optimizer(grads))
         if self.return_grad:
             grad_with_param_name = {}
             for index, value in enumerate(grads):
@@ -446,7 +445,7 @@ class TrainOneStepCell(Cell):
         grads = self.grad_reducer(grads)
         if self.use_graceful_exit:
             grads = self.graceful_exit.exit_by_request(grads, self.init_param, self.exit_param)
-        loss = F.depend(loss, self.optimizer(grads))
+        loss = ops.depend(loss, self.optimizer(grads))
         if self.return_grad:
             grad_with_param_name = {}
             for index, value in enumerate(grads):
@@ -494,7 +493,7 @@ class GetNextSingleOp(Cell):
 
     def __init__(self, dataset_types, dataset_shapes, queue_name):
         super(GetNextSingleOp, self).__init__()
-        self.get_next = P.GetNext(dataset_types, dataset_shapes, len(dataset_types), queue_name)
+        self.get_next = ops.GetNext(dataset_types, dataset_shapes, len(dataset_types), queue_name)
 
     def construct(self):
         return self.get_next()
@@ -530,9 +529,23 @@ class _VirtualDatasetCell(Cell):
         return self._backbone(*output)
 
 
+def _pipeline_clear_grad(accu_grad, grad):
+    accu_grad = ops.depend(accu_grad, grad)
+    zeros = ops.zeros_like(accu_grad)
+    return ops.assign(accu_grad, zeros)
+
+def grad_scale(scale, grad):
+    """grad_scale"""
+    new_grad = scale * grad
+    grad = ops.depend(grad, new_grad)
+    zeros = ops.zeros_like(grad)
+    new_grad = ops.depend(new_grad, ops.assign(grad, zeros))
+    return new_grad
+
+
 @_primexpr
 def _check_shape_value_on_axis_divided_by_target_value(input_shape, micro_size):
-    if F.isconstant(input_shape[0]) is False:
+    if ops.isconstant(input_shape[0]) is False:
         return
     if input_shape[0] % micro_size != 0:
         raise ValueError(f"For micro batch initialization, the 0th dimension shape of input({input_shape[0]}) must be "
@@ -548,9 +561,9 @@ class _MicroBatch(Cell):
     """
     def __init__(self, micro_size):
         super(_MicroBatch, self).__init__()
-        self.shape = P.Shape()
+        self.shape = ops.Shape()
         self.micro_size = micro_size
-        self.strided_slice = P.StridedSlice()
+        self.strided_slice = ops.StridedSlice()
 
     def construct(self, i, *inputs):
         """construct for _MicroBatch."""
@@ -572,118 +585,12 @@ class _MicroBatch(Cell):
         return micro_inputs
 
 
-class MicroBatchInterleaved(Cell):
-    """
-    This function splits the input at the 0th into interleave_num pieces and then performs
-    the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
-    and network, if the first slice data is calculating forward, the second slice data will execute the
-    communication operators at the same time, to achieve the performance acceleration of communication and computing
-    concurrency.
-
-    Args:
-        network (Cell): The target network to wrap.
-        interleave_num (int, optional): split num of batch size. Default: ``2`` .
-
-    Inputs:
-        tuple[Tensor]. It's the same with the input of the `network` .
-
-    Outputs:
-        The wrapped input. The output of the input `network` should be a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> # Define the network structure of LeNet5. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
-        >>> net = LeNet5()
-        >>> net = nn.MicroBatchInterleaved(net, 2)
-    """
-    def __init__(self, network, interleave_num=2):
-        super(MicroBatchInterleaved, self).__init__(auto_prefix=False)
-        if not isinstance(interleave_num, int):
-            raise TypeError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be integer, "
-                            "but got the type : {}.".format(type(interleave_num)))
-        if interleave_num <= 0:
-            raise ValueError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be large than 0, "
-                             "but got {}.".format(interleave_num))
-        self.network = network
-        self.interleave_num = interleave_num
-        self.interleave_inputs = nn.CellList()
-        self.add = P.Add().add_prim_attr("micro_interleaved_add_flag", True)
-        for _ in range(interleave_num):
-            interleave_data = _MicroBatch(interleave_num)
-            interleave_data.strided_slice.add_prim_attr("strided_slice_flag", True)
-            interleave_data.strided_slice.add_prim_attr("interleave_num", interleave_num)
-            self.interleave_inputs.append(interleave_data)
-        self._get_attr_from_cell(network)
-
-    def construct(self, *inputs):
-        output = 0.0
-        for i in range(self.interleave_num):
-            interleave_input = self.interleave_inputs[i](i, *inputs)
-            output = self.add(output, self.network(*interleave_input))
-        return output
-
-
-class PipelineCell(Cell):
-    """
-    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
-
-    Note:
-        micro_size must be greater or equal to pipeline stages.
-
-    Args:
-        network (Cell): The target network to wrap.
-        micro_size (int): MicroBatch size.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> # Define the network structure of LeNet5. Refer to
-        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
-        >>> net = LeNet5()
-        >>> net = nn.PipelineCell(net, 4)
-    """
-    def __init__(self, network, micro_size):
-        super(PipelineCell, self).__init__(auto_prefix=False)
-        self.network = network
-        self.micro_inputs = nn.CellList()
-        self.micro_size = micro_size
-        self.add_list = []
-        if not isinstance(network, Cell):
-            raise TypeError("For 'PipelineCell', the argument 'network' must cell type, "
-                            "but got the type : {}.".format(type(network)))
-        if not isinstance(micro_size, int):
-            raise TypeError("For 'PipelineCell', the argument 'micro_size' must be integer, "
-                            "but got the type : {}.".format(type(micro_size)))
-        if micro_size <= 0:
-            raise ValueError("For 'PipelineCell', the argument 'micro_size' must be large than 0, "
-                             "but got {}.".format(micro_size))
-        for i in range(micro_size):
-            micro_input = _MicroBatch(micro_size)
-            self.micro_inputs.append(micro_input)
-            self.add = P.Add().add_prim_attr("pipeline_end", i)
-            self.add_list.append(self.add)
-        self._get_attr_from_cell(network)
-
-    def construct(self, *inputs):
-        ret = None
-        for i in range(self.micro_size):
-            micro_input = self.micro_inputs[i](i, *inputs)
-            output = self.network(*micro_input)
-            if ret is not None:
-                ret = self.add_list[i](ret, output)
-            else:
-                ret = output
-        return ret
-
 class GradAccumulationCell(Cell):
     """
     Wrap the network with Micro Batch to enable the grad accumulation in semi_auto_parallel/auto_parallel mode.
+
+    Note:
+        The api will be deprecated, please use the api :class:`mindspore.parallel.nn.GradAccumulation` instead.
 
     Args:
         network (Cell): The target network to wrap.
@@ -718,7 +625,7 @@ class GradAccumulationCell(Cell):
             micro_input = _MicroBatch(micro_size)
             micro_input.strided_slice.add_prim_attr("grad_accu_num", micro_size)
             self.micro_inputs.append(micro_input)
-            self.add = P.Add().add_prim_attr("forward_end", i)
+            self.add = ops.Add().add_prim_attr("forward_end", i)
             self.add_list.append(self.add)
         self._get_attr_from_cell(network)
 
@@ -734,12 +641,6 @@ class GradAccumulationCell(Cell):
         return ret
 
 
-def _pipeline_clear_grad(accu_grad, grad):
-    accu_grad = F.depend(accu_grad, grad)
-    zeros = F.zeros_like(accu_grad)
-    return F.assign(accu_grad, zeros)
-
-
 class _TrainGradAccuStepCell(TrainOneStepCell):
     """
     Wraps the network with an optimizer in pipeline mode.
@@ -751,6 +652,13 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         self.opt_shard = _get_enable_parallel_optimizer()
         self._get_attr_from_cell(network)
         self.enable_tft = False
+        if not self.sense_flag:
+            micro_size = 1.0
+            for _, cell in network.cells_and_names():
+                if hasattr(cell, 'micro_size'):
+                    micro_size = cell.micro_size
+                    break
+            self.sens = 1 / micro_size
 
     def construct(self, *inputs):
         if not self.sense_flag:
@@ -774,8 +682,10 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         grads = self.grad_no_sens(self.network, self.weights)(*inputs)
         accu_grads = ops.depend(self.accu_grads, grads)
         if self.opt_shard:
+            grads = self.hyper_map(ops.partial(grad_scale, self.sens), grads)
             succ = self.optimizer(grads)
         else:
+            accu_grads = self.hyper_map(ops.partial(grad_scale, self.sens), accu_grads)
             succ = self.optimizer(accu_grads)
         loss = ops.depend(loss, succ)
         clear = self.hyper_map(_pipeline_clear_grad, accu_grads, grads)
@@ -881,8 +791,8 @@ class WithEvalCell(Cell):
     def construct(self, data, label):
         outputs = self._network(data)
         if self.add_cast_fp32:
-            label = F.mixed_precision_cast(mstype.float32, label)
-            outputs = F.cast(outputs, mstype.float32)
+            label = ops.mixed_precision_cast(mstype.float32, label)
+            outputs = ops.cast(outputs, mstype.float32)
         loss = self._loss_fn(outputs, label)
         return loss, outputs, label
 
@@ -932,7 +842,7 @@ class ParameterUpdate(Cell):
         self._param = param
 
     def construct(self, x):
-        F.assign(self._param, x)
+        ops.assign(self._param, x)
         return x
 
 
@@ -948,19 +858,167 @@ class _BroadCastCell(Cell):
         super(_BroadCastCell, self).__init__()
         from mindspore.communication.management import get_group_size, create_group
         from mindspore import context
-        self.map_ = C.Map()
+        self.map_ = ops.Map()
         self.params = tuple(params)
         if context.get_context("device_target") == "Ascend" and context.get_context("mode") != context.PYNATIVE_MODE:
             rank_list = [id for id in range(0, get_group_size())]
             create_group("BroadcastWorldGroup", rank_list)
-            self.broadcast = P.Broadcast(0, group="BroadcastWorldGroup")
+            self.broadcast = ops.Broadcast(0, group="BroadcastWorldGroup")
         else:
-            self.broadcast = P.Broadcast(0)
+            self.broadcast = ops.Broadcast(0)
         self.add_flags(skip_auto_parallel_compile=True)
 
     def construct(self):
-        datatypes = self.map_(F.partial(_get_datatype), self.params)
-        params = self.map_(F.partial(_cast_datatype, mstype.float32), self.params)
+        datatypes = self.map_(ops.partial(_get_datatype), self.params)
+        params = self.map_(ops.partial(_cast_datatype, mstype.float32), self.params)
         params = self.broadcast(params)
-        new_params = self.map_(F.partial(_cast_datatype), datatypes, params)
+        new_params = self.map_(ops.partial(_cast_datatype), datatypes, params)
         return new_params
+
+
+class PipelineCell(Cell):
+    """
+    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
+
+    Note:
+        - micro_size must be greater or equal to pipeline stages.
+        - The api will be deprecated, please use the api :class:`mindspore.parallel.nn.Pipeline` instead.
+
+    Args:
+        network (Cell): The target network to wrap.
+        micro_size (int): MicroBatch size.
+        stage_config (dict, optional): The stage configuration for each cell's execution in pipeline parallel.
+            Default ``None``.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> import mindspore.nn as nn
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = nn.PipelineCell(net, 4)
+    """
+    def __init__(self, network, micro_size, stage_config=None):
+        super(PipelineCell, self).__init__(auto_prefix=False)
+        self.network = network
+        self.micro_inputs = nn.CellList()
+        self.micro_size = micro_size
+        self.add_list = []
+        if not isinstance(network, Cell):
+            raise TypeError("For 'PipelineCell', the argument 'network' must cell type, "
+                            "but got the type : {}.".format(type(network)))
+        if not isinstance(micro_size, int):
+            raise TypeError("For 'PipelineCell', the argument 'micro_size' must be integer, "
+                            "but got the type : {}.".format(type(micro_size)))
+        if micro_size <= 0:
+            raise ValueError("For 'PipelineCell', the argument 'micro_size' must be large than 0, "
+                             "but got {}.".format(micro_size))
+        for i in range(micro_size):
+            micro_input = _MicroBatch(micro_size)
+            self.micro_inputs.append(micro_input)
+            self.add = ops.Add().add_prim_attr("pipeline_end", i)
+            self.add_list.append(self.add)
+        self._get_attr_from_cell(network)
+
+        # prase stage_config
+        config_dict = {}
+        if stage_config is not None:
+            for cell_name, stage_num in stage_config.items():
+                config_cell_name = cell_name
+                config_stage_num = stage_num
+                config_dict[config_cell_name] = config_stage_num
+
+        # set cell.stage_config
+            for cell_name, cell in self.network.cells_and_names():
+                for config_cell_name, config_stage_num in config_dict.copy().items():
+                    if not cell_name or not config_cell_name:
+                        continue
+                    if cell_name == config_cell_name:
+                        setattr(cell, "pipeline_stage", config_stage_num)
+                        del config_dict[config_cell_name]
+
+            for config_cell_name, config_stage_num in config_dict.copy().items():
+                if str(network) == config_cell_name:
+                    setattr(network, "pipeline_stage", config_stage_num)
+                    del config_dict[config_cell_name]
+
+            # if there are any config elements left, print them
+            if config_dict:
+                for config_cell_name, config_stage_num in config_dict.items():
+                    print("pipeline_cell stage_config set pipeline_stage fail!")
+                    print("config cell name:" + str(config_cell_name) +
+                          " config stage num:" + str(config_stage_num))
+                print("network:" + str(self.network))
+                print("cell name available:")
+                for cell_name, cell in self.network.cells_and_names():
+                    print(cell_name)
+                raise KeyError("For 'PipelineCell', the argument 'stage_config' : {} is not "
+                               "found in 'network' : {}".format(config_dict, network))
+
+    def construct(self, *inputs):
+        ret = None
+        for i in range(self.micro_size):
+            micro_input = self.micro_inputs[i](i, *inputs)
+            output = self.network(*micro_input)
+            if ret is not None:
+                ret = self.add_list[i](ret, output)
+            else:
+                ret = output
+        return ret
+
+
+class MicroBatchInterleaved(Cell):
+    """
+    This function splits the input at the 0th into interleave_num pieces and then performs
+    the computation of the wrapped cell. Application scenario: When there is model parallelism in semi-automatic mode
+    and network, if the first slice data is calculating forward, the second slice data will execute the
+    communication operators at the same time, to achieve the performance acceleration of communication and computing
+    concurrency.
+
+    Args:
+        network (Cell): The target network to wrap.
+        interleave_num (int, optional): split num of batch size. Default: ``2`` .
+
+    Inputs:
+        tuple[Tensor]. It's the same with the input of the `network` .
+
+    Outputs:
+        The wrapped input. The output of the input `network` should be a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        >>> import mindspore.nn as nn
+        >>> # Define the network structure of LeNet5. Refer to
+        >>> # https://gitee.com/mindspore/docs/blob/master/docs/mindspore/code/lenet.py
+        >>> net = LeNet5()
+        >>> net = nn.MicroBatchInterleaved(net, 2)
+    """
+    def __init__(self, network, interleave_num=2):
+        super(MicroBatchInterleaved, self).__init__(auto_prefix=False)
+        if not isinstance(interleave_num, int):
+            raise TypeError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be integer, "
+                            "but got the type : {}.".format(type(interleave_num)))
+        if interleave_num <= 0:
+            raise ValueError("For 'MicroBatchInterleaved', the argument 'interleave_num' must be large than 0, "
+                             "but got {}.".format(interleave_num))
+        self.network = network
+        self.interleave_num = interleave_num
+        self.interleave_inputs = nn.CellList()
+        self.add = ops.Add().add_prim_attr("micro_interleaved_add_flag", True)
+        for _ in range(interleave_num):
+            interleave_data = _MicroBatch(interleave_num)
+            interleave_data.strided_slice.add_prim_attr("strided_slice_flag", True)
+            interleave_data.strided_slice.add_prim_attr("interleave_num", interleave_num)
+            self.interleave_inputs.append(interleave_data)
+        self._get_attr_from_cell(network)
+
+    def construct(self, *inputs):
+        output = 0.0
+        for i in range(self.interleave_num):
+            interleave_input = self.interleave_inputs[i](i, *inputs)
+            output = self.add(output, self.network(*interleave_input))
+        return output

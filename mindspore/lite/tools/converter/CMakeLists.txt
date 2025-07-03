@@ -315,6 +315,8 @@ set(LITE_SRC
         ${CORE_DIR}/ir/anf.cc
         ${CORE_DIR}/base/base.cc
         ${OPS_DIR}/op_def/auto_generate/gen_lite_ops.cc
+        ${OPS_DIR}/kernel/common/device_address.cc
+        ${OPS_DIR}/kernel/common/device_type.cc
         )
 
 set_property(SOURCE ${CONVERTER_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)
@@ -331,6 +333,7 @@ add_dependencies(converter_src_mid fbs_src fbs_inner_src)
 
 
 target_compile_definitions(converter_src_mid PRIVATE BACKEND_DLL)
+target_compile_definitions(converter_src_mid PRIVATE BACKEND_COMMON_DLL)
 target_compile_definitions(quantizer_mid PRIVATE BACKEND_DLL)
 
 add_dependencies(mindspore_converter nnacl_mid)

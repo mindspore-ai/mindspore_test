@@ -9,7 +9,7 @@ mindspore.dataset.audio.DeemphBiquad
 
     参数：
         - **sample_rate** (int) - 波形的采样频率，只能为 ``44100`` 或 ``48000`` (Hz)。
-    
+
     异常：
         - **TypeError** - 当 `sample_rate` 的类型不为int。
         - **ValueError** - 当 `sample_rate` 不为 ``44100`` 或 ``48000`` 。

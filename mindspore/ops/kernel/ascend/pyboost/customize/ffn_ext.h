@@ -22,19 +22,19 @@
 #include "ir/tensor.h"
 #include "ir/value.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/common/pyboost/op_runner.h"
+#include "mindspore/ccsrc/pyboost/op_runner.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr FFNExtAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor, const BaseTensorPtr &weight1_tensor,
-  const BaseTensorPtr &weight2_tensor, const std::optional<ValueTuplePtr> &expertTokens,
-  const std::optional<BaseTensorPtr> &bias1_tensor, const std::optional<BaseTensorPtr> &bias2_tensor,
-  const std::optional<BaseTensorPtr> &scale_tensor, const std::optional<BaseTensorPtr> &offset_tensor,
-  const std::optional<BaseTensorPtr> &deqScale1_tensor, const std::optional<BaseTensorPtr> &deqScale2_tensor,
-  const std::optional<BaseTensorPtr> &antiquant_scale1, const std::optional<BaseTensorPtr> &antiquant_scale2,
-  const std::optional<BaseTensorPtr> &antiquant_offset1, const std::optional<BaseTensorPtr> &antiquant_offset2,
+tensor::TensorPtr FFNExtAscendCustomize(
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor, const TensorPtr &weight1_tensor,
+  const TensorPtr &weight2_tensor, const std::optional<ValueTuplePtr> &expertTokens,
+  const std::optional<TensorPtr> &bias1_tensor, const std::optional<TensorPtr> &bias2_tensor,
+  const std::optional<TensorPtr> &scale_tensor, const std::optional<TensorPtr> &offset_tensor,
+  const std::optional<TensorPtr> &deqScale1_tensor, const std::optional<TensorPtr> &deqScale2_tensor,
+  const std::optional<TensorPtr> &antiquant_scale1, const std::optional<TensorPtr> &antiquant_scale2,
+  const std::optional<TensorPtr> &antiquant_offset1, const std::optional<TensorPtr> &antiquant_offset2,
   const Int64ImmPtr &activation, const Int64ImmPtr &inner_precise);
 }  // namespace pyboost
 }  // namespace kernel

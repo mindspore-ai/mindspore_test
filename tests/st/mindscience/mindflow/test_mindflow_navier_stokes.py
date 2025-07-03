@@ -24,6 +24,7 @@ from tests.mark_utils import arg_mark
 
 from tests.st.utils import test_utils
 
+context.set_context(jit_level='O0')
 set_seed(123456)
 np.random.seed(123456)
 
@@ -102,7 +103,7 @@ def test_mindflow_navier_stokes():
     grad_fn = ops.value_and_grad(
         forward_fn, None, optimizer.parameters, has_aux=False)
 
-    @jit
+    @jit(backend="GE")
     def train_step(pde_data, bc_data, bc_label, ic_data, ic_label):
         loss, grads = grad_fn(pde_data, bc_data, bc_label, ic_data, ic_label)
         if use_ascend:

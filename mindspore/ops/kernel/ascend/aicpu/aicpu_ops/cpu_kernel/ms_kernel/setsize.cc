@@ -31,7 +31,7 @@ const int64_t kParallelDataNumSameShape = 7 * 1024;
 
 #define SETSIZE_COMPUTE_CASE(DTYPE, TYPE, CTX, ST)                  \
   case (DTYPE): {                                                   \
-    uint32_t result;                                                \
+    uint32_t result{0};                                             \
     result = SetSizeCompute<TYPE>(CTX, ST);                         \
     if (result != KERNEL_STATUS_OK) {                               \
       CUST_KERNEL_LOG_ERROR(ctx, "SetSize kernel compute failed."); \
@@ -84,21 +84,23 @@ uint32_t SetSizeCpuKernel::Compute(CpuKernelContext &ctx) {
     SETSIZE_COMPUTE_CASE(DT_INT64, int64_t, ctx, st)
     SETSIZE_COMPUTE_CASE(DT_UINT8, uint8_t, ctx, st)
     SETSIZE_COMPUTE_CASE(DT_UINT16, uint16_t, ctx, st)
-    case DT_STRING:
-      uint32_t result;
+    case DT_STRING: {
+      uint32_t result{0};
       result = SetSizeCompute_string(ctx, st);
       if (result != KERNEL_STATUS_OK) {
         CUST_KERNEL_LOG_ERROR(ctx, "SetSize kernel compute failed.");
         return result;
       }
       break;
-    default:
+    }
+    default: {
       CUST_KERNEL_LOG_ERROR(ctx,
                             "Value passed to parameter 'set_values_' has DataType [%s] not in "
                             "list of allowed values: int8, int16, int32, int64, uint8, uint16, "
                             "string.",
                             DTypeStr(data_type_1).c_str());
       return KERNEL_STATUS_PARAM_INVALID;
+    }
   }
   return KERNEL_STATUS_OK;
 }

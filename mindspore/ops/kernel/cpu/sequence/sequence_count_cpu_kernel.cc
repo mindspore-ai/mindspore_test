@@ -18,8 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <complex>
-#include "include/common/thread_pool.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 namespace mindspore {
 namespace kernel {
 namespace {
@@ -62,8 +61,11 @@ bool SequenceCountCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
   T *seq_addr = GetDeviceAddress<T>(inputs, 0);
+  MS_EXCEPTION_IF_NULL(seq_addr);
   T *target_addr = GetDeviceAddress<T>(inputs, 1);
+  MS_EXCEPTION_IF_NULL(target_addr);
   int64_t *output_addr = GetDeviceAddress<int64_t>(outputs, 0);
+  MS_EXCEPTION_IF_NULL(output_addr);
   auto seq_size = inputs[0]->size();
 
   int64_t count = 0;

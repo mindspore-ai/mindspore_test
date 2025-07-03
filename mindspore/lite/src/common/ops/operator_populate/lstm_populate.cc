@@ -16,6 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/lstm_fp32.h"
 #include "infer/lstm.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 using mindspore::ops::kNameLSTM;
 using mindspore::schema::PrimitiveType_LSTM;
 namespace mindspore {

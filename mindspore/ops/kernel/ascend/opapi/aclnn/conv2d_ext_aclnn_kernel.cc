@@ -20,12 +20,13 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace conv2d_ext {
 namespace {
 void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
   if (param->size() == kIndex1) {
@@ -81,13 +82,13 @@ void Conv2DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
                                        const std::vector<KernelTensor *> &outputs) {
   const auto &weight_shape = inputs[kIndex1]->GetShapeVector();
   auto spatial_len = weight_shape.size() - kIndex2;
-  stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
+  stride_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
   ExpandParamIfNeeded(&stride_, spatial_len);
-  padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex4]);
+  padding_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex4]);
   ExpandParamIfNeeded(&padding_, spatial_len);
-  dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  dilation_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
   ExpandParamIfNeeded(&dilation_, spatial_len);
-  groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
+  groups_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   auto input_2d_rank = 4;
@@ -102,14 +103,13 @@ void Conv2DExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
     SetTensorStorageInfo<std::shared_ptr<KernelTensor>>(input_kernel_tensor_, in_shape);
 
     auto out_shape = outputs[kIndex0]->GetShapeVector();
-    auto out_shape_ori = out_shape;
     ShapeVector expand_out_shape = out_shape;
     expand_out_shape.insert(expand_out_shape.begin(), 1);
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], expand_out_shape);
+    output_kernel_tensor_ = outputs[kIndex0]->CloneKernelTensor();
+    output_kernel_tensor_->SetShapeVector(expand_out_shape);
     GetWorkspaceForResize(input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, padding_, dilation_,
-                          transposed_, output_padding_, groups_, outputs[kIndex0],
+                          transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
                           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
-    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], out_shape_ori);
   }
 }
 
@@ -122,13 +122,15 @@ bool Conv2DExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   } else {
     input_kernel_tensor_->set_device_ptr(inputs[kIndex0]->device_ptr());
+    output_kernel_tensor_->set_device_ptr(outputs[kIndex0]->device_ptr());
     RunOp(stream_ptr, workspace, input_kernel_tensor_.get(), inputs[kIndex1], inputs[kIndex2], stride_, padding_,
-          dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
+          dilation_, transposed_, output_padding_, groups_, output_kernel_tensor_.get(),
           OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   }
   return true;
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(Conv2DExt, Conv2DExtAscend);
+}  // namespace conv2d_ext
 }  // namespace kernel
 }  // namespace mindspore

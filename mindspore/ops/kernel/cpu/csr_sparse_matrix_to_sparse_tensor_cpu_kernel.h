@@ -27,11 +27,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace csr_sparse_matrix_to_sparse_tensor_cpu {
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 class CSRSparseMatrixToSparseTensorCpuKernelMod : public NativeCpuKernelMod {
@@ -59,6 +60,7 @@ class CSRSparseMatrixToSparseTensorCpuKernelMod : public NativeCpuKernelMod {
   TypeId value_type_{kTypeUnknown};
   TypeId indice_type_{kTypeUnknown};
 };
+}  // namespace csr_sparse_matrix_to_sparse_tensor_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_EIGEN_CSR_SPAESE_MATRIX_TO_SPARSE_TENSOR_CPU_KERNEL_H_

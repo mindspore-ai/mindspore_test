@@ -17,15 +17,17 @@
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_MPI_MPI_INTERFACE_H_
 #include <vector>
 #include <string>
+#include "include/backend/visible.h"
 #ifdef ENABLE_MPI
 constexpr auto kMPIOpTypeSum = "sum";
 int GetMPIRankId();
 int GetMPIRankSize();
-bool MPIReduceScatter(const float *input, float *output, const std::vector<int> &ranks_group, size_t data_num,
-                      const std::string &op_type = kMPIOpTypeSum);
+BACKEND_EXPORT bool MPIReduceScatter(const float *input, float *output, const std::vector<int> &ranks_group,
+                                     size_t data_num, const std::string &op_type = kMPIOpTypeSum);
 bool MPIReduceScatterOverwriteInput(float *input, const std::vector<int> &ranks_group, size_t in_data_num,
                                     size_t output_size, const std::string &op_type = kMPIOpTypeSum,
                                     float *output = nullptr);
-bool MPIAllGather(const float *input, float *output, const std::vector<int> &ranks_group, size_t data_num);
+BACKEND_EXPORT bool MPIAllGather(const float *input, float *output, const std::vector<int> &ranks_group,
+                                 size_t data_num);
 #endif  // ENABLE_MPI
 #endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_MPI_MPI_INTERFACE_H_

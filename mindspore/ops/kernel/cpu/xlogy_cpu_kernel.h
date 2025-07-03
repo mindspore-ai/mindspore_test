@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace xlogy_cpu {
 class XlogyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<XlogyCpuKernelMod> {
  public:
   XlogyCpuKernelMod() { ResetResource(); }
@@ -58,6 +59,7 @@ class XlogyCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<Xl
   bool is_need_broadcast_{false};
   bool has_null_input_{false};
 };
+}  // namespace xlogy_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_XLOGY_CPU_KERNEL_H

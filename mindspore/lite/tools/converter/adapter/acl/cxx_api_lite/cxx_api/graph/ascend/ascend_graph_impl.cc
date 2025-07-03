@@ -28,8 +28,8 @@
 #include "backend/common/session/session_basic.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/distributed/init.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace mindspore {
 API_GRAPH_REG(kAscendDevice, AscendGraphImpl);
@@ -76,7 +76,7 @@ Status AscendGraphImpl::InitEnv() {
     return kMCDeviceError;
   }
 
-  backend_ = std::make_shared<compile::MindRTBackend>(kMsConvert, kAscendDevice, device_id_);
+  backend_ = std::make_shared<backend::ms_backend::MSBackend>();
   if (backend_ == nullptr) {
     MS_LOG(ERROR) << "DeviceContext create failed!, please make sure target device:" << kAscendDevice
                   << " is available.";
@@ -96,8 +96,9 @@ Status AscendGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_grap
     MS_EXCEPTION_IF_NULL(manager);
     manager->AddFuncGraph(func_graph);
     func_graph->set_manager(manager);
-    actor_info_ = backend_->CompileGraphs(func_graph);
-    kernel_graph_ = backend_->GetGraphById(GraphImpl::GetRootGraphIdFromActorInfo(actor_info_));
+    BackendJitConfig &backend_jit_config = backend::BackendJitConfig::ParseBackendJitConfig();
+    graph_id_ = backend_->Build(func_graph, backend_jit_config);
+    kernel_graph_ = backend_->GetGraphById(graph_id_);
     return kSuccess;
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "CompileGraph failed: " << e.what();
@@ -108,7 +109,7 @@ Status AscendGraphImpl::CompileGraph(const std::shared_ptr<FuncGraph> &func_grap
 std::vector<tensor::TensorPtr> AscendGraphImpl::RunGraph(const std::vector<tensor::TensorPtr> &inputs) {
   try {
     VectorRef outputs;
-    backend_->RunGraph(actor_info_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
+    backend_->Run(graph_id_, GraphImpl::GenerateInputsRef(inputs, func_graph_.lock()), &outputs);
     return TransformVectorRefToMultiTensor(outputs);
   } catch (std::exception &e) {
     MS_LOG(ERROR) << "RunGraph failed: " << e.what();
@@ -123,7 +124,7 @@ Status AscendGraphImpl::ExecuteModel(const std::vector<MSTensor> &request, std::
     return kMCDeviceError;
   }
   auto rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set Ascend rtCtx failed";
     return kMCDeviceError;
   }
@@ -257,7 +258,7 @@ Status AscendGraphImpl::Load(uint32_t device_id) {
 
     // save d context
     auto rt_ret = CALL_ASCEND_API(aclrtGetCurrentContext, &context_);
-    if (rt_ret != ACL_ERROR_NONE || context_ == nullptr) {
+    if (rt_ret != ACL_SUCCESS || context_ == nullptr) {
       MS_LOG(ERROR) << "the ascend device context is null";
       return kMCDeviceError;
     }
@@ -267,7 +268,7 @@ Status AscendGraphImpl::Load(uint32_t device_id) {
   }
 
   auto rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
-  if (rt_ret != ACL_ERROR_NONE) {
+  if (rt_ret != ACL_SUCCESS) {
     MS_LOG(ERROR) << "Set the ascend device context failed";
     return kMCDeviceError;
   }
@@ -349,7 +350,7 @@ AscendGraphImpl::MsEnvGuard::MsEnvGuard(uint32_t device_id) : device_id_(device_
     }
   } else {
     auto ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(device_id_));
-    if (ret != ACL_ERROR_NONE) {
+    if (ret != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Device " << device_id_ << " call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
                         << "]";
     }
@@ -383,7 +384,7 @@ AscendGraphImpl::MsEnvGuard::~MsEnvGuard() {
       }
     } else {
       auto ret = CALL_ASCEND_API(aclrtResetDevice, static_cast<int32_t>(device_id_));
-      if (ret != ACL_ERROR_NONE) {
+      if (ret != ACL_SUCCESS) {
         MS_LOG(ERROR) << "Device " << device_id_ << " call aclrtResetDevice failed, ret[" << static_cast<int>(ret)
                       << "]";
         return;

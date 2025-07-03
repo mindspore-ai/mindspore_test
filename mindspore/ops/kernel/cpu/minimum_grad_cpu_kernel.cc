@@ -16,10 +16,11 @@
 
 #include "kernel/cpu/minimum_grad_cpu_kernel.h"
 #include <algorithm>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace minimum_grad_cpu {
 namespace {
 constexpr size_t kMinimumGradInputsNum = 5;
 constexpr size_t kMinimumGradOutputsNum = 2;
@@ -253,5 +254,6 @@ bool MinimumGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MinimumGrad, MinimumGradCpuKernelMod);
+}  // namespace minimum_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

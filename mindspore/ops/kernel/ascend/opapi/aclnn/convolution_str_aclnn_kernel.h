@@ -20,11 +20,12 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace convolution_str {
 
 class ConvolutionStrAscend : public AclnnKernelMod {
  public:
@@ -57,6 +58,7 @@ class ConvolutionStrAscend : public AclnnKernelMod {
   size_t expand_count_{0};
   std::vector<size_t> expand_indices_{};
 };
+}  // namespace convolution_str
 }  // namespace kernel
 }  // namespace mindspore
 

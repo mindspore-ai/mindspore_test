@@ -74,7 +74,7 @@ class SymbolTree:
 
         - :class:`mindspore.nn.SequentialCell`
         - Functions(Excludes Python built-in functions and third-party library functions)
-        - Control flow statements, such as `if` statements
+        - Control flow statements(such as `if` statements)
 
         Note:
             Because the specific execution branch of control flows are still unknown during the rewrite operation

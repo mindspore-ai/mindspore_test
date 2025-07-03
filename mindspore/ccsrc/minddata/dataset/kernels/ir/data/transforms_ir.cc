@@ -19,39 +19,25 @@
 #include <algorithm>
 #include <utility>
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/engine/serdes.h"
-#endif
 
 // Kernel data headers (in alphabetical order)
 #include "minddata/dataset/kernels/data/compose_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/concatenate_op.h"
-#endif
 #include "minddata/dataset/kernels/data/duplicate_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/fill_op.h"
 #include "minddata/dataset/kernels/data/mask_op.h"
-#endif
 #include "minddata/dataset/kernels/data/one_hot_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/pad_end_op.h"
 #include "minddata/dataset/kernels/data/parse_example_op.h"
-#endif
 #include "minddata/dataset/kernels/data/random_apply_op.h"
 #include "minddata/dataset/kernels/data/random_choice_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/slice_op.h"
-#endif
 #include "minddata/dataset/kernels/data/type_cast_op.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/unique_op.h"
-#endif
 
 #include "minddata/dataset/kernels/ir/validators.h"
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/plugin_op.h"
-#endif
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/kernels/py_func_op.h"
 #endif
@@ -94,7 +80,6 @@ Status ComposeOperation::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status ComposeOperation::from_json(const nlohmann::json &op_params, std::shared_ptr<TensorOperation> *operation) {
   RETURN_UNEXPECTED_IF_NULL(operation);
   RETURN_IF_NOT_OK(ValidateParamInJson(op_params, "transforms", kComposeOperation));
@@ -164,7 +149,6 @@ Status ConcatenateOperation::from_json(const nlohmann::json &op_params, std::sha
   *operation = std::make_shared<transforms::ConcatenateOperation>(axis, prepend, append);
   return Status::OK();
 }
-#endif
 
 // DuplicateOperation
 Status DuplicateOperation::ValidateParams() { return Status::OK(); }
@@ -177,7 +161,6 @@ Status DuplicateOperation::from_json(const nlohmann::json &op_params, std::share
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // FillOperation
 FillOperation::FillOperation(const std::shared_ptr<Tensor> &fill_value) : fill_value_(fill_value) {}
 
@@ -244,7 +227,6 @@ Status MaskOperation::from_json(const nlohmann::json &op_params, std::shared_ptr
   *operation = std::make_shared<transforms::MaskOperation>(op, constant, dtype);
   return Status::OK();
 }
-#endif
 
 // OneHotOperation
 OneHotOperation::OneHotOperation(int32_t num_classes, double smoothing_rate)
@@ -284,7 +266,6 @@ Status OneHotOperation::from_json(nlohmann::json op_params, std::shared_ptr<Tens
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // PadEndOperation
 PadEndOperation::PadEndOperation(const TensorShape &pad_shape, const std::shared_ptr<Tensor> &pad_value)
     : pad_shape_(pad_shape), pad_value_(pad_value) {}
@@ -325,7 +306,6 @@ ParseExampleOperation::ParseExampleOperation(DataSchema schema, std::vector<std:
 std::shared_ptr<TensorOp> ParseExampleOperation::Build() {
   return std::make_shared<ParseExampleOp>(schema_, column_list_, parallel_parse_);
 }
-#endif
 #endif
 
 // PreBuiltOperation
@@ -381,7 +361,6 @@ Status RandomApplyOperation::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status RandomApplyOperation::from_json(nlohmann::json op_params, std::shared_ptr<TensorOperation> *operation) {
   RETURN_UNEXPECTED_IF_NULL(operation);
   RETURN_IF_NOT_OK(ValidateParamInJson(op_params, "transforms", kRandomApplyOperation));
@@ -393,7 +372,6 @@ Status RandomApplyOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<transforms::RandomApplyOperation>(operations, prob);
   return Status::OK();
 }
-#endif
 
 // RandomChoiceOperation
 RandomChoiceOperation::RandomChoiceOperation(const std::vector<std::shared_ptr<TensorOperation>> &transforms)
@@ -425,7 +403,6 @@ Status RandomChoiceOperation::to_json(nlohmann::json *out_json) {
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status RandomChoiceOperation::from_json(nlohmann::json op_params, std::shared_ptr<TensorOperation> *operation) {
   RETURN_UNEXPECTED_IF_NULL(operation);
   RETURN_IF_NOT_OK(ValidateParamInJson(op_params, "transforms", kRandomChoiceOperation));
@@ -442,7 +419,6 @@ SliceOperation::SliceOperation(const std::vector<SliceOption> &slice_input) : sl
 Status SliceOperation::ValidateParams() { return Status::OK(); }
 
 std::shared_ptr<TensorOp> SliceOperation::Build() { return std::make_shared<SliceOp>(slice_input_); }
-#endif
 
 // TypeCastOperation
 // DataType data_type - required for C++ API
@@ -481,7 +457,6 @@ Status TypeCastOperation::from_json(nlohmann::json op_params, std::shared_ptr<Te
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 // UniqueOperation
 Status UniqueOperation::ValidateParams() { return Status::OK(); }
 
@@ -527,7 +502,6 @@ Status PluginOperation::from_json(nlohmann::json op_params, std::shared_ptr<Tens
   *operation = std::make_shared<transforms::PluginOperation>(lib_path, func_name, user_args);
   return Status::OK();
 }
-#endif
 }  // namespace transforms
 }  // namespace dataset
 }  // namespace mindspore

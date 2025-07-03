@@ -31,6 +31,9 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
 namespace mindspore::lite {
 namespace {
@@ -186,6 +189,8 @@ bool Conv1DInOutAdjust::Run(const FuncGraphPtr &func_graph) {
       auto unsqueeze_weight =
         NewUnsqueezeOpNode(func_graph, weight_node, axis, cnode->fullname_with_scope() + "_unsqueeze_weight");
       MS_CHECK_TRUE_MSG(unsqueeze_weight != nullptr, false, "New unsqueeze node failed.");
+      MS_CHECK_TRUE_MSG(weight_node->abstract() != nullptr, false, "weight_node->abstract() is nullptr!");
+      unsqueeze_weight->set_abstract(weight_node->abstract()->Clone());
       (void)manager->SetEdge(cnode, THIRD_INPUT, unsqueeze_weight);
     } else {
       schema::Format schema_format = schema::Format::Format_KCHW;

@@ -23,11 +23,12 @@
 #include <complex>
 
 #include "mindspore/ops/infer/renorm.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "include/common/thread_pool.h"
 
 namespace mindspore {
 namespace kernel {
+namespace renorm_cpu {
 namespace {
 constexpr size_t kRenormInputsNum = 1;
 constexpr size_t kRenormOutputsNum = 1;
@@ -169,5 +170,6 @@ std::vector<KernelAttr> RenormCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Renorm, RenormCpuKernelMod);
+}  // namespace renorm_cpu
 }  // namespace kernel
 }  // namespace mindspore

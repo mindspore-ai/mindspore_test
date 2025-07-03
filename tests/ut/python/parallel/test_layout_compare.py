@@ -28,7 +28,6 @@ def setup_function():
 
 
 def compile_net(net, input_x):
-    net.set_auto_parallel()
     net.set_train()
     _cell_graph_executor.compile(net, input_x)
 

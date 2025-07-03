@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/common/utils/convert_utils.h"
-#include "utils/info.h"
 #include "include/common/visible.h"
 #include "symbolic_shape/symbol_info.h"
 
@@ -56,6 +54,8 @@ constexpr char kKeepInputUnchanged[] = "keep_input_unchanged";
 constexpr char kPipeline1F1B[] = "1f1b";
 constexpr char kPipelineGpipe[] = "gpipe";
 constexpr char kPipelineSeqpipe[] = "seqpipe";
+constexpr char kPipelineSeqvpp[] = "seqvpp";
+constexpr char kPipelineSeqsmartvpp[] = "seqsmartvpp";
 
 constexpr char kFusionAuto[] = "auto";
 constexpr char kFusionSize[] = "size";
@@ -84,7 +84,16 @@ class COMMON_EXPORT ParallelContext {
   bool full_batch() const { return full_batch_; }
 
   void set_dataset_strategy(const std::vector<std::vector<int64_t>> &dataset_strategy);
+  void set_dataset_layout(const std::vector<std::vector<int64_t>> &dataset_strategy_devmat,
+                          const std::vector<std::vector<std::vector<int64_t>>> &dataset_strategy_tensormap,
+                          const std::vector<std::vector<std::string>> &dataset_strategy_alias_name);
+
   std::vector<std::vector<int64_t>> dataset_strategy() const { return dataset_strategy_; }
+  std::vector<std::vector<int64_t>> dataset_strategy_devmat() const { return dataset_strategy_devmat_; }
+  std::vector<std::vector<std::vector<int64_t>>> dataset_strategy_tensormap() const {
+    return dataset_strategy_tensormap_;
+  }
+  std::vector<std::vector<std::string>> dataset_strategy_alias_name() const { return dataset_strategy_alias_name_; }
 
   void set_gradient_fp32_sync(bool gradient_fp32_sync);
   bool gradient_fp32_sync() const { return gradient_fp32_sync_; }
@@ -117,8 +126,14 @@ class COMMON_EXPORT ParallelContext {
   void set_pipeline_interleave(const bool pipeline_interleave);
   bool pipeline_interleave() const { return pipeline_interleave_; }
 
+  void set_pipeline_interleave_temp(const bool pipeline_interleave_temp);
+  bool pipeline_interleave_temp() const { return pipeline_interleave_temp_; }
+
   void set_pipeline_scheduler(const std::string &pipeline_scheduler);
   std::string pipeline_scheduler() const { return pipeline_scheduler_; }
+
+  void set_pipeline_scheduler_temp(const std::string &pipeline_scheduler_temp);
+  std::string pipeline_scheduler_temp() const { return pipeline_scheduler_temp_; }
 
   void set_global_rank(int64_t global_rank);
   int64_t global_rank() const { return global_rank_; }
@@ -255,6 +270,15 @@ class COMMON_EXPORT ParallelContext {
   void set_stra_file_only_trainable_params(const bool);
   bool stra_file_only_trainable_params() const { return stra_file_only_trainable_params_; }
 
+  void set_zero3(const bool);
+  bool zero3() const { return zero3_; }
+
+  void set_init_param_in_compile(const bool init_param_in_compile);
+  bool init_param_in_compile() const { return init_param_in_compile_; }
+
+  void set_auto_parallel_new_interface(const bool auto_parallel_new_interface);
+  bool auto_parallel_new_interface() const { return auto_parallel_new_interface_; }
+
   void set_symbol_infos(const std::vector<symshape::SymbolInfoList> &symbol_infos) { symbol_infos_ = symbol_infos; }
   const std::vector<symshape::SymbolInfoList> &symbol_infos() const { return symbol_infos_; }
 
@@ -280,6 +304,8 @@ class COMMON_EXPORT ParallelContext {
   int64_t pipeline_segment_split_num_;
   bool pipeline_interleave_;
   std::string pipeline_scheduler_;
+  bool pipeline_interleave_temp_;
+  std::string pipeline_scheduler_temp_;
   size_t pipeline_micro_size_;
   bool auto_pipeline_;
   bool parameter_broadcast_;
@@ -311,6 +337,9 @@ class COMMON_EXPORT ParallelContext {
   // Enable AllToAll or not. If false, use AllGather and Split.
   bool enable_all2all_;
   std::vector<std::vector<int64_t>> dataset_strategy_;
+  std::vector<std::vector<int64_t>> dataset_strategy_devmat_;
+  std::vector<std::vector<std::vector<int64_t>>> dataset_strategy_tensormap_;
+  std::vector<std::vector<std::string>> dataset_strategy_alias_name_;
   bool dataset_repeat_dim_right_ = false;
   bool hccl_test_available_ = false;
   bool sharding_propagation_;
@@ -326,8 +355,11 @@ class COMMON_EXPORT ParallelContext {
   bool direct_split_ = false;
   bool pipeline_result_broadcast_ = false;
   std::vector<symshape::SymbolInfoList> symbol_infos_;
+  bool zero3_ = false;
   bool is_dynamic_shape_parallel_ = false;
   bool dynamic_shape_parallel_flag_is_set_ = false;
+  bool init_param_in_compile_ = true;
+  bool auto_parallel_new_interface_ = false;
 };
 }  // namespace mindspore::parallel
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PARALLEL_CONTEXT_H_

@@ -22,10 +22,11 @@
 #include <cmath>
 #include <atomic>
 #include "kernel/cpu/adaptive_max_pool_2d_grad_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adaptive_max_pool_2d_grad_cpu {
 namespace {
 #define F64 kNumberTypeFloat64
 #define F32 kNumberTypeFloat32
@@ -151,5 +152,6 @@ std::vector<KernelAttr> AdaptiveMaxPool2DGradCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdaptiveMaxPool2DGrad, AdaptiveMaxPool2DGradCpuKernelMod);
+}  // namespace adaptive_max_pool_2d_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore

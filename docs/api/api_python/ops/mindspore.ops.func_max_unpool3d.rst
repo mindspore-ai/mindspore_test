@@ -7,7 +7,7 @@ mindspore.ops.max_unpool3d
 
     `max_unpool3d` 在计算过程中，保留最大值位置的元素，并将非最大值位置元素设置为0。
     支持的输入数据格式为 :math:`(N, C, D_{in}, H_{in}, W_{in})` 或 :math:`(C, D_{in}, H_{in}, W_{in})` ，
-    输出数据的个格式为 :math:`(N, C, D_{out}, H_{out}, W_{out})` 或 :math:`(C, D_{out}, H_{out}, W_{out})` ，计算公式如下：
+    输出数据的格式为 :math:`(N, C, D_{out}, H_{out}, W_{out})` 或 :math:`(C, D_{out}, H_{out}, W_{out})` ，计算公式如下：
 
     .. math::
         \begin{array}{ll} \\
@@ -24,10 +24,10 @@ mindspore.ops.max_unpool3d
         - **kernel_size** (Union[int, tuple[int]]) - 池化核尺寸大小。int类型表示池化核的深度、长和宽相同。
           tuple类型中的三个值分别代表池化核的深度、长和宽。
         - **stride** (Union[int, tuple[int]]) - 池化操作的移动步长，int类型表示深度、长和宽方向的移动步长相同。
-          tuple中的三个值分别代表深度、长和宽方向移动的步长。默认值： ``None`` ，表示移动步长为 `kernel_size` 。
-        - **padding** (Union[int, tuple[int]]) - 填充值。默认值： ``0`` 。若为int类型，则深度、长和宽方向的填充大小相同，均为 `padding` 。
+          tuple中的三个值分别代表深度、长和宽方向移动的步长。默认 ``None`` ，表示移动步长为 `kernel_size` 。
+        - **padding** (Union[int, tuple[int]]) - 填充值。默认 ``0`` 。若为int类型，则深度、长和宽方向的填充大小相同，均为 `padding` 。
           若为tuple类型，则tuple中的三个值分别代表深度、长和宽方向填充的大小。
-        - **output_size** (tuple[int], 可选) - 输出shape。默认值： ``None`` 。
+        - **output_size** (tuple[int], 可选) - 输出shape。默认 ``None`` 。
           如果output_size为()，那么输出shape根据 ``kernel_size`` 、 ``stride`` 和 ``padding`` 计算得出。
           如果output_size不为()，那么 `output_size` 必须满足格式 :math:`(N, C, D, H, W)` ， :math:`(C, D, H, W)` 或 :math:`(D, H, W)` ，
           取值范围需满足：
@@ -39,10 +39,10 @@ mindspore.ops.max_unpool3d
 
     异常：
         - **TypeError** - `x` 或 `indices` 的数据类型不支持。
-        - **TypeError** - `kernel_size` ， `stride` 或 `padding` 既不是整数也不是tuple。
-        - **ValueError** - `stride` ， `kernel_size` 或 `padding` 的值不是非负的。
+        - **TypeError** - `kernel_size` 、 `stride` 或 `padding` 既不是整数也不是tuple。
+        - **ValueError** - `stride` 、 `kernel_size` 或 `padding` 的值不是非负的。
         - **ValueError** - `x` 和 `indices` 的shape不一致。
-        - **ValueError** - `kernel_size` ， `stride` 或 `padding` 为tuple时长度不等于3。
+        - **ValueError** - `kernel_size` 、 `stride` 或 `padding` 为tuple时长度不等于3。
         - **ValueError** - `x` 的长度不为4或5。
         - **ValueError** - `output_size` 的类型不是tuple。
         - **ValueError** - `output_size` 的长度不为0、4或5。

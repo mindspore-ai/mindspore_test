@@ -7,7 +7,7 @@ mindspore.ops.celu
 
     .. math::
         \text{CeLU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))
-    
+
     详情请参考： `celu <https://arxiv.org/abs/1704.07483>`_ 。
 
     .. warning::
@@ -20,7 +20,7 @@ mindspore.ops.celu
 
     参数：
         - **x** (Tensor) - celu的输入，数据类型为float16或float32。
-        - **alpha** (float，可选) - celu公式定义的阈值 :math:`\alpha` 。默认值： ``1.0`` 。
+        - **alpha** (float，可选) - celu公式定义的阈值 :math:`\alpha` 。默认 ``1.0`` 。
 
     返回：
         Tensor，shape和数据类型与输入相同。

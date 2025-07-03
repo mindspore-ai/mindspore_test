@@ -26,11 +26,13 @@
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "backend/common/pass/communication_op_fusion.h"
-#include "backend/graph_compiler/backend.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "kernel/ops_utils.h"
-#include "kernel/common_utils.h"
+#include "common/device_address.h"
+#include "common/kernel_tensor.h"
+#include "common/kernel_utils.h"
+#include "common/common_utils.h"
 #include "kernel/framework_utils.h"
 #define private public
 #define protected public
@@ -49,17 +51,19 @@ using device::DeviceContextKey;
 using device::DeviceContextRegister;
 using device::DeviceType;
 using kernel::AddressPtr;
+using kernel::KernelTensorPtr;
 using session::KernelGraph;
 
 class TestDeviceAddress : public DeviceAddress {
  public:
-  TestDeviceAddress(const KernelTensorPtr &kernel_tensor) : DeviceAddress(kernel_tensor) {}
+  TestDeviceAddress() : DeviceAddress() {}
   TestDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const {
+  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                                bool sync_on_demand) const {
     return true;
   }
   virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
@@ -108,17 +112,16 @@ class TestDeviceResManager : public device::DeviceResManager {
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id) const {
+                                               uint32_t device_id, uint32_t stream_id,
+                                               const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
   }
 
-  DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    if (kernel_tensor->device_name().empty()) {
-      kernel_tensor->set_device_name(device_context_->device_context_key().device_name_);
-      kernel_tensor->set_device_id(device_context_->device_context_key().device_id_);
-    }
-    return std::make_shared<TestDeviceAddress>(kernel_tensor);
+  DeviceAddressPtr CreateDeviceAddress() const {
+    auto device_address = std::make_shared<TestDeviceAddress>();
+    device_address->set_device_name(device_context_->device_context_key().device_name_);
+    device_address->set_device_id(device_context_->device_context_key().device_id_);
+    return device_address;
   }
 };
 
@@ -132,7 +135,7 @@ class TestKernelExecutor : public device::KernelExecutor {
     auto kernel_graph = graph->cast<KernelGraphPtr>();
     MS_EXCEPTION_IF_NULL(kernel_graph);
     auto &nodes = kernel_graph->execution_order();
-    for (const auto node : nodes) {
+    for (const auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
       SetKernelInfo(node);
     }
@@ -145,7 +148,7 @@ class TestKernelExecutor : public device::KernelExecutor {
   }
 
   virtual void CreateKernel(const std::vector<CNodePtr> &nodes) const {
-    for (const auto node : nodes) {
+    for (const auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
       SetKernelInfo(node);
 
@@ -159,13 +162,13 @@ class TestKernelExecutor : public device::KernelExecutor {
         if (AnfAlgo::OutputAddrExist(input_node, index)) {
           continue;
         }
-        AnfAlgo::SetOutputAddr(std::make_shared<TestDeviceAddress>(nullptr, tensor_size), index, input_node.get());
+        AnfAlgo::SetOutputAddr(std::make_shared<TestDeviceAddress>(nullptr, tensor_size), index, input_node);
       }
       size_t output_num = AnfAlgo::GetOutputTensorNum(node);
       for (size_t output_index = 0; output_index < output_num; ++output_index) {
         size_t tensor_size = AnfAlgo::GetOutputTensorMemSize(node, output_index);
         (void)output_size_list.emplace_back(tensor_size);
-        AnfAlgo::SetOutputAddr(std::make_shared<TestDeviceAddress>(nullptr, tensor_size), output_index, node.get());
+        AnfAlgo::SetOutputAddr(std::make_shared<TestDeviceAddress>(nullptr, tensor_size), output_index, node);
       }
 
       const size_t kDefaultWorkSpaceSize = 4;
@@ -174,7 +177,7 @@ class TestKernelExecutor : public device::KernelExecutor {
       kernel_mod_ptr->SetOutputSizeList(output_size_list);
       kernel_mod_ptr->SetWorkspaceSizeList({kDefaultWorkSpaceSize});
       AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
-      AnfAlgo::SetWorkspaceAddr(std::make_shared<TestDeviceAddress>(nullptr, kDefaultWorkSpaceSize), 0, node.get());
+      AnfAlgo::SetWorkspaceAddr(std::make_shared<TestDeviceAddress>(nullptr, kDefaultWorkSpaceSize), 0, node);
     }
   }
 
@@ -218,9 +221,9 @@ class TestKernelExecutor : public device::KernelExecutor {
   }
 };
 
-class TestGraphExecutor : public device::GraphExecutor {
+class TestGraphExecutor {
  public:
-  ~TestGraphExecutor() override = default;
+  ~TestGraphExecutor() = default;
   bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
                 std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(INFO) << "Ut run test graph.";
@@ -242,14 +245,34 @@ class TestGraphExecutor : public device::GraphExecutor {
   }
 };
 
-class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, TestKernelExecutor, TestDeviceResManager> {
+class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, TestDeviceResManager> {
  public:
-  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
+  explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {
+    graph_executor_ = std::make_shared<TestGraphExecutor>();
+  }
   ~TestDeviceContext() override = default;
 
   virtual void Initialize() {}
   virtual DeviceType GetDeviceType() const { return DeviceType::kCPU; }
-  device::RunMode GetRunMode(const FuncGraphPtr &func_graph) const override { return device::RunMode::kKernelMode; }
+private:
+  std::shared_ptr<TestGraphExecutor> graph_executor_;
+};
+
+class TestResManager : public device::HalResBase {
+ public:
+  TestResManager(const device::ResKey &res_key) : device::HalResBase(res_key) {}
+
+  ~TestResManager() override = default;
+
+  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
+                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override {
+    return std::make_shared<TestDeviceAddress>(ptr, size, "NCHW", type_id, "CPU", 0);
+  }
+  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override {}
+  void FreeMemory(void *ptr) const override {}
+  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
+                       const std::vector<size_t> &keep_addr_sizes) const override {}
 };
 }  // namespace test
 }  // namespace runtime

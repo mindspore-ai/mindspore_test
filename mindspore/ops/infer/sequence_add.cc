@@ -33,6 +33,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "ops_utils/op_constants.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -173,6 +174,6 @@ class SequenceAddInfer : public abstract::OpInferBase {
     return SequenceAddInferInner(primitive, input_args);
   }
 };
-REGISTER_PRIMITIVE_OP_INFER_IMPL(SequenceAdd, prim::kPrimSequenceAdd, SequenceAddInfer, true);
+REGISTER_PRIMITIVE_OP_INFER_IMPL(SequenceAdd, prim::kPrimSequenceAdd, SequenceAddInfer, false);
 }  // namespace ops
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2025Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,12 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "utils/ms_context.h"
+#include "ir/tensor.h"
+#include "ir/anf.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_v.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace parallel {
@@ -44,7 +50,9 @@ static std::vector<std::string> layout_keys = {DEVICE_MATRIX, TENSOR_MAP, INTERL
 
 static void GenerateDefaultStrategy(const ValueNodePtr &axes, const std::vector<AnfNodePtr> &nodes,
                                     const size_t device_num, std::vector<std::vector<int64_t>> *default_strategy) {
-  auto strategies = axes->value()->cast<ValueTuplePtr>()->value();
+  auto axes_value = axes->value()->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(axes_value);
+  auto strategies = axes_value->value();
   size_t i = 0;
   for (auto &strategy : strategies) {
     auto node = nodes[i];
@@ -64,7 +72,10 @@ static void GenerateDefaultStrategy(const ValueNodePtr &axes, const std::vector<
 }
 
 static void PreCheckStrategy(const ValueNodePtr &axes, bool *need_default_strategy, size_t *axes_size) {
-  auto strategies = axes->value()->cast<ValueTuplePtr>()->value();
+  MS_EXCEPTION_IF_NULL(axes);
+  auto axes_value = axes->value()->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(axes_value);
+  auto strategies = axes_value->value();
   for (auto &strategy : strategies) {
     *axes_size += 1;
     if (strategy->isa<None>()) {
@@ -80,7 +91,9 @@ static void GetInputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr
     if (parameter->abstract()->isa<abstract::AbstractMonad>()) {
       continue;
     }
-    input_nodes->push_back(parameter);
+    if (IsValueNode<mindspore::tensor::Tensor>(parameter) || parameter->isa<Parameter>()) {
+      input_nodes->push_back(parameter);
+    }
   }
 }
 
@@ -126,6 +139,7 @@ static ValueTuplePtr ShapesToValueTuplePtr(const Shapes &shapes) {
 
 static Shapes ValueTuplePtrToShapes(const ValueTuplePtr &value_tuple_ptr) {
   Shapes shapes;
+  MS_EXCEPTION_IF_NULL(value_tuple_ptr);
   auto value_list = value_tuple_ptr->value();
   (void)std::transform(value_list.begin(), value_list.end(), std::back_inserter(shapes),
                        [](const ValuePtr &value_ptr) { return GetValue<Shape>(value_ptr); });
@@ -167,7 +181,9 @@ static bool IsSettingStrategyByInsertIdentity(const FuncGraphPtr &func_graph, co
   for (const auto &user : node_users) {
     auto user_node = user.first;
     if (IsPrimitiveCNode(user_node, prim::kPrimAShardIdentity)) {
-      auto attrs = GetCNodePrimitive(user_node)->attrs();
+      auto cnode_primitive = GetCNodePrimitive(user_node);
+      MS_EXCEPTION_IF_NULL(cnode_primitive);
+      auto attrs = cnode_primitive->attrs();
       if (StrategyFound(attrs)) {
         auto origin_strategies = ValueTuplePtrToShapes(attrs[parallel::IN_STRATEGY]->cast<ValueTuplePtr>());
         MS_LOG(WARNING) << "For " << param_name << ", its strategy has been set to " << origin_strategies.at(0)
@@ -221,7 +237,9 @@ static bool IsItemTypeBool(const ValuePtr &item) { return item->type()->isa<Bool
 
 static void updateStrategyType(const std::vector<ValuePtr> &layout_value_vector, std::string *strategy_type) {
   bool has_bool = std::any_of(layout_value_vector.begin(), layout_value_vector.end(), [](const ValuePtr &layout_item) {
-    auto layout_item_tuple = layout_item->cast<ValueTuplePtr>()->value();
+    auto layout_item_value = layout_item->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_item_value);
+    auto layout_item_tuple = layout_item_value->value();
     return std::any_of(layout_item_tuple.begin(), layout_item_tuple.end(),
                        [](const auto &item) { return IsItemTypeBool(item); });
   });
@@ -234,34 +252,23 @@ static CNodePtr InsertIdentityCNode(const AnfNodePtr &parameter, const FuncGraph
                                     const CNodePtr &to_insert_cnode, const int execution_mode) {
   CNodePtr identity_cnode = nullptr;
   FuncGraphManagerPtr manager = func_graph->manager();
-  if (execution_mode == kGraphMode) {
-    // Setting strategy by insert identity CNode directly using inputs in GraphMode.
-    // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
-    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
-    AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
-    auto input_index =
-      std::distance(node_inputs_list.begin(),
-                    std::find(node_inputs_list.begin(), node_inputs_list.end(), parameter->cast<AnfNodePtr>()));
-    identity_cnode->set_abstract(parameter->abstract());
-    manager->SetEdge(to_insert_cnode, input_index, identity_cnode);
-  }
-  if (execution_mode == kPynativeMode) {
-    // Setting strategy by insert identity after TupleGetItem in PynativeMode.
-    // e.g TupleGetItem(parameter, index) -> identity{in_strategy=[input_strategy[index], TupleGetItem_i}
-    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), to_insert_cnode});
-    auto to_insert_cnode_abstract = to_insert_cnode->abstract();
-    MS_EXCEPTION_IF_NULL(to_insert_cnode_abstract);
-    identity_cnode->set_abstract(to_insert_cnode_abstract->Clone());
-    (void)manager->Replace(to_insert_cnode, identity_cnode);
-  }
+  // Setting strategy by insert identity CNode directly using inputs.
+  // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
+  identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
+  AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
+  auto input_index = std::distance(node_inputs_list.begin(), std::find(node_inputs_list.begin(), node_inputs_list.end(),
+                                                                       parameter->cast<AnfNodePtr>()));
+  identity_cnode->set_abstract(parameter->abstract());
+  manager->SetEdge(to_insert_cnode, input_index, identity_cnode);
   return identity_cnode;
 }
 
 static void GetInputLayout(std::vector<ValuePtr> *input_layout, const std::vector<ValuePtr> &layout_value_vector) {
   for (size_t i = 0; i < layout_value_vector.size(); ++i) {
     std::vector<std::pair<ValuePtr, ValuePtr>> dim_layout;
-    auto layout_item = layout_value_vector[i];
-    auto layout_item_tuple = layout_item->cast<ValueTuplePtr>()->value();
+    auto layout_item = layout_value_vector[i]->cast<ValueTuplePtr>();
+    MS_EXCEPTION_IF_NULL(layout_item);
+    auto layout_item_tuple = layout_item->value();
     for (size_t j = 0; j < layout_item_tuple.size(); ++j) {
       auto item = layout_item_tuple[j];
       dim_layout.emplace_back(std::make_pair(MakeValue(layout_keys[j]), item));
@@ -288,8 +295,88 @@ static void CheckInputStrategy(const std::vector<std::vector<int64_t>> &input_st
   }
 }
 
+static AnfNodePtr FindCellLastNode(const FuncGraphPtr &func_graph) {
+  auto ret = func_graph->get_return();
+  auto input_ret = ret->input(1);
+  MS_EXCEPTION_IF_NULL(input_ret);
+  auto cnode_input_ret = input_ret->cast<CNodePtr>();
+  auto filter_func = [](const CNodePtr &cnode) {
+    bool filter = IsPrimitiveCNode(cnode, prim::kPrimDepend);
+    return std::make_pair(filter, 1);
+  };
+  auto real_input = GetInputNodeWithFilter(cnode_input_ret, filter_func);
+  MS_EXCEPTION_IF_NULL(real_input);
+  auto cnode_real_input = real_input->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode_real_input);
+  if (utils::isa<CNodePtr>(cnode_real_input)) {
+    auto input0 = cnode_real_input->input(0);
+    auto input0_cnode = input0->cast<CNodePtr>();
+    if (input0_cnode != nullptr && input0_cnode->size() > 1) {
+      auto input1 = input0_cnode->input(1);
+      if (AnfAlgo::NodeValueIsFuncGraph(input1)) {
+        return nullptr;
+      }
+    }
+    return cnode_real_input;
+  }
+  return nullptr;
+}
+
+static void SetOutputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &out_strategy, const int64_t device_num) {
+  auto out_strategy_tuple = out_strategy->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(out_strategy_tuple);
+  bool need_default_strategy = false;
+  size_t out_strategy_size = 0;
+  PreCheckStrategy(out_strategy_tuple, &need_default_strategy, &out_strategy_size);
+
+  if (out_strategy_size != 1) {
+    MS_LOG(WARNING) << "Numbers of out strategy should be 1.";
+    return;
+  }
+
+  // Get strategy in ValueTuple.
+  std::vector<ValuePtr> layout_value_vector;
+  auto &out_strategy_value = out_strategy_tuple->value();
+  if (!out_strategy_value->isa<ValueTuple>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, out_strategy)
+      << "Parse out_strategy to ValueType failed. Please check out_strategy format.";
+  }
+  auto layout_value_vector_ptr = out_strategy_value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(layout_value_vector_ptr);
+  layout_value_vector = layout_value_vector_ptr->value();
+
+  // Check strategy type, it can only be "tuple" or "layout".
+  std::string strategy_type = TUPLE;
+  if (!need_default_strategy) {
+    updateStrategyType(layout_value_vector, &strategy_type);
+  }
+
+  auto cell_last_node = FindCellLastNode(func_graph);
+  if (cell_last_node == nullptr) {
+    MS_LOG(WARNING) << "Out strategy set failed.";
+    return;
+  }
+  // Get strategy either in input_strategy (given tuple) or input_layout (given layout).
+  std::vector<std::vector<int64_t>> output_strategy;
+  std::vector<ValuePtr> output_layout;
+  if (strategy_type == TUPLE) {
+    output_strategy = GetValue<std::vector<std::vector<int64_t>>>(out_strategy_tuple->value());
+    if (!CheckDeviceNum(output_strategy, device_num)) {
+      MS_LOG_WITH_NODE(EXCEPTION, out_strategy) << "check device number failed";
+    }
+    common::AnfAlgo::SetNodeAttr(parallel::OUT_STRATEGY, out_strategy_value, cell_last_node);
+  }
+  if (strategy_type == LAYOUT) {
+    GetInputLayout(&output_layout, layout_value_vector);
+    auto current_layout = std::make_shared<ValueTuple>(std::vector<ValuePtr>(output_layout));
+    common::AnfAlgo::SetNodeAttr(parallel::OUT_LAYOUT, current_layout, cell_last_node);
+  }
+  common::AnfAlgo::SetNodeAttr(parallel::CELL_SHARD_OP, MakeValue(True), cell_last_node);
+}
+
 static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_strategy, const int64_t device_num) {
   auto in_strategy_tuple = in_strategy->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(in_strategy_tuple);
   bool need_default_strategy = false;
   size_t in_strategy_size = 0;
   PreCheckStrategy(in_strategy_tuple, &need_default_strategy, &in_strategy_size);
@@ -309,7 +396,9 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
       << "Parse in_strategy to ValueType failed. Please check in_strategy format.";
   }
-  layout_value_vector = in_strategy_value->cast<ValueTuplePtr>()->value();
+  auto layout_value_vector_ptr = in_strategy_value->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(layout_value_vector_ptr);
+  layout_value_vector = layout_value_vector_ptr->value();
 
   // Check strategy type, it can only be "tuple" or "layout".
   std::string strategy_type = TUPLE;
@@ -348,15 +437,10 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     auto to_insert_nodes_set = manager->node_users()[parameter];
 
     auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
-    if (execution_mode == kPynativeMode) {
-      // In PyNative mode, to_insert_nodes_set are TupleGetItem Prims.
-      to_insert_nodes_set = FindAnfNodeIndexSetToInsertStrategy(
-        func_graph, parameter, [](const CNodePtr &cnode) { return IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem); });
-    }
-
     if (to_insert_nodes_set.empty()) {
-      MS_LOG_WITH_NODE(EXCEPTION, parameter)
-        << "For input: \"" << parameter->fullname_with_scope() << "\", failed to find node to insert strategy.";
+      MS_LOG(INFO) << "For input: \"" << parameter->fullname_with_scope()
+                   << "\", failed to find node to insert strategy. This input may not be used in computation, skip it.";
+      continue;
     }
     for (auto &node : to_insert_nodes_set) {
       auto to_insert_cnode = node.first->cast<CNodePtr>();
@@ -366,13 +450,6 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
       }
       CNodePtr identity_cnode = InsertIdentityCNode(parameter, func_graph, to_insert_cnode, execution_mode);
       int64_t layout_index = static_cast<int64_t>(i);
-      if (execution_mode == kPynativeMode) {
-        // Get corresponding param_layout index in PynativeMode.
-        auto tuple_index = to_insert_cnode->input(2);
-        auto value_node = tuple_index->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        layout_index = GetValue<int64_t>(value_node->value());
-      }
       if (!input_strategy.empty()) {
         Shapes current_layout = {input_strategy[layout_index]};
         SetStrategyToCNode(identity_cnode, current_layout);
@@ -394,6 +471,7 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
   auto root_parameters = root->parameters();
   for (const auto &param : root_parameters) {
     auto parameter = param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter);
     auto param_info = parameter->param_info();
     if (param_info == nullptr) {
       // Do not set param_strategy, skip it.
@@ -456,6 +534,7 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
 
 void CheckVmap(AnfNodePtr node) {
   auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   AnfNodePtr value_node = cnode->input(1);
   auto func_graph = GetValueNode<FuncGraphPtr>(value_node);
   if (func_graph == nullptr) {
@@ -472,6 +551,7 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
                                 const int64_t device_num) {
   constexpr size_t kShardFnIndex = 1;
   constexpr size_t kShardInStrategyIndex = 2;
+  constexpr size_t kShardOutStrategyIndex = 3;
   auto set_success = false;
   auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   for (auto &node : all_nodes) {
@@ -480,8 +560,11 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
     }
     if (IsPrimitiveCNode(node, prim::kPrimShard)) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto vnode = cnode->input(kShardFnIndex)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(vnode);
       auto in_strategy = cnode->input(kShardInStrategyIndex);
+      auto out_strategy = cnode->input(kShardOutStrategyIndex);
       ScopeGuard scope_guard(vnode->scope());
       auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
       MS_EXCEPTION_IF_NULL(func_graph);
@@ -493,19 +576,26 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
                                            << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();
       }
       // get input nodes
-      std::vector<AnfNodePtr> input_nodes;
-      GetInputNodes(func_graph, &input_nodes);
       if (HasNestedMetaFg(func_graph)) {
         return set_success;
       }
       SetInputLayout(func_graph, in_strategy, device_num);
+      auto output_value_ptr = out_strategy->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(output_value_ptr);
+      auto output_value = output_value_ptr->value();
+      if (!output_value->isa<None>()) {
+        SetOutputLayout(func_graph, out_strategy, device_num);
+      }
       func_graph->set_flag(kSharded, true);
       set_success = true;
     }
     if (IsPrimitiveCNode(node, prim::kPrimReshard)) {
       // Get reshard attributes, e.g., in_layout/in_strategy.
       auto reshard_cnode = node->cast<CNodePtr>();
-      auto attrs = GetCNodePrimitive(reshard_cnode)->attrs();
+      MS_EXCEPTION_IF_NULL(reshard_cnode);
+      auto reshard_prim = GetCNodePrimitive(reshard_cnode);
+      MS_EXCEPTION_IF_NULL(reshard_prim);
+      auto attrs = reshard_prim->attrs();
 
       // New a identity prim and set the attributes the same as reshard prim.
       auto new_identity_prim = std::make_shared<Primitive>(prim::kPrimAShardIdentity->name());
@@ -538,6 +628,48 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
   return set_success;
 }
 
+void CheckIsAllParameterHasTagInPynativeShard(const AnfNodePtrList &all_nodes) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
+    return;
+  }
+  for (const auto &shard_node : all_nodes) {
+    if (!IsPrimitiveCNode(shard_node, prim::kPrimShard)) {
+      continue;
+    }
+    auto shard_cnode = shard_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(shard_cnode);
+    auto vnode = shard_cnode->input(kIndex1)->cast<ValueNodePtr>();
+    ScopeGuard scope_guard(vnode->scope());
+    auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
+    MS_EXCEPTION_IF_NULL(func_graph);
+    const auto &func_graph_nodes = func_graph->GetOrderedCnodes();
+    for (const auto &load_node : func_graph_nodes) {
+      if (!IsPrimitiveCNode(load_node, prim::kPrimLoad)) {
+        continue;
+      }
+      auto load_cnode = load_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(load_cnode);
+      auto param_input = load_cnode->input(kIndex1);
+      if (!param_input->isa<Parameter>() || !ParameterRequireGrad(param_input)) {
+        continue;
+      }
+      auto param_ptr = param_input->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param_ptr);
+      auto param_info = param_ptr->param_info();
+      MS_EXCEPTION_IF_NULL(param_info);
+      if (!param_info->is_in_pynative_shard()) {
+        MS_LOG(EXCEPTION)
+          << "In the pynative mode, when you call the ms.shard interface and the input 'fn' is of Function type, the "
+             "internal computation of fn cannot involve Parameter. Please modify your script to use nn.Cell instead of "
+             "Function. Parameter: "
+          << param_ptr->name();
+      }
+    }
+  }
+}
+
 bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(root);
   MS_LOG(INFO) << "Shard pass starts.";
@@ -546,11 +678,25 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     MS_LOG(INFO) << "Shard Prim don't exist, skip Shard pass";
     return change;
   }
+
+  // assertion
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel && parallel_mode != kAutoParallel) {
-    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support shard";
+    MS_LOG(DEBUG) << "Only auto_parallel and semi_auto_parallel support shard.";
     return change;
   }
+
+  auto device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_target != kAscendDevice && device_target != kGPUDevice) {
+    MS_LOG(EXCEPTION) << "'Shard' now only supports 'Ascend' and 'GPU'";
+  }
+
+  auto strategy_search_mode = ParallelContext::GetInstance()->strategy_search_mode();
+  if (parallel_mode == kAutoParallel && strategy_search_mode != kShardingPropagation) {
+    MS_LOG(EXCEPTION)
+      << "'search_mode' must be 'sharding_propagation' for 'Shard' when the 'parallel_mode' is 'auto_parallel.'";
+  }
+
   if (IsParallelDynamicShape(root)) {
     MS_LOG(WARNING) << "Sharding does not support dynamic shape, will be ignored in the following procedures.";
   }
@@ -564,6 +710,7 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   CheckGlobalDeviceManager();
   auto device_num_shard = g_device_manager->stage_device_num();
+  CheckIsAllParameterHasTagInPynativeShard(all_nodes);
   change = SetStrategyForShard(root, all_nodes, device_num_shard);
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
@@ -574,5 +721,138 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
 #endif
   return change;
 }
+
+static std::vector<std::pair<std::string, ValuePtr>> GetPrimAttrFromAddAttrNode(const AnfNodePtr &addattr_node) {
+  const size_t add_attr_attr_pair_index = 2;
+  std::vector<std::pair<std::string, ValuePtr>> kv_pair_vec;
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return kv_pair_vec;
+  }
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
+  AnfNodePtr attr_pair_node = addattr_cnode->input(add_attr_attr_pair_index);
+  MS_EXCEPTION_IF_NULL(attr_pair_node);
+  ValueNodePtr attr_pair_vnode = attr_pair_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(attr_pair_vnode);
+  MS_EXCEPTION_IF_NULL(attr_pair_vnode->value());
+  if (!attr_pair_vnode->value()->isa<ValueTuple>()) {
+    MS_LOG_WITH_NODE(EXCEPTION, addattr_node) << "Parse attr_pair to ValueTuple failed. Please check attr_pair format.";
+  }
+  ValueTuplePtr attr_value_tuple = attr_pair_vnode->value()->cast<ValueTuplePtr>();
+  MS_EXCEPTION_IF_NULL(attr_value_tuple);
+  const std::vector<ValuePtr> attr_pair_vals = attr_value_tuple->value();
+  MS_LOG(INFO) << "In HandleAddAttr, Parse attr pairs success.";
+  for (const ValuePtr &val : attr_pair_vals) {
+    if (!val->isa<ValueTuple>()) {
+      continue;
+    }
+    auto pair_value_tuple = GetValueSequence(val);
+    if (pair_value_tuple.size() != kSizeTwo) {
+      MS_LOG(EXCEPTION) << "attr key-value pair length should be 2, but got: " << pair_value_tuple.size();
+    }
+    auto primitive_key_value = pair_value_tuple.at(kIndex0);
+    auto primitive_value_value = pair_value_tuple.at(kIndex1);
+    std::string prim_key = GetValue<std::string>(primitive_key_value);
+    kv_pair_vec.emplace_back(prim_key, primitive_value_value);
+    MS_LOG(INFO) << "Obtain key: " << prim_key << ", value: " << primitive_value_value->ToString();
+  }
+  return kv_pair_vec;
+}
+
+static void GetNestedAddAttrPrims(const AnfNodePtr &addattr_node,
+                                  std::vector<std::pair<std::string, ValuePtr>> *kv_pairs) {
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return;
+  }
+  const size_t add_attr_fn_index = 1;
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
+  AnfNodePtr fn_node = addattr_cnode->input(add_attr_fn_index);
+  MS_EXCEPTION_IF_NULL(fn_node);
+  ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fn_vnode);
+  FuncGraphPtr graph_need_inline = GetValueNode<FuncGraphPtr>(fn_vnode);
+  MS_EXCEPTION_IF_NULL(graph_need_inline);
+  MS_LOG(DEBUG) << "Find graph need inline: " << graph_need_inline->ToString();
+  // Collect prim attr from addattr_node into kv_pairs
+  auto kv_vec = GetPrimAttrFromAddAttrNode(addattr_node);
+  std::copy(kv_vec.begin(), kv_vec.end(), std::back_inserter(*kv_pairs));
+  auto addattr_iter = std::find_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                                   [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimAddAttr); });
+  if (addattr_iter != graph_need_inline->nodes().end()) {
+    GetNestedAddAttrPrims(*addattr_iter, kv_pairs);
+  }
+  return;
+}
+
+static void GetNodesToTagAttr(const AnfNodePtr &addattr_node, AnfNodePtrList *nodes_to_tag) {
+  if (!addattr_node || !addattr_node->isa<CNode>() || !IsPrimitiveCNode(addattr_node, prim::kPrimAddAttr)) {
+    return;
+  }
+  const size_t add_attr_fn_index = 1;
+  CNodePtr addattr_cnode = addattr_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(addattr_cnode);
+  AnfNodePtr fn_node = addattr_cnode->input(add_attr_fn_index);
+  MS_EXCEPTION_IF_NULL(fn_node);
+  ValueNodePtr fn_vnode = fn_node->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(fn_vnode);
+  FuncGraphPtr graph_need_inline = GetValueNode<FuncGraphPtr>(fn_vnode);
+  MS_EXCEPTION_IF_NULL(graph_need_inline);
+  auto addattr_iter = std::find_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                                   [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimAddAttr); });
+  graph_need_inline->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
+  if (addattr_iter != graph_need_inline->nodes().end()) {
+    GetNodesToTagAttr(*addattr_iter, nodes_to_tag);
+  } else {
+    // collect nodes to tag
+    std::copy_if(graph_need_inline->nodes().begin(), graph_need_inline->nodes().end(),
+                 std::back_inserter(*nodes_to_tag), [](const AnfNodePtr &node) {
+                   return !IsPrimitiveCNode(node, prim::kPrimDepend) &&
+                          !IsPrimitiveCNode(node, prim::kPrimUpdateState) && !IsPrimitiveCNode(node, prim::kPrimReturn);
+                 });
+  }
+  return;
+}
+
+bool HandleAddAttr(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+  MS_EXCEPTION_IF_NULL(root);
+  MS_LOG(INFO) << "HandleAddAttr pass start.";
+  bool change = false;
+  AnfNodePtr ret = root->get_return();
+  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  for (auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimAddAttr)) {
+      continue;
+    }
+    change = true;
+    std::vector<std::pair<std::string, ValuePtr>> kv_pair_vec;
+    AnfNodePtrList nodes_to_tag;
+    (void)GetNestedAddAttrPrims(node, &kv_pair_vec);
+    (void)GetNodesToTagAttr(node, &nodes_to_tag);
+    for (AnfNodePtr &node_to_tag : nodes_to_tag) {
+      if (!node_to_tag->isa<CNode>()) {
+        continue;
+      }
+      CNodePtr cnode_to_tag = node_to_tag->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode_to_tag);
+      PrimitivePtr prim = GetCNodePrimitive(cnode_to_tag);
+      if (!prim) {
+        continue;
+      }
+      prim = prim->Clone();
+      MS_EXCEPTION_IF_NULL(prim);
+      for (const auto &p : kv_pair_vec) {
+        prim->AddAttr(p.first, p.second);
+      }
+      FuncGraphPtr fg = node->func_graph();
+      MS_EXCEPTION_IF_NULL(fg);
+      FuncGraphManagerPtr fg_mng = fg->manager();
+      MS_EXCEPTION_IF_NULL(fg_mng);
+      (void)fg_mng->SetEdge(cnode_to_tag, kIndex0, NewValueNode(prim));
+    }
+  }
+  return change;
+}
+
 }  // namespace parallel
 }  // namespace mindspore

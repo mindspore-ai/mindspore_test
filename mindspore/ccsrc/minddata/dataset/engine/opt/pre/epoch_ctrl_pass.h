@@ -54,13 +54,11 @@ class EpochCtrlPass : public IRTreePass {
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<BuildVocabNode> node, bool *const modified) override;
 
-#ifndef ENABLE_ANDROID
     /// \brief Performs finder work for BuildSentenceVocabNode that has special rules about epoch control injection.
     /// \param[in] node The node being visited
     /// \param[in, out] modified Indicator if the node was changed at all
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<BuildSentenceVocabNode> node, bool *const modified) override;
-#endif
 
     /// \brief Register the DataQueueNode for further action.
     /// \param[in] node The node being visited

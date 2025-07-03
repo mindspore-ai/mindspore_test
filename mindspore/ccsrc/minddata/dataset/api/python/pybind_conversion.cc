@@ -27,7 +27,7 @@ bool toBool(const py::handle &handle) { return py::reinterpret_borrow<py::bool_>
 
 std::string toString(const py::handle &handle) { return py::reinterpret_borrow<py::str>(handle); }
 
-std::set<std::string> toStringSet(const py::list list) {
+std::set<std::string> toStringSet(const py::list &list) {
   std::set<std::string> set;
   if (!list.empty()) {
     for (auto l : list) {
@@ -39,7 +39,7 @@ std::set<std::string> toStringSet(const py::list list) {
   return set;
 }
 
-std::map<std::string, int32_t> toStringMap(const py::dict dict) {
+std::map<std::string, int32_t> toStringMap(const py::dict &dict) {
   std::map<std::string, int32_t> map;
   if (!dict.empty()) {
     for (auto p : dict) {
@@ -49,7 +49,7 @@ std::map<std::string, int32_t> toStringMap(const py::dict dict) {
   return map;
 }
 
-std::map<std::string, float> toStringFloatMap(const py::dict dict) {
+std::map<std::string, float> toStringFloatMap(const py::dict &dict) {
   std::map<std::string, float> map;
   if (!dict.empty()) {
     for (auto p : dict) {
@@ -59,7 +59,7 @@ std::map<std::string, float> toStringFloatMap(const py::dict dict) {
   return map;
 }
 
-std::vector<std::string> toStringVector(const py::list list) {
+std::vector<std::string> toStringVector(const py::list &list) {
   std::vector<std::string> vector;
   if (!list.empty()) {
     for (auto l : list) {
@@ -73,7 +73,7 @@ std::vector<std::string> toStringVector(const py::list list) {
   return vector;
 }
 
-std::vector<pid_t> toIntVector(const py::list input_list) {
+std::vector<pid_t> toIntVector(const py::list &input_list) {
   std::vector<pid_t> vector;
   if (!input_list.empty()) {
     std::transform(input_list.begin(), input_list.end(), std::back_inserter(vector),
@@ -82,7 +82,7 @@ std::vector<pid_t> toIntVector(const py::list input_list) {
   return vector;
 }
 
-std::vector<int64_t> toInt64Vector(const py::list input_list) {
+std::vector<int64_t> toInt64Vector(const py::list &input_list) {
   std::vector<int64_t> vector;
   if (!input_list.empty()) {
     std::transform(input_list.begin(), input_list.end(), std::back_inserter(vector),
@@ -91,7 +91,7 @@ std::vector<int64_t> toInt64Vector(const py::list input_list) {
   return vector;
 }
 
-std::unordered_map<int32_t, std::vector<pid_t>> toIntMap(const py::dict input_dict) {
+std::unordered_map<int32_t, std::vector<pid_t>> toIntMap(const py::dict &input_dict) {
   std::unordered_map<int32_t, std::vector<pid_t>> map;
   if (!input_dict.empty()) {
     for (auto p : input_dict) {
@@ -101,7 +101,7 @@ std::unordered_map<int32_t, std::vector<pid_t>> toIntMap(const py::dict input_di
   return map;
 }
 
-std::pair<int64_t, int64_t> toIntPair(const py::tuple tuple) {
+std::pair<int64_t, int64_t> toIntPair(const py::tuple &tuple) {
   std::pair<int64_t, int64_t> pair;
   if (tuple.size() == 2) {
     pair = std::make_pair(toInt64((tuple)[0]), toInt64((tuple)[1]));
@@ -109,7 +109,7 @@ std::pair<int64_t, int64_t> toIntPair(const py::tuple tuple) {
   return pair;
 }
 
-std::vector<std::pair<int, int>> toPairVector(const py::list list) {
+std::vector<std::pair<int, int>> toPairVector(const py::list &list) {
   std::vector<std::pair<int, int>> vector;
   if (list) {
     for (auto data : list) {
@@ -124,7 +124,7 @@ std::vector<std::pair<int, int>> toPairVector(const py::list list) {
   return vector;
 }
 
-std::vector<std::shared_ptr<TensorOperation>> toTensorOperations(py::list operations) {
+std::vector<std::shared_ptr<TensorOperation>> toTensorOperations(const py::list &operations) {
   std::vector<std::shared_ptr<TensorOperation>> vector;
   if (!operations.empty()) {
     for (auto op : operations) {
@@ -150,7 +150,7 @@ std::vector<std::shared_ptr<TensorOperation>> toTensorOperations(py::list operat
   return vector;
 }
 
-std::shared_ptr<TensorOperation> toTensorOperation(py::handle operation) {
+std::shared_ptr<TensorOperation> toTensorOperation(const py::handle &operation) {
   std::shared_ptr<TensorOperation> op;
   std::shared_ptr<TensorOp> tensor_op;
   if (py::isinstance<TensorOperation>(operation)) {
@@ -165,7 +165,8 @@ std::shared_ptr<TensorOperation> toTensorOperation(py::handle operation) {
   return op;
 }
 
-std::vector<std::shared_ptr<DatasetNode>> toDatasetNode(std::shared_ptr<DatasetNode> self, py::list datasets) {
+std::vector<std::shared_ptr<DatasetNode>> toDatasetNode(const std::shared_ptr<DatasetNode> &self,
+                                                        const py::list &datasets) {
   std::vector<std::shared_ptr<DatasetNode>> vector;
   vector.push_back(self);
   if (datasets) {
@@ -181,7 +182,7 @@ std::vector<std::shared_ptr<DatasetNode>> toDatasetNode(std::shared_ptr<DatasetN
   return vector;
 }
 
-std::shared_ptr<SamplerObj> toSamplerObj(const py::handle py_sampler, bool isMindDataset) {
+std::shared_ptr<SamplerObj> toSamplerObj(const py::handle &py_sampler, bool isMindDataset) {
   if (py_sampler.is_none()) {
     return nullptr;
   }
@@ -216,7 +217,7 @@ std::shared_ptr<DatasetCache> toDatasetCache(std::shared_ptr<CacheClient> cc) {
   }
 }
 
-ShuffleMode toShuffleMode(const int32_t shuffle) {
+ShuffleMode toShuffleMode(int32_t shuffle) {
   if (shuffle == 0) {
     return ShuffleMode::kFalse;
   }
@@ -229,7 +230,7 @@ ShuffleMode toShuffleMode(const int32_t shuffle) {
   return ShuffleMode();
 }
 
-std::vector<std::shared_ptr<CsvBase>> toCSVBase(py::list csv_bases) {
+std::vector<std::shared_ptr<CsvBase>> toCSVBase(const py::list &csv_bases) {
   std::vector<std::shared_ptr<CsvBase>> vector;
   if (csv_bases) {
     for (auto base : *csv_bases) {
@@ -247,7 +248,7 @@ std::vector<std::shared_ptr<CsvBase>> toCSVBase(py::list csv_bases) {
   return vector;
 }
 
-Status ToJson(const py::handle &padded_sample, nlohmann::json *const padded_sample_json,
+Status ToJson(const py::handle &padded_sample, nlohmann::json *padded_sample_json,
               std::map<std::string, std::string> *sample_bytes) {
   RETURN_UNEXPECTED_IF_NULL(padded_sample_json);
   for (const py::handle &key : padded_sample) {
@@ -314,7 +315,7 @@ Status toPadInfo(const py::dict &value,
   return Status::OK();
 }
 
-std::shared_ptr<TensorOp> toPyFuncOp(py::object func, DataType::Type data_type) {
+std::shared_ptr<TensorOp> toPyFuncOp(const py::object &func, DataType::Type data_type) {
   std::shared_ptr<TensorOp> py_func;
   if (!func.is_none()) {
     py::function py_function = func.cast<py::function>();
@@ -325,7 +326,7 @@ std::shared_ptr<TensorOp> toPyFuncOp(py::object func, DataType::Type data_type) 
   return py_func;
 }
 
-py::list shapesToListOfShape(std::vector<TensorShape> shapes) {
+py::list shapesToListOfShape(const std::vector<TensorShape> &shapes) {
   py::list shape_list;
   for (const auto &shape : shapes) {
     py::list per_col_shape;
@@ -341,7 +342,7 @@ py::list shapesToListOfShape(std::vector<TensorShape> shapes) {
   return shape_list;
 }
 
-py::list typesToListOfType(std::vector<DataType> types) {
+py::list typesToListOfType(const std::vector<DataType> &types) {
   py::list type_list;
   for (const auto &type : types) {
     type_list.append(type.AsNumpyType());
@@ -349,7 +350,7 @@ py::list typesToListOfType(std::vector<DataType> types) {
   return type_list;
 }
 
-Status toIntMapTensor(py::dict value, std::unordered_map<std::int16_t, std::shared_ptr<Tensor>> *feature) {
+Status toIntMapTensor(const py::dict &value, std::unordered_map<std::int16_t, std::shared_ptr<Tensor>> *feature) {
   RETURN_UNEXPECTED_IF_NULL(feature);
   for (const auto &p : value) {
     // do some judge, as whether it is none

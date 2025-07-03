@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import mindspore as ms
-from mindspore import nn, Tensor, ops
+from mindspore import nn, Tensor, ops, Parameter
+from mindspore.ops import operations as P
 import mindspore.context as context
 from tests.mark_utils import arg_mark
 
@@ -109,3 +110,82 @@ def test_tuple_arg_to_dynamic_tuple_and_partial_para():
     inputx = ms.mutable((Tensor(input1), Tensor(input2)), dynamic_len=True)
     gradnet = ms.ops.GradOperation(get_all=True)(Net())
     _ = gradnet(inputx)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_twice_execute_for_dynamic_type_graph():
+    """
+    Feature: Dynamic type.
+    Description: Value depend in any type.
+    Expectation: Not throw exception.
+    """
+    import numpy as np
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+            self.l = (1, 2, 3)
+
+        def construct(self, x, a, b):
+            out = x
+            while a < b:
+                if 2 * a >= b:
+                    for _ in range(3):
+                        out = self.relu(out)
+                else:
+                    for _ in range(1):
+                        out = divmod(out.asnumpy(), 2)
+                    out = Tensor(out[1])
+                a += 1
+            return out
+
+    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
+    x = np.random.rand(2, 3, 4, 5).astype(np.float32)
+    input_x = Tensor(x)
+    a = Tensor(2, ms.float32)
+    b = Tensor(6, ms.float32)
+    net = Net()
+    net(input_x, a, b)
+
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cpu_optimize_fp16():
+    """
+    Feature: Dynamic type.
+    Description: Value depend in any type.
+    Expectation: Not throw exception.
+    """
+    import numpy as np
+    class ApplyRMSNet(nn.Cell):
+        def __init__(self):
+            super(ApplyRMSNet, self).__init__()
+            self.apply_rms = P.ApplyRMSProp()
+            self.lr = 0.001
+            self.rho = 0.0
+            self.momentum = 0.0
+            self.epsilon = 1e-10
+            self.ms = Parameter(Tensor(np.random.rand(3, 3).astype(np.float16)), name="ms")
+            self.moment = Parameter(Tensor(np.random.rand(3, 3).astype(np.float16)), name="moment")
+
+        def construct(self, var, grad):
+            out = self.apply_rms(var, self.ms, self.moment, self.lr, grad, self.rho, self.momentum, self.epsilon)
+            return out
+
+    x = Tensor(np.random.rand(3, 3).astype(np.float16))
+    var_value1 = Tensor(np.random.rand(3, 3).astype(np.float16))
+    var_value2 = var_value1.copy()
+    print(var_value1)
+    print(var_value2)
+    context.set_context(device_target="CPU")
+    context.set_context(mode=context.GRAPH_MODE)
+    var1 = Parameter(var_value1, name="var")
+    net1 = ApplyRMSNet()
+    net1(var1, x)
+    context.set_context(mode=context.PYNATIVE_MODE)
+    var2 = Parameter(var_value2, name="var")
+    net2 = ApplyRMSNet()
+    net2(var2, x)
+    print(var1.value())
+    print(var2.value())
+    assert np.allclose(var1.value().asnumpy(), var2.value().asnumpy(), 1.0e-4, 1.0e-4)

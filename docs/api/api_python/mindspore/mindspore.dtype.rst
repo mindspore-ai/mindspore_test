@@ -11,10 +11,10 @@ mindspore.dtype
 
         from mindspore import dtype as mstype
 
-数值型
+基础数据类型
 ^^^^^^^^^^^^^^^
 
-目前，MindSpore支持 ``int``，``uint`` 和 ``float`` 数据类型。详情请参照以下表格。
+MindSpore支持以下基础数据类型：
 
 ==============================================   =============================
 定义                                              描述
@@ -38,7 +38,7 @@ mindspore.dtype
 其他类型
 ^^^^^^^^^^^^^^^
 
-除数值型以外的其他数据类型，请参照以下表格。
+除基础数据类型以外的其他数据类型，请参照以下表格。
 
 ============================   =================
 类型                            描述
@@ -52,7 +52,7 @@ mindspore.dtype
 ``number``                      数值型，包括 ``int_``、``uint``、``float_``、``complex`` 和 ``bool_``。
 ``list_``                       由 ``tensor`` 构造的列表，例如 ``List[T0,T1,...,Tn]`` ，其中元素 ``Ti`` 可以是不同的类型。
 ``tuple_``                      由 ``tensor`` 构造的元组，例如 ``Tuple[T0,T1,...,Tn]`` ，其中元素 ``Ti`` 可以是不同的类型。
-``function``                    函数类型。两种返回方式，当function不是None时，直接返回function，另一种当function为None时返回function(参数: List[T0,T1,...,Tn]，返回值: T)。
+``function``                    函数类型。两种返回方式：当function不是None时，直接返回function；当function为None时，返回function(参数：List[T0,T1,...,Tn]，返回值：T)。
 ``type_type``                   类型的类型定义。
 ``type_none``                   没有匹配的返回类型，对应 Python 中的 ``type(None)``。
 ``symbolic_key``                在 ``env_type`` 中用作变量的键的变量的值。

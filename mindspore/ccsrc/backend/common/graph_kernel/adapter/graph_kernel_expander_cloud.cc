@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -29,6 +28,22 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 namespace mindspore::graphkernel {
 namespace {
 bool DvmSupported(const AnfNodePtr &node) {
@@ -150,9 +165,8 @@ const std::vector<OpWithLevel> expand_ops_with_level_v2 = {
   {kGPUDevice, OpLevel_0, prim::kPrimClipByNorm},
 };
 
+// note: inplace op can not be fused by default, as view + inplace case may have precision error
 const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
-  {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAdam},
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecayAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAddcmul},
@@ -169,6 +183,7 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimSiLU},
   {kAscendDevice, OpLevel_0, prim::kPrimSiLUGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimGeLUGrad},
+  {kAscendDevice, OpLevel_0, prim::kPrimMuls},
   {kAscendDevice, OpLevel_0, prim::kPrimRsqrtGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimSqrtGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimSquare},
@@ -184,36 +199,41 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimOnesLike},
   {kAscendDevice, OpLevel_0, prim::kPrimZerosLike},
   {kAscendDevice, OpLevel_0, prim::kPrimReduceMean},
-  {kAscendDevice, OpLevel_1, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
+  {kAscendDevice, OpLevel_2, prim::kPrimLogSoftmaxGrad},  // will be split to multiple sub graphs because of ReduceSum
   {kAscendDevice, OpLevel_0, prim::kPrimReLU},
   {kAscendDevice, OpLevel_0, prim::kPrimReluGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimAssignAdd},
   {kAscendDevice, OpLevel_0, prim::kLambApplyOptimizerAssign},
   {kAscendDevice, OpLevel_0, prim::kLambApplyWeightAssign},
   {kAscendDevice, OpLevel_0, prim::kPrimAdamApplyOneWithDecay},
-  {kAscendDevice, OpLevel_1, prim::kPrimExpandDims},
-  {kAscendDevice, OpLevel_1, prim::kPrimSqueeze},
-  {kAscendDevice, OpLevel_1, prim::kSoftmaxGradExt},
-  {kAscendDevice, OpLevel_1, prim::kPrimApplyMomentum},
-  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
+  {kAscendDevice, OpLevel_2, prim::kPrimExpandDims},
+  {kAscendDevice, OpLevel_2, prim::kPrimSqueeze},
+  {kAscendDevice, OpLevel_2, prim::kPrimApplyMomentum},
   {kAscendDevice, OpLevel_0, prim::kPrimRepeatInterleaveInt},
   {kAscendDevice, OpLevel_0, prim::kPrimHShrink},
   {kAscendDevice, OpLevel_0, prim::kPrimHSigmoid},
   {kAscendDevice, OpLevel_0, prim::kPrimHSwish},
-  {kAscendDevice, OpLevel_0, prim::kPrimBinaryCrossEntropy},
+  {kAscendDevice, OpLevel_2, prim::kPrimBinaryCrossEntropy},  // will split to multiple sub graphs
   {kAscendDevice, OpLevel_0, prim::kPrimErf},
   {kAscendDevice, OpLevel_0, prim::kPrimTanh},
   {kAscendDevice, OpLevel_0, prim::kPrimCosh},
   {kAscendDevice, OpLevel_0, prim::kPrimSinh},
   {kAscendDevice, OpLevel_0, prim::kPrimClampScalar},
   {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
-  {kAscendDevice, OpLevel_0, prim::kPrimBCEWithLogitsLoss},
+  {kAscendDevice, OpLevel_2, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
+  // mint ops
+  {kAscendDevice, OpLevel_0, prim::kPrimAddExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSubExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSumExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAcoshExt},
   {kAscendDevice, OpLevel_0, prim::kPrimAsinhExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimMeanExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
+  {kAscendDevice, OpLevel_0, prim::kPrimZerosLikeExt},
+  {kAscendDevice, OpLevel_2, prim::kSoftmaxGradExt},
 };
 }  // namespace
 
@@ -260,6 +280,15 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   }
   if (is_dvm && !DvmSupported(node)) {
     return false;
+  }
+  if (GkUtils::InplaceWithViewInputs(node)) {
+    return false;
+  }
+  if (GkUtils::IsShapeZero(node)) {
+    return false;
+  }
+  if (is_dvm) {
+    GkUtils::CheckOpLevel(node, expand_ops_with_level_dvm, OpLevel_1);
   }
   if (!common::AnfAlgo::IsDynamicShape(node)) {
     // for static cases, the node can be expanded if this is complex op

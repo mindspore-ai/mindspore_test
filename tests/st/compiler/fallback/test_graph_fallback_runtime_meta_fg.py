@@ -18,7 +18,8 @@ import numpy as np
 
 import mindspore as ms
 from mindspore import nn
-from mindspore import Tensor, mutable, jit, ops
+from mindspore import dtype as mstype
+from mindspore import Tensor, mutable, jit, ops, context
 from mindspore.ops import composite as C
 from mindspore.ops import functional as F
 from . import utils
@@ -281,6 +282,7 @@ def test_fallback_compare_meta_2():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class SubClass:
         number1 = 10
         list1 = [Tensor(1), Tensor(2), Tensor(3)]
@@ -577,6 +579,7 @@ def test_fallback_meta_fg_not_support_type_greater_equal_1():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class InnerClass(nn.Cell):
         def construct(self):
             x = [1, 2, 3]
@@ -647,7 +650,7 @@ def test_fallback_meta_fg_not_support_type_aug_assign():
     net = InnerClass()
     with pytest.raises(TypeError) as err:
         net()
-    assert "Failed calling Sub with" in str(err.value)
+    assert "Failed calling sub with" in str(err.value)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -906,7 +909,7 @@ def test_shift_operator_error_list_input():
     Description: test shift operator with lists
     Expectation: throw RuntimeError
     """
-
+    context.set_context(jit_level='O0')
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -1040,7 +1043,7 @@ def test_multitype_with_cache():
     Expectation: throw RuntimeError
     """
 
-    @jit
+    @jit(backend="ms_backend")
     def foo(x):
         a = 2 * x
         a = a.asnumpy()
@@ -1083,12 +1086,12 @@ def test_multitype_generated_by_inner_method_1():
     Description: test multitype_generated_by_inner_method
     Expectation: throw RuntimeError
     """
-
     class Net(nn.Cell):
         def construct(self, x):
             out = x[::2]
             return out
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     x = [0, 1, 0, 1]
     net = Net()
     res = net(x)
@@ -1115,7 +1118,7 @@ def test_multitype_generated_by_inner_method_2():
     assert np.allclose(res.asnumpy(), np.array([0, 1, 2, 2]))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_multitype_funcgraph_with_slice_in_tuple():
     """
@@ -1134,6 +1137,7 @@ def test_multitype_funcgraph_with_slice_in_tuple():
             res = x[:, (self.a)]
             return res
 
+    ms.set_context(jit_config={"jit_level": "O0"})
     x = Tensor([[0, 1], [1, 0], [2, 0], [2, 2]])
     net = Net()
     res = net(x)
@@ -1148,6 +1152,7 @@ def test_fallback_setitem_meta_dict():
     Description: Support JIT Fallback runtime feature.
     Expectation: No exception.
     """
+    context.set_context(jit_level='O0')
     class InnerClass(nn.Cell):
         def __init__(self, x):
             super(InnerClass, self).__init__()
@@ -1161,3 +1166,29 @@ def test_fallback_setitem_meta_dict():
     net = InnerClass(input_dict)
     ret = net()
     assert ret == {'Name': 'a', 'Age': 7, 'country': 'china'}
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+def test_pow_error_tuple_input():
+    """
+    Feature: power
+    Description: test pow with tuple
+    Expectation: throw RuntimeError
+    """
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = nn.ReLU()
+
+        def construct(self, input_x):
+            input_x[:, ..., :, [0, 1, 2, 3, 4], True] **= (2, 2, 2, 2, 2)
+            out = self.relu(input_x)
+            return out
+
+    net = Net()
+    input_tensor = Tensor(np.arange(2 * 3 * 4 * 5).reshape(2, 3, 4, 5), mstype.float16)
+    with pytest.raises(TypeError) as err:
+        net(input_tensor)
+    assert "Failed calling pow with" in str(err.value)

@@ -23,6 +23,12 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/custom.h"
 #include "infer/group_norm_silu.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
 namespace mindspore::opt {
 namespace {
@@ -393,6 +399,7 @@ CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNodeForSDWithCast(const std::st
   MS_LOG(INFO) << "GroupNormSilu with cast";
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   auto cnode = node->cast<CNodePtr>();  // mul_2
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
 
   auto cast = cnode->input(1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(cast != nullptr, nullptr);
@@ -446,18 +453,23 @@ CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNodeForSDWithoutSilu(const std:
   MS_LOG(INFO) << "GroupNormSilu without silu";
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   auto cnode = node->cast<CNodePtr>();  // add
+  MS_CHECK_TRUE_RET(cnode->size() >= kInputSizeTwo, nullptr);
 
   auto mul = cnode->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(mul != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(mul->size() >= kInputSizeTwo, nullptr);
 
   auto reshape_2 = mul->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_2 != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(reshape_2->size() >= kInputSizeTwo, nullptr);
 
   auto instance_normalization = reshape_2->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(instance_normalization != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(instance_normalization->size() >= kInputSizeTwo, nullptr);
 
   auto reshape_1 = instance_normalization->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reshape_1 != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(reshape_1->size() >= kInputSizeTwo, nullptr);
 
   auto conv = reshape_1->input(kNumIndex1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(conv != nullptr, nullptr);

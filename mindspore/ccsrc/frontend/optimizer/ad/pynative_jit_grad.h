@@ -23,7 +23,8 @@
 #include <utility>
 #include "ir/anf.h"
 #include "ir/tensor.h"
-#include "pipeline/pynative/base.h"
+#include "pynative/base.h"
+#include "mindspore/core/include/ir/manager.h"
 
 namespace mindspore {
 namespace ad {
@@ -44,9 +45,12 @@ class BpropGenerator {
   void Init();
   FuncGraphPtr GenerateBpropGraph();
   FuncGraphPtr GenerateForwardGraph(const FuncGraphPtr &jit_forward_graph, bool do_renormalize);
-  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs, bool do_dout_plant);
+  void set_forward_output_abs(const abstract::AbstractBasePtr &forward_abs);
 
  private:
+  void ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
+  void ReuseCustomBpropForwardOutput(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg);
+
   FuncGraphPtr fprop_graph_;
   FuncGraphPtr forward_graph_;
   FuncGraphPtr basic_graph_;
@@ -60,8 +64,9 @@ class BpropGenerator {
 };
 using BpropGeneratorPtr = std::shared_ptr<BpropGenerator>;
 
-std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param);
-void ClearGradCache();
+FRONTEND_EXPORT std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param);
+FRONTEND_EXPORT void CheckBpropGraphHasInvalidDout(const std::string &cache_key, const std::vector<bool> &need_grads);
+FRONTEND_EXPORT void ClearGradCache();
 }  // namespace ad
 }  // namespace mindspore
 

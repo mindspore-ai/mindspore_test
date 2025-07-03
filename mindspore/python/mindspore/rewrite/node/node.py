@@ -124,9 +124,14 @@ class Node:
         self._init_cls = None
 
     @classmethod
-    def create_call_method(cls, ast_node: Optional[ast.AST], targets: [Union[ScopedValue, str]],
-                           func_name: Union[ScopedValue, str], args: [ScopedValue] = None,
-                           kwargs: {str: ScopedValue}=None, name: str = ""):
+    def create_call_method(
+            cls,
+            ast_node: Optional[ast.AST],
+            targets: [Union[ScopedValue, str]],
+            func_name: Union[ScopedValue, str],
+            args: [ScopedValue] = None,
+            kwargs: {str: ScopedValue} = None,  # pylint: disable=bad-whitespace
+            name: str = ""):
         """
         Class method of Node. Instantiate an instance of node whose type is CallCell. A CallCell node represents an
         invoking to cell-op.
@@ -227,8 +232,12 @@ class Node:
         return cls(NodeType.MathOps, ast_node, targets, op_type, args, None, name, None)
 
     @staticmethod
-    def _create_call_function(function: FunctionType, targets: [Union[ScopedValue, str]], args: [ScopedValue] = None,
-                              kwargs: {str: ScopedValue}=None):
+    def _create_call_function(
+            function: FunctionType,
+            targets: [Union[ScopedValue, str]],
+            args: [ScopedValue] = None,
+            kwargs: {str: ScopedValue} = None  # pylint: disable=bad-whitespace
+    ):
         """
         Create a node that corresponds to a function call.
 
@@ -275,9 +284,14 @@ class Node:
         return CallFunction(targets, func_name, args, kwargs, node_name, ast_node, None, None, func_obj, False)
 
     @staticmethod
-    def create_call_op(op: Union[Cell, Primitive], ast_node: Optional[ast.AST], targets: [Union[ScopedValue, str]],
-                       args: [ScopedValue] = None, kwargs: {str: ScopedValue}=None, node_name: str = "",
-                       is_sub_net: bool = False):
+    def create_call_op(
+            op: Union[Cell, Primitive],
+            ast_node: Optional[ast.AST],
+            targets: [Union[ScopedValue, str]],
+            args: [ScopedValue] = None,
+            kwargs: {str: ScopedValue} = None,  # pylint: disable=bad-whitespace
+            node_name: str = "",
+            is_sub_net: bool = False):
         """
         Static method of Node. Instantiate an instance of node whose type is `CallCell` or `CallPrimitive`.
         If op is custom defined, it is treated by TreeNode.
@@ -325,9 +339,15 @@ class Node:
         return Node.create_call_buildin_op(op, ast_node, new_targets, func_name, args, kwargs, node_name)
 
     @classmethod
-    def create_call_buildin_op(cls, op: Union[Cell, Primitive], ast_node: Optional[ast.AST], targets: [ScopedValue],
-                               func_name: ScopedValue, args: [ScopedValue] = None, kwargs: {str: ScopedValue}=None,
-                               node_name: str = ""):
+    def create_call_buildin_op(
+            cls,
+            op: Union[Cell, Primitive],
+            ast_node: Optional[ast.AST],
+            targets: [ScopedValue],
+            func_name: ScopedValue,
+            args: [ScopedValue] = None,
+            kwargs: {str: ScopedValue} = None,  # pylint: disable=bad-whitespace
+            node_name: str = ""):
         """
         Class method of Node. Instantiate an instance of node whose type is `CallCell` or `CallPrimitive`.
         A `CallCell` node represents an invoking to cell-op.

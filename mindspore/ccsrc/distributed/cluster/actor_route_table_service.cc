@@ -17,6 +17,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include "distributed/cluster/actor_route_table_service.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace distributed {

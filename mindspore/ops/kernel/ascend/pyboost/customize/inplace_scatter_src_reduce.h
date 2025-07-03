@@ -18,18 +18,17 @@
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_INPLACE_SCATTER_SRC_REDUCE_H_
 
 #include <memory>
-#include "kernel/common/pyboost/auto_generate/inplace_scatter_src_reduce.h"
+#include "mindspore/ccsrc/pyboost/auto_generate/inplace_scatter_src_reduce.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                                             const BaseTensorPtr &input_tensor, const Int64ImmPtr &dim,
-                                                             const BaseTensorPtr &index_tensor,
-                                                             const BaseTensorPtr &src_tensor,
-                                                             const Int64ImmPtr &reduce);
+tensor::TensorPtr InplaceScatterSrcReduceAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                         const TensorPtr &input_tensor, const Int64ImmPtr &dim,
+                                                         const TensorPtr &index_tensor, const TensorPtr &src_tensor,
+                                                         const Int64ImmPtr &reduce);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

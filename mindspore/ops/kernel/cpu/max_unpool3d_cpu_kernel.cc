@@ -18,11 +18,12 @@
 #include <utility>
 #include <algorithm>
 #include "kernel/cpu/max_unpool3d_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/max_unpool3d.h"
 
 namespace mindspore {
 namespace kernel {
+namespace max_unpool3d_cpu {
 namespace {
 constexpr size_t kMaxUnpool3DInputsNum = 2;
 constexpr size_t kMaxUnpool3DOutputsNum = 1;
@@ -226,5 +227,6 @@ std::vector<KernelAttr> MaxUnpool3DCpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, MaxUnpool3D, MaxUnpool3DCpuKernelMod);
+}  // namespace max_unpool3d_cpu
 }  // namespace kernel
 }  // namespace mindspore

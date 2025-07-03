@@ -1,6 +1,7 @@
 if(GPU_BACKEND_CUDA)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/gpu)
     add_subdirectory(plugin/device/gpu)
+    add_subdirectory(plugin/res_manager/gpu)
     enable_directory_when_only_build_plugins(plugin/device/gpu)
 endif()
 

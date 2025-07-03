@@ -9,6 +9,8 @@ inplace_erfinv:
     output:
       dtype: tensor
       inplace: input
+  labels:
+      side_effect_mem: True
   function:
       disable: True
   dispatch:

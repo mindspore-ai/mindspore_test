@@ -90,7 +90,7 @@ TensorShape &TensorShape::operator=(TensorShape &&shape) noexcept {
 }
 
 #ifdef ENABLE_PYTHON
-TensorShape::TensorShape(py::list l) {
+TensorShape::TensorShape(const py::list &l) {
   std::vector<dsize_t> list_c;
   for (auto &i : l) {
     if (!i.is_none()) {
@@ -103,7 +103,6 @@ TensorShape::TensorShape(py::list l) {
 }
 #endif
 
-#ifndef ENABLE_ANDROID
 TensorShape::TensorShape(cv::MatSize cv_size, uint32_t type) : known_(true) {
   for (int i = 0; i < cv_size.dims(); i++) {
     raw_shape_.push_back(cv_size[i]);
@@ -113,7 +112,6 @@ TensorShape::TensorShape(cv::MatSize cv_size, uint32_t type) : known_(true) {
     raw_shape_.push_back(channels);
   }
 }
-#endif
 
 TensorShape TensorShape::CreateUnknownRankShape() {
   TensorShape s({});

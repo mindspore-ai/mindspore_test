@@ -18,11 +18,12 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <iostream>
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adjust_contrastv2_cpu {
 namespace {
 constexpr size_t kAdjustContrastv2InputNum = 2;
 constexpr size_t kAdjustContrastv2OutputNum = 1;
@@ -121,5 +122,6 @@ std::vector<KernelAttr> AdjustContrastv2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, AdjustContrastv2, AdjustContrastv2CpuKernelMod);
+}  // namespace adjust_contrastv2_cpu
 }  // namespace kernel
 }  // namespace mindspore

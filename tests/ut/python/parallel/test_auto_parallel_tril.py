@@ -55,7 +55,7 @@ def test_auto_parallel_tril():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="dynamic_programming", device_num=8,
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation", device_num=8,
                                       global_rank=2)
     strategy1 = ((2, 4, 1),)
     net = Net(_w, strategy1)

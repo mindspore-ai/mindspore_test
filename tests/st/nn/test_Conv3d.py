@@ -18,11 +18,14 @@ import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+from mindspore import Tensor, ops, context
 
 from tests.st.utils import test_utils
 from tests.device_utils import set_device
 from tests.mark_utils import arg_mark
+
+context.set_context(jit_level='O0')
+
 
 class Net(nn.Cell):
     def __init__(self):

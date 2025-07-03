@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/apply_proximal_adagrad_cpu_kernel.h"
 #include <algorithm>
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 #include "kernel/cpu/nnacl/op_base.h"
 #include "kernel/cpu/nnacl/fp32_grad/apply_proximal_adagrad_fp32.h"
 #include "kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h"
@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace apply_proximal_adagrad_cpu {
 constexpr size_t kApplyProximalAdagradInputsNum = 6;
 constexpr size_t kVarIndex = 0;
 constexpr size_t kAccIndex = 1;
@@ -167,5 +168,6 @@ bool ApplyProximalAdagradCpuKernelMod::Launch(const std::vector<kernel::KernelTe
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, ApplyProximalAdagrad, ApplyProximalAdagradCpuKernelMod);
+}  // namespace apply_proximal_adagrad_cpu
 }  // namespace kernel
 }  // namespace mindspore

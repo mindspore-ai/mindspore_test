@@ -19,8 +19,8 @@ mindspore.ops.add_layer_norm
         - **x2** (Tensor) - AddLayerNorm中加法计算的输入，将会在算子内做 `x1 + x2`  的计算并对计算结果做层归一化。数据类型和shape与 `x1` 相同。
         - **gamma** (Tensor) -  可学习参数 :math:`\gamma`。shape支持 1 维度，数据维度和 `x1` 的尾轴相同。数据类型和 `x1` 相同。
         - **beta** (Tensor) - 可学习参数 :math:`\beta`。shape支持 1 维度，数据维度和 `x1` 的尾轴相同。数据类型和 `x1` 相同。
-        - **epsilon** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认值： ``1e-5`` 。
-        - **additional_output** (bool, 可选) - 表示是否开启 `x=x1+x2` 的输出, 默认值： ``False`` 。
+        - **epsilon** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认 ``1e-5`` 。
+        - **additional_output** (bool, 可选) - 表示是否开启 `x=x1+x2` 的输出, 默认 ``False`` 。
 
     返回：
         tuple[Tensor]，4个Tensor组成的tuple，层归一化输出和更新后的参数。

@@ -1,0 +1,22 @@
+#operator TransposeBatchMatmulTranspose
+transpose_batch_matmul_transpose:
+  args:
+    input:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    perm_in:
+      dtype: tuple[int]
+    perm_out:
+      dtype: tuple[int]
+    transpose_a:
+      dtype: bool
+      default: False
+    transpose_b:
+      dtype: bool
+      default: False
+  function:
+    disable: True
+  returns:
+    output:
+      dtype: tensor

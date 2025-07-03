@@ -222,6 +222,9 @@ std::map<std::string, std::vector<std::pair<KernelAttr, BroadcastOptGpuKernelMod
     {"BitwiseAnd",
      {MS_REG_BROADCAST_OP_BOOL_TYPE(BinaryOpType::kBitwiseAnd),
       MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kBitwiseAnd)}},
+    {"BitwiseAndTensor",
+     {MS_REG_BROADCAST_OP_BOOL_TYPE(BinaryOpType::kBitwiseAnd),
+      MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kBitwiseAnd)}},
     {"BitwiseOr",
      {MS_REG_BROADCAST_OP_BOOL_TYPE(BinaryOpType::kBitwiseOr), MS_REG_BROADCAST_OP_INT_TYPE(BinaryOpType::kBitwiseOr)}},
     {"BitwiseXor",
@@ -284,6 +287,8 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, AbsGrad,
                                  []() { return std::make_shared<BroadcastOptGpuKernelMod>("AbsGrad"); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, BitwiseAnd,
                                  []() { return std::make_shared<BroadcastOptGpuKernelMod>("BitwiseAnd"); });
+MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, BitwiseAndTensor,
+                                 []() { return std::make_shared<BroadcastOptGpuKernelMod>("BitwiseAndTensor"); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, BitwiseOr,
                                  []() { return std::make_shared<BroadcastOptGpuKernelMod>("BitwiseOr"); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeGpuKernelMod, BitwiseXor,

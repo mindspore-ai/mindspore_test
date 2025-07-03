@@ -30,6 +30,7 @@
 #include "abstract/dshape.h"
 #include "base/base.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore::ops {
 namespace {
@@ -82,7 +83,11 @@ BaseShapePtr StackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
       inferred_shape = key_shape->GetShapeVector();
     } else {
       auto tuple_shape = input_shape->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(tuple_shape);
+      if (!tuple_shape) {
+        auto tensor_shape = input_shape->cast<abstract::TensorShapePtr>();  // for the expanding tuple case
+        MS_EXCEPTION_IF_NULL(tensor_shape);
+        tuple_shape = std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{tensor_shape});
+      }
       num = SizeToLong(tuple_shape->size());
       ShapeArray element_shapes;
       element_shapes.reserve(tuple_shape->size());
@@ -170,7 +175,7 @@ ShapeArray StackExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Val
   shapes.reserve(tuple_x->size());
   for (const auto &item : tuple_x->value()) {
     MS_EXCEPTION_IF_NULL(item);
-    auto tensor = item->cast<tensor::BaseTensorPtr>();
+    auto tensor = item->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     shapes.push_back(tensor->shape());
   }
@@ -196,7 +201,7 @@ TypePtrList StackExtFuncImpl::InferType(const PrimitivePtr &primitive, const Val
   elements.reserve(tuple_x->size());
   for (const auto &item : tuple_x->value()) {
     MS_EXCEPTION_IF_NULL(item);
-    auto tensor = item->cast<tensor::BaseTensorPtr>();
+    auto tensor = item->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
     elements.push_back(tensor->Dtype());
   }

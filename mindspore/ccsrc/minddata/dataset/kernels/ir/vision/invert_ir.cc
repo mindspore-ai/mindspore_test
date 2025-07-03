@@ -15,10 +15,8 @@
  */
 #include "minddata/dataset/kernels/ir/vision/invert_ir.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/image/invert_op.h"
-#endif
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_invert_op.h"
 #endif
 #include "minddata/dataset/kernels/ir/validators.h"
@@ -27,7 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#ifndef ENABLE_ANDROID
 // InvertOperation
 InvertOperation::InvertOperation(const std::string &device_target) : device_target_(device_target) {}
 
@@ -47,7 +44,7 @@ Status InvertOperation::ValidateParams() {
 std::shared_ptr<TensorOp> InvertOperation::Build() {
   if (device_target_ == "CPU") {
     return std::make_shared<InvertOp>();
-#if !defined(BUILD_LITE) && defined(ENABLE_D)
+#if defined(ENABLE_D)
   } else if (device_target_ == "Ascend") {
     std::shared_ptr<DvppInvertOp> dvpp_tensor_op = std::make_shared<DvppInvertOp>();
     return dvpp_tensor_op;
@@ -82,7 +79,6 @@ MapTargetDevice InvertOperation::Type() {
   }
   return MapTargetDevice::kInvalid;
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

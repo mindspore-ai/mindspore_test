@@ -1,0 +1,9 @@
+empty:
+  op_yaml: empty_op.yaml
+  py_method: tensor_empty
+  kwonlyargs: dtype, device
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: py_method
+  interface: function
+  varargs: size

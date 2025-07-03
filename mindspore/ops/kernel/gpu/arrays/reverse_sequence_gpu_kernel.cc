@@ -18,7 +18,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "mindspore/ops/infer/reverse_sequence.h"
 #include "abstract/utils.h"
-#include "kernel/common_utils.h"
+#include "common/common_utils.h"
 
 namespace mindspore {
 namespace kernel {

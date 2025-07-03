@@ -73,7 +73,7 @@ abstract::BaseShapePtr AddRmsNormQuantV2FuncImpl::InferShape(const PrimitivePtr 
 ShapeArray AddRmsNormQuantV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
   MS_EXCEPTION_IF_NULL(primitive);
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();
 
@@ -97,13 +97,17 @@ TypePtr AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &prim,
   } else {
     quant_type = std::make_shared<TensorType>(kInt8);
   }
-  std::vector<TypePtr> types_list = {quant_type, quant_type, x_type};
+
+  auto out1_type = prim->HasAttr("need_rms_norm_out")
+                     ? (GetValue<bool>(prim->GetAttr("need_rms_norm_out")) ? x_type : quant_type)
+                     : quant_type;
+  std::vector<TypePtr> types_list = {quant_type, out1_type, x_type};
   return std::make_shared<Tuple>(types_list);
 }
 
 TypePtrList AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   mindspore::TensorTypePtr quant_type;
   if (primitive->HasAttr("dst_type")) {
@@ -117,7 +121,10 @@ TypePtrList AddRmsNormQuantV2FuncImpl::InferType(const PrimitivePtr &primitive,
   } else {
     quant_type = std::make_shared<TensorType>(kInt8);
   }
-  return {quant_type, quant_type, x_tensor->Dtype()};
+  auto out1_type = primitive->HasAttr("need_rms_norm_out")
+                     ? (GetValue<bool>(primitive->GetAttr("need_rms_norm_out")) ? x_tensor->Dtype() : quant_type)
+                     : quant_type;
+  return {quant_type, out1_type, x_tensor->Dtype()};
 }
 
 }  // namespace ops

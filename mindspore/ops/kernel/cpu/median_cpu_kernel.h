@@ -23,11 +23,12 @@
 #include <vector>
 
 #include "include/common/utils/convert_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace median_cpu {
 class MedianCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<MedianCpuKernelMod> {
  public:
   MedianCpuKernelMod() = default;
@@ -72,7 +73,10 @@ class MedianCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<M
   template <typename T>
   bool MedianComputeIgnoreNan(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs);
+  template <typename T, typename... CompFunc>
+  inline T CopyAndCalcMedian(const T *const input_begin, int64_t median_pos, CompFunc... comp);
 };
+}  // namespace median_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

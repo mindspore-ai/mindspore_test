@@ -4,7 +4,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
 .. py:class:: mindspore.nn.probability.distribution.TransformedDistribution(bijector, distribution, seed=None, name='transformed_distribution')
 
     转换分布（Transformed Distribution）。
-    该类包含一个Bijector和一个分布，并通过Bijector定义的操作将原始分布转换为新分布。可如果原始分布为 :math:`X` ，Bijector的映射函数为 :math:`g(x)`，那么对应的转换分布为 :math:`Y = g(X)` 。
+    该类包含一个Bijector和一个分布，并通过Bijector定义的操作将原始分布转换为新分布。如果原始分布为 :math:`X` ，Bijector的映射函数为 :math:`g(x)`，那么对应的转换分布为 :math:`Y = g(X)` 。
 
 
     参数：
@@ -13,7 +13,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
         - **seed** (int) - 采样时使用的种子。如果为None，则使用全局种子。默认值： ``None`` 。如果在初始化TransformedDistribution对象时给出了此种子，则对象的采样函数将使用此种子；否则，将使用基础分布的种子。
         - **name** (str) - 转换分布的名称。默认值： ``'transformed_distribution'``。
 
-    .. note:: 
+    .. note::
         用于初始化原始分布的参数不能为None。例如，由于未指定 `mean` 和 `sd` ，因此无法使用mynormal = msd.Normal(dtype=mindspore.float32)初始化TransformedDistribution。
         `batch_shape` 为原始分布的 batch 的 shape。
         `broadcast_shape` 为原始分布和概率映射经过广播后的 shape。
@@ -59,7 +59,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
 
     .. py:method:: cdf(value)
 
-        在给定值下计算累积分布函数（Cumulatuve Distribution Function, CDF）。
+        计算给定值的累积分布函数（Cumulative Distribution Function, CDF）。
 
         参数：
             - **value** (Tensor) - 要计算的值。
@@ -69,7 +69,7 @@ mindspore.nn.probability.distribution.TransformedDistribution
 
     .. py:method:: log_cdf(value)
 
-        计算给定值对于的累积分布函数的对数。
+        计算给定值对应的累积分布函数的对数。
 
         参数：
             - **value** (Tensor) - 要计算的值。

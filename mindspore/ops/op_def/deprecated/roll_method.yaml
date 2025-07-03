@@ -1,0 +1,17 @@
+#deprecated operator roll
+roll:
+  args:
+    input:
+      dtype: tensor
+    shifts:
+      dtype: tuple[int]
+      prim_init: True
+      type_cast:  int, list[int]
+    dims:
+      dtype: tuple[int]
+      default: None
+      prim_init: True
+      type_cast:  int, list[int]
+  returns:
+    output:
+      dtype: tensor

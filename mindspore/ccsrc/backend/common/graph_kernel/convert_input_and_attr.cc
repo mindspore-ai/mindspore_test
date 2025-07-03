@@ -26,13 +26,22 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -45,7 +54,7 @@ const std::set<std::string> &GetConvertInputAttrOps() {
     prim::kPrimBiasAdd->name(),       prim::kPrimBiasAddGrad->name(),     prim::kPrimLayerNorm->name(),
     prim::kPrimLayerNormGrad->name(), prim::kPrimLogSoftmax->name(),      prim::kPrimLogSoftmaxGrad->name(),
     prim::kPrimStridedSlice->name(),  prim::kPrimAdamWeightDecay->name(), prim::kPrimMatMul->name(),
-    prim::kPrimBatchMatMul->name(),
+    prim::kPrimBatchMatMul->name(),   prim::kPrimGroupedMatmul->name(),
   };
   return convert_input_attr_ops;
 }
@@ -169,11 +178,11 @@ bool ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     return true;
   }
 
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     primitive->AddAttr(arg_name, value);
     return true;
   }
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   if (tensor->Dtype()->type_id() == kNumberTypeBool) {
     auto tensor_data = GetArrayValue<bool>(value).value().ToVector();
     primitive->AddAttr(arg_name, MakeValue<bool>(tensor_data[0]));

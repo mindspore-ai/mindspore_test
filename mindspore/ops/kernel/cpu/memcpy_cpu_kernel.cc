@@ -16,11 +16,12 @@
 
 #include "kernel/cpu/memcpy_cpu_kernel.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/factory/ms_factory.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "common/ms_factory.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
+namespace memcpy_cpu {
 namespace {
 #define EXPAND_DIMS_CPU_REG(T)                                                                     \
   KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt64).AddOutputAttr(T), \
@@ -241,5 +242,6 @@ MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, ExpandDims,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kExpandDims); });
 MS_KERNEL_FACTORY_REG_BY_CREATOR(NativeCpuKernelMod, Squeeze,
                                  []() { return std::make_shared<MemcpyCpuKernelMod>(kSqueeze); });
+}  // namespace memcpy_cpu
 }  // namespace kernel
 }  // namespace mindspore

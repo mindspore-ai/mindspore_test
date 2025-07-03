@@ -19,10 +19,11 @@
 #include <vector>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cross {
 
 class CrossAscend : public AclnnKernelMod {
  public:
@@ -37,6 +38,7 @@ class CrossAscend : public AclnnKernelMod {
   int64_t dim_ = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
+}  // namespace cross
 }  // namespace kernel
 }  // namespace mindspore
 

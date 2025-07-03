@@ -2,32 +2,4 @@ cosh:
   description: |
     cosh() -> Tensor
 
-    Computes hyperbolic cosine of self element-wise.
-
-    .. math::
-    
-        out_i = \cosh(self_i)
-
-    Returns:
-        Tensor, has the same shape as `self`.
-
-    :raise TypeError: If `self` is not a Tensor.
-    :raise TypeError:
-        * CPU/GPU: If dtype of `self` is not float16, float32 or float64, complex64, complex128.
-        * Ascend: If dtype of `self` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128 or bfloat16.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([0.24, 0.83, 0.31, 0.09]), mindspore.float32)
-        >>> output = x.cosh()
-        >>> print(output)
-        [1.0289385 1.364684 1.048436 1.0040528]
-        >>> x = Tensor(2.1, mindspore.float32)
-        >>> output = x.cosh()
-        >>> print(output)
-        4.144313
+    For details, please refer to :func:`mindspore.ops.cosh`.

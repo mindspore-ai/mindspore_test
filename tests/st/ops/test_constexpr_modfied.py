@@ -724,6 +724,7 @@ def test_embeddinglookup():
     """
     # _check_input_2d, _check_input_dtype
     # mindspore/python/mindspore/nn/layer/embedding.py
+    context.set_context(jit_config={"jit_level": "O0"})
     input_indices = Tensor(np.array([[1, 0], [3, 2]]), ms.int32)
     output = nn.EmbeddingLookup(4, 2, max_norm=0.002)(input_indices)
     assert output is not None

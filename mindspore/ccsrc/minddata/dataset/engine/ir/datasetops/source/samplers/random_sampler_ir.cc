@@ -18,7 +18,6 @@
 #include "minddata/dataset/engine/datasetops/source/sampler/random_sampler.h"
 #include "minddata/dataset/core/config_manager.h"
 
-#ifndef ENABLE_ANDROID
 #include "minddata/dataset/util/random.h"
 #include "minddata/mindrecord/include/shard_distributed_sample.h"
 #include "minddata/mindrecord/include/shard_operator.h"
@@ -26,13 +25,16 @@
 #include "minddata/mindrecord/include/shard_sample.h"
 #include "minddata/mindrecord/include/shard_sequential_sample.h"
 #include "minddata/mindrecord/include/shard_shuffle.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
 // Constructor
-RandomSamplerObj::RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch)
-    : replacement_(replacement), num_samples_(num_samples), reshuffle_each_epoch_(reshuffle_each_epoch) {}
+RandomSamplerObj::RandomSamplerObj(bool replacement, int64_t num_samples, bool reshuffle_each_epoch,
+                                   dataset::ShuffleMode shuffle_mode)
+    : replacement_(replacement),
+      num_samples_(num_samples),
+      reshuffle_each_epoch_(reshuffle_each_epoch),
+      shuffle_mode_(shuffle_mode) {}
 
 // Destructor
 RandomSamplerObj::~RandomSamplerObj() = default;
@@ -52,11 +54,11 @@ Status RandomSamplerObj::to_json(nlohmann::json *const out_json) {
   args["replacement"] = replacement_;
   args["reshuffle_each_epoch"] = reshuffle_each_epoch_;
   args["num_samples"] = num_samples_;
+  args["shuffle_mode"] = shuffle_mode_;
   *out_json = args;
   return Status::OK();
 }
 
-#ifndef ENABLE_ANDROID
 Status RandomSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples, std::shared_ptr<SamplerObj> *sampler) {
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "replacement", "RandomSampler"));
   RETURN_IF_NOT_OK(ValidateParamInJson(json_obj, "reshuffle_each_epoch", "RandomSampler"));
@@ -67,7 +69,6 @@ Status RandomSamplerObj::from_json(nlohmann::json json_obj, int64_t num_samples,
   RETURN_IF_NOT_OK(SamplerObj::from_json(json_obj, sampler));
   return Status::OK();
 }
-#endif
 
 Status RandomSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   // runtime sampler object
@@ -77,7 +78,6 @@ Status RandomSamplerObj::SamplerBuild(std::shared_ptr<SamplerRT> *sampler) {
   return s;
 }
 
-#ifndef ENABLE_ANDROID
 std::shared_ptr<mindrecord::ShardOperator> RandomSamplerObj::BuildForMindDataset() {
   // runtime mindrecord sampler object
   auto mind_sampler =
@@ -85,7 +85,6 @@ std::shared_ptr<mindrecord::ShardOperator> RandomSamplerObj::BuildForMindDataset
 
   return mind_sampler;
 }
-#endif
 
 std::shared_ptr<SamplerObj> RandomSamplerObj::SamplerCopy() {
   auto sampler = std::make_shared<RandomSamplerObj>(replacement_, num_samples_, reshuffle_each_epoch_);

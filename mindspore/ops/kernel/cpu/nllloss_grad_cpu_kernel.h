@@ -20,13 +20,14 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 #include "nnacl/kernel/nllloss.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
+namespace nllloss_grad_cpu {
 class NLLLossGradCpuKernelMod : public NativeCpuKernelMod {
  public:
   NLLLossGradCpuKernelMod() = default;
@@ -60,6 +61,7 @@ class NLLLossGradCpuKernelMod : public NativeCpuKernelMod {
   Reduction reduction_type_;
   int64_t ignore_index_;
 };
+}  // namespace nllloss_grad_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_NLLLOSS_GRAD_CPU_KERNEL_H_

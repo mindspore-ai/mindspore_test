@@ -1,11 +1,12 @@
 chunk:
   description: |
-    chunk(chunks, dim=0) -> Tuple of Tensors
+    chunk(chunks, dim=0) -> tuple[Tensor]
 
     Cut the self Tensor into `chunks` sub-tensors along the specified dimension.
 
     Note:
-        This function may return less than the specified number of chunks!
+        The number of sub-tensors returned by this function may be less than the number
+        of sub-tensors specified by `chunks`.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -37,7 +38,7 @@ chunk:
             Tensor(shape=[3], dtype=Float32, value= [ 3.00000000e+00,  4.00000000e+00,  5.00000000e+00]),
             Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
 
-    .. method:: Tensor.chunk(chunks, axis=0) -> Tuple of Tensors
+    .. method:: Tensor.chunk(chunks, axis=0) -> tuple[Tensor]
         :noindex:
 
     Cut the self Tensor into `chunks` sub-tensors along the specified axis.

@@ -19,6 +19,9 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
 #include "infer/cxx_api/activation.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
 namespace mindspore {
 namespace opt {

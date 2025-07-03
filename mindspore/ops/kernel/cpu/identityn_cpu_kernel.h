@@ -19,13 +19,14 @@
 #include <vector>
 #include <set>
 #include <map>
-#include "kernel/cpu/cpu_kernel.h"
-#include "kernel/common_utils.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/common_utils.h"
+#include "common/ms_factory.h"
 #include "mindspore/ops/infer/identity_n.h"
 
 namespace mindspore {
 namespace kernel {
+namespace identityn_cpu {
 class IdentityNCpuKernelMod : public NativeCpuKernelMod {
  public:
   IdentityNCpuKernelMod() = default;
@@ -44,6 +45,7 @@ class IdentityNCpuKernelMod : public NativeCpuKernelMod {
     kNumberTypeInt32, kNumberTypeUInt64, kNumberTypeInt64, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64};
   bool CheckType(TypeId idx_type, size_t idx);
 };
+}  // namespace identityn_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

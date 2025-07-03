@@ -24,7 +24,8 @@
 
 namespace mindspore {
 namespace kernel {
-class SparseApplyAdagradV2CpuKernelMod : public SparseOptimizerCpuKernelMod,
+namespace sparse_apply_adagrad_v2_cpu {
+class SparseApplyAdagradV2CpuKernelMod : public sparse_optimizer_cpu::SparseOptimizerCpuKernelMod,
                                          public MatchKernelHelper<SparseApplyAdagradV2CpuKernelMod> {
  public:
   SparseApplyAdagradV2CpuKernelMod() { ResetResource(); }
@@ -64,6 +65,7 @@ class SparseApplyAdagradV2CpuKernelMod : public SparseOptimizerCpuKernelMod,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &) const;
 };
+}  // namespace sparse_apply_adagrad_v2_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -29,6 +29,8 @@
 #include "infer/ops_func_impl/scalar_gt.h"
 #include "infer/ops_func_impl/scalar_lt.h"
 #include "infer/ops_func_impl/scalar_le.h"
+#include "infer/ops_func_impl/scalar_max.h"
+#include "infer/ops_func_impl/scalar_min.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -36,8 +38,8 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
 namespace ops {
@@ -64,6 +66,8 @@ TEST_P(TestScalarArithmetic, scalar_arithmetic_dyn_shape) {
                                                     expect_type);
   DoFuncImplInferAndCompare<ScalarModFuncImpl>(kNameScalarMod, {input_x, input_y}, abstract::kNoShape, expect_type);
   DoFuncImplInferAndCompare<ScalarPowFuncImpl>(kNameScalarPow, {input_x, input_y}, abstract::kNoShape, expect_type);
+  DoFuncImplInferAndCompare<ScalarMaxFuncImpl>(kNameScalarMax, {input_x, input_y}, abstract::kNoShape, expect_type);
+  DoFuncImplInferAndCompare<ScalarMinFuncImpl>(kNameScalarMin, {input_x, input_y}, abstract::kNoShape, expect_type);
   auto div_expect_type = kFloat32;
   DoFuncImplInferAndCompare<ScalarDivFuncImpl>(kNameScalarDiv, {input_x, input_y}, abstract::kNoShape, div_expect_type);
   auto cmp_expect_type = kBool;

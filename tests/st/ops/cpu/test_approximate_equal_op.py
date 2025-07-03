@@ -115,7 +115,7 @@ def test_approxmiate_equal_tol_not_float():
         tol = "str"
         approx_equal = NetApproxmiateEqual(tol)
         x1 = np.random.rand(3, 3, 3).astype(np.float16)
-        x2 = np.random.rand(3, 3, 3).astype(np.int)
+        x2 = np.random.rand(3, 3, 3).astype(np.int_)
         approx_equal.change_xy(Tensor(x1), Tensor(x2))
         _pynative_executor.sync()
 

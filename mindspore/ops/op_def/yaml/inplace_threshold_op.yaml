@@ -1,0 +1,21 @@
+#operator inplace_threshold
+inplace_threshold:
+  args:
+    input:
+      dtype: tensor
+    threshold:
+      dtype: number
+    value:
+      dtype: number
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceThresholdAscend
+  

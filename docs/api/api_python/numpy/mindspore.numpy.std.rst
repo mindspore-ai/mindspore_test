@@ -7,7 +7,7 @@ mindspore.numpy.std
 
     返回标准差，默认计算展平数组的标准差，否则在指定轴上计算。
 
-    .. note:: 
+    .. note::
         不支持NumPy参数 `dtype` 、 `out` 、 `where` 。
 
     参数：

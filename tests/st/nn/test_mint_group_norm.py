@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import mint
-from mindspore import Tensor, jit, JitConfig
+from mindspore import Tensor, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -42,7 +42,7 @@ def grad_group_norm_net(input_x, num_group, num_channels, eps=1e-05, affine=True
     return ms.grad(net)(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_groupnorm_para_customed_dtype(mode):
     """
@@ -79,11 +79,11 @@ def test_groupnorm_para_customed_dtype(mode):
         output = forward_group_norm_net(x, num_group, num_channel)
         out_grad = grad_group_norm_net(x, num_group, num_channel)
     elif mode == 'KBK':
-        output = (jit(forward_group_norm_net, jit_config=JitConfig(jit_level="O0")))(x, num_group, num_channel)
-        out_grad = (jit(grad_group_norm_net, jit_config=JitConfig(jit_level="O0")))(x, num_group, num_channel)
+        output = (jit(forward_group_norm_net, jit_level="O0"))(x, num_group, num_channel)
+        out_grad = (jit(grad_group_norm_net, jit_level="O0"))(x, num_group, num_channel)
     else:
-        output = (jit(forward_group_norm_net, jit_config=JitConfig(jit_level="O2")))(x, num_group, num_channel)
-        out_grad = (jit(grad_group_norm_net, jit_config=JitConfig(jit_level="O2")))(x, num_group, num_channel)
+        output = (jit(forward_group_norm_net, backend="GE"))(x, num_group, num_channel)
+        out_grad = (jit(grad_group_norm_net, backend="GE"))(x, num_group, num_channel)
 
     assert np.allclose(expect_output_shape, output.shape)
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-4, atol=1e-4)

@@ -23,13 +23,14 @@
 #include <utility>
 #include <string>
 
-#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/cpu/nnacl/base/broadcast_to.h"
 
 namespace mindspore {
 namespace kernel {
+namespace broadcast_to_cpu {
 constexpr auto kBroadcastTo = "BroadcastTo";
 constexpr auto kDynamicBroadcastTo = "DynamicBroadcastTo";
 constexpr auto kUnknown = "Unknown";
@@ -69,6 +70,7 @@ class BroadcastToCpuKernelMod : public NativeCpuKernelMod {
   BroadcastShapeInfo shape_info_{};
   std::string kernel_type_{kUnknown};
 };
+}  // namespace broadcast_to_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

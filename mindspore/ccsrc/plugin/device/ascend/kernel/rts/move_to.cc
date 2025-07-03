@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2024-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,22 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "runtime/device/gsm/swap_manager.h"
+#include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "kernel/framework_utils.h"
 
 namespace mindspore {
 namespace kernel {
 constexpr size_t kToInputIndex = 2;
+constexpr size_t kBlockInputIndex = 3;
 constexpr int64_t kNpuInt = 0;
 constexpr int64_t kCpuInt = 1;
 constexpr int64_t kDiskInt = 2;
 
-static const std::map<std::string, int64_t> ToStrMap{{kToNup, kNpuInt}, {kToCpu, kCpuInt}, {kToDisk, kDiskInt}};
+static const std::map<std::string, int64_t> ToStrMap{{kToNpu, kNpuInt}, {kToCpu, kCpuInt}, {kToDisk, kDiskInt}};
 
 std::map<std::pair<int64_t, int64_t>, MoveFunc> MoveTo::func_map_ = {
   {{kNpuInt, kCpuInt}, &MoveTo::MoveFromDToH},  {{kNpuInt, kDiskInt}, &MoveTo::MoveFromDToF},
@@ -83,6 +84,27 @@ bool MoveTo::GetToValue(const AnfNodePtr &anf_node, size_t to_input_index) {
   return true;
 }
 
+bool MoveTo::GetBlockingValue(const mindspore::AnfNodePtr &anf_node, size_t block_input_index) {
+  MS_EXCEPTION_IF_NULL(anf_node);
+  auto cnode = anf_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(cnode->input(block_input_index), 0, true);
+  auto block_input = kernel_with_index.first;
+  MS_EXCEPTION_IF_NULL(block_input);
+  if (!block_input->isa<ValueNode>()) {
+    MS_LOG(ERROR) << "Get to value failed, the second input of MoveTo is not a ValueNode.";
+    return false;
+  }
+  auto block_value_node = block_input->cast<ValueNodePtr>();
+  auto block_value = block_value_node->value();
+  if (!block_value->isa<BoolImm>()) {
+    MS_LOG(ERROR) << "The value of the third input of MoveTo[" << block_value->ToString() << "] is not a bool.";
+    return false;
+  }
+  blocking_ = block_value->cast<BoolImmPtr>()->value();
+  return true;
+}
+
 bool MoveTo::UpdateSizeList(const AnfNodePtr &anf_node) {
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
@@ -104,7 +126,7 @@ bool MoveTo::UpdateSizeList(const AnfNodePtr &anf_node) {
 
 bool MoveTo::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
-  if (!GetToValue(anf_node, kToInputIndex)) {
+  if (!GetToValue(anf_node, kToInputIndex) || !GetBlockingValue(anf_node, kBlockInputIndex)) {
     return false;
   }
   return UpdateSizeList(anf_node);
@@ -386,7 +408,18 @@ bool MoveTo::Launch(const std::vector<KernelTensor *> &inputs, const std::vector
     return false;
   }
   auto func = func_iter->second;
-  return (this->*func)(output, input, stream_ptr);
+  if (!(this->*func)(output, input, stream_ptr)) {
+    MS_LOG(ERROR) << "Launch MoveTo kernel failed.";
+    return false;
+  }
+  if (blocking_) {
+    const auto status = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream_ptr, -1);
+    if (status != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "Failed to synchronize stream, ret = " << status << ".";
+      return false;
+    }
+  }
+  return true;
 }
 }  // namespace kernel
 }  // namespace mindspore

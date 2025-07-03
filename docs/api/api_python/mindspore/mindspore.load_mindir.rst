@@ -13,7 +13,7 @@ mindspore.load_mindir
 
     返回：
          ModelProto，一个MindIR proto 对象。
-        
+
     异常：
         - **ValueError** - 文件不存在或文件名格式不对。
 

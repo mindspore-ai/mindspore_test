@@ -15,8 +15,6 @@
 """pooling"""
 from __future__ import absolute_import
 
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 import mindspore.ops as ops
 from mindspore._checkparam import _check_3d_int_or_tuple
 from mindspore import _checkparam as validator
@@ -27,12 +25,13 @@ from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore._c_expression import MSContext
 from mindspore.ops.auto_generate import avg_pool1d_ext
+from mindspore.ops.function.nn_func import max_pool2d_ext
 
 
 __all__ = ['AvgPool3d', 'MaxPool3d', 'AvgPool2d', 'MaxPool2d', 'AvgPool1d', 'MaxPool1d', 'FractionalMaxPool2d',
            'FractionalMaxPool3d', 'AdaptiveAvgPool1d', 'AdaptiveMaxPool1d', 'AdaptiveMaxPool2d', 'AdaptiveMaxPool3d',
            'AdaptiveAvgPool2d', 'AdaptiveAvgPool3d', 'MaxUnpool1d', 'MaxUnpool2d', 'MaxUnpool3d', 'LPPool1d',
-           'LPPool2d', 'AvgPool2dExt', 'MaxPool2dExt', 'AvgPool1dExt']
+           'LPPool2d', 'AvgPool2dExt', 'AvgPool3dExt', 'MaxPool2dExt', 'AvgPool1dExt']
 
 
 class _PoolNd(Cell):
@@ -299,11 +298,12 @@ class MaxPool3d(_PoolNd):
         For Atlas training series products, this interface is not supported.
 
     Args:
-        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the maximum value,
+        kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the maximum value,
             is an int number or a single element tuple that represents depth, height and width of the kernel, or a tuple
             of three int numbers that represent depth, height and width respectively.
             The value must be a positive integer. Default: ``1`` .
-        stride (Union[int, tuple[int]]): The moving stride of pooling operation, an int number or a single element tuple
+        stride (Union[int, tuple[int]], optional): The moving stride of pooling operation,
+            an int number or a single element tuple
             that represents the moving stride of pooling kernel in the directions of depth, height and the width,
             or a tuple of three int numbers that represent depth, height and width of movement respectively.
             The value must be a positive integer. If the value is None, the default value `kernel_size` is used.
@@ -324,18 +324,19 @@ class MaxPool3d(_PoolNd):
               in the depth, height and width dimension is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Pooling padding value. Default: ``0`` .
+        padding (Union(int, tuple[int], list[int]), optional): Pooling padding value. Default: ``0`` .
             `padding` can only be an integer or a tuple/list containing one or three integers.
             If `padding` is an integer or a tuple/list containing one integer, it will be padded in six directions of
             front, back, top, bottom, left and right of the input. If `padding` is a tuple/list containing three
             integers, it will be padded in front and back of the input `padding[0]` times, up and down `padding[1]`
             times, and left and right of the input `padding[2]` times.
-        dilation (Union(int, tuple[int])): The spacing between the elements of the kernel in convolution,
+        dilation (Union(int, tuple[int]), optional): The spacing between the elements of the kernel in convolution,
             used to increase the receptive field of the pooling operation. If it is a tuple, it must contain one or
             three integers. Default: ``1`` .
-        return_indices (bool): If ``True`` , output is a Tuple of 2 Tensors, representing the maxpool result and where
+        return_indices (bool, optional): If ``True`` , output is a Tuple of 2 Tensors,
+            representing the maxpool result and where
             the max values are generated. Otherwise, only the maxpool result is returned. Default: ``False`` .
-        ceil_mode (bool): If ``True``, use ceil to calculate output shape.
+        ceil_mode (bool, optional): If ``True``, use ceil to calculate output shape.
             If ``False``, use ceil to calculate output shape. Default: ``False`` .
 
     Inputs:
@@ -411,13 +412,13 @@ class MaxPool3d(_PoolNd):
             if pad_mode.upper() != "PAD":
                 raise ValueError(f"For {self.cls_name}, the pad_mode must be 'pad' when dilation is not 1 "
                                  f"or return_indices is True, but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
         else:
             self.only_pad = False
             ceil_mode = None if not ceil_mode else True
-            self.max_pool = P.MaxPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad_list=padding,
-                                        ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad_list=padding,
+                                          ceil_mode=ceil_mode)
 
     def construct(self, x):
         expand_batch = False
@@ -565,18 +566,18 @@ class MaxPool2d(_PoolNd):
                 stride = (1, self.stride, self.stride)
             self.padding = _check_maxpool_padding(padding, 2, self.cls_name)
             dilation = _cal_dilation(dilation, 2, self.cls_name)
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=self.padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=kernel_size, strides=stride, pads=self.padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
         else:
             self.use_pad = False
             if padding != 0 or dilation != 1 or return_indices or ceil_mode:
                 raise ValueError(f"For MaxPool2d, the parameter 'padding', 'dilation', 'return_indices', 'ceil_mode' "
                                  f"can not be set to non-default value when pad_mode is not 'pad', "
                                  f"but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode,
-                                      data_format=self.format)
+            self.max_pool = ops.MaxPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode,
+                                        data_format=self.format)
 
     def construct(self, x):
         expand_batch = False
@@ -684,20 +685,16 @@ class MaxPool2dExt(Cell):
                  ceil_mode=False):
         """Initialize MaxPool2d."""
         super(MaxPool2dExt, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride if (stride is not None) else kernel_size
+        self.padding = padding
+        self.dilation = dilation
         self.return_indices = return_indices
-        strides = stride if (stride is not None) else kernel_size
-        if return_indices:
-            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithIndices(kernel_size, strides, padding,
-                                                                                    dilation, ceil_mode)
-        else:
-            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithMask(kernel_size, strides, padding,
-                                                                                 dilation, ceil_mode)
+        self.ceil_mode = ceil_mode
 
     def construct(self, input):
-        out, indices = self.max_pool_func_(input)
-        if self.return_indices:
-            return out, indices
-        return out
+        return max_pool2d_ext(input, self.kernel_size, self.stride, self.padding,
+                              self.dilation, self.ceil_mode, self.return_indices)
 
 
 class MaxPool1d(_PoolNd):
@@ -713,9 +710,9 @@ class MaxPool1d(_PoolNd):
         \text{input}(N_i, C_j, s_0 \times l + n)
 
     Args:
-        kernel_size (int): The size of kernel used to take the max value, Default: ``1`` .
-        stride (int): The distance of kernel moving, an int number that represents
-            the width of movement is stride, Default: ``1`` .
+        kernel_size (int, optional): The size of kernel used to take the max value. Default: ``1`` .
+        stride (int, optional): The distance of kernel moving, an int number that represents
+            the width of movement is stride. Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
 
@@ -731,24 +728,25 @@ class MaxPool1d(_PoolNd):
               at the begin and end is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Padding value for the pooling. Default value is ``0``.
+        padding (Union(int, tuple[int], list[int]), optional): Padding value for the pooling. Default value is ``0``.
             padding can only be an integer or a tuple/list containing a single integer, in which case padding times or
             padding[0] times are padded on both sides of the input.
-        dilation (Union(int, tuple[int])): The spacing between the elements of the kernel in convolution,
+        dilation (Union(int, tuple[int]), optional): The spacing between the elements of the kernel in convolution,
             used to increase the receptive field of the pooling operation. If it is a tuple, its length can only be 1.
             Default: ``1`` .
-        return_indices (bool): If ``True`` , the function will return both the result of max pooling and the indices of
+        return_indices (bool, optional): If ``True`` , the function will return
+            both the result of max pooling and the indices of
             the max elements. Default: ``False`` .
-        ceil_mode (bool): If True, use ceil to compute the output shape instead of floor. Default: ``False`` .
+        ceil_mode (bool, optional): If True, use ceil to compute the output shape instead of floor. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.
 
     Outputs:
-        If `return_indices` is False, output is a Tensor, with shape :math:`(N, C_{out}, L_{out})` or
+        If `return_indices` is ``False``, output is a Tensor, with shape :math:`(N, C_{out}, L_{out})` or
         :math:`(C_{out}, L_{out})`. It has the same data type as `x`.
 
-        If `return_indices` is True, output is a Tuple of 2 Tensors, representing the maxpool result and where
+        If `return_indices` is ``True``, output is a Tuple of 2 Tensors, representing the maxpool result and where
         the max values are generated.
 
         - **output** (Tensor) - Maxpooling result, with shape :math:`(N, C_{out}, L_{out})` or
@@ -812,8 +810,8 @@ class MaxPool1d(_PoolNd):
             self.stride = (1, 1, stride)
             self.padding = _check_maxpool_padding(padding, 1, self.cls_name)
             dilation = _cal_dilation(dilation, 1, self.cls_name)
-            self.max_pool = P.MaxPool3DWithArgmax(ksize=self.kernel_size, strides=self.stride, pads=self.padding,
-                                                  dilation=dilation, ceil_mode=ceil_mode)
+            self.max_pool = ops.MaxPool3DWithArgmax(ksize=self.kernel_size, strides=self.stride, pads=self.padding,
+                                                    dilation=dilation, ceil_mode=ceil_mode)
 
         else:
             self.use_pad = False
@@ -821,13 +819,13 @@ class MaxPool1d(_PoolNd):
                 raise ValueError(f"For MaxPool1d, the parameter 'padding', 'dilation', 'return_indices', 'ceil_mode' "
                                  f"can not be set to non-default value when pad_mode is not 'pad', "
                                  f"but got pad_mode:{pad_mode}.")
-            self.max_pool = P.MaxPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode)
-            self.shape = F.shape
-            self.reduce_mean = P.ReduceMean(keep_dims=True)
-            self.expand = P.ExpandDims()
-            self.squeeze = P.Squeeze(2)
+            self.max_pool = ops.MaxPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode)
+            self.shape = ops.shape
+            self.reduce_mean = ops.ReduceMean(keep_dims=True)
+            self.expand = ops.ExpandDims()
+            self.squeeze = ops.Squeeze(2)
 
     def construct(self, x):
         expand_batch = False
@@ -1007,8 +1005,8 @@ class AvgPool3d(_PoolNd):
         if divisor_override is not None and divisor_override <= 0:
             raise ValueError(f"For '{self.cls_name}', the 'divisor_override' must be > 0, but got {divisor_override}.")
         divisor_override = 0 if divisor_override is None else divisor_override
-        self.avg_pool = P.AvgPool3D(self.kernel_size, self.stride, pad_mode, padding, ceil_mode, count_include_pad,
-                                    divisor_override)
+        self.avg_pool = ops.AvgPool3D(self.kernel_size, self.stride, pad_mode, padding, ceil_mode, count_include_pad,
+                                      divisor_override)
 
     def construct(self, x):
         expand_batch = False
@@ -1019,6 +1017,47 @@ class AvgPool3d(_PoolNd):
         if expand_batch:
             out = out.squeeze(0)
         return out
+
+
+class AvgPool3dExt(Cell):
+    r"""
+    Applies a 3D average pooling over an input Tensor which can be regarded as
+    a composition of 3D input planes.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.avg_pool3d`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> pool = ms.nn.AvgPool3dExt(kernel_size=3, stride=1)
+        >>> x = ms.ops.randn(1, 2, 4, 4, 5).astype(ms.float32)
+        >>> output = pool(x)
+        >>> print(output.shape)
+        (1, 2, 2, 2, 3)
+        >>> x1 = ms.ops.randn(6, 5, 7, 7, 5).astype(ms.float32)
+        >>> pool2 = ms.nn.AvgPool3dExt(4, stride=2, padding=(2, 2, 1), divisor_override=10)
+        >>> output2 = pool2(x1)
+        >>> print(output2.shape)
+        (6, 5, 4, 4, 2)
+    """
+    def __init__(self, kernel_size, stride=None, padding=0, ceil_mode=False,
+                 count_include_pad=True, divisor_override=None):
+        super(AvgPool3dExt, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.ceil_mode = ceil_mode
+        self.count_include_pad = count_include_pad
+        self.divisor_override = divisor_override
+
+    def construct(self, input):
+        return ops.function.nn_func.avg_pool3d_ext(input, self.kernel_size, self.stride, self.padding,
+                                                   self.ceil_mode, self.count_include_pad, self.divisor_override)
 
 
 class AvgPool1dExt(Cell):
@@ -1228,15 +1267,15 @@ class AvgPool2d(_PoolNd):
                 stride = (1,) + self.stride
             elif isinstance(self.stride, int):
                 stride = (1, self.stride, self.stride)
-            self.avg_pool = P.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
-                                        ceil_mode=ceil_mode,
-                                        count_include_pad=count_include_pad, divisor_override=divisor_override)
+            self.avg_pool = ops.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
+                                          ceil_mode=ceil_mode,
+                                          count_include_pad=count_include_pad, divisor_override=divisor_override)
         else:
             self.is_expand = False
-            self.avg_pool = P.AvgPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode,
-                                      data_format=self.format)
+            self.avg_pool = ops.AvgPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode,
+                                        data_format=self.format)
 
     def construct(self, x):
         expand_batch = False
@@ -1270,8 +1309,8 @@ class AvgPool1d(_PoolNd):
         This interface currently does not support Atlas A2 training series products.
 
     Args:
-        kernel_size (int): The size of kernel window used to take the average value, Default: ``1`` .
-        stride (int): The distance of kernel moving, an int number that represents
+        kernel_size (int, optional): The size of kernel window used to take the average value, Default: ``1`` .
+        stride (int, optional): The distance of kernel moving, an int number that represents
             the width of movement is strides, Default: ``1`` .
         pad_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"same"`` , ``"valid"`` or ``"pad"`` . Default: ``"valid"`` .
@@ -1282,17 +1321,20 @@ class AvgPool1d(_PoolNd):
               uniformly distributed around the input, if it is odd, the excess padding is goes to the right side.
               If this mode is set, `padding` must be 0.
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
-              possible length. Extra pixels that could not complete a full stride will
-              be discarded. If this mode is set, `padding` must be 0.
+              possible length. If a full stride cannot be formed, the extra pixels will be discarded.
+              If this mode is set, `padding` must be 0.
             - ``"pad"``: Pad the input with a specified amount. In this mode, the amount of padding
               at the begin and end is determined by the `padding` parameter.
               If this mode is set, `padding` must be greater than or equal to 0.
 
-        padding (Union(int, tuple[int], list[int])): Pooling padding value, only ``"pad"`` mode can be set to non-zero.
+        padding (Union(int, tuple[int], list[int]), optional): Pooling padding value,
+            only ``"pad"`` mode can be set to non-zero.
             Default: ``0`` . padding can only be an integer or a tuple/list containing a single integer, in which case
             padding times or padding[0] times are padded on both sides of the input.
-        ceil_mode (bool): If ``True`` , use ceil to compute the output shape instead of floor. Default: ``False`` .
-        count_include_pad (bool): If ``True`` , averaging calculation will include the zero-padding. Default: ``True`` .
+        ceil_mode (bool, optional): If ``True`` , use ceil to compute the output shape instead of floor.
+            Default: ``False`` .
+        count_include_pad (bool, optional): If ``True`` , averaging calculation will include the zero-padding.
+            Default: ``True`` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, L_{in})` or :math:`(C_{in}, L_{in})`.
@@ -1349,21 +1391,21 @@ class AvgPool1d(_PoolNd):
             self.is_expand_3d = True
             kernel_size = (1, 1, self.kernel_size)
             stride = (1, 1, self.stride)
-            self.avg_pool = P.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
-                                        ceil_mode=ceil_mode,
-                                        count_include_pad=count_include_pad)
+            self.avg_pool = ops.AvgPool3D(kernel_size=kernel_size, strides=stride, pad_mode=pad_mode, pad=padding,
+                                          ceil_mode=ceil_mode,
+                                          count_include_pad=count_include_pad)
         else:
             self.is_expand_3d = False
             self.kernel_size = (1, self.kernel_size)
             self.stride = (1, self.stride)
-            self.avg_pool = P.AvgPool(kernel_size=self.kernel_size,
-                                      strides=self.stride,
-                                      pad_mode=self.pad_mode)
-            self.shape = F.shape
-            self.reduce_mean = P.ReduceMean(keep_dims=True)
-            self.slice = P.Slice()
-            self.expand = P.ExpandDims()
-            self.squeeze = P.Squeeze(2)
+            self.avg_pool = ops.AvgPool(kernel_size=self.kernel_size,
+                                        strides=self.stride,
+                                        pad_mode=self.pad_mode)
+            self.shape = ops.shape
+            self.reduce_mean = ops.ReduceMean(keep_dims=True)
+            self.slice = ops.Slice()
+            self.expand = ops.ExpandDims()
+            self.squeeze = ops.Squeeze(2)
 
     def construct(self, x):
         expand_batch = False
@@ -1463,11 +1505,11 @@ class AdaptiveAvgPool1d(Cell):
         super(AdaptiveAvgPool1d, self).__init__()
         validator.check_value_type('output_size', output_size, [int], self.cls_name)
         validator.check_int(output_size, 1, validator.GE, "output_size", self.cls_name)
-        self.shape = F.shape
-        self.expand = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
+        self.shape = ops.shape
+        self.expand = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
         self.output_size = output_size
-        self.dtype = P.DType()
+        self.dtype = ops.DType()
 
     def construct(self, input):
         _adaptive_shape_check(self.shape(input), self.output_size, self.cls_name)
@@ -1481,7 +1523,7 @@ class AdaptiveAvgPool1d(Cell):
         kernel_size = (1, kernel_size)
 
         input = self.expand(input, 2)
-        avg_pool = P.AvgPool(kernel_size=kernel_size, strides=stride)
+        avg_pool = ops.AvgPool(kernel_size=kernel_size, strides=stride)
         input = avg_pool(input)
         input = self.squeeze(input)
 
@@ -1544,7 +1586,7 @@ class AdaptiveAvgPool2d(Cell):
     def __init__(self, output_size):
         """Initialize AdaptiveAvgPool2d."""
         super(AdaptiveAvgPool2d, self).__init__()
-        self.adaptive_avgpool2d = P.AdaptiveAvgPool2D(output_size)
+        self.adaptive_avgpool2d = ops.AdaptiveAvgPool2D(output_size)
 
     def construct(self, input):
         return self.adaptive_avgpool2d(input)
@@ -1681,11 +1723,11 @@ class AdaptiveMaxPool1d(Cell):
         super(AdaptiveMaxPool1d, self).__init__()
         validator.check_int(output_size, 1, validator.GE, "output_size", self.cls_name)
         validator.check_value_type('output_size', output_size, [int], self.cls_name)
-        self.expand = P.ExpandDims()
-        self.squeeze = P.Squeeze(2)
+        self.expand = ops.ExpandDims()
+        self.squeeze = ops.Squeeze(2)
         self.output_size = output_size
-        self.shape = F.shape
-        self.dtype = P.DType()
+        self.shape = ops.shape
+        self.dtype = ops.DType()
 
     def construct(self, x):
         _adaptive_shape_check(self.shape(x), self.output_size, self.cls_name)
@@ -1698,7 +1740,7 @@ class AdaptiveMaxPool1d(Cell):
         stride = (1, width // self.output_size)
         kernel_size = (1, kernel_size)
 
-        max_pool = P.MaxPool(kernel_size=kernel_size, strides=stride)
+        max_pool = ops.MaxPool(kernel_size=kernel_size, strides=stride)
         x = self.expand(x, 2)
         x = max_pool(x)
         x = self.squeeze(x)
@@ -1728,13 +1770,14 @@ class AdaptiveMaxPool2d(Cell):
         \end{align}
 
     Note:
-        Ascend platform only supports float16 type for input.
+        In KBK mode, `output_size` does not support mutable.
 
     Args:
         output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
             or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
             If it is None, it means the output size is the same as the input size.
-        return_indices (bool): If `return_indices` is ``True`` , the indices of max value would be output.
+        return_indices (bool, optional): Whether to output the index of the maximum value.
+            If `return_indices` is ``True`` , the indices of max value would be output.
             Default: ``False`` .
 
     Inputs:
@@ -1797,15 +1840,11 @@ class AdaptiveMaxPool2d(Cell):
     def __init__(self, output_size, return_indices=False):
         """Initialize AdaptiveMaxPool2d."""
         super(AdaptiveMaxPool2d, self).__init__()
-        validator.check_value_type('return_indices', return_indices, [bool], self.cls_name)
-        self.adaptive_max_pool2d = ops.AdaptiveMaxPool2D(output_size)
+        self.output_size = output_size
         self.return_indices = return_indices
 
     def construct(self, input):
-        output = self.adaptive_max_pool2d(input)
-        if self.return_indices:
-            return output
-        return output[0]
+        return ops.adaptive_max_pool2d(input, self.output_size, self.return_indices)
 
 
 class AdaptiveMaxPool3d(Cell):

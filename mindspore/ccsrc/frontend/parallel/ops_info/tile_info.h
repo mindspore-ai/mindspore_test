@@ -50,11 +50,16 @@ class TileInfo : public OperatorInfo {
   Status InferForwardCommunication() override { return SUCCESS; }
   Status InferDevMatrixShape() override;
   Status InferTensorMap() override;
+  Status CheckInputLayout() override;
+  Status CheckOutputLayout() override;
+  Status InferOutputTensorInfo() override;
+  Status InferForwardCommunicationByLayout() override { return SUCCESS; }
 
  private:
   std::vector<int64_t> full_multiples_;
   std::vector<int64_t> slice_multiples_;
   void UpdateDynamicMultiples(const AnfNodePtr &multiples_input_node);
+  TensorLayout InferOutputLayout();
 };
 
 using TileInfoPtr = std::shared_ptr<TileInfo>;

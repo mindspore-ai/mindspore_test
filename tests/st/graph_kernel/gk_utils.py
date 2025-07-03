@@ -35,6 +35,7 @@ class AssertGKEnable:
 
     def __exit__(self, *args):
         if self.enable_gk:
+            context.set_context(save_graphs=False)
             graph_kernel_ir_dir = os.path.join(self.ir_path, "verbose_ir_files/graph_kernel")
             if not os.path.isdir(graph_kernel_ir_dir) or not os.listdir(graph_kernel_ir_dir):
                 self._rm_dir(self.ir_path)

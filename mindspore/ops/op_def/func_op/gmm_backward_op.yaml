@@ -1,0 +1,30 @@
+#operator gmm_backward
+gmm_backward:
+    args:
+        grad:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        x:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        weight:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        group_list:
+            dtype: tuple[int]
+            type_cast: list[int]
+            default: None
+        group_list_type:
+            dtype: int
+            default: 0
+    returns:
+        output:
+            dtype: tuple[tensor]
+    bprop_expander: True
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: GmmBackwardAscend
+        CPU: None
+        GPU: None

@@ -21,10 +21,11 @@
 #include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace custom {
 constexpr size_t kWorkspaceIndex = 3;
 constexpr size_t kReleaseFuncIndex = 2;
 
@@ -35,12 +36,16 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   ~CustomAclnnKernelMod() = default;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                         const std::vector<KernelTensor *> &outputs) override {
+    MS_LOG(DEBUG) << "Start get custom workspace info, op_type: " << op_type_;
     const auto &res_tuple = GetKernelTuple<N>(inputs, outputs);
     std::apply([this](const auto &... args) { GetWorkspaceForResize(args...); }, res_tuple);
+    MS_LOG(DEBUG) << "End get custom workspace info, op_type: " << op_type_;
   }
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
+    MS_LOG(DEBUG) << "Start launch custom, op_type: " << op_type_;
     CallRun(stream_ptr, workspace, inputs, outputs);
+    MS_LOG(DEBUG) << "End launch custom, op_type: " << op_type_;
     return true;
   }
 
@@ -55,7 +60,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
 
   template <typename... Args>
   void GetWorkspaceForResize(const Args &... args) {
-    hash_id_ = transform::AclnnHash(op_type_, args...);
+    hash_id_ = device::ascend::AclnnHash(op_type_, args...);
     size_t cur_workspace = 0;
     if (hash_map_.count(hash_id_)) {
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);
@@ -68,13 +73,13 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
         hash_map_[hash_id_] = hash_cache_.begin();
       } else {
         hash_id_ = 0;
-        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+        cache(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
       }
     }
     if (hash_cache_.size() > capacity_) {
       hash_map_.erase(std::get<0>(hash_cache_.back()));
       auto release_func = std::get<kReleaseFuncIndex>(hash_cache_.back());
-      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+      release_func(device::ascend::ProcessCacheType::kReleaseParamsAndExecutor, {});
       hash_cache_.pop_back();
     }
 
@@ -108,7 +113,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
     if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
       aclOpExecutor *executor;
       std::function<void()> release_func;
-      std::tie(std::ignore, executor, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
+      std::tie(std::ignore, executor, std::ignore, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
       return std::make_pair(executor, release_func);
     }
     const auto &cur_run = *hash_map_[hash_id_];
@@ -118,6 +123,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   }
 };
 
+}  // namespace custom
 }  // namespace kernel
 }  // namespace mindspore
 

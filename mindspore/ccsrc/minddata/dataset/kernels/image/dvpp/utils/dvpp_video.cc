@@ -24,9 +24,10 @@
 #include <thread>
 
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteUtils.h"
+#include "minddata/utils.h"
 #include "utils/log_adapter.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
+#include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
+#include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
 namespace {
 const int64_t kUsec = 1000000;
@@ -358,7 +359,7 @@ void DvppVideo::ProcessDecodedImage(std::shared_ptr<ImageData> frameData) {
 
   auto ret = FrameImageEnQueue(frameData);
   if (ret != ACLLITE_OK) {
-    MS_LOG(ERROR) << "FrameImageEnQueue faile, errorno: " << ret;
+    MS_LOG(ERROR) << "FrameImageEnQueue failed, errorno: " << ret;
   }
 
   if ((status_ == DecodeStatus::DECODE_FRAME_EXTRACT_FINISHED) && (finFrameCnt_ >= frameId_)) {
@@ -391,6 +392,7 @@ void DvppVideo::StartFrameDecoder() {
 
 // ffmpeg decoder entry
 void DvppVideo::FrameDecodeThreadFunction(void *decoderSelf) {
+  mindspore::dataset::BindThreadCoreForMindDataOp("dataset::DvppVideo::FrameDecodeThreadFunction");
   if (decoderSelf == nullptr) {
     return;
   }
@@ -414,7 +416,7 @@ void DvppVideo::FrameDecodeThreadFunction(void *decoderSelf) {
   videoFrame->data = nullptr;
   videoFrame->size = 0;
   auto ret = thisPtr->dvppVdec_->Process(videoFrame, decoderSelf);
-  if (ret != ACLLITE_ERROR) {
+  if (ret != ACLLITE_OK) {
     MS_LOG(ERROR) << "DvppVdec procesing failed, errorno: " << ret;
   }
 

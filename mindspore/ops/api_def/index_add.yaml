@@ -1,0 +1,15 @@
+index_add:
+  - op_yaml: index_add_ext_op.yaml
+    py_method: tensor_index_add
+    kwonlyargs: alpha
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function
+
+  - op_yaml: deprecated/index_add_method.yaml
+    py_method: deprecated_tensor_index_add
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

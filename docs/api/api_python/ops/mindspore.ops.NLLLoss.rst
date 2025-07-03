@@ -32,15 +32,15 @@ mindspore.ops.NLLLoss
           - ``"mean"``：计算输出元素的加权平均值。
           - ``"sum"``：计算输出元素的总和。
 
-        - **ignore_index** (int，可选) - 指定标签中需要忽略的值(一般为填充值)，使其不对梯度产生影响。默认值： ``-100`` 。
+        - **ignore_index** (int，可选) - 指定标签中需要忽略的值（一般为填充值），使其不对梯度产生影响。默认值： ``-100`` 。
 
     输入：
-        - **logits** (Tensor) - 输入预测值，shape为 :math:`(N, C)` 。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。
+        - **logits** (Tensor) - 输入预测值，shape为 :math:`(N, C)` 。数据类型仅支持float32或float16或bfloat16（仅Atlas A2训练系列产品支持）。
         - **labels** (Tensor) - 输入目标值，shape为 :math:`(N,)` ，取值范围为 :math:`[0, C-1]` 。数据类型仅支持uint8或int32或int64。
-        - **weight** (Tensor) - 指定各类别的权重。shape为 :math:`(C,)`。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `logits` 的数据类型保持一致。
+        - **weight** (Tensor) - 指定各类别的权重。shape为 :math:`(C,)`。数据类型仅支持float32或float16或bfloat16（仅Atlas A2训练系列产品支持）。要求与 `logits` 的数据类型保持一致。
 
     返回：
         由 `loss` 和 `total_weight` 组成的2个Tensor的tuple。
 
-        - **loss** (Tensor) - 当 `reduction` 为'none'且 `logits` 为二维Tensor时， `loss` 的shape为 :math:`(N,)` 。否则， `loss` 为scalar。数据类型与 `logits` 相同。
+        - **loss** (Tensor) - 当 `reduction` 为 ``"none"`` 且 `logits` 为二维Tensor时， `loss` 的shape为 :math:`(N,)` ，否则 `loss` 为scalar。 `loss` 的数据类型与 `logits` 相同。
         - **total_weight** (Tensor) - `total_weight` 是scalar，数据类型与 `weight` 相同。

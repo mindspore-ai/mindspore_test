@@ -26,6 +26,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ccsrc/include/common/utils/comm_manager.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
 namespace opt {
@@ -35,9 +36,10 @@ void InsertDepend(const AnfNodePtr &prior_node, const AnfNodePtr &post_node, con
   MS_EXCEPTION_IF_NULL(prior_node);
   MS_EXCEPTION_IF_NULL(post_node);
   auto post_cnode = post_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(post_cnode);
   if (IsPrimitiveCNode(post_cnode->input(1))) {
     auto cnode = post_cnode->input(1)->cast<CNodePtr>();
-    if (GetCNodePrimitive(cnode)->name() == prim::kPrimDepend->name() && post_cnode->inputs().size() >= kIndex2 &&
+    if (IsPrimitiveCNode(cnode, prim::kPrimDepend) && post_cnode->inputs().size() >= kIndex2 &&
         post_cnode->input(kIndex2) == prior_node) {
       return;
     }

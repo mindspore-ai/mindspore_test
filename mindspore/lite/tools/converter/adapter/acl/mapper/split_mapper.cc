@@ -21,12 +21,15 @@
 #include "src/common/log_util.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name_s.h"
 
 namespace mindspore {
 namespace lite {
 namespace {
 const size_t kNumInputSize = 2;
 }
+using mindspore::ops::kNameSplit;
+SplitMapper::SplitMapper() : PrimitiveMapper(kNameSplit) {}
 STATUS SplitMapper::Mapper(const CNodePtr &cnode) {
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;

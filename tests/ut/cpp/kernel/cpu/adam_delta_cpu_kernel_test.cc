@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 class AdamDeltaCpuKernelTest : public UT::Common {
  public:
-  AdamDeltaCpuKernelTest() : adam_delta_(std::make_shared<AdamDeltaCpuKernelMod>()) {}
+  AdamDeltaCpuKernelTest() : adam_delta_(std::make_shared<adam_delta_cpu::AdamDeltaCpuKernelMod>()) {}
 
   void SetUp() override {
     delta_.clear();
@@ -65,7 +65,7 @@ class AdamDeltaCpuKernelTest : public UT::Common {
   std::vector<KernelTensor *> inputs_;
   std::vector<KernelTensor *> workspace_;
   std::vector<KernelTensor *> outputs_;
-  std::shared_ptr<AdamDeltaCpuKernelMod> adam_delta_;
+  std::shared_ptr<adam_delta_cpu::AdamDeltaCpuKernelMod> adam_delta_;
   float beta1_power_ = 0.9;
   float beta2_power_ = 0.999;
   float lr_ = 0.001;

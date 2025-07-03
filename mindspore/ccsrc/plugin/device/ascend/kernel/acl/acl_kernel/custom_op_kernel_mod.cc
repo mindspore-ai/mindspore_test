@@ -18,17 +18,18 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include "transform/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/kernel_runtime.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
 constexpr auto kAclOpJitCompile = "acl_op_jit_compile";
 
 bool CustomOpAclKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  converter_ = std::make_shared<transform::AclConverter>();
+  converter_ = std::make_shared<device::ascend::AclConverter>();
   MS_EXCEPTION_IF_NULL(converter_);
   MS_EXCEPTION_IF_NULL(primitive_);
   auto op_name = primitive_->GetAttr("reg_op_name");
@@ -134,5 +135,6 @@ bool CustomOpAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   }
   return true;
 }
+MS_KERNEL_FACTORY_REG(AclKernelMod, CustomOp, CustomOpAclKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

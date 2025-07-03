@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace adamw {
 
 class AdamWAscend : public AclnnKernelMod {
  public:
@@ -44,6 +45,7 @@ class AdamWAscend : public AclnnKernelMod {
   bool amsgrad_{false};
   bool maximize_{false};
 };
+}  // namespace adamw
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -20,15 +20,16 @@
 #include <memory>
 #include <functional>
 #include "ir/tensor.h"
-#include "transform/acl_ir/acl_helper.h"
-#include "transform/acl_ir/op_api_convert.h"
+#include "kernel/ascend/acl_ir/acl_helper.h"
+#include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
+namespace split_with_size {
 
 int64_t SplitWithSizeAscend::GetDimValue(KernelTensor *axis_ptr) const noexcept {
-  auto axis_vec = transform::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
+  auto axis_vec = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(axis_ptr);
   auto dim = axis_vec[0];
   return dim;
 }
@@ -48,7 +49,7 @@ std::vector<KernelTensor *> SplitWithSizeAscend::GetSplitRealOutputs(const std::
   std::vector<KernelTensor *> split_results;
   for (auto &output : outputs) {
     if (IsTuple(output)) {
-      converted_output_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(output);
+      converted_output_ = device::ascend::ConvertKernelTensor<std::vector<KernelTensorPtr>>(output);
       std::transform(converted_output_.begin(), converted_output_.end(), std::back_inserter(split_results),
                      [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
     } else {
@@ -61,7 +62,7 @@ std::vector<KernelTensor *> SplitWithSizeAscend::GetSplitRealOutputs(const std::
 void SplitWithSizeAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
   axis_ = GetDimValue(inputs[kIndex2]);
-  dims_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
+  dims_ = device::ascend::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex1]);
   std::vector<KernelTensor *> split_outputs = GetSplitRealOutputs(outputs);
   GetWorkspaceForResize(inputs[kIndex0], dims_, axis_, split_outputs);
 }
@@ -76,5 +77,6 @@ bool SplitWithSizeAscend::Launch(const std::vector<KernelTensor *> &inputs,
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(SplitWithSize, SplitWithSizeAscend);
+}  // namespace split_with_size
 }  // namespace kernel
 }  // namespace mindspore

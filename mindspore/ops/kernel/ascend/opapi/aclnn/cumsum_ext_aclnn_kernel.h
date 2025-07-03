@@ -20,10 +20,11 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
+namespace cumsum_ext {
 
 class CumsumExtAscend : public AclnnKernelMod {
  public:
@@ -39,6 +40,7 @@ class CumsumExtAscend : public AclnnKernelMod {
   int64_t dim_ = 0;
   TypeId dtype_;
 };
+}  // namespace cumsum_ext
 }  // namespace kernel
 }  // namespace mindspore
 

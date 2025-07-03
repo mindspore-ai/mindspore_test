@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.ops import operations as P
@@ -53,6 +52,7 @@ def test_dynamic_atan2():
     Description: Test case of dynamic shape for Atan2 grad operator.
     Expectation: success.
     """
+    context.set_context(jit_level='O0')
     # Graph mode
     context.set_context(mode=context.GRAPH_MODE)
     dynamic_shape()

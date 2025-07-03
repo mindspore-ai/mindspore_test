@@ -30,10 +30,10 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **concentration1_b** (Tensor) - the alpha parameter of the other Beta distribution.
-        - **concentration0_b** (Tensor) - the beta parameter of the other Beta distribution.
-        - **concentration1** (Tensor) - the alpha parameter of the Beta distribution. Default: ``None`` .
-        - **concentration0** (Tensor) - the beta parameter of the Beta distribution. Default: ``None`` .
+        - **concentration1_b** (Tensor) - the alpha parameter of the other Beta distribution b.
+        - **concentration0_b** (Tensor) - the beta parameter of the other Beta distribution b.
+        - **concentration1** (Tensor) - the alpha parameter of the Beta distribution a. Default: ``None`` .
+        - **concentration0** (Tensor) - the beta parameter of the Beta distribution a. Default: ``None`` .
 
     Returns
         Tensor, the value of the cross entropy.
@@ -55,10 +55,10 @@
 
     Parameters
         - **dist** (str) - the type of the other distribution.
-        - **concentration1_b** (Tensor) - the alpha parameter of the other Beta distribution.
-        - **concentration0_b** (Tensor) - the beta parameter of the other Beta distribution.
-        - **concentration1** (Tensor) - the alpha parameter of the Beta distribution. Default: ``None`` .
-        - **concentration0** (Tensor) - the beta parameter of the Beta distribution. Default: ``None`` .
+        - **concentration1_b** (Tensor) - the alpha parameter of the other Beta distribution b.
+        - **concentration0_b** (Tensor) - the beta parameter of the other Beta distribution b.
+        - **concentration1** (Tensor) - the alpha parameter of the Beta distribution a. Default: ``None`` .
+        - **concentration0** (Tensor) - the beta parameter of the Beta distribution a. Default: ``None`` .
 
     Returns
         Tensor, the value of the K-L loss.

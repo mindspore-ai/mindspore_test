@@ -2,38 +2,4 @@ bincount:
   description: |
     bincount(weights=None, minlength=0) -> Tensor
     
-    Count the occurrences of each value in the `self`.
-
-    If `minlength` is not specified, the length of the output Tensor is the maximum value in the `self` plus one.
-    If `minlength` is specified, the length of the output Tensor is the maximum value between `minlength` and
-    the maximum value in the `self` plus one.
-
-    Each value in the output Tensor represents the number of occurrences of that index value in the `self`.
-    If `weights` is specified, the output results are weighted,
-    i.e., :math:`out[n] += weight[i]` instead of :math:`out[n] += 1`.
-
-    Args:
-        weights (Tensor, optional): Weights with the same shape as the `self` . Default: ``None`` .
-        minlength (int, optional): The minimum length of output Tensor. Should be non-negative. Default: ``0`` .
-
-    Returns:
-        Tensor, If `self` is non-empty, the output shape is :math:`(max(max(self)+1, minlength), )`,
-        otherwise the shape is :math:`(0, )`.
-
-    Raises:
-        TypeError: If `weights` is not a Tensor.
-        ValueError: If `self` contains negative values.
-        ValueError: If `self` is not one-dimensional or `self` and `weights` do not have the same shape.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor([2, 4, 1, 0, 0], dtype=mstype.int64)
-        >>> print(x.bincount(minlength=7))
-        [2 1 1 0 1 0 0]
-        >>> weights = Tensor([0, 0.25, 0.5, 0.75, 1], dtype=mstype.float32)
-        >>> print(x.bincount(weights=weights))
-        [1.75 0.5  0.   0.   0.25]
+    For details, please refer to :func:`mindspore.ops.bincount`.

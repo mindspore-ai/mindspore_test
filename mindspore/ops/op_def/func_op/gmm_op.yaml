@@ -1,0 +1,34 @@
+#operator gmm
+gmm:
+    args:
+        x:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        weight:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        bias:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+            default: None
+        group_list:
+            dtype: tuple[int]
+            type_cast: list[int]
+            default: None
+        group_type:
+            dtype: int
+            default: 0
+        group_list_type:
+            dtype: int
+            default: 0
+    returns:
+        output:
+            dtype: tuple[tensor]
+    bprop_expander: False
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: GmmAscend
+        CPU: None
+        GPU: None

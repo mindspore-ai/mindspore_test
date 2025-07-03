@@ -20,11 +20,12 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "transform/acl_ir/acl_convert.h"
+#include "kernel/ascend/acl_ir/acl_convert.h"
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
+namespace mse_loss_grad_ext {
+using TensorParams = device::ascend::TensorParams;
 
 class MSELossGradExtAclnnKernelMod : public AclnnKernelMod {
  public:
@@ -55,6 +56,7 @@ class MSELossGradExtAclnnKernelMod : public AclnnKernelMod {
   int64_t reduction_value_;
 };
 
+}  // namespace mse_loss_grad_ext
 }  // namespace kernel
 }  // namespace mindspore
 

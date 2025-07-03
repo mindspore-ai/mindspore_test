@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace lstsqv2_cpu {
 namespace {
 using Eigen::ComputeThinU;
 using Eigen::ComputeThinV;
@@ -248,5 +249,6 @@ std::vector<KernelAttr> LstsqV2CpuKernelMod::GetOpSupport() {
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, LstsqV2, LstsqV2CpuKernelMod);
+}  // namespace lstsqv2_cpu
 }  // namespace kernel
 }  // namespace mindspore

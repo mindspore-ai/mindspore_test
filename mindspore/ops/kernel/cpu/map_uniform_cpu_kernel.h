@@ -23,10 +23,11 @@
 #include <memory>
 #include <utility>
 #include <unordered_map>
-#include "include/common/factory/ms_factory.h"
-#include "kernel/cpu/cpu_kernel.h"
+#include "common/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
 namespace mindspore {
 namespace kernel {
+namespace map_uniform_cpu {
 class MapUniformCpuKernelMod : public NativeCpuKernelMod {
  public:
   MapUniformCpuKernelMod() = default;
@@ -59,6 +60,7 @@ class MapUniformCpuKernelMod : public NativeCpuKernelMod {
   size_t batch_size_{1};
   TypeId dtype_{kTypeUnknown};
 };
+}  // namespace map_uniform_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

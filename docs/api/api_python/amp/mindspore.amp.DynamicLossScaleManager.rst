@@ -6,16 +6,16 @@ mindspore.amp.DynamicLossScaleManager
     动态调整损失缩放系数的管理器，继承自 :class:`mindspore.amp.LossScaleManager` 。
 
     参数：
-        - **init_loss_scale** (float) - 初始梯度放大系数。默认值： ``2 ** 24`` 。
-        - **scale_factor** (int) - 放大/缩小倍数。默认值： ``2`` 。
-        - **scale_window** (int) - 无溢出时的连续正常step的最大数量。默认值： ``2000`` 。
+        - **init_loss_scale** (float，可选) - 初始梯度放大系数。默认值： ``2 ** 24`` 。
+        - **scale_factor** (int，可选) - 放大/缩小倍数。默认值： ``2`` 。
+        - **scale_window** (int，可选) - 无溢出时的连续正常step的最大数量。默认值： ``2000`` 。
 
     .. py:method:: get_drop_overflow_update()
 
         该值表示是否在发生溢出时放弃本轮参数更新。
 
         返回：
-            bool，始终为True。
+            bool，值始终为 ``True``。
 
     .. py:method:: get_loss_scale()
 

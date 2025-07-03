@@ -21,6 +21,7 @@
 #include "ir/core_ops_primitive.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore::session {
 const size_t kDefaultContainerSize = 5000;
@@ -48,16 +49,25 @@ bool NeedOptimize(const AnfNodePtr &node, const std::string &optimized_comm_grou
   }
   return false;
 }
+
+std::string GetExecOrderAlgo(KernelGraph *graph) {
+  std::string ret = graph->backend_jit_config().exec_order;
+  if (ret.empty()) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    ret = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  }
+  return ret;
+}
 }  // namespace
 
 ExecOrderBuilder::~ExecOrderBuilder() {}
 
-void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user) {
+void ExecOrderBuilder::Build(KernelGraph *graph, std::vector<CNodePtr> *execution_order, NodeUser *node_user) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(execution_order);
   MS_EXCEPTION_IF_NULL(node_user);
   graph_ = graph;
-  is_pynative_kernel_graph_ = graph_->has_flag(kFlagIsPyNativeBpropKernelGraph);
   execution_order_ = execution_order;
   node_output_edges_ = node_user;
   node_output_edges_->clear();
@@ -65,9 +75,7 @@ void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_
   ClearLinkInfo();
   BuildLinkInfo();
   FindIndependentNodes();
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto exec_order = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  auto exec_order = GetExecOrderAlgo(graph);
   if (exec_order == "dfs") {
     MS_LOG(INFO) << "exec order build by dfs";
     BuildByDFS();
@@ -142,9 +150,7 @@ void ExecOrderBuilder::BuildLinkInfo() {
         GetTrivialInputNode(input, seen);
         continue;
       }
-      if (!is_pynative_kernel_graph_) {
-        (void)node_input_edges_[node].emplace_back(input);
-      }
+      (void)node_input_edges_[node].emplace_back(input);
       node_input_num_[node] += 1;
       node_output_num_[input] += 1;
       if (input->seen_ == seen || !input->isa<CNode>() || AnfUtils::IsCustomActorNode(input)) {
@@ -241,9 +247,7 @@ void ExecOrderBuilder::FindIndependentNodes() {
         if (!independent_nodes_.empty() && visit_with_refcount) {
           auto inode = independent_nodes_.top();
           (void)(*node_output_edges_)[input].emplace_back(inode);
-          if (!is_pynative_kernel_graph_) {
-            (void)node_input_edges_[inode].emplace_back(input);
-          }
+          (void)node_input_edges_[inode].emplace_back(input);
           node_input_num_[inode] += 1;
           independent_nodes_.pop();
         }
@@ -367,10 +371,9 @@ void ExecOrderBuilder::BuildByDFS() {
     dfs(independent_nodes_.top());
     independent_nodes_.pop();
   }
-  if (!is_pynative_kernel_graph_) {
-    CheckLoop();
-  }
+  CheckLoop();
 }
+
 void ExecOrderBuilder::BuildByBFS() {
   MS_EXCEPTION_IF_NULL(execution_order_);
   execution_order_->clear();
@@ -427,9 +430,7 @@ void ExecOrderBuilder::BuildByBFS() {
       }
     }
   }
-  if (!is_pynative_kernel_graph_) {
-    CheckLoop();
-  }
+  CheckLoop();
 }
 
 bool ExecOrderBuilder::PrintLoopNodesIfExist(const AnfNodePtr &node, std::set<AnfNodePtr> *visited_nodes,

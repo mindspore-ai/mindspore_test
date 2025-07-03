@@ -15,7 +15,7 @@ set(DVPP_IMAGE_SOURCE
         acl_adapter.cc
         )
 
-if(NOT BUILD_LITE AND ENABLE_D)
+if(ENABLE_D)
     include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 set(DVPP_IMAGE_SOURCE
         ${DVPP_IMAGE_SOURCE}

@@ -25,7 +25,7 @@ mindspore.nn.Adadelta
         .. include:: mindspore.nn.optim_note_weight_decay.rst
 
     参数：
-        - **params** (Union[list[Parameter], list[dict]]) - 必须是 `Parameter` 组成的列表或字典组成的列表。当列表元素是字典时，字典的键可以是"params"、"lr"、"weight_decay"、"grad_centralization"和"order_params"：
+        - **params** (Union[list[Parameter], list[dict]]) - 必须是 `Parameter` 组成的列表或字典组成的列表。当列表元素是字典时，字典的键可以是 `"params"`、 `"lr"` 、 `"weight_decay"` 、 `"grad_centralization"` 和 `"order_params"`：
 
           .. include:: mindspore.nn.optim_group_param.rst
           .. include:: mindspore.nn.optim_group_lr.rst
@@ -33,23 +33,23 @@ mindspore.nn.Adadelta
           .. include:: mindspore.nn.optim_group_gc.rst
           .. include:: mindspore.nn.optim_group_order.rst
 
-        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]) - 默认值： ``1.0`` 。
+        - **learning_rate** (Union[float, int, Tensor, Iterable, LearningRateSchedule]，可选) - 默认值： ``1.0`` 。
 
           .. include:: mindspore.nn.optim_arg_dynamic_lr.rst
 
-        - **rho** (float) - 衰减率，应在 [0.0, 1.0] 范围内。默认值： ``0.9`` 。
-        - **epsilon** (float) - 分母添加项，非负数。默认值： ``1e-6`` 。
+        - **rho** (float，可选) - 衰减率，应在 [0.0, 1.0] 范围内。默认值： ``0.9`` 。
+        - **epsilon** (float，可选) - 分母添加项，非负数。默认值： ``1e-6`` 。
 
         .. include:: mindspore.nn.optim_arg_loss_scale.rst
 
-        - **weight_decay** (Union[float, int, Cell]) - 权重衰减值，必须大于等于0.0。默认值： ``0.0`` 。
+        - **weight_decay** (Union[float, int, Cell]，可选) - 权重衰减值，必须大于等于0.0。默认值： ``0.0`` 。
 
           - float：固定的权量衰减值。必须等于或大于0。
           - int：固定的权量衰减值。必须等于或大于0。它将会被转换为float类型。
           - Cell：权重衰减此时是动态的。在训练期间，优化器调用该Cell的实例，以获取当前阶段所要使用的权重衰减值。
 
     输入：
-        - **grads** (tuple[Tensor]) - 优化器中 `params` 的梯度，形状（shape）和数据类型与 `params` 相同。数据类型为float16或float32。
+        - **grads** (tuple[Tensor]) - 优化器中 `params` 的梯度，shape和数据类型与 `params` 相同。数据类型为float16或float32。
 
     输出：
         Tensor[bool]，值为True。

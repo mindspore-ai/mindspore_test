@@ -18,11 +18,12 @@
 #include <string>
 #include <algorithm>
 #include "kernel/cpu/bartlett_window_cpu_kernel.h"
-#include "plugin/device/cpu/hal/device/cpu_device_address.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "mindspore/ops/infer/bartlett_window.h"
 
 namespace mindspore {
 namespace kernel {
+namespace bartlett_window_cpu {
 namespace {
 constexpr size_t kBartlettWindowInputsNum = 1;
 constexpr size_t kBartlettWindowOutputsNum = 1;
@@ -102,5 +103,6 @@ std::vector<KernelAttr> BartlettWindowCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, BartlettWindow, BartlettWindowCpuKernelMod);
+}  // namespace bartlett_window_cpu
 }  // namespace kernel
 }  // namespace mindspore

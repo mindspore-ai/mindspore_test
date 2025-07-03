@@ -23,11 +23,19 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::opt {
 namespace {
@@ -62,6 +70,7 @@ std::tuple<FuncGraphPtr, CNodePtr> CreateNewCNode(const FuncGraphManagerPtr &, c
   std::vector<AnfNodePtr> params;
 
   auto old_prim = GetValueNode<PrimitivePtr>(old_node->input(0));
+  MS_EXCEPTION_IF_NULL(old_prim);
   auto prim_name = old_prim->name();
   params.push_back(NewValueNode(std::make_shared<Primitive>(prim_name)));
 
@@ -76,7 +85,9 @@ std::tuple<FuncGraphPtr, CNodePtr> CreateNewCNode(const FuncGraphManagerPtr &, c
 
   std::ostringstream ss;
   if (IsSendRecvOps(old_node)) {
-    ss << old_prim->name() << old_prim->GetAttr(parallel::SR_TAG)->ToString();
+    auto sr_tag = old_prim->GetAttr(parallel::SR_TAG);
+    MS_EXCEPTION_IF_NULL(sr_tag);
+    ss << old_prim->name() << sr_tag->ToString();
   } else {
     ss << old_prim->name();
   }
@@ -157,13 +168,16 @@ void AddAllGatherRecvDepend(const FuncGraphPtr &graph) {
   for (auto &node : all_nodes) {
     if (IsPrimitiveCNode(node, prim::kPrimAllGather)) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+      MS_EXCEPTION_IF_NULL(prim);
       const auto &instance_name = prim->instance_name();
       if (instance_name.find(kAttrNeedAllGather) != std::string::npos) {
         (void)all_gather_nodes.emplace_back(cnode);
       }
     } else if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (cnode->HasPrimalAttr(parallel::PIPELINE_BEGIN)) {
         auto pipeline_begin = GetValue<int64_t>(cnode->GetPrimalAttr(parallel::PIPELINE_BEGIN));
         if (pipeline_begin == 0) {
@@ -192,7 +206,9 @@ bool IsCall(const AnfNodePtr &node) {
   if (!utils::isa<CNodePtr>(node)) {
     return false;
   }
-  return IsValueNode<FuncGraph>(node->cast<CNodePtr>()->input(0));
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  return IsValueNode<FuncGraph>(cnode->input(0));
 }
 
 bool IsClosure(const AnfNodePtr &node) {
@@ -323,7 +339,7 @@ void ProcessSpecialNodes(const FuncGraphPtr &graph, const std::vector<AnfNodePtr
 void ProcessSendRecvForGE(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  static const bool is_enable_ge = (context->backend_policy() == "ge");
+  static const bool is_enable_ge = common::AnfAlgo::IsBackendGe();
   const auto no_cell_reuse = context->CellReuseLevel() == CellReuseLevel::kNoCellReuse;
   if (!is_enable_ge || no_cell_reuse) {
     return;

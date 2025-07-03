@@ -29,11 +29,11 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "ir/graph_utils.h"
 #include "include/common/utils/contract.h"
-#include "include/backend/device_type.h"
+#include "common/device_type.h"
 #include "include/backend/kernel_info.h"
-#include "include/backend/device_address.h"
+#include "common/device_address.h"
+#include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"
 
 namespace mindspore {
@@ -87,7 +87,7 @@ struct SomasInfo {
 using DeviceType = device::DeviceType;
 using KernelMapTensor = std::map<session::KernelWithIndex, BaseRef, session::KernelWithIndexCmp>;
 
-class BACKEND_EXPORT KernelGraph : public FuncGraph {
+class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
  public:
   KernelGraph()
       : inputs_(std::make_shared<AnfNodePtrList>()),
@@ -111,6 +111,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
     mem_reuse_exec_order_ = graph.mem_reuse_exec_order_;
     graph_id_ = graph.graph_id_;
     device_target_ = graph.device_target_;
+    backend_jit_config_ = graph.backend_jit_config_;
     stream_distinction_label_ = graph.stream_distinction_label_;
     front_backend_anf_map_ = graph.front_backend_anf_map_;
     backend_front_anf_map_ = graph.backend_front_anf_map_;
@@ -195,6 +196,10 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   void set_root_graph_id(uint32_t root_graph_id) { root_graph_id_ = root_graph_id; }
   DeviceType device_target() const { return device_target_; }
   void set_device_target(DeviceType target) { device_target_ = target; }
+  backend::BackendJitConfig backend_jit_config() { return backend_jit_config_; }
+  void set_backend_jit_config(backend::BackendJitConfig backend_jit_config) {
+    backend_jit_config_ = backend_jit_config;
+  }
 
   // and a new front to backend anf relation to maop
   void FrontBackendMapAdd(const AnfNodePtr &front_anf, const AnfNodePtr &backend_anf);
@@ -507,11 +512,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   device::RunMode RunMode() const { return run_mode_; }
   bool is_graph_run_mode() const { return run_mode_ == device::RunMode::kGraphMode; }
   bool is_loop_count_sink() const { return is_loop_count_sink_; }
-  void set_memory_managed_by_ge(bool memory_managed_by_ge) {
-    if (IsEnableRefMode()) {
-      memory_managed_by_ge_ = memory_managed_by_ge;
-    }
-  }
+  void set_memory_managed_by_ge(bool memory_managed_by_ge) { memory_managed_by_ge_ = memory_managed_by_ge; }
   bool memory_managed_by_ge() const { return memory_managed_by_ge_; }
   void set_is_loop_count_sink(bool is_loop_count_sink) { is_loop_count_sink_ = is_loop_count_sink; }
   const mindspore::HashMap<AnfNodePtr, AnfNodePtr> &front_backend_anf_map() const { return front_backend_anf_map_; }
@@ -604,6 +605,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   uint32_t graph_id_;
   uint32_t stream_distinction_label_;
   DeviceType device_target_;
+  backend::BackendJitConfig backend_jit_config_;
   uint32_t root_graph_id_{0};
 
   // record map between front anf and backend anf,use two map implement bidirectional map

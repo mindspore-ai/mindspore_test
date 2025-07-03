@@ -353,8 +353,8 @@ class TestProfiler(unittest.TestCase):
         """
         profiler_interface = ProfilerInterface()
         prof_action_controller = ProfilerActionController(profiler_interface, None)
-        self.assertEqual(prof_action_controller.handle_normal_action(ProfilerAction.NONE, ProfilerAction.RECORD),
+        self.assertEqual(prof_action_controller.action_map.get((ProfilerAction.NONE, ProfilerAction.RECORD)),
                          [ProfilerInterface.init, ProfilerInterface.start])
-        self.assertEqual(prof_action_controller.handle_normal_action(ProfilerAction.NONE,
-                                                                     ProfilerAction.RECORD_AND_SAVE),
+        self.assertEqual(prof_action_controller.action_map.get((ProfilerAction.NONE,
+                                                                ProfilerAction.RECORD_AND_SAVE)),
                          [ProfilerInterface.init, ProfilerInterface.start])

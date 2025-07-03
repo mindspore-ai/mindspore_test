@@ -25,6 +25,9 @@ ShardSequentialSample::ShardSequentialSample(float per, float per_offset)
     : ShardSample(0), offset_(0), per_(per), per_offset_(per_offset) {}
 
 int64_t ShardSequentialSample::GetNumSamples(int64_t dataset_size, int64_t num_classes) {
+  if (offset_ > 0) {
+    dataset_size -= offset_;
+  }
   if (no_of_samples_ == 0 && (per_ >= -kEpsilon && per_ <= kEpsilon)) {
     return dataset_size;
   }
@@ -48,7 +51,10 @@ Status ShardSequentialSample::Execute(ShardTaskList &tasks) {
     if (tasks.permutation_.empty()) {
       ShardTaskList new_tasks;
       total_no = static_cast<int64_t>(tasks.Size());
-      for (int64_t i = offset_; i < taking + offset_; ++i) {
+      if (no_of_samples_ != 0) {
+        taking = taking + offset_ > total_no ? total_no : taking + offset_;
+      }
+      for (int64_t i = offset_; i < taking; ++i) {
         CHECK_FAIL_RETURN_UNEXPECTED_MR(total_no != 0, "Divisor 'total_no' is zero.");
         new_tasks.AssignTask(tasks, i % total_no);
       }
@@ -56,7 +62,10 @@ Status ShardSequentialSample::Execute(ShardTaskList &tasks) {
     } else {  // shuffled
       ShardTaskList new_tasks;
       total_no = static_cast<int64_t>(tasks.permutation_.size());
-      for (int64_t i = offset_; i < taking + offset_; ++i) {
+      if (no_of_samples_ != 0) {
+        taking = taking + offset_ > total_no ? total_no : taking + offset_;
+      }
+      for (int64_t i = offset_; i < taking; ++i) {
         CHECK_FAIL_RETURN_UNEXPECTED_MR(total_no != 0, "Divisor 'total_no' is zero.");
         new_tasks.AssignTask(tasks, tasks.permutation_[i % total_no]);
       }

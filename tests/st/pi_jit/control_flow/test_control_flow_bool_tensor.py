@@ -5,14 +5,8 @@ from mindspore.common import Tensor
 import mindspore.ops.functional as F
 import numpy as np
 from ..share.grad import GradOfFirstInput
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.mark_utils import arg_mark
-import sys  
-import pytest 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class Net1(Cell):
     def __init__(self):
@@ -44,7 +38,7 @@ def test_control_flow_tensor_bool():
     npx = np.random.rand(3, 4).astype(np.float32)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net1()
-    jit(fn=Net1.construct, mode="PIJit", jit_config={"loop_unrolling":True})(pi_net, Tensor(npx))
+    pi_jit_with_config(function=Net1.construct, jit_config={"loop_unrolling": True})(pi_net, Tensor(npx))
     grad_net = F.grad(pi_net)
     pi_net(Tensor(npx))
     grad_net(Tensor(npx))
@@ -74,7 +68,7 @@ def test_control_flow_tensor_bool_with_x():
     x = Tensor([0], dtype.float32)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net2()
-    jit(fn=Net2.construct, mode="PIJit")(pi_net, x)
+    jit(function=Net2.construct, capture_mode="bytecode")(pi_net, x)
     grad_net = GradOfFirstInput(pi_net, sens_param=False)
     pi_net(x)
     grad_net(x)

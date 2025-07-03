@@ -18,16 +18,16 @@
 #include <vector>
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
-#include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/ms_factory.h"
 #include "kernel/framework_utils.h"
 #include "ops/op_def.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore {
 namespace kernel {
@@ -63,7 +63,7 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
   } else {
     kernel_ptr->SetDynamic(true);
   }
-  transform::AclnnInit();
+  device::ascend::AclnnInit();
   return kernel_ptr;
 }
 
@@ -90,10 +90,9 @@ bool IsViewOp(const std::string &op_name) {
 }
 
 bool IsAclnnViewOp(const std::string &op_name) {
-  if (mindspore::ops::aclnn_view_to_op.find(op_name) != mindspore::ops::aclnn_view_to_op.end()) {
-    return true;
-  }
-  return false;
+  const auto &op_def = mindspore::ops::GetOpDef(op_name);
+  const auto &graph_view_prim = op_def != nullptr ? op_def->is_graph_view_ : false;
+  return graph_view_prim;
 }
 }  // namespace kernel
 }  // namespace mindspore

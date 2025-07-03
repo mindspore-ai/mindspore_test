@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Define pijit context"""
+
+"""Define pijit context."""
 
 import inspect
 import types
@@ -21,6 +22,7 @@ import importlib.util
 import mindspore
 from mindspore import log as logger
 from mindspore.common.jit_config import JitConfig
+from mindspore._c_expression import PreJit
 from mindspore._c_expression import GraphExecutor_, jit_mode_pi_enable, jit_mode_pi_disable, pi_jit_set_context
 
 
@@ -36,18 +38,30 @@ def _update_graph_executor_config(jit_config):
     GraphExecutor_.get_instance().set_jit_config(JitConfig(**valid_config).jit_config_dict)
 
 
+class Unsupported(RuntimeError):
+    """If using @jit(fullgraph=True), pijit will raise an Unsupported exception when encountering a graph break."""
+
+    # pylint: disable=useless-super-delegation
+    def __init__(self, msg: str):
+        super().__init__(msg)
+
+
 class PIJitCaptureContext:
     """
     Context manager for pijit graph capture
     """
 
-    def __init__(self, jit_config=None, input_signature=None):
+    def __init__(self, fullgraph=False, jit_config=None, input_signature=None):
         _update_graph_executor_config(jit_config)
-        config = {}
+        config = {'fullgraph': fullgraph}
         if isinstance(jit_config, JitConfig):
             config.update(jit_config.jit_config_dict)
         elif jit_config is not None:
             config.update(jit_config)
+
+        disable_pijit = config.get('_disable_pijit', None)
+        if disable_pijit is not None and not callable(disable_pijit):
+            raise TypeError(f"The config '_disable_pijit' must be callable but got {disable_pijit}")
 
         self.config = config
         self.input_signature = input_signature
@@ -69,36 +83,51 @@ class PIJitCaptureContext:
             or inspect.isasyncgenfunction(fn) or inspect.isawaitable(fn)
 
     def _wrapper(self):
+        """
+        pijit wrapper of fn.
+        """
         def _fn(*args, **kwds):
+            PreJit(args, kwds)
+            disable_pijit = self.config.get('_disable_pijit', None)
+            if disable_pijit is not None and disable_pijit(args, kwds):
+                return self.fn(*args, **kwds)
             with self:
                 self.ret = self.fn(*args, **kwds)
                 return self.ret
+
         return _fn
 
     def __call__(self, fn):
+        """
+        :raises Unsupported: If using @jit(fullgraph=True), will raise exception when encountering a graph break.
+        """
         if isinstance(fn, type) and issubclass(fn, mindspore.nn.Cell):
             fn.construct = self(fn.construct)
             return fn
         if isinstance(fn, mindspore.nn.Cell):
-            type(fn).construct = self(type(fn).construct)
-            return fn
+            return types.MethodType(self(fn.construct.__func__), fn)
         if isinstance(fn, types.MethodType):
             return types.MethodType(self(fn.__func__), fn.__self__)
         if not isinstance(fn, types.FunctionType) or self._is_unsupported(fn):
             logger.warning("unsupported function type" + str(fn))
             return fn
 
-        try:
-            if inspect.getmodule(fn.__code__).__name__.startswith("mindspore"):
+        if hasattr(fn, "__wrapped_by_jit__"):
+            logger.warning(f"The fn {fn} should be wrapped by jit only once.")
+
+        module = inspect.getmodule(fn.__code__)
+        if module is not None and module.__name__.startswith("mindspore"):
+            if fn.__code__.co_name != 'after_grad':
+                # Use PIJit for mindspore api, please use PSJit
                 return fn
-        finally:
-            pass
 
         _fn = self._wrapper()
         if fn.__code__ is _fn.__code__:
             fn = fn.__closure__[0].cell_contents.fn
         self.fn = fn
-        return functools.wraps(fn)(_fn)
+        wrap_fn = functools.wraps(fn)(_fn)
+        setattr(wrap_fn, "__wrapped_by_jit__", True)
+        return wrap_fn
 
     def __enter__(self):
         pi_jit_set_context(self.fn, *self._init_arg)
@@ -113,6 +142,7 @@ def _get_skip_files():
     """
     Get skip files by SKIP_RULES
     """
+
     def _filter(path: str):
         if path.endswith("__init__.py"):
             return path[0:-11]

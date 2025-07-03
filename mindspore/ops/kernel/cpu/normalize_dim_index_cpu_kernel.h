@@ -19,11 +19,12 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace normalize_dim_index_cpu {
 class NormalizeDimIndexCpuKernelMod : public NativeCpuKernelMod {
  public:
   NormalizeDimIndexCpuKernelMod() = default;
@@ -52,6 +53,7 @@ class NormalizeDimIndexCpuKernelMod : public NativeCpuKernelMod {
   size_t dim_index_ = 0;
   size_t expand_dims_cnt_ = 0;
 };
+}  // namespace normalize_dim_index_cpu
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_NORMALIZE_DIM_INDEX_CPU_KERNEL_H_

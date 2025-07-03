@@ -1,0 +1,8 @@
+addcdiv:
+  description: |
+    addcdiv(tensor1, tensor2, *, value=1) -> Tensor
+
+    For details, please refer to :func:`mindspore.ops.addcdiv`.
+
+    Supported Platforms:
+        ``Ascend``

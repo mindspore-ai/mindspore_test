@@ -23,12 +23,13 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "kernel/common_utils.h"
-#include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "common/common_utils.h"
+#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "common/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
+namespace upsample_trilinear_3d_cpu {
 class UpsampleTrilinear3DCpuKernelMod : public NativeCpuKernelMod {
  public:
   UpsampleTrilinear3DCpuKernelMod() = default;
@@ -90,6 +91,7 @@ class UpsampleTrilinear3DCpuKernelMod : public NativeCpuKernelMod {
   std::vector<int64_t> none_list_{};
   bool align_corners_{false};
 };
+}  // namespace upsample_trilinear_3d_cpu
 }  // namespace kernel
 }  // namespace mindspore
 

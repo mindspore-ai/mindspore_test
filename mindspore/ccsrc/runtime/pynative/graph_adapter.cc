@@ -26,18 +26,17 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
-#include "runtime/device/ms_device_shape_transfer.h"
+#include "include/common/utils/ms_device_shape_transfer.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/common/pyboost/pyboost_utils.h"
 
 namespace mindspore::pynative {
 namespace {
 constexpr auto kAttrBpropValueNodeRefCount = "bprop_value_node_ref_count";
 constexpr auto kAttrValueNodeForwardOuputFlags = "value_node_forward_output_flags";
 
-tensor::BaseTensorPtr GetTensorFromValueNode(const AnfNodePtr &node) {
+tensor::TensorPtr GetTensorFromValueNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<ValueNode>()) {
     return nullptr;
@@ -47,12 +46,12 @@ tensor::BaseTensorPtr GetTensorFromValueNode(const AnfNodePtr &node) {
   auto value = value_node->value();
   MS_EXCEPTION_IF_NULL(value);
   // ValueTuple is already expanded into tensors in backend.
-  if (!value->isa<tensor::BaseTensor>()) {
+  if (!value->isa<tensor::Tensor>()) {
     MS_LOG(DEBUG) << "Only need to process forward output tensor. value:" << value->ToString();
     return nullptr;
   }
 
-  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto tensor = value->cast<tensor::TensorPtr>();
   return tensor;
 }
 
@@ -103,24 +102,23 @@ device::DeviceAddressPtr CreateValueNodeAddress(const ValueNodePtr &value_node,
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
-    {value_node, 0}, nullptr, tensor_size, output_format, data_type, trans::GetRuntimePaddingShape(value_node, 0),
+    {value_node, 0}, nullptr, tensor_size, output_format, data_type, AnfAlgo::GetRuntimePaddingShape(value_node, 0),
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-  return device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+  AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
+  return kernel_tensor->device_address();
 }
 
-bool CopyTensorData(const tensor::BaseTensorPtr &tensor, const device::DeviceAddressPtr &device_address,
+bool CopyTensorData(const tensor::TensorPtr &tensor, const device::DeviceAddressPtr &device_address,
                     const AnfNodePtr &node, const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(device_address);
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
-                                                     0);
   if (device_address->GetPtr() == nullptr) {
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "CopyTensorData", "CopyTensorData", "");
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "CopyTensorData", "CopyTensorData", "", false);
     auto mem_type =
-      tensor->is_parameter() ? device::tracker::MemType::kWeight : device::tracker::MemType::kPyNativeInput;
+      tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "CopyTensorData", mem_type, device_address->GetSize(),
                                                    device_address.get());
     if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
@@ -132,7 +130,7 @@ bool CopyTensorData(const tensor::BaseTensorPtr &tensor, const device::DeviceAdd
   // Copy data from host tensor to device.
   auto host_tensor_size = LongToSize(tensor->data().nbytes());
   auto host_tensor_type = tensor->data_type();
-  if (!device_address->SyncHostToDevice(trans::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
+  if (!device_address->SyncHostToDevice(AnfAlgo::GetRuntimePaddingShape(node, 0), host_tensor_size, host_tensor_type,
                                         kOpFormat_DEFAULT, tensor->data_ptr())) {
     std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                              ", tensor size: " + std::to_string(host_tensor_size) +
@@ -144,8 +142,7 @@ bool CopyTensorData(const tensor::BaseTensorPtr &tensor, const device::DeviceAdd
   return true;
 }
 
-device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::BaseTensorPtr &tensor,
-                                                       const ValueNodePtr &value_node,
+device::DeviceAddressPtr HandleAddressForHeterogeneous(const tensor::TensorPtr &tensor, const ValueNodePtr &value_node,
                                                        const device::DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(value_node);
@@ -192,8 +189,8 @@ void GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(const KernelGraphPtr
     MS_EXCEPTION_IF_NULL(value_node);
     auto value = value_node->value();
     MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<tensor::BaseTensor>()) {
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       if (!tensor->is_forward_output()) {
         continue;
@@ -203,9 +200,9 @@ void GraphAdapter::ClearForwardOutputValueNodeDeviceAddress(const KernelGraphPtr
         MS_LOG(DEBUG) << "Output addr is not exist for ValueNode " << value_node->ToString();
         continue;
       }
-      const auto &device_address = AnfAlgo::GetMutableOutputAddr(value_node, 0);
-      auto new_device_address = runtime::DeviceAddressUtils::CloneEmptyDeviceAddress(device_address, device_context);
-      AnfAlgo::SetOutputAddr(new_device_address, 0, value_node.get());
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, 0, false);
+      auto new_kernel_tensor = runtime::DeviceAddressUtils::CloneEmptyKernelTensor(kernel_tensor, device_context);
+      AnfAlgo::SetOutputAddr(new_kernel_tensor->device_address(), 0, value_node);
     }
   }
 }
@@ -280,26 +277,27 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
     if (!AnfAlgo::OutputAddrExist(value_node, 0)) {
       MS_LOG(EXCEPTION) << "The device address is not exist: " << value_node->ToString();
     }
-    auto device_tensor = AnfAlgo::GetMutableOutputAddr(value_node, 0, false);
+    auto old_kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, 0, false);
+    MS_EXCEPTION_IF_NULL(old_kernel_tensor);
+    auto device_tensor = old_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
 
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-      nullptr, device_tensor->GetSize(), device_tensor->kernel_tensor()->format(), device_tensor->type_id(),
-      device_tensor->host_shape(), device_context->device_context_key().device_name_,
-      device_context->device_context_key().device_id_);
+    auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), old_kernel_tensor->format(),
+                                                     device_tensor->type_id(), old_kernel_tensor->host_shape(),
+                                                     real_device_context->device_context_key().device_name_,
+                                                     real_device_context->device_context_key().device_id_);
 
-    kernel_tensor->SetHostInfo(
-      std::make_shared<abstract::TensorShape>(device_tensor->kernel_tensor()->GetShapeVector()),
-      std::make_shared<TensorType>(TypeIdToType(device_tensor->kernel_tensor()->dtype_id())), nullptr);
+    kernel_tensor->SetHostInfo(std::make_shared<abstract::TensorShape>(old_kernel_tensor->GetShapeVector()),
+                               std::make_shared<TensorType>(TypeIdToType(old_kernel_tensor->dtype_id())), nullptr);
 
     kernel_tensor->set_stream_id(device_tensor->stream_id());
-    auto new_device_tensor = real_device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    const auto &new_device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     new_device_tensor->SetNodeIndex(value_node, 0);
     new_device_tensor->set_from_persistent_mem(true);
-    MS_LOG(DEBUG) << "Create backoff device tensor:" << new_device_tensor << " type:" << new_device_tensor->type_id()
-                  << " for ValueNode " << value_node->ToString();
-    runtime::SchedulerHelper::AddDeviceTensorStore(front_node, new_device_tensor);
+    MS_LOG(DEBUG) << "Create backoff kernel tensor:" << kernel_tensor->ToString() << " for ValueNode "
+                  << value_node->ToString();
+    runtime::SchedulerHelper::AddDeviceTensorStore(front_node, kernel_tensor);
   }
 }
 
@@ -330,9 +328,15 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     MS_EXCEPTION_IF_NULL(tensor);
 
     auto device_address = HandleAddressForHeterogeneous(tensor, value_node, device_context);
-    device_address = std::dynamic_pointer_cast<device::DeviceAddress>(
-      kernel::pyboost::PyBoostUtils::ContiguousByDeviceAddress(device_address));
-    runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor.get());
+    device_address = runtime::DeviceAddressUtils::ConvertContiguousDeviceAddress(nullptr, device_address, true);
+    auto abs = tensor->ToAbstract()->Broaden();
+    MS_EXCEPTION_IF_NULL(abs);
+    auto shape = abs->GetShape();
+    auto type = abs->GetType();
+    auto value = abs->GetValue();
+    const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
+    kernel_tensor->set_device_address(device_address);
+    kernel_tensor->set_host_shape(tensor->shape());
     tensor->set_device_address(device_address);
     auto front_node = AnfAlgo::FetchFrontNodeByBackendNode(value_node, *graph);
     MS_EXCEPTION_IF_NULL(front_node);
@@ -341,15 +345,8 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
       address_ref_count[device_address] += value_node_ref_count;
       device_address->AddHeldByNode(front_node->cast<ValueNodePtr>());
     }
-    runtime::DeviceTensorStore::GetInstance().Insert(front_node.get(), device_address);
+    runtime::DeviceTensorStore::GetInstance().Insert(front_node.get(), kernel_tensor);
     HandleBackoffValueNode(value_node, front_node, device_context);
-  }
-
-  for (auto &[address, ref_count] : address_ref_count) {
-    MS_EXCEPTION_IF_NULL(address);
-    address->set_original_ref_count(ref_count);
-    address->ResetRefCount();
-    MS_LOG(DEBUG) << "device_address " << address.get() << " ref_count " << address->ref_count();
   }
   MS_LOG(DEBUG) << "Update end";
 }
@@ -409,7 +406,7 @@ void GraphAdapter::ReplaceGraphParameterProperties(const KernelGraphPtr &graph,
       kernel_build_info_builder->SetOutputsFormat(std::vector<std::string>{address->format()});
       kernel_build_info_builder->SetOutputsDeviceType(std::vector<TypeId>{address->type_id()});
       kernel_build_info_builder->SetOutputsReshapeType({address->padding_type()});
-      AnfAlgo::SetOutputAddr(address, 0, parameter.get());
+      AnfAlgo::SetOutputAddr(address, 0, parameter);
       AnfAlgo::SetSelectKernelBuildInfo(kernel_build_info_builder->Build(), parameter.get());
 
       auto abstract = parameter->abstract();
@@ -443,12 +440,7 @@ bool GraphAdapter::IsPynativeGeGraphSink(const FuncGraphPtr &func_graph) {
   if (context_ptr->backend_policy() != "ge" || !context_ptr->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
     return false;
   }
-
   MS_EXCEPTION_IF_NULL(func_graph);
-  if (func_graph->has_flag(kFlagEnableRunGraphBySingleOp)) {
-    return false;
-  }
-
   return true;
 }
 
@@ -492,7 +484,7 @@ bool GraphAdapter::PyNativeEnableTaskSink(const FuncGraphPtr &func_graph) {
   return !is_auto_parallel && !has_comm_op && !is_cut_graph;
 }
 
-void UpdateValueNodeAbstractFromTensor(const ValueNodePtr &value_node, const tensor::BaseTensorPtr &tensor) {
+void UpdateValueNodeAbstractFromTensor(const ValueNodePtr &value_node, const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(tensor);
   auto real_shape = tensor->shape();
@@ -516,8 +508,8 @@ void GraphAdapter::UpdateDynamicValueNodeAbstract(const KernelGraphPtr &graph) {
     MS_EXCEPTION_IF_NULL(value_node);
     const auto &value = value_node->value();
     MS_EXCEPTION_IF_NULL(value);
-    if (value->isa<tensor::BaseTensor>()) {
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+    if (value->isa<tensor::Tensor>()) {
+      auto tensor = value->cast<tensor::TensorPtr>();
       MS_EXCEPTION_IF_NULL(tensor);
       if (tensor->is_forward_output()) {
         UpdateValueNodeAbstractFromTensor(value_node, tensor);
@@ -536,7 +528,7 @@ void GraphAdapter::SensTensorToDevice(const KernelGraphPtr &graph, const device:
     MS_EXCEPTION_IF_NULL(value_node);
     auto value = value_node->value();
     MS_EXCEPTION_IF_NULL(value);
-    std::vector<tensor::BaseTensorPtr> tensors;
+    std::vector<tensor::TensorPtr> tensors;
     TensorValueToTensor(value, &tensors);
     for (const auto &tensor : tensors) {
       MS_EXCEPTION_IF_NULL(tensor);
@@ -549,7 +541,7 @@ void GraphAdapter::SensTensorToDevice(const KernelGraphPtr &graph, const device:
         auto node_address = CreateValueNodeAddress(value_node, device_context);
         MS_EXCEPTION_IF_NULL(node_address);
         tensor->set_device_address(node_address);
-        AnfAlgo::SetOutputAddr(node_address, 0, value_node.get());
+        AnfAlgo::SetOutputAddr(node_address, 0, value_node);
         MS_LOG(DEBUG) << "Start to copy sens tensor to device";
         if (!CopyTensorData(tensor, node_address, value_node, device_context)) {
           MS_LOG(EXCEPTION) << "ValueNode host to device copy failed";

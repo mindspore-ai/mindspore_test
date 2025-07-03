@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include <algorithm>
 #include <fstream>
-#include "debug/data_dump/npy_header.h"
+#include <chrono>
+#include <thread>
+#include "debug/dump/npy_header.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_dump_utils.h"
@@ -39,6 +41,7 @@ constexpr auto kPath = "path";
 constexpr auto kNetName = "net_name";
 constexpr auto kSavedData = "saved_data";
 constexpr auto kIteration = "iteration";
+constexpr auto kInitialIteration = "initial_iteration";
 constexpr auto kInputOutput = "input_output";
 constexpr auto kKernels = "kernels";
 constexpr auto kSupportDevice = "support_device";
@@ -87,6 +90,15 @@ constexpr auto kSupportedStatisticsategory =
 }  // namespace
 
 namespace mindspore {
+
+void DumpJsonParser::SetInitialIteration(uint32_t initial_iteration) {
+  Parse();
+  dump_user_step_flag_ = true;
+  cur_dump_iter_ = initial_iteration;
+  cur_user_dump_iter_ = initial_iteration;
+  initial_dump_iter_ = initial_iteration;
+}
+
 auto DumpJsonParser::CheckJsonKeyExist(const nlohmann::json &content, const std::string &key) {
   nlohmann::json::const_iterator iter = content.find(key);
   if (iter == content.end()) {
@@ -114,38 +126,14 @@ bool DumpJsonParser::IsDumpEnabled() {
   if (config_path.empty()) {
     return false;
   }
-  MS_LOG(INFO) << "Dump config path is " << config_path;
-
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    MS_LOG(EXCEPTION) << "In GPU or CPU, Dump is disabled in PyNative mode. Please set mode to GRAPH_MODE in context.";
-  }
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && e2e_dump_enabled_) {
-    MS_LOG(EXCEPTION) << "Dump is only support asynchronous for Ascend in PyNative mode.";
-  }
+  MS_VLOG(VL_DUMP) << "Dump config path is " << config_path;
   return true;
-}
-
-void DumpJsonParser::PyNativeModeCheck() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode &&
-      dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
-    MS_LOG(EXCEPTION) << "Cell dump is only supported in GRAPH mode. Please set dump_mode to 0 or 1 in PyNative mode.";
-  }
 }
 
 void DumpJsonParser::CheckE2eSetting() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_enabled()) {
-    if (!context->IsKByKExecutorMode()) {
-      MS_LOG(WARNING) << "e2e_dump_settings does not support Ascend O2 mode. Do not use e2e_dump_settings or use "
-                         "Ascend O0/O1 mode instead";
-    }
     CheckStatCalcModeVaild();
   }
 }
@@ -161,7 +149,6 @@ void DumpJsonParser::Parse() {
   if (already_parsed_) {
     return;
   }
-  already_parsed_ = true;
   if (!IsDumpEnabled()) {
     return;
   }
@@ -190,15 +177,15 @@ void DumpJsonParser::Parse() {
   ss << j;
   std::string cfg = ss.str();
   json_file.close();
-  MS_LOG(INFO) << "Dump json:" << cfg;
+  MS_VLOG(VL_DUMP) << "Dump json:" << cfg;
 
   ParseE2eDumpSetting(j);
   ParseCommonDumpSetting(j);
-  PyNativeModeCheck();
   CheckE2eSetting();
   JudgeDumpEnabled();
   CheckStatCalcModeVaild();
   ParseStatisticCategory(j);
+  already_parsed_ = true;
 }
 
 void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
@@ -225,8 +212,8 @@ void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
           }
         } else {
           statistic_category_.push_back(statistic_item);
-          MS_LOG(INFO) << "The item: " << statistic_item
-                       << " is a valid statistic category, it will be computed on device.";
+          MS_VLOG(VL_DUMP) << "The item: " << statistic_item
+                           << " is a valid statistic category, it will be computed on device.";
         }
       }
       if (!device_unsupported_items.empty()) {
@@ -242,8 +229,8 @@ void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
           unsupported_items += statistic_item + ", ";
         } else {
           statistic_category_.push_back(statistic_item);
-          MS_LOG(INFO) << "The item: " << statistic_item
-                       << " is a valid statistic category, it will be computed on host.";
+          MS_VLOG(VL_DUMP) << "The item: " << statistic_item
+                           << " is a valid statistic category, it will be computed on host.";
         }
       }
     }
@@ -253,9 +240,9 @@ void DumpJsonParser::ParseStatisticCategory(const nlohmann::json &content) {
     }
   } else {
     statistic_category_ = kDefaultStatisticCategory;
-    MS_LOG(INFO) << "Statistic category is not set, use the default items as follows:";
+    MS_VLOG(VL_DUMP) << "Statistic category is not set, use the default items as follows:";
     for (auto &itm : kDefaultStatisticCategory) {
-      MS_LOG(INFO) << itm;
+      MS_VLOG(VL_DUMP) << itm;
     }
   }
   CsvHeaderUtil::GetInstance().SetStatCsvHeader(statistic_category_);
@@ -305,33 +292,6 @@ void DumpJsonParser::CopyDumpJsonToDir(uint32_t rank_id) {
 
 /*
  * Feature group: Dump.
- * Target device group: Ascend.
- * Runtime category: Old runtime, MindRT.
- * Description: Copy the hccl configuration file to the root directory of dump path.
- */
-void DumpJsonParser::CopyHcclJsonToDir(uint32_t rank_id) {
-  if (!IsDumpEnabled()) {
-    return;
-  }
-  std::string config_path = common::GetEnv("MINDSPORE_HCCL_CONFIG_PATH");
-  if (config_path.empty()) {
-    config_path = common::GetEnv("RANK_TABLE_FILE");
-    if (config_path.empty()) {
-      MS_LOG(INFO) << "Get hccl json config failed.";
-      return;
-    }
-  }
-  std::ifstream json_file(config_path);
-  auto realpath = Common::CreatePrefixPath(path_ + "/rank_" + std::to_string(rank_id) + "/.dump_metadata/hccl.json");
-  if (!realpath.has_value()) {
-    MS_LOG(ERROR) << "Get real path failed in CopyHcclJsonToDir.";
-  } else {
-    WriteJsonFile(realpath.value(), json_file);
-  }
-}
-
-/*
- * Feature group: Dump.
  * Target device group: Ascend, GPU and CPU.
  * Runtime category: Old runtime, MindRT.
  * Description: Copy the mindspore configuration file to the root directory of dump path. It provides the device and
@@ -366,15 +326,30 @@ void DumpJsonParser::CopyMSCfgJsonToDir(uint32_t rank_id) {
   }
 }
 
-bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter_); }
+uint32_t DumpJsonParser::cur_dump_iter() const { return dump_user_step_flag_ ? cur_user_dump_iter_ : cur_dump_iter_; }
+
+void DumpJsonParser::UpdateDumpIter(int cur_step_count) {
+  cur_dump_iter_ = static_cast<uint32_t>(cur_step_count) + initial_dump_iter_;
+}
+
+void DumpJsonParser::UpdateUserDumpStep(const uint32_t step) {
+  MS_VLOG(VL_DUMP) << "Do dump step update:" << step;
+  if (!dump_user_step_flag_) {
+    MS_LOG(WARNING) << "Costomized step function has not enabled, step update does not work!";
+  }
+  cur_user_dump_iter_ += step;
+}
+
+bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter()); }
 
 bool DumpJsonParser::DumpEnabledForIter() const {
   const auto &dump_control = DumpControl::GetInstance();
   if (dump_control.dynamic_switch()) {
-    MS_LOG(INFO) << (dump_control.dump_switch() ? "Dynamic switch is on, dump for every iteration." : "Dump is end.");
+    MS_VLOG(VL_DUMP) << (dump_control.dump_switch() ? "Dynamic switch is on, dump for every iteration."
+                                                    : "Dump is end.");
     return dump_control.dump_switch() && (e2e_dump_enabled_ || async_dump_enabled_);
   }
-  return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter_);
+  return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter());
 }
 
 /*
@@ -439,7 +414,7 @@ bool DumpJsonParser::DumpToFile(const std::string &filename, const void *data, s
     return false;
   }
   const std::string file_path_str = file_path.value();
-  MS_LOG(INFO) << "Dump path is " << file_path_str;
+  MS_VLOG(VL_DUMP) << "Dump path is " << file_path_str;
   ChangeFileMode(file_path_str, S_IWUSR);
 
   MSLogTime msTime;
@@ -512,8 +487,9 @@ void DumpJsonParser::ParseCommonDumpSetting(const nlohmann::json &content) {
       CheckOverflowSetting();
     }
   }
-  ParseOverflowNumber(*common_dump_settings);  // The overflow number field is optional.
-  ParseSavedData(*common_dump_settings);       // saved data optional
+  ParseOverflowNumber(*common_dump_settings);    // The overflow number field is optional.
+  ParseSavedData(*common_dump_settings);         // saved data optional
+  ParseInitialIteration(*common_dump_settings);  // saved initial iter
 }
 
 void DumpJsonParser::ParseE2eSyncDumpEnable(const nlohmann::json &content) {
@@ -529,7 +505,14 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_setting == content.end()) {
-    MS_LOG(INFO) << "No e2e_dump_settings";
+    constexpr int kMaxWarnings = 3;
+    constexpr auto kWarningInterval = std::chrono::milliseconds(1000);
+    for (int i = 1; i <= kMaxWarnings; ++i) {
+      MS_LOG(WARNING) << "[Dump Alert " << i << "/" << kMaxWarnings << "]: "
+                      << "For 'Dump', in the scenario where 'backend' is 'ms_backend', please configure "
+                         "'e2e_dump_setting', otherwise there will be no data.";
+      std::this_thread::sleep_for(kWarningInterval);
+    }
     return;
   }
 
@@ -589,9 +572,6 @@ void DumpJsonParser::ParseDumpMode(const nlohmann::json &content) {
   if (dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
     if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
       MS_LOG(EXCEPTION) << "Set dump is only supported in Ascend async dump. Please set dump_mode to 0 or 1.";
-    }
-    if (IsGeDump()) {
-      MS_LOG(EXCEPTION) << "Set dump is not supported in GE dump. Please set dump_mode to 0 or 1.";
     }
   }
 }
@@ -700,6 +680,16 @@ void DumpJsonParser::ParseIteration(const nlohmann::json &content) {
   }
 }
 
+void DumpJsonParser::ParseInitialIteration(const nlohmann::json &content) {
+  auto json_iter = content.find(kInitialIteration);
+  if (json_iter != content.end()) {
+    CheckJsonUnsignedType(*json_iter, kInitialIteration);
+    initial_dump_iter_ = *json_iter;
+    cur_dump_iter_ = initial_dump_iter_;
+    cur_user_dump_iter_ = initial_dump_iter_;
+  }
+}
+
 bool IsIterInRange(uint32_t iteration, const std::string &range) {
   if (range.empty()) {
     return false;
@@ -710,8 +700,8 @@ bool IsIterInRange(uint32_t iteration, const std::string &range) {
   if (range_idx == std::string::npos) {
     size_t range_d = 0;
     if (!CheckStoul(&range_d, range)) {
-      MS_LOG(INFO) << "Failed to convert the single step range: " << range
-                   << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
+      MS_VLOG(VL_DUMP) << "Failed to convert the single step range: " << range
+                       << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
       return false;
     }
     return iteration == range_d;
@@ -727,14 +717,14 @@ bool IsIterInRange(uint32_t iteration, const std::string &range) {
   }
   size_t low_range = 0;
   if (!CheckStoul(&low_range, low_range_str)) {
-    MS_LOG(INFO) << "Failed to convert the low_range_str: " << low_range_str
-                 << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
+    MS_VLOG(VL_DUMP) << "Failed to convert the low_range_str: " << low_range_str
+                     << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
     return false;
   }
   size_t high_range = 0;
   if (!CheckStoul(&high_range, high_range_str)) {
-    MS_LOG(INFO) << "Failed to convert the high_range_str: " << high_range_str
-                 << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
+    MS_VLOG(VL_DUMP) << "Failed to convert the high_range_str: " << high_range_str
+                     << " into an integer, so the iteration: " << iteration << " is regarded as not in dump range.";
     return false;
   }
   return (low_range <= iteration) && (iteration <= high_range);
@@ -781,7 +771,7 @@ void DumpJsonParser::ParseInputOutput(const nlohmann::json &content) {
 void DumpJsonParser::ParseKernels(const nlohmann::json &content) {
   CheckJsonArrayType(content, kKernels);
   if (dump_mode_ != static_cast<uint32_t>(DUMP_KERNEL)) {
-    MS_LOG(INFO) << "Dump config field <" << kKernels << "> is not used as the dump mode is not 1.";
+    MS_VLOG(VL_DUMP) << "Dump config field <" << kKernels << "> is not used as the dump mode is not 1.";
     return;
   }
   kernels_json_ = content;
@@ -791,7 +781,7 @@ void DumpJsonParser::ParseKernels(const nlohmann::json &content) {
   for (const auto &kernel : content) {
     bool ret;
     auto kernel_str = kernel.dump();
-    MS_LOG(INFO) << "Need dump kernel:" << kernel_str;
+    MS_VLOG(VL_DUMP) << "Need dump kernel:" << kernel_str;
     kernel_str.erase(std::remove(kernel_str.begin(), kernel_str.end(), '\"'), kernel_str.end());
     kernel_str.erase(std::remove(kernel_str.begin(), kernel_str.end(), ' '), kernel_str.end());
     if (kernel_str == "") {
@@ -831,7 +821,7 @@ void DumpJsonParser::ParseStatCalcMode(const nlohmann::json &content) {
   auto iter = content.find(kStatCalcMode);
   stat_calc_mode_ = kHost;
   if (iter == content.end()) {
-    MS_LOG(INFO) << "'stat_calc_mode' is not set, default is " << stat_calc_mode_;
+    MS_VLOG(VL_DUMP) << "'stat_calc_mode' is not set, default is " << stat_calc_mode_;
     return;
   }
   CheckJsonStringType(*iter, kStatCalcMode);
@@ -847,7 +837,7 @@ void DumpJsonParser::ParseDeviceStatPrecisionMode(const nlohmann::json &content)
   auto iter = content.find(kDeviceStatPrecisionMode);
   device_stat_precision_mode_ = kHighPrecision;
   if (iter == content.end()) {
-    MS_LOG(INFO) << "'device_stat_precision_mode' is not set, default is " << device_stat_precision_mode_;
+    MS_VLOG(VL_DUMP) << "'device_stat_precision_mode' is not set, default is " << device_stat_precision_mode_;
     return;
   }
   CheckJsonStringType(*iter, kDeviceStatPrecisionMode);
@@ -874,7 +864,7 @@ void DumpJsonParser::CheckStatCalcModeVaild() {
       << device_target << ", and the 'stat_calc_mode' option is forcibly set to 'host'.";
     stat_calc_mode_ = kHost;
   }
-  MS_LOG(INFO) << "stat_calc_mode is set to " << stat_calc_mode_;
+  MS_VLOG(VL_DUMP) << "stat_calc_mode is set to " << stat_calc_mode_;
 }
 
 bool DumpJsonParser::IsDeviceCalcStats() const { return stat_calc_mode_ == kDevice; }
@@ -883,7 +873,7 @@ void DumpJsonParser::ParseSupportDevice(const nlohmann::json &content) {
   CheckJsonArrayType(content, kSupportDevice);
   for (const auto &device : content) {
     uint32_t device_id = device;
-    MS_LOG(INFO) << "Dump support device:" << device_id;
+    MS_VLOG(VL_DUMP) << "Dump support device:" << device_id;
     auto ret = support_devices_.emplace(device_id);
     if (!ret.second) {
       MS_LOG(WARNING) << "Duplicate support device:" << device_id;
@@ -923,13 +913,12 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
     case static_cast<uint32_t>(DUMP_WHOLE):
       break;
     case static_cast<uint32_t>(DUMP_AICORE_OVERFLOW):
-    case static_cast<uint32_t>(DUMP_ATOMIC_OVERFLOW):
-      if (!IsGeDump()) {
-        MS_LOG(INFO) << "Op_debug_mode should be 0, 3, 4. When set to 1 or 2, it would be reset to 3 and overflow dump "
-                        "is enabled.";
-        op_debug_mode_ = static_cast<uint32_t>(DUMP_BOTH_OVERFLOW);
-      }
-      break;
+    case static_cast<uint32_t>(DUMP_ATOMIC_OVERFLOW): {
+      MS_VLOG(VL_DUMP)
+        << "Op_debug_mode should be 0, 3, 4. When set to 1 or 2, it would be reset to 3 and overflow dump "
+           "is enabled.";
+      op_debug_mode_ = static_cast<uint32_t>(DUMP_BOTH_OVERFLOW);
+    } break;
     case static_cast<uint32_t>(DUMP_BOTH_OVERFLOW): {
       break;
     }
@@ -950,17 +939,10 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
                            "whole tensor would be saved when exception occur.";
         sample_mode_ = 0;
       }
-      if (async_dump_enabled_ && IsGeDump()) {
-        MS_LOG(EXCEPTION) << "For ge dump, op_debug_mode should be 0, 1, 2, 3.";
-      }
       break;
     }
     default:
-      if (!IsGeDump()) {
-        MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 3, 4";
-      } else {
-        MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 1, 2, 3";
-      }
+      MS_LOG(EXCEPTION) << "Dump Json Parse Failed. op_debug_mode should be 0, 3, 4";
   }
   if (op_debug_mode_ != static_cast<uint32_t>(DUMP_WHOLE) && dump_mode_ != static_cast<uint32_t>(DUMP_ALL)) {
     MS_LOG(WARNING) << "Overflow dump or exception dump do not support specify kernels, the dump_mode is set to 0";
@@ -1015,7 +997,7 @@ void DumpJsonParser::JsonConfigToString() {
   cur_config.append(std::to_string(static_cast<int>(e2e_dump_enabled_)));
   cur_config.append(" async_dump_enable:");
   cur_config.append(std::to_string(static_cast<int>(async_dump_enabled_)));
-  MS_LOG(INFO) << cur_config;
+  MS_VLOG(VL_DUMP) << cur_config;
 }
 
 void DumpJsonParser::JudgeDumpEnabled() {
@@ -1028,7 +1010,7 @@ void DumpJsonParser::JudgeDumpEnabled() {
   if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
     if (async_dump_enabled_ && e2e_dump_enabled_) {
       async_dump_enabled_ = false;
-      MS_LOG(INFO) << "Disable async dump";
+      MS_VLOG(VL_DUMP) << "Disable async dump";
     }
   }
 
@@ -1041,15 +1023,6 @@ void DumpJsonParser::JudgeDumpEnabled() {
       async_dump_enabled_ = false;
       e2e_dump_enabled_ = false;
       MS_LOG(WARNING) << "Dump is not enabled. device_id:" << device_id << " not support";
-    }
-  }
-  if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    if (async_dump_enabled_ && IsGeDump()) {
-      if (context->IsKByKExecutorMode()) {
-        MS_LOG(WARNING)
-          << "When jit_level is set to 'o0' or 'o1', async_dump only support acl dump method, ie. set environment "
-             "MS_ACL_DUMP_CFG_PATH to the same path with MINDSPORE_DUMP_CONFIG. In fact, e2e dump is preferable.";
-      }
     }
   }
   JsonConfigToString();
@@ -1126,7 +1099,7 @@ void DumpJsonParser::MatchKernel(const std::string &kernel_name) {
     return;
   }
   iter->second = iter->second + 1;
-  MS_LOG(INFO) << "Match dump kernel:" << iter->first << " match times:" << iter->second;
+  MS_VLOG(VL_DUMP) << "Match dump kernel:" << iter->first << " match times:" << iter->second;
 }
 
 void DumpJsonParser::PrintUnusedKernel() {
@@ -1138,41 +1111,6 @@ void DumpJsonParser::PrintUnusedKernel() {
       MS_LOG(WARNING) << "[DataDump] Unused Kernel in json: " << iter.first;
     }
   }
-}
-
-/*
- * Feature group: Online debugger.
- * Target device group: Ascend.
- * Runtime category: Old runtime, MindRT.
- * Description: Generate the directory path where overflow bin file locates.
- */
-std::string DumpJsonParser::GetOpOverflowBinPath(uint32_t graph_id) const {
-  std::string bin_path;
-  bin_path.append(path_);
-  bin_path.append("/");
-  bin_path.append("rank_");
-
-  uint32_t rank_id = 0;
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto env_rank_id = common::GetEnv("RANK_ID");
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL) && !env_rank_id.empty()) {
-    // get actual rank id if it's distribution training case.
-    if (!CommManager::GetInstance().GetRankID(kHcclWorldGroup, &rank_id)) {
-      MS_LOG(INFO) << "Failed to get rank id.";
-    }
-  }
-  bin_path.append(std::to_string(rank_id));
-
-  bin_path.append("/");
-  bin_path.append(net_name_);
-  bin_path.append("/");
-  bin_path.append(std::to_string(graph_id));
-  bin_path.append("/");
-  bin_path.append(std::to_string(cur_dump_iter_));
-  bin_path.append("/");
-
-  return bin_path;
 }
 
 bool DumpJsonParser::InputNeedDump() const {
@@ -1204,48 +1142,8 @@ void DumpJsonParser::GetCellDumpFlag(const session::KernelGraph &kernel_graph) {
 }
 
 void DumpJsonParser::UpdateNeedDumpKernels(const session::KernelGraph &kernel_graph) {
-  MS_LOG(INFO) << "Get kernel dump flag";
+  MS_VLOG(VL_DUMP) << "Get kernel dump flag";
   GetCellDumpFlag(kernel_graph);
-
-  if (!async_dump_enabled_) {
-    return;
-  }
-
-  MS_LOG(INFO) << "Update async dump kernel list for hccl";
-  for (const auto &kernel : kernel_graph.execution_order()) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    if (AnfAlgo::GetKernelType(kernel) == HCCL_KERNEL &&
-        DumpJsonParser::GetInstance().NeedDump(GetKernelNodeName(kernel)) &&
-        DumpJsonParser::GetInstance().InputNeedDump()) {
-      auto input_size = common::AnfAlgo::GetInputTensorNum(kernel);
-      for (size_t i = 0; i < input_size; ++i) {
-        auto input_with_index = common::AnfAlgo::GetPrevNodeOutput(kernel, i);
-        auto input = input_with_index.first;
-        MS_EXCEPTION_IF_NULL(input);
-        if (input->isa<CNode>()) {
-          MS_LOG(INFO) << "[AsyncDump] Match Hccl Node:" << GetKernelNodeName(kernel)
-                       << " Input:" << GetKernelNodeName(input);
-          hccl_input_kernels_.insert(GetKernelNodeName(input));
-        }
-      }
-    }
-  }
-}
-
-bool DumpJsonParser::IsHCCLKernelInput(const std::string &kernel_name) const {
-  if (hccl_input_kernels_.empty()) {
-    return false;
-  }
-  auto iter = std::find(hccl_input_kernels_.begin(), hccl_input_kernels_.end(), kernel_name);
-  if (iter != hccl_input_kernels_.end()) {
-    return true;
-  }
-  return false;
-}
-
-bool DumpJsonParser::IsGeDump() {
-  auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
-  return enable_ge_dump == "1";
 }
 
 bool DumpJsonParser::IsDeviceStatHighPrecisionMode() const { return device_stat_precision_mode_ == kHighPrecision; }

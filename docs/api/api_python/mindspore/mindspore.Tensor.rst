@@ -1,12 +1,15 @@
 mindspore.Tensor
 ================
 
-.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False, device=None)
+.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, const_arg=False, device=None)
 
     张量，即存储多维数组（n-dimensional array）的数据结构。
 
     .. note::
-        当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
+        - 当使用 `init` 参数来初始化 `Tensor` 时，通常需要使用 `Tensor.init_data` 来加载 `Tensor` 的数据。
+        - CPU、GPU 的所有模式，以及 Atlas 训练系列产品的 `图模式(mode=mindspore.GRAPH_MODE) <https://www.mindspore.cn/tutorials/zh-CN/master/compile/static_graph.html>`_ 尚不支持in-place操作。
+        - `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个 NoneType 的 Tensor 。
+        - 当前对 `shape` 中包含0的 Tensor 支持的不完善。
 
     .. warning::
         当转换 `Tensor` 类型时，推荐使用 `Tensor.astype()` 而非 `Tensor(sourceTensor, dtype=newDtype)` 。
@@ -16,16 +19,11 @@ mindspore.Tensor
         - **dtype** (:class:`mindspore.dtype`) - 用于定义该Tensor的数据类型，必须是 `mindspore.dtype` 中定义的类型。如果该参数为 ``None`` ，则数据类型与 `input_data` 一致，默认值： ``None`` 。
         - **shape** (Union[tuple, list, int, :class:`mindspore.Symbol`]) - 用于定义该Tensor的形状。如果指定了 `input_data` ，则无需设置该参数。如果 `shape` 中存在 ``None`` 或 `Symbol` 类型数据，表示创建一个动态形状（dynamic shape）的Tensor，此时不需要设置 `input_data` 参数；如果 `shape` 中仅存在整数类型数据，表示创建一个静态形状（static shape）的Tensor，此时必须设置 `input_data` 或 `init` 参数。默认值： ``None`` 。
         - **init** (Initializer) - 用于在并行模式中延迟Tensor的数据的初始化，如果指定该参数，则 `dtype` 和 `shape` 也必须被指定。默认值： ``None`` 。
-        - **internal** (bool) - Tensor是否由框架创建。如果为 ``True`` ，表示Tensor是由框架创建的，如果为 ``False`` ，表示Tensor是由用户创建的。默认值： ``False`` 。
         - **const_arg** (bool) - 指定该Tensor作为网络输入时是否为常量。默认值： ``False`` 。
         - **device** (str) - 该参数为保留参数，不需要用户配置。默认值： ``None`` 。
 
     输出：
         Tensor。
-
-    .. note::
-        `input_data` 的默认值 ``None`` 只作为一个占位符，并不意味着可以创建一个NoneType的Tensor。
-        当前对 `shape` 中包含0的Tensor支持的不完善。
 
 .. mscnautosummary::
     :toctree: Tensor
@@ -134,10 +132,12 @@ mindspore.Tensor
     mindspore.Tensor.erfc
     mindspore.Tensor.erfinv
     mindspore.Tensor.exp
+    mindspore.Tensor.exp_
     mindspore.Tensor.expand
     mindspore.Tensor.expand_as
     mindspore.Tensor.expand_dims
     mindspore.Tensor.expm1
+    mindspore.Tensor.exponential_
     mindspore.Tensor.fill_
     mindspore.Tensor.fill_diagonal
     mindspore.Tensor.flatten
@@ -149,6 +149,7 @@ mindspore.Tensor
     mindspore.Tensor.floor
     mindspore.Tensor.floor_
     mindspore.Tensor.floor_divide
+    mindspore.Tensor.floor_divide_
     mindspore.Tensor.flush_from_cache
     mindspore.Tensor.fmax
     mindspore.Tensor.fmod
@@ -248,6 +249,7 @@ mindspore.Tensor
     mindspore.Tensor.msort
     mindspore.Tensor.mT
     mindspore.Tensor.mul
+    mindspore.Tensor.mul_
     mindspore.Tensor.multinomial
     mindspore.Tensor.multiply
     mindspore.Tensor.mvlgamma
@@ -263,8 +265,10 @@ mindspore.Tensor
     mindspore.Tensor.neg
     mindspore.Tensor.negative
     mindspore.Tensor.nelement
+    mindspore.Tensor.new_empty
     mindspore.Tensor.new_ones
     mindspore.Tensor.new_zeros
+    mindspore.Tensor.new_full
     mindspore.Tensor.nextafter
     mindspore.Tensor.nonzero
     mindspore.Tensor.norm
@@ -332,6 +336,7 @@ mindspore.Tensor
     mindspore.Tensor.square
     mindspore.Tensor.squeeze
     mindspore.Tensor.std
+    mindspore.Tensor.storage
     mindspore.Tensor.storage_offset
     mindspore.Tensor.stride
     mindspore.Tensor.strides
@@ -357,6 +362,7 @@ mindspore.Tensor
     mindspore.Tensor.topk
     mindspore.Tensor.trace
     mindspore.Tensor.transpose
+    mindspore.Tensor.triangular_solve
     mindspore.Tensor.tril
     mindspore.Tensor.triu
     mindspore.Tensor.true_divide
@@ -369,11 +375,11 @@ mindspore.Tensor
     mindspore.Tensor.uniform_
     mindspore.Tensor.unique
     mindspore.Tensor.unique_consecutive
-    mindspore.Tensor.unique_with_pad
     mindspore.Tensor.unsorted_segment_max
     mindspore.Tensor.unsorted_segment_min
     mindspore.Tensor.unsorted_segment_prod
     mindspore.Tensor.unsqueeze
+    mindspore.Tensor.untyped_storage
     mindspore.Tensor.var
     mindspore.Tensor.view
     mindspore.Tensor.view_as

@@ -20,6 +20,7 @@
 
 namespace mindspore {
 namespace kernel {
+namespace erfinv_cpu {
 namespace {
 constexpr size_t kErfinvInputsNum = 1;
 constexpr size_t kErfinvOutputsNum = 1;
@@ -104,5 +105,6 @@ const std::vector<std::pair<KernelAttr, ErfinvCpuKernelMod::KernelRunFunc>> &Erf
 }
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Erfinv, ErfinvCpuKernelMod);
+}  // namespace erfinv_cpu
 }  // namespace kernel
 }  // namespace mindspore
