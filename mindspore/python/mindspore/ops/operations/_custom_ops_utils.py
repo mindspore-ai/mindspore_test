@@ -186,17 +186,16 @@ class ExtensionBuilder:
         """Write ninja file."""
         python_include_path = sysconfig.get_path('include', scheme='posix_prefix')
         python_includes = [python_include_path] if python_include_path is not None else []
-        cflags = [f'-DMS_EXTENSION_NAME={name}', "-D_GLIBCXX_USE_CXX11_ABI=0"]
+        cflags = []
         cflags += [f'-I{shlex.quote(os.path.abspath(include.strip()))}' for include in extra_include_paths]
         cflags += [f'-isystem {shlex.quote(include)}' for include in python_includes]
-        cflags += ['-fPIC', '-std=c++17']
         cflags += extra_cflags
         cflags = [flag.strip() for flag in cflags]
 
         # '/path/to/file.cpp' -> 'file'
         objs = [os.path.splitext(os.path.basename(src))[0] + ".o" for src in sources]
         sources = [os.path.abspath(file) for file in sources]
-        ldflags = ['-shared'] + [flag.strip() for flag in extra_ldflags]
+        ldflags = [flag.strip() for flag in extra_ldflags]
         target = name + '.so'
 
         config = ['ninja_required_version = 1.3']
