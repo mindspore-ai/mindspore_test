@@ -3305,30 +3305,31 @@ StopTraceReason GraphBuilder::HandleCall() {
 }
 
 static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size) {
+  MS_LOG(DEBUG) << "Try to guard sequence: " << ToString(seq_node);
   if (graph == nullptr || seq_node == nullptr) {
     MS_LOG(INFO) << "Try to guard " << seq_node << " with graph " << graph << ".";
     return false;
   }
   auto vobj = seq_node->GetVobj();
   if (vobj == nullptr) {
-    MS_LOG(INFO) << "Try to guard " << seq_node << " but vobj is nullptr.";
+    MS_LOG(INFO) << "Try to guard sequence, but vobj is null. " << seq_node->ToString();
     return false;
   }
-  auto base_version = vobj->GetBaseVersion();
-  PyObject *seq = base_version->GetPyObject().ptr();
-  if (seq == nullptr || !PySequence_Check(seq)) {
-    MS_LOG(INFO) << "Try to guard " << seq_node << " but no pyobject or not a sequence.";
-    return false;
-  }
-  // guard length
   if (seq_size == -1) {
+    auto base_version = vobj->GetBaseVersion();
+    PyObject *seq = base_version->GetPyObject().ptr();
+    if (seq == nullptr || !PySequence_Check(seq)) {
+      MS_LOG(INFO) << "Try to guard sequence, but no pyobject or not a sequence. " << seq_node->ToString();
+      return false;
+    }
+    // guard length
     seq_size = PySequence_Size(seq);
-  }
-  if (seq_size == -1) {
-    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
-                 << ", reason: " << py::error_already_set().what();
-    PyErr_Clear();
-    return false;
+    if (seq_size == -1) {
+      MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
+                   << ", reason: " << py::error_already_set().what();
+      PyErr_Clear();
+      return false;
+    }
   }
   if (!graph->GuardSequenceNodeLength(seq_node, seq_size)) {
     return false;
@@ -3336,6 +3337,7 @@ static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_
   if (!graph->GuardType(seq_node)) {
     return false;
   }
+  MS_LOG(DEBUG) << "Finish guard sequence: " << ToString(seq_node);
   return true;
 }
 
@@ -3370,29 +3372,21 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
   return true;
 }
 
-bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
-  MS_LOG(DEBUG) << "Start do sequence FOR_ITER";
-  auto *iter_node = dynamic_cast<IterNode *>(seek(0));
-  if (iter_node == nullptr) {
-    MS_LOG(INFO) << "TOS node should be IterNode, but actual is: " << seek(0)->ToString();
+bool GraphBuilder::TraceRunForIterSequence(int jump_bci, int seq_size) {
+  MS_LOG(DEBUG) << "Start do sequence FOR_ITER, seq size: " << seq_size;
+  if (seq_size < 0) {
+    MS_LOG(INFO) << "Sequence length should >= 0, but actual is: " << seq_size;
     return false;
   }
+  auto *iter_node = dynamic_cast<IterNode *>(seek(0));
+  MS_EXCEPTION_IF_NULL(iter_node);
   // check for iter
   ValueNode *seq_node = iter_node->iterable();
-  PyObject *seq = seq_node->GetVobj()->GetPyObject().ptr();
-  if (seq == nullptr) {
-    MS_LOG(INFO) << "no sequence object for loop";
-    return false;  // infer failed
-  }
-  Py_ssize_t size = PySequence_Size(seq);
-  if (size == -1) {
-    MS_LOG(INFO) << "Failed to get sequence length for: " << ToString(seq_node)
-                 << ", reason: " << py::error_already_set().what();
-    PyErr_Clear();
-    return false;
-  }
+  MS_EXCEPTION_IF_NULL(seq_node);
 
   int index = SizeToInt(iter_node->index());
+  MS_LOG(DEBUG) << "Current index: " << index << ", seq size: " << seq_size;
+
   if (index == 0 && seq_node->GetVobj()->GetType() == AObject::kTypeTuple) {
     DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
     push(seq_node);
@@ -3404,13 +3398,13 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
     iter_node->set_iterable(new_tuple_node);
     seq_node = new_tuple_node;
   }
-  if (index == 0 && !GuardLoopSequence(graph_, seq_node)) {
+  if (index == 0 && !GuardLoopSequence(graph_, seq_node, seq_size)) {
     // loop start.
     MS_LOG(INFO) << "guard loop sequence failed";
     return false;
   }
 
-  if (index >= size) {
+  if (index >= seq_size) {
     MS_LOG(DEBUG) << "Loop end";
     pop();
     cur_bci_ = jump_bci;
@@ -3689,17 +3683,40 @@ LocationPtr GraphBuilder::GetLocation(const Instr &instr) const {
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
 }
 
+namespace {
+int GetPySequenceLength(PyObject *seq) {
+  MS_EXCEPTION_IF_NULL(seq);
+  Py_ssize_t size = PySequence_Size(seq);
+  if (size == -1) {
+    MS_LOG(INFO) << "Failed to get sequence length, reason: " << py::error_already_set().what();
+    PyErr_Clear();
+    return -1;
+  }
+  return static_cast<int>(size);
+}
+}  // namespace
+
 bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   MS_EXCEPTION_IF_NULL(instr.extra_jump());
   // check for iter
-  ValueNode *iter_node = seek(0);
-  AObject *iterable = iter_node->getInputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
-  bool succ;
+  ValueNode *top_node = seek(0);
+  MS_EXCEPTION_IF_NULL(top_node);
+  auto *iter_node = dynamic_cast<IterNode *>(top_node);
+  if (iter_node == nullptr) {
+    MS_LOG(INFO) << "TOS node should be IterNode, but actual is: " << ToString(top_node);
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
+    return false;
+  }
   if (iter_node->GetOpcode() != GET_ITER) {  // might be a bug
     MS_LOG(INFO) << "FOR_ITER without GET_ITER";
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
     return false;
   }
+
+  ValueNode *iterable_node = iter_node->iterable();
+  MS_EXCEPTION_IF_NULL(iterable_node);
+  AObject *iterable = iter_node->getInputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
+  bool succ = false;
   if (iterable == nullptr) {
     MS_LOG(INFO) << "iterable is null!";
     succ = false;
@@ -3712,8 +3729,14 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   } else if (iterable->GetTypeObject() == &PyDictKeys_Type || iterable->GetTypeObject() == &PyDictValues_Type ||
              iterable->GetTypeObject() == &PyDictItems_Type) {
     succ = TraceRunForIterDictItems(instr.extra_jump()->bci());
+  } else if (pijit::IsSequence(iterable_node->abstract_wrapper())) {
+    // list, tuple, namedtuple
+    int size = iterable_node->abstract_wrapper()->TryToGetSize();
+    succ = TraceRunForIterSequence(instr.extra_jump()->bci(), size);
   } else if (iterable->GetPyObject().ptr() != nullptr && PySequence_Check(iterable->GetPyObject().ptr())) {
-    succ = TraceRunForIterSequence(instr.extra_jump()->bci());
+    // other sequences, such as range()
+    int size = GetPySequenceLength(iterable->GetPyObject().ptr());
+    succ = TraceRunForIterSequence(instr.extra_jump()->bci(), size);
   } else {
     std::string type = iterable->GetTypeObject() != nullptr ? iterable->GetTypeObject()->tp_name : "<NULL>";
     MS_LOG(INFO) << "Unsupported iterable type: " << type;
@@ -3722,9 +3745,7 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
     return false;
   }
   if (!succ) {
-    if (IsPiJitLogOn(LogCfg::kGraphBreak)) {
-      GRAPH_JIT_LOG_F("loop unsupported by trace, iter node is [%s]", iter_node->ToString().c_str());
-    }
+    MS_LOG(INFO) << "Trace FOR_ITER failed. " << ToString(iter_node);
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Failed);
   }
   return succ;

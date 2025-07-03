@@ -367,6 +367,7 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
 bool OptGuard::Record(const GuardItemPtr &new_item) {
   GuardItemPtr item = new_item;
   if (item == nullptr) {
+    MS_LOG(DEBUG) << "Guard item is null";
     return false;
   }
   const auto &trace_ctx_stack = TraceManager::CurrentContextInfo();

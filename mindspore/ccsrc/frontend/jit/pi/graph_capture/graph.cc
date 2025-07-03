@@ -598,9 +598,10 @@ bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
       }
       rep[id] = item;
     }
+    MS_LOG(DEBUG) << "Finish guard closure. " << pijit::ToString(node);
     return true;
   } else {
-    MS_LOG(DEBUG) << "too deep trace for guard";
+    MS_LOG(INFO) << "Trace failed, cannot add guard. " << pijit::ToString(node);
     return false;
   }
 }
@@ -608,6 +609,7 @@ bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
 TracePtr Graph::TraceValueNode(ValueNode *node, int max_trace_depth) {
   AObject *vo = node->GetVobj();
   if (GetGuardManager() == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
+    MS_LOG(DEBUG) << "Cannot get trace for node: " << node->ToString();
     return nullptr;
   }
   return guard_builder_->GetTrace(node);
@@ -616,6 +618,7 @@ TracePtr Graph::TraceValueNode(ValueNode *node, int max_trace_depth) {
 std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, int) {
   AObject *vo = node->GetVobj();
   if (GetGuardManager() == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
+    MS_LOG(DEBUG) << "Cannot get trace for node: " << node->ToString();
     return {};
   }
   bool succ = true;
@@ -672,12 +675,16 @@ std::vector<ValueNode *> Graph::CollectAliveNode(const FrameStates &last_frame, 
 }
 
 bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequence_size) {
+  MS_EXCEPTION_IF_NULL(sequence_node);
+  MS_LOG(DEBUG) << "Try to guard sequence length: " << sequence_size << ", node: " << sequence_node->ToString();
   if (sequence_node->IsConstantValue()) {
+    MS_LOG(DEBUG) << "Sequence node is const value, skip guard. " << sequence_node->ToString();
     return true;
   }
   const auto &cnst = sequence_node->GetConstantInfo();
   if (cnst != nullptr && cnst->len() != -1) {
     MS_EXCEPTION_IF_CHECK_FAIL(sequence_size == cnst->len(), "error sequence length");
+    MS_LOG(DEBUG) << "Sequence length is const, skip guard. " << sequence_node->ToString();
     return true;
   }
   TracePtr tr = this->TraceValueNode(sequence_node);
@@ -699,15 +706,20 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
   guard->GuardOn(len_trace, GuardLevel::GEqual, true);
 
   sequence_node->MakeConstantInfo()->set_len(sequence_size);
+  MS_LOG(DEBUG) << "Finish guard sequence length: " << sequence_node->ToString();
   return true;
 }
 
 bool Graph::GuardType(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_LOG(DEBUG) << "Try to guard type: " << node->ToString();
   if (node->IsConstantValue()) {
+    MS_LOG(DEBUG) << "Node is const value, skip guard. " << node->ToString();
     return true;
   }
   const auto &cnst = node->GetConstantInfo();
   if (cnst != nullptr && cnst->type() != nullptr) {
+    MS_LOG(DEBUG) << "Node type is const, skip guard. " << node->ToString();
     return true;
   }
   TracePtr tr = this->TraceValueNode(node);
@@ -720,6 +732,7 @@ bool Graph::GuardType(ValueNode *node) {
   }
   bool ret = GetGuardManager()->GetGuard()->GuardOn(tr, mindspore::pijit::GuardLevel::GType);
   node->MakeConstantInfo()->set_type(node->GetVobj()->GetTypeObject());
+  MS_LOG(DEBUG) << "Finish guard type, result: " << (ret ? "ok" : "failed") << ", node: " << node->ToString();
   return ret;
 }
 

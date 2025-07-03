@@ -75,6 +75,10 @@ class AbstractWrapper {
 inline std::string ToString(const AbstractWrapperPtr &wrapper) {
   return wrapper != nullptr ? wrapper->ToString() : "NULL";
 }
+
+inline bool IsSequence(const AbstractWrapperPtr &wrapper) {
+  return wrapper != nullptr && wrapper->abstract() != nullptr && wrapper->abstract()->isa<abstract::AbstractSequence>();
+}
 }  // namespace pijit
 }  // namespace mindspore
 
