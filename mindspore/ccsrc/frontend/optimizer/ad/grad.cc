@@ -29,6 +29,7 @@
 #include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
+#include "frontend/optimizer/irpass/free_variables_eliminate.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
@@ -42,99 +43,6 @@ constexpr auto kNeedGradFlag = "need_grad";
 constexpr auto kHasViewOutputFlag = "has_view_output";
 constexpr auto kCheckViewInplaceGradFlag = "view_inplace_grad_validate";
 constexpr auto kSetNeedGradFlag = "set_need_grad_flag";
-
-FuncGraphPtr PartialEliminateOptPass(const pipeline::ResourcePtr &resource, const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(resource);
-
-  opt::irpass::OptimizeIRPassLib irpass;
-  opt::OptPassConfig partial_eliminate_opt_ = opt::OptPassConfig(
-    {irpass.partial_eliminate_, irpass.switch_partial_eliminater_, irpass.switch_layer_partial_eliminater_});
-  opt::OptPassGroupMap map({{"partial_eliminate_", partial_eliminate_opt_}});
-
-  auto after_lift_opt = opt::Optimizer::MakeOptimizer("partial_eliminate", resource, map);
-
-  FuncGraphPtr opt_fg = nullptr;
-  ProfileExecute(MsProfile::GetProfile()->Step("partial_eliminate_before_grad"),
-                 [&after_lift_opt, func_graph, &opt_fg]() { opt_fg = after_lift_opt->step(func_graph, true); });
-  return opt_fg;
-}
-
-FuncGraphVector PartialEliminateMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs) {
-  auto new_res = std::dynamic_pointer_cast<pipeline::Resource>(resource);
-  if (new_res == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Parameter resources is not a pipeline::Resource";
-  }
-  FuncGraphVector opt_fgs;
-  for (const auto &func_graph : func_graphs) {
-    auto opt_fg = PartialEliminateOptPass(new_res, func_graph);
-#ifdef ENABLE_DUMP_IR
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    if (context->CanDump(kIntroductory)) {
-      DumpIR("after_opt_" + opt_fg->ToString() + ".ir", opt_fg);
-    }
-#endif
-    opt_fgs.push_back(opt_fg);
-  }
-  return opt_fgs;
-}
-
-FuncGraphPtr LiftFv(const pipeline::ResourceBasePtr &resource, const FuncGraphPtr &func_graph) {
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  bool enable_save_graphs = context->CanDump(kIntroductory);
-  if (enable_save_graphs) {
-    DumpIR("before_lift_" + func_graph->ToString() + ".ir", func_graph);
-  }
-#endif
-  FuncGraphPtr new_fg = LiftingClone(func_graph);
-#ifdef ENABLE_DUMP_IR
-  if (enable_save_graphs) {
-    DumpIR("after_lift_" + new_fg->ToString() + ".ir", new_fg);
-  }
-#endif
-  auto new_res = std::dynamic_pointer_cast<pipeline::Resource>(resource);
-  if (new_res == nullptr) {
-    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, func_graph->return_node())
-      << "Parameter resources is not a pipeline::Resource";
-  }
-  auto opt_fg = PartialEliminateOptPass(new_res, new_fg);
-#ifdef ENABLE_DUMP_IR
-  if (enable_save_graphs) {
-    DumpIR("after_opt_" + opt_fg->ToString() + ".ir", opt_fg);
-  }
-#endif
-  return opt_fg;
-}
-
-FuncGraphVector LiftFvMulti(const pipeline::ResourceBasePtr &resource, const FuncGraphVector &func_graphs) {
-#ifdef ENABLE_DUMP_IR
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->CanDump(kIntroductory)) {
-    for (const auto &func_graph : func_graphs) {
-      DumpIR("before_lift_" + func_graph->ToString() + ".ir", func_graph);
-    }
-  }
-#endif
-  bool has_used_fg = std::any_of(func_graphs.cbegin(), func_graphs.cend(), [](const FuncGraphPtr &func_graph) {
-    return func_graph->func_graphs_used().size() != 0;
-  });
-  // All func_graphs being graded don't have used funcgraphs, no need to do lifting clone.
-  if (!has_used_fg) {
-    return func_graphs;
-  }
-  FuncGraphVector new_fgs = LiftingCloneMulti(func_graphs);
-#ifdef ENABLE_DUMP_IR
-  if (context->CanDump(kIntroductory)) {
-    for (const auto &new_fg : new_fgs) {
-      DumpIR("after_lift_" + new_fg->ToString() + ".ir", new_fg);
-    }
-  }
-#endif
-  return PartialEliminateMulti(resource, new_fgs);
-}
 
 bool ForwardInputsEqual(const AnfNodeWeakPtrList &first_inputs, const AnfNodeWeakPtrList &second_inputs) {
   if (first_inputs.size() != second_inputs.size()) {
@@ -397,15 +305,21 @@ bool ChooseNewViewInplaceScheme(const FuncGraphPtr &func_graph, const opt::Optim
 }
 }  // namespace
 
-FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
+FuncGraphPtr GradOneFuncGraph(FuncGraphPtr *func, const opt::OptimizerPtr &optimizer, bool is_top,
                               BpropAutoMonadLevel level, bool is_view_inplace) {
+  FuncGraphPtr func_graph = *func;
   MS_EXCEPTION_IF_NULL(func_graph);
-  if (is_view_inplace && ChooseNewViewInplaceScheme(func_graph, optimizer)) {
+  bool use_view_inplace_new_method = is_view_inplace && ChooseNewViewInplaceScheme(func_graph, optimizer);
+  if (use_view_inplace_new_method) {
     MS_LOG(INFO) << "Choose new view inplace grad scheme for func_graph:" << func_graph->ToString();
     // Insert VirtualView op for view+inplace scene
     mindspore::opt::irpass::VirtualViewInsert(func_graph, optimizer);
     // Insert VirtualViewGrad op for view+inplace scene
     mindspore::opt::irpass::VirtualViewGradInsert(func_graph, optimizer);
+    // If exist fv, do Renormalize and LiftFv.
+    func_graph = mindspore::opt::irpass::FreeVariablesEliminate(&func_graph, optimizer);
+    // Convert View op name -> Primitive
+    mindspore::opt::irpass::ConvertViewOpNameInVirtualViewGrad(func_graph, optimizer);
     // Do inplace input replacement
     mindspore::opt::irpass::DoInplaceInputReplace(func_graph, optimizer);
     // Eliminate Redundant Operators
@@ -495,11 +409,11 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   FuncGraphPtr grad_fg = func_graph;
   if (func_graph->func_graphs_used().size() != 0 && optimizer->is_first_order_j()) {
     lift_fv_before_grad = true;
-    grad_fg = LiftFv(resources, func_graph);
+    grad_fg = mindspore::opt::irpass::LiftFv(resources, func_graph);
   } else {
     lift_fv_before_grad = false;
   }
-  return GradOneFuncGraph(grad_fg, optimizer, is_top, level, is_view_inplace);
+  return GradOneFuncGraph(&grad_fg, optimizer, is_top, level, is_view_inplace);
 }
 
 FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt::OptimizerPtr &optimizer,
@@ -526,14 +440,14 @@ FuncGraphVector GradMultiFuncGraph(const FuncGraphVector &func_graphs, const opt
   FuncGraphVector before_grad_fgs;
   if (optimizer->is_first_order_j()) {
     lift_fv_before_grad = true;
-    before_grad_fgs = LiftFvMulti(resources, func_graphs);
+    before_grad_fgs = mindspore::opt::irpass::LiftFvMulti(resources, func_graphs);
   } else {
     before_grad_fgs = func_graphs;
     lift_fv_before_grad = false;
   }
   for (size_t i = 0; i < before_grad_fgs.size(); ++i) {
-    const auto &func_graph = before_grad_fgs[i];
-    auto grad_fg = GradOneFuncGraph(func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i]);
+    auto func_graph = before_grad_fgs[i];
+    auto grad_fg = GradOneFuncGraph(&func_graph, optimizer, is_top, bprop_auto_monad_level, is_view_inplace[i]);
     grad_fgs.push_back(grad_fg);
   }
   return grad_fgs;
