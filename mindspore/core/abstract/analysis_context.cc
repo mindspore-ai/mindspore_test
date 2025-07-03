@@ -118,7 +118,8 @@ AnalysisContextPtr AnalysisContext::GetCachedContext(const FuncGraphPtr &fg, con
   auto parent_context = FindContext(parent_graph);
   if (parent_context == nullptr) {
     if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
-      MS_LOG(INFO) << "Failed to find context for: " << parent_graph->ToString() << ", use dummy context instead.";
+      MS_LOG(INFO) << "Failed to find context for: " << (parent_graph == nullptr ? "null" : parent_graph->ToString())
+                   << ", use dummy context instead.";
       return DummyContext();
     } else {
       // If parent context is not found, we'll raise exception.

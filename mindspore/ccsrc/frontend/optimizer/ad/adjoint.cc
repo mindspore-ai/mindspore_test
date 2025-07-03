@@ -123,6 +123,7 @@ AnfNodePtr Adjoint::ApplyTensorHookForDout(const pipeline::ResourceBasePtr &reso
 
   MS_LOG(DEBUG) << "Add hooks for param: " << primal_->DebugString();
   auto hooks = param->user_data<TensorHookMap>(TENSOR_HOOK_MAP);
+  MS_EXCEPTION_IF_NULL(hooks);
   for (auto &[id, hook] : *hooks) {
     MS_LOG(DEBUG) << "Add hook for " << primal_->DebugString() << ", hook id: " << id << ", hook: " << hook->ToString();
     hooked_dout = caller_->NewCNode({NewValueNode(hook), hooked_dout});

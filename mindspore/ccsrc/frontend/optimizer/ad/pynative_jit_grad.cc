@@ -546,7 +546,11 @@ FuncGraphPtr BpropGenerator::GenerateBpropGraph() {
     size_t index = 0;
     for (const auto &k_fg : fprop_sub_fgs_) {
       auto param = basic_graph_->add_parameter();
-      auto forward_output_node = k_fg->output()->cast<CNodePtr>()->input(kIndex1);
+      auto output = k_fg->output();
+      MS_EXCEPTION_IF_NULL(output);
+      auto output_cnode = output->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(output_cnode);
+      auto forward_output_node = output_cnode->input(kIndex1);
       back_manager->Replace(forward_output_node, param);
       param->set_abstract(replace_nodes_abs_[index++]);
     }
