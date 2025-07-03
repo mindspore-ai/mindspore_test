@@ -227,13 +227,24 @@ void AclKernelMod::SetValueDependArgs(const std::set<int64_t> &indices) {
   }
 }
 
+void AclKernelMod::SetValueDependArgs(const std::string &prim_name, const std::set<int64_t> &indices) {
+  auto info = device::ascend::GeAdapterManager::GetInstance().GetInfo(prim_name, true);
+  MS_EXCEPTION_IF_NULL(info);
+
+  value_depend_args_.clear();
+  for (auto ms_proto_idx : indices) {
+    if (info->input_attr_map().count(ms_proto_idx) == 0) {
+      value_depend_args_.emplace(ms_proto_idx);
+    }
+  }
+}
+
 bool AclKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   if (stream_ptr == nullptr) {
     MS_LOG(ERROR) << "stream_ptr should not be nullptr.";
     return false;
   }
-
   // Process value depend arguments, value depend arguments reside both on device and host (which were synchronized at
   // type and shape inference stage). Inside the ACL internal, it may also need to sync there arguments to host for
   // operator validation (e.g. ReduceSum), so put it on host will be more efficiencient to reduce the count of sync from

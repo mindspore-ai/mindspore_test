@@ -181,7 +181,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   void SetHostInfo(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value);
 
   // Get the object enum type id of the KernelTensor.
-  virtual TypeId type_id() const {
+  TypeId type_id() const {
     MS_EXCEPTION_IF_NULL(host_info_);
     return host_info_->type_id_;
   }
@@ -304,10 +304,10 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   mindspore::Format format() const;
 
   // Set the data format.
-  void set_format(mindspore::Format format);
+  virtual void set_format(mindspore::Format format);
 
   // Get the data format of string type.
-  std::string GetStringFormat() const;
+  virtual std::string GetStringFormat() const;
 
   // Set the data format of string type.
   void SetStringFormat(const std::string &format);

@@ -15,6 +15,7 @@
  */
 #include "kernel/ascend/acl/acl_kernel_build.h"
 #include <vector>
+#include <string>
 #include "kernel/ascend/acl/acl_kernel_mod.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -69,6 +70,38 @@ KernelModPtr AclOpBuild(const std::shared_ptr<AnfNode> &anf_node) {
     kernel_mod_ptr->SetDynamic(false);
     kernel_mod_ptr->Resize(input_kernel_tensors, output_kernel_tensors);
   }
+
+  MS_LOG(INFO) << "Finished creating acl kernel module for primitive " << primitive->name();
+  return kernel_mod_ptr;
+}
+
+KernelModPtr CreateAclKernelMod(const PrimitivePtr &primitive, const std::vector<KernelTensor *> &inputs,
+                                const std::vector<KernelTensor *> &outputs) {
+  MS_LOG(INFO) << "Begin to create acl kernel module for primitive " << primitive->name();
+  auto kernel_mod_ptr = std::make_shared<AclKernelMod>();
+  MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+
+  std::vector<std::string> input_formats;
+  std::vector<std::string> output_formats;
+  std::vector<mindspore::TypeId> input_dtypes;
+  std::vector<mindspore::TypeId> output_dtypes;
+  for (auto &input : inputs) {
+    MS_EXCEPTION_IF_NULL(input);
+    input_formats.emplace_back(input->GetStringFormat());
+    input_dtypes.emplace_back(input->dtype_id());
+  }
+  for (auto &output : outputs) {
+    MS_EXCEPTION_IF_NULL(output);
+    output_formats.emplace_back(output->GetStringFormat());
+    output_dtypes.emplace_back(output->dtype_id());
+  }
+
+  kernel_mod_ptr->SetDeviceInfo(input_formats, output_formats, input_dtypes, output_dtypes);
+  kernel_mod_ptr->SetDynamic(false);
+
+  // acl_kernel_mod use proto value_depend indices
+  kernel_mod_ptr->SetValueDependArgs(primitive->name(),
+                                     abstract::GetValueDependArgIndicesFromProto(primitive, inputs.size()));
 
   MS_LOG(INFO) << "Finished creating acl kernel module for primitive " << primitive->name();
   return kernel_mod_ptr;

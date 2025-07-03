@@ -16,12 +16,15 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_ACL_KERNEL_BUILD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ACL_ACL_KERNEL_BUILD_H_
 #include <memory>
+#include <vector>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
 #include "kernel/ascend/visible.h"
 
 namespace mindspore {
 namespace kernel {
 OPS_ASCEND_API KernelModPtr AclOpBuild(const std::shared_ptr<AnfNode> &anf_node);
+OPS_ASCEND_API KernelModPtr CreateAclKernelMod(const PrimitivePtr &primitive, const std::vector<KernelTensor *> &inputs,
+                                               const std::vector<KernelTensor *> &outputs);
 }  // namespace kernel
 }  // namespace mindspore
 

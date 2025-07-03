@@ -23,6 +23,7 @@
 namespace mindspore {
 namespace kernel {
 OPS_ASCEND_API KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node);
+OPS_ASCEND_API KernelModPtr CreateAclnnKernelMod(const std::string &op_name);
 OPS_ASCEND_API bool IsRegisteredAclnnOp(const std::string &op_name);
 OPS_ASCEND_API bool IsEnabledAclnnDispatch(const std::string &op_name);
 OPS_ASCEND_API bool IsViewOp(const std::string &op_name);

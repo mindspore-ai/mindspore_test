@@ -17,7 +17,11 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_MS_KERNEL_LIB_H_
 #define MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_MS_KERNEL_LIB_H__
 
+#include <string>
+
 #include "dalang/dart/runtime/kernel_lib.h"
+
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace backend {
@@ -27,9 +31,17 @@ const char kMindsporeKernelLibName[] = "Mindspore";
 
 class MindsporeKernelLib : public da::runtime::KernelLib {
  public:
-  MindsporeKernelLib() : KernelLib(kMindsporeKernelLibName) {}
+  MindsporeKernelLib() : KernelLib(kMindsporeKernelLibName) {
+    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+       MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    device_context_->Initialize();
+  }
 
-  bool RunTensor(da::tensor::DATensor *tensorNode, da::runtime::MemoryPool *mempool) const override;
+  bool RunTensor(da::tensor::DATensor *tensorNode, da::runtime::MemoryPool *mempool = nullptr) const override;
+
+ private:
+  device::DeviceContext *device_context_{nullptr};
 };
 
 }  // namespace ms_infer_backend

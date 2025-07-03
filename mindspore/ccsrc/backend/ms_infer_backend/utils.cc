@@ -45,6 +45,7 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameNorm, da::ops::Op_norm},
   {ops::kNameReLU, da::ops::Op_relu},
   {ops::kNameGeLU, da::ops::Op_gelu},
+  {ops::kNameSiLU, da::ops::Op_silu},
   {ops::kNameSoftmax, da::ops::Op_softmax},
   {ops::kNameBatchMatMul, da::ops::Op_batch_matmul},
   {ops::kNameCast, da::ops::Op_cast},
@@ -76,6 +77,7 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_norm, prim::kPrimNorm},
   {da::ops::Op_relu, prim::kPrimReLU},
   {da::ops::Op_gelu, prim::kPrimGeLU},
+  {da::ops::Op_silu, prim::kPrimSiLU},
   {da::ops::Op_softmax, prim::kPrimSoftmax},
   {da::ops::Op_batch_matmul, prim::kPrimBatchMatMul},
   {da::ops::Op_cast, prim::kPrimCast},
@@ -125,13 +127,16 @@ static std::map<TypeId, da::tensor::Type> type_id_dtype_map = {
   {kNumberTypeFloat16, da::tensor::Type_F16}, {kNumberTypeFloat32, da::tensor::Type_F32},
   {kNumberTypeFloat64, da::tensor::Type_F64}, {kNumberTypeBFloat16, da::tensor::Type_BF16},
   {kObjectTypeMonad, da::tensor::Type_Monad}, {kObjectTypeTuple, da::tensor::Type_Tuple},
+  {kMetaTypeNone, da::tensor::Type_None},
 };
+
 static std::map<da::tensor::Type, TypeId> dtype_type_id_map = {
   {da::tensor::Type_Bool, kNumberTypeBool},   {da::tensor::Type_I16, kNumberTypeInt16},
   {da::tensor::Type_I32, kNumberTypeInt32},   {da::tensor::Type_I64, kNumberTypeInt64},
   {da::tensor::Type_F16, kNumberTypeFloat16}, {da::tensor::Type_F32, kNumberTypeFloat32},
   {da::tensor::Type_F64, kNumberTypeFloat64}, {da::tensor::Type_BF16, kNumberTypeBFloat16},
   {da::tensor::Type_Monad, kObjectTypeMonad}, {da::tensor::Type_Tuple, kObjectTypeTuple},
+  {da::tensor::Type_None, kMetaTypeNone},
 };
 
 da::tensor::Type ConvertDataType(const TypePtr &type) {
