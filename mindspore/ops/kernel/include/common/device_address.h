@@ -298,6 +298,12 @@ struct HeterogeneousInfo {
   std::optional<size_t> aio_token_;
   // Mark which heterogeneous resource should be allocated.
   NeedAllocateHeteRes need_alloc_hete_res_{NeedAllocateHeteRes::NoNeedHeteRes};
+  std::string ToString() {
+    std::ostringstream ofs;
+    ofs << this << " host ptr:" << host_ptr_ << " file name:" << file_name_
+        << " need alloc hete res:" << need_alloc_hete_res_;
+    return ofs.str();
+  }
 };
 using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
 namespace device {
