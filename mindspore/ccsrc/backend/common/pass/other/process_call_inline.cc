@@ -60,7 +60,7 @@ const AnfNodePtr ProcessCallInline::Process(const FuncGraphPtr &graph, const Anf
     std::vector<AnfNodePtr> call_inputs = {};
     call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimCallInline->name())));
     for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
-      call_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
+      (void)call_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
     }
     auto new_call_node = graph->NewCNode(call_inputs);
     MS_EXCEPTION_IF_NULL(new_call_node);

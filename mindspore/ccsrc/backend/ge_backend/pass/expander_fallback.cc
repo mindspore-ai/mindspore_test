@@ -32,7 +32,7 @@ bool ExpanderFallback::Run(const FuncGraphPtr &graph) {
   auto IsRegisteredAdapter = [](const AnfNodePtr &node) { return device::ascend::ConvertCheck(node); };
 
   bool changed = false;
-  std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
+  const std::vector<AnfNodePtr> node_list = TopoSort(graph->get_return());
   for (auto &node : node_list) {
     MS_EXCEPTION_IF_NULL(node);
     if (!IsRegisteredAdapter(node)) {

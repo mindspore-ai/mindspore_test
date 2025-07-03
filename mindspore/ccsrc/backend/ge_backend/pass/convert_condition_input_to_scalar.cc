@@ -54,7 +54,7 @@ const AnfNodePtr ConvertCondInputToScalar::Process(const FuncGraphPtr &funcGraph
   }
 
   std::vector<ValuePtr> value_list;
-  value_list.emplace_back(MakeValue(0));
+  (void)value_list.emplace_back(MakeValue(0));
   auto value_tuple = std::make_shared<ValueTuple>(value_list);
   auto value_node = NewValueNode(value_tuple);
   value_node->set_abstract(value_tuple->ToAbstract());
