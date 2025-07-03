@@ -159,14 +159,14 @@ inline std::map<std::string, urpc_session_t *> kConnectedSession = {};
 // Callback arguments for URPC sending operations.
 struct req_cb_arg {
   // The flag represents request is successfully received by peer.
-  bool rsp_received;
+  bool rsp_received{false};
   // Pointer to URPC sending data which needs to be freed after it's sent.
-  void *data_to_free;
+  void *data_to_free{nullptr};
   // URPC allocator which is used to release data.
-  struct urpc_buffer_allocator *allocator;
+  struct urpc_buffer_allocator *allocator{nullptr};
   // Variables for synchronizing in async scenario.
-  std::mutex *mtx;
-  std::condition_variable *cv;
+  std::mutex *mtx{nullptr};
+  std::condition_variable *cv{nullptr};
 };
 }  // namespace rpc
 }  // namespace distributed
