@@ -313,7 +313,31 @@ class DATASET_API Tensor {
   /// \param[in] index vector<dsize_t>
   /// \return return the item specified at index
   template <typename T>
-  Status GetItemAt(T *o, const std::vector<dsize_t> &index) const;
+  Status GetItemAt(T *o, const std::vector<dsize_t> &index) const {
+    RETURN_UNEXPECTED_IF_NULL(o);
+    if (data_ == nullptr) {
+      RETURN_STATUS_UNEXPECTED("Data is not allocated yet");
+    }
+    if (!type_.IsLooselyCompatible<T>()) {
+      std::string err = "Template type and Tensor type are not compatible";
+      RETURN_STATUS_UNEXPECTED(err);
+    }
+    if (type_.IsUnsignedInt()) {
+      RETURN_IF_NOT_OK(GetUnsignedIntAt<T>(o, index));
+    } else if (type_.IsSignedInt()) {
+      RETURN_IF_NOT_OK(GetSignedIntAt<T>(o, index));
+    } else if (type_.IsFloat()) {
+      RETURN_IF_NOT_OK(GetFloatAt<T>(o, index));
+    } else if (type_.IsBool()) {
+      bool *ptr = nullptr;
+      RETURN_IF_NOT_OK(GetItemPtr<bool>(&ptr, index));
+      *o = static_cast<T>(*ptr);
+    } else {
+      std::string err = "Tensor Type is unknown";
+      RETURN_STATUS_UNEXPECTED(err);
+    }
+    return Status::OK();
+  }
 
   /// Get string located at `index`.
   /// \param[in] index vector<dsize_t>

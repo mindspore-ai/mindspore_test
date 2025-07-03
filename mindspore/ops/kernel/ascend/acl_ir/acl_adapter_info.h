@@ -129,7 +129,7 @@ class AclAdapterInfo {
   const bool &is_3d() const { return is_3d_ops_; }
   const bool &is_need_pad_no_shape() const { return is_need_pad_no_shape_; }
   const bool &is_need_retrieve_output_shape() const { return is_need_retrieve_output_shape_; }
-  const bool &is_dynamic(bool is_dynamic) const { return set_dynamic_mode ? is_dynamic_ : is_dynamic; }
+  const bool is_dynamic(bool is_dynamic) const { return set_dynamic_mode ? is_dynamic_ : is_dynamic; }
   const bool &is_const_input() const { return is_const_input_; }
   const bool &is_complex_parallel_concerned() const { return is_complex_parallel_concerned_; }
   const AclPrecisionMode &precision_mode() const { return precision_mode_; }

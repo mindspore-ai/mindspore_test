@@ -246,7 +246,7 @@ bool UnfoldMaketuple::Run(const FuncGraphPtr &func_graph) {
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  for (const auto node : node_list) {
+  for (const auto &node : node_list) {
     MS_EXCEPTION_IF_NULL(node);
     if (node == nullptr || !node->isa<CNode>() || !IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
       continue;

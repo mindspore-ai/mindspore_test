@@ -42,7 +42,7 @@ bool IsNestedTuple(const AnfNodePtr &node) {
   }
   auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
   MS_EXCEPTION_IF_NULL(abs_tuple);
-  for (const auto element : abs_tuple->elements()) {
+  for (const auto &element : abs_tuple->elements()) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<abstract::AbstractTuple>()) {
       return true;

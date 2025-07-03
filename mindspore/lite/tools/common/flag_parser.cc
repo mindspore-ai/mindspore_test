@@ -57,7 +57,7 @@ Option<std::string> FlagParser::ParseFlags(int argc, const char *const *argv, bo
       return Option<std::string>("Failed: flag " + flagItem + " is not valid.");
     }
 
-    std::string key;
+    std::string key = "";
     Option<std::string> value = Option<std::string>(None());
 
     size_t pos = flagItem.find_first_of('=');
@@ -68,7 +68,7 @@ Option<std::string> FlagParser::ParseFlags(int argc, const char *const *argv, bo
       value = Option<std::string>(flagItem.substr(pos + 1));
     }
 
-    keyValues.insert(std::pair<std::string, Option<std::string>>(key, value));
+    keyValues.insert(std::make_pair(key, value));
   }
 
   Option<std::string> ret = Option<std::string>(InnerParseFlags(&keyValues));
