@@ -144,8 +144,7 @@ def _build_protobuf_strategy(strategy_filename):
     parallel_strategy_map = _load_protobuf_strategy(strategy_filename)
     layout_items = parallel_strategy_map.parallel_layout_item
     if not layout_items:
-        raise ValueError(f"For 'build_searched_strategy', the strategy file {strategy_filename} has no sliced "
-                         f"parameter, please check whether the 'strategy_filename' is correct.")
+        return {}
 
     strategy = {}
     for layout_item in layout_items:
@@ -159,6 +158,8 @@ def _build_json_strategy(strategy_filename):
     """build strategy from json file"""
     with open(strategy_filename, 'r') as f:
         json_content = json.load(f)
+    if "parallel_layout_item" not in json_content:
+        return {}
     layout_items = json_content.get("parallel_layout_item")
     strategy = {}
     for parameter_name, layout_item in layout_items.items():

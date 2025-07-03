@@ -54,11 +54,16 @@ void StrategyCheckpointInfo::set_out_tensor_layout_newshape_map(
 
 void StrategyCheckpointInfo::FromJson(const nlohmann::json &stra_ckpt_info_j) {
   current_stage_ = stra_ckpt_info_j.at("current_stage").get<int64_t>();
-  for (const auto &stra_j : stra_ckpt_info_j.at("parallel_strategy_item").items()) {
-    auto node_name = stra_j.key();
-    auto stage = stra_j.value().at("stage").get<int64_t>();
-    auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
-    strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
+  if (stra_ckpt_info_j.count("parallel_strategy_item") > 0) {
+    for (const auto &stra_j : stra_ckpt_info_j.at("parallel_strategy_item").items()) {
+      auto node_name = stra_j.key();
+      auto stage = stra_j.value().at("stage").get<int64_t>();
+      auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
+      strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
+    }
+  }
+  if (stra_ckpt_info_j.count("parallel_layout_item") == 0) {
+    return;
   }
   for (const auto &layout_j : stra_ckpt_info_j.at("parallel_layout_item").items()) {
     auto parameter_name = layout_j.key();
