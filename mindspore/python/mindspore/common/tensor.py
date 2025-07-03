@@ -2939,7 +2939,8 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
               taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
 
         Args:
-            dtype (dtype.Number): The valid data type of the output tensor. Only constant value is allowed.
+            dtype (dtype.Number, bool): The valid data type of the output tensor. Only constant value is allowed.
+                Only Support type bool in PyNative mode.
 
         Returns:
             Tensor, converted to the specified `dtype`.

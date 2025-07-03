@@ -11,7 +11,7 @@ mindspore.Tensor.to
         - 当将复数转换为布尔类型时，复数的虚部不被考虑。只要实部非零，它就返回True；否则，返回False。
 
     参数：
-        - **dtype** (dtype.Number) - 输出Tensor的有效数据类型，只允许常量值。
+        - **dtype** (dtype.Number, bool) - 输出Tensor的有效数据类型，只允许常量值。bool类型仅在PyNative模式下支持。
 
     返回：
         Tensor，其数据类型为 `dtype`。
