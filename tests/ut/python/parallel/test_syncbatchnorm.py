@@ -65,8 +65,8 @@ def test_syncbatchnorm():
     context.set_auto_parallel_context(parallel_mode="data_parallel", device_num=4, global_rank=0)
     net = Net(_w1, out_channel=8, kernel_size=2, pad_mode="same", stride=1)
     compile_net(net)
-    assert net.bn1.group_name == "2_174882033225436b1440b7de44686450"
-    assert net.bn2.group_name == "4_937e3b535d29ac4571b6fecb60df6169"
+    assert net.bn1.group_name == "2_01d9879862b2f0c1cc2b7c913a9ced8b2ab5cea0918305de952679cd4d5cd90c"
+    assert net.bn2.group_name == "4_068fa4363ae24b10b83ba9832ddd2d4c46cbc46d0f53053258c1618eb31000d0"
     assert net.bn3.group_name == "hccl_world_group"
-    assert net.bn4.group_name == "2_174882033225436b1440b7de44686450"
+    assert net.bn4.group_name == "2_01d9879862b2f0c1cc2b7c913a9ced8b2ab5cea0918305de952679cd4d5cd90c"
     assert net.bn5.is_global is False

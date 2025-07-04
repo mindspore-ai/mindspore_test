@@ -202,7 +202,7 @@ class _AdaSum(Cell):
     @staticmethod
     def _hash(step, target, weights_index):
         target = "tag" + str(step) + str(target) + str(weights_index)
-        target_hash = hashlib.sha1(target.encode()).hexdigest()
+        target_hash = hashlib.sha256(target.encode()).hexdigest()
         hash_res = int(int(target_hash, 16) % MAX_NUM_HASH)
         return hash_res
 
