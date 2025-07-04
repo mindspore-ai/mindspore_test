@@ -241,7 +241,7 @@ void DumpConditionGatherActorV2(const ConditionGatherRunner *actor, std::ofstrea
 
 void DumpKernelActorVectorElement(const KernelActor *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\t\tis output kernel:";
+  ofs << "\t\t\tis output kernel:";
   std::for_each(actor->is_output_kernel().begin(), actor->is_output_kernel().end(),
                 [&ofs](const auto &element) { ofs << element << " "; });
   ofs << "\tis monad input:";
@@ -265,13 +265,13 @@ void DumpKernelActorVectorElement(const KernelActor *actor, std::ofstream &ofs) 
     for (const auto &pair : actor->increase_ref_count_size()) {
       ofs << "(" << pair.first << ", " << pair.second << ")  ";
     }
+    ofs << "\n";
   }
-  ofs << "\n";
 }
 
 void DumpKernelActorVectorElementV2(const KernelRunner *actor, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor);
-  ofs << "\t\tis output kernel:";
+  ofs << "\t\t\tis output kernel:";
   std::for_each(actor->is_output_kernel().begin(), actor->is_output_kernel().end(),
                 [&ofs](const auto &element) { ofs << element << " "; });
   ofs << "\tis monad input:";
@@ -295,8 +295,8 @@ void DumpKernelActorVectorElementV2(const KernelRunner *actor, std::ofstream &of
     for (const auto &pair : actor->increase_ref_count_size()) {
       ofs << "(" << pair.first << ", " << pair.second << ")  ";
     }
+    ofs << "\n";
   }
-  ofs << "\n";
 }
 
 void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
