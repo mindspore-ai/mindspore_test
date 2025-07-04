@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import ops, Tensor
@@ -281,7 +280,6 @@ def test_virtual_view_classic_case1():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="The gradient error for 'value' is unrelated to virtual view insertion, fix it later")
 def test_virtual_view_classic_case2():
     """
     Feature: Support tensor inplace view gradient.
