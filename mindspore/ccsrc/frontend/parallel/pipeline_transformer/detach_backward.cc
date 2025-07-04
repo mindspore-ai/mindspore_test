@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "frontend/parallel/pipeline_transformer/detach_backward.h"
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "frontend/parallel/pipeline_transformer/detach_backward.h"
+#include <utility>
 #include "ir/func_graph.h"
 #include "ir/core_ops_primitive.h"
 #include "ir/func_graph_cloner.h"
@@ -29,6 +30,7 @@
 
 namespace mindspore {
 namespace parallel {
+constexpr int64_t kSizeTwo = 2;
 std::vector<PPInfo> InferNeedDetachInfo(int64_t stage, int64_t micro_size) {
   auto stage_num = ParallelContext::GetInstance()->pipeline_stage_split_num();
   std::vector<PPInfo> need_detach_info;
@@ -44,12 +46,12 @@ std::vector<PPInfo> InferNeedDetachInfo(int64_t stage, int64_t micro_size) {
     need_detach_info.emplace_back(info);
   }
   // phase 0
-  for (int64_t i = 0; i < (stage + 1) / 2 - offset_int; ++i) {
+  for (int64_t i = 0; i < (stage + 1) / kSizeTwo - offset_int; ++i) {
     PPInfo info = {1, micro_size - 1 - i};
     need_detach_info.emplace_back(info);
   }
   // phase 1
-  int64_t detach_num = stage_num - (stage + 1) / 2;
+  int64_t detach_num = stage_num - (stage + 1) / kSizeTwo;
   for (int64_t i = 0; i < detach_num - offset_int; ++i) {
     PPInfo info = {0, micro_size - 1 - i};
     need_detach_info.emplace_back(info);
@@ -107,6 +109,7 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
   std::vector<AnfNodePtr> dw_out_inputs;
   std::vector<size_t> dw_index;
   auto fg_params = fg->parameters();
+  auto num_diff = fg_params.size() + kSizeTwo - partial_cnode->inputs().size();
   for (size_t i = 1; i < fg_output->inputs().size(); ++i) {
     auto cur_input = fg_output->input(i);
     if (!IsPrimitiveCNode(cur_input, prim::kPrimDepend)) {
@@ -142,14 +145,19 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
     }
     dw_index.emplace_back(i - 1);
     dw_out_inputs.emplace_back(cur_input);
-    dx_out_inputs.emplace_back(dw_c->input(1));
+    size_t input_index = kIndex1;
+    if (dw_c->HasPrimalAttr(FORWARD_TRANSPOSE_B) && !GetValue<bool>(dw_c->GetPrimalAttr(FORWARD_TRANSPOSE_B))) {
+      input_index = kIndex2;
+    }
+    dx_out_inputs.emplace_back(dw_c->input(input_index));
     if (is_dw_fg) {
       auto fg_new_param = std::make_shared<Parameter>(fg);
       fg_params.emplace_back(fg_new_param);
-      manager_->SetEdge(dw_c, 1, fg_new_param);
+      manager_->SetEdge(dw_c, input_index, fg_new_param);
     }
   }
-  auto no_used_index = HandleBwdGraphOutputs(dx_out_inputs, dw_out_inputs, is_dw_fg, fg, fg_params);
+  auto no_used_index =
+    HandleBwdGraphOutputs(std::make_pair(dx_out_inputs, dw_out_inputs), is_dw_fg, fg, fg_params, num_diff);
   for (size_t i = 2; i < partial_cnode->inputs().size(); ++i) {
     if (std::find(no_used_index.begin(), no_used_index.end(), i) == no_used_index.end()) {
       new_partial_inputs->emplace_back(partial_cnode->input(i));
@@ -175,16 +183,17 @@ AnfNodePtr DetachBackward::CreateTupleGetItem(const FuncGraphPtr &fg, const AnfN
   return tuple_getitem;
 }
 
-std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(const std::vector<AnfNodePtr> &dx_out_inputs,
-                                                          const std::vector<AnfNodePtr> &dw_out_inputs, bool is_dw_fg,
-                                                          const FuncGraphPtr &fg,
-                                                          const std::vector<AnfNodePtr> &parameters) {
+std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(
+  const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr> > &out_inputs, bool is_dw_fg, const FuncGraphPtr &fg,
+  const std::vector<AnfNodePtr> &parameters, size_t num_diff) {
   auto output = fg->output();
-  if (!is_dw_fg && dx_out_inputs.size() > 1) {
+  const auto &dx_out_inputs = out_inputs.first;
+  if (!is_dw_fg && !dx_out_inputs.empty()) {
     auto make_tuple = CreateMakeTuple(fg, dx_out_inputs);
     manager_->Replace(output, make_tuple);
   }
-  if (is_dw_fg && dw_out_inputs.size() > 1) {
+  const auto &dw_out_inputs = out_inputs.second;
+  if (is_dw_fg && !dw_out_inputs.empty()) {
     auto make_tuple = CreateMakeTuple(fg, dw_out_inputs);
     manager_->Replace(output, make_tuple);
     manager_->SetParameters(fg, parameters);
@@ -196,6 +205,10 @@ std::vector<size_t> DetachBackward::HandleBwdGraphOutputs(const std::vector<AnfN
   auto node_users_map = manager_->node_users();
   for (size_t i = 0; i < params.size(); ++i) {
     auto cur_param = params.at(i);
+    if (i >= (params.size() - num_diff) && !is_dw_fg) {
+      parameter_used.emplace_back(cur_param);
+      continue;
+    }
     const auto &iter = node_users_map.find(cur_param);
     if (iter == node_users_map.end()) {
       no_used_index.emplace_back(i + kIndex2);
@@ -298,7 +311,7 @@ void DetachBackward::HandleDataDependency(const std::vector<size_t> &dw_index, c
           continue;
         }
         dx_call_node = dx_func_user.first->cast<CNodePtr>();
-        (void)manager_->SetEdge(closure_call_user.first, 2, NewValueNode(MakeValue<int64_t>(2)));
+        (void)manager_->SetEdge(closure_call_user.first, kIndexTwo, NewValueNode(MakeValue<int64_t>(kIndexTwo)));
         break;
       }
     }
@@ -334,6 +347,7 @@ void DetachBackward::HandleClosureGraph(const FuncGraphPtr &fg) {
   auto partial_node = closure_output->input(kIndex2)->cast<CNodePtr>();
   auto bwd_fg = GetValueNode<FuncGraphPtr>(partial_node->input(kIndex1));
   MS_EXCEPTION_IF_NULL(bwd_fg);
+  AdapteDwOverlap(bwd_fg);
   // detach dw fg
   auto dw_fg = BasicClone(bwd_fg);
   manager_->AddFuncGraph(dw_fg);
@@ -359,6 +373,21 @@ void DetachBackward::HandleClosureGraph(const FuncGraphPtr &fg) {
 
   // Handle dx dw data dependency
   HandleDataDependency(dw_index, fg, num_diff);
+}
+
+void DetachBackward::AdapteDwOverlap(const FuncGraphPtr &fg) {
+  auto nodes = fg->nodes();
+  for (const auto &node : nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimDepend)) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (cnode->HasAttr("matmul_grad_depend1") || cnode->HasAttr("matmul_grad_depend2") ||
+        cnode->HasAttr("matmul_grad_depend3")) {
+      manager_->Replace(cnode, cnode->input(1));
+    }
+  }
 }
 
 void DetachBackward::Run() {

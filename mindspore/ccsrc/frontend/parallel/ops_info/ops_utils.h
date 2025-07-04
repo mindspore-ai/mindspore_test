@@ -888,6 +888,7 @@ constexpr char ASCEND_QUANTV2[] = "QuantV2";
 constexpr char ASCEND_DEQUANT[] = "Dequant";
 constexpr char ANTI_QUANT[] = "AntiQuant";
 constexpr char MESHGRID[] = "Meshgrid";
+constexpr char FORWARD_TRANSPOSE_B[] = "forward_transpose_b";
 
 // Batch parallel black list
 constexpr char TENSOR_SCATTER_UPDATE[] = "TensorScatterUpdate";

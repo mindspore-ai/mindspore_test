@@ -19,6 +19,7 @@
 
 #include <set>
 #include <vector>
+#include <utility>
 #include "ir/manager.h"
 
 namespace mindspore {
@@ -39,6 +40,7 @@ class DetachBackward {
  private:
   bool IsNeedDetach(int64_t chunk, int64_t micro);
   void GetChunkNumMicroSize();
+  void AdapteDwOverlap(const FuncGraphPtr &fg);
   size_t HandleMonadNode(const FuncGraphPtr &dx_fg, const FuncGraphPtr &dw_fg, size_t partial_dw_size,
                          std::vector<size_t> *dw_index);
   std::vector<size_t> DetachDxAndDwGraph(const FuncGraphPtr &fg, bool is_dw_fg, const CNodePtr &partial_cnode,
@@ -47,9 +49,9 @@ class DetachBackward {
   CNodePtr CreateDwCallNode(const NodeUsersMap &node_users_map, const CNodePtr &dx_call_node,
                             const CNodePtr &closure_call_node, std::vector<size_t> dw_index);
   void HandleDataDependency(const std::vector<size_t> &dw_index, const FuncGraphPtr &fg, size_t num_diff);
-  std::vector<size_t> HandleBwdGraphOutputs(const std::vector<AnfNodePtr> &dx_out_inputs,
-                                            const std::vector<AnfNodePtr> &dw_out_inputs, bool is_dw_fg,
-                                            const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &parameters);
+  std::vector<size_t> HandleBwdGraphOutputs(
+    const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr> > &out_inputs, bool is_dw_fg,
+    const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &parameters, size_t num_diff);
   AnfNodePtr CreateTupleGetItem(const FuncGraphPtr &fg, const AnfNodePtr &node, int64_t index);
   AnfNodePtr CreateMakeTuple(const FuncGraphPtr &fg, const std::vector<AnfNodePtr> &inputs);
   FuncGraphManagerPtr manager_;

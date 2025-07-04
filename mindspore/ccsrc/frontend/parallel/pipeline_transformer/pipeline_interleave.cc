@@ -49,6 +49,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
@@ -353,7 +354,8 @@ void PipelineInterleave::LabelMicroBatch() {
       auto micro_size = int64_t(MicroSize(data_users));
       auto stage_num = g_device_manager->stage_num();
       auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
-      if ((scheduler == ZBV) && (micro_size < stage_num * 2)) {
+      int64_t kSizeTwo = 2;  // 2: for double
+      if ((scheduler == ZBV) && (micro_size < stage_num * kSizeTwo)) {
         MS_LOG(EXCEPTION)
           << "For zero_bubble_v scheduler, micro_size must be greater than or equal to twice stage_num. Got micro_size:"
           << micro_size << ", stage_num:" << stage_num;
@@ -834,6 +836,27 @@ void PipelineInterleave::ParameterColoring() {
   }
 }
 
+void PipelinePostProcess::RemoveMonadNodeBetweenStage(const CNodePtr &cnode) {
+  auto node_users = manager_->node_users()[cnode];
+  for (const auto &user_node_pair : node_users) {
+    auto user_cnode = user_node_pair.first->cast<CNodePtr>();
+    for (const auto &input : user_cnode->inputs()) {
+      if (IsPrimitiveCNode(input, prim::kPrimReceive)) {
+        auto monad_node = NewValueNode(kUMonad);
+        monad_node->set_abstract(kUMonad->ToAbstract());
+        auto abs = cnode->abstract();
+        MS_EXCEPTION_IF_NULL(abs);
+        if (abs->isa<abstract::AbstractIOMonad>()) {
+          monad_node = NewValueNode(kIOMonad);
+          monad_node->set_abstract(kIOMonad->ToAbstract());
+        }
+        (void)manager_->SetEdge(user_node_pair.first, user_node_pair.second, monad_node);
+        break;
+      }
+    }
+  }
+}
+
 void PipelineInterleave::RemoveMonadNode() {
   auto all_nodes = DeepScopedGraphSearch(shared_cell_->get_return());
   auto node_users_map = manager_->node_users();
@@ -1117,6 +1140,15 @@ void PipelineInterleave::CutBorder() {
   std::reverse(all_nodes.begin(), all_nodes.end());
   int64_t order = 0;
   for (auto &node : all_nodes) {
+    if (is_v_shape_ &&
+        (IsPrimitiveCNode(node, prim::kPrimMatMul) || (IsPrimitiveCNode(node, prim::kPrimBatchMatMul)))) {
+      const auto &cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      const auto &the_4th_input = cnode->input(kIndex4);
+      const auto &trans_b = GetValueNode(the_4th_input);
+      bool is_trans_b = GetValue<bool>(trans_b);
+      cnode->AddPrimalAttr(FORWARD_TRANSPOSE_B, MakeValue(is_trans_b));
+    }
     auto stage_info = node->user_data<NodeStageInfo>();
     if (!node->isa<CNode>() || stage_info == nullptr || stage_info->stage() == -1 ||
         IsPrimitiveCNode(node, prim::kPrimUpdateState)) {
@@ -1632,6 +1664,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
       continue;
     }
     auto recv_c = node->cast<CNodePtr>();
+    if (recv_c->HasPrimalAttr(PIPELINE_PARAM)) {
+      continue;
+    }
     auto is_v_shape = GetValue<bool>(recv_c->GetPrimalAttr(V_SHAPE));
     if (!is_v_shape) {
       continue;
@@ -1639,6 +1674,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
     auto recv_tag = GetValue<int64_t>(recv_c->GetPrimalAttr(ORDER));
     for (const auto &send : sends) {
       auto send_c = send->cast<CNodePtr>();
+      if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
+        continue;
+      }
       auto send_tag = GetValue<int64_t>(send_c->GetPrimalAttr(ORDER));
       if (recv_tag != send_tag) {
         continue;
@@ -1654,6 +1692,10 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
   std::vector<AnfNodePtr> out_input = {NewValueNode(prim::kPrimMakeTuple)};
   for (const auto &send : sends) {
     auto send_c = send->cast<CNodePtr>();
+    if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
+      out_input.emplace_back(send);
+      continue;
+    }
     auto is_v_shape = GetValue<bool>(send_c->GetPrimalAttr(V_SHAPE));
     if (is_v_shape) {
       continue;
@@ -1694,6 +1736,7 @@ void PipelinePostProcess::GraphPartition(const std::vector<AnfNodePtr> &all_node
     if (out_input.size() > 1) {
       make_tuple->set_inputs(out_input);
     }
+    return;
   }
   if (stage_ == stage_num_ - 1) {
     return;
@@ -1780,6 +1823,7 @@ void PipelinePostProcess::RemoveMonadNode(const FuncGraphPtr &fg, int64_t chunk)
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
+    RemoveMonadNodeBetweenStage(cnode);
     auto abs = cnode->abstract();
     MS_EXCEPTION_IF_NULL(abs);
     auto stage_info = cnode->user_data<NodeStageInfo>();
@@ -1928,6 +1972,47 @@ static bool NeedAttach(const FuncGraphPtr &root) {
   return true;
 }
 
+AnfNodePtr GetUserNode(const AnfNodePtr &node, const NodeUsersMap &node_users_map) {
+  if (!node->isa<CNode>()) {
+    return nullptr;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (!IsValueNode<FuncGraph>(cnode->input(0))) {
+    return nullptr;
+  }
+  auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  auto sub_graph_output = graph->output();
+  if (!IsPrimitiveCNode(sub_graph_output, prim::kPrimMakeTuple)) {
+    return nullptr;
+  }
+  auto csub_graph_output = sub_graph_output->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(csub_graph_output);
+  if (!IsPrimitiveCNode(csub_graph_output->input(1), prim::kPrimReceive)) {
+    return nullptr;
+  }
+  auto recv = csub_graph_output->input(1)->cast<CNodePtr>();
+  if (recv->HasPrimalAttr(FREEZE)) {
+    auto freeze_v = recv->GetPrimalAttr(FREEZE);
+    if (GetValue<bool>(freeze_v)) {
+      return nullptr;
+    }
+  }
+  auto call_node_input = cnode->input(1);
+  if (!IsValueNode<tensor::Tensor>(call_node_input)) {
+    return nullptr;
+  }
+  auto call_node_users = node_users_map.at(node);
+  if (call_node_users.size() != 1) {
+    return nullptr;
+  }
+  auto user_node = call_node_users.begin()->first;
+  if (!IsPrimitiveCNode(user_node, prim::kPrimTupleGetItem)) {
+    return nullptr;
+  }
+  return user_node;
+}
+
 bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
   if (!NeedAttach(root)) {
     return false;
@@ -1942,46 +2027,15 @@ bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optim
   FuncGraphPtr main_graph;
   FuncGraphPtr grad_graph;
   for (auto &node : all_nodes) {
-    if (!node->isa<CNode>()) {
+    const auto &user_node = GetUserNode(node, node_users_map);
+    if (user_node == nullptr) {
       continue;
     }
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (!IsValueNode<FuncGraph>(cnode->input(0))) {
-      continue;
-    }
-    auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
-    auto sub_graph_output = graph->output();
-    if (!IsPrimitiveCNode(sub_graph_output, prim::kPrimMakeTuple)) {
-      continue;
-    }
-    auto csub_graph_output = sub_graph_output->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(csub_graph_output);
-    if (!IsPrimitiveCNode(csub_graph_output->input(1), prim::kPrimReceive)) {
-      continue;
-    }
-    auto recv = csub_graph_output->input(1)->cast<CNodePtr>();
-    if (recv->HasPrimalAttr(FREEZE)) {
-      auto freeze_v = recv->GetPrimalAttr(FREEZE);
-      if (GetValue<bool>(freeze_v)) {
-        continue;
-      }
-    }
-    auto call_node_input = cnode->input(1);
-    if (!IsValueNode<tensor::Tensor>(call_node_input)) {
-      continue;
-    }
-    auto call_node_users = node_users_map.at(node);
-    if (call_node_users.size() != 1) {
-      continue;
-    }
-    auto usr_node = call_node_users.begin()->first;
-    if (!IsPrimitiveCNode(usr_node, prim::kPrimTupleGetItem)) {
-      continue;
-    }
-    auto get_item_usrs = node_users_map.at(usr_node);
+    auto get_item_usrs = node_users_map.at(user_node);
     std::vector<AnfNodePtr> addn_input = {NewValueNode(prim::kPrimAddN)};
     main_graph = node->func_graph();
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     for (auto &get_item_usr_pair : get_item_usrs) {
       auto get_item_usr = get_item_usr_pair.first;
       auto grad_node = GetDout(get_item_usr, node_users_map);
@@ -1999,12 +2053,7 @@ bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optim
       auto new_get_item = grad_graph->NewCNode(new_get_item_input);
       addn_input.emplace_back(new_get_item);
     }
-    AnfNodePtr temp;
-    if (addn_input.size() > SIZE_TWO) {
-      temp = grad_graph->NewCNode(addn_input);
-    } else {
-      temp = addn_input.at(1);
-    }
+    AnfNodePtr temp = (addn_input.size() > SIZE_TWO) ? grad_graph->NewCNode(addn_input) : addn_input.at(1);
     std::vector<AnfNodePtr> send_grad_fn_input = {NewValueNode(prim::kPrimTupleGetItem), node,
                                                   NewValueNode(MakeValue(int64_t(1)))};
     auto send_grad_fn = main_graph->NewCNode(send_grad_fn_input);

@@ -36,6 +36,8 @@ bool ParameterRequireGrad(const AnfNodePtr &node_ptr);
 
 size_t GetLengthOfDataType(const TypePtr &type);
 
+AnfNodePtr GetRealInput(const AnfNodePtr &input);
+
 std::vector<bool> ExtractInputParameterByNode(const CNodePtr &node);
 
 std::string ExtractInputParameterNameByNode(const CNodePtr &node);
