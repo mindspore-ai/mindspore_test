@@ -165,7 +165,8 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  MS_EXCEPTION_IF_CHECK_FAIL(device_address != nullptr, "Tensor device address is nullptr, id is " + tensor->id());
+  MS_EXCEPTION_IF_CHECK_FAIL(device_address != nullptr,
+                             "Tensor device address is nullptr, id is " + std::to_string(tensor->id()));
   // Break copy data to device address if has the device_address has flag ignore.
   if (TEST_FLAG(device_address->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
     MS_LOG(DEBUG) << "Node " << node->DebugString() << " with address " << device_address
