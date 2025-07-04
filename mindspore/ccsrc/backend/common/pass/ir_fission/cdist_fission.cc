@@ -74,6 +74,7 @@ AnfNodePtr AddBroadCastToNode(const FuncGraphPtr &func_graph, const AnfNodePtr &
   std::vector<AnfNodePtr> expand_dims_inputs = {
     NewValueNode(std::make_shared<Primitive>(prim::kPrimExpandDims->name())), input_node, axis};
   auto expand_dims = pass.NewCNode(expand_dims_inputs, func_graph);
+  MS_EXCEPTION_IF_NULL(expand_dims);
   expand_dims->set_scope(input_node->scope());
   auto dtype = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
   auto expand_shape = common::AnfAlgo::GetOutputInferShape(input_node, 0);

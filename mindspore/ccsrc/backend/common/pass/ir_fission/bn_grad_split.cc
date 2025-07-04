@@ -257,6 +257,7 @@ CNodePtr SyncBnGradSplit::SyncBNGradSplitForTBE(const FuncGraphPtr &func_graph, 
 
   auto make_tuple = CreateMakeTupleNode(
     func_graph, std::vector<AnfNodePtr>{bn_reduce_grad_outputs[0], allreduce_mul_outputs[0], allreduce_mul_outputs[1]});
+  MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_scope(cnode->scope());
   return make_tuple;
 }

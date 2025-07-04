@@ -404,6 +404,7 @@
       "mindspore/ccsrc/plugin/device/ascend/kernel/atb",
       "mindspore/ccsrc/plugin/device/ascend/kernel/rts",
       "mindspore/ccsrc/plugin/device/ascend/kernel/utils",
+      "mindspore/ccsrc/plugin/device/ascend/kernel/aicore",
       "mindspore/ccsrc/plugin/device/ascend/llm_boost",
       "mindspore/ccsrc/plugin/device/ascend/optimizer",
       "mindspore/ccsrc/plugin/device/cpu/hal/device",

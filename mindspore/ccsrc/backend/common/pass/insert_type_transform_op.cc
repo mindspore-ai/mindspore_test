@@ -563,6 +563,7 @@ const AnfNodePtr InsertTypeTransformOp::Process(const FuncGraphPtr &func_graph, 
 
     ObjectTypePair type_pair = {current_input_type, needed_input_type};
     if (kTypePairToProcessFunc.count(type_pair) != 0) {
+      MS_EXCEPTION_IF_NULL(input_node);
       MS_LOG(INFO) << "Kernel object type pair of input index " << i << " for node pair "
                    << input_node->fullname_with_scope() << " to " << cnode->fullname_with_scope() << " is "
                    << type_pair.to_string();

@@ -110,7 +110,10 @@ bool IsKbkMode(const FuncGraphPtr &graph) {
 
 ShapeVector GetShape(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  auto base_shape = node->abstract()->GetShape();
+  auto abs = node->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
   if (base_shape->isa<abstract::Shape>()) {
     auto shape_ptr = base_shape->cast<abstract::ShapePtr>();
     MS_EXCEPTION_IF_NULL(shape_ptr);
