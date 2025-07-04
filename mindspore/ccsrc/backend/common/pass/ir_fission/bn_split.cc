@@ -174,6 +174,7 @@ bool SyncBnSplit::CreateOutputsOfBNTrainingReduce(const FuncGraphPtr &graph, con
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto value = MakeValue<int64_t>(static_cast<int64_t>(kNCHWFormat));
+  MS_EXCEPTION_IF_NULL(value);
   ValueNodePtr format_input = kernel_graph->NewValueNode(value->ToAbstract(), value);
   std::vector<AnfNodePtr> bn_training_reduce_inputs = {
     NewValueNode(std::make_shared<Primitive>(kBNTrainingReduceOpName)), bn_cnode->input(kIndex1), format_input};
@@ -314,6 +315,7 @@ AnfNodePtr InsertCast(const FuncGraphPtr &graph, const AnfNodePtr &input, const 
   MS_EXCEPTION_IF_NULL(input);
   if (common::AnfAlgo::GetOutputInferDataType(input, 0) != dst_type) {
     AnfNodePtr cast = graph->NewCNode({NewValueNode(std::make_shared<Primitive>(kCastOpName)), input});
+    MS_EXCEPTION_IF_NULL(cast);
     common::AnfAlgo::SetOutputTypeAndDetailShape({dst_type}, {AnfAlgo::GetOutputDetailShape(input, 0)}, cast.get());
     common::AnfAlgo::SetNodeAttr(kIsBackendCast, MakeValue(true), cast);
     cast->set_scope(input->scope());
