@@ -786,6 +786,7 @@ DynamicMemBlockPtr DynamicMemPoolBestFit::FindMemBlock(const DeviceMemPtr &devic
 }
 
 void DynamicMemPoolBestFit::FreeTensorMem(const DeviceMemPtr &device_addr) {
+  MS_EXCEPTION_IF_NULL(device_addr);
 #ifdef __APPLE__
   std::lock_guard<SpinLock> spin_lock(spin_lock_);
 #else
