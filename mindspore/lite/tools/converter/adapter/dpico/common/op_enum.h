@@ -35,6 +35,7 @@ constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
 constexpr size_t kInputIndex4 = 4;
 constexpr size_t kInputIndex5 = 5;
+constexpr size_t kInputSize2 = 2;
 constexpr int kMaxInputWOf4Dims = 4096;
 constexpr int kMaxInputWOf2Dims = 16384;
 constexpr int kMaxNumOutput = 32768;

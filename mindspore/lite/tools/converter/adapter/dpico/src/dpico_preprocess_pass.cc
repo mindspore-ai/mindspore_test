@@ -124,6 +124,18 @@ STATUS InsertTransposeAfterBiasAdd(const api::FuncGraphPtr &func_graph, const ap
 }
 }  // namespace
 STATUS DpicoPreprocessPass::PreProcessBiadAdd(const api::FuncGraphPtr &func_graph, const api::CNodePtr &cnode) {
+  if (func_graph == nullptr) {
+    MS_LOG(ERROR) << "func_graph is nullptr.";
+    return RET_ERROR;
+  }
+  if (cnode == nullptr) {
+    MS_LOG(ERROR) << "cnode is nullptr.";
+    return RET_ERROR;
+  }
+  if (cnode->inputs().size() < kInputSize2) {
+    MS_LOG(ERROR) << "The size of cnode input cannot be less than 2.";
+    return RET_ERROR;
+  }
   auto manager = func_graph->manager();
   if (manager == nullptr) {
     MS_LOG(ERROR) << "manager is nullptr. ";
@@ -135,13 +147,19 @@ STATUS DpicoPreprocessPass::PreProcessBiadAdd(const api::FuncGraphPtr &func_grap
     return RET_ERROR;
   }
   auto abstract = GetCNodeInputAbstract(cnode, kInputIndex1);
-  if (abstract == nullptr && cnode->input(1) != nullptr) {
-    MS_LOG(ERROR) << "abstract is nullptr. " << cnode->input(1)->fullname_with_scope();
+  if (abstract == nullptr) {
+    MS_LOG(ERROR) << "abstract is nullptr. ";
+    if (cnode->input(1) != nullptr) {
+      MS_LOG(ERROR) << "cnode name : " << cnode->input(1)->fullname_with_scope();
+    }
     return RET_ERROR;
   }
   ShapeVector shape_vector;
-  if (FetchShapeFromAbstract(abstract, &shape_vector) != RET_OK && cnode->input(1) != nullptr) {
-    MS_LOG(ERROR) << "fetch shape from abstract failed. " << cnode->input(1)->fullname_with_scope();
+  if (FetchShapeFromAbstract(abstract, &shape_vector) != RET_OK) {
+    MS_LOG(ERROR) << "fetch shape from abstract failed. ";
+    if (cnode->input(1) != nullptr) {
+      MS_LOG(ERROR) << "cnode name : " << cnode->input(1)->fullname_with_scope();
+    }
     return RET_ERROR;
   }
   if (shape_vector.empty() || shape_vector.size() != kDims4) {
