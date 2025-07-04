@@ -58,6 +58,7 @@ inline int32_t SetExecutorRepeatable(const std::string &workspace_api_name, aclO
     repeat_ret = aclSetAclOpExecutorRepeatable(executor);
     if (repeat_ret != 0) {
       MS_LOG(INFO) << workspace_api_name << " don't support cache, repeat_ret is " << repeat_ret;
+      MS_VLOG(VL_ACLNN_OP) << workspace_api_name << " don't support cache, repeat_ret is " << repeat_ret;
     }
   }
   return repeat_ret;

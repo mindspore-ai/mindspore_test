@@ -61,7 +61,8 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
                                          << cnode->fullname_with_scope() << "] Resize failed.";
     }
   } else {
-    kernel_ptr->SetDynamic(true);
+    static std::once_flag set_dynamic_flag;
+    std::call_once(set_dynamic_flag, [kernel_ptr]() { kernel_ptr->SetDynamic(true); });
   }
   device::ascend::AclnnInit();
   return kernel_ptr;

@@ -36,7 +36,7 @@ namespace pyboost {
 class CustomAclnnPyboostKernelModBase {
  public:
   explicit CustomAclnnPyboostKernelModBase(std::string &&op_type) : op_type_(std::move(op_type)) {
-    int64_t capaticy_from_user = ops::GetCacheCapaticy();
+    int64_t capaticy_from_user = device::ascend::GetCacheCapaticy();
     if (capaticy_from_user >= 0) {
       capacity_ = LongToSize(capaticy_from_user);
     }

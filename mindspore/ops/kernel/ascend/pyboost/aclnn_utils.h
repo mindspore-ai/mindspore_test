@@ -100,6 +100,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
       return std::make_tuple(ws_size, executor, cache, release_func, update_func);                     \
     } else {                                                                                           \
       MS_LOG(INFO) << "Api " << api_str << " miss cache, with hash id:" << hash_id;                    \
+      MS_VLOG(VL_ACLNN_OP) << "Api " << api_str << " miss cache, with hash id:" << hash_id;            \
       auto [ws_size, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(api_str, args...);         \
       auto update_func = std::function<void()>(nullptr);                                               \
       if (hash_id != 0 && !fail_cache) {                                                               \
@@ -135,12 +136,13 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     static std::list<CacheTuple> hash_cache_;                                                                     \
     static size_t capacity_{1024};                                                                                \
     static std::mutex mutex_;                                                                                     \
-    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                                  \
+    static int64_t capaticy_from_user = device::ascend::GetCacheCapaticy();                                       \
     static bool not_set_capaticy = true;                                                                          \
     if (capaticy_from_user >= 0 && not_set_capaticy) {                                                            \
       capacity_ = LongToSize(capaticy_from_user);                                                                 \
       not_set_capaticy = false;                                                                                   \
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                                 \
+      MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of pyboost to " << capacity_;                         \
     }                                                                                                             \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                                  \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);     \
@@ -190,13 +192,14 @@ using CacheTuple = std::tuple<uint64_t, mindspore::device::ascend::aclOpExecutor
     static std::list<CacheTuple> hash_cache_;                                                                 \
     static size_t capacity_{1024};                                                                            \
     static std::mutex mutex_;                                                                                 \
-    static int64_t capaticy_from_user = ops::GetCacheCapaticy();                                              \
+    static int64_t capaticy_from_user = device::ascend::GetCacheCapaticy();                                   \
     static bool not_set_capaticy = true;                                                                      \
     REGISTER_SYNC_OP(aclnn_name);                                                                             \
     if (capaticy_from_user >= 0 && not_set_capaticy) {                                                        \
       capacity_ = LongToSize(capaticy_from_user);                                                             \
       not_set_capaticy = false;                                                                               \
       MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                             \
+      MS_VLOG(VL_ACLNN_OP) << "Set aclnn cache queue length of pyboost to " << capacity_;                     \
     }                                                                                                         \
     runtime::Pipeline::Get().WaitForward();                                                                   \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                              \
