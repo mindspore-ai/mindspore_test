@@ -206,12 +206,15 @@ PYBIND_REGISTER(MapNode, 2, ([](const py::module *m) {
                     }));
                 }));
 
+#if !defined(_WIN32) && !defined(_WIN64)
 PYBIND_REGISTER(PythonMultiprocessingRuntime, 1, ([](const py::module *m) {
                   (void)py::class_<PythonMultiprocessingRuntime, PyPythonMultiprocessingRuntime,
                                    std::shared_ptr<PythonMultiprocessingRuntime>>(*m, "PythonMultiprocessingRuntime",
                                                                                   "Runtime for Python Multiprocessing")
                     .def(py::init<>())
-                    .def("launch", &PythonMultiprocessingRuntime::launch)
+                    .def("launch", [](PythonMultiprocessingRuntime &pmr, int32_t id) { pmr.launch(id); })
+                    .def("launch", [](PythonMultiprocessingRuntime &pmr, int32_t id, std::string op_type,
+                                      std::vector<key_t> ftok_keys) { pmr.launch(id, op_type, ftok_keys); })
                     .def("terminate", &PythonMultiprocessingRuntime::terminate)
                     .def("is_mp_enabled", &PythonMultiprocessingRuntime::is_mp_enabled)
                     .def("add_new_workers", &PythonMultiprocessingRuntime::add_new_workers)
@@ -226,6 +229,26 @@ PYBIND_REGISTER(PythonMultiprocessingRuntime, 1, ([](const py::module *m) {
                     .def("reset", &PythonMultiprocessingRuntime::reset)
                     .def("is_running", &PythonMultiprocessingRuntime::is_running);
                 }));
+#else
+PYBIND_REGISTER(PythonMultiprocessingRuntime, 1, ([](const py::module *m) {
+                  (void)py::class_<PythonMultiprocessingRuntime, PyPythonMultiprocessingRuntime,
+                                   std::shared_ptr<PythonMultiprocessingRuntime>>(*m, "PythonMultiprocessingRuntime",
+                                                                                  "Runtime for Python Multiprocessing")
+                    .def(py::init<>())
+                    .def("launch", [](PythonMultiprocessingRuntime &pmr, int32_t id) { pmr.launch(id); })
+                    .def("terminate", &PythonMultiprocessingRuntime::terminate)
+                    .def("is_mp_enabled", &PythonMultiprocessingRuntime::is_mp_enabled)
+                    .def("get_pids", &PythonMultiprocessingRuntime::get_pids)
+                    .def("get_thread_to_worker",
+                         [](const PythonMultiprocessingRuntime &python_multiprocessing_runtime) {
+                           int32_t worker_id;
+                           THROW_IF_ERROR(python_multiprocessing_runtime.get_thread_to_worker(&worker_id));
+                           return worker_id;
+                         })
+                    .def("reset", &PythonMultiprocessingRuntime::reset)
+                    .def("is_running", &PythonMultiprocessingRuntime::is_running);
+                }));
+#endif
 
 PYBIND_REGISTER(ProjectNode, 2, ([](const py::module *m) {
                   (void)py::class_<ProjectNode, DatasetNode, std::shared_ptr<ProjectNode>>(*m, "ProjectNode",

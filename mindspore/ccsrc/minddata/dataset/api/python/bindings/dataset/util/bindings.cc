@@ -76,5 +76,11 @@ PYBIND_REGISTER(RegisterWorkerPIDs, 0, ([](py::module *m) {
 PYBIND_REGISTER(DeregisterWorkerPIDs, 0, ([](py::module *m) {
                   (void)m->def("deregister_worker_pids", ([](int64_t id) { DeregisterWorkerPIDs(id); }));
                 }));
+
+PYBIND_REGISTER(RegisterShmIDAndMsgID, 0, ([](py::module *m) {
+                  (void)m->def("register_shm_id_and_msg_id", ([](std::string pid, int32_t shm_id, int32_t msg_id) {
+                                 RegisterShmIDAndMsgID(pid, shm_id, msg_id);
+                               }));
+                }));
 }  // namespace dataset
 }  // namespace mindspore

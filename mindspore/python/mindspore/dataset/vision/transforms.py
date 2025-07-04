@@ -7025,6 +7025,18 @@ class ToTensor(ImageTensorOperation):
     def parse(self):
         return cde.ToTensorOperation(self.output_type)
 
+    def _execute_py(self, img):
+        """
+        Execute method.
+
+        Args:
+            img (PIL Image): Convert PIL Image to np.ndarray by method HWC to CHW and divide 255.
+
+        Returns:
+            Image converted to numpy.ndarray.
+        """
+        return util.to_tensor(img, self.output_type)
+
 
 class ToType(TypeCast):
     """

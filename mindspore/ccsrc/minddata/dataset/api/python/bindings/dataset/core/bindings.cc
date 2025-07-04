@@ -29,6 +29,9 @@
 #include "minddata/dataset/core/device_buffer.h"
 #endif
 #include "minddata/dataset/core/global_context.h"
+#include "minddata/dataset/core/message_queue.h"
+#include "minddata/dataset/core/shared_memory_queue.h"
+
 #include "minddata/dataset/include/dataset/constants.h"
 #if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
@@ -259,5 +262,129 @@ PYBIND_REGISTER(ErrorSamplesMode, 0, ([](const py::module *m) {
                     .value("DE_ERROR_SAMPLES_MODE_SKIP", ErrorSamplesMode::kSkip)
                     .export_values();
                 }));
+
+#if !defined(_WIN32) && !defined(_WIN64)
+PYBIND_REGISTER(MsgType, 0, ([](const py::module *m) {
+                  (*m).attr("WORKER_SEND_DATA_MSG") = kWorkerSendDataMsg;
+                  (*m).attr("MASTER_SEND_DATA_MSG") = kMasterSendDataMsg;
+                }));
+
+PYBIND_REGISTER(SharedMemoryQueue, 0, ([](const py::module *m) {
+                  (void)py::class_<SharedMemoryQueue, std::shared_ptr<SharedMemoryQueue>>(*m, "SharedMemoryQueue")
+                    .def(py::init([](key_t key) {  // the key_t is int32_t
+                      return std::make_shared<SharedMemoryQueue>(key);
+                    }))
+                    .def("from_tensor_row",
+                         [](SharedMemoryQueue &shm_queue, const TensorRow &in_row) {
+                           THROW_IF_ERROR(shm_queue.FromTensorRow(in_row));
+                           return shm_queue;
+                         })
+                    .def("from_tensor_table",
+                         [](SharedMemoryQueue &shm_queue, const TensorTable &in_table, const CBatchInfo &batch_info,
+                            bool concat_batch) {
+                           THROW_IF_ERROR(shm_queue.FromTensorTable(in_table, &batch_info, &concat_batch));
+                           return shm_queue;
+                         })
+                    .def("to_tensor_row",
+                         [](SharedMemoryQueue &shm_queue, int shm_id, uint64_t shm_size) {
+                           std::shared_ptr<TensorRow> tensor_row = std::make_shared<TensorRow>();
+                           THROW_IF_ERROR(shm_queue.ToTensorRow(tensor_row.get(), shm_id, shm_size));
+                           return tensor_row;
+                         })
+                    .def("to_tensor_table",
+                         [](SharedMemoryQueue &shm_queue, int shm_id, uint64_t shm_size) {
+                           TensorTable tensor_table;
+                           CBatchInfo batch_info;
+                           bool concat_batch;
+                           THROW_IF_ERROR(
+                             shm_queue.ToTensorTable(&tensor_table, &batch_info, &concat_batch, shm_id, shm_size));
+                           return std::make_tuple(tensor_table, batch_info, concat_batch);
+                         })
+                    .def("set_release_flag", &SharedMemoryQueue::SetReleaseFlag)
+                    .def("get_shm_id", &SharedMemoryQueue::GetShmID)
+                    .def("get_shm_size", &SharedMemoryQueue::GetShmSize);
+                }));
+
+PYBIND_REGISTER(MessageQueue, 0, ([](const py::module *m) {
+                  (void)py::class_<MessageQueue, std::shared_ptr<MessageQueue>>(*m, "MessageQueue")
+                    .def(py::init([](key_t key) {  // the key_t is int32_t
+                      return std::make_shared<MessageQueue>(key);
+                    }))
+                    .def("set_release_flag", &MessageQueue::SetReleaseFlag)
+                    .def("msg_snd",
+                         [](MessageQueue &msg_queue, int64_t mtype, int shm_id, uint64_t shm_size) {
+                           THROW_IF_ERROR(msg_queue.MsgSnd(mtype, shm_id, shm_size));
+                           return msg_queue;
+                         })
+                    .def("msg_rcv",
+                         [](MessageQueue &msg_queue, int mtype) {
+                           THROW_IF_ERROR(msg_queue.MsgRcv(mtype));
+                           return msg_queue;
+                         })
+                    .def("serialize_status",
+                         [](MessageQueue &msg_queue, int32_t status_code, int32_t line_of_code,
+                            const std::string &filename, const std::string &err_desc) {
+                           THROW_IF_ERROR(msg_queue.SerializeStatus(status_code, line_of_code, filename, err_desc));
+                           return msg_queue;
+                         })
+                    .def("message_queue_state", &MessageQueue::MessageQueueState)
+                    .def_readonly("shm_id", &MessageQueue::shm_id_)
+                    .def_readonly("shm_size", &MessageQueue::shm_size_)
+                    .def_readonly("msg_queue_id", &MessageQueue::msg_queue_id_);
+                }));
+
+PYBIND_REGISTER(MessageState, 0, ([](const py::module *m) {
+                  (void)py::enum_<MessageState>(*m, "MessageState", py::arithmetic())
+                    .value("INIT", mindspore::dataset::MessageState::kInit)
+                    .value("RUNNING", mindspore::dataset::MessageState::kRunning)
+                    .value("RELEASED", mindspore::dataset::MessageState::kReleased)
+                    .export_values();
+                }));
+
+PYBIND_REGISTER(TensorRow, 0, ([](const py::module *m) {
+                  (void)py::class_<TensorRow, std::shared_ptr<TensorRow>>(*m, "TensorRow").def(py::init([]() {
+                    return std::make_shared<TensorRow>();
+                  }));
+                }));
+
+PYBIND_REGISTER(ConvertTensorRowToPyTuple, 0, ([](py::module *m) {
+                  (void)m->def("convert_tensor_row_to_py_tuple", ([](const TensorRow &input) {
+                                 py::tuple output(input.size());
+                                 THROW_IF_ERROR(ConvertTensorRowToPyTuple(input, &output));
+                                 return output;
+                               }));
+                }));
+
+PYBIND_REGISTER(ConvertPyTupleToTensorRow, 0, ([](py::module *m) {
+                  (void)m->def("convert_py_tuple_to_tensor_row", ([](const py::tuple &input) {
+                                 TensorRow output;
+                                 THROW_IF_ERROR(ConvertPyTupleToTensorRow(input, &output));
+                                 return output;
+                               }));
+                }));
+
+PYBIND_REGISTER(ConvertTensorTableToPyTupleList, 0, ([](py::module *m) {
+                  (void)m->def("convert_tensor_table_to_py_tuple_list", ([](const TensorTable &input) {
+                                 py::tuple output(input.size());
+                                 THROW_IF_ERROR(ConvertTensorTableToPyTupleList(input, &output));
+                                 return output;
+                               }));
+                }));
+
+PYBIND_REGISTER(ConvertPyTupleListToTensorTable, 0, ([](py::module *m) {
+                  (void)m->def("convert_py_tuple_list_to_tensor_table", ([](const py::tuple &input) {
+                                 TensorTable output;
+                                 bool concat_batch;
+                                 THROW_IF_ERROR(ConvertPyTupleListToTensorTable(input, &output, &concat_batch));
+                                 return std::make_tuple(output, concat_batch);
+                               }));
+                }));
+
+PYBIND_REGISTER(StatusCode, 0, ([](const py::module *m) {
+                  (void)py::enum_<StatusCode>(*m, "StatusCode", py::module_local())
+                    .value("MD_PY_FUNC_EXCEPTION", mindspore::StatusCode::kMDPyFuncException)
+                    .export_values();
+                }));
+#endif
 }  // namespace dataset
 }  // namespace mindspore

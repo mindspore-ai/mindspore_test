@@ -22,16 +22,25 @@
 #include <utility>
 #include <vector>
 
+#include "minddata/dataset/core/message_queue.h"
+#include "minddata/dataset/core/shared_memory_queue.h"
 #include "minddata/dataset/core/tensor.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 
 namespace mindspore {
 namespace dataset {
+
+Status ConvertNumpyToTensor(const py::object &py_obj, TensorRow *output);
+
+Status ConvertPythonToTensor(const py::object &py_obj, TensorRow *output);
+
 class PyFuncOp : public TensorOp {
  public:
   explicit PyFuncOp(const py::function &func);
 
   explicit PyFuncOp(const py::function &func, DataType::Type output_type);
+
+  explicit PyFuncOp(std::shared_ptr<PyFuncOp> op);
 
   ~PyFuncOp() override;
 
@@ -72,9 +81,37 @@ class PyFuncOp : public TensorOp {
     return Status::OK();
   }
 
+#if !defined(_WIN32) && !defined(_WIN64)
+  /// \brief Create message queue and shared memory queue
+  // called in MapOp::SetPythonMp()
+  void CreateMsgQueueAndShmQueue(const int32_t &thread_idx, const key_t &key);
+
+  Status GetOrCreateMessageQueueID();
+
+  /// \brief Set the process id when multiprocess mode
+  // called in MapOp::Launch()
+  void SetProcessID(int32_t process_id);
+#endif
+
  private:
+#if !defined(_WIN32) && !defined(_WIN64)
+  /// \brief Execute the operations with python multiprocessing workers
+  Status ComputeWithWorker(const TensorRow &input, TensorRow *output);
+#endif
+
+  /// \brief Execute the operations with C++ thread
+  Status ComputeWithThread(const TensorRow &input, TensorRow *output);
+
   py::function py_func_ptr_;
   DataType::Type output_type_;
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  int32_t worker_pid_;                       // process id of the worker
+  int32_t thread_idx_;                       // the thread idx which corresponds to python process worker
+  std::shared_ptr<MessageQueue> msg_queue_;  // MapOp with PyFunc in process mode will use msg_queue to transfer data
+  std::shared_ptr<SharedMemoryQueue>
+    shm_queue_;  // MapOp with PyFunc in process mode will use shm_queue to transfer data
+#endif
 };
 }  // namespace dataset
 }  // namespace mindspore

@@ -16,6 +16,9 @@
 
 #include "minddata/dataset/engine/datasetops/map_op/npu_map_job.h"
 
+#include <string>
+#include <utility>
+
 #include "minddata/dataset/core/device_tensor_ascend910b.h"
 #include "minddata/dataset/kernels/image/image_utils.h"
 
@@ -32,7 +35,7 @@ NpuMapJob::NpuMapJob(std::vector<std::shared_ptr<TensorOp>> operations) : MapJob
 NpuMapJob::~NpuMapJob() = default;
 
 // A function to execute a npu map job
-Status NpuMapJob::Run(std::vector<TensorRow> in, std::vector<TensorRow> *out,
+Status NpuMapJob::Run(const std::vector<TensorRow> &in, std::vector<TensorRow> *out,
                       mindspore::device::DeviceContext *device_context, const size_t &stream_id) {
   RETURN_UNEXPECTED_IF_NULL(out);
   RETURN_UNEXPECTED_IF_NULL(device_context);

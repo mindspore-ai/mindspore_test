@@ -17,6 +17,8 @@
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/wait.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
 #endif
 
 #include <csignal>
@@ -27,6 +29,16 @@
 
 namespace mindspore::dataset {
 static std::unordered_map<int64_t, std::vector<int>> worker_groups = {};
+
+// The shm_id & msg_id will be registered when the worker process run
+// key: the process id
+// value: the shm_id / msg_id
+// Scenario 1: When the main process is killed, the worker process will release shm & msg in SIGTERMHandler
+// Scenario 2: When the worker process is killed, the main process will release shm & msg in SIGCHLDHandler
+std::mutex shm_mgs_id_mtx_;                      // lock for g_shm_id & g_msg_id
+static std::map<std::string, int32_t> g_shm_id;  // used by map / batch multiprocess mode data transfer
+static std::map<std::string, int32_t> g_msg_id;  // used by map / batch multiprocess mode data transfer
+
 #if !defined(_WIN32) && !defined(_WIN64)
 /// \brief Set handler for the specified signal.
 /// \param[in] signal The signal to set handler.
@@ -53,6 +65,50 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
   TaskManager::WakeUpWatchDog();
 }
 
+/// \brief Release the shared memory and message queue when got signal TERM / CHLD
+void ReleaseShmAndMsg() {
+  std::string current_pid = std::to_string(getpid());
+
+  {
+    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
+    // release the shm & msg used by the current process when the main process is killed
+    for (auto &item : g_shm_id) {
+      // so just release the shm used by the current process
+      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
+      // scenario 2: for the worker process, the item.first is "WorkerPID"
+      if (item.first.find(current_pid) == std::string::npos) {
+        continue;
+      }
+      if (item.second != -1) {
+        if (shmctl(item.second, IPC_RMID, NULL) == -1 && errno != EINVAL) {
+          MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(item.second)
+                        << " error. Errno: " << std::to_string(errno);
+        } else {
+          MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(item.second) << " successfully.";
+        }
+        g_shm_id[item.first] = -1;
+      }
+    }
+
+    for (auto &item : g_msg_id) {
+      // so just release the msg used by the current process
+      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
+      // scenario 2: for the worker process, the item.first is "WorkerPID"
+      if (item.first.find(current_pid) == std::string::npos) {
+        continue;
+      }
+      if (item.second != -1) {
+        if (msgctl(item.second, IPC_RMID, 0) == -1 && errno != EINVAL) {
+          MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(item.second) << " failed.";
+        } else {
+          MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(item.second) << " successfully.";
+        }
+        g_msg_id[item.first] = -1;
+      }
+    }
+  }
+}
+
 /// \brief A signal handler for SIGTERM to exit the process.
 /// \details When Python exits, it may terminate the children processes before deleting our runtime.
 ///   Then the watch dog has not been aborted, it will report an error and terminate the main process.
@@ -65,6 +121,11 @@ void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
     MS_LOG(ERROR) << "SIGTERMHandler expects SIGTERM signal, but got: " << strsignal(signal);
     _exit(EXIT_FAILURE);
   }
+
+  MS_LOG(INFO) << "Got SIGTERM signal from process: " << info->si_pid;
+
+  // release the shm & msg when the main process is killed
+  ReleaseShmAndMsg();
 
   if (info->si_pid == getppid()) {
     MS_LOG(INFO) << "Dataset worker process " << std::to_string(getpid())
@@ -97,6 +158,8 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
     _exit(EXIT_FAILURE);
   }
 
+  MS_LOG(INFO) << "Got SIGBUS signal from process: " << info->si_pid;
+
   if (info->si_code == BUS_ADRERR) {
     MS_LOG(ERROR) << "Unexpected bus error encountered in process: " << std::to_string(getpid())
                   << ". Non-existent physical address. This might be caused by insufficient shared memory. "
@@ -127,6 +190,8 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
     MS_LOG(ERROR) << "SIGCHLDHandler expects SIGCHLD signal, but got: " << strsignal(signal);
     _exit(EXIT_FAILURE);
   }
+
+  MS_LOG(INFO) << "Got SIGCHLD signal from process: " << info->si_pid;
 
   for (auto &worker_group : worker_groups) {
     auto &pids = worker_group.second;
@@ -174,6 +239,10 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
           kill(pid_to_kill, SIGTERM);
         }
       }
+
+      // release the shm & msg when the worker process is killed
+      ReleaseShmAndMsg();
+
       MS_LOG(ERROR) << msg << " Main process will be terminated.";
       kill(getpid(), SIGTERM);
       // In case the signal is not responded, return here
@@ -181,6 +250,7 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       return;
     }
   }
+  MS_LOG(INFO) << "End got SIGCHLD signal";
 }
 #endif
 
@@ -193,6 +263,7 @@ void RegisterHandlers() {
 
 void RegisterMainHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
+  SetSignalHandler(SIGINT, &SIGINTHandler, nullptr);
   SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
   SetSignalHandler(SIGCHLD, &SIGCHLDHandler, nullptr);
 #endif
@@ -225,5 +296,15 @@ void RegisterWorkerPIDs(int64_t id, const std::vector<int> &pids) {
 void DeregisterWorkerPIDs(int64_t id) {
   MS_LOG(INFO) << "Watch dog stops monitoring process(es): " << GetPIDsString(worker_groups[id]);
   (void)worker_groups.erase(id);
+}
+
+void RegisterShmIDAndMsgID(std::string pid, int32_t shm_id, int32_t msg_id) {
+  {
+    std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
+    g_shm_id[pid] = shm_id;
+    g_msg_id[pid] = msg_id;
+  }
+  MS_LOG(INFO) << "Update the shm_id to " << std::to_string(shm_id) << ", msg_id to " << std::to_string(msg_id)
+               << " for pid: " << pid;
 }
 }  // namespace mindspore::dataset

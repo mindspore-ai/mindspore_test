@@ -320,7 +320,13 @@ PreBuiltOperation::PreBuiltOperation(std::shared_ptr<TensorOp> tensor_op) : op_(
 
 Status PreBuiltOperation::ValidateParams() { return Status::OK(); }
 
-std::shared_ptr<TensorOp> PreBuiltOperation::Build() { return op_; }
+std::shared_ptr<TensorOp> PreBuiltOperation::Build() {
+  if (op_->Name() == "PyFuncOp") {
+    // create new tensor_op so that each worker has its own tensor_op
+    return std::make_shared<PyFuncOp>(std::dynamic_pointer_cast<PyFuncOp>(op_));
+  }
+  return op_;
+}
 
 std::string PreBuiltOperation::Name() const { return op_ ? op_->Name() : kPreBuiltOperation; }
 

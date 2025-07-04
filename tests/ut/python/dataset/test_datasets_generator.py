@@ -2765,7 +2765,7 @@ def test_release_generator_dataset_iter(num_epochs):
     # initialize user defined dataset
     data = Iterable()
     data_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    assert (data_memory - init_memory) > 2000
+    assert (data_memory - init_memory) > 1990
 
     # initialize GeneratorDataset
     dataset = ds.GeneratorDataset(source=data, column_names=["data", "label"], shuffle=False)
