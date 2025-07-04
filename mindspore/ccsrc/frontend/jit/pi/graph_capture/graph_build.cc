@@ -2943,6 +2943,7 @@ bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates 
       MS_LOG(DEBUG) << "no " << (i < defs_off ? "" : "kw-") << "default parameter error";
       return false;
     }
+    MS_LOG(DEBUG) << "Handle default param at position " << i;
     DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(val)});
     frame->SetLocal(i, pop());
   }
@@ -3012,6 +3013,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   if (func_info.ptr() == nullptr) {
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
+  MS_LOG(DEBUG) << "Handle params for function call. Node: " << ToString(call_node);
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
   PyCodeWrapper co_wrapper(co);
   frame->ResizeLocal(co_wrapper.LocalSize());
@@ -5330,12 +5332,15 @@ AbstractWrapperPtr GraphBuilder::HandleBuildStringOp(const PrimitivePtr &primiti
 
 bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
+  MS_LOG(DEBUG) << "Handle positional params for function call: " << ToString(call_node);
+
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   auto vobj = AObject::Convert(func.ptr());
   AObject::Type callable_type = vobj->GetType();
 
   ValueNode *self = GetBoundSelf(call_node);
   if (self != nullptr) {
+    MS_LOG(DEBUG) << "Add 'self' param for bound-method. self: " << self->ToString();
     params->insert(params->begin(), self);
   }
 
@@ -5346,7 +5351,8 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
   const int kwvarg_loc = argc + co->co_kwonlyargcount + has_varg;
   int pargc = params->size();
   if (pargc > argc && !has_varg) {
-    MS_LOG(DEBUG) << "too many parameters";
+    MS_LOG(INFO) << "Param num mismatch! co_argcount is " << argc << ", but actual param num is " << pargc << ". "
+                 << ToString(call_node);
     return false;
   }
   bool append_self_to_varg = has_varg && self && callable_type == AObject::kTypeBoundMethod && argc == 0;
@@ -5356,6 +5362,7 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
   }
 
   if (has_kwvarg && frame->Local(kwvarg_loc) == &ValueNode::kUnboundLocal) {
+    MS_LOG(DEBUG) << "Function has kwvargs, build map for kwvargs";
     DoBuildOp({BUILD_MAP, 0});
     auto m = pop();
     call_node->AddParam(m);
@@ -5367,6 +5374,7 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
     std::vector<ValueNode *> vargs(params->end() - vargc, params->end());
     params->resize(params->size() - vargc);
     std::for_each(vargs.begin(), vargs.end(), [this](ValueNode *i) { this->push(i); });
+    MS_LOG(DEBUG) << "Function has vargs, build tuple for vargs. vargs num: " << vargs.size();
     DoBuildOp({BUILD_TUPLE, static_cast<int>(vargs.size())});
     ValueNode *build_tuple = pop();
     call_node->AddParam(build_tuple);
@@ -5388,6 +5396,7 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
 
 bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
                                       CallNode *call_node) {
+  MS_LOG(DEBUG) << "Unpack CALL_FUNCTION_EX params. " << ToString(call_node);
   bool has_dict = params->size() > 1;
   ValueNode *args_node = params->operator[](0);
   if (!has_dict) {
@@ -5398,14 +5407,19 @@ bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extr
   *has_kw = params->size();
 
   if (args_node->GetVobj() == nullptr) {
+    MS_LOG(INFO) << "CALL_FUNCTION_EX param node has no vobj. " << args_node->ToString();
     return false;
   }
-  py::object object = args_node->GetVobj()->GetPyObject();
-  if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
-    MS_LOG(INFO) << "CallEx parameter should be tuple or list but got " << py::str(object);
+  if (args_node->abstract_wrapper() == nullptr || args_node->abstract_wrapper()->abstract() == nullptr) {
+    MS_LOG(INFO) << "CALL_FUNCTION_EX param node has no abstract. " << args_node->ToString();
     return false;
   }
-  size_t args_len = py::len(object);
+  AbstractBasePtr abstract = args_node->abstract_wrapper()->abstract();
+  if (!abstract->isa<abstract::AbstractTuple>() && !abstract->isa<abstract::AbstractList>()) {
+    MS_LOG(INFO) << "CALL_FUNCTION_EX param should be tuple or list, but got: " << abstract->ToString();
+    return false;
+  }
+  size_t args_len = args_node->abstract_wrapper()->size();
   if (args_len == 0) {
     return true;
   }

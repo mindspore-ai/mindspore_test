@@ -1009,9 +1009,17 @@ void GraphBreakException::set_error() const {
   }
 }
 
-std::string GetFileName(const Graph *graph) { return PyUnicode_AsUTF8(graph->GetCodeObj()->co_filename); }
+std::string GetFileName(const Graph *graph) {
+  if (graph == nullptr || graph->GetCodeObj() == nullptr) {
+    return "";
+  }
+  return PyUnicode_AsUTF8(graph->GetCodeObj()->co_filename);
+}
 
 std::string GetNameAndLocation(const Graph *graph) {
+  if (graph == nullptr || graph->GetCodeObj() == nullptr) {
+    return "";
+  }
   std::ostringstream ss;
   PyCodeWrapper co(graph->GetCodeObj());
   ss << "'" << graph->GetCodeName() << "' " << graph << " at \"" << co.FileName() << ":" << co.FirstLine() << "\"";

@@ -107,6 +107,13 @@ std::string CallNode::ToString() const {
   s << this->ValueNode::ToString()
     << (kw_names().ptr() != nullptr ? ("kw:" + std::string(py::str(kw_names().ptr()))) : std::string())
     << " sub-graph=" << sub_graph_;
+  if (!getInputs().empty()) {
+    ValueNode *func_node = input(0);
+    MS_EXCEPTION_IF_NULL(func_node);
+    if (func_node->GetVobj() != nullptr && func_node->GetVobj()->GetPyObject().ptr() != nullptr) {
+      s << ", function=" << py::str(func_node->GetVobj()->GetPyObject());
+    }
+  }
   return s.str();
 }
 
@@ -178,6 +185,9 @@ std::string ValueNode::ToString() const {
   s << ") ";
   if (constant_info_ != nullptr) {
     s << " constant: " << constant_info_->ToString();
+  }
+  if (GetGraph() != nullptr) {
+    s << " at \"" << pijit::GetFileName(GetGraph()) << ":" << GetLineNo() << "\"";
   }
   return s.str();
 }
