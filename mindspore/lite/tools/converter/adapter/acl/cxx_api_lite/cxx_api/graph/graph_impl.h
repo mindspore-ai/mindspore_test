@@ -161,7 +161,7 @@ class GraphCell::GraphImpl {
   std::shared_ptr<Context> graph_context_;
 
   std::shared_ptr<backend::ms_backend::MSBackend> backend_;
-  uint32_t graph_id_;
+  uint32_t graph_id_{0};
   std::weak_ptr<KernelGraph> kernel_graph_;
   std::weak_ptr<FuncGraph> func_graph_;
   uint32_t device_id_;
