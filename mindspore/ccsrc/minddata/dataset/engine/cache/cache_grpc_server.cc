@@ -55,11 +55,9 @@ Status CacheServerGreeterImpl::Run() {
   grpc::ServerBuilder builder;
   // Default message size for gRPC is 4MB. Increase it to 2g-1
   builder.SetMaxReceiveMessageSize(std::numeric_limits<int32_t>::max());
-#ifdef CACHE_LOCAL_CLIENT
   int port_local = 0;
   // We also optimize on local clients on the same machine using unix socket
   builder.AddListeningPort("unix://" + unix_socket_, grpc::InsecureServerCredentials(), &port_local);
-#endif
   builder.RegisterService(&svc_);
   cq_ = builder.AddCompletionQueue();
   server_ = builder.BuildAndStart();
@@ -67,12 +65,14 @@ Status CacheServerGreeterImpl::Run() {
     MS_LOG(INFO) << "Server listening on " << server_address;
   } else {
     std::string errMsg = "Fail to start server. ";
-#ifdef CACHE_LOCAL_CLIENT
     if (port_local == 0) {
       errMsg += " Unable to create unix socket " + unix_socket_ + ".";
     }
-#endif
     RETURN_STATUS_UNEXPECTED(errMsg);
+  }
+  if (chmod(unix_socket_.c_str(), S_IRUSR | S_IWUSR) != 0) {  // 0600
+    RETURN_STATUS_UNEXPECTED("Failed to set permission for unix socket " + unix_socket_ + ": " +
+                             std::string(strerror(errno)));
   }
   return Status::OK();
 }
@@ -171,7 +171,6 @@ void CacheServerRequest::Print(std::ostream &out) const {
 
 Status CacheServerGreeterImpl::MonitorUnixSocket() {
   TaskManager::FindMe()->Post();
-#ifdef CACHE_LOCAL_CLIENT
   Path p(unix_socket_);
   do {
     RETURN_IF_INTERRUPTED();
@@ -194,7 +193,6 @@ Status CacheServerGreeterImpl::MonitorUnixSocket() {
     }
     std::this_thread::sleep_for(std::chrono::seconds(kMonitorIntervalInSec));
   } while (true);
-#endif
   return Status::OK();
 }
 }  // namespace dataset

@@ -28,10 +28,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   endif()
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  ADD_DEFINITIONS(-DCACHE_LOCAL_CLIENT)
-endif()
-
 add_library(engine-cache-client OBJECT
     cache_client.cc
     cache_fbb.cc
