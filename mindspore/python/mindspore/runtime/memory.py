@@ -50,6 +50,7 @@ def set_memory(init_size="2GB", increase_size="2GB", max_size="1024GB", optimize
             The format is "xxGB". Default is the maximum available memory of the device, expressed as ``1024GB``.
         optimize_level (str): The memory optimize level. The value must be in ['O0', 'O1']. Default: ``O0`` .
         huge_page_reserve_size (str): The reserved size of huge page memory. The format is "xxGB". Default: ``0GB``.
+            When virtual memory is enabled, reserve huge page function is not available and this parameter is ignored.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

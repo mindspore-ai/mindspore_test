@@ -47,11 +47,11 @@ class TestAscendVmmAdapter : public UT::Common {
 /// Description: test basic allocation.
 /// Expectation: can alloc memory and can not throw exception.
 TEST_F(TestAscendVmmAdapter, test_basic_allocation) {
-  size_t block = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t block = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(block);
   size_t size = 1024;
   size_t ret = ascend_vmm_adapter_.AllocDeviceMem(size, &addr);
-  EXPECT_EQ(ret, ascend_vmm_adapter_.kVmmAlignSize);
+  EXPECT_EQ(ret, ascend_vmm_adapter_.vmm_align_size_);
 }
 
 /// Feature: test ascend vmm adapter.
@@ -61,7 +61,7 @@ TEST_F(TestAscendVmmAdapter, test_set_align_size) {
   common::SetEnv("MS_ALLOC_CONF", "vmm_align_size:20MB");
   size_t mb = 1024 * 1024;
   AscendVmmAdapter test_vmm_adapter;
-  EXPECT_EQ(test_vmm_adapter.kVmmAlignSize, 20 * mb);
+  EXPECT_EQ(test_vmm_adapter.vmm_align_size_, 20 * mb);
   common::SetEnv("MS_ALLOC_CONF", "");
   common::ResetConfig("MS_ALLOC_CONF");
 }
@@ -80,7 +80,7 @@ TEST_F(TestAscendVmmAdapter, test_set_align_size_throw) {
 /// Description: test round up.
 /// Expectation: can round up.
 TEST_F(TestAscendVmmAdapter, test_round_up) {
-  size_t block = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t block = ascend_vmm_adapter_.vmm_align_size_;
   size_t size = block + 33;
   size_t ret = ascend_vmm_adapter_.GetRoundUpAlignSize(size);
   EXPECT_EQ(ret, block * 2);
@@ -92,7 +92,7 @@ TEST_F(TestAscendVmmAdapter, test_round_up) {
 TEST_F(TestAscendVmmAdapter, test_round_up_1) {
   common::SetEnv("MS_ALLOC_CONF", "vmm_align_size:20MB");
   AscendVmmAdapter test_vmm_adapter;
-  size_t block = test_vmm_adapter.kVmmAlignSize;
+  size_t block = test_vmm_adapter.vmm_align_size_;
   size_t size = block + 33;
   size_t ret = test_vmm_adapter.GetRoundUpAlignSize(size);
   EXPECT_EQ(ret, block * 2);
@@ -104,7 +104,7 @@ TEST_F(TestAscendVmmAdapter, test_round_up_1) {
 /// Description: test round down.
 /// Expectation: can round down.
 TEST_F(TestAscendVmmAdapter, test_round_down) {
-  size_t block = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t block = ascend_vmm_adapter_.vmm_align_size_;
   size_t size = block + 33;
   size_t ret = ascend_vmm_adapter_.GetRoundDownAlignSize(size);
   EXPECT_EQ(ret, block);
@@ -116,7 +116,7 @@ TEST_F(TestAscendVmmAdapter, test_round_down) {
 TEST_F(TestAscendVmmAdapter, test_round_down_1) {
   common::SetEnv("MS_ALLOC_CONF", "vmm_align_size:20MB");
   AscendVmmAdapter test_vmm_adapter;
-  size_t block = test_vmm_adapter.kVmmAlignSize;
+  size_t block = test_vmm_adapter.vmm_align_size_;
   size_t size = block + 33;
   size_t ret = test_vmm_adapter.GetRoundDownAlignSize(size);
   EXPECT_EQ(ret, block);
@@ -128,7 +128,7 @@ TEST_F(TestAscendVmmAdapter, test_round_down_1) {
 /// Description: test handle size.
 /// Expectation: can get handle size.
 TEST_F(TestAscendVmmAdapter, test_handle_size) {
-  size_t block = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t block = ascend_vmm_adapter_.vmm_align_size_;
   size_t size = block * 99;
   size_t ret = ascend_vmm_adapter_.GetHandleSize(size);
   EXPECT_EQ(ret, 99);
@@ -138,7 +138,7 @@ TEST_F(TestAscendVmmAdapter, test_handle_size) {
 /// Description: test handle size throw.
 /// Expectation: can throw exception.
 TEST_F(TestAscendVmmAdapter, test_handle_size_throw) {
-  size_t block = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t block = ascend_vmm_adapter_.vmm_align_size_;
   size_t size = block * 99 + 233;
   EXPECT_ANY_THROW(ascend_vmm_adapter_.GetHandleSize(size));
 }
@@ -147,7 +147,7 @@ TEST_F(TestAscendVmmAdapter, test_handle_size_throw) {
 /// Description: test find vmm segment.
 /// Expectation: can find vmm segment.
 TEST_F(TestAscendVmmAdapter, test_find_vmm_segment) {
-  size_t size = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t size = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(size);
   auto ret = ascend_vmm_adapter_.AllocDeviceMem(size * 7, &addr);
   EXPECT_EQ(ret, size * 7);
@@ -165,7 +165,7 @@ TEST_F(TestAscendVmmAdapter, test_find_vmm_segment) {
 /// Description: test mmap device memory.
 /// Expectation: can mmap device memory.
 TEST_F(TestAscendVmmAdapter, test_mmap_device_mem) {
-  size_t size = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t size = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(size);
   auto ret = ascend_vmm_adapter_.AllocDeviceMem(size * 20, &addr);
   EXPECT_EQ(ret, size * 20);
@@ -184,7 +184,7 @@ TEST_F(TestAscendVmmAdapter, test_mmap_device_mem) {
 /// Description: test mmap device memory.
 /// Expectation: can't mmap device memory.
 TEST_F(TestAscendVmmAdapter, test_mmap_device_mem_err) {
-  size_t size = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t size = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(size);
   auto ret = ascend_vmm_adapter_.AllocDeviceMem(size * 20, &addr);
   EXPECT_EQ(ret, size * 20);
@@ -197,7 +197,7 @@ TEST_F(TestAscendVmmAdapter, test_mmap_device_mem_err) {
 /// Description: test eager free memory.
 /// Expectation: can eager free memory.
 TEST_F(TestAscendVmmAdapter, test_eager_free_0) {
-  size_t size = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t size = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(size);
   ascend_vmm_adapter_.vmm_map_[addr] = reinterpret_cast<void *>(1);
   size_t ret_size = ascend_vmm_adapter_.EagerFreeDeviceMem(addr, size);
@@ -209,7 +209,7 @@ TEST_F(TestAscendVmmAdapter, test_eager_free_0) {
 /// Description: test eager free memory.
 /// Expectation: can eager free memory.
 TEST_F(TestAscendVmmAdapter, test_eager_free_1) {
-  size_t size = ascend_vmm_adapter_.kVmmAlignSize;
+  size_t size = ascend_vmm_adapter_.vmm_align_size_;
   DeviceMemPtr not_null = reinterpret_cast<void *>(1);
   DeviceMemPtr addr = reinterpret_cast<DeviceMemPtr>(size);
   ascend_vmm_adapter_.vmm_map_[addr] = not_null;

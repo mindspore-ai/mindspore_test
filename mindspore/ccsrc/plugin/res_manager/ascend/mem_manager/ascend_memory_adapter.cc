@@ -107,6 +107,9 @@ bool AscendMemAdapter::Initialize() {
 
   float huge_page_reserve_size = runtime::RuntimeConf::GetInstance()->mem_huge_page_reserve_size();
   device_hbm_huge_page_reserved_size_ = static_cast<size_t>(huge_page_reserve_size * kGBToByte);
+  if (AscendVmmAdapter::IsEnabled() && device_hbm_huge_page_reserved_size_ > 0) {
+    MS_LOG(WARNING) << "Reserve huge page feature is not available when VMM is enabled.";
+  }
   MS_LOG(INFO) << "Config huge_page_reserve_size : " << huge_page_reserve_size
                << ", device_hbm_huge_page_reserved_size_ : " << device_hbm_huge_page_reserved_size_;
 
@@ -237,7 +240,7 @@ bool AscendMemAdapter::DeInitialize() {
 namespace {
 struct HugeMemReserver {
   HugeMemReserver(size_t size, size_t reserver_size) {
-    MS_LOG(INFO) << "Huge mem reserve size : " << size << ", reserve_size : " << reserver_size << ".";
+    MS_LOG(INFO) << "Allocate size : " << size << ", reserve_size : " << reserver_size << ".";
     if (reserver_size < kMBToByte) {
       return;
     }
@@ -248,8 +251,8 @@ struct HugeMemReserver {
     if (ret == ACL_SUCCESS) {
       if (free_size < reserver_size + size) {
         MS_LOG(WARNING) << "Free size of huge page mem[" << free_size
-                        << "] is not enough for reserving, reserver_size : " << reserver_size << ", size : " << size
-                        << ", total size : " << total_size << ", trigger reserve operation.";
+                        << "] is less than the sum of reserver_size and allocate size. Reserve size " << reserver_size
+                        << ", allocate size : " << size << ", total ACL_HBM_MEM_HUGE size : " << total_size << ".";
         if (free_size < reserver_size) {
           MS_LOG(ERROR) << "Free size of huge page mem[" << free_size
                         << "] is less than reserver_size : " << reserver_size
