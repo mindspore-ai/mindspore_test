@@ -359,8 +359,7 @@ uint32_t AscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_rank,
 
 bool AscendCollectiveCommLib::CommSwitchNic(const std::vector<uint32_t> &global_ranks,
                                             const std::vector<bool> &use_backup) {
-  MS_LOG(INFO) << "The global rank: " << GetRankId(kHCCLWorldGroup) << ", switch global ranks: " << global_ranks
-               << ", use backup: " << use_backup;
+  MS_LOG(INFO) << "Switch global ranks: " << global_ranks << ", use backup: " << use_backup;
   // Firstly, traverse the communication domain to check whether there is an intersection
   // between the ranks in the communication domain and the ranks that need to switch NIC.
   for (const auto &kv : groups_) {
