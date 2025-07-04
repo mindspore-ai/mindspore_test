@@ -85,7 +85,7 @@ struct ActorSet {
   ControlActorSetPtr control_actors_{nullptr};
   std::vector<AbstractActorPtr> all_actors_;
   ActorInfo name_;
-  uint32_t actor_id_;
+  uint32_t actor_id_{0};
   // The related statistics information of multi thread and single thread to decide whether use the multi thread.
   bool is_multi_thread_execution_{true};
   size_t execution_count_{0};
