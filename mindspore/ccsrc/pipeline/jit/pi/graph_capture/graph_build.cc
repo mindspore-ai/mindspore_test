@@ -4313,6 +4313,7 @@ std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(C
   AObject *callable = call_node->input(0)->GetVobj();
   auto callable_info = callable->GetPyObject();
   if (callable_info.ptr() == nullptr) {
+    MS_LOG(DEBUG) << "Callable object is null!";
     return std::pair<bool, std::vector<py::object>>(false, {});
   }
   std::vector<ValueNode *> args_value_node;
@@ -4329,6 +4330,7 @@ std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(C
     if (arg_value_node->has_abstract_wrapper()) {
       auto arg_abstract_wrapper = arg_value_node->abstract_wrapper();
       if (!arg_abstract_wrapper->IsConstant()) {
+        MS_LOG(DEBUG) << "Found a non-constant argument, can't do const-fold. node: " << ToString(arg_value_node);
         return std::pair<bool, std::vector<py::object>>(false, {});
       }
       arg_py_object = AbstractWrapper::ConvertToPyObject(arg_abstract_wrapper);
@@ -4336,6 +4338,7 @@ std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(C
       arg_py_object = arg_value_node->GetVobj()->GetPyObject();
     }
     if (arg_py_object.ptr() == nullptr) {
+      MS_LOG(DEBUG) << "Found an argument without python object, can't do const-fold. " << ToString(arg_value_node);
       return std::pair<bool, std::vector<py::object>>(false, {});
     }
     input_objects.push_back(arg_py_object);
@@ -4787,6 +4790,12 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
     return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
 
+  // python builtin type()
+  if (callable_info.ptr() == reinterpret_cast<PyObject *>(&PyType_Type)) {
+    HandleCallType(call_node, stop_reason);
+    return py::object();
+  }
+
   py::object result = ResolveCallableWithByteCode(call_node, stop_reason);
   AObject *callable = call_node->input(0)->GetVobj();
   bool pijit_specialized = original_callable.ptr() == callable_info.ptr()  // not converted
@@ -4804,7 +4813,7 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
 py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                                 StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
-  MS_LOG(INFO) << "CanConstantFoldFunc for: " << call_node->ToString() << ", " << py::str(callable_info);
+  MS_LOG(INFO) << "Do constant fold for: " << call_node->ToString() << ", " << py::str(callable_info);
 
   JustCallAndSetResWithArgs(call_node, args);
 
@@ -4812,6 +4821,7 @@ py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &a
   if (result.ptr() != nullptr) {
     const AbstractWrapperPtr &abs_wrapper = FGBuilder()->AddLocalVariable(result);
     if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
+      MS_LOG(INFO) << "Constant fold failed, abstract is null";
       *stop_reason = StopTraceReason::kStopTraceDataType_Unsupported;
     } else {
       call_node->set_abstract_wrapper(abs_wrapper);
@@ -4822,6 +4832,38 @@ py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &a
     *stop_reason = StopTraceReason::kStopTraceConstantFold_Failed;
   }
   return py::object();
+}
+
+void GraphBuilder::HandleCallType(CallNode *call_node, StopTraceReason *stop_reason) const {
+  MS_LOG(DEBUG) << "Handle python builtin type()";
+  if (call_node->getInputs().size() != 2) {
+    // Only support type(object).
+    // type(name, bases, dict, **kwds) is not supported for now.
+    MS_LOG(INFO) << "Only support type() with one argument";
+    *stop_reason = StopTraceReason::kStopTraceFunc_Type_Unsupported;
+    return;
+  }
+  ValueNode *param = call_node->input(1);
+  MS_EXCEPTION_IF_NULL(param);
+  if (param->GetVobj() == nullptr) {
+    MS_LOG(INFO) << "The argument AObject of type() is null. Argument: " << param->ToString();
+    *stop_reason = StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
+    return;
+  }
+
+  PyTypeObject *py_type = param->GetVobj()->GetTypeObject();
+  if (py_type == nullptr) {
+    MS_LOG(INFO) << "Infer failed, the PyTypeObject of argument is null. Argument: " << param->ToString();
+    *stop_reason = StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
+    return;
+  }
+
+  auto py_obj = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(py_type));
+  AObject *aobj = AObject::Convert(py_obj);
+  call_node->SetVobj(aobj);
+  AbstractWrapperPtr wrapper = FGBuilder()->AddLocalVariable(py_obj);
+  call_node->set_abstract_wrapper(wrapper);
+  *stop_reason = StopTraceReason::kNonStopTrace;
 }
 
 namespace {

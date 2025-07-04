@@ -361,6 +361,8 @@ class GraphBuilder {
                                     StopTraceReason *stop_reason);
   py::object HandleMSCallable(CallNode *call_node, const py::object &callable_info, const py::object &original_callable,
                               StopTraceReason *stop_reason);
+  // Handle python builtin type()
+  void HandleCallType(CallNode *call_node, StopTraceReason *stop_reason) const;
 
   // Collect side effect nodes that need to be returned from current graph.
   void CollectSideEffectOutputs();
