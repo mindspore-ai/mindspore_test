@@ -208,7 +208,10 @@ static CNodePtr CreateGroupNormSiluNodeForSD15(const std::string &pattern_name, 
 
   // create op
   auto groupnorm_silu_prim = std::make_shared<ops::Custom>();
-  MS_CHECK_TRUE_RET(groupnorm_silu_prim != nullptr, nullptr);
+  if (groupnorm_silu_prim == nullptr) {
+    MS_LOG(ERROR) << "New GroupNormSilu prim failed!";
+    return nullptr;
+  }
   std::vector<std::string> input_names = {"x", "gamma", "beta"};
   std::vector<std::string> output_names = {"z"};
   groupnorm_silu_prim->set_type("GNSNZ");
@@ -218,10 +221,6 @@ static CNodePtr CreateGroupNormSiluNodeForSD15(const std::string &pattern_name, 
   groupnorm_silu_prim->AddAttr("eps", api::MakeValue(kNumEps));
   groupnorm_silu_prim->AddAttr("activate_silu", api::MakeValue(use_silu));
   groupnorm_silu_prim->AddAttr("reg_op_name", api::MakeValue("GNSNZ"));
-  if (groupnorm_silu_prim == nullptr) {
-    MS_LOG(ERROR) << "New GroupNormSilu prim failed!";
-    return nullptr;
-  }
 
   auto GNS_prim_c = groupnorm_silu_prim->GetPrim();
   if (GNS_prim_c == nullptr) {
@@ -265,6 +264,7 @@ std::unordered_map<std::string, VectorRef> GNSNZPass::DefinePatterns() const {
 
 AnfNodePtr GNSNZPass::Process(const std::string &patten_name, const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                               const EquivPtr &equiv) const {
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   MS_LOG(INFO) << "Do groupnorm silu nz fusion, pattern name: " << patten_name << "   " << node->fullname_with_scope();
   if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
     MS_LOG(ERROR) << "Function graph, node or equiv is nullptr!";
