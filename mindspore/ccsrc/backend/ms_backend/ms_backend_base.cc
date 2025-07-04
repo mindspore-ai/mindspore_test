@@ -1851,8 +1851,16 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 
 namespace {
 bool IsMemoryLeak(const device::DeviceAddress *const device_tensor) {
-  return device_tensor != nullptr && device_tensor->new_ref_count() != SIZE_MAX &&
-         (device_tensor->GetPtr() != nullptr || device_tensor->new_ref_count() != 0);
+  if (device_tensor == nullptr || device_tensor->new_ref_count() == SIZE_MAX) {
+    return false;
+  }
+  if (device_tensor->GetPtr() != nullptr) {
+    return true;
+  }
+  if (device_tensor->new_ref_count() != 0) {
+    MS_LOG(INFO) << "Ref count is not 0 after run graph for device address:" << device_tensor->ToString();
+  }
+  return false;
 }
 
 void CheckMemoryLeak(const runtime::AbstractActorPtr &actor, const KernelTensorPtr &kernel_tensor) {

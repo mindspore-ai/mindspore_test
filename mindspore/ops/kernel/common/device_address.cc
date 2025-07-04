@@ -103,6 +103,10 @@ std::string DeviceAddress::ToString() const {
   if (hete_info_ != nullptr) {
     ofs << " hete info:" << hete_info_->ToString();
   }
+  const auto &node_index = GetNodeIndex();
+  if (node_index.first != nullptr) {
+    ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
+  }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
       << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_;
   return ofs.str();
