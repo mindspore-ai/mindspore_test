@@ -824,11 +824,11 @@ DataPrepareActorPtr GraphScheduler::BuildDataPrepareActor(const GraphCompilerInf
   auto actor_name = graph_compiler_info.name_ + kDataPrepareActorNameSuffix;
   auto data_prepare_actor = std::make_shared<DataPrepareActor>(
     actor_name, memory_manager_aid_, debug_aid_, profiler_aid_, &graph_compiler_info, host_queue_ds_actor, host_queue);
+  MS_EXCEPTION_IF_NULL(data_prepare_actor);
   if (host_queue_ds_actor != nullptr) {
     data_prepare_actor->ref_device_tensors_ = host_queue_ds_actor->ref_device_tensors_;
   }
   MS_LOG(INFO) << "Create data prepare actor: " << actor_name;
-  MS_EXCEPTION_IF_NULL(data_prepare_actor);
   InsertActor(data_prepare_actor.get());
   return data_prepare_actor;
 }
