@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_MEMORY_FREE_ACTOR_H_
 
 #include <memory>
-#include <set>
 #include <string>
 #include "runtime/graph_scheduler/actor/memory_aware_actor.h"
 
