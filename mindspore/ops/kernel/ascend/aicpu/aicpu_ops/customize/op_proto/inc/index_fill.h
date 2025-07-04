@@ -20,24 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Fills the elements of the input tensor with value val by selecting the indices in the order given in index. \n
-
-* @par Inputs:
-* Four inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, float64, uint8, uint16, uint32,
-*     uint64, int8, int16, int32, int64. \n
-* @li dim: A Tensor of type int32, dimension along which to index. \n
-* @li indices: A Tensor of the indices, type should be int32. \n
-* @li value: A tensor. Must be one of the following types: float16, float32, float64, uint8, uint16, uint32,
-*     uint64, int8, int16, int32, int64. \n
-
-* @par Outputs:
-* y: A Tensor with the same type and shape of input_x's. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator IndexFill. \n
-*/
 REG_CUST_OP(IndexFill)
   .INPUT(x, TensorType::BasicType())
   .INPUT(dim, TensorType({DT_INT32}))

@@ -20,25 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
- * @brief Computes the mean along sparse segments of a tensor . \n
-
- * @par Inputs:
- * The input indices and segment_ids must have same rank. Inputs include:
- * @li x: A Tensor. Must be one of the following types: float, double.
- * @li indices: A Tensor. Must be one of the following types: int32, int64.
- A 1-D tensor. Has same rank as segment_ids.
- * @li segment_ids: A Tensor. Must be one of the following types: int32, int64.
- A 1-D tensor. Values should be sorted and can be repeated.
- * @li num_segments: Should equal the number of distinct segment IDs . \n
-
- * @par Outputs:
- * y:A Tensor. Has same shape as data, except for dimension 0 which has size num_segments . \n
-
- * @par Third-party framework compatibility
- * Compatible with tensorflow SparseSegmentMeanWithNumSegments operator
- */
-
 REG_CUST_OP(SparseSegmentMeanWithNumSegments)
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
   .INPUT(indices, TensorType({DT_INT32, DT_INT64}))

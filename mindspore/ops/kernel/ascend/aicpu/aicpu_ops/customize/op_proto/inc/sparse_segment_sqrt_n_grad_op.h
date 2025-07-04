@@ -20,27 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes gradients for SparseSegmentMean . \n
-
-* @par Inputs:
-* The input grad must have be type float or double. Inputs include:
-* @li x: A Tensor. Must be one of the following types: float, double.
-gradient propagated to the SparseSegmentMean op.
-* @li indices: A Tensor. Must be one of the following types: int32, int64.
-indices passed to the corresponding SparseSegmentMean op.
-* @li segment_ids: A Tensor of type int32. segment_ids passed to the
-corresponding SparseSegmentMean op.
-* @li output_dim0: A Tensor of type int32. dimension 0 of "x" passed to
-SparseSegmentMean op . \n
-
-* @par Outputs:
-* y:A Tensor. Has the same type as grad . \n
-
-* @par Third-party framework compatibility
-* Compatible with tensorflow SparseSegmentSqrtNGrad operator
-*/
-
 REG_CUST_OP(SparseSegmentSqrtNGrad)
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
   .INPUT(indices, TensorType({DT_INT32}))

@@ -20,29 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Creates a one-dimensional tensor of size steps whose values are
-    evenly spaced from start to end, inclusive, on a logarithmic scale
-    with base base.
-
-* @par Inputs:
-* Two inputs, including:
-* start: A tensor. Must be one of the following types:
-*     float16, float32.  \n
-* end: A tensor. Must be one of the following types:
-*     float16, float32.  \n
-
-* @par Attributes:
-* @li steps: An optional int.Defaults to 100. \n
-* @li base: An optional float.Defaults to 10.0. \n
-* @li dtype: An optional int.Defaults to 1. \n
-
-* @par Outputs:
-* y: A Tensor with the same type and shape of input_x's. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator logspace. \n
-*/
 REG_CUST_OP(LogSpace)
   .INPUT(start, TensorType({DT_FLOAT, DT_FLOAT16}))
   .INPUT(end, TensorType({DT_FLOAT, DT_FLOAT16}))

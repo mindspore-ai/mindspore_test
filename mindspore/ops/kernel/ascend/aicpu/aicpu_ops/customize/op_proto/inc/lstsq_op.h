@@ -20,21 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @Calculates the solutions of the least squares and minimum norm problems. \n
-
-* @par Inputs:
-* matrix: An 2D tensor of type float16, float32, double.
-* rhs: An 2D tensor of type float16, float32, double.
-
-* @par Attributes:
-* @li Ie_regularizer: An optional float. This value defaults to 0.0.
-* @li fast: An optional bool. This value defaults to True.
-
-* @par Outputs:
-* y: An 2D tensor of type float16, float32, double.
-*/
-
 REG_CUST_OP(Lstsq)
   .INPUT(matrix, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
   .INPUT(rhs, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

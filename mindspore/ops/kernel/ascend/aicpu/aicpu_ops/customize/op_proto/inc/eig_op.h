@@ -20,23 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the eigenvalue decomposition of a square matrix. \n
-
-* @par Inputs:
-* One input, including:
-* @li x:A Tensor. Must be one of the following types: float32, float64, complex64, complex128.
- Shape is [N, N]. \n
-
-* @par Attributes:
-* @li compute_v: A bool. Indicating whether to compute eigenvectors. \n
-
-* @par Outputs:
-* eigen_values: A Tensor. Has the corresponding complex type with "x". Shape is [N, 1].
-* eigen_vectors: A Tensor. Has the corresponding complex type with "x". Shape is [N, N] with compute_v true,
- Shape is empty with compute_v false. \n
-*/
-
 REG_CUST_OP(Eig)
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
   .OUTPUT(eigen_values, TensorType({DT_COMPLEX64, DT_COMPLEX128}))

@@ -20,20 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Performs the backpropagation of AdaptiveMaxPool2dGrad. \n
-
-* @par Inputs:
-* @li input_grad: A 3D or 4D Tensor of input's gradient. Must be one of RealNumberType. \n
-* @li x: A 3D or 4D Tensor. Must be one of RealNumberType. \n
-* @li argmax: A 3D or 4D Tensor of type IndexNumberType. \n
-
-* @par Outputs:
-* @li output_grad: A Tensor. Has the same data type and shape as "x" \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator AdaptiveMaxPool2dGrad.
-*/
 REG_CUST_OP(AdaptiveMaxPool2dGrad)
   .INPUT(y_grad, TensorType::FloatingDataType())
   .INPUT(x, TensorType::FloatingDataType())

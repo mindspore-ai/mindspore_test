@@ -20,44 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
- * @brief Update entries in '*var' and '*accum' according to the proximal adagrad scheme. \n
- *
- * @attention Constraints:
- *  the input tensors expect indices must have the same shape.
- *
- * @par Inputs:
- * Nine inputs, including:
- * @li var: A mutable Tensor. Must be one of the following types:
- *     TensorType::NumberType(). Should be a Variable Tensor.
- * @li gradient_accumulator: A mutable Tensor. Must have the same
- *     type as "var". Should be a Variable Tensor.
- * @li gradient_squared_accumulator: A mutable Tensor of the same type as "var".
- *     Should be a Variable Tensor.
- * @li grad: A Tensor of the same type as "var", for the gradient.
- * @li indices: A Tensor of the type of int32 or int64.
- *     A vector of indices into the first dimension of var and accum.
- * @li lr: A Tensor of the same type as "var".
- *     Scaling factor. Must be a scalar.
- * @li l1: A Tensor of the same type as "var".
- *     L1 regulariation. Must be a scalar.
- * @li l2: A Tensor of the same type as "var".
- *     L2 regulariation. Must be a scalar.
- * @li global_step: A Tensor of type int32 or int64.
- *     Training step number. Must be a scalar . \n
- *
- * @par Attributes:
- * use_locking: An optional bool. Defaults to "False".
- *     If "True", updating of the var and accum tensors will be
- *     protected by a lock; otherwise the behavior is undefined,
- *     but may exhibit less contention . \n
- *
- * @par Outputs:
- * var: A mutable Tensor. Has the same type as "var" . \n
- *
- * @par Third-party framework compatibility
- * Compatible with the TensorFlow operator SparseApplyAdagradDA.
- */
 REG_CUST_OP(SparseApplyAdagradDA)
   .INPUT(var, TensorType::RealNumberType())
   .INPUT(grad_accum, TensorType::RealNumberType())

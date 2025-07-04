@@ -20,24 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Applies a 3D adaptive max pooling over an input signal composed of several input planes. \n
-* The output is of size D x H x W, for 4D/5D input Tensor. \n
-* The number of output features is equal to the number of input planes.
-
-* @par Inputs:
-* Two inputs, including:
-* @li x: A 4D/5D Tensor. Must be one of RealNumberType.
-* @li output_size: A 3D Tensor with data type int32.
-
-* @par Outputs:
-* Two outputs, including:
-* @li y: A Tensor. Has the same data type as "x" \n
-* @li argmax: A Tensor with data type int32. Has the same shape as "y"
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator AdaptiveMaxPool3d.
-*/
 REG_CUST_OP(AdaptiveMaxPool3d)
   .INPUT(x, TensorType::RealNumberType())
   .INPUT(output_size, TensorType({DT_INT32}))

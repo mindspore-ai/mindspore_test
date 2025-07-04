@@ -20,22 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Converts a (possibly batched)dense matrix to CSRSparseMatrix. \n
-
-* @par Inputs:
-* @li dense_input: A dense matrix Tensor of 2D or 3D. Dtype fp32, fp64, cfp64, cfp128. \n
-* @li indices: A matrix Tensor indicating positions of nonzero elements. Dtype int32, int64 \n
-
-* @par Outputs:
-* @li y_dense_shape: A vector Tensor of type int32 or int64. 1D.
-* @li y_batch_pointers: A vector Tensor of type int32 or int64. 1D.
-* @li y_row_pointers: A vector Tensor of type int32 or int64. 1D.
-* @li y_values: A matrix Tensor of type float, double, complex64 or complex128. 2D. \n
-
-* @par Third-party framework compatibility
-* Compatible with the TensorFlow operator DenseToCSRSparseMatrix.
-*/
 REG_CUST_OP(DenseToCSRSparseMatrix)
   .INPUT(dense_input, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
   .INPUT(indices, TensorType({DT_INT64, DT_INT32}))

@@ -20,34 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief InstanceNormV2Grad operator interface implementation.
-
-* @par Inputs:
-* Seven inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float32.
-* @li mean: A Tensor. Must be one of the following types: float32.
-* @li gamma: A Tensor. Must be one of the following types: float32.
-* @li save_mean: A Tensor. Must be one of the following types: float32.
-* @li save_variance: A Tensor. Must be one of the following types: float32.
-
-* @par Attributes:
-* @li is_training: An optional bool, specifying if the operation is used for
-* training or inference. Defaults to "True".
-* @li epsilon: An optional float32, specifying the small value added to
-* variance to avoid dividing by zero. Defaults to "0.00001".
-
-* @par Outputs:
-* Three outputs, including:
-* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_gamma: A Tensor. Must be one of the following types: float32.
-* @li pd_beta: A Tensor. Must be one of the following types: float32.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION NOW IS SUPPORT 5D INPUT WITH FORMAT NC1HWC0 AND 4D INPUT WITH FORMAT NCHW & NHWC
-*/
 REG_CUST_OP(InstanceNormV2Grad)
   .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

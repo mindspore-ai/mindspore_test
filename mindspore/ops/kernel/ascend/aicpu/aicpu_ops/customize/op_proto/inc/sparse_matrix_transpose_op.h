@@ -20,35 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Transpose of CSRsparsematrix . \n
-
-* @par Inputs:
-* The input must be a batched CSRsparsematrix .
-* @li x_dense_shape: A vector Tensor of type int64. 1D. The shape of the
- CSRsparsematrix.
-* @li x_col_indices: A vector Tensor of type int64. 1D. The indices of the
- col CSRsparsematrix.
-* @li x_values: A vector Tensor of type float or double. 1D. The values of
- the CSRsparsematrix.
-* @li x_batch_pointers: A vector Tensor of type int64. 1D. The indices of
- the batch CSRsparsematrix.
-* @li x_row_pointers: A vector Tensor of type int64. 1D. The pointers of the
- row CSRsparsematrix . \n
-
-* @par Outputs:
-* The Output must be a batched CSRsparsematrix .
-* @li y_dense_shape: A vector Tensor of type int64. 1D. The shape of the
- CSRsparsematrix.
-* @li y_col_indices: A vector Tensor of type int64. 1D. The indices of the
- col CSRsparsematrix.
-* @li y_values: A vector Tensor of type float or double. 1D. The values of
- the CSRsparsematrix.
-* @li y_batch_pointers: A vector Tensor of type int64. 1D. The indices of
- the batch CSRsparsematrix.
-* @li y_row_pointers: A vector Tensor of type int64. 1D. The pointers of the
- row CSRsparsematrix. \n
-*/
 REG_CUST_OP(SparseMatrixTranspose)
   .INPUT(x_dense_shape, TensorType({DT_INT32, DT_INT64}))
   .INPUT(x_batch_pointers, TensorType({DT_INT32, DT_INT64}))
