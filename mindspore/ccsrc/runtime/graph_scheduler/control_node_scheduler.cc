@@ -1511,6 +1511,7 @@ void ControlNodeScheduler::LinkArrowByParameter(const AnfNodePtr &parameter, Con
   if (parser->IsRootGraphPersistentDeviceTensor(parameter)) {
     if (EnableInputOptimize()) {
       auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+      MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
       auto real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(parameter.get());
       ParameterInfo cur_param_info{from_node_with_index, real_outer_idx};
       to_actor->InsertParameterIndexs(to_node_with_index.second, cur_param_info);
