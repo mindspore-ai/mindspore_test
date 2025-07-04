@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/optimizer/enhancer/insert_transpose_for_sort.h"
 #include <algorithm>
 #include <string>
+#include <vector>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/device/ascend/optimizer/create_node_helper.h"
@@ -25,7 +26,7 @@
 
 namespace mindspore {
 namespace opt {
-const size_t kSortOutputNum = 2;
+constexpr size_t kSortOutputNum = 2;
 const BaseRef InsertTransposeForSort::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   auto prim = std::make_shared<Primitive>(kSortOpName);
