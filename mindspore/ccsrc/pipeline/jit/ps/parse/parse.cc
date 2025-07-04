@@ -1819,6 +1819,7 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
   }
   MS_LOG(DEBUG) << "Process ast Call, name_id: " << name_id;
   auto call_function_node = ParseExprNode(block, function_ast_node);
+  MS_EXCEPTION_IF_NULL(call_function_node);
 
   // Function call arguments should be passed in as groups and unpacked later using unpack call
   ArgsContext args_context = ArgsContext();
@@ -1930,6 +1931,7 @@ void Parser::ParseArgsInCall(const FunctionBlockPtr &block, const py::list &args
     } else {
       MS_LOG(DEBUG) << "args[" << i << "]: " << py::str(args[i]);
       AnfNodePtr node = ParseExprNode(block, args[i]);
+      MS_EXCEPTION_IF_NULL(node);
       auto internal = node->interpret_internal_type();
       auto interpret_without_internal =
         ((node->interpret() || IsPrimitiveCNode(node, prim::kPrimPyInterpret)) && !internal);
