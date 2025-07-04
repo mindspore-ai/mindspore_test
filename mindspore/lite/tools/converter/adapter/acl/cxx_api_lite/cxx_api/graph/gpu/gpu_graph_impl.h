@@ -51,8 +51,8 @@ class GPUGraphImpl : public GraphCell::GraphImpl {
   bool set_device_id_flag_;
 
   // tensor-rt
-  uint32_t batch_size_;
-  uint32_t workspace_size_;
+  uint32_t batch_size_{0};
+  uint32_t workspace_size_{0};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_CXX_API_GRAPH_MS_GPU_GRAPH_IMPL_H
