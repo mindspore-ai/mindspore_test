@@ -19,7 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, jit, context, Symbol
 from mindspore.nn import Cell
 from mindspore._c_expression import get_code_extra
-from .share.utils import match_array
+from tests.st.pi_jit.share.utils import match_array
 from tests.mark_utils import arg_mark
 
 s=Symbol(max=10,min=1)

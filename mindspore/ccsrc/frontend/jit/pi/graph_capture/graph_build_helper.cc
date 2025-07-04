@@ -143,7 +143,7 @@ AbstractWrapperPtr GradGraphBuildHelper::Build(GraphBuilder *graph_builder, Call
   }
 
   auto forward_net_object = grad_net_node->input(forward_net_index)->GetVobj()->GetPyObject();
-  (void)pi_jit_should_compile(forward_net_object, py::dict(), py::none());
+  (void)pi_jit_should_compile(forward_net_object);
 
   bool guard_forward_net = graph->GuardValueNode(grad_net_node->input(forward_net_index), GId);
   if (!guard_forward_net) {
