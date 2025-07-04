@@ -176,8 +176,10 @@ void InsertCast(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
       MS_EXCEPTION_IF_NULL(second_depend_node);
       second_depend_node->set_abstract(cnode->abstract());
       auto used_node_list = GetRealNodeUsedList(func_graph, cnode);
-      if (used_node_list != nullptr && used_node_list->empty()) {
+      MS_EXCEPTION_IF_NULL(used_node_list);
+      if (used_node_list->empty()) {
         used_node_list = GetNodeUserList(func_graph, cnode);
+        MS_EXCEPTION_IF_NULL(used_node_list);
       }
       for (size_t j = 0; j < used_node_list->size(); j++) {
         auto used_node = used_node_list->at(j).first;
