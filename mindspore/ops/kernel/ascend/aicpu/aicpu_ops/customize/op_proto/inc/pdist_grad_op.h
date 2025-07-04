@@ -20,27 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the grad of x in pdist. \n
-
-* @par Inputs:
-* Thress inputs, including:
-* @li grad: A tensor. Must be one of the following types:
-*     float16, float32. \n
-* @li x: A tensor. Must be one of the following types:
-*     float16, float32. \n
-* @li pdist: Output tensor of cdist forward.
-*     Must be one of the following types: float16, float32. \n
-
-* @par Attributes:
-* p: An optional float.Defaults to 2. \n
-
-* @par Outputs:
-* y: A Tensor with the same type and shape of x's. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator Pdist Backward. \n
-*/
 REG_CUST_OP(PdistGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

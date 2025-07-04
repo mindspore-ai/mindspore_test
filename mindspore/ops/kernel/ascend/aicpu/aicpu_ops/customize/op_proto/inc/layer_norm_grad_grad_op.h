@@ -20,23 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
- * @brief Compute the backward of LayerNormGrad. \n
- * @par Inputs:
- * x: the input x from LayerNorm. Must be one of the following types: float16, float32. \n
- * dy: the gradient of y. Must be one of the following types: float16,float32. \n
- * variance: the variance of x. Must be one of the following types: float16, float32. \n
- * mean: the mean value of x. Must be one of the following types: float16, float32. \n
- * gamma: the input gamma from LayerNorm. Must be one of the following types: float16, float32. \n
- * d_dx: the gradient of dx. Must be one of the following types: float16, float32. \n
- * d_dg: the gradient of dg. Must be one of the following types: float16, float32. \n
- * d_db: the gradient of db. Must be one of the following types: float16, float32. \n
- *
- * @par Outputs:
- * sopd_x: the gradient of x. Must be one of the following types: float16, float32. \n
- * sopd_dy: the gradient of dy. Must be one of the following types: float16, float32. \n
- * sopd_gamma: the gradient of gamma. Must be one of the following types: float16, float32. \n
- */
 REG_CUST_OP(LayerNormGradGrad)
   .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
   .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))

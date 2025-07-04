@@ -20,28 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @name The prototype of sspaddmm
-* @brief out = beta input + alpha (mat1 @ mat2), input, mat1, mat2 are sparse matrix \n
-
-* @par Inputs:
-* @li input_indices: A 2D Tensor of type int32 or int64.
-* @li input_values: A 1D Tensor. The values of the SparseTensor
-* @li input_shape: A 1D Tensor of type int64. The shape of the SparseTensor \n
-* @li mat1_indices: A 2D Tensor of type int32 or int64.
-* @li mat1_values: A 1D Tensor. The values of the SparseTensor
-* @li mat1_shape: A 1D Tensor of type int64. The shape of the SparseTensor
-* @li mat2_tensor: A 2D tensor Matrix
-
-* @par optional:
-* @li alpha: a scalor of type int32, int64, float, etc
-* @li beta: a scalor of type int32, int64, float, etc \n
-
-* @par Outputs:
-       *@li y_indices: A Tensor of type int64.
-       *@li y_values: A Tensor. Has the same type as "values".
-       *@li y_shape: A Tensor of type int64 . \n
-**/
 REG_CUST_OP(Sspaddmm)
   .INPUT(input_indices, TensorType({DT_INT32, DT_INT64}))
   .INPUT(input_values, TensorType({DT_UINT8, DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))

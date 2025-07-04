@@ -20,20 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the Geqrf decompositions of one matrix.
-
-* @par Inputs:
-* @li x: A Tensor whose shape is [M, N].The inpute shape of x must be 2D.
-
-* @par Outputs:
-* @li r: A Tensor. Has the same type as x.
-* @li tau: A Vector. Has min(M, N) elements.
-
-* @par Third-party framework compatibility
-* Compatible with pytorch Geqrf operator.
-*/
-
 REG_CUST_OP(Geqrf)
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
   .OUTPUT(r, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))

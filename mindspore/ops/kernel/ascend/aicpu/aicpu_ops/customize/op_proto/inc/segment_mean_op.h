@@ -20,24 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief: Computes the maximum along segments of a tensor.
-* Computes a tensor such that output[i]=(data[i]) where max is over j such that segment_ids[j] == i.
-* If the max is empty for a given segment ID i, output[i] = 0
-
-* @par Inputs:
-* Two inputs, include:
-* @li x:A Tensor of type float16, float32, int32,int8,uint8.
-* @li segment_ids:should be the size of the first dimension
-        must sorted and need not cover all values in the full range of valid values
-        must be positive intege
-
-* @par Outputs:
-* y:A Tensor with same type as "x" . \n
-
-* @par Third-party framework compatibility
-* Compatible with the TensorFlow operator SegmentMean.
-*/
 REG_CUST_OP(SegmentMean)
   .INPUT(x, TensorType::RealNumberType())
   .INPUT(segment_ids, TensorType::IndexNumberType())

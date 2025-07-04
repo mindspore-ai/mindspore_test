@@ -20,30 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the MultiMarginLossGrad. \n
-
-* @par Inputs:
-* @li y_grad: A scalar of type float16, float32, double.
-* @li x: A 2D Tensor of dtype float16, float32, double.
-* @li target: A 1D Tensor of dtype int64.
-* @li weight:Optional 1D Tensor of dtype float16, float32, double.
-a manual rescaling weight given to each class.
-* If given, it has to be a Tensor of size C. Otherwise,
-* it is treated as if having all ones. \n
-
-* @par Attributes:
-* margin :An optional float , Defaults to 1.
-* p :An optional int .The norm degree for pairwise distance.Should be 1 or 2.
-Defaults to 1.
-* reduction:A character string from "none", "mean", and "sum", specifying the
-* reduction type to be applied to the output. Defaults to "mean". \n
-
-
-* @par Outputs:
-* x_grad: A Tensor.  the same type and shape as "x".
-*/
-
 REG_CUST_OP(MultiMarginLossGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

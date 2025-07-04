@@ -20,24 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the exponential of "x" element-wise. \n
-
-* @par Inputs:
-* One input:\n
-* x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. \n
-
-* @par Attributes:
-* @li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1.0".
-* @li scale: An optional attribute of type float32, specifying the scale alpha. Defaults to "1.0".
-* @li shift: An optional attribute of type float32, specifying the shift beta. Defaults to "0.0". \n
-
-* @par Outputs:
-* y: A Tensor of the same type as "x". \n
-
-* @par Third-party framework compatibility
-* Compatible with TensorFlow operator Exp.
-*/
 REG_CUST_OP(Exp)
   .INPUT(x, TensorType::UnaryDataType())
   .OUTPUT(y, TensorType::UnaryDataType())

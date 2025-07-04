@@ -20,21 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the multivariate log-gamma function. \n
-
-* @par Inputs:
-* x:A Tensor. Must be one of the following types: float32, double.
-
-* @par Attributes:
-* p:A required attribute of the following types: int32, int64. \n
-
-* @par Outputs:
-* y:A Tensor. Has the same type as x. \n
-
-* @par Third-party framework compatibility.
-* Compatible with pytorch Mvlgamma operator.
-*/
 REG_CUST_OP(Mvlgamma)
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
   .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))

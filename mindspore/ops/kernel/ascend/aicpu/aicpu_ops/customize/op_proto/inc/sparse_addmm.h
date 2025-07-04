@@ -20,22 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Generate the distribution of dirichlet. \n
-
-* @par Inputs:
-* x: A tensor with data type float16 or float. n-D. \n
-
-* @par Attributes:
-* @li seed: An optional int. Defaults to 0. \n
-
-* @par Outputs:
-* y: A Tensor. Has the type float16 or float. n-D. \n
-
-* @par Third-party framework compatibility
-* @li Compatible with the Pytorch operator SampleDirichlet.
-*/
-
 REG_CUST_OP(SparseAddmm)
   .INPUT(x1_indices, TensorType({DT_INT32, DT_INT64}))
   .INPUT(x1_values, TensorType({DT_UINT64, DT_INT64, DT_UINT32, DT_INT32, DT_UINT16, DT_INT16, DT_UINT8, DT_INT8,

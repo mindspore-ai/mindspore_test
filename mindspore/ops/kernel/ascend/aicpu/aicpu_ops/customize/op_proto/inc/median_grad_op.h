@@ -20,25 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief MedianGrad. \n
-
-* @par Inputs:
-* four inputs, including:
-* @li y_grad: A Tensor. Support int16/int32/int64/float/double.\n
-* @li x: A Tensor. Support int16/int32/int64/float/double.\n
-* @li y: A Tensor. Support int16/int32/int64/float/double.\n
-* @li indices: A Tensor. Support int32/int64.\n
-
-* @par Outputs:
-* one output, including:
-* @li x_grad: A Tensor. Support int16/int32/int64/float/double.\n
-
-* @par Attributes:
-* @li global_median: whether the output is the global median of all elements or just in the dim.\n
-* @li axis:the dimension to reduce.\n
-* @li keepdim: whether the output tensor has dim retained or not.\n
-*/
 REG_CUST_OP(MedianGrad)
   .INPUT(y_grad, TensorType({DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))
   .INPUT(x, TensorType({DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, DT_DOUBLE}))

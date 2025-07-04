@@ -20,26 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-   * @brief The Glu operator represents a gated linear unit. Where the input is divided into two halves to
-   * form A and B, All elements in B are evaluated by the sigmoid function, A and B do elements-wise product . \n
-
-   * @par Inputs:
-   * @li x: A tensor of type float16, float32, float64 . \n
-
-   * @par Attributes:
-   * axis: An optional attribute int32. Specifies the dimension along which to split. Defaults to -1 . \n
-
-   * @par Outputs:
-   * @li y:  output with the same dtype of input x. \n
-
-   * @attention Constraints:
-   * @li "axis" is in the range [-len(x.shape), (x.shape)-1] . \n
-
-   * @par Third-party framework compatibility
-   * Compatible with the PyTorch operator GLU.
-   */
-
 REG_CUST_OP(Glu)
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
   .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16}))
