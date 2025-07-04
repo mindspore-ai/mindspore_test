@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/dist_comm_reduce_scatter.h"
+#include "infer/ops_func_impl/dist_comm_reduce_scatter_tensor_uneven.h"
 #include <memory>
 #include <set>
 #include <string>
@@ -25,23 +25,17 @@
 
 namespace mindspore {
 namespace ops {
-ShapeArray DistCommReduceScatterFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const InferInfoPtrList &input_infos) const {
-  auto &value = input_infos[kIndex2];
-  (void)CheckRankSize(primitive->name(), value);
+ShapeArray DistCommReduceScatterTensorUnevenFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                                 const InferInfoPtrList &input_infos) const {
   const auto &output_shape = input_infos[kIndex0]->GetShape();
   return {output_shape};
 }
 
-std::vector<TypeId> DistCommReduceScatterFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                             const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> DistCommReduceScatterTensorUnevenFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                                         const InferInfoPtrList &input_infos) const {
+  auto type = input_infos[kIndex1]->GetType();
   auto out_type = input_infos[kIndex0]->GetType();
-  auto x_list = input_infos[kIndex1]->GetSequenceElements();
-  for (size_t i = 1; i < x_list.size(); i++) {
-    auto in_type = x_list[i]->GetType();
-    CheckInferTypes(primitive->name(), in_type, out_type, true);
-  }
-  return {out_type};
+  return {CheckInferTypes(primitive->name(), type, out_type, true)};
 }
 }  // namespace ops
 }  // namespace mindspore
