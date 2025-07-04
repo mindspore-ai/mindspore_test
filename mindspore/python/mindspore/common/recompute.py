@@ -26,6 +26,7 @@ from mindspore.common.api import _pynative_executor, _no_grad
 from mindspore.common.generator import get_rng_state, set_rng_state
 from mindspore.train.amp import AmpDecorator
 from mindspore._c_expression.amp import get_curr_amp_strategy
+from mindspore._check_jit_forbidden_api import jit_forbidden_register
 
 
 class _WrapCell(Cell):
@@ -215,6 +216,7 @@ def _check_validation(block):
                        'function will not come into effect.')
 
 
+@jit_forbidden_register
 def recompute(block, *args, **kwargs):
     r"""
     This function is used to reduce memory, when run block, rather than

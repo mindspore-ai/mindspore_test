@@ -2345,12 +2345,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 }
 
 std::vector<ActionItem> MindIRPipeline() {
-  auto context_ptr = MsContext::GetInstance();
-  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    MS_LOG(EXCEPTION)
-      << "The graph generated form MindIR is not support to execute in the PynativeMode, please convert "
-         "to the GraphMode.";
-  }
   std::vector<ActionItem> actions;
   // Set funcGraph loaded from MindIR to resource.
   (void)actions.emplace_back(std::make_pair(kLoadMindir, SetMindIRGraphAction));
