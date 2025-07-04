@@ -1855,6 +1855,10 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
             self[i][j][index[i][j][k]] += src[i][j][k]  # if dim == 2
 
+        .. warning::
+            When deterministic computation is enabled, `index` can not be a non-contiguous Tensor; otherwise,
+            deterministic results can not be guaranteed.
+
         Args:
             dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`self`).
             index (Tensor): The index of `self` to do scatter operation whose data type must

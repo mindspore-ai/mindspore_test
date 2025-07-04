@@ -17,6 +17,9 @@ mindspore.Tensor.scatter_add\_
 
         self[i][j][index[i][j][k]] += src[i][j][k]  # if dim == 2
 
+    .. warning::
+        开启确定性计算后， `index` 不能传入非连续的Tensor，否则会无法获得确定性的计算结果。
+
     参数：
         - **dim** (int) - `self` 执行scatter_add操作的轴。取值范围是[-r, r)，其中r是 `self` 的rank。
         - **index** (Tensor) - `self` 要进行scatter_add操作的目标索引。数据类型为int32或int64，rank必须和 `self` 一致。除了 `dim` 指定的维度， `index` 的每一维的size都需要小于或等于 `self` 对应维度的size。
