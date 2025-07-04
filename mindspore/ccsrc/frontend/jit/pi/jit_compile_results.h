@@ -88,7 +88,6 @@ class JitCompileResults {
 
   State stat() const { return stat_; }
   const auto &origin_frame() const { return compile_frame_; }
-  const auto &input_signature() const { return input_signature_; }
   const auto &codehub() { return cache_.code_hub(); }
   const auto &code() const { return cache_.code(); }
   const auto &tbs() const { return tbs_; }
@@ -96,9 +95,10 @@ class JitCompileResults {
   int &compile_count() { return compile_count_; }
   int &break_count() { return break_count_; }
   const auto &cache() const { return cache_; }
+  bool is_for_loop_body_wrapper() { return is_for_loop_body_wrapper_; }
+  const auto &enable_dynamic_dict() const { return enable_dynamic_dict_; }
 
   void set_stat(State s);
-  void set_input_signature(const py::object &sig) { input_signature_ = sig; }
   void set_origin_frame(PyFrameWrapper f) { compile_frame_ = f; }
   void set_code(const OptCodePtr &p) { cache_.set_code(p); }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
@@ -106,7 +106,7 @@ class JitCompileResults {
   void set_is_for_loop_body_wrapper(bool is_for_loop_body_wrapper) {
     is_for_loop_body_wrapper_ = is_for_loop_body_wrapper;
   }
-  bool is_for_loop_body_wrapper() { return is_for_loop_body_wrapper_; }
+  void set_enable_dynamic_dict(const py::object &enable_dynamic_dict) { enable_dynamic_dict_ = enable_dynamic_dict; }
 
   int IncCodeCount() { return compile_count_++; }
   void ClearCache() { cache_.Clear(); }
@@ -117,7 +117,7 @@ class JitCompileResults {
   ~JitCompileResults() = default;
 
   PyFrameWrapper compile_frame_;
-  py::object input_signature_;
+  py::object enable_dynamic_dict_{py::none()};
   State stat_;
 
   // compiler output
@@ -127,7 +127,7 @@ class JitCompileResults {
   std::shared_ptr<GraphJitConfig> conf_;
   int compile_count_;
   int break_count_;
-  bool is_for_loop_body_wrapper_ = false;
+  bool is_for_loop_body_wrapper_{false};
 };
 
 inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {

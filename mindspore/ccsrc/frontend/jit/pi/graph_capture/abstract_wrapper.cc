@@ -357,7 +357,7 @@ bool AbstractWrapper::MarkObjectPiJItShouldCompile(const py::object &object) {
   } else {
     mark_object = object;
   }
-  return pi_jit_should_compile(mark_object, py::dict(), py::none());
+  return pi_jit_should_compile(mark_object);
 }
 
 bool AbstractWrapper::IsConstant() const {

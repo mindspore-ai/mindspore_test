@@ -193,16 +193,15 @@ void CaptureContext::SetContext(const py::args &va, const py::kwargs &kw) {
   struct ContextArgument {
     PyObject *fn_;
     PyObject *config_;
-    PyObject *input_signature_;
     PyObject *wrapper_;
     PyObject *skip_codes_;
     PyObject *skip_files_;
   };
-  static const char *kws[] = {"fn", "config", "input_signature", "wrapper", "skip_codes", "skip_files", nullptr};
-  constexpr const char fmt[] = "|OOO$OOO:pi_jit_set_context";
-  ContextArgument args = {nullptr, nullptr, Py_None, nullptr, nullptr, nullptr};
+  static const char *kws[] = {"fn", "config", "wrapper", "skip_codes", "skip_files", nullptr};
+  constexpr const char fmt[] = "|OO$OOO:pi_jit_set_context";
+  ContextArgument args = {nullptr, nullptr, nullptr, nullptr, nullptr};
   if (!PyArg_ParseTupleAndKeywords(va.ptr(), kw.ptr(), fmt, const_cast<char **>(kws), &args.fn_, &args.config_,
-                                   &args.input_signature_, &args.wrapper_, &args.skip_codes_, &args.skip_files_)) {
+                                   &args.wrapper_, &args.skip_codes_, &args.skip_files_)) {
     throw py::error_already_set();  // arguments is invalid
   }
 
@@ -218,7 +217,7 @@ void CaptureContext::SetContext(const py::args &va, const py::kwargs &kw) {
   }
   auto jcr = GetJitCompileResults(args.fn_);
   if (jcr == nullptr || jcr == JitCompileResults::get_skip_jcr()) {
-    pi_jit_should_compile(args.fn_, py::dict(), args.input_signature_);
+    pi_jit_should_compile(args.fn_);
     jcr = GetJitCompileResults(args.fn_);
   }
   if (jcr == nullptr) {

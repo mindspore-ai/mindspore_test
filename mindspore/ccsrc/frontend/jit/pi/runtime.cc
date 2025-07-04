@@ -472,13 +472,15 @@ static void AddGradFlagForParam(const OptGuardPtr &guard) {
 }
 
 extern bool UnsupportedCodeTypeCheck(PyCodeObject *co);
+
 static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   const auto &frame = c->origin_frame();
   PyCodeObject *code = frame.GetCode().ptr();
   if (UnsupportedCodeTypeCheck(code)) {
     return false;
   }
-  ShapeContext sc(c->origin_frame(), c->input_signature());
+  ShapeContext sc(c->origin_frame(), c->enable_dynamic_dict());
+  sc.ApplyEnableDynamic();
   MS_LOG(INFO) << "Start compile " << ToString(frame.GetCode());
 
   ParameterManager::ScopedCleaner param_auto_cleaner;
@@ -499,7 +501,6 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     c->code()->guard_status() = nullptr;
     aobject_resource.Release();
   }
-  sc.ApplySignature();
 
   if (c->conf()->getIntConfig(GraphJitConfig::kGuardRelaxCount) > 0) {
     auto guard = c->code()->GetGuard()->Optimize();
@@ -745,14 +746,14 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameW
           << "Recompile func: " << std::string(py::str(reinterpret_cast<PyObject *>(co)));
         return CodeHook(tstate, c, frame);
       }
-      MS_LOG(EXCEPTION) << "shouldn't reach here";
+      MS_LOG(INTERNAL_EXCEPTION) << "shouldn't reach here";
     }
     case JitCompileResults::GRAPH_BUILDING:
       MS_LOG(ERROR) << "recursive call, compiler call the code "
                     << std::string(py::str(reinterpret_cast<PyObject *>(co))) << " which is compiling";
       break;
     default:
-      MS_LOG(EXCEPTION) << "shouldn't reach here";
+      MS_LOG(INTERNAL_EXCEPTION) << "shouldn't reach here";
       break;
   }
   MS_LOG(INFO) << "Fall back to python execute: " << ToString(PyFrameWrapper(frame).GetCode());
@@ -818,6 +819,7 @@ PyObject *EvalFrame(PY_FRAME_EVAL_FUNCTION_SIGNATURE) {
 }  // namespace mindspore
 
 namespace mindspore {
+constexpr auto kEnableDynamic = "__enable_dynamic__";
 
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 7) && (PY_MINOR_VERSION <= 11)
 
@@ -844,8 +846,8 @@ py::bool_ pi_jit_disable() {
   return true;
 }
 
-bool pi_jit_should_compile(const py::handle &funcHandle, const py::handle &tag, const py::handle &signature) {
-  PyObject *func = funcHandle.ptr();
+bool pi_jit_should_compile(const py::handle &func_handle) {
+  PyObject *func = func_handle.ptr();
   PyObject *code = NULL;
   if (PyFunction_Check(func)) {
     code = PyFunction_GET_CODE(func);
@@ -863,8 +865,13 @@ bool pi_jit_should_compile(const py::handle &funcHandle, const py::handle &tag, 
   if (c == nullptr) {
     return false;
   }
-  c->set_input_signature(py::reinterpret_borrow<py::object>(signature));
-  auto new_config = mindspore::pijit::GraphJitConfig(py::reinterpret_borrow<py::object>(tag));
+  if (PyObject_HasAttrString(func, kEnableDynamic)) {
+    PyObject *enable_dynamic_dict = PyObject_GetAttrString(func, kEnableDynamic);
+    MS_LOG(INFO) << "Set enable_dynamic: " << std::string(py::str(enable_dynamic_dict));
+    c->set_enable_dynamic_dict(py::cast<py::object>(enable_dynamic_dict));
+  }
+
+  auto new_config = mindspore::pijit::GraphJitConfig();
   if (c->stat() != mindspore::pijit::JitCompileResults::NEVER_COMPILE) {
     *c->conf() = new_config;
     return true;
@@ -898,9 +905,7 @@ py::bool_ pi_jit_enable() {
   return py::bool_(false);
 }
 py::bool_ pi_jit_disable() { return py::bool_(false); }
-py::bool_ pi_jit_should_compile(const py::object &func, const py::object &tag, const py::object &signature) {
-  return py::bool_(false);
-}
+py::bool_ pi_jit_should_compile(const py::object &func_handle) { return py::bool_(false); }
 
 #endif
 
