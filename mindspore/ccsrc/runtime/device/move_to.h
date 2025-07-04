@@ -16,9 +16,12 @@
 
 #ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_MOVE_TO_H
 #define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_MOVE_TO_H
+
 #include <string>
+
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
+
 namespace mindspore {
 namespace device {
 void BACKEND_EXPORT MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,

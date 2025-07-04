@@ -531,6 +531,7 @@ void MemReuseChecker::ExportMembufInfoIR() {
   int64_t total_reuse_size = 0;
   if (!ofs.is_open()) {
     MS_LOG(ERROR) << "Open file [" << ir_file_name << "] failed!";
+    return;
   }
   ofs << "Total static size:\t" << total_ori_static_size_ << "\n";
   ofs << "Graph inputs size:\t" << total_ori_input_size_ << "\n";
@@ -558,6 +559,7 @@ void MemReuseChecker::ExportAddNewMmebufIR() {
   std::ofstream ofs(ir_file_name, std::ofstream::app);
   if (!ofs.is_open()) {
     MS_LOG(ERROR) << "Open file [" << ir_file_name << "] failed!";
+    return;
   }
   auto check_idx = add_new_mem_infos_.size();
   if (check_idx == add_new_op_indxs_.size() && check_idx == add_new_names_.size() &&
