@@ -440,7 +440,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the internal data ptr. The ptr maybe null if the data is not initialized.
   ///
   /// \return The ptr in device_address of Tensor.
-  void *unsafe_data();
+  const void *unsafe_data() const;
 
   TypeId set_data_type(TypeId data_type) override;
 

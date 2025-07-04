@@ -25,26 +25,8 @@ if(MSLITE_ENABLE_CONVERTER)
             ${OPS_DIR}/kernel/common/format_utils.cc
             ${CCSRC_DIR}/utils/convert_utils.cc
 
-            ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
+            ${SRC_DIR}/extendrt/lite_device_address.cc
             ${CCSRC_DIR}/runtime/device/res_manager/utils/convert_tensor_utils.cc
-            ${OPS_DIR}/kernel/common/kernel_build_info.cc
-            ${CCSRC_DIR}/backend/common/session/anf_runtime_algorithm.cc
-            ${CCSRC_DIR}/runtime/device/res_manager/hal_res_manager.cc
-            ${CCSRC_DIR}/backend/common/session/kernel_graph.cc
-            ${CCSRC_DIR}/kernel/kernel_info.cc
-            ${OPS_DIR}/kernel/common/common_utils.cc
-            ${CCSRC_DIR}/backend/common/session/exec_order_builder.cc
-            ${CCSRC_DIR}/kernel/framework_utils.cc
-            ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
-            ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
-            ${OPS_DIR}/kernel/common/oplib/oplib.cc
-            ${CCSRC_DIR}/runtime/device/res_manager/multi_stream_controller.cc
-
-            ${CCSRC_DIR}/runtime/device/res_manager/test_device_address.cc
-            ${CCSRC_DIR}/backend/common/pass/communication_op_fusion.cc
-            ${CCSRC_DIR}/runtime/hardware/device_context.cc
-            ${CCSRC_DIR}/runtime/device/res_manager/hal_res_base.cc
-            ${CCSRC_DIR}/runtime/device/res_manager/auto_mem_offload.cc
             )
 
     if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
@@ -56,10 +38,23 @@ if(MSLITE_ENABLE_CONVERTER)
                 ${CCSRC_DIR}/plugin/device/cpu/kernel/cpu_kernel.cc
                 ${CCSRC_DIR}/distributed/cluster/dummy_cluster_context.cc
                 ${OPS_DIR}/kernel/common/kernel_utils.cc
+                ${OPS_DIR}/kernel/common/common_utils.cc
+                ${CCSRC_DIR}/kernel/framework_utils.cc
                 ${CCSRC_DIR}/kernel/philox_random.cc
+                ${CCSRC_DIR}/kernel/kash/kernel_pack.cc
+                ${OPS_DIR}/kernel/common/kernel_build_info.cc
+                ${OPS_DIR}/kernel/common/oplib/oplib.cc
+                ${CCSRC_DIR}/kernel/kernel_info.cc
+                ${CCSRC_DIR}/utils/ms_device_shape_transfer.cc
                 ${CCSRC_DIR}/runtime/device/kernel_runtime_manager.cc
+                ${CCSRC_DIR}/runtime/hardware/device_context_manager.cc
                 ${CCSRC_DIR}/common/runtime_conf/runtime_conf.cc
                 ${CCSRC_DIR}/utils/comm_manager.cc
+                ${CCSRC_DIR}/backend/common/session/exec_order_builder.cc
+                ${CCSRC_DIR}/backend/common/session/kernel_graph.cc
+                ${CCSRC_DIR}/backend/common/session/anf_runtime_algorithm.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/hal_res_manager.cc
+                ${CCSRC_DIR}/runtime/device/res_manager/multi_stream_controller.cc
                 ${SRC_DIR}/extendrt/utils/tensor_utils.cc
                 )
     endif()

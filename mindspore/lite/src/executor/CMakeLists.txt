@@ -41,6 +41,7 @@ set(LITE_SRC
         ${LITE_DIR}/src/control_flow/control_flow_scheduler.cc
         ${LITE_DIR}/src/control_flow/control_subgraph_creator.cc
         ${LITE_DIR}/src/extendrt/utils/tensor_utils.cc
+        ${LITE_DIR}/src/extendrt/lite_device_address.cc
         )
 
 set(MODEL_LOADER_FRAMEWORK_SRC
