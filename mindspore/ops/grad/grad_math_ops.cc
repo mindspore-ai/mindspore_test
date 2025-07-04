@@ -5890,7 +5890,7 @@ REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
-REG_BPROP_BUILDER("VarMean").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("VarMean").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(i0);
   auto dim = ib->GetInput(i1);
   auto correction = ib->GetInput(i2);
