@@ -24,7 +24,7 @@ if(EXISTS ${CMAKE_C_COMPILER} AND EXISTS ${CMAKE_CXX_COMPILER})
         string(REPLACE "-g" " " CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
     endif()
 
-    include(${CMAKE_SOURCE_DIR}/cmake/dependency_securec_arm.cmake)
+    include(${CMAKE_SOURCE_DIR}/cmake/external_libs/securec_arm.cmake)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/protobuf_arm.cmake)
 
     set(AICPU_PROTO_SRC
@@ -71,7 +71,6 @@ if(EXISTS ${CMAKE_C_COMPILER} AND EXISTS ${CMAKE_CXX_COMPILER})
     )
 
     string(REGEX REPLACE "-B.*mold" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(REGEX REPLACE "-B.*mold" " " CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
 
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/customize/op_info_cfg)
         add_subdirectory(customize)

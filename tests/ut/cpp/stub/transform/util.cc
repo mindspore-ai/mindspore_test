@@ -20,7 +20,7 @@
 #include <utility>
 #include <map>
 
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "backend/ge_backend/graph_ir/df_graph_manager.h"

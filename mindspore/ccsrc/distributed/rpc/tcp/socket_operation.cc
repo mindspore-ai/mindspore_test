@@ -19,11 +19,11 @@
 #include <net/if.h>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
-#include <securec.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <system_error>
 
+#include "include/securec.h"
 #include "actor/log.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 

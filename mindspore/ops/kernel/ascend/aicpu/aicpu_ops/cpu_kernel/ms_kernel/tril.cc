@@ -16,7 +16,7 @@
 
 #include "tril.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include "Eigen/Core"
 
 #include "context/inc/cpu_kernel_utils.h"

@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/sparse_apply_adagrad_da.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <map>
 #include <memory>
 #include <string>

@@ -17,7 +17,7 @@
 #include "minddata/mindrecord/include/common/shard_utils.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "./securec.h"
+#include "include/securec.h"
 
 #ifdef _MSC_VER
 #define stat _stat64  //  for file size exceeds (1<<31)-1 bytes

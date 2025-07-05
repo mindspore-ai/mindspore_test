@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/index_put.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <Eigen/Dense>
 #include <cstring>
 #include <iostream>

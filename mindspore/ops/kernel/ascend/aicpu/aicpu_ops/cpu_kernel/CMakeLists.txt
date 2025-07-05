@@ -40,7 +40,7 @@ target_link_libraries(mindspore_cpu_kernels PRIVATE
     -ldl
     -shared
     PUBLIC
-    ${SECUREC_ARM_LIBRARY}
+    mindspore::securec_arm
     -Wl,--whole-archive
     -Wl,--no-whole-archive
     -Wl,-Bsymbolic

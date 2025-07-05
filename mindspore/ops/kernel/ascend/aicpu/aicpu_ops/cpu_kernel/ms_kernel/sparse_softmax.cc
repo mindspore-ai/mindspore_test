@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/sparse_softmax.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <vector>
 #include <iostream>
 #include <stack>

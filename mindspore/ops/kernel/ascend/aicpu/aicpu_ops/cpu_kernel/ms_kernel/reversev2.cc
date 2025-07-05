@@ -15,7 +15,7 @@
  */
 
 #include "ms_kernel/reversev2.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <unordered_set>
 #include <string>
 #include <vector>

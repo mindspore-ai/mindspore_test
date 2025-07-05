@@ -16,7 +16,7 @@
 
 #include "uniform_candidate_sampler.h"
 #include <algorithm>
-#include <securec.h>
+#include "include/securec.h"
 #include "utils/range_sampler.h"
 #include "random/utils.h"
 

@@ -19,7 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include "nlohmann/json.hpp"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/log_adapter.h"
 #include "utils/system/sha256.h"
 #include "common/common_utils.h"

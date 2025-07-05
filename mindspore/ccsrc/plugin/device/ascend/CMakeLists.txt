@@ -76,7 +76,7 @@ target_link_libraries(mindspore_ascend PRIVATE mindspore_backend_common mindspor
 target_link_libraries(mindspore_ascend PRIVATE mindspore_ascend_res_manager)
 target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore_pyboost -Wl,--as-needed)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
-target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
+target_link_libraries(mindspore_ascend PRIVATE mindspore::securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)
 target_link_libraries(mindspore_ascend PRIVATE mindspore::ssl mindspore::crypto)
 set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH

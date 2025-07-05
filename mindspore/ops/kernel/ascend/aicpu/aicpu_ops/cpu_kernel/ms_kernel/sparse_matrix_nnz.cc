@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "cpu_kernel/ms_kernel/sparse_matrix_nnz.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <complex>
 #include <numeric>
 #include <algorithm>
