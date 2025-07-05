@@ -48,13 +48,19 @@ DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target) {
 
 DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, bool init, device::DeviceType device_type) {
   // todo: set allocator
-  auto tensor_data = tensor::MakeTensorData(data_type, shape);
-  // todo: use init after tensor::empty is replaced.
-  auto ret = DeviceAddressMaker(init ? tensor_data->data() : nullptr, data_type, shape)
-               .set_deleter([tensor_data](void *, bool) {})
-               .set_maker(GetDeviceAddressMaker(device_type))
-               .make_device_address();
-  ret->set_data(std::move(tensor_data));
+  if (device_type == device::DeviceType::kCPU) {
+    auto tensor_data = tensor::MakeTensorData(data_type, shape);
+    // todo: use init after tensor::empty is replaced.
+    auto ret = DeviceAddressMaker(init ? tensor_data->data() : nullptr, data_type, shape)
+                 .set_deleter([tensor_data](void *, bool) {})
+                 .set_maker(GetDeviceAddressMaker(device_type))
+                 .make_device_address();
+    ret->set_data(std::move(tensor_data));
+    return ret;
+  }
+
+  auto ret =
+    DeviceAddressMaker(nullptr, data_type, shape).set_maker(GetDeviceAddressMaker(device_type)).make_device_address();
   return ret;
 }
 

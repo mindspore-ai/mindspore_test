@@ -70,6 +70,7 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static size_t GetTensorDeviceSize(const DeviceContext *device_context, const AnfNodePtr &node,
                                     const ShapeVector &shape, const string &format, TypeId dtype, size_t output_index);
 
+  static bool LazyCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id);
   // Overloading
   static void CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                        const tensor::TensorPtr &tensor);

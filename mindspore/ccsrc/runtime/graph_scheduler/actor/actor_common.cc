@@ -1106,7 +1106,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
   auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
-  MS_EXCEPTION_IF_NULL(tensor_address);
+  if (tensor_address == nullptr) {
+    // Tensor with initializer but didn't init_data yet.
+    auto empty_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
+    tensor->set_device_address(empty_tensor->device_address());
+    tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
+  }
   auto device_tensor = kernel_tensor->device_address();
 
   if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {

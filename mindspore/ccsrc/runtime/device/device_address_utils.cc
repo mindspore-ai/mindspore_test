@@ -124,7 +124,6 @@ const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *
 }
 }  // namespace
 
-
 std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
   constexpr auto kParameterDeviceUserDataName = "parameter_device";
   if (!node->isa<Parameter>()) {
@@ -977,6 +976,16 @@ void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &
   }
 }
 
+bool DeviceAddressUtils::LazyCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                  size_t stream_id) {
+  if (src_device_sync->GetDeviceType() != device::DeviceType::kCPU &&
+      dst_device_sync->GetDeviceType() == device::DeviceType::kCPU) {
+    return SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  } else {
+    return AsyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }
+}
+
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                                   const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
@@ -1012,9 +1021,9 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   device_address->set_from_persistent_mem(tensor->is_parameter());
   device_address->set_new_ref_count(SIZE_MAX);
 
-  auto h2d = [addr, device_address]() { return AsyncCopy(device_address, addr, device_address->stream_id()); };
   // keep origin device_address and execute in another thread.
-  tensor->set_to_device(std::move(h2d));
+  tensor->set_to_device(
+    [addr, device_address]() { return LazyCopy(device_address, addr, device_address->stream_id()); });
 
   tensor->set_device_address(device_address);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
