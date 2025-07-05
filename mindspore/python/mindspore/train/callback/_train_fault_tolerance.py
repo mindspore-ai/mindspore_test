@@ -167,6 +167,7 @@ def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.warning(f"Enter _tft_stop_callback device_id: {cb_ctx.device_id}")
     _stop_device(cb_ctx.device_id)
+    cb_ctx.stop_been_called = True
     if (not cb_ctx.is_uce_rank) and (not cb_ctx._is_params_consistent()):  # pylint: disable=W0212
         raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
     cb_ctx.is_uce_rank = False
@@ -339,6 +340,7 @@ class TrainFaultTolerance(Callback):
         self.learning_rate = None
         self.has_init_replica = False
         self.is_uce_rank = False
+        self.stop_been_called = False
 
         self.assign = mindspore.ops.Assign()
         self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
