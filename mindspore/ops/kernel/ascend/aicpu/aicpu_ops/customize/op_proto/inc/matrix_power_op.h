@@ -20,22 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief: Computes the n-th power of a batch of square matrices. \n
-
-* @par Inputs:
-* @li x: A tensor of shape (n, m, m). Must be one of the following types: float32, float16. \n
-
-* @par Outputs:
-* @li y: A tensor of the same shape and type with x. \n
-
-* @par Attributes:
-* @li n: A required int. The exponent. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator MatrixPower.
-*/
-
 REG_CUST_OP(MatrixPower)
   .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
   .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))

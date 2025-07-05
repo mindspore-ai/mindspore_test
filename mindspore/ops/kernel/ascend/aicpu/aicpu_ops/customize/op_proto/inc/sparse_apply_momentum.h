@@ -20,42 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Update relevant entries in '*var' and '*accum' according to the momentum scheme.
-*   Set use_nesterov = True if you want to use Nesterov momentum.
-*  computing process:
-*  accum = accum * momentum + grad
-*  var -= lr * accum
-*
-* @attention Constraints:
-*  the input tensors expect indices must have the same shape.
-*
-* @par Inputs:
-* @li var: A mutable tensor. Should be from a Variable().
-* @li accum: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-* @li lr: A scalar. Has the same type as "var".
-* @li grad: A tensor for the gradient. Has the same type as "var".
-* @li indices: A vector of indices into the first dimension of "var" and "accum".
-* @li momentum: Momentum. Must be a scalar.
-
-* @par Attributes:
-* @li use_nesterov: An optional bool. Defaults to "False".
-*     If "True", the tensor passed to compute grad will be
-*     var - lr * momentum * accum, so in the end, the var you get is actually
-*     var - lr * momentum * accum.
-*
-* @li use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected by a lock;
-*     otherwise the behavior is undefined, but may exhibit less contention.
-*
-* @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-*
-* @par Third-party framework compatibility
-* Compatible with the TensorFlow operator SparseApplyMomentum.
-*
-*/
 REG_CUST_OP(SparseApplyMomentum)
   .INPUT(var, TensorType::RealNumberType())
   .INPUT(accum, TensorType::RealNumberType())

@@ -20,19 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
- * @brief: Returns the matrix logarithm of one or more square matrices. \n
-
- * @par Inputs:
- * @li x: A Tensor. Must be one of the following types:
- *         complex64, complex128. \n
-
- * @par Outputs:
- * @li y: A Tensor. Has the same type as "x". \n
-
- * @par Third-party framework compatibility
- * Compatible with the TensorFlow operator MaxLogarithm.
- */
 REG_CUST_OP(MatrixLogarithm)
   .INPUT(x, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
   .OUTPUT(y, TensorType({DT_COMPLEX64, DT_COMPLEX128}))

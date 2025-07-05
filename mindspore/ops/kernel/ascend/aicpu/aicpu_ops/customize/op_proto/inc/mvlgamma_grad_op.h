@@ -20,23 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes gradients for Mvlgamma (multivariate log-gamma function). \n
-
-* @par Inputs:
-* y_grad:A Tensor. Must be one of the following types: float32, double.
-* x:A Tensor. Must be one of the following types: float32, double.
-
-* @par Attributes:
-* p:A required attribute of the following types: int32, int64. \n
-
-* @par Outputs:
-* x_grad:A Tensor. Has the same type as y_grad and x. \n
-
-* @par Third-party framework compatibility.
-* Compatible with pytorch mvlgamma_backward operator.
-*/
-
 REG_CUST_OP(MvlgammaGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT, DT_DOUBLE}))
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))

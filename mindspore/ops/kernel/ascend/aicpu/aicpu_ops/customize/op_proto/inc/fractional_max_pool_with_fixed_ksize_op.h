@@ -20,25 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Performs fractional max pooling with fixed ksize on the input . \n
-
-* @par Inputs:
-* Inputs include:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64.
-* 4-D with shape [batch, channels, height, width] . \n
-* @li random_samples: A Tensor. The value must > 0 and < 1. 3-D with shape [batch, channels, 2]
-
-* @par Outputs:
-* @li y: A Tensor. Has the same type as x.
-* @li argmax: A Tensor. Has the same shape as y. Specifying the index of maximum value in input x
-* Each element in y is a maximum value.
-
-* @par Attributes:
-* @li ksize: A required tuple or list, specifying the size of the window for each dimension of the input tensor.
-* @li output_shape: A required tuple or list, specifying the size of the output y.
-* @li data_format: The default is "NCHW". Specifying the format for input x.
-*/
 REG_CUST_OP(FractionalMaxPoolWithFixedKsize)
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))
   .INPUT(random_samples, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

@@ -20,23 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Counts the number of occurrences of each value in an integer array. \n
-
-* @par Inputs:
-* @li grads: A Tensor of grad_output. Its data tpye must be float16, float, double.
-* @li x: A Tensor of input. Its data tpye must be float16, float, double.
-
-* @par Outputs:
-* @li output: A Tensor of grad_input with the same shape of x. Its data tpye must be float16, float, double.
-
-* @par Attributes:
-* binary_output: An required value for computing.
-
-
-* @par Third-party framework compatibility
-* the pytorch framework does not have the same operation.
-*/
 REG_CUST_OP(GluGrad)
   .INPUT(grads, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
   .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))

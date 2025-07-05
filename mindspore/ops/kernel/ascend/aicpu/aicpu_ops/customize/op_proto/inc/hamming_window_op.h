@@ -20,26 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes the hamming_window function. \n
-
-* @par Inputs:
-* length: A Tensor of IntegerDataType, the size of returned window. \n
-
-* @par Attributes:
-* @li periodic: An optional flag, if True, returns a window to be used as periodic
-*     function. If False, return a symmetric window. Defaults to True. \n
-* @li alpha: An optional float coefficient. Defaults to 0.54. \n
-* @li beta: An optional float coefficient. Defaults to 0.46. \n
-* @li dtype: The desired data type of returned tensor. Only floating point
-*     types are supported. Defaults to "float". \n
-
-* @par Outputs:
-* y: A Tensor with type as attribute dtype. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator hamming_window. \n
-*/
 REG_CUST_OP(HammingWindow)
   .INPUT(length, TensorType::IntegerDataType())
   .OUTPUT(y, TensorType::FloatingDataType())

@@ -20,23 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
- * @brief Returns the median of the values in input.
- *
- * @par Inputs
- * one input including:
- * @li x: input A Tensor.Must be one of the RealNumberType types.
- *
- * @par Attributes:
- * @li global_median: whether the output is the global median of all elements or just in the dim.
- * @li axis: the dimension to reduce.
- * @li keepdim: whether the output tensor has dim retained or not.
- *
- * @par Output:
- * one output including:
- * @li y: The output format is (Tensor, Tensor),The first tensor will be populated with the median values and the
- * second tensor, which must have dtype long, with their indices in the dimension dim of input.
- */
 REG_CUST_OP(Median)
   .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT16, DT_INT32, DT_INT64}))
   .OUTPUT(values, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT16, DT_INT32, DT_INT64}))
