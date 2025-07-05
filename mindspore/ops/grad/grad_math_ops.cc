@@ -2086,7 +2086,7 @@ REG_BPROP_BUILDER("AssignAdd").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib
 REG_BPROP_BUILDER("AssignSub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(i0);
   auto y = ib->GetInput(i1);
-  auto dout = ib->GetInput(i2);
+  auto dout = ib->GetInput(i3);
   NodePtr dx = nullptr;
   NodePtr dy = nullptr;
   if (x->need_compute_grad_out()) {
