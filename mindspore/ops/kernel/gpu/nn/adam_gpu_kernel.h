@@ -68,7 +68,7 @@ class AdamGpuKernelMod : public NativeGpuKernelMod {
  private:
   AdamLaunchFunc kernel_func_;
   static std::vector<std::pair<KernelAttr, AdamLaunchFunc>> func_list_;
-  size_t input_elements_;
+  size_t input_elements_{0};
   int64_t batch_rank_{0};
   int64_t batch_size_{1};
   size_t variable_size_;

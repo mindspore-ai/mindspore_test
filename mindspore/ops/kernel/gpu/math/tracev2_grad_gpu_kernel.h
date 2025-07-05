@@ -80,7 +80,6 @@ class TraceV2GradGpuKernelMod : public NativeGpuKernelMod {
   int64_t mat_size_;
   int64_t min_size_;
   int64_t mat_row_size_;
-  int64_t dout_size_;
   size_t data_unit_size_;
   std::vector<int64_t> input_shape_;
   std::vector<int32_t> input_perm_;

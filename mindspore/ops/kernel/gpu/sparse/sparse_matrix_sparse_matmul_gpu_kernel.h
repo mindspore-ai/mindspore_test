@@ -128,8 +128,8 @@ class SparseMatrixSparseMatMulGpuKernelMod : public NativeGpuKernelMod {
   int64_t C_nnz1 = 0;
   bool transpose_a;
   bool transpose_b;
-  bool adjoint_a;
-  bool adjoint_b;
+  bool adjoint_a{false};
+  bool adjoint_b{false};
   device::gpu::GPUMemoryAllocator &allocator = device::gpu::GPUMemoryAllocator::GetInstance();
 
   cudaStream_t stream;

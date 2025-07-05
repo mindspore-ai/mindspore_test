@@ -46,7 +46,7 @@ int BufferSampleKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   workspace_size_list_.clear();
   output_size_list_.clear();
-  exp_element_list.clear();
+  exp_element_list_.clear();
   auto shapes = GetValue<std::vector<int64_t>>(primitive_->GetAttr("buffer_elements"));
   auto types = GetValue<std::vector<TypePtr>>(primitive_->GetAttr("buffer_dtype"));
   capacity_ = GetValue<int64_t>(primitive_->GetAttr("capacity"));
@@ -71,7 +71,7 @@ int BufferSampleKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   for (size_t i = 0; i < element_nums_; i++) {
     auto element = shapes[i] * UnitSizeInBytes(types[i]->type_id());
-    exp_element_list.push_back(element);
+    exp_element_list_.push_back(element);
     output_size_list_.push_back(batch_size_ * element);
   }
   workspace_size_list_.push_back(indexes_size * sizeof(unsigned int));
@@ -116,8 +116,8 @@ bool BufferSampleKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   for (size_t i = 0; i < element_nums_; i++) {
     auto buffer_addr = GetDeviceAddress<unsigned char>(inputs, i);
     auto out_addr = GetDeviceAddress<unsigned char>(outputs, i);
-    size_t size = batch_size_ * exp_element_list[i];
-    status = BufferSample(size, exp_element_list[i], indexes, buffer_addr, out_addr, cuda_stream);
+    size_t size = batch_size_ * exp_element_list_[i];
+    status = BufferSample(size, exp_element_list_[i], indexes, buffer_addr, out_addr, cuda_stream);
     CHECK_CUDA_STATUS(status, kernel_name_);
   }
   return true;

@@ -58,6 +58,10 @@ class CorrelateGpuKernelMod : public NativeGpuKernelMod {
     data_unit_size_ = 1;
     copy_start_idx_ = 0;
     mode_type_ = mindspore::PadMode::VALID;
+    padded_long_size_ = 0;
+    out_size_ = 0;
+    kernel_func_ = nullptr;
+    cuda_stream_ = nullptr;
     output_size_list_.clear();
     workspace_size_list_.clear();
   }
@@ -77,17 +81,17 @@ class CorrelateGpuKernelMod : public NativeGpuKernelMod {
                        const std::vector<kernel::KernelTensor *> &, const std::vector<kernel::KernelTensor *> &)>;
 
  private:
-  int64_t a_size_;
-  int64_t v_size_;
-  bool a_ge_v_;
-  int64_t long_size_;
-  int64_t short_size_;
-  int64_t padded_long_size_;
-  int64_t out_size_;
-  int64_t copy_start_idx_;
-  size_t data_unit_size_;
-  mindspore::PadMode mode_type_;
-  CorrelateFunc kernel_func_{};
+  int64_t a_size_{0};
+  int64_t v_size_{0};
+  bool a_ge_v_{true};
+  int64_t long_size_{0};
+  int64_t short_size_{0};
+  size_t data_unit_size_{1};
+  int64_t copy_start_idx_{0};
+  mindspore::PadMode mode_type_{mindspore::PadMode::VALID};
+  int64_t padded_long_size_{0};
+  int64_t out_size_{0};
+  CorrelateFunc kernel_func_{nullptr};
   void *cuda_stream_{nullptr};
   static std::vector<std::pair<KernelAttr, CorrelateFunc>> func_list_;
 };

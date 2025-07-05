@@ -414,7 +414,7 @@ bool SparseMatrixSparseMatMulGpuKernelMod::LaunchKernel(const std::vector<Kernel
   }
 
   C_nnz1 = h_y_batch_num[h_y_batch_num.size() - 1];
-  C_num_rows1 = (shape_y_row + 1) * batch;
+  C_num_rows1 = (static_cast<int64_t>(shape_y_row) + 1) * batch;
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
     cudaMemcpyAsync(y_batch_pointers, h_y_batch_num.data(), sizeof(int) * h_y_batch_num.size(), cudaMemcpyHostToDevice,
                     stream),
