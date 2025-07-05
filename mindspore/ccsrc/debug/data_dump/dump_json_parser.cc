@@ -97,6 +97,7 @@ void DumpJsonParser::SetInitialIteration(uint32_t initial_iteration) {
   cur_dump_iter_ = initial_iteration;
   cur_user_dump_iter_ = initial_iteration;
   initial_dump_iter_ = initial_iteration;
+  MS_VLOG(VL_DUMP) << "Set initial iteration to " << initial_iteration;
 }
 
 auto DumpJsonParser::CheckJsonKeyExist(const nlohmann::json &content, const std::string &key) {
@@ -333,7 +334,7 @@ void DumpJsonParser::UpdateDumpIter(int cur_step_count) {
 }
 
 void DumpJsonParser::UpdateUserDumpStep(const uint32_t step) {
-  MS_VLOG(VL_DUMP) << "Do dump step update:" << step;
+  MS_VLOG(VL_DUMP) << "Do dump step update:" << step << "before update cur_user_dump_iter_: " << cur_user_dump_iter_;
   if (!dump_user_step_flag_) {
     MS_LOG(WARNING) << "Costomized step function has not enabled, step update does not work!";
   }

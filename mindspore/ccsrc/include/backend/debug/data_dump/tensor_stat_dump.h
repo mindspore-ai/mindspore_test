@@ -35,9 +35,6 @@ class BACKEND_COMMON_EXPORT TensorStatDump {
 
   TensorStatDump(const std::string &op_type, const std::string &op_name, uint32_t task_id, uint32_t stream_id,
                  uint64_t timestamp, bool input, size_t slot, size_t tensor_loader_slot_);
-  TensorStatDump(const std::string &op_type, const std::string &op_name, const std::string &task_id,
-                 const std::string &stream_id, const std::string &timestamp, const std::string &io, size_t slot,
-                 size_t tensor_loader_slot, const mindspore::TypeId data_type);
   bool DumpTensorStatsToFile(const std::string &dump_path, const std::shared_ptr<TensorData> data);
   bool DumpTensorStatsToFile(const std::string &original_kernel_name, const std::string &dump_path,
                              const Debugger *debugger);
