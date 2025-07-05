@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/types.h>
 #include <sys/ipc.h>
 #endif
@@ -41,7 +41,7 @@ namespace platform = mindspore;
 
 namespace mindspore {
 namespace dataset {
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 extern std::atomic<uint32_t> inc_id;
 Status GetKey(key_t *key);
 #endif
