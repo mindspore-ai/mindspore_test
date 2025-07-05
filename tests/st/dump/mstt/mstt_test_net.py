@@ -53,13 +53,13 @@ def forward_hook(cell, inputs, outputs):
 
 
 def backward_pre_hook(cell, grad_out):
-    assert isinstance(cell, nn.Cell)
-    save_npy('backward_pre', grad_out[0].numpy())
+    assert False
 
 
 def backward_hook(cell, grad_in, grad_out):
     assert isinstance(cell, nn.Cell)
-    save_npy('backward', grad_in[0].numpy())
+    assert grad_in == (None,)
+    save_npy('backward', grad_out[0].numpy())
 
 
 def tensor_hook(grad):
