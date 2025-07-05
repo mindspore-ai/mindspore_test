@@ -15,9 +15,10 @@
  */
 
 #include "ms_kernel/random/utils.h"
-#include <securec.h>
+
 #include <random>
-#include <securec.h>
+
+#include "include/securec.h"
 #include "utils/philox_random.h"
 #include "inc/kernel_log.h"
 #include "unsupported/Eigen/CXX11/Tensor"

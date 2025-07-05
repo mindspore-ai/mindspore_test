@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 #include "kernel/ascend/aicpu/aicpu_ops/sequence_stack.h"
-#include <securec.h>
+
 #include <string>
 #include <thread>
 #include <complex>
 #include <algorithm>
+
+#include "include/securec.h"
 #include "proto/aicpu_tensor.pb.h"
 #include "common/atomic_op.h"
 #include "utils/eigen_tensor.h"

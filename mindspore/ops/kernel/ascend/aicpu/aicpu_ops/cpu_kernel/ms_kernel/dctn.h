@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <securec.h>
+#include "include/securec.h"
 #include "inc/ms_cpu_kernel.h"
 #include "cpu_kernel/utils/fft_helper.h"
 

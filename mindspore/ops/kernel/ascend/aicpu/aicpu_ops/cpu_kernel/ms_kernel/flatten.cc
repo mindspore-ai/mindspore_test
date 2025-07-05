@@ -16,7 +16,7 @@
 #include "ms_kernel/flatten.h"
 #include <vector>
 #include <numeric>
-#include <securec.h>
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/kernel_util.h"
 

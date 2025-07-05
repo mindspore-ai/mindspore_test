@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <string>
-#include "./securec.h"
+#include "include/securec.h"
 #include "minddata/dataset/core/data_type.h"
 #include "common/common.h"
 #include "gtest/gtest.h"

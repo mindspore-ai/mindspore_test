@@ -24,7 +24,7 @@
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/eigen_tensor.h"
 #include "utils/kernel_util.h"
 

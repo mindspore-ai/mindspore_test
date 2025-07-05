@@ -150,7 +150,6 @@ endif()
 if(USE_GLOG)
     set_property(SOURCE ${JNI_SRC} PROPERTY COMPILE_DEFINITIONS
             LOG_HDR_FILE_REL_PATH="mindspore/lite/java/native/../../../../mindspore/core/include/utils/log_adapter.h")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/securec/include)
     include_directories(${CMAKE_BINARY_DIR}/jni_include)
     add_definitions(-DUSE_GLOG)
     set_property(SOURCE ${JNI_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)
@@ -200,7 +199,6 @@ if(SUPPORT_TRAIN)
         set_property(SOURCE ${JNI_SRC} PROPERTY COMPILE_DEFINITIONS
                 LOG_HDR_FILE_REL_PATH=
                 "mindspore/lite/java/native/../../../../mindspore/core/include/utils/log_adapter.h")
-        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/securec/include)
         include_directories(${CMAKE_BINARY_DIR}/jni_include)
         add_definitions(-DUSE_GLOG)
         set(JNI_TRAIN_SRC

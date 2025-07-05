@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/cpu/generator_cpu_kernel.h"
-#include <securec.h>
+
 #include <algorithm>
 #include <limits>
 #include <random>
@@ -22,6 +22,8 @@
 #include <cmath>
 #include <string>
 #include <unordered_map>
+
+#include "include/securec.h"
 #include "mindspore/ops/infer/ops_func_impl/generator.h"
 #include "common/ms_factory.h"
 

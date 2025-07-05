@@ -17,9 +17,9 @@
 
 #include "cpu_kernel/ms_kernel/check_numerics.h"
 
-#include "securec/include/securec.h"
+#include "include/securec.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include "unsupported/Eigen/CXX11/Tensor"
 

@@ -21,7 +21,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "utils/os.h"

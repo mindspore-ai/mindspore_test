@@ -207,7 +207,7 @@ set_target_properties(de_ut_tests PROPERTIES INSTALL_RPATH "$ORIGIN/../lib:$ORIG
 target_link_libraries(de_ut_tests PRIVATE
         _c_dataengine pybind11::embed
         ${GTEST_LIBRARY}
-        ${SECUREC_LIBRARY}
+        mindspore::securec
         ${SLOG_LIBRARY}
         )
 

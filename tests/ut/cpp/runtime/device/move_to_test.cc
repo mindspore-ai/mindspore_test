@@ -23,7 +23,7 @@
 #include "runtime/device/move_to.h"
 #include "common/device_type.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "ir/tensor.h"
 #include "frontend/ir/tensor_py.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"

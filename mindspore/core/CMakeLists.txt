@@ -111,7 +111,7 @@ elseif(NOT TARGET_AOS_ARM AND NOT ANDROID_NDK)
     target_link_libraries(mindspore_core PRIVATE mindspore::protobuf)
 endif()
 
-target_link_libraries(mindspore_core PRIVATE securec)
+target_link_libraries(mindspore_core PRIVATE mindspore::securec)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_options(mindspore_core PRIVATE -Wl,-init,mindspore_log_init)

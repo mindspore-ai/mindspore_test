@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/sparse_tensor_dense_add.h"
 #include <float.h>
-#include <securec.h>
+#include "include/securec.h"
 #include <vector>
 #include <complex>
 #include <algorithm>

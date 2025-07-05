@@ -16,7 +16,7 @@
 
 #include "ms_kernel/resize_nearest_neighbor_v2.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>

@@ -16,7 +16,7 @@
 
 #include "ms_kernel/resize_bicubic.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <vector>
 #include <limits>

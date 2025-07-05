@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/fftshift.h"
-#include <securec.h>
+#include "include/securec.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/kernel_util.h"
