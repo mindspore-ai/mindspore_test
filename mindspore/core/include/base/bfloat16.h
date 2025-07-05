@@ -24,7 +24,7 @@
 #include <ostream>
 #include <limits>
 #include <functional>
-#include "third_party/securec/include/securec.h"
+#include "include/securec.h"
 
 // Implement BFloat16 for mindspore, inspired by Eigen::half.
 namespace mindspore {

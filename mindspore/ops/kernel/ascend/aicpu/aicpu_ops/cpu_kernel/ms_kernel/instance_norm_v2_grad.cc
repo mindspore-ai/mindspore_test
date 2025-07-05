@@ -15,7 +15,7 @@
  */
 #include "cpu_kernel/ms_kernel/instance_norm_v2_grad.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <Eigen/Dense>
 #include <map>
 #include <string>

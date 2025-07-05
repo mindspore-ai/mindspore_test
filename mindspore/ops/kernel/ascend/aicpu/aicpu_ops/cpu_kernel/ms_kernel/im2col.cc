@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "cpu_kernel/ms_kernel/im2col.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <complex>
 

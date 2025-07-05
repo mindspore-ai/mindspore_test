@@ -19,7 +19,7 @@
 #include <memory.h>
 #include <cfloat>
 #include <random>
-#include <securec.h>
+#include "include/securec.h"
 
 #include "context/inc/cpu_kernel_utils.h"
 #include "random/utils.h"

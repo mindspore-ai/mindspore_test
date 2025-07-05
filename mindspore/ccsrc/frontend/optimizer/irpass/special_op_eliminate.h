@@ -17,12 +17,12 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_SPECIAL_OP_ELIMINATE_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_SPECIAL_OP_ELIMINATE_H_
 
-#include <securec.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
 #include <string>
 
+#include "include/securec.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

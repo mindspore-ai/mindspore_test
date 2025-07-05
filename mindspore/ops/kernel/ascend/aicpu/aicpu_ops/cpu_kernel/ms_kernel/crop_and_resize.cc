@@ -16,7 +16,7 @@
 
 #include "ms_kernel/crop_and_resize.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <limits>
 #include <vector>

@@ -29,7 +29,7 @@
 #include "mindapi/base/macros.h"
 #include "utils/os.h"
 #include "utils/overload.h"
-#include "./securec.h"
+#include "include/securec.h"
 #ifdef USE_GLOG
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #define google mindspore_private

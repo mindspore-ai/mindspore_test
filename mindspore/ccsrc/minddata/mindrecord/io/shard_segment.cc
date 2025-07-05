@@ -17,7 +17,7 @@
 #include "minddata/mindrecord/include/shard_segment.h"
 #include "utils/ms_utils.h"
 
-#include "./securec.h"
+#include "include/securec.h"
 #include "minddata/mindrecord/include/common/shard_utils.h"
 #include "pybind11/pybind11.h"
 

@@ -15,7 +15,7 @@
  */
 #include "ms_kernel/dropout3d.h"
 #include <random>
-#include <securec.h>
+#include "include/securec.h"
 #include <Eigen/Core>
 #include "utils/kernel_util.h"
 

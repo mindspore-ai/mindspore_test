@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CORE_UTILS_MS_UTILS_SECURE_H_
 #define MINDSPORE_CORE_UTILS_MS_UTILS_SECURE_H_
 
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

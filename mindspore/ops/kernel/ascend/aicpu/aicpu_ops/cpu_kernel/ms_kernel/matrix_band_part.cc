@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/matrix_band_part.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <vector>
 

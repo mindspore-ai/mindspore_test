@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/sparse_fill_empty_rows.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <atomic>
 #include <mutex>

@@ -112,7 +112,7 @@ endif()
 
 # ------------------ LINK, SET_PROPERTY ---------------
 
-target_link_libraries(mindspore_ops PRIVATE securec)
+target_link_libraries(mindspore_ops PRIVATE mindspore::securec)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_options(mindspore_ops PRIVATE -Wl,-init,mindspore_log_init)

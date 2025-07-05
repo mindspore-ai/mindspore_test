@@ -15,7 +15,7 @@
  */
 #include "cpu_kernel/ms_kernel/list_diff.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <vector>
 #include <unordered_set>
 

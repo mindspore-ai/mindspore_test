@@ -17,7 +17,7 @@
 #define AICPU_KERNELS_NORMALIZED_DCT_H_
 
 #include <vector>
-#include <securec.h>
+#include "include/securec.h"
 #include "inc/ms_cpu_kernel.h"
 
 namespace aicpu {

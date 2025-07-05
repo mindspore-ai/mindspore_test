@@ -21,7 +21,7 @@
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "ir/tensor.h"
 #include "frontend/ir/tensor_py.h"
 

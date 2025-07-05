@@ -24,7 +24,7 @@
 #include "inc/kernel_log.h"
 #include "base/bfloat16.h"
 #include <vector>
-#include <securec.h>
+#include "include/securec.h"
 
 namespace aicpu {
 const char *const kInputNName = "n";

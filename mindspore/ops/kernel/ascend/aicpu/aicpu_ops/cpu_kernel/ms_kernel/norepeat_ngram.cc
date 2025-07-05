@@ -18,13 +18,13 @@
 #include <algorithm>
 #include <functional>
 #include <memory.h>
-#include <securec.h>
+#include "include/securec.h"
 #include "Eigen/Core"
 #include "unsupported/Eigen/CXX11/Tensor"
 
 #include "utils/kernel_util.h"
 #include "context/inc/cpu_kernel_utils.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "inc/kernel_log.h"
 
 #define FLT_MAX __FLT_MAX__

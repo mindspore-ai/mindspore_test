@@ -15,7 +15,7 @@
  */
 
 #include "ms_kernel/resize_area.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <vector>
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/kernel_util.h"
