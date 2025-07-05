@@ -47,7 +47,7 @@
 
 namespace mindspore {
 namespace dataset {
-#if !defined(__APPLE__) && !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 std::atomic<uint32_t> inc_id(0);
 
 Status GetKey(key_t *key) {
