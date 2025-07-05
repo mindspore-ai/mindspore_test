@@ -76,9 +76,9 @@ class ReduceScatterInfer : public abstract::OpInferBase {
     auto value_ptr = primitive->GetAttr(kRankSize);
     MS_ERROR_IF_NULL_W_RET_VAL(value_ptr, std::make_shared<abstract::Shape>());
     auto rank_size = static_cast<int>(GetValue<int64_t>(value_ptr));
-    if (rank_size == 0) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the 'rank_size' can not be zero, but got "
-                               << rank_size;
+    if (rank_size <= 0) {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                               << "', the 'rank_size' must be larger than zero, but got " << rank_size;
     }
     auto abstract_shape = input_args[kIndex0]->GetShape();
     MS_ERROR_IF_NULL_W_RET_VAL(abstract_shape, std::make_shared<abstract::Shape>());

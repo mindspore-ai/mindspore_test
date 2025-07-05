@@ -39,15 +39,15 @@ class BufferSampleKernelMod : public NativeGpuKernelMod {
   std::vector<KernelAttr> GetOpSupport() override;
 
  private:
-  size_t element_nums_;
-  int64_t capacity_;
-  size_t batch_size_;
-  int64_t seed_;
-  bool states_init_;
-  bool unique_;
+  size_t element_nums_{0};
+  int64_t capacity_{0};
+  size_t batch_size_{0};
+  int64_t seed_{0};
+  bool states_init_{false};
+  bool unique_{false};
   std::mt19937 generator_;
-  curandState *devStates_;
-  std::vector<size_t> exp_element_list;
+  curandState *devStates_{nullptr};
+  std::vector<size_t> exp_element_list_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

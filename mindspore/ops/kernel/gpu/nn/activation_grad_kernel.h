@@ -69,7 +69,7 @@ class ActivationGradGpuKernelMod : public NativeGpuKernelMod {
   static std::map<std::string, std::vector<std::pair<KernelAttr, ActivationGradGpuKernelMod::ActivationGradFunc>>>
     kernel_attr_map_;
   std::string kernel_name_{kUnKnown};
-  ActivationGradFunc kernel_func_;
+  ActivationGradFunc kernel_func_{nullptr};
   ShapeVector input_shape_{};
   bool is_null_input_{true};
   cudnnHandle_t cudnn_handle_{nullptr};
@@ -78,8 +78,8 @@ class ActivationGradGpuKernelMod : public NativeGpuKernelMod {
   cudnnTensorDescriptor_t data_descriptor_{nullptr};
   cudnnDataType_t cudnn_data_type_{CUDNN_DATA_FLOAT};
   void *cuda_stream_{nullptr};
-  TypeId dtype_;
-  size_t elements_;  // used only when input dtype_ is Complex<double> or Complex<float>
+  TypeId dtype_{kNumberTypeFloat32};
+  size_t elements_{0};  // used only when input dtype_ is Complex<double> or Complex<float>
 };
 }  // namespace kernel
 }  // namespace mindspore

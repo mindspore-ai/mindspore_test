@@ -73,8 +73,8 @@ class BroadcastExtOptGpuKernelMod : public NativeGpuKernelMod {
                                            const std::vector<kernel::KernelTensor *> &)>;
 
   BinaryOpType op_type_;
-  bool is_broadcast_;
-  bool is_null_input_;
+  bool is_broadcast_{false};
+  bool is_null_input_{false};
   std::vector<int64_t> simplified_in0_shape_;
   std::vector<int64_t> simplified_in1_shape_;
   std::vector<int64_t> simplified_in2_shape_;
