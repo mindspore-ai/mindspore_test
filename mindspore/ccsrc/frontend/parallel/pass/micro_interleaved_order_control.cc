@@ -540,8 +540,8 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (!parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved()) {
     return;
   }
-  circle_handler::SetAttrToDepend(graph);
   MS_EXCEPTION_IF_NULL(graph);
+  circle_handler::SetAttrToDepend(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto context = MsContext::GetInstance();
