@@ -114,6 +114,7 @@
 "mindspore/mindspore/ccsrc/minddata/dataset/util"                                                  "build/include"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv/image_process.h"                 "runtime/references"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv/image_process.cc"                "runtime/references"
+"mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv/image_process.cc"                "legal/copyright"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/lite_cv/lite_mat.h"                      "runtime/explicit"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/resize_cubic_op.h"                       "runtime/references"
 "mindspore/mindspore/ccsrc/minddata/dataset/kernels/image/resize_cubic_op.cc"                      "runtime/references"
