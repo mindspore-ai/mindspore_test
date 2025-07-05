@@ -84,8 +84,9 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
         tensor->set_sync_status(kNeedSyncHostToDeviceImmediately);
         tensor->set_need_pipeline_sync(true);
         tensor->set_device_address(node_address);
-        tensor->set_to_device(
-          [node_address, tensor_address, stream_id]() { return AsyncCopy(node_address, tensor_address, stream_id); });
+        tensor->set_to_device([node_address, tensor_address, stream_id]() {
+          return DeviceAddressUtils::LazyCopy(node_address, tensor_address, stream_id);
+        });
         MS_LOG(DEBUG) << "Set to_device callback for tensor " << tensor->ToString() << " id " << tensor->id();
       }
     }
@@ -748,8 +749,9 @@ void UpdateAddressInfoByInputTensor(const OpCompilerInfoPtr &op_compiler_info, c
   new_device_address->SetSize(tensor_size);
   new_device_address->set_from_persistent_mem(tensor->is_parameter());
 
-  MS_LOG(DEBUG) << "Update input edge kernel tensor from " << (edge->kernel_tensor_ != nullptr ? edge->kernel_tensor_->ToString() : "None")
-                << " to " << new_kernel_tensor->ToString();
+  MS_LOG(DEBUG) << "Update input edge kernel tensor from "
+                << (edge->kernel_tensor_ != nullptr ? edge->kernel_tensor_->ToString() : "None") << " to "
+                << new_kernel_tensor->ToString();
   edge->kernel_tensor_ = new_kernel_tensor;
 }
 
@@ -1019,12 +1021,12 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
 
     const auto &new_device_address = input_edge->kernel_tensor_->device_address();
     if (device_address->GetDeviceType() != new_device_address->GetDeviceType()) {
-      MS_LOG(DEBUG) << "Input tensor device address type:" << device::GetDeviceNameByType(device_address->GetDeviceType())
-                    << " but ir device address type:" << device::GetDeviceNameByType(new_device_address->GetDeviceType());
-      auto h2d = [device_address, new_device_address, stream_id](){
-        return AsyncCopy(new_device_address, device_address, stream_id);
-      };
-      input_tensor->set_to_device(std::move(h2d));
+      MS_LOG(DEBUG) << "Input tensor device address type:"
+                    << device::GetDeviceNameByType(device_address->GetDeviceType()) << " but ir device address type:"
+                    << device::GetDeviceNameByType(new_device_address->GetDeviceType());
+      input_tensor->set_to_device([device_address, new_device_address, stream_id]() {
+        return DeviceAddressUtils::LazyCopy(new_device_address, device_address, stream_id);
+      });
       input_tensor->set_device_address(new_device_address);
     } else {
       MS_LOG(DEBUG) << "Input device type is same, set tensor device address to ir input.";
