@@ -113,17 +113,15 @@ class PhiloxRandom {
   ResultType operator()() {
     ResultType counter = counter_;
     Key key = key_;
-    /*
-     * Run the single rounds for ten times. Manually unrolling the loop
-     * for better performance.
-     */
-    constexpr auto kTimes9 = 9;
-    for (int i = 0; i < kTimes9; i++) {
+    constexpr auto kTimes = 10;
+    for (int i = 0; i < kTimes; i++) {
       counter = ComputeSingleRound(counter, key);
-      RaiseKey(&key);
+      if (i < kTimes - 1) {
+        RaiseKey(&key);
+      } else {
+        SkipOne();
+      }
     }
-    counter = ComputeSingleRound(counter, key);
-    SkipOne();
     return counter;
   }
 

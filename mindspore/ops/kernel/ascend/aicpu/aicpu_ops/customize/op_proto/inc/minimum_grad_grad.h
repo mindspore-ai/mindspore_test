@@ -20,25 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Calculates the reversed outputs of the function "MinimumGradGrad"
-
-* @par Inputs:
-* Three inputs, including:
-* @li grad_y1: A mutable Tensor. Must be one of the following types:
-*     float16, float32, int32.
-* @li grad_y2: A mutable Tensor. Has the same type as "grad_y1".
-* @li x1: A mutable Tensor of the same type as "grad_y1".
-* @li x2: A mutable Tensor of the same type as "grad_y1". \n
-
-* @par Outputs:
-* @li spod_x1: A mutable Tensor. Has the same type as "grad_y1".
-* @li spod_x2: A mutable Tensor. Has the same type as "grad_y1".
-* @li sopd_grads: A mutable Tensor. Has the same type as "grad_y1". \n
-
-* @par Third-party framework compatibility
-* Compatible with the TensorFlow operator MinimumGradGrad.
-*/
 REG_CUST_OP(MinimumGradGrad)
   .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
   .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))

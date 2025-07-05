@@ -20,21 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Draws samples from a multinomial distribution. \n
-* @brief Fills the elements of the input tensor with log normal values initialized by given mean and std \n
-
-* @par Inputs:
-* Four inputs, including:
-* @li x: A Tensor. Must be one of the following types: float32, float64 \n
-* @li dim: A Tensor of type float, which is the mean of normal distribution. \n
-* @li std: A Tensor of type float, which is the mean of normal distribution. \n
-* @par Outputs:
-* y: A Tensor with the same type and shape of input_x's. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator LogNormal. \n
-*/
 REG_CUST_OP(LogNormalReverse)
   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))

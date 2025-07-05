@@ -234,8 +234,6 @@ cust_op_lists = [
     "rgbtohsv",
     "rightshift",
     "rsqrtgrad",
-    "sampledistortedboundingboxv2",
-    "scaleandtranslate",
     "scaleandtranslategrad",
     "scatternd",
     "scatterndupdate",

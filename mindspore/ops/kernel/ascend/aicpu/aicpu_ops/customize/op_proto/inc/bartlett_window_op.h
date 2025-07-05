@@ -20,25 +20,6 @@
 #include "op_proto_macro.h"
 
 namespace ge {
-/**
-* @brief Computes Bartlett window function. \n
-
-*
-* @par Inputs:
-* @li window_length: A tensor of IntegerDataType.
-*
-* @par Attributes:
-* @li periodic: An optional attribute. Defaults to true .
-* @li dtype: An optional attribute. Defaults to "0" .
-*
-*
-* @par Outputs:
-* y: A 1-D tensor of size (window_length,) containing the window
-*
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator LogicalXor.
-*
-*/
 REG_CUST_OP(BartlettWindow)
   .INPUT(window_length, TensorType({DT_INT32, DT_INT64}))
   .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
