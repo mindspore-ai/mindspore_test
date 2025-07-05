@@ -100,8 +100,8 @@ uint64_t GetSeed(const uint64_t &global_seed, const uint64_t &ops_seed) {
   } else {
     // Using Philox algorithm to scramble the global_seed and ops_seed so that
     // the user doesn't need to worry about which seed is more important.
-    random::PhiloxRandom::Key outer_key;
-    random::PhiloxRandom::ResultType outer_counter;
+    random::PhiloxRandom::KeyArr outer_key;
+    random::PhiloxRandom::ResultTypeArr outer_counter;
     outer_key[0] = 0x3ec8f720;
     outer_key[1] = 0x02461e29;
     outer_counter[0] = static_cast<uint32_t>(global_seed);

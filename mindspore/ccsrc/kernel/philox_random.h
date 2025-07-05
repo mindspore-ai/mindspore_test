@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,7 @@ constexpr size_t kIndex0 = 0;
 constexpr size_t kIndex1 = 1;
 constexpr size_t kIndex2 = 2;
 constexpr size_t kIndex3 = 3;
-/**
- * A class that represents an inline array.
- * Arguments:
- *   T: the array element type;
- *   ElementCount: the fixed size of the array;
- */
+
 template <typename T, int ElementCount>
 class BACKEND_COMMON_EXPORT Array {
  public:
@@ -54,28 +49,20 @@ class BACKEND_COMMON_EXPORT Array {
   T data_[ElementCount];
 };
 
+// The implementation of the Philox algorithm. More Details can be found in the paper:
+// Salmon, John K., et al. (2011) "Parallel random numbers: As easy as 1, 2, 3."
+// http://www.thesalmons.org/john/random123/papers/random123sc11.pdf
 class BACKEND_COMMON_EXPORT PhiloxRandom {
  public:
   using ResultElementType = uint32_t;
-  // The number of elements that will be returned.
   static constexpr int kKeyCount = 2;
   static constexpr int kResultElementCount = 4;
-  // Cost of generation of a single element (in cycles).
   static constexpr int kElementCost = 10;
   static constexpr int kMoveStepInBit = 32;
-  /*
-   * The type for the 64-bit key stored in the form of two 32-bit uint
-   * that are used in the diffusion process.
-   */
   using ResultType = Array<uint32_t, kResultElementCount>;
   using Key = Array<uint32_t, kKeyCount>;
 
   PhiloxRandom() {}
-
-  explicit PhiloxRandom(uint64_t seed) {
-    key_[kIndex0] = static_cast<uint32_t>(seed);
-    key_[kIndex1] = static_cast<uint32_t>(seed >> kMoveStepInBit);
-  }
 
   explicit PhiloxRandom(uint64_t seed_lo, uint64_t seed_hi) {
     key_[kIndex0] = static_cast<uint32_t>(seed_lo);
@@ -97,94 +84,67 @@ class BACKEND_COMMON_EXPORT PhiloxRandom {
     counter_[offset_high_index] = static_cast<uint32_t>(offset >> kMoveStepInBit);
   }
 
-  ResultType const &counter() const { return counter_; }
-  Key const &key() const { return key_; }
-
-  // Skip the specified number of samples of 128-bits in the current stream.
   void Skip(uint64_t count) {
-    const uint32_t count_lo = static_cast<uint32_t>(count);
-    uint32_t count_hi = static_cast<uint32_t>(count >> kMoveStepInBit);
+    const uint32_t low = static_cast<uint32_t>(count);
+    uint32_t high = static_cast<uint32_t>(count >> 32);
 
-    counter_[kIndex0] += count_lo;
-    if (counter_[kIndex0] < count_lo) {
-      ++count_hi;
-    }
+    counter_[kIndex0] += low;
+    if (counter_[kIndex0] < low) ++high;
 
-    counter_[kIndex1] += count_hi;
-    if (counter_[kIndex1] < count_hi) {
-      if (++counter_[kIndex2] == 0) {
-        ++counter_[kIndex3];
-      }
+    counter_[kIndex1] += high;
+    if (counter_[kIndex1] < high) {
+      if (++counter_[kIndex2] == 0) ++counter_[kIndex3];
     }
   }
-  /*
-   * Returns a group of four random numbers using the underlying Philox
-   * algorithm.
-   */
+
+  // overload the directly call
   ResultType operator()() {
-    ResultType counter = counter_;
-    Key key = key_;
-    for (size_t i = 0; i < kElementCost; i++) {
-      counter = ComputeSingleRound(counter, key);
-      RaiseKey(&key);
+    ResultType tmp_counter = counter_;
+    Key tmp_key = key_;
+    constexpr auto kTimes = 10;
+    for (int i = 0; i < kTimes; i++) {
+      tmp_counter = ComputeResult(tmp_counter, tmp_key);
+      if (i < kTimes - 1) {
+        tmp_key[kIndex0] += kPhiloxW32A;
+        tmp_key[kIndex1] += kPhiloxW32B;
+      } else {
+        SkipNext();
+      }
     }
-    SkipOne();
-    return counter;
+    return tmp_counter;
   }
 
  private:
-  // We use the same constants as recommended by the original paper.
+  ResultType counter_{};
+  Key key_{};
+
+  // constants adopted by the original paper.
   static constexpr uint32_t kPhiloxW32A = 0x9E3779B9;
   static constexpr uint32_t kPhiloxW32B = 0xBB67AE85;
   static constexpr uint32_t kPhiloxM4x32A = 0xD2511F53;
   static constexpr uint32_t kPhiloxM4x32B = 0xCD9E8D57;
 
-  // Helper function to skip the next sample of 128-bits in the current stream.
-  void SkipOne() {
-    if (++counter_[kIndex0] == 0) {
-      if (++counter_[kIndex1] == 0) {
-        if (++counter_[kIndex2] == 0) {
-          ++counter_[kIndex3];
-        }
-      }
-    }
-  }
-  /*
-   * Helper function to return the lower and higher 32-bits from two 32-bit
-   * integer multiplications.
-   */
-  static void MultiplyHighLow(uint32_t a, uint32_t b, uint32_t *result_low, uint32_t *result_high) {
-    const uint64_t product = static_cast<uint64_t>(a) * b;
-    *result_low = static_cast<uint32_t>(product);
-    *result_high = static_cast<uint32_t>(product >> kMoveStepInBit);
+  void SkipNext() {
+    if (++counter_[kIndex0] == 0 && ++counter_[kIndex1] == 0 && ++counter_[kIndex2] == 0) ++counter_[kIndex3];
   }
 
-  // Helper function for a single round of the underlying Philox algorithm.
-  static ResultType ComputeSingleRound(const ResultType &counter, const Key &key) {
-    uint32_t lo0;
-    uint32_t hi0;
-    MultiplyHighLow(kPhiloxM4x32A, counter[kIndex0], &lo0, &hi0);
+  static ResultType ComputeResult(const ResultType &counter, const Key &key) {
+    ResultType res;
 
-    uint32_t lo1;
-    uint32_t hi1;
-    MultiplyHighLow(kPhiloxM4x32B, counter[kIndex2], &lo1, &hi1);
+    const uint64_t res0 = static_cast<uint64_t>(kPhiloxM4x32A) * counter[kIndex0];
+    auto low0 = static_cast<uint32_t>(res0);
+    auto high0 = static_cast<uint32_t>(res0 >> kMoveStepInBit);
+    res[kIndex2] = high0 ^ counter[kIndex3] ^ key[kIndex1];
+    res[kIndex3] = low0;
 
-    ResultType result;
-    result[kIndex0] = hi1 ^ counter[kIndex1] ^ key[kIndex0];
-    result[kIndex1] = lo1;
-    result[kIndex2] = hi0 ^ counter[kIndex3] ^ key[kIndex1];
-    result[kIndex3] = lo0;
-    return result;
+    const uint64_t res1 = static_cast<uint64_t>(kPhiloxM4x32B) * counter[kIndex2];
+    auto low1 = static_cast<uint32_t>(res1);
+    auto high1 = static_cast<uint32_t>(res1 >> kMoveStepInBit);
+    res[kIndex0] = high1 ^ counter[kIndex1] ^ key[kIndex0];
+    res[kIndex1] = low1;
+
+    return res;
   }
-
-  void RaiseKey(Key *key) {
-    (*key)[kIndex0] += kPhiloxW32A;
-    (*key)[kIndex1] += kPhiloxW32B;
-  }
-
- private:
-  ResultType counter_;
-  Key key_;
 };
 
 BACKEND_COMMON_EXPORT uint64_t GetSeed(const uint64_t &global_seed, const uint64_t &ops_seed);

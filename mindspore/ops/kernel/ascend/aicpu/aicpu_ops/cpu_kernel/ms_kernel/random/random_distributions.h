@@ -20,6 +20,7 @@
 #include <securec.h>
 #include <string.h>
 #include <cmath>
+#include <array>
 #include "ms_kernel/random/utils.h"
 #include "utils/philox_random.h"
 #include "unsupported/Eigen/CXX11/Tensor"
@@ -48,14 +49,14 @@ class NormalDistribution<Generator, Eigen::half> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<Eigen::half, kResultElementCount>;
+  using ResultType = std::array<Eigen::half, kResultElementCount>;
 
   void operator()(CpuKernelContext &, Generator *gen, const Eigen::half *input, Eigen::half *output,
                   const int64_t &size, bool *ptr_flag) {
     (void)input;
     (void)ptr_flag;
 
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -79,14 +80,14 @@ class NormalDistribution<Generator, float> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<float, kResultElementCount>;
+  using ResultType = std::array<float, kResultElementCount>;
 
   void operator()(CpuKernelContext &, Generator *gen, const float *input, float *output, const int64_t &size,
                   bool *ptr_flag) {
     (void)input;
     (void)ptr_flag;
 
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -110,7 +111,7 @@ class NormalDistribution<Generator, double> {
  public:
   // The number of elements that will be returned.
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount / 2;
-  using ResultType = Array<double, kResultElementCount>;
+  using ResultType = std::array<double, kResultElementCount>;
 
   void operator()(CpuKernelContext &, Generator *gen, const double *input, double *output, const int64_t &size,
                   bool *ptr_flag) {
@@ -119,7 +120,7 @@ class NormalDistribution<Generator, double> {
 
     double f[2];
     int count = 0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
       const int i2 = 2 * i;
       // For the double type, the algorithm requires four inputs and produces two outputs
@@ -160,14 +161,14 @@ class BernoulliTensorDistribution<Generator, UnrealOutputType, Eigen::half> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<Eigen::half, kResultElementCount>;
+  using ResultType = std::array<Eigen::half, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const Eigen::half *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const float epsilon = 1.0e-7f;
     const Eigen::half prob_up_limit = static_cast<Eigen::half>(1.0);
     const Eigen::half prob_down_limit = static_cast<Eigen::half>(0.0);
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -206,14 +207,14 @@ class BernoulliTensorDistribution<Generator, UnrealOutputType, float> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<float, kResultElementCount>;
+  using ResultType = std::array<float, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const float *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const float epsilon = 1.0e-7f;
     const float prob_up_limit = 1.0;
     const float prob_down_limit = 0.0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -252,14 +253,14 @@ class BernoulliTensorDistribution<Generator, UnrealOutputType, double> {
  public:
   // The number of elements that will be returned.
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount / 2;
-  using ResultType = Array<double, kResultElementCount>;
+  using ResultType = std::array<double, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const double *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const double epsilon = 1.0e-7f;
     const double prob_up_limit = 1.0;
     const double prob_down_limit = 0.0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     double f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -317,14 +318,14 @@ class BernoulliScalarDistribution<Generator, UnrealOutputType, Eigen::half> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<Eigen::half, kResultElementCount>;
+  using ResultType = std::array<Eigen::half, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const Eigen::half *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const float epsilon = 1.0e-7f;
     const Eigen::half prob_up_limit = static_cast<Eigen::half>(1.0);
     const Eigen::half prob_down_limit = static_cast<Eigen::half>(0.0);
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -359,14 +360,14 @@ class BernoulliScalarDistribution<Generator, UnrealOutputType, float> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<float, kResultElementCount>;
+  using ResultType = std::array<float, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const float *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const float epsilon = 1.0e-7f;
     const float prob_up_limit = 1.0;
     const float prob_down_limit = 0.0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -401,14 +402,14 @@ class BernoulliScalarDistribution<Generator, UnrealOutputType, double> {
  public:
   // The number of elements that will be returned.
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount / 2;
-  using ResultType = Array<double, kResultElementCount>;
+  using ResultType = std::array<double, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, const double *input, UnrealOutputType *output,
                   const int64_t &size, bool *ptr_flag) {
     const double epsilon = 1.0e-7f;
     const double prob_up_limit = 1.0;
     const double prob_down_limit = 0.0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     double f[2];
     int count = 0;
     for (int32_t i = 0; i < kResultElementCount; i += 2) {
@@ -453,14 +454,14 @@ class UniformDistribution<Generator, Eigen::half> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<Eigen::half, kResultElementCount>;
+  using ResultType = std::array<Eigen::half, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, Eigen::half *input, Eigen::half *output, const int64_t &size,
                   bool *ptr_flag) {
     (void)input;
     (void)ptr_flag;
 
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     const int two = 2;
     int count = 0;
@@ -486,14 +487,14 @@ class UniformDistribution<Generator, float> {
  public:
   // The number of elements that will be returned. default value is 4 for philox
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount;
-  using ResultType = Array<float, kResultElementCount>;
+  using ResultType = std::array<float, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, float *input, float *output, const int64_t &size,
                   bool *ptr_flag) {
     (void)input;
     (void)ptr_flag;
 
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     float f[2];
     const int two = 2;
     int count = 0;
@@ -519,7 +520,7 @@ class UniformDistribution<Generator, double> {
  public:
   // The number of elements that will be returned.
   static constexpr int32_t kResultElementCount = Generator::kResultElementCount / 2;
-  using ResultType = Array<double, kResultElementCount>;
+  using ResultType = std::array<double, kResultElementCount>;
 
   void operator()(CpuKernelContext &ctx, Generator *gen, double *input, double *output, const int64_t &size,
                   bool *ptr_flag) {
@@ -530,7 +531,7 @@ class UniformDistribution<Generator, double> {
     const int two = 2;
     const int three = 3;
     int count = 0;
-    typename Generator::ResultType sample = (*gen)();
+    typename Generator::ResultTypeArr sample = (*gen)();
     for (int32_t i = 0; i < kResultElementCount; i += two) {
       const int i2 = 2 * i;
       // For the double type, the algorithm requires four inputs and produces two outputs
