@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace opt {
 namespace {
-const int kPermIndex = 2;
+constexpr int kPermIndex = 2;
 template <typename T>
 void UpdatePermValue(const tensor::TensorPtr &tensor, std::vector<T> *new_value, bool *need_change_flag) {
   MS_EXCEPTION_IF_NULL(tensor);
