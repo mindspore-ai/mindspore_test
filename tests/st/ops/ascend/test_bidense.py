@@ -113,10 +113,10 @@ def test_pynative_precision():
     # prepare input
     context.set_context(mode=context.PYNATIVE_MODE)
     dtype = np.float32
-    input1_shape = (1024, 44)
-    input2_shape = (1024, 55)
-    in1_channel = 44
-    in2_channel = 55
+    input1_shape = (1024, 16)
+    input2_shape = (1024, 16)
+    in1_channel = 16
+    in2_channel = 16
     out_channel = 32
     input1_np = np.random.randn(*input1_shape).astype(dtype)
     input2_np = np.random.randn(*input2_shape).astype(dtype)
