@@ -34,15 +34,11 @@ TEST_F(TestCheckMsContext, test_kbk_mode) {
   MsContext ms_context_("", "");
   ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
   ms_context_.set_ascend_soc_version("ascend910");
-  ms_context_.jit_status_ = JitStatus::kGraphCompiling;
+  ms_context_.set_param<int>(MS_CTX_EXECUTION_MODE, 0);
   ASSERT_FALSE(ms_context_.IsKByKExecutorMode());
 
   ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
-  ms_context_.jit_status_ = JitStatus::kJitCompiling;
-  ASSERT_FALSE(ms_context_.IsKByKExecutorMode());
-
-  ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
-  ms_context_.jit_status_ = JitStatus::kNotJit;
+  ms_context_.set_param<int>(MS_CTX_EXECUTION_MODE, 1);
   ASSERT_TRUE(ms_context_.IsKByKExecutorMode());
 
   ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "GPU");
@@ -54,7 +50,7 @@ TEST_F(TestCheckMsContext, test_kbk_mode) {
 
   ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
   ms_context_.set_param<std::string>(MS_CTX_JIT_LEVEL, "O2");
-  ms_context_.jit_status_ = JitStatus::kJitCompiling;
+  ms_context_.set_param<int>(MS_CTX_EXECUTION_MODE, 0);
   ASSERT_FALSE(ms_context_.IsKByKExecutorMode());
 }
 }  // namespace mindspore
