@@ -146,8 +146,14 @@ def test_getitem(capture_mode):
             getitem_check_indexing(ms_x, index, np_expected, capture_mode)
 
     # Tensor index
-    tensor_indices = [Tensor(0), Tensor(True), Tensor(False), slice(Tensor(0), Tensor(2)), Tensor([0, 1])]
-    np_indices = [0, True, False, slice(0, 2), [0, 1]]
+    tensor_indices = [
+        Tensor(0), Tensor(True),
+        Tensor(False),
+        slice(Tensor(0), Tensor(2)),
+        Tensor([0, 1]),
+        Tensor([True, False])
+    ]
+    np_indices = [0, True, False, slice(0, 2), [0, 1], [True, False]]
     for np_index, tensor_index in zip(np_indices, tensor_indices):
         np_expected = np_x[np_index]
         getitem_check_indexing(ms_x, tensor_index, np_expected, capture_mode)

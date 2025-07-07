@@ -70,6 +70,9 @@ MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector 
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
                                             tensor::TensorDataPtr &&tensor_data,
                                             device::DeviceType device_type = device::DeviceType::kCPU);
+MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, void *device_data_ptr,
+                                            size_t device_offset, device::DeviceType device_type);
+
 template <typename T>
 DeviceSyncPtr MakeDeviceAddress(TypeId data_type, T scalar) {
   static ShapeVector scalar_shape{};

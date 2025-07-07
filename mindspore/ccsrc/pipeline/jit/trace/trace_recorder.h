@@ -44,7 +44,7 @@ FRONTEND_EXPORT void CapturePy(const std::vector<PyObject *> &args_vec, const Pr
 FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive,
                                              py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
-bool IsTracing();
+FRONTEND_EXPORT bool IsTracing();
 FRONTEND_EXPORT py::object DefaultOutput();
 FRONTEND_EXPORT bool Compiled();
 
