@@ -49,6 +49,7 @@ class HostValueStore {
 
     MS_LOG(INFO) << "Insert host value for DATensor: " << k << ", value: " << v->ToString();
     host_da_tensor_value_[k] = v;
+    da_tensor_host_value_[v] = k;
   }
 
   ValuePtr &Get(da::tensor::DATensor *k) {
@@ -59,13 +60,27 @@ class HostValueStore {
     return iter->second;
   }
 
+  da::tensor::DATensor *Get(const ValuePtr &v) {
+    auto iter = da_tensor_host_value_.find(v);
+    if (iter == da_tensor_host_value_.end()) {
+      MS_LOG(EXCEPTION) << "Cannot find DATensor for host value: " << v->ToString();
+    }
+    return iter->second;
+  }
+
+  bool HasValue(const ValuePtr &v) const { return da_tensor_host_value_.find(v) != da_tensor_host_value_.end(); }
+
   std::unordered_map<da::tensor::DATensor *, ValuePtr> &GetHostValueMap() { return host_da_tensor_value_; }
-  void Clear() { host_da_tensor_value_.clear(); }
+  void Clear() {
+    host_da_tensor_value_.clear();
+    da_tensor_host_value_.clear();
+  }
 
  private:
   HostValueStore() = default;
 
   std::unordered_map<da::tensor::DATensor *, ValuePtr> host_da_tensor_value_;
+  std::unordered_map<ValuePtr, da::tensor::DATensor *> da_tensor_host_value_;
 };
 }  // namespace ms_infer_backend
 }  // namespace backend

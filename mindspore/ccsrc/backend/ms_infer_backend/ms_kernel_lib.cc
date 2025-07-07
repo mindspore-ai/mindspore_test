@@ -26,6 +26,7 @@
 #include "common/kernel_mod_cache.h"
 #include "common/ms_factory.h"
 #include "common/format_utils.h"
+#include "ir/dtype.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
@@ -93,7 +94,7 @@ class DAKernelTensor : public kernel::KernelTensor {
 
   explicit DAKernelTensor(da::tensor::DATensor *tensor) : tensor_(tensor) {
     MS_EXCEPTION_IF_NULL(tensor_);
-    MS_LOG(INFO) << "New DAKernelTensor, DATensor: " << tensor;
+    MS_LOG(INFO) << "New DAKernelTensor, DATensor: " << tensor << ", type: " << tensor->type;
     for (size_t i = 0; i < tensor_->dim; i++) {
       (void)shape_vector_.emplace_back(tensor_->shape[i]);
     }
@@ -108,7 +109,11 @@ class DAKernelTensor : public kernel::KernelTensor {
       SetValue(host_value);
     } else {
       // currently only set object type for DEVICE_TENSOR/UNKNOW_TENSOR
-      SetType(TypeIdToType(kObjectTypeTensorType));
+      if (tensor->type == da::tensor::Type_Monad || tensor->type == da::tensor::Type_None) {
+        SetType(TypeIdToType(ConvertDataType(tensor->type)));
+      } else {
+        SetType(TypeIdToType(kObjectTypeTensorType));
+      }
       SetShape(std::make_shared<abstract::TensorShape>(shape_vector_));
     }
   }
@@ -144,7 +149,7 @@ class DAKernelTensor : public kernel::KernelTensor {
 
   // Get the memory size in byte of the KernelTensor.
   size_t size() const override {
-    return da::tensor::DataTypeSize(tensor_->type) * da::tensor::ShapeSize(tensor_->shape);
+    return UnitSizeInBytes(ConvertDataType(tensor_->type)) * da::tensor::ShapeSize(tensor_->shape);
   }
 
   // Get string representation of tensor format
@@ -187,17 +192,33 @@ DAKernel::DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *devic
   MS_LOG(DEBUG) << "Primitive: " << prim->name();
 
   // Initialize input kernel tensors
+  MS_LOG(INFO) << "Start create input DAKernelTensors";
   for (size_t i = 0; i < da_tensor->inputSize; ++i) {
     auto input_tensor = new DAKernelTensor(da_tensor->input[i]);
     MS_EXCEPTION_IF_NULL(input_tensor);
     (void)inputs_.emplace_back(input_tensor);
     MS_LOG(DEBUG) << "input kernel tensors: " << input_tensor->ToString();
   }
+  MS_LOG(INFO) << "End create input DAKernelTensors";
+
   // Initialize output kernel tensor
-  auto output_tensor = new DAKernelTensor(da_tensor);
-  MS_EXCEPTION_IF_NULL(output_tensor);
-  (void)outputs_.emplace_back(output_tensor);
-  MS_LOG(DEBUG) << "output kernel tensor: " << output_tensor->ToString();
+  MS_LOG(INFO) << "Start create output DAKernelTensors";
+  if (da_tensor->type == da::tensor::Type_Tensor) {
+    auto **da_tensor_list = reinterpret_cast<da::tensor::DATensor **>(da_tensor->data);
+    MS_EXCEPTION_IF_NULL(da_tensor_list);
+    for (size_t i = 0; i < da_tensor->shape[0]; ++i) {
+      auto output_tensor = new DAKernelTensor(da_tensor_list[i]);
+      MS_EXCEPTION_IF_NULL(output_tensor);
+      (void)outputs_.emplace_back(output_tensor);
+      MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString() << ", index: " << i;
+    }
+  } else {
+    auto output_tensor = new DAKernelTensor(da_tensor);
+    MS_EXCEPTION_IF_NULL(output_tensor);
+    (void)outputs_.emplace_back(output_tensor);
+    MS_LOG(DEBUG) << "Create output kernel tensor: " << output_tensor->ToString();
+  }
+  MS_LOG(INFO) << "End create output DAKernelTensors";
 
   // Create KernelMod
   kernel_mod_ = SelectKernelMod(prim, inputs_, outputs_);
@@ -218,13 +239,15 @@ DAKernel::~DAKernel() {
 }
 
 void DAKernel::AllocateOutputDeviceMemory() {
-  MS_EXCEPTION_IF_CHECK_FAIL(kernel_mod_->GetOutputSizeList().size() == 1, "Invalid kernel mod output size");
-  auto output_size = kernel_mod_->GetOutputSizeList()[0];
-  auto output_data = device_context_->device_res_manager_->AllocateMemory(output_size, kDefaultStreamIndex);
-  if (!output_data) {
-    MS_LOG(EXCEPTION) << "Allocate output memory failed";
+  auto output_size_list = kernel_mod_->GetOutputSizeList();
+  MS_EXCEPTION_IF_CHECK_FAIL(output_size_list.size() == outputs_.size(), "Output size is not same");
+  for (size_t i = 0; i < output_size_list.size(); ++i) {
+    auto output_data = device_context_->device_res_manager_->AllocateMemory(output_size_list[i], kDefaultStreamIndex);
+    if (!output_data) {
+      MS_LOG(EXCEPTION) << "Allocate output memory failed";
+    }
+    outputs_[i]->set_device_ptr(output_data);
   }
-  outputs_[0]->set_device_ptr(output_data);
 }
 
 void DAKernel::AllocateWorkspaceDeviceMemory() {
@@ -275,12 +298,11 @@ bool MindsporeKernelLib::RunTensor(da::tensor::DATensor *tensor, da::runtime::Me
   if (kernel_cache.find(tensor) == kernel_cache.end()) {
     static std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
-
     auto kernel = std::make_shared<DAKernel>(tensor, device_context_);
-    kernel->AllocateOutputDeviceMemory();
     kernel_cache[tensor] = kernel;
   }
 
+  kernel_cache[tensor]->AllocateOutputDeviceMemory();
   kernel_cache[tensor]->AllocateWorkspaceDeviceMemory();
   kernel_cache[tensor]->Launch();
   kernel_cache[tensor]->FreeWorkspaceDeviceMemory();

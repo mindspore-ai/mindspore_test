@@ -25,6 +25,7 @@
 
 #include "backend/ms_infer_backend/ms_infer_backend.h"
 #include "backend/ms_infer_backend/host_value_store.h"
+#include "backend/ms_infer_backend/device_tensor_store.h"
 
 namespace mindspore {
 namespace backend {
@@ -78,7 +79,10 @@ void MSInferBackend::ConvertIR(const FuncGraphPtr &func_graph,
                                const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors,
                                IRFormat ir_format) {}
 
-void MSInferBackend::Clear() {}
+void MSInferBackend::Clear() {
+  HostValueStore::GetInstance().Clear();
+  DeviceTensorStore::GetInstance().Clear();
+}
 
 MS_REGISTER_BACKEND(kMSInferBackendName, MSInferBackend)
 

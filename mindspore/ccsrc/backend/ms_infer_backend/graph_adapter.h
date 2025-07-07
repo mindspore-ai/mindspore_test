@@ -56,7 +56,7 @@ class GraphAdapter {
   void ConvertInputs(const VectorRef &inputs);
   void ConvertOutputs(VectorRef *outputs);
 
-  void SetValue(da::tensor::DATensor *da_value, const BaseRef &val);
+  void ConvertValueNode(const ValueNodePtr &value_node);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
 
   void *PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value);

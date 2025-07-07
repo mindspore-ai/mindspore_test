@@ -23,9 +23,11 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
@@ -45,6 +47,7 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameNorm, da::ops::Op_norm},
   {ops::kNameReLU, da::ops::Op_relu},
   {ops::kNameGeLU, da::ops::Op_gelu},
+  {ops::kNameRmsNorm, da::ops::Op_rmsnorm},
   {ops::kNameSiLU, da::ops::Op_silu},
   {ops::kNameSoftmax, da::ops::Op_softmax},
   {ops::kNameBatchMatMul, da::ops::Op_batch_matmul},
@@ -55,6 +58,7 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameNeg, da::ops::Op_neg},
   {ops::kNameNotEqual, da::ops::Op_not_equal},
   {ops::kNameReduceMean, da::ops::Op_reduce_mean},
+  {ops::kNameShape, da::ops::Op_shape},
   {ops::kNameReshape, da::ops::Op_reshape},
   {ops::kNameRsqrt, da::ops::Op_rsqrt},
   {ops::kNameSigmoid, da::ops::Op_sigmoid},
@@ -62,6 +66,11 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameStridedSlice, da::ops::Op_strided_slice},
   {ops::kNameTile, da::ops::Op_tile},
   {ops::kNameTranspose, da::ops::Op_transpose},
+  {ops::kNameApplyRotaryPosEmb, da::ops::Op_apply_rotary_pos_emb},
+  {ops::kNameReshapeAndCache, da::ops::Op_reshape_and_cache},
+  {ops::kNameFlashAttentionScore, da::ops::Op_flash_attention_score},
+  {ops::kNamePagedAttention, da::ops::Op_paged_attention},
+  {kTupleGetItemOpName, da::ops::Op_tuple_getitem},
   {kMakeTupleOpName, da::ops::Op_make_tuple},
   {kUpdateStateOpName, da::ops::Op_update_state},
   {kLoadOpName, da::ops::Op_load},
@@ -76,6 +85,7 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_matmul, prim::kPrimMatMul},
   {da::ops::Op_norm, prim::kPrimNorm},
   {da::ops::Op_relu, prim::kPrimReLU},
+  {da::ops::Op_rmsnorm, prim::kPrimRmsNorm},
   {da::ops::Op_gelu, prim::kPrimGeLU},
   {da::ops::Op_silu, prim::kPrimSiLU},
   {da::ops::Op_softmax, prim::kPrimSoftmax},
@@ -88,12 +98,18 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_not_equal, prim::kPrimNotEqual},
   {da::ops::Op_reduce_mean, prim::kPrimReduceMean},
   {da::ops::Op_reshape, prim::kPrimReshape},
+  {da::ops::Op_shape, prim::kPrimShape},
   {da::ops::Op_rsqrt, prim::kPrimRsqrt},
   {da::ops::Op_sigmoid, prim::kPrimSigmoid},
   {da::ops::Op_square, prim::kPrimSquare},
   {da::ops::Op_strided_slice, prim::kPrimStridedSlice},
   {da::ops::Op_tile, prim::kPrimTile},
+  {da::ops::Op_apply_rotary_pos_emb, prim::kPrimApplyRotaryPosEmb},
+  {da::ops::Op_reshape_and_cache, prim::kPrimReshapeAndCache},
+  {da::ops::Op_flash_attention_score, prim::kPrimFlashAttentionScore},
+  {da::ops::Op_paged_attention, prim::kPrimPagedAttention},
   {da::ops::Op_transpose, prim::kPrimTranspose},
+  {da::ops::Op_tuple_getitem, prim::kPrimTupleGetItem},
   {da::ops::Op_make_tuple, prim::kPrimMakeTuple},
   {da::ops::Op_update_state, prim::kPrimUpdateState},
   {da::ops::Op_load, prim::kPrimLoad},
@@ -122,20 +138,20 @@ const PrimitivePtr ConvertPrimitiveOp(da::ops::Op op) {
 }
 
 static std::map<TypeId, da::tensor::Type> type_id_dtype_map = {
-  {kNumberTypeBool, da::tensor::Type_Bool},   {kNumberTypeInt16, da::tensor::Type_I16},
-  {kNumberTypeInt32, da::tensor::Type_I32},   {kNumberTypeInt64, da::tensor::Type_I64},
-  {kNumberTypeFloat16, da::tensor::Type_F16}, {kNumberTypeFloat32, da::tensor::Type_F32},
-  {kNumberTypeFloat64, da::tensor::Type_F64}, {kNumberTypeBFloat16, da::tensor::Type_BF16},
-  {kObjectTypeMonad, da::tensor::Type_Monad}, {kObjectTypeTuple, da::tensor::Type_Tuple},
+  {kNumberTypeBool, da::tensor::Type_Bool},    {kNumberTypeInt16, da::tensor::Type_I16},
+  {kNumberTypeInt32, da::tensor::Type_I32},    {kNumberTypeInt64, da::tensor::Type_I64},
+  {kNumberTypeFloat16, da::tensor::Type_F16},  {kNumberTypeFloat32, da::tensor::Type_F32},
+  {kNumberTypeFloat64, da::tensor::Type_F64},  {kNumberTypeBFloat16, da::tensor::Type_BF16},
+  {kObjectTypeUMonad, da::tensor::Type_Monad}, {kObjectTypeTuple, da::tensor::Type_Tuple},
   {kMetaTypeNone, da::tensor::Type_None},
 };
 
 static std::map<da::tensor::Type, TypeId> dtype_type_id_map = {
-  {da::tensor::Type_Bool, kNumberTypeBool},   {da::tensor::Type_I16, kNumberTypeInt16},
-  {da::tensor::Type_I32, kNumberTypeInt32},   {da::tensor::Type_I64, kNumberTypeInt64},
-  {da::tensor::Type_F16, kNumberTypeFloat16}, {da::tensor::Type_F32, kNumberTypeFloat32},
-  {da::tensor::Type_F64, kNumberTypeFloat64}, {da::tensor::Type_BF16, kNumberTypeBFloat16},
-  {da::tensor::Type_Monad, kObjectTypeMonad}, {da::tensor::Type_Tuple, kObjectTypeTuple},
+  {da::tensor::Type_Bool, kNumberTypeBool},    {da::tensor::Type_I16, kNumberTypeInt16},
+  {da::tensor::Type_I32, kNumberTypeInt32},    {da::tensor::Type_I64, kNumberTypeInt64},
+  {da::tensor::Type_F16, kNumberTypeFloat16},  {da::tensor::Type_F32, kNumberTypeFloat32},
+  {da::tensor::Type_F64, kNumberTypeFloat64},  {da::tensor::Type_BF16, kNumberTypeBFloat16},
+  {da::tensor::Type_Monad, kObjectTypeUMonad}, {da::tensor::Type_Tuple, kObjectTypeTuple},
   {da::tensor::Type_None, kMetaTypeNone},
 };
 
@@ -147,6 +163,15 @@ da::tensor::Type ConvertDataType(const TypePtr &type) {
     return iter->second;
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "Unexpected MS Type " << type->type_name();
+  }
+}
+
+da::tensor::Type ConvertDataType(TypeId dtype) {
+  auto iter = type_id_dtype_map.find(dtype);
+  if (iter != type_id_dtype_map.end()) {
+    return iter->second;
+  } else {
+    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected MS TypeId: " << dtype;
   }
 }
 
@@ -168,6 +193,40 @@ void SetTensorShape(da::tensor::DATensor *tensor, const ShapeVector &shape_vecto
     tensor->shape[i] = shape_vector[i];
   }
   tensor->shape[tensor->dim] = 0;
+}
+
+void SetTupleType(da::tensor::DATensor *tensor, const TuplePtr &tuple_type) {
+  auto element_types = tuple_type->elements();
+  MS_EXCEPTION_IF_CHECK_FAIL(element_types.size() == tensor->shape[0], "Tuple size is not equal to DATensorList size");
+  auto **tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensor->data);
+  MS_EXCEPTION_IF_NULL(tensor_list);
+  for (size_t i = 0; i < tensor->shape[0]; ++i) {
+    if (element_types[i]->isa<Tuple>()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Tuple in tuple is not supported in dart";
+    }
+    if (element_types[i]->isa<TensorType>()) {
+      auto tensor_type = element_types[i]->cast<TensorTypePtr>();
+      MS_EXCEPTION_IF_NULL(tensor_type);
+      tensor_list[i]->type = ConvertDataType(tensor_type->element());
+    } else {
+      tensor_list[i]->type = ConvertDataType(element_types[i]->type_id());
+    }
+  }
+}
+
+void SetTupleShape(da::tensor::DATensor *tensor, const TupleShapePtr &tuple_shape) {
+  auto element_shapes = tuple_shape->shape();
+  MS_EXCEPTION_IF_CHECK_FAIL(element_shapes.size() == tensor->shape[0], "Tuple size is not equal to DATensorList size");
+  auto **tensor_list = reinterpret_cast<da::tensor::DATensor **>(tensor->data);
+  MS_EXCEPTION_IF_NULL(tensor_list);
+  for (size_t i = 0; i < tensor->shape[0]; ++i) {
+    if (element_shapes[i]->isa<TupleShape>()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Tuple in tuple is not supported in dart";
+    }
+    if (element_shapes[i]->isa<TensorShape>()) {
+      SetTensorShape(tensor_list[i], element_shapes[i]->GetShapeVector());
+    }
+  }
 }
 
 }  // namespace ms_infer_backend

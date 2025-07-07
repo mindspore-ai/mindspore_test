@@ -4,6 +4,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dair)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dart/dalang/dart)
 
+# Add compile definitions for DART
+set(ENABLE_RUN_TENSOR "on")
+
 # Add DART directories
 add_subdirectory(dart)
 
