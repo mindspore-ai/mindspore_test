@@ -45,8 +45,8 @@ REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(GroupedMatmul, INPUT_NUM_5, INDEX_0, INDEX_
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(GroupedMatmul, OUTPUT_NUM_1, INDEX_0);
 
 MS_INTERNAL_KERNEL_FACTORY_REG(GroupedMatmulV4Transpose, internal::kInternalGroupedMatmulOpName, InternalGroupedMatmul);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(GroupedMatmulV4Transpose, INPUT_NUM_6, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_8,
-                                     INDEX_7);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(GroupedMatmulV4Transpose, INPUT_NUM_7, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_8,
+                                     INDEX_7, INDEX_5);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(GroupedMatmulV4Transpose, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
