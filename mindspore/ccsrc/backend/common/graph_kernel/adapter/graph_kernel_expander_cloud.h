@@ -40,6 +40,6 @@ class GraphKernelExpanderCloud : public GraphKernelExpander {
 class GraphKernelExpanderBeforeBuild : public GraphKernelExpanderCloud {
    protected:
     std::vector<PrimitivePtr> InitOpList() override;
-}
+};
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_ADAPTER_GRAPH_KERNEL_EXPANDER_WITH_PY_H_

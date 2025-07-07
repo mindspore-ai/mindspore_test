@@ -22,8 +22,6 @@
 #include <memory>
 #include <map>
 
-#include "mindspore/ccsrc/plugin/device/ascend/kernel/dvm/dvm.h"
-
 // rts_msprof
 #if defined(__cplusplus)
 extern "C" {

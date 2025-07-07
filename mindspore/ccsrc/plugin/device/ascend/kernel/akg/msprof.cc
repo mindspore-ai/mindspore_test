@@ -22,7 +22,6 @@
 #include <sys/syscall.h>
 #include "mindspore/core/include/utils/log_adapter.h"
 #include "mindspore/ccsrc/plugin/device/ascend/kernel/akg/msprof.h"
-#include "mindspore/ccsrc/plugin/device/ascend/kernel/dvm/dvm.h"
 
 using ShapeVector = std::vector<int64_t>;
 

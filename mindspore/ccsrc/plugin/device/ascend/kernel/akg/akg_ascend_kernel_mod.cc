@@ -20,10 +20,9 @@
 #include <unordered_map>
 #include <vector>
 #include "utils/log_adapter.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/kernel/akg/msprof.h"
 #include "acl/acl_rt.h"
-#include "include/backend/debug/profiler/profiling.h"
+#include "debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace kernel {
