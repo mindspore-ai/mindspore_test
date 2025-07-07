@@ -58,7 +58,7 @@ class GpuInfo {
   }
 
   int64_t GetMemoryLimitInScope(int scope_idx) {
-    if (scope_idx > MEM_SCOPE_BULK) {
+    if (scope_idx >= MEM_SCOPE_BULK) {
       MS_EXCEPTION(RuntimeError) << "scope_idx should be less than " << MEM_SCOPE_BULK << ", but got " << scope_idx
                                  << "\n";
       return 0;

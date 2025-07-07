@@ -26,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 class EpsGpuKernelMod : public NativeGpuKernelMod {
  public:
-  EpsGpuKernelMod() : is_null_input_(false) {}
+  EpsGpuKernelMod() = default;
   ~EpsGpuKernelMod() override = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
@@ -48,10 +48,10 @@ class EpsGpuKernelMod : public NativeGpuKernelMod {
   using EpsFunc = std::function<bool(EpsGpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
                                      const std::vector<kernel::KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, EpsFunc>> func_list_;
-  EpsFunc kernel_func_;
+  EpsFunc kernel_func_{nullptr};
   void *cuda_stream_{nullptr};
-  size_t output_elements_;
-  bool is_null_input_;
+  size_t output_elements_{0};
+  bool is_null_input_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

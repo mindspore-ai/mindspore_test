@@ -46,12 +46,12 @@ class DynamicStitchKernelMod : public NativeGpuKernelMod {
   ShapeVector GetShapeAdaptively(const std::vector<KernelTensor *> &data, size_t index);
 
  private:
-  size_t n_;
-  size_t real_ele_num_;
-  int max_index_;
-  size_t one_data_ele_num_;
-  size_t data_type_size_;
-  void *stream_ptr_;
+  size_t n_{0};
+  size_t real_ele_num_{0};
+  int max_index_{0};
+  size_t one_data_ele_num_{0};
+  size_t data_type_size_{0};
+  void *stream_ptr_{nullptr};
 };
 
 MS_REG_GPU_KERNEL(DynamicStitch, DynamicStitchKernelMod)

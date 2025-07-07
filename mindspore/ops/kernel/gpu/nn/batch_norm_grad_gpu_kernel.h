@@ -51,6 +51,7 @@ class BatchNormGradGpuKernelMod : public NativeGpuKernelMod {
     height_ = 0;
     width_ = 0;
     x_size_ = 0;
+    attrs_pos0_ = 6;
     para_size_ = 0;
     workspace_size_ = 0;
     reserve_size_ = 0;
