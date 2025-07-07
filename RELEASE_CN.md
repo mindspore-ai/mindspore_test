@@ -89,6 +89,26 @@
 - [STABLE] [mindspore.runtime](https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore.runtime.html)增加[mindspore.runtime.empty_cache](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.empty_cache.html#mindspore.runtime.empty_cache)的实现。
 - [STABLE] [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.set_memory.html#mindspore.runtime.set_memory)接口新增入参 `huge_page_reserve_size`。
 - [STABLE] [mindspore.runtime.set_cpu_affinity](https://www.mindspore.cn/docs/zh-CN/master/api_python/runtime/mindspore.runtime.set_cpu_affinity.html#mindspore.runtime.set_cpu_affinity)接口新增入参 `module_to_cpu_dict`。
+- [STABLE] [minspore.nn.Cell](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html)模块新增查看/保存模型状态的功能。新增接口：
+
+  | mindspore.nn.Cell                       |
+  | --------------------------------------- |
+  | cell.register_state_dict_post_hook      |
+  | cell.register_state_dict_pre_hook       |
+  | cell.state_dict                         |
+  | cell.register_load_state_dict_pre_hook  |
+  | cell.register_load_state_dict_post_hook |
+  | cell.load_state_dict                    |
+
+- [STABLE] [minspore.nn.Cell](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html)模块查看/注册模型缓冲区的功能。新增接口：
+
+  | mindspore.nn.Cell    |
+  | -------------------- |
+  | cell.register_buffer |
+  | cell.get_buffer      |
+  | cell.get_sub_cell    |
+  | cell.named_buffer    |
+  | cell.buffers         |
 
 #### 非兼容性接口变更
 
