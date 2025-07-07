@@ -165,15 +165,6 @@ void TensorSummary<T>::TensorStatisticsSingleThread() {
   avg_ = mean_calc.GetMean();
 }
 
-template <typename T>
-double_t TensorSummary<T>::GetZeroValPercent() const {
-  if (num_elements_ == 0) {
-    return 0.0;
-  }
-  const double percentage = 100;
-  return (zero_count_ * percentage) / num_elements_;
-}
-
 template class TensorSummary<uint8_t>;
 template class TensorSummary<int8_t>;
 template class TensorSummary<uint16_t>;

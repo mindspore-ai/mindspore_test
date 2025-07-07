@@ -45,23 +45,6 @@ TensorStatDump::TensorStatDump(const std::string &op_type, const std::string &op
   }
 }
 
-TensorStatDump::TensorStatDump(const std::string &op_type, const std::string &op_name, const std::string &task_id,
-                               const std::string &stream_id, const std::string &timestamp, const std::string &io,
-                               size_t slot, size_t tensor_loader_slot, const mindspore::TypeId data_type)
-    : op_type_{op_type},
-      op_name_{op_name},
-      task_id_{task_id},
-      stream_id_{stream_id},
-      timestamp_{timestamp},
-      io_{io},
-      slot_{slot},
-      tensor_loader_slot_{tensor_loader_slot},
-      data_type_{data_type} {
-  if (io_ != kInput && io_ != kOutput) {
-    MS_LOG(EXCEPTION) << "Cannot instantiate TensorStatDump, io needs to be either " << kInput << " or " << kOutput;
-  }
-}
-
 bool TensorStatDump::OpenStatisticsFile(const std::string &dump_path) {
   std::string filename = dump_path + "/" + kCsvFileName;
   // try to open file

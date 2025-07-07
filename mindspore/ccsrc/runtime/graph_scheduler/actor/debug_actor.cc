@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2024 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,8 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Kerne
   }
   const auto &cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  MS_LOG(INFO) << "kernel by kernel debug for node: " << cnode->fullname_with_scope() << ", device type is "
-               << device_context->GetDeviceType();
+  MS_VLOG(VL_DUMP) << "kernel by kernel debug for node: " << cnode->fullname_with_scope() << ", device type is "
+                   << device_context->GetDeviceType();
   if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
     checksum::AscendCheckSum(cnode, raw_input_kernel_tensors, raw_output_kernel_tensors, device_context);
 #ifdef ENABLE_DEBUGGER
@@ -202,7 +202,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   const std::vector<AnfNodePtr> &origin_parameters_order,
                                   std::vector<DeviceContext *> device_contexts,
                                   OpContext<KernelTensor> *const op_context, const AID *) {
-  MS_LOG(INFO) << "Debug on step begin.";
+  MS_VLOG(VL_DUMP) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   device_ctx_ = device_contexts[0];
@@ -214,7 +214,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     if (cur_step == 1 && DumpJsonParser::GetInstance().GetDatasetSink()) {
       uint32_t init_step = 0;
       DumpJsonParser::GetInstance().UpdateDumpIter(init_step);
-      MS_LOG(INFO) << "In dataset sink mode, reset step to init_step: " << init_step;
+      MS_VLOG(VL_DUMP) << "In dataset sink mode, reset step to init_step: " << init_step;
     }
     DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_graph);
   }
@@ -259,8 +259,8 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
  * Ascend and update step number of online debugger GPU.
  */
 void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int total_running_count_, int sink_size_) {
-  MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count_
-               << "; total user_dump_step is: " << DumpJsonParser::GetInstance().cur_dump_iter();
+  MS_VLOG(VL_DUMP) << "Debug on step end. total_running_count is: " << total_running_count_
+                   << "; total user_dump_step is: " << DumpJsonParser::GetInstance().cur_dump_iter();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   auto is_kbyk = context->IsKByKExecutorMode();
@@ -290,7 +290,7 @@ void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int
     debugger->Debugger::PostExecuteGraphDebugger();
   }
   DumpJsonParser::GetInstance().UpdateDumpIter(step_count_);
-  MS_LOG(INFO) << "UpdateDumpIter: " << step_count_;
+  MS_VLOG(VL_DUMP) << "UpdateDumpIter: " << step_count_;
 #endif
 }
 

@@ -108,7 +108,6 @@ class TensorSummary : public ITensorSummary {
   uint64_t nan_count_;
   uint64_t zero_count_;
   L2Calculator l2_calc_;
-  double_t GetZeroValPercent() const;
   void TensorStatisticsSingleThread();
 };
 }  // namespace mindspore

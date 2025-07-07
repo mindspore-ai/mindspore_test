@@ -46,22 +46,6 @@
 #endif
 
 namespace mindspore {
-std::string GenDataFilePath(const CNodePtr &node, const std::string &kernel_name, const std::string &dump_path,
-                            size_t slot, bool is_input) {
-  std::string op_type = common::AnfAlgo::GetCNodeName(node);
-  std::string op_name = kernel_name;
-  uint64_t timestamp = Common::GetTimeStamp();
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  if (E2eDump::IsDeviceTargetAscend()) {
-    stream_id = AnfAlgo::GetStreamId(node);
-  }
-  std::string tensor_type = is_input ? ".input." : ".output.";
-  std::string file_path = dump_path + '/' + op_type + '.' + op_name + '.' + std::to_string(task_id) + '.' +
-                          std::to_string(stream_id) + '.' + std::to_string(timestamp) + tensor_type +
-                          std::to_string(slot);
-  return file_path;
-}
 
 TypeId ConvertStringToTypeId(const std::string &dtype) {
   const std::map<std::string, TypeId> kDbgDataTypeToStringMap = {

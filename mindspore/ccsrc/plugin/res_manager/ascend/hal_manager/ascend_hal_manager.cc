@@ -46,7 +46,7 @@ std::string GenerateAclInitJsonPath() {
   }
   constexpr size_t random_len = 12;
   auto rand_str = Common::GetRandomStr(random_len);
-  return "./aclinit_" + rankid_str + "_" + std::to_string(pid) + "_" + rand_str + ".json";
+  return "/tmp/aclinit_" + rankid_str + "_" + std::to_string(pid) + "_" + rand_str + ".json";
 }
 }  // namespace
 static thread_local aclrtContext thread_local_rt_context{nullptr};
