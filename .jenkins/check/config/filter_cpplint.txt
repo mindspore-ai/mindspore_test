@@ -85,6 +85,7 @@
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv2d_padding.h"                  "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv3d_padding.cc"                  "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv3d_padding.h"                  "runtime/references"
+"mindspore/mindspore/ccsrc/ms_extension/ascend/asdsip/asdsip_utils.h"                  "runtime/references"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.cc"    "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_prof_symbol.cc"    "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.cc"    "build/include_subdir"

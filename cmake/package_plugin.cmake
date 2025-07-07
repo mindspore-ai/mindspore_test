@@ -93,6 +93,13 @@ if(ENABLE_D)
                 COMPONENT mindspore
         )
     endif()
+    if(EXISTS ${ASCEND_NNAL_ASDSIP_PATH})
+        install(
+                TARGETS mindspore_extension_ascend_asdsip ARCHIVE
+                DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                COMPONENT mindspore
+        )
+    endif()
     install(
         TARGETS ms_atb_boost
         DESTINATION ${INSTALL_PLUGIN_DIR}/ascend

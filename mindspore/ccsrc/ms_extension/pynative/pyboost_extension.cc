@@ -62,6 +62,11 @@ mindspore::device::DeviceType GetDeviceTarget() { return mindspore::DeviceManage
 }  // namespace inner
 
 namespace pynative {
+PyboostRunner::PyboostRunner(const std::string &op_name) {
+  _op_name_ = op_name;
+  _device_context_ = mindspore::runtime::OpRunner::GetDeviceContext(inner::GetDeviceTarget());
+}
+
 void PyboostRunner::Run(const std::vector<Tensor> &inputs, const std::vector<Tensor> &outputs) {
   _inputs_ = inputs;
   _outputs_ = outputs;
@@ -69,7 +74,6 @@ void PyboostRunner::Run(const std::vector<Tensor> &inputs, const std::vector<Ten
 }
 
 void PyboostRunner::_Run() {
-  _device_context_ = mindspore::runtime::OpRunner::GetDeviceContext(inner::GetDeviceTarget());
   this->_PrepareStream();
   this->_PrepareDeviceAddress();
   PyBoostUtils::DispatchRun(std::make_shared<mindspore::runtime::PyBoostDeviceTask>([runner = shared_from_this()]() {

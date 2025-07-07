@@ -157,7 +157,7 @@ class EXTENSION_EXPORT PyboostRunner : public std::enable_shared_from_this<Pyboo
    * @brief Constructs a PyboostRunner with the specified operation name.
    * @param op_name The name of the operation.
    */
-  explicit PyboostRunner(const std::string &op_name) : _op_name_(op_name) {}
+  explicit PyboostRunner(const std::string &op_name);
 
   /**
    * @brief Virtual destructor for PyboostRunner.

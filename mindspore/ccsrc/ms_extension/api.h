@@ -29,5 +29,8 @@
 #ifdef CUSTOM_ENABLE_ATB
 #include "ms_extension/ascend/atb/atb_common.h"
 #endif  // CUSTOM_ENABLE_ATB
+#ifdef CUSTOM_ENABLE_ASDSIP
+#include "ms_extension/ascend/asdsip/asdsip_common.h"
+#endif  // CUSTOM_ENABLE_ASDSIP
 #endif  // CUSTOM_ASCEND_OP
 #endif  // MINDSPORE_CCSRC_MS_EXTENSION_API_H_
