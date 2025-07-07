@@ -67,26 +67,26 @@ class STFTCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<STF
   TypeId input_type_1_{kTypeUnknown};
   TypeId input_type_2_{kTypeUnknown};
   TypeId output_type_{kTypeUnknown};
-  std::vector<int64_t> input_shape_1_;
-  std::vector<int64_t> input_shape_2_;
-  std::vector<int64_t> output_shape_;
-  bool normalized_;
-  bool onesided_;
-  bool return_complex_;
+  std::vector<int64_t> input_shape_1_{};
+  std::vector<int64_t> input_shape_2_{};
+  std::vector<int64_t> output_shape_{};
+  bool normalized_{false};
+  bool onesided_{false};
+  bool return_complex_{false};
   bool has_batches_{false};
 
-  int64_t n_fft_;
-  int64_t fft_length_;  // relative to n_fft_ and onesided_, refer to w in formular
-  int64_t hop_length_;
-  int64_t win_length_;
-  int64_t batches_{1};  // batch size when input is 2D (without vmap)
-  int64_t input_len_;   // last dimension of input
-  int64_t n_frames_;    // num of windows
-  int64_t window_left_;
+  int64_t n_fft_{0};
+  int64_t fft_length_{0};  // relative to n_fft_ and onesided_, refer to w in formular
+  int64_t hop_length_{0};
+  int64_t win_length_{0};
+  int64_t batches_{1};    // batch size when input is 2D (without vmap)
+  int64_t input_len_{0};  // last dimension of input
+  int64_t n_frames_{0};   // num of windows
+  int64_t window_left_{0};
   bool pad_window_{false};
-  int64_t w_skip_;
+  int64_t w_skip_{0};
   complex128 norm_coe_{1.0, 0};
-  size_t parallel_num_;  // batches_ * w
+  size_t parallel_num_{0};  // batches_ * w
 
   complex128 temp_ = kSTFTComplexZero;
   complex128 complex_w_ = kSTFTComplexZero;
