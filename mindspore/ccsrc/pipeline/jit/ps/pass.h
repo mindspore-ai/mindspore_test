@@ -42,6 +42,7 @@ extern std::vector<PassItem> kAddAttrWithInlinePass;
 bool OptPassAGroup(const ResourcePtr &resource);
 bool CconvPass(const ResourcePtr &resource);
 bool DatasetRepeatReaderOptPass(const ResourcePtr &resource);
+bool DetachBackward(const ResourcePtr &resource);
 bool PipelineSplitPass(const ResourcePtr &resource);
 bool PipelineParallelScheduler(const ResourcePtr &resource);
 bool AutoParallelPass(const ResourcePtr &resource);
