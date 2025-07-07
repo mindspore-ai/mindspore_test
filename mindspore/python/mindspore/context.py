@@ -843,7 +843,8 @@ class _Context:
     @staticmethod
     def _check_speedup_config_str_value(key, value):
         """check speedup config str value"""
-        if key in ["pp_1f1b_overlap", "recompute_comm_overlap", "recomputation_communication_overlap"]:
+        if key in ["pp_1f1b_overlap", "recompute_comm_overlap", "recomputation_communication_overlap",
+                   "matmul_grad_comm_overlap"]:
             if isinstance(value, str):
                 values = value.split(",")
                 for v in values:
@@ -871,8 +872,8 @@ class _Context:
         try:
             valid_option = {"recompute_comm_overlap": (ms_ctx_param.recompute_comm_overlap, str),
                             "recomputation_communication_overlap": (ms_ctx_param.recompute_comm_overlap, str),
-                            "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
-                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, bool),
+                            "matmul_grad_comm_overlap": (ms_ctx_param.matmul_grad_comm_overlap, (bool, str)),
+                            "grad_matmul_communication_overlap": (ms_ctx_param.matmul_grad_comm_overlap, (bool, str)),
                             "enable_task_opt": (ms_ctx_param.enable_task_opt, bool),
                             "enable_communication_fusion": (ms_ctx_param.enable_task_opt, bool),
                             "enable_grad_comm_opt": (ms_ctx_param.enable_grad_comm_opt, bool),

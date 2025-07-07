@@ -887,3 +887,73 @@ def test_llama2_dp8mp1pp1op():
         check_log(log_path, check_pair)
     check_peak_memory(log_path, "14350")
     check_compile_time(log_path, 15)
+
+
+def test_llama2_cell_dp2mp4pp1opcp1_fgi_grad_accu_dw_config_str():
+    """
+    Feature: test llama2 cell_dp2mp4pp2_fgi dw overlap with str
+    Description: test llama2 cell_dp2mp4pp2_fgi dw overlap with str
+    Expectation: st pass
+    """
+    case_name = "llama2_dp2mp4pp1opcp1_fgi_grad_accu_dw_config_str"
+    rank_list = "0"
+    llama2_config = LLMConfig(case_name=case_name, data_parallel=2, model_parallel=4, pipeline_stage=1,
+                              recompute=False, batch_size=1, vocab_emb_dp=False,
+                              gradient_accumulation_steps=4, fine_grain_interleave=2,
+                              context_parallel=1, use_seq_parallel=True,
+                              parallel_speed_up_json={
+                                  'matmul_grad_comm_overlap': '\"AllGather\"',
+                                  'enable_grad_comm_opt': 'true',
+                                  'enable_opt_shard_comm_opt': 'true',
+                                  'dataset_broadcast_opt_level': 3},)
+    output_file, file_path = prepare_testcase_env(case_name, llama2_config)
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    os.system(f"bash {sh_path}/run_llm_dryrun.sh 8 {rank_list} {file_path} {output_file} {case_name} no_pp")
+    check_pair = {"Training Over": 1}
+    # 返回路径 list
+    graph_path = graph_path_preprocess(llama2_config.save_graphs_path, rank_list)
+    # 返回 validate.ir 的 graph_name
+    validate_ir_graph_name = find_graph_file_name(graph_path[0], 'validate')
+    # 返回 step_parallel_end.ir 的 graph_name
+    parallel_end_ir_graph_name = find_graph_file_name(graph_path[0],
+                                                      'step_parallel_end')
+    # PrimFunc_Gather 的策略
+    parm_dpmp_strategy_check_pairs = {'PrimFunc_Gather': {'': '((4, 1), (2, 1))',}}
+    # 控制边数量 micro_interleaved_depend_begin
+    parm_micro_interleaved_depend_begin_check_pairs = {
+        'micro_interleaved_depend_begin: Bool(1)': '6'}
+    # virtualassignadd 数量
+    parm_virtualassignadd_check_pairs = {'VirtualAssignAdd': '66'}
+    # 反向掩盖控制边个数
+    parm_parallel_speed_up_check_pairs = {'grad_overlap_matmul': '14', 'matmul_grad_depend1': '0',
+                                          'matmul_grad_depend2: Bool(1)': '7',
+                                          'matmul_grad_depend3: Bool(1)': '7'}
+    parm_opt_shape_check_pairs = {'_model.layers.0.attention.wq.weight': '(512, 4096)',
+                                  '_model.layers.0.attention.wk.weight': '(512, 4096)',
+                                  '_model.layers.0.attention.wv.weight': '(512, 4096)',
+                                  '_accu_grads.model.layers.0.attention.wq.weight': '(1024, 4096)',
+                                  '_accu_grads.model.layers.0.attention.wk.weight': '(1024, 4096)',
+                                  '_accu_grads.model.layers.0.attention.wv.weight': '(1024, 4096)',
+                                  '_adam_m.model.layers.0.attention.wq.weight': '(512, 4096)',
+                                  '_adam_m.model.layers.0.attention.wk.weight': '(512, 4096)',
+                                  '_adam_m.model.layers.0.attention.wv.weight': '(512, 4096)',
+                                  }
+    real_log_path = log_path_preprocess(output_file, rank_list, case_name)
+    for log_path in real_log_path:
+        check_log(log_path, check_pair)
+        check_compile_time(log_path, 15)
+        check_peak_memory(log_path, '6200')
+    # 校验 dp、mp 的 Gather 的切分策略
+    check_node_strategy(graph_path[0], validate_ir_graph_name,
+                        parm_dpmp_strategy_check_pairs)
+    # 细粒度多副本 fine_grain_interleave, 正常执行（不成环）统计控制边个数符合预期
+    check_graph(graph_path[0], validate_ir_graph_name,
+                parm_micro_interleaved_depend_begin_check_pairs)
+    # 梯度累加，检查 virtualassignadd 数量
+    check_graph(graph_path[0], parallel_end_ir_graph_name,
+                parm_virtualassignadd_check_pairs)
+    # 并行加速控制，校验反向掩盖控制边个数
+    check_graph(graph_path[0], validate_ir_graph_name, parm_parallel_speed_up_check_pairs)
+    # 检查优化器，优化器/权重是否被切分(step_parallel_end.ir)
+    check_param_shape(graph_path[0], parallel_end_ir_graph_name, 100,
+                      parm_opt_shape_check_pairs)
