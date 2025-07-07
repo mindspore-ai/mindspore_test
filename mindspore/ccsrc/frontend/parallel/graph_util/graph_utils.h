@@ -30,7 +30,8 @@ CNodePtr InsertNode(const Operator &op, const CNodePtr &node, size_t index, cons
                     const FuncGraphPtr &func_graph, const std::string &instance_name,
                     const std::string &param_name = "", const FuncGraphPtr &root = nullptr,
                     const TensorRedistributionPtr &tensor_redistribution = nullptr);
-std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr> &root_all_nodes);
+std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr> &root_all_nodes,
+                                                   const FuncGraphPtr &func_graph = nullptr);
 std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::string &instance_name,
                                        const CNodePtr &node);
 std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_node, const std::string &instance_name,

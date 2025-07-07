@@ -23,6 +23,7 @@
 #include <memory>
 #include <set>
 #include <mutex>
+#include <optional>
 
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -35,15 +36,29 @@
 
 namespace mindspore {
 namespace symshape {
+class SymbolEngineImpl;
 /// \brief When a CNode's input[0] is also a CNode, it's a SpecialCNode.
 class COMMON_EXPORT SpecialCNodeHelper {
  public:
   explicit SpecialCNodeHelper(const CNodePtr &cnode) : cnode_(cnode) {}
   virtual ~SpecialCNodeHelper() = default;
   virtual void SetDependStatus(std::map<AnfNodePtr, DependStatus> *depend_status_map) = 0;
-  virtual std::pair<PrimitivePtr, AbstractBasePtrList> ExtractInputs() = 0;
+
+  /// \brief Infer the symbolic shape and symbolic value of a special CNode.
+  ///
+  /// This interface is called during the symbolic inference process of a CNode. It provides two ways to handle the
+  /// inference:
+  ///
+  /// 1. Directly set the output symbol and return null primitive: If the symbolic output of the CNode can be
+  /// directly determined, the implementation can set the symbolic information for the CNode and return
+  /// `pair{nullptr, {}}` to indicate the inference is complete.
+  ///
+  /// 2. Return the Primitive and input Abstract information: This result will be passed to `OperationBuilder` to
+  /// perform symbolic inference.
+  virtual std::pair<PrimitivePtr, AbstractBasePtrList> Process() = 0;
 
  protected:
+  std::shared_ptr<SymbolEngineImpl> symbol_engine() const;
   CNodePtr cnode_;
 };
 
