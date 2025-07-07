@@ -106,6 +106,22 @@ Status TensorLayout::SetDefaultTensorMapAndShapeBefore(const Shape &tensor_map, 
   return SUCCESS;
 }
 
+Status TensorLayout::CheckDeviceNum(const Shape &device_arrangement, bool check_device_num) {
+  if (device_arrangement_origin_.Init(device_arrangement) != SUCCESS) {
+    return FAILED;
+  }
+  CheckGlobalDeviceManager();
+  auto device_num = g_device_manager->stage_device_num();
+  int64_t device_total =
+    std::accumulate(device_arrangement.begin(), device_arrangement.end(), 1, std::multiplies<int64_t>());
+  if (device_num != device_total && check_device_num) {
+    MS_LOG(ERROR) << "The configured device_matrix " << device_arrangement << " accumulate value " << device_total
+                  << " dose not equal to the device number in one stage " << device_num;
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 /*
  *  example1:
  *    in_device_arrangement = [8, 2, 4],
@@ -141,18 +157,10 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     device_arrangement[device_arrangement.size() - 1] = 1;
   }
 
-  if (device_arrangement_origin_.Init(device_arrangement) != SUCCESS) {
+  if (CheckDeviceNum(device_arrangement, check_device_num) != SUCCESS) {
     return FAILED;
   }
-  CheckGlobalDeviceManager();
-  auto device_num = g_device_manager->stage_device_num();
-  int64_t device_total =
-    std::accumulate(device_arrangement.begin(), device_arrangement.end(), 1, std::multiplies<int64_t>());
-  if (device_num != device_total && check_device_num) {
-    MS_LOG(ERROR) << "The configured device_matrix " << device_arrangement << " accumulate value " << device_total
-                  << " does not equal to the device number in one stage " << device_num;
-    return FAILED;
-  }
+
   Shape extended_tensor_map;
   Shape reshaped_tensor_shape;
   if (tensor_shape.size() != tensor_map.size()) {
@@ -185,6 +193,10 @@ Status TensorLayout::InitFromExtendVector(const Shape &device_matrix, const std:
     }
     int64_t accu_shp = 1;
     for (size_t j = 0; j < tensor_map[i].size() - 1; ++j) {
+      if (tensor_map[i][j] < 0) {
+        reshaped_tensor_shape.push_back(1);
+        continue;
+      }
       size_t tensor_index = device_arrangement.size() - 1 - static_cast<size_t>(tensor_map[i][j]);
       auto shard_size = device_arrangement[tensor_index];
       accu_shp *= shard_size;
@@ -533,6 +545,25 @@ Arrangement TensorLayout::base_slice_shape() const {
   } else {
     return new_slice_shape;
   }
+}
+
+Shape TensorLayout::base_shard_strategy() const {
+  if (tensor_map_before_.empty()) {
+    return shard_strategy();
+  }
+  Shape stra;
+  for (size_t index = 0; index < tensor_map_before_.size(); index++) {
+    auto dim_map = tensor_map_before_[index];
+    int64_t axis_shard = 1;
+    for (const auto &dim : dim_map) {
+      if (dim != -1) {
+        int64_t divisor = device_arrangement_origin_.GetDimByReverseIdx(LongToUlong(dim));
+        axis_shard *= divisor;
+      }
+    }
+    stra.push_back(axis_shard);
+  }
+  return stra;
 }
 
 Shape TensorLayout::shard_strategy() const {

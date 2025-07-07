@@ -84,6 +84,7 @@ class MatMul : public MatMulBase {
   Status CheckInputLayout() override;
   Status CheckOutputLayout() override;
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  StrategyPtr output_strategy_ = nullptr;
 
  private:
   void ProcessMatMulLeftInput(const std::vector<Group> &x_group_list, const AnfNodePtr &matmul_actual_input_node,
@@ -132,7 +133,10 @@ class BatchMatMulInfo : public MatMul {
                   const PrimitiveAttrs &attrs)
       : MatMul(name, inputs_shape, outputs_shape, attrs) {}
   ~BatchMatMulInfo() override = default;
-
+  Status Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+              const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts = {},
+              const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts = {}) override;
+  Status CheckOutputStrategy(const StrategyPtr &out_strategy) override;
   std::shared_ptr<Strategies> GenerateBatchStrategies() override;
 };
 
