@@ -29,6 +29,7 @@ namespace mindspore::device::ascend {
 namespace {
 
 void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr) {
+  MS_EXCEPTION_IF_NULL(tensor_ptr);
   if (tensor_ptr->data_type_c() == TypeId::kNumberTypeBFloat16) {
     auto bfloat16_tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(*tensor_ptr, TypeId::kNumberTypeFloat32);
     tensor_ptr = bfloat16_tensor_ptr;

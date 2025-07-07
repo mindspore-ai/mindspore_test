@@ -218,6 +218,7 @@ size_t AscendVmmAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
 }
 
 size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size) {
+  MS_EXCEPTION_IF_NULL(addr);
   if (common::IsCompileSimulation()) {
     MS_LOG(EXCEPTION) << "VMM is not supported in dry run mode.";
   }

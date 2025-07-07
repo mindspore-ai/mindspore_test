@@ -21,7 +21,10 @@
 // Built for lite and ARM
 #include <arm_neon.h>
 
+#ifdef ENABLE_FP16
 using float16 = float16_t;
+inline float half_to_float(const float16 &h) { return static_cast<float>(h); }
+#endif
 
 #else
 #include <cmath>
@@ -319,8 +322,6 @@ inline float16 pow(const float16 &a, const float16 &b) {
   return float16(::powf(static_cast<float>(a), static_cast<float>(b)));
 }
 
-#endif  // ENABLE_ARM32 || ENABLE_ARM64
-
 inline float half_to_float(const float16 &h) { return static_cast<float>(h); }
-
+#endif  // ENABLE_ARM32 || ENABLE_ARM64
 #endif  // MINDSPORE_CORE_BASE_FLOAT16_H_

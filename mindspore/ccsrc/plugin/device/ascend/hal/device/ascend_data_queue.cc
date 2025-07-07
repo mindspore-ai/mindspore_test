@@ -466,6 +466,7 @@ void WingmanQueue::Close() {
 }
 
 std::shared_ptr<BlockingQueue> GetTdtWingManQueue(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
   if (!IsGetNextOp(prim->name())) return nullptr;
   auto queue_name = GetValue<std::string>(prim->GetAttr("shared_name"));
   if (!DataQueueMgr::GetInstance().IsCreated(queue_name)) {
