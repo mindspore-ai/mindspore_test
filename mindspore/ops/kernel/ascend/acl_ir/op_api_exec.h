@@ -484,12 +484,12 @@ class ApiCachePool {
 #define RUN_CUSTOM_OP_API_ASYNC(aclnn_api, workspace_addr, workspace_size, executor, acl_stream, release_func) \
   do {                                                                                                         \
     const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_api.c_str());                                  \
-    if (op_api_func == nullptr) {                                                                              \
+    if (MS_UNLIKELY(op_api_func == nullptr)) {                                                                 \
       MS_LOG(EXCEPTION) << aclnn_api << " not in " << device::ascend::GetOpApiLibName() << ", please check!";  \
     }                                                                                                          \
-    auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                             \
+    static auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                      \
     auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                         \
-    if (api_ret != 0) {                                                                                        \
+    if (MS_UNLIKELY(api_ret != 0)) {                                                                           \
       CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                            \
       MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg);  \
     }                                                                                                          \
@@ -499,22 +499,18 @@ class ApiCachePool {
   } while (false)
 
 // Sync run op.
-#define RUN_OP_API_SYNC(aclnn_api, workspace_addr, workspace_size, executor, acl_stream)                             \
-  do {                                                                                                               \
-    static const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_api.c_str());                                 \
-    if (op_api_func == nullptr) {                                                                                    \
-      MS_LOG(EXCEPTION) << aclnn_api << " not in " << device::ascend::GetOpApiLibName() << ", please check!";        \
-    }                                                                                                                \
-    auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                                   \
-    auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                               \
-    if (api_ret != 0) {                                                                                              \
-      CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                                  \
-      MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg);        \
-    }                                                                                                                \
-    auto ret = CALL_ASCEND_API(aclrtSynchronizeStream, acl_stream);                                                  \
-    if (ret != 0) {                                                                                                  \
-      MS_LOG(EXCEPTION) << "Sync stream " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg); \
-    }                                                                                                                \
+#define RUN_OP_API_SYNC(aclnn_api, workspace_addr, workspace_size, executor, acl_stream)                      \
+  do {                                                                                                        \
+    static const auto op_api_func = device::ascend::GetOpApiFunc(aclnn_api.c_str());                          \
+    if (MS_UNLIKELY(op_api_func == nullptr)) {                                                                \
+      MS_LOG(EXCEPTION) << aclnn_api << " not in " << device::ascend::GetOpApiLibName() << ", please check!"; \
+    }                                                                                                         \
+    static auto run_api_func = reinterpret_cast<device::ascend::RunApiFunc>(op_api_func);                     \
+    auto api_ret = run_api_func(workspace_addr, workspace_size, executor, acl_stream);                        \
+    if (MS_UNLIKELY(api_ret != 0)) {                                                                          \
+      CHECK_AND_THROW_RECOVERABLE_ERROR(aclnn_api);                                                           \
+      MS_LOG(EXCEPTION) << "Call " << aclnn_api << " failed, detail:" << CALL_ASCEND_API(aclGetRecentErrMsg); \
+    }                                                                                                         \
   } while (false)
 }  // namespace  mindspore::device::ascend
 

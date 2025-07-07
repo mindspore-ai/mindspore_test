@@ -31,31 +31,33 @@ tensor::TensorPtr InnerNonZeroAscendCustomize(const std::shared_ptr<OpRunner> &o
   MS_LOG(DEBUG) << "InnerNonZero Ascend start";
   OpRunner::InferOpOutput(op, input_tensor);
 
-  auto device_context = op->device_context();
-
   // set address
-  PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), input_tensor);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  runtime::Pipeline::Get().WaitForward();
+  // Async
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor]() {
+    auto device_context = op->device_context();
+    // exec aclnnNonzero
+    const auto &outputs = op->outputs();
 
-  // exec aclnnNonzero
-  const auto &outputs = op->outputs();
-  // Malloc for input tensors
-  PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-  // Malloc for output tensors
-  PyBoostUtils::MallocOpOutputs(device_context, outputs);
-  const auto &all_acl_tensor =
-    LAUNCH_ACLNN_SYNC(aclnnNonzeroV2, device_context, op->stream_id(), input_tensor, outputs[0]);
+    // Malloc for input tensors
+    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+    // Malloc for output tensors
+    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    const auto &all_acl_tensor =
+      LAUNCH_ACLNN_SYNC(aclnnNonzeroV2, device_context, op->stream_id(), input_tensor, outputs[0]);
 
-  // update shape
-  auto output_real_shape = all_acl_tensor[kIndex1];
-  // when case:1D-0D tensor,needs to update shape {-1,1} to {0,1}
-  if (output_real_shape[0] == -1) {
-    output_real_shape[0] = 0;
-  }
-  auto simple_infer_ptr = op->output_value_simple_info();
-  simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape};
-  op->UpdateOutputShape(outputs[kIndex0], output_real_shape);
+    // update shape
+    auto output_real_shape = all_acl_tensor[kIndex1];
+    // when case:1D-0D tensor,needs to update shape {-1,1} to {0,1}
+    if (output_real_shape[0] == -1) {
+      output_real_shape[0] = 0;
+    }
+    auto simple_infer_ptr = op->output_value_simple_info();
+    simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape};
+    op->UpdateOutputShape(outputs[kIndex0], output_real_shape);
+  }));
+  runtime::Pipeline::Get().backend_stage()->Wait();
   MS_LOG(DEBUG) << "InnerNonZero Ascend end";
   return op->output(0);
 }

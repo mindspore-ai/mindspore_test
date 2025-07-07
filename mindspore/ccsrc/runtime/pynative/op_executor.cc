@@ -62,7 +62,8 @@ void OpExecutor::WorkerJoin() {
 }
 
 void OpExecutor::DispatchLaunchTask(std::function<void()> &&func) {
-  if (NeedSync()) {
+  static bool need_sync = NeedSync();
+  if (need_sync) {
     runtime::Pipeline::Get().WaitForward();
     func();
   } else {
