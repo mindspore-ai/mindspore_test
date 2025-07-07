@@ -49,6 +49,7 @@ constexpr auto kGroupedMatmulName = "GroupedMatmul";
 constexpr auto kMlaPreprocessName = "MlaPreprocess";
 constexpr auto kGroupedMatmulV4TransposeName = "GroupedMatmulV4Transpose";
 constexpr auto kGroupedMatmulV4Name = "GroupedMatmulV4";
+constexpr auto kTransposeBatchMatmulTranspose = "TransposeBatchMatmulTranspose";
 constexpr auto CONST_2 = 2;
 constexpr auto Align16 = 16;
 constexpr auto kQuantLinearSparseBiasIdx = 5;  // primitive input weight deq_scale compress_idx bias
@@ -124,7 +125,8 @@ static std::unordered_map<std::string, std::vector<std::vector<std::vector<size_
   {kMlaPreprocessName, {{{5, 18}, {}}, {{5, 18}, {}}}},
   {kGroupedMatmulV4Name, {{{1}, {}}, {{1}, {}}}},
   {kGroupedMatmulV4TransposeName, {{{1}, {}}, {{1}, {}}}},
-  {kBatchMatMulOpName, {{{1}, {}}, {{1}, {}}}}};
+  {kBatchMatMulOpName, {{{1}, {}}, {{1}, {}}}},
+  {kTransposeBatchMatmulTranspose, {{{1}, {}}, {{1}, {}}}}};
 
 // unordered_map mean:
 // key is input_idx, value is special_format value
