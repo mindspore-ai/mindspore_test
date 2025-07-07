@@ -357,7 +357,13 @@ bool Tensor::ValueEqual(const Tensor &tensor) const {
 
 TypeId Tensor::set_data_type(TypeId data_type) {
   if (data_type != data_type_) {
-    MS_EXCEPTION_IF_NULL(device_sync_);
+    if (device_sync_ == nullptr) {
+      // For Parameter with initializer.
+      // The Parameter is not initialized yet.
+      id_ = MakeId();
+      return MetaTensor::set_data_type(data_type);
+    }
+
     if (device_sync_->GetDeviceType() != device::DeviceType::kCPU) {
       auto cpu_tensor = cpu();
       device_sync_ = cpu_tensor->device_address();
@@ -376,8 +382,18 @@ TypeId Tensor::set_data_type(TypeId data_type) {
 
 size_t Tensor::set_shape(const ShapeVector &shape) {
   bool is_shape_unknown = std::any_of(shape_.begin(), shape_.end(), [](int64_t value) { return value < 0; });
-  if (!is_shape_unknown && DataSize() < SizeOf(shape)) {
-    MS_LOG(EXCEPTION) << "It's invalid to set " << ToString() << " shape to " << shape;
+  auto cur_data_size = DataSize();
+  auto incoming_size = SizeOf(shape);
+  if (!is_shape_unknown && cur_data_size < incoming_size) {
+    // For dynamic shape scene.
+    MS_LOG(WARNING) << "It's not recommended to set " << ToString() << " shape to " << shape;
+    if (device_sync_ != nullptr) {
+      auto incoming_bytes = incoming_size * DataItemSize();
+      if (incoming_bytes > device_sync_->GetSize()) {
+        MS_LOG(WARNING) << "Cannot set " << ToString() << " shape to " << shape << ". The data size is "
+                        << device_sync_->GetSize();
+      }
+    }
   }
   MS_LOG(DEBUG) << "Change shape of Tensor " << ToString() << " to " << shape;
   return MetaTensor::set_shape(shape);
@@ -550,7 +566,9 @@ TensorPtr Tensor::cpu() const {
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
-  SyncCopy(dst, device_address, device_address->stream_id());
+  if (!SyncCopy(dst, device_address, device_address->stream_id())) {
+    MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
+  }
   return std::make_shared<Tensor>(data_type_, shape_, dst);
 }
 
