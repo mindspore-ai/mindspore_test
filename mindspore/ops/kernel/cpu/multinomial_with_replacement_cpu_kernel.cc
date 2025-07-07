@@ -202,6 +202,7 @@ int64_t *MultinomialWithReplacementCpuKernelMod::TrueCompute(T *in, int64_t *out
     }
     out = out + 1;
   }
+  delete[] cumulative_distribution_function;
   return out;
 }
 
@@ -261,6 +262,9 @@ int64_t *MultinomialWithReplacementCpuKernelMod::FalseCompute(T *in, int64_t *ou
       out = out + 1;
     }
   }
+  delete[] cumulative_distribution_function;
+  delete[] weight;
+  delete[] zero_data;
   return out;
 }
 
