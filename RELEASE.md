@@ -89,6 +89,26 @@ MindInsight will no longer update or release new versions after version 2.3，an
 - [STABLE] [mindspore.runtime](https://www.mindspore.cn/docs/en/master/api_python/mindspore.runtime.html) API adds implementation of [mindspore.runtime.empty_cache](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.empty_cache.html#mindspore.runtime.empty_cache).
 - [STABLE] [mindspore.runtime.set_memory](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.set_memory.html#mindspore.runtime.set_memory) now supports input argument `huge_page_reserve_size`.
 - [STABLE] [mindspore.runtime.set_cpu_affinity](https://www.mindspore.cn/docs/en/master/api_python/runtime/mindspore.runtime.set_cpu_affinity.html) now supports input argument `module_to_cpu_dict`.
+- [STABLE] [minspore.nn.cell](https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html) added the function to view/save model's state_dict. New interfaces are as follows:
+
+  | mindspore.nn.Cell                       |
+  | --------------------------------------- |
+  | cell.register_state_dict_post_hook      |
+  | cell.register_state_dict_pre_hook       |
+  | cell.state_dict                         |
+  | cell.register_load_state_dict_pre_hook  |
+  | cell.register_load_state_dict_post_hook |
+  | cell.load_state_dict                    |
+
+- [STABLE] [minspore.nn.cell](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html) added the function to view/register model's buffer. New interfaces are as follows:
+
+  | mindspore.nn.Cell    |
+  | -------------------- |
+  | cell.register_buffer |
+  | cell.get_buffer      |
+  | cell.get_sub_cell    |
+  | cell.named_buffer    |
+  | cell.buffers         |
 
 #### Backwards Incompatible Change
 
