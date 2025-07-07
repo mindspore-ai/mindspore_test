@@ -78,7 +78,7 @@ class BACKEND_EXPORT GraphCaptureManager {
 
   // Using the kv_cache and weight results recorded during the capture phase, verify whether the addresses
   // fetched during replay phase have changed.
-  bool CheckWeightAndKVCacheNotChange(size_t stream_id);
+  bool CheckParameterNotChange(size_t stream_id);
 
   void HandleFirstUserMemoryFree(const KernelTensorPtr &kernel_tensor, const KernelRunnerPtr &kernel_actor,
                                  std::queue<std::vector<KernelTensorPtr>> *memory_free_lists);

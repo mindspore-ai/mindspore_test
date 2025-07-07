@@ -524,7 +524,8 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
     // Push flatten tensors into store buffers.
     graph_parameter_store->FillBuffer(index, flatten_tensors);
   }
-  auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(inference_input_indexes_, inference_parameters_);
+  auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(graph_compiler_info_, inference_input_indexes_,
+                                                                inference_parameters_);
   MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
                << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
                << ", enable parallel dispatch: " << EnableParallelDispatchKernel()

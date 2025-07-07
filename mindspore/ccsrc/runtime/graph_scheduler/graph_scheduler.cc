@@ -393,6 +393,16 @@ void TryEnableInputOptimize(const GraphCompilerInfo &graph_compiler_info, ActorS
   }
 }
 
+void TryEnableCaptureGraph(const GraphCompilerInfo &graph_compiler_info) {
+  if (!EnableInputOptimize() && GraphCaptureManager::GetInstance().GetEnableGraphCapture()) {
+    MS_LOG(EXCEPTION) << "You have to enable input optimize before enable capture graph. It seems that the "
+                         "input optimize feature verification has failed. Please enable the debug "
+                         "log by export MS_SUBMODULE_LOG_v=\"{RUNTIME_FRAMEWORK:0}\" and search for the field 'enable "
+                         "input optimize failed.' to determine whether "
+                         "input optimize is having issues in some of your scenarios. ";
+  }
+}
+
 // Check whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
 bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   auto ms_context = MsContext::GetInstance();
@@ -1591,6 +1601,7 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
 
   TryEnableKbkSubGraphExecMode(graph_compiler_info, actor_set.get());
   TryEnableInputOptimize(graph_compiler_info, actor_set.get());
+  TryEnableCaptureGraph(graph_compiler_info);
 
   // Create the graph_parameter_store of the current graph
   if (EnableInputOptimize()) {

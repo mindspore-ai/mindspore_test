@@ -556,7 +556,7 @@ bool IsInferPhase(const std::string &phase);
 TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node);
 KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
                                bool is_first_user = true, size_t stream_id = SIZE_MAX,
-                               bool enable_parallel_dispath = false);
+                               bool enable_parallel_dispath = false, bool *has_h2d_copy = nullptr);
 bool IsEmptySequenceTensor(tensor::Tensor *tensor);
 size_t FetchInputTensorIndex(const KernelWithIndex &front_node);
 
