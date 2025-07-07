@@ -99,6 +99,10 @@ class AdamW(Optimizer):
             &\hline \\[-1.ex]
        \end{array}
 
+    More details of the AdamW algorithm can be found in the paper `Decoupled Weight Decay Regularization
+    <https://arxiv.org/abs/1711.05101>`_ and `On the Convergence of Adam and Beyond
+    <https://openreview.net/forum?id=ryQu7f-RZ>`_.
+
     .. warning::
         - This is an experimental optimizer API that is subject to change.
           This module must be used with lr scheduler module in `LRScheduler Class
@@ -155,6 +159,8 @@ class AdamW(Optimizer):
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
                  weight_decay=1e-2, amsgrad=False, *, maximize=False):
+        # The API definition and the validation of attributes below refers to PyTorch:
+        # https://github.com/pytorch/pytorch/blob/v2.1.0/torch/optim/adamw.py
         _check_param_value(betas, eps, weight_decay, lr, amsgrad, maximize, self.cls_name)
         if lr < 0.0:
             raise ValueError("Invalid learning rate: {}".format(lr))
