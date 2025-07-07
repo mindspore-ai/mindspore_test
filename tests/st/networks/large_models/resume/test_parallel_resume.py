@@ -19,9 +19,27 @@ How to run this:
 """
 
 import os
+import shutil
 
 from tests.mark_utils import arg_mark
 from resume_train_utils import extract_loss_values
+
+
+def remove_folder(folder_path):
+    """
+    If the folder exists, delete it and all its contents.
+
+    Args:
+      folder_path: The path to the folder to delete.
+    """
+    if os.path.exists(folder_path):
+        try:
+            shutil.rmtree(folder_path)
+            print(f"Directory '{folder_path}' has been removed.")
+        except OSError as e:
+            print(f"Remove directory '{folder_path}' failed: {e}")
+    else:
+        print(f"Directory '{folder_path}' is not exist.")
 
 
 class TestResumeTraining:
@@ -43,12 +61,14 @@ class TestResumeTraining:
                         f"export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
                         f"bash {sh_path}/msrun_launch.sh 4")
 
-        os.system("grep -E 'ERROR|error' {sh_path}/msrun_log/worker_3.log -C 3")
+        os.system(f"grep -E 'ERROR|error' {sh_path}/msrun_log/worker_3.log -C 3")
         assert ret == 0
 
         loss = extract_loss_values("msrun_log/worker_3.log")
 
-        resume_start = 257
+        resume_start = 256
         train_middle = 128
         for i in range(0, 10):
             assert abs(loss[resume_start + i] - loss[train_middle + i]) < 0.005
+
+        remove_folder("./output/test_resume_parallel/checkpoint")

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(workspace, "mindformers"))
 
 from mindformers.models.llama import LlamaForCausalLM, LlamaConfig
 from mindformers.modules.transformer import TransformerOpParallelConfig, TransformerRecomputeConfig
-from mindformers import CosineWithWarmUpLR, FP32StateAdamWeightDecay
+from mindformers import CosineWithWarmUpLR
 
 
 NUM_LAYERS = 16
@@ -91,9 +91,8 @@ BASE_CONFIG = {
     },
     # optimizer
     'optimizer': {
-        'type': FP32StateAdamWeightDecay,
-        'beta1': 0.9,
-        'beta2': 0.999,
+        'type': "AdamW",
+        'betas': [0.9, 0.999],
         'eps': 1.e-8,
         'learning_rate': 5.e-5,
     },
