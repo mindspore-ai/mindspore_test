@@ -925,13 +925,6 @@ extern PyObject *TensorPython_set_device_address(PyObject *self, PyObject *args)
   HANDLE_MS_EXCEPTION_END
 }
 
-extern py::object TensorGetItemImpl(const py::object &self, const py::object &py_index) {
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    return self.attr("_getitem_origin")(py_index);
-  }
-  return self.attr("_getitem")(py_index);
-}
-
 extern PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
 
@@ -939,20 +932,23 @@ extern PyObject *TensorPython_GetItem(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "O", &py_index)) {
     return nullptr;
   }
-  py::object result =
-    TensorGetItemImpl(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index));
-  trace::CaptureResolveOperation(
-    py::make_tuple(py::reinterpret_borrow<py::object>(self), py::reinterpret_borrow<py::object>(py_index)), "getitem",
-    &result);
-  return result.release().ptr();
-  HANDLE_MS_EXCEPTION_END
-}
-
-extern py::object TensorSetItemImpl(const py::object &self, const py::object &py_index, const py::object &py_value) {
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    return self.attr("_setitem_origin")(py_index, py_value);
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && !trace::IsTracing() &&
+      !Tensor::CheckStub()) {
+    PyType<TensorPy> *py_tensor = (PyType<TensorPy> *)self;
+    TensorPtr tensor = py_tensor->value.GetTensor();
+    PyObject *py_result_obj;
+    TensorPtr result = TensorIndex::TensorGetItem(tensor, py::reinterpret_borrow<py::object>(py_index), &py_result_obj);
+    if (result == nullptr) {
+      return py_result_obj;
+    }
+    return tensor::PackTensor(result);
   }
-  return self.attr("_setitem")(py_index, py_value);
+  py::object self_obj = py::reinterpret_borrow<py::object>(self);
+  py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
+  py::object py_result_obj = self_obj.attr("_getitem_origin")(py_index_obj);
+  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj), "getitem", &py_result_obj);
+  return py_result_obj.release().ptr();
+  HANDLE_MS_EXCEPTION_END
 }
 
 extern PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
@@ -961,15 +957,23 @@ extern PyObject *TensorPython_SetItem(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "|OO", &py_index, &py_value)) {
     return nullptr;
   }
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice && !trace::IsTracing() &&
+      !Tensor::CheckStub()) {
+    PyType<TensorPy> *py_tensor = (PyType<TensorPy> *)self;
+    TensorPtr tensor = py_tensor->value.GetTensor();
+    TensorPtr result = TensorIndex::TensorSetItem(tensor, py::reinterpret_borrow<py::object>(py_index),
+                                                  py::reinterpret_borrow<py::object>(py_value));
+    return tensor::PackTensor(result);
+  }
   py::object self_obj = py::reinterpret_borrow<py::object>(self);
   py::object py_index_obj = py::reinterpret_borrow<py::object>(py_index);
   py::object py_value_obj = py::reinterpret_borrow<py::object>(py_value);
-  py::object result = TensorSetItemImpl(self_obj, py_index_obj, py_value_obj);
-  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj, py_value_obj), "setitem", &result);
-  if (result.is(py::none())) {
+  py::object py_result_obj = self_obj.attr("_setitem_origin")(py_index_obj, py_value_obj);
+  trace::CaptureResolveOperation(py::make_tuple(self_obj, py_index_obj, py_value_obj), "setitem", &py_result_obj);
+  if (py_result_obj.is(py::none())) {
     return nullptr;
   }
-  return result.release().ptr();
+  return py_result_obj.release().ptr();
   HANDLE_MS_EXCEPTION_END
 }
 

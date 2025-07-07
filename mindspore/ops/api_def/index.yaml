@@ -1,0 +1,7 @@
+index:
+  - op_yaml: index_op.yaml
+    py_method: tensor_index
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
