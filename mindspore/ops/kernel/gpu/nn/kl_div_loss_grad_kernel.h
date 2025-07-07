@@ -30,7 +30,8 @@ namespace mindspore {
 namespace kernel {
 class KLDivLossGradGpuKernelMod : public NativeGpuKernelMod {
  public:
-  KLDivLossGradGpuKernelMod() : input_size_(1), reduction_(ReductionMode::kMean), is_null_input_(false) {}
+  KLDivLossGradGpuKernelMod()
+      : input_size_(1), reduction_(ReductionMode::kMean), is_null_input_(false), type_id_size_(0) {}
   ~KLDivLossGradGpuKernelMod() override = default;
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -57,9 +58,9 @@ class KLDivLossGradGpuKernelMod : public NativeGpuKernelMod {
   static std::vector<std::pair<KernelAttr, KLDivLossLaunchFunc>> func_list_;
 
   size_t input_size_;
-  size_t type_id_size_;
   ReductionMode reduction_;
   bool is_null_input_;
+  size_t type_id_size_;
 };
 }  // namespace kernel
 }  // namespace mindspore

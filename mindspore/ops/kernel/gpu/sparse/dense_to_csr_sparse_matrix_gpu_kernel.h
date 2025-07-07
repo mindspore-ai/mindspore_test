@@ -68,9 +68,9 @@ class DenseToCSRSparseMatrixKernelMod : public NativeGpuKernelMod {
   size_t dim_indices_last_;
 
   bool is_batch_csr_{false};
-  int nnz_;
-  int m_;
-  int rank_;
+  int nnz_{0};
+  int m_{0};
+  int rank_{0};
 
   void Reshape() {
     size_t dim_of_indices = 1;

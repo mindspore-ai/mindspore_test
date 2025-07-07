@@ -82,7 +82,7 @@ class NcclSendGpuKernel : public NcclGpuKernelMod, public MatchKernelHelper<Nccl
     return true;
   }
   int dest_rank_;
-  bool is_null_input_;
+  bool is_null_input_{false};
   void *cuda_stream_{nullptr};
 };
 }  // namespace kernel

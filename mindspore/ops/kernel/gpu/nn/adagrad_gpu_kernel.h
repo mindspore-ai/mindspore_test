@@ -34,6 +34,9 @@ class AdagradGpuKernelMod : public NativeGpuKernelMod {
         accumulation_size_(0),
         learning_rate_size_(0),
         gradient_size_(0),
+        variable_shape_(0),
+        accumulation_shape_(0),
+        gradient_shape_(0),
         update_slots(true),
         kernel_name_("ApplyAdagrad") {}
 
@@ -59,13 +62,12 @@ class AdagradGpuKernelMod : public NativeGpuKernelMod {
                                                const std::vector<kernel::KernelTensor *> &, void *)>;
 
  private:
-  AdagradLaunchFunc kernel_func_;
+  AdagradLaunchFunc kernel_func_{nullptr};
   static std::vector<std::pair<KernelAttr, AdagradLaunchFunc>> func_list_;
   size_t variable_size_;
   size_t accumulation_size_;
   size_t learning_rate_size_;
   size_t gradient_size_;
-
   size_t variable_shape_;
   size_t accumulation_shape_;
   size_t gradient_shape_;

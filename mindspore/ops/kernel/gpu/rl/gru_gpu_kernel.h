@@ -50,6 +50,7 @@ class GruGpuKernelMod : public NativeGpuKernelMod {
         dropout_(0),
         weight_size_(0),
         reserved_size_(0),
+        input_type_size_(0),
         x_desc_(nullptr),
         hx_desc_(nullptr),
         cx_desc_(nullptr),

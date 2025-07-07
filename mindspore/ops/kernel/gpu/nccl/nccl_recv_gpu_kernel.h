@@ -87,7 +87,7 @@ class NcclRecvGpuKernel : public NcclGpuKernelMod, public MatchKernelHelper<Nccl
     return true;
   }
   int src_rank_;
-  bool is_null_input_;
+  bool is_null_input_{false};
   int unit_size_{0};
   void *cuda_stream_{nullptr};
 };

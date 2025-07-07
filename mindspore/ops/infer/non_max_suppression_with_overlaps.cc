@@ -108,8 +108,8 @@ abstract::ShapePtr NonMaxSuppressionWithOverlapsFrontendInferShape(const Primiti
 
 TypePtr NonMaxSuppressionWithOverlapsInferType(const PrimitivePtr &prim,
                                                const std::vector<AbstractBasePtr> &input_args) {
-  auto prim_name = prim->name();
   MS_EXCEPTION_IF_NULL(prim);
+  auto prim_name = prim->name();
   (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual,
                                            kNonMaxSuppressionWithOverlapsInputsNum, prim_name);
   for (const auto &i : input_args) {
