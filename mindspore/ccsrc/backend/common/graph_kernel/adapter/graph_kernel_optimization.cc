@@ -284,7 +284,7 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(true), enable_dyn_level, is_gpu);
 #ifdef ENABLE_AKG
   pm->Add(std::make_shared<GraphKernelExpanderBeforeBuild>(), OptLevel_1, !is_dvm);
-  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_ge && !is_dvm);
+  pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_dvm);
 #endif
   pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1, !is_dvm);
@@ -313,6 +313,10 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
 
   // Update side effect attr, update kernel graph ref pair(used in device address allocation)
   pm->Add(std::make_shared<DealWithSideEffect>(), OptLevel_1);
+
+  //add som attribute to graph kernel for further optimization
+  pm->Add(std::make_shared<AddAttr>(), OptLevel_1);
+
   pm->Add(std::make_shared<ConvertCallToPrim>(), OptLevel_1);
   return pm;
 }
