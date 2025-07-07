@@ -27,8 +27,7 @@ def test_summarycollector():
     """
     if sys.platform != 'linux':
         return
-    ret = os.system("msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10802 "
-                    "--join=True --log_dir=./test_summary_without_mainfunc/msrun_log pytest -s "
-                    "summary_net.py::test_summary_net")
-    assert ret == 0
+    exec_network_cmd = 'cd {0}; bash run_summary_without_mainfunc.sh'.format(
+        os.path.split(os.path.realpath(__file__))[0])
+    ret = os.system(exec_network_cmd)
+    assert not ret

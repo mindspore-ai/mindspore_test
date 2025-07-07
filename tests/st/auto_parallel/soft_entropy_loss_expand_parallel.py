@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import numpy as np
 from numpy import allclose
 
@@ -30,6 +31,7 @@ from mindspore.train import Model, Callback
 
 np.set_printoptions(threshold=np.inf)
 device_num = 2
+device_id = int(os.getenv('DEVICE_ID'))
 rank_id = 0
 embed = 128
 classes = 32
@@ -42,10 +44,12 @@ def setup_module():
     global rank_id
     np.random.seed(0)
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O2"})
+    context.set_context(device_id=device_id)
     distributedTool.init()
     rank_id = distributedTool.get_rank()
     device_num = distributedTool.get_group_size()
-    context.set_auto_parallel_context(device_num=device_num)
+    context.set_auto_parallel_context(device_num=device_num,
+                                      global_rank=device_id)
 
 
 def teardown_module():

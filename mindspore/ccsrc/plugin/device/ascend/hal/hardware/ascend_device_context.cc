@@ -76,8 +76,6 @@ void AscendDeviceContext::InitializeForAclop() const {
   if (initialized_aclop_) {
     return;
   }
-
-  MS_LOG(INFO) << "Start initializing for acl.";
   if (!UseSimulationApi()) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
@@ -92,7 +90,6 @@ void AscendDeviceContext::InitializeForAclop() const {
   SetAclOpDebugOption();
   datadump::TensorDumpStepManager::GetInstance().SetAclDumpCallbackReg(reinterpret_cast<void *>(acldumpRegCallback));
   initialized_aclop_ = true;
-  MS_LOG(INFO) << "End initializing for acl.";
 }
 
 void AscendDeviceContext::Initialize() {
