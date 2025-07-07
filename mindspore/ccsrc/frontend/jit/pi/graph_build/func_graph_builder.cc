@@ -785,7 +785,6 @@ bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
     if (node == nullptr) {
       return false;
     }
-    EraseCandidateIsolatedNode(node);
     (void)input_node_list->emplace_back(node);
     (void)input_abs_list->emplace_back(node->abstract());
   }
