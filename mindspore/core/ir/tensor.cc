@@ -256,7 +256,7 @@ Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compres
                TensorCompressionType compression_type)
     : Tensor(
         origin_data_type, shape,
-        MakeDeviceAddress(kNumberTypeInt8, shape,
+        MakeDeviceAddress(kNumberTypeInt8, ShapeVector{static_cast<int64_t>(compression_data_size)},
                           MakeTensorData(kNumberTypeInt8, ShapeVector{static_cast<int64_t>(compression_data_size)}))) {
   compression_type_ = compression_type;
 }
