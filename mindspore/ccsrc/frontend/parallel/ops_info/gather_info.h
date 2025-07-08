@@ -39,6 +39,7 @@ enum GatherMode {
   SHARD_AXIS_0_DYNAMIC,
   SHARD_AXIS_0_STATIC,
   SHARD_AXIS_1,
+  SHARD_BATCH_AXIS_1_AND_DP,
   INVALID
 };
 
@@ -122,6 +123,7 @@ class GatherUtil {
                                                         "shard_axis_0_dynamic",
                                                         "shard_axis_0_static",
                                                         "shard_axis_1",
+                                                        "shard_batch_axis_and_dp",
                                                         "invalid"};
 };
 
@@ -329,6 +331,18 @@ class ShardBatchAxisAndSpImpl : public ShardBatchAndAxisImpl {
   Status InferTensorInfo() override { return ShardAxisImpl::InferTensorInfo(); }
 };
 
+class ShardBatchAxisAndDpImpl : public ShardBatchAndAxisImpl {
+ public:
+  ShardBatchAxisAndDpImpl(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                          int64_t axis)
+      : ShardBatchAndAxisImpl(name, inputs_shape, outputs_shape, axis) {}
+  ~ShardBatchAxisAndDpImpl() override = default;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  Status InferTensorInfo() override { return ShardAxisImpl::InferTensorInfo(); }
+  Status InferBias() override;
+};
+
 class GatherInfo : public OperatorInfo {
  public:
   GatherInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -378,6 +392,8 @@ class GatherInfo : public OperatorInfo {
   Status ComputeReplaceOp();
   bool ShardBatchAndAxis(const Shape &param_strategy, const Shape &indices_strategy) const;
   bool ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &indices_strategy) const;
+  bool ShardBatchAxisAndDp(const Shape &param_strategy, const Shape &indices_strategy) const;
+  Status CheckStrategyParam(const Shape &param_strategy, const Shape &indices_strategy, const int64_t param_idx);
   int64_t bias_ = 0;
 };
 

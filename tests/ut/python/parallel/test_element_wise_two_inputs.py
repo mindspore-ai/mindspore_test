@@ -301,7 +301,6 @@ def test_FmodTensor_with_default_values():
     Description: basic.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True)
     stra = ((4, 1), (4, 1))
     net = FmodTensorNet(stra)
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
@@ -314,7 +313,6 @@ def test_FmodTensor_other_shape_broadcast_succ():
     Description: Valid other shape.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True)
     stra = ((4, 1), (4, 1))
     net = FmodTensorNet(strategy=stra)
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
@@ -327,7 +325,6 @@ def test_FmodTensor_other_shape_broadcast_error():
     Description: Invalid other shape.
     Expectation: raise ValueError.
     """
-    context.set_context(save_graphs=True)
     stra = ((4, 1), (4, 1))
     net = FmodTensorNet(strategy=stra)
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
@@ -341,11 +338,22 @@ def test_FmodTensor_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_context(save_graphs=True)
     net = FmodTensorNet()
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
     other_tensor = Tensor(np.ones([128, 128]) * 3, dtype=ms.float32)
     compile_graph(net, input_tensor, other_tensor, device_num=8, parallel_mode="semi_auto_parallel")
+
+def test_FmodTensor_auto_parallel_dynamic_shape():
+    """
+    Features: test FmodTensor auto parallel
+    Description: auto parallel
+    Expectation: compile success
+    """
+    net = FmodTensorNet()
+    input_dyn = Tensor(shape=[128, 128], dtype=ms.float32)
+    other_tensor = Tensor(np.ones([128, 128]) * 3, dtype=ms.float32)
+    net.set_inputs(input_dyn, other_tensor)
+    compile_graph(net, input_dyn, other_tensor, device_num=8, parallel_mode="semi_auto_parallel")
 
 class CopyNet(nn.Cell):
     def __init__(self, strategy=None):
@@ -364,7 +372,6 @@ def test_inplace_copy_with_default_values():
     Description: basic.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True)
     stra = ((4, 1), (4, 1))
     net = CopyNet(strategy=stra)
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
@@ -377,7 +384,6 @@ def test_inplace_copy_auto_parallel():
     Description: auto parallel
     Expectation: compile success
     """
-    context.set_context(save_graphs=True)
     net = CopyNet()
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
     output_tensor = Tensor(np.ones([128, 128]), dtype=ms.float32)
@@ -389,7 +395,6 @@ def test_inplace_copy_other_shape_broadcast_succ():
     Description: Valid other shape.
     Expectation: compile done without error.
     """
-    context.set_context(save_graphs=True)
     stra = ((4, 1), (4, 1))
     net = CopyNet(strategy=stra)
     input_tensor = Tensor(np.ones([128, 128]) * 8, dtype=ms.float32)
