@@ -34,9 +34,6 @@ namespace device {
 struct BACKEND_COMMON_EXPORT GroupOptions {
   // Whether creating communication group asynchonizely.
   bool async = false;
-  // For sync manner, this key means whether submit init task immediately for this group. If
-  // set to false, caller has to call 'SubmitCreateDeviceCommTask' itself.
-  bool submit_now = true;
   // Used to specify some hccl settings.
   std::unordered_map<std::string, std::variant<uint32_t, std::string>> hccl_config = {};
 };

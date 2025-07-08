@@ -28,8 +28,8 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/distributed/cluster/cluster_context.h"
-#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "plugin/res_manager/ascend/collective/utils.h"
 
 namespace mindspore {
 namespace device {
@@ -131,8 +131,7 @@ bool AscendCommunicationGroup::Finalize() {
 
 void AscendCommunicationGroup::InitHcclCommConfig(HcclCommConfig *config) {
   HcclCommConfigInit(config);
-  auto instance = distributed::collective::CollectHcclInitInfo::GetInstance();
-  uint32_t buffsize = instance->GetBuffsize(name_);
+  uint32_t buffsize = GetHcclBufferSize(name_, group_ranks_);
   config->hcclBufferSize = buffsize == 0 ? HCCL_COMM_DEFAULT_BUFFSIZE : buffsize;
 
   // The hcclDeterministic configured for the communicator is preferentially based on the parameter in the context,

@@ -705,7 +705,6 @@ PYBIND11_MODULE(_c_expression, m) {
   (void)py::class_<GroupOptions>(m, "GroupOptions")
     .def(py::init<>())
     .def_readwrite("async", &GroupOptions::async)
-    .def_readwrite("submit_now", &GroupOptions::submit_now)
     .def_readwrite("hccl_config", &GroupOptions::hccl_config);
 
   (void)py::class_<CollectiveManager, std::shared_ptr<CollectiveManager>>(m, "CollectiveManager")

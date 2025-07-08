@@ -14,6 +14,8 @@
 # ============================================================================
 
 import os
+import locale
+import subprocess
 from tests.mark_utils import arg_mark
 
 
@@ -60,3 +62,39 @@ def test_msrun_transformer_opt():
         "pytest -s transformer_opt_auto_parallel.py"
     )
     assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_hccl_config():
+    '''
+    Feature: test hccl buffer size in auto_parallel interface.
+    Description: control buffer size by MS_DEV_HCCL_CONF using msrun.
+    Expectation: run success.
+    '''
+    os.environ['MS_DEV_HCCL_CONF'] = (
+        "enable_hccl_config:True,"
+        "hccl_customized_default:100MB,"
+        "hccl_list_config:0-1-2-3=150MB|4-5-6-7=50MB,"
+        "hccl_stride_config:0-2:2=80MB|5-7:2=120MB"
+    )
+
+    command = (
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
+        "--master_port=10801 --join=True --log_dir=./test_hccl_config/msrun_log "
+        "pytest -s hccl_config.py"
+    )
+
+    output_lines = []
+    with subprocess.Popen(command, shell=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          encoding=locale.getpreferredencoding(False), errors='ignore') as proc:
+        for line in proc.stdout:
+            print(line, end='')
+            output_lines.append(line)
+
+    full_output = ''.join(output_lines)
+    assert "customized hcclBufferSize: 100 MB" in full_output, "Expected buffer size not found in log."
+    assert "customized hcclBufferSize: 150 MB" in full_output, "Expected buffer size not found in log."
+    assert "customized hcclBufferSize: 80 MB" in full_output, "Expected buffer size not found in log."
+
+    del os.environ['MS_DEV_HCCL_CONF']

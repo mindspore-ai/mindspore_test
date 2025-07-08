@@ -34,7 +34,6 @@
 #include "utils/device_manager_conf.h"
 #include "utils/distributed_meta.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
-#include "include/backend/distributed/collective/collect_hccl_init_info.h"
 #include "distributed/persistent/storage/json_utils.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/dummy_collective_communication_lib.h"
@@ -339,7 +338,7 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                                                  const std::vector<uint32_t> &group_ranks, const GroupOptions &config) {
   PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
-                  << ", async: " << config.async << ", submit_now: " << config.submit_now;
+                  << ", async: " << config.async;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -393,17 +392,12 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     MS_LOG(WARNING) << "This group's communicator is async created " << group_name;
     return true;
   } else {
-    // Normally this key is set to false by step_parallel pass for setting hccl buffer size feature.
-    if (!config.submit_now) {
-      CollectHcclInitInfo::GetInstance()->SetInitOrder(group_name);
-    } else {
-      // To ensure the initialization order of async and sync created communicators, we invoke submit and wait methods
-      // for sync ones.
-      SubmitCreateDeviceCommTask(group_name);
-      if (!WaitCommInitDone(group_name)) {
-        MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
-                          << " init done. Please check ERROR log above.";
-      }
+    // To ensure the initialization order of async and sync created communicators, we invoke submit and wait methods
+    // for sync ones.
+    SubmitCreateDeviceCommTask(group_name);
+    if (!WaitCommInitDone(group_name)) {
+      MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
+                        << " init done. Please check ERROR log above.";
     }
   }
 
@@ -963,13 +957,6 @@ void CollectiveManager::SetGlobalCommInfo(CommunicationGroupPtr group, const std
 
 bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, const int32_t buffsize) {
   MS_LOG(INFO) << "Create device communicator for " << group_name;
-
-  // When this is ascend platform, set buffersize for HCCL communicator.
-  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_type == kAscendDevice) {
-    SetCommBuffSize(group_name, buffsize);
-  }
-
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
   if (group_name.compare(kIndex0, kSizeFour, kPlatFormMccl) == 0) {
@@ -1135,30 +1122,6 @@ void CollectiveManager::SubmitCreateDeviceCommTask(const std::string &group_name
   task_queue_blocker_.notify_one();
   MS_LOG(INFO) << "Submit init communicator task for " << group_name
                << ". Call 'WaitCommInitDone' later to wait initialization to be done.";
-}
-
-void CollectiveManager::SetCommBuffSize(const std::string &group_name, const int32_t buffsize) {
-  auto instance = CollectHcclInitInfo::GetInstance();
-  uint32_t res = 200;
-  if (buffsize > 0) {
-    res = buffsize;
-  } else {
-    static std::string hccl_buffer_size_env = common::GetEnv("HCCL_BUFFSIZE");
-    if (!hccl_buffer_size_env.empty()) {
-      MS_LOG(INFO) << "The hccl buff size is: " << hccl_buffer_size_env;
-      int default_size = 0;
-      try {
-        default_size = stoi(hccl_buffer_size_env);
-      } catch (const std::exception &e) {
-        MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
-      }
-      if (default_size < 0) {
-        MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
-      }
-      res = default_size;
-    }
-  }
-  instance->SetBuffsize(group_name, res);
 }
 
 void CollectiveManager::RunInitCommTasks() {

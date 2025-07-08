@@ -57,8 +57,7 @@ class TestResumeTraining:
             os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
         sh_path = os.path.split(os.path.realpath(__file__))[0]
-        ret = os.system(f"export MS_DEV_P2P_HCCL_BUFFSIZE=24 && "
-                        f"export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
+        ret = os.system(f"export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
                         f"bash {sh_path}/msrun_launch.sh 4")
 
         os.system(f"grep -E 'ERROR|error' {sh_path}/msrun_log/worker_3.log -C 3")

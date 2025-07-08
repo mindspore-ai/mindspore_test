@@ -1,5 +1,6 @@
 set(ASCEND_COLLECTIVE_SRCS "ascend_collective_comm_lib.cc"
         "ascend_communication_group.cc"
+        "utils.cc"
         "dummy_ascend_collective_comm_lib.cc"
         "ccool_collective_comm_lib.cc"
         "ccool_communication_group.cc"

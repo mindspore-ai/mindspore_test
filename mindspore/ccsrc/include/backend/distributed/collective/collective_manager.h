@@ -197,8 +197,6 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   // Get timeout window for communicator initialization.
   int64_t GetCommunicatorInitTimeout();
 
-  void SetCommBuffSize(const std::string &group_name, const int32_t buffsize);
-
   // This method will consume the tasks in init_comm_task_queue_.
   void RunInitCommTasks();
 
