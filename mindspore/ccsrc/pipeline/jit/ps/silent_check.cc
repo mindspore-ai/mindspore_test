@@ -513,8 +513,7 @@ bool SilentCheckPass(const ResourcePtr &resource) {
 
 bool IsEnableSilentCheck() {
   auto checker = silentcheck::SilentCheckerBase::GetInstance();
-  return checker != nullptr && checker->IsNpuAsdEnable() &&
-         MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode;
+  return checker != nullptr && checker->IsNpuAsdEnable();
 }
 }  // namespace pipeline
 }  // namespace mindspore

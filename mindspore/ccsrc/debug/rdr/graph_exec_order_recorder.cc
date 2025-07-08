@@ -20,6 +20,7 @@
 #include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/rdr/recorder_manager.h"
+#include "include/common/utils/utils.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {
@@ -63,8 +64,7 @@ bool RecordGraphExecOrder(const SubModuleId module, const std::string &name,
                           const std::vector<CNodePtr> &final_exec_order) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  if (!mindspore::RecorderManager::Instance().RdrEnable() ||
-      ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+  if (!mindspore::RecorderManager::Instance().RdrEnable() || !IsGraphPipelineCompiled()) {
     return false;
   }
   std::string submodule_name = std::string(GetSubModuleName(module));
