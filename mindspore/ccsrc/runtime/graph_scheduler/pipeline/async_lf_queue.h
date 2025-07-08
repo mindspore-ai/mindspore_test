@@ -38,7 +38,7 @@ constexpr uint64_t kLFQueueCapacity = 8192;
 // can be constructed into an std::function<void()> object.
 class AsyncLFQueue {
  public:
-  explicit AsyncLFQueue(std::string name) : name_(std::move(name)) {}
+  explicit AsyncLFQueue(std::string name);
   virtual ~AsyncLFQueue();
 
   void Init();
@@ -81,13 +81,12 @@ class AsyncLFQueue {
   std::thread::id thread_id() const;
   const std::unique_ptr<std::thread> &worker() const { return worker_; }
 
- protected:
+ private:
   void WorkerLoop();
   void SetThreadName() const;
-  std::unique_ptr<std::thread> worker_{nullptr};
+  std::unique_ptr<std::thread> worker_;
   std::string name_;
 
- private:
   LFRingQueue<std::function<void()>, kLFQueueCapacity> tasks_queue_;
   bool init_{false};
   bool alive_{true};

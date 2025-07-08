@@ -32,6 +32,10 @@ void AsyncLFQueue::SetThreadName() const {
 #endif
 }
 
+AsyncLFQueue::AsyncLFQueue(std::string name) : name_(std::move(name)) {
+  worker_ = std::make_unique<std::thread>(&AsyncLFQueue::WorkerLoop, this);
+}
+
 AsyncLFQueue::~AsyncLFQueue() {
   try {
     WorkerJoin();
