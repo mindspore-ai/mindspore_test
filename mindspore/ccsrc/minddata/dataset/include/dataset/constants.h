@@ -356,6 +356,15 @@ constexpr int32_t kMaxLegalPort = 65535;
 // Invalid OpenCV type should not be from 0 to 7 (opencv4/opencv2/core/hal/interface.h)
 constexpr uint8_t kCVInvalidType = 255;
 
+constexpr size_t dimension_zero = 0;
+constexpr size_t dimension_one = 1;
+constexpr size_t dimension_two = 2;
+constexpr size_t dimension_three = 3;
+constexpr size_t size_one = 1;
+constexpr size_t size_two = 2;
+constexpr size_t size_three = 3;
+constexpr size_t size_four = 4;
+
 using connection_id_type = uint64_t;
 using session_id_type = uint32_t;
 using row_id_type = int64_t;

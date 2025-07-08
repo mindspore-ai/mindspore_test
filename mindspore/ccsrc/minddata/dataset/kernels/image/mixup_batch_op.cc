@@ -30,9 +30,6 @@ namespace dataset {
 constexpr size_t kExpectedImageShapeSize = 4;
 constexpr size_t kMaxLabelShapeSize = 3;
 constexpr size_t kMinLabelShapeSize = 2;
-constexpr size_t dimension_one = 1;
-constexpr size_t dimension_two = 2;
-constexpr size_t dimension_three = 3;
 constexpr int64_t value_one = 1;
 constexpr int64_t value_three = 3;
 

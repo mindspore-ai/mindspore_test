@@ -25,9 +25,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-constexpr size_t dimension_zero = 0;
-constexpr size_t dimension_one = 1;
-constexpr size_t size_two = 2;
 
 // RandomColorAdjustOperation.
 RandomColorAdjustOperation::RandomColorAdjustOperation(const std::vector<float> &brightness,
