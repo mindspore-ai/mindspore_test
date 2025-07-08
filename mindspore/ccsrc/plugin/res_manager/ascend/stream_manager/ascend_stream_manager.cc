@@ -299,7 +299,9 @@ bool AscendStreamMng::SyncAllStreams() const {
   auto RET = ACL_ERROR_NONE;
   try {
     GilReleaseWithCheck gil_release;
-    RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, -1);
+    // According to CANN, we need to set timeout to 2 hours for aclrtSynchronizeDeviceWithTimeout.
+    int timeout = 7200000;
+    RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, timeout);
     if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
       MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error.";
       return false;
