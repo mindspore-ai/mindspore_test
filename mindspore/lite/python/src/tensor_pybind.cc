@@ -238,7 +238,9 @@ std::string GetPyTypeFormat(DataType data_type) {
 }
 
 bool SetTensorNumpyData(const MSTensorPtr &tensor_ptr, const py::array &input) {
+  MS_CHECK_TRUE_RET(tensor_ptr != nullptr, false);
   auto &tensor = *tensor_ptr;
+
   // Check format.
   if (!IsCContiguous(input)) {
     MS_LOG(ERROR) << "Numpy array is not C Contiguous";

@@ -294,7 +294,9 @@ Status TreeAdapter::SplitBySendReceiveOp() {
   send_tree_ = std::make_unique<ExecutionTree>();
 
   // dis-assign the root from tree_ and assign the root to the receive tree
+  RETURN_UNEXPECTED_IF_NULL(tree_);
   std::shared_ptr<DatasetOp> op = tree_->root();
+  RETURN_UNEXPECTED_IF_NULL(op);
   RETURN_IF_NOT_OK(tree_->root()->Remove());           // del the head from tree_
   RETURN_IF_NOT_OK(receive_tree_->AssociateNode(op));  // add the head to receive_tree_
   RETURN_IF_NOT_OK(receive_tree_->AssignRoot(op));     // assign the receive_tree_ root

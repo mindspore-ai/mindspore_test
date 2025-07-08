@@ -186,7 +186,7 @@ class SamplerRT {
   bool is_initialized;
   int64_t samples_per_tensor_;
   std::unique_ptr<ColDescriptor> col_desc_;
-  std::vector<std::shared_ptr<SamplerRT>> child_;  // Child nodes
+  std::vector<std::shared_ptr<SamplerRT>> child_ = {};  // Child nodes
   TensorRow child_ids_;
 };
 }  // namespace dataset
