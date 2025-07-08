@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import re
 import os
 import pytest
 import subprocess
@@ -61,8 +62,7 @@ def test_bind_core_auto():
         print("Skip this ST, as the environment is not suitable for thread bind core.")
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_bind_core_manual():
     """
     Feature: Runtime set_cpu_affinity api.
@@ -84,8 +84,45 @@ def test_bind_core_manual():
             output_log = f.read()
             print(output_log, flush=True)
         manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
-                             "'minddata': [4, 5, 6, 7], 'pynative': [10, 21]}")
+                             "'minddata': [4, 5], 'runtime': [8, 9], 'pynative': [10, 21]}")
         assert manual_policy_str in output_log
+        assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
+        assert re.search(r"This module: 1 is assigned a bind core list: .+?", output_log)
+        assert re.search(r"Success to bind core to .+? for thread \d+", output_log)
+        assert re.search(r"This module: 2 is assigned a bind core list: .+?", output_log)
+
+    else:
+        print("Skip this ST, as the environment is not suitable for thread bind core.")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_bind_core_manual_dynamic_shape():
+    """
+    Feature: Runtime set_cpu_affinity api.
+    Description: Test runtime.set_cpu_affinity api which manually bind thread core for dynamic shape.
+    Expectation: Core bound for module and threads as input affinity_cpu_list and module_to_cpu_dict.
+    """
+    if _check_env_valid_cpu_resource():
+        os.environ['GLOG_v'] = str(1)
+        real_path = os.path.realpath(os.getcwd())
+        script = real_path + "/test_bind_core_manual_dynamic_shape.py"
+        output = real_path + "/manual_dynamic_shape.log"
+        assert os.path.exists(script)
+
+        cmd = (f"python {script} > {output} 2>&1")
+        os.system(cmd)
+
+        assert os.path.exists(output)
+        with open(output, "r") as f:
+            output_log = f.read()
+            print(output_log, flush=True)
+        manual_policy_str = ("Module bind core policy generated: {'main': [0, 1, 2, 3], "
+                             "'minddata': [4, 5], 'runtime': [8, 9], 'pynative': [10, 21]}")
+        assert manual_policy_str in output_log
+        assert re.search(r"This module: 0 is assigned a bind core list: .+?", output_log)
+        assert re.search(r"This module: 1 is assigned a bind core list: .+?", output_log)
+        assert re.search(r"Success to bind core to .+? for thread \d+", output_log)
+        assert re.search(r"This module: 2 is assigned a bind core list: .+?", output_log)
     else:
         print("Skip this ST, as the environment is not suitable for thread bind core.")
 

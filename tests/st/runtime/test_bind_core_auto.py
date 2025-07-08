@@ -14,10 +14,12 @@
 # ============================================================================
 import mindspore as ms
 import mindspore.nn as nn
-import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
+ms.set_context(mode=ms.PYNATIVE_MODE)
+
+ms.runtime.set_cpu_affinity(True)
 
 class Net(nn.Cell):
     def __init__(self):
@@ -27,8 +29,5 @@ class Net(nn.Cell):
     def construct(self, x):
         return self.ops(x)
 
-
-context.set_context(mode=context.PYNATIVE_MODE)
-ms.runtime.set_cpu_affinity(True)
 net = Net()
 net(Tensor(2.0))
