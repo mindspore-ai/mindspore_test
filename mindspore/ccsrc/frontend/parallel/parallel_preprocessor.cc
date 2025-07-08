@@ -1377,7 +1377,8 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   std::reverse(all_nodes.begin(), all_nodes.end());
 
-  if (processor_context_->pipeline_stages > 1 && processor_context_->is_pp_interleave) {
+  bool grad_accumulation_shard = GradAccumulationStep(all_nodes) > 1;
+  if ((processor_context_->pipeline_stages > 1 && processor_context_->is_pp_interleave) || grad_accumulation_shard) {
     bool merged = MergeConcatSlice(all_nodes, manager);
     if (merged) {
       all_nodes = TopoSort(ret, SuccDeeperSimple);
