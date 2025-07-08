@@ -41,9 +41,9 @@ class DropoutExtAscend : public AclnnKernelMod {
   const std::string dropout_do_mask_{"aclnnDropoutDoMask"};
   uint64_t gen_mask_hash_id_{0};
   uint64_t do_mask_hash_id_{0};
-  double p_value_;
-  int64_t seed_value_;
-  int64_t offset_value_;
+  double p_value_{0.};
+  int64_t seed_value_{0};
+  int64_t offset_value_{0};
   TypeId dtype_value_;
 };
 }  // namespace dropout_ext

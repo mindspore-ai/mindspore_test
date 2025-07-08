@@ -37,8 +37,8 @@ class InplaceNormalAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   float mean_{0.};
   float std_{1.};
-  int64_t seed_;
-  int64_t offset_;
+  int64_t seed_{0};
+  int64_t offset_{0};
 };
 }  // namespace inplace_normal
 }  // namespace kernel

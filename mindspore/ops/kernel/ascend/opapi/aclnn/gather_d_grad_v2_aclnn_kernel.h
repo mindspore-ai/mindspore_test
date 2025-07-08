@@ -37,7 +37,7 @@ class GatherDGradAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnScatterAdd, ScatterAdd)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 
-  int64_t dim_;
+  int64_t dim_{0};
 };
 }  // namespace gather_d_grad_v2
 }  // namespace kernel

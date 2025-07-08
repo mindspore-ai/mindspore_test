@@ -38,7 +38,7 @@ class NormAscend : public AclnnKernelMod {
 
   ScalarPtr p_scalar_{nullptr};
   std::vector<int64_t> dim_{};
-  bool keepdim_;
+  bool keepdim_{false};
 };
 }  // namespace norm
 }  // namespace kernel
