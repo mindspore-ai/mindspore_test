@@ -49,7 +49,7 @@ class SparseApplyAdagradCpuKernelMod : public sparse_optimizer_cpu::SparseOptimi
   void ResetResource() noexcept;
 
  protected:
-  float lr_;
+  float lr_{0};
   bool update_slots_{true};
 
  private:

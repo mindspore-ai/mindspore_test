@@ -115,7 +115,7 @@ static inline scalar_t zeta(scalar_t x, scalar_t q) {
     t = a * b / A[i];
     s = s + t;
     if (s == 0) {
-      t = ::fabs(t / s);
+      t = ::fabs(t / 1e-12);
     } else {
       t = ::fabs(t / s);
     }

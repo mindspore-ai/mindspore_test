@@ -58,9 +58,9 @@ class SelectGpuKernelMod : public NativeGpuKernelMod, public MatchKernelHelper<S
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
-  bool is_null_input_;
+  bool is_null_input_{true};
   void *cuda_stream_{nullptr};
-  size_t output_size_;
+  size_t output_size_{0};
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -57,7 +57,7 @@ class BroadcastToGpuKernelMod : public NativeGpuKernelMod {
   std::string kernel_name_{};
   BroadcastToLaunchFunc kernel_func_;
   static std::vector<std::pair<KernelAttr, BroadcastToLaunchFunc>> func_list_;
-  bool is_broadcast_;
+  bool is_broadcast_{false};
   std::vector<int64_t> simplified_inp_shape_;
   std::vector<int64_t> simplified_out_shape_;
   bool is_null_input_{false};
