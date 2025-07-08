@@ -25,7 +25,21 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
 namespace mindspore::graphkernel {
-AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const std::string &name) const {
+HashMap<std::string, ValuePtr> GetAttributesToInherit(const CNodePtr &cnode) {
+  HashMap<std::string, ValuePtr> attr_map;
+  static const std::vector<std::string> attr_list{
+    kAttrDuplicated,
+  };
+  for (const auto &attr : attr_list) {
+    if (cnode->HasAttr(attr)) {
+      attr_map[attr] = cnode->GetAttr(attr);
+    }
+  }
+  return attr_map;
+}
+
+AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const CNodePtr &ori_node) const {
+  const std::string &name = AnfUtils::GetCNodeName(ori_node);
   auto new_fg = GetCNodeFuncGraph(node);
   new_fg->set_attr(FUNC_GRAPH_ATTR_GRAPH_KERNEL, MakeValue(name));
   auto main_graph = node->func_graph();
@@ -34,6 +48,7 @@ AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const s
   auto graph_kernel_node = CreateNewFuseCNode(main_graph, new_fg, inputs);
   // update sub graph nodes attr
   auto expand_from = MakeValue(name);
+  const auto &attr_map = GetAttributesToInherit(ori_node);
   auto nodes = TopoSort(new_fg->get_return());
   for (const auto &n : nodes) {
     if (n == nullptr || !n->isa<CNode>()) {
@@ -41,6 +56,9 @@ AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const s
     }
     auto cnode = n->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
+    for (const auto &iter : attr_map) {
+      cnode->AddAttr(iter.first, iter.second);
+    }
     cnode->AddAttr(kAttrExpandFrom, expand_from);
   }
   MS_LOG(DEBUG) << "Expand node: " << node->fullname_with_scope()
@@ -93,7 +111,7 @@ bool GraphKernelExpander::DoExpand(const FuncGraphPtr &func_graph) {
       continue;
     }
     if (newnode->isa<CNode>()) {
-      newnode = CreateExpandedNode(newnode->cast<CNodePtr>(), AnfUtils::GetCNodeName(node));
+      newnode = CreateExpandedNode(newnode->cast<CNodePtr>(), node);
     }
     if (newnode == nullptr) {
       MS_LOG(DEBUG) << "Skipped node: " << node->fullname_with_scope();
