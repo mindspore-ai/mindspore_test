@@ -123,7 +123,8 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
     Checks whether an argument is a positive int or tuple with 3 or 5(when allow_five is True) positive int elements.
     """
 
-    def _raise_message(third_one_flag=False, three_input_flag=False):
+    def _raise_message(third_one_flag=False, three_input_flag=False, ret_value=None):
+        ret_value = arg_value if ret_value is None else ret_value
         if third_one_flag:
             raise ValueError(f"For '{prim_name}', the depth of parameter '{arg_name}' must be 1, " \
                              f"but got {ret_value[-3]}.")
@@ -160,12 +161,12 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
                     continue
                 if not greater_zero and item >= 0:
                     continue
-            _raise_message()
+            _raise_message(ret_value=ret_value)
 
     def _check_third_one(ret_value):
         if third_one:
             if ret_value[-3] != 1:
-                _raise_message(third_one_flag=third_one)
+                _raise_message(third_one_flag=third_one, ret_value=ret_value)
 
     check_value_type(arg_name, arg_value, (int, tuple), prim_name)
     if three_input and isinstance(arg_value, tuple):
