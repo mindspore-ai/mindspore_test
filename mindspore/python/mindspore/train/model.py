@@ -156,7 +156,11 @@ def _handle_exception_info(obj, uce_env, tft, e):
         tft.tft_report_error(tft.ReportState.RS_UCE.value)
     elif "HCCEError" in e_str:
         logger.warning("uce wrapper caught HCCEError")
-        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
+        if  obj.stop_been_called:
+            logger.warning("Received HCCEError after force stop been called, so report force stopped error to MindIO.")
+            tft.tft_report_error(tft.ReportState.RS_NORMAL.value)
+        else:
+            tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")
         force_stop_err = tft.ReportState.RS_NORMAL.value
@@ -266,6 +270,7 @@ def _handle_tft(func):
                         ret = obj.tft.tft_wait_next_action()
                         if ret == obj.tft.Action.EXIT.value:
                             raise e
+                        obj.stop_been_called = False
                         repair_step = obj.tft.tft_get_repair_step()
                         logger.warning(
                             "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
@@ -274,7 +279,7 @@ def _handle_tft(func):
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
                     cb_initial_step = _calc_cb_initial_step(initial_epoch, initial_step, *args, **kwargs)
-                    if not self.enable_tre and not self.enable_hcce:
+                    if not self.enable_tre:
                         kwargs["initial_step"] = cb_initial_step
                         self._initial_step = 0
                     # reset all accu grads to zero
