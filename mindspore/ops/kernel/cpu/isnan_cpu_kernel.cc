@@ -17,7 +17,6 @@
 #include "kernel/cpu/isnan_cpu_kernel.h"
 #include <cmath>
 #include "abstract/utils.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

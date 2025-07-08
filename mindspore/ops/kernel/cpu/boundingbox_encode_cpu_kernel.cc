@@ -16,7 +16,6 @@
 
 #include "kernel/cpu/boundingbox_encode_cpu_kernel.h"
 #include <utility>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

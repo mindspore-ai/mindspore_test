@@ -24,33 +24,16 @@ namespace mindspore {
 namespace device {
 class MbufDeviceAddress : public device::DeviceAddress {
  public:
-  MbufDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
   MbufDeviceAddress(void *ptr, size_t size, const ShapeVector &shape, TypeId type, const std::string &device_name,
                     uint32_t device_id)
-      : DeviceAddress(ptr, size) {
+      : DeviceAddress(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"), type, device_name, device_id,
+                      0) {
     auto tensor_shape = std::make_shared<abstract::TensorShape>();
     tensor_shape->SetShapeVector(shape);
     auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));
-    address_common_ = std::make_shared<AddressCommon>(ptr, size, shape, kernel::GetFormatFromStrToEnum("DefaultFormat"),
-                                                      type, device_name, device_id, 0);
   }
   void SetData(void *data) { set_ptr(data); }
-
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
-                        bool sync_on_demand = false) const override {
-    MS_LOG(ERROR) << "Mbuf address does not support sync data from device to host, please use graph mode";
-    return false;
-  }
-  bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                        const std::string &format) const override {
-    MS_LOG(ERROR) << "Mbuf address does not support sync data from host to device, please use graph mode";
-    return false;
-  }
-  bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr) const override {
-    MS_LOG(ERROR) << "Mbuf address does not support sync data from device to host, please use graph mode";
-    return false;
-  }
-  void ClearDeviceMemory() override {}
+  void ClearDeviceMemory() {}
   device::DeviceType GetDeviceType() const { return DeviceType::kAscend; }
 };
 }  // namespace device

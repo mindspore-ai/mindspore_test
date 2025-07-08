@@ -16,7 +16,6 @@
 #include "kernel/cpu/adaptive_max_pool_3d_cpu_kernel.h"
 
 #include <functional>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

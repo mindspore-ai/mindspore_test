@@ -27,7 +27,6 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "common/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/lu_unpack_impl.cuh"
-#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 

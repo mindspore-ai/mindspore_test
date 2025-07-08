@@ -22,7 +22,6 @@
 #include <iostream>
 
 #include "mindspore/ops/infer/index_put.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

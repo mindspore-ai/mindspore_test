@@ -22,7 +22,7 @@
 #include <memory>
 #include <utility>
 #include "common/kernel.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore {

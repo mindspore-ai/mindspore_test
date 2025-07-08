@@ -58,31 +58,24 @@ using session::KernelGraph;
 class TestDeviceAddress : public DeviceAddress {
  public:
   TestDeviceAddress() : DeviceAddress() {}
-  TestDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
+  TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
+      : DeviceAddress(ptr, size, device_name) {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
-                        bool sync_on_demand) const override {
-    return true;
-  }
-  bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                        const std::string &format) const override {
-    return true;
-  }
 
-  void ClearDeviceMemory() override {}
-  bool IsPtrValid() const override {
+  void ClearDeviceMemory() {}
+  bool IsPtrValid() const {
     return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
   }
-  DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
 
-  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+  void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
 
-  const tensor::TensorDataPtr &data() const override { return data_; }
+  const tensor::TensorDataPtr &data() const { return data_; }
 
-  bool has_data() const override { return data_ != nullptr; }
+  bool has_data() const { return data_ != nullptr; }
 
  private:
   // the data for numpy object.
@@ -140,7 +133,7 @@ class TestDeviceResManager : public device::DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress() const {
     auto device_address = std::make_shared<TestDeviceAddress>();
-    device_address->set_device_name(device_context_->device_context_key().device_name_);
+    device_address->SetDeviceType(device::GetDeviceTypeByName(device_context_->device_context_key().device_name_));
     device_address->set_device_id(device_context_->device_context_key().device_id_);
     return device_address;
   }
@@ -259,7 +252,7 @@ class TestGraphExecutor {
       const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, 0, false);
       MS_EXCEPTION_IF_NULL(device_tensor);
       auto context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->device_name(), device_tensor->device_id()});
+        {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
       MS_EXCEPTION_IF_NULL(context);
       context->device_res_manager_->AllocateMemory(device_tensor.get(), device_tensor->stream_id());
       MS_LOG(INFO) << "Alloc memory in run graph";

@@ -20,87 +20,133 @@
 
 namespace mindspore {
 namespace device {
-using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
-
-DeviceAddress::DeviceAddress() { address_common_ = std::make_shared<AddressCommon>(); }
-DeviceAddress::DeviceAddress(const AddressCommonPtr &address_common) : address_common_(address_common) {}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size) { address_common_ = std::make_shared<AddressCommon>(ptr, size); }
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id) {
-  address_common_ = std::make_shared<AddressCommon>();
-  address_common_->pointer_ref_count_->set_ptr(ptr);
-  address_common_->size_ = size;
-  address_common_->dtype_id_ = type_id;
-  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
+DevicePtrDeleterMakerFunc g_deleter_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+void SetDevicePtrDeleterMaker(device::DeviceType device_type, DevicePtrDeleterMakerFunc &&func) {
+  MS_LOG(DEBUG) << "Resigter device ptr deleter function for device type:" << device::GetDeviceNameByType(device_type);
+  g_deleter_func[static_cast<int>(device_type)] = func;
 }
 
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                             const KernelWithIndex &node_index)
-    : node_index_(node_index) {
-  address_common_ = std::make_shared<AddressCommon>();
-  address_common_->pointer_ref_count_->set_ptr(ptr);
-  address_common_->size_ = size;
-  address_common_->dtype_id_ = type_id;
-  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
+using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
+
+DeviceAddress::DeviceAddress() { pointer_ref_count_ = std::make_shared<PointerRefCount>(); }
+
+DeviceAddress::DeviceAddress(void *device_ptr, size_t size)
+    : pointer_ref_count_(std::make_shared<PointerRefCount>(device_ptr)), size_(size) {}
+
+DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name)
+    : pointer_ref_count_(std::make_shared<PointerRefCount>(ptr)), size_(size) {
+  device_type_ = device::GetDeviceTypeByName(device_name);
+  SetDevicePtrDeleter();
+}
+
+DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
+                             const std::string &device_name) {
+  pointer_ref_count_ = std::make_shared<PointerRefCount>();
+  pointer_ref_count_->set_ptr(ptr);
+  size_ = size;
+  dtype_id_ = type_id;
+  device_type_ = device::GetDeviceTypeByName(device_name);
+  format_ = kernel::GetFormatFromStrToEnum(format);
+  SetDevicePtrDeleter();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id) {
-  address_common_ = std::make_shared<AddressCommon>();
-  address_common_->pointer_ref_count_->set_ptr(ptr);
-  address_common_->size_ = size;
-  address_common_->device_name_ = device_name;
-  address_common_->device_id_ = device_id;
+  pointer_ref_count_ = std::make_shared<PointerRefCount>();
+  pointer_ref_count_->set_ptr(ptr);
+  size_ = size;
+  device_type_ = device::GetDeviceTypeByName(device_name);
+  device_id_ = device_id;
+  SetDevicePtrDeleter();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
                              const std::string &device_name, uint32_t device_id) {
-  address_common_ = std::make_shared<AddressCommon>();
-  address_common_->pointer_ref_count_->set_ptr(ptr);
-  address_common_->size_ = size;
-  address_common_->device_name_ = device_name;
-  address_common_->dtype_id_ = type_id;
-  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
-  address_common_->device_id_ = device_id;
+  pointer_ref_count_ = std::make_shared<PointerRefCount>();
+  pointer_ref_count_->set_ptr(ptr);
+  size_ = size;
+  device_type_ = device::GetDeviceTypeByName(device_name);
+  dtype_id_ = type_id;
+  format_ = kernel::GetFormatFromStrToEnum(format);
+  device_id_ = device_id;
+  SetDevicePtrDeleter();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                             TypeId type_id, const std::string &device_name, uint32_t device_id, uint32_t stream_id) {
-  address_common_ =
-    std::make_shared<AddressCommon>(ptr, size, shape_vector, format, type_id, device_name, device_id, stream_id);
+                             TypeId type_id, const std::string &device_name, uint32_t device_id, uint32_t stream_id)
+    : pointer_ref_count_(std::make_shared<PointerRefCount>(ptr)),
+      stream_id_(stream_id),
+      size_(size),
+      format_(format),
+      dtype_id_(type_id),
+      device_type_(device::GetDeviceTypeByName(device_name)),
+      device_id_(device_id),
+      shape_vector_(shape_vector) {
+  SetDevicePtrDeleter();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
                              const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id)
     : node_index_(node_index) {
-  address_common_ = std::make_shared<AddressCommon>();
-  address_common_->pointer_ref_count_->set_ptr(ptr);
-  address_common_->size_ = size;
-  address_common_->device_name_ = device_name;
-  address_common_->dtype_id_ = type_id;
-  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
-  address_common_->device_id_ = device_id;
+  pointer_ref_count_ = std::make_shared<PointerRefCount>();
+  pointer_ref_count_->set_ptr(ptr);
+  size_ = size;
+  device_type_ = device::GetDeviceTypeByName(device_name);
+  dtype_id_ = type_id;
+  format_ = kernel::GetFormatFromStrToEnum(format);
+  device_id_ = device_id;
+  SetDevicePtrDeleter();
+}
+
+DeviceAddress::DeviceAddress(const DeviceAddress &other) {
+  pointer_ref_count_ =
+    other.pointer_ref_count_ != nullptr
+      ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter(),
+                                          other.pointer_ref_count_->allocator())
+      : std::make_shared<PointerRefCount>();
+  tensor_storage_info_ = other.tensor_storage_info_;
+  stream_id_ = other.stream_id_;
+  size_ = other.size_;
+  format_ = other.format_;
+  dtype_id_ = other.dtype_id_;
+  device_id_ = other.device_id_;
+  device_type_ = other.device_type_;
+  dtype_id_ = other.dtype_id_;
+  shape_vector_ = other.shape_vector_;
+  padding_type_ = other.padding_type();
+  is_view_ = other.is_view();
+  deleter_ = other.deleter();
+  host_shape_ = other.host_shape();
+  SetDevicePtrDeleter();
 }
 
 DeviceAddress::~DeviceAddress() {
-  if (IS_OUTPUT_ON(mindspore::kDebug) && address_common_ != nullptr && address_common_->pointer_ref_count_ != nullptr &&
-      address_common_->pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
+  if (IS_OUTPUT_ON(mindspore::kDebug) && pointer_ref_count_ != nullptr &&
+      pointer_ref_count_->new_ref_count() != SIZE_MAX && GetPtr() != nullptr) {
     MS_LOG(DEBUG) << "Maybe memory leak detect in device address:" << ToString();
   }
   if (!from_mem_pool() && deleter_ && GetDevicePtr() != nullptr) {
     deleter_(static_cast<uint8_t *>(GetDevicePtr()));
     SetDevicePtr(nullptr);
   } else {
-    address_common_->pointer_ref_count_ = nullptr;
+    pointer_ref_count_ = nullptr;
   }
 }
 
 std::string DeviceAddress::ToString() const {
   std::ostringstream ofs;
   ofs << this << " device type:" << GetDeviceType() << " host shape:" << host_shape_
-      << " device shape:" << device_shape_ << " address common:" << address_common_;
-  if (address_common_ != nullptr) {
-    ofs << " " << address_common_->ToString();
+      << " tensor storage info:" << tensor_storage_info_;
+  if (tensor_storage_info_ != nullptr) {
+    ofs << tensor_storage_info_->ToString();
+  }
+  ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+      << " device name:" << device::GetDeviceNameByType(device_type_) << " shape vector:{";
+  std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
+  ofs << "} point ref count:";
+  if (pointer_ref_count_ == nullptr) {
+    ofs << "0";
+  } else {
+    ofs << pointer_ref_count_->ToString();
   }
   if (hete_info_ != nullptr) {
     ofs << " hete info:" << hete_info_->ToString();
@@ -116,70 +162,48 @@ std::string DeviceAddress::ToString() const {
   return ofs.str();
 }
 
-void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
-  device_address->set_address_common(std::make_shared<AddressCommon>(*address_common_));
-  device_address->set_from_persistent_mem(from_persistent_mem_);
-  device_address->set_need_recycle(need_recycle_);
-  device_address->set_padding_type(padding_type_);
-  device_address->set_flag(flag_);
-  device_address->set_is_view(is_view_);
-  device_address->set_status(status_);
-  device_address->set_deleter(deleter_);
-  device_address->set_user_data(user_data_);
-  device_address->set_need_sync_user_data(need_sync_user_data_);
-  device_address->set_host_shape(host_shape_);
-  auto node_with_index = GetNodeIndex();
-  device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
-  for (const auto &held_by_node : held_by_nodes_) {
-    device_address->AddHeldByNode(held_by_node);
-  }
-}
-
 const void *DeviceAddress::GetPtr() const { return GetDevicePtr(); }
 
 void DeviceAddress::set_ptr(void *ptr) {
-  address_common_->pointer_ref_count_->set_ptr(ptr);
+  pointer_ref_count_->set_ptr(ptr);
   if (ptr != nullptr) {
     status_ = DeviceAddressStatus::kInDevice;
   }
 }
 
 size_t DeviceAddress::GetSize() const {
-  if (address_common_ && address_common_->tensor_storage_info_ &&
-      (address_common_->tensor_storage_info_->ori_size != 0)) {
-    return address_common_->tensor_storage_info_->ori_size;
+  if (tensor_storage_info_ && (tensor_storage_info_->ori_size != 0)) {
+    return tensor_storage_info_->ori_size;
   }
   return size();
 }
 
-void DeviceAddress::SetSize(size_t size) { address_common_->size_ = size; }
+void DeviceAddress::SetSize(size_t size) { size_ = size; }
 
-std::string DeviceAddress::format() const { return kernel::GetFormatFromEnumToStr(address_common_->format_); }
+std::string DeviceAddress::format() const { return kernel::GetFormatFromEnumToStr(format_); }
 
-void DeviceAddress::set_format(const std::string &format) {
-  address_common_->format_ = kernel::GetFormatFromStrToEnum(format);
-}
+void DeviceAddress::set_format(const std::string &format) { format_ = kernel::GetFormatFromStrToEnum(format); }
 
 const std::string &DeviceAddress::padding_type() const { return padding_type_; }
 
 void DeviceAddress::set_padding_type(const std::string &padding_type) { padding_type_ = padding_type; }
 
-TypeId DeviceAddress::type_id() const { return address_common_->dtype_id_; }
+TypeId DeviceAddress::type_id() const { return dtype_id_; }
 
-void DeviceAddress::set_type_id(TypeId type_id) { address_common_->dtype_id_ = type_id; }
+void DeviceAddress::set_type_id(TypeId dtype_id) { dtype_id_ = dtype_id; }
 
-bool DeviceAddress::from_mem_pool() const { return address_common_->pointer_ref_count_->from_mem_pool(); }
+bool DeviceAddress::from_mem_pool() const { return pointer_ref_count_->from_mem_pool(); }
 
 void DeviceAddress::set_from_mem_pool(bool from_mem_pool) const {
-  address_common_->pointer_ref_count_->set_from_mem_pool(from_mem_pool);
+  pointer_ref_count_->set_from_mem_pool(from_mem_pool);
 }
 
 void DeviceAddress::set_communication_ptr(uint8_t *communication_ptr) { MS_LOG(EXCEPTION) << "Not implemented error."; }
 
-bool DeviceAddress::is_ptr_persisted() const { return address_common_->pointer_ref_count_->is_ptr_persisted(); }
+bool DeviceAddress::is_ptr_persisted() const { return pointer_ref_count_->is_ptr_persisted(); }
 
 void DeviceAddress::set_is_ptr_persisted(bool is_ptr_persisted) {
-  address_common_->pointer_ref_count_->set_is_ptr_persisted(is_ptr_persisted);
+  pointer_ref_count_->set_is_ptr_persisted(is_ptr_persisted);
 }
 
 bool DeviceAddress::from_persistent_mem() const { return from_persistent_mem_; }
@@ -196,37 +220,29 @@ DeviceAddressStatus DeviceAddress::status() const { return status_; }
 
 void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
 
-const ShapeVector &DeviceAddress::GetShapeVector() const { return address_common_->shape_vector_; }
+const ShapeVector &DeviceAddress::GetShapeVector() const { return shape_vector_; }
 
-void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { address_common_->shape_vector_ = shape_vector; }
+void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { shape_vector_ = shape_vector; }
 
-TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const {
-  if (address_common_ == nullptr) {
-    return nullptr;
-  }
-
-  return address_common_->tensor_storage_info_;
-}
+TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const { return tensor_storage_info_; }
 
 void DeviceAddress::set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info) {
-  address_common_->tensor_storage_info_ = tensor_storage_info;
+  tensor_storage_info_ = tensor_storage_info;
 }
 
-const std::string &DeviceAddress::device_name() const { return address_common_->device_name_; }
-void DeviceAddress::set_device_name(const std::string &device_name) { address_common_->device_name_ = device_name; }
+device::DeviceType DeviceAddress::GetDeviceType() const { return device_type_; }
+void DeviceAddress::SetDeviceType(const device::DeviceType &device_type) { device_type_ = device_type; }
 
-uint32_t DeviceAddress::device_id() const { return address_common_->device_id_; }
-void DeviceAddress::set_device_id(uint32_t device_id) { address_common_->device_id_ = device_id; }
+uint32_t DeviceAddress::device_id() const { return device_id_; }
+void DeviceAddress::set_device_id(uint32_t device_id) { device_id_ = device_id; }
 
-void DeviceAddress::set_stream_id(uint32_t stream_id) { address_common_->stream_id_ = stream_id; }
+void DeviceAddress::set_stream_id(uint32_t stream_id) { stream_id_ = stream_id; }
 
-const uint32_t DeviceAddress::stream_id() const { return address_common_->stream_id_; }
+const uint32_t DeviceAddress::stream_id() const { return stream_id_; }
 
-bool DeviceAddress::managed_by_somas() const { return address_common_->managed_by_somas_; }
+bool DeviceAddress::managed_by_somas() const { return managed_by_somas_; }
 
-void DeviceAddress::set_managed_by_somas(bool managed_by_somas) {
-  address_common_->managed_by_somas_ = managed_by_somas;
-}
+void DeviceAddress::set_managed_by_somas(bool managed_by_somas) { managed_by_somas_ = managed_by_somas; }
 
 void DeviceAddress::AddHeldByNode(const std::weak_ptr<ValueNode> &value_node) {
   (void)held_by_nodes_.emplace_back(value_node);
@@ -244,87 +260,68 @@ KernelWithIndex DeviceAddress::GetNodeIndex() const {
 }
 
 void DeviceAddress::IncreaseNewRefCount(const std::string &op_name, size_t i) {
-  address_common_->pointer_ref_count_->IncreaseNewRefCount(i);
+  pointer_ref_count_->IncreaseNewRefCount(i);
   MS_LOG(DEBUG) << "Op:" << op_name << " increase new ref count for device address:" << ToString();
 }
 
-void DeviceAddress::IncreaseNewRefCount(size_t i) { address_common_->pointer_ref_count_->IncreaseNewRefCount(i); }
+void DeviceAddress::IncreaseNewRefCount(size_t i) { pointer_ref_count_->IncreaseNewRefCount(i); }
 
 size_t DeviceAddress::DecreaseNewRefCount(const std::string &op_name) {
-  size_t ref_count = address_common_->pointer_ref_count_->DecreaseNewRefCount();
+  size_t ref_count = pointer_ref_count_->DecreaseNewRefCount();
   MS_LOG(DEBUG) << "Op:" << op_name << " decrease new ref count for device address:" << ToString();
   return ref_count;
 }
 
 void DeviceAddress::set_new_ref_count(size_t new_ref_count) const {
-  address_common_->pointer_ref_count_->set_new_ref_count(new_ref_count);
+  pointer_ref_count_->set_new_ref_count(new_ref_count);
 }
 
-size_t DeviceAddress::new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
+size_t DeviceAddress::new_ref_count() const { return pointer_ref_count_->new_ref_count(); }
 
 void DeviceAddress::set_original_ref_count(size_t original_ref_count) const {
-  address_common_->pointer_ref_count_->set_original_ref_count(original_ref_count);
+  pointer_ref_count_->set_original_ref_count(original_ref_count);
 }
 
-size_t DeviceAddress::original_ref_count() const { return address_common_->pointer_ref_count_->original_ref_count(); }
+size_t DeviceAddress::original_ref_count() const { return pointer_ref_count_->original_ref_count(); }
 
-void DeviceAddress::set_ref_count(size_t ref_count) const {
-  address_common_->pointer_ref_count_->set_ref_count(ref_count);
-}
+void DeviceAddress::set_ref_count(size_t ref_count) const { pointer_ref_count_->set_ref_count(ref_count); }
 
-size_t DeviceAddress::ref_count() const { return address_common_->pointer_ref_count_->ref_count(); }
+size_t DeviceAddress::ref_count() const { return pointer_ref_count_->ref_count(); }
 
-void DeviceAddress::set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref_cnt) {
-  if (ptr_ref_cnt == nullptr || address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
-    return;
-  }
-  address_common_->pointer_ref_count_->set_ptr(ptr_ref_cnt->ptr());
-  address_common_->pointer_ref_count_->set_from_mem_pool(ptr_ref_cnt->from_mem_pool());
-  address_common_->pointer_ref_count_->set_original_ref_count(ptr_ref_cnt->original_ref_count());
-  address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
-  address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
-  address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
-  address_common_->pointer_ref_count_->set_allocator(ptr_ref_cnt->allocator());
-  address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
-  address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
-}
-
-void DeviceAddress::ResetRefCount() { address_common_->pointer_ref_count_->ResetRefCount(); }
+void DeviceAddress::ResetRefCount() { pointer_ref_count_->ResetRefCount(); }
 
 void DeviceAddress::IncreaseOriginalRefCount() {
   if (original_ref_count() < SIZE_MAX) {
-    address_common_->pointer_ref_count_->IncreaseOriginalRefCount();
+    pointer_ref_count_->IncreaseOriginalRefCount();
   }
 }
 
 void DeviceAddress::DecreaseOriginalRefCount() {
   if ((original_ref_count() < SIZE_MAX) && (original_ref_count() > 0)) {
-    address_common_->pointer_ref_count_->DecreaseOriginalRefCount();
+    pointer_ref_count_->DecreaseOriginalRefCount();
   }
 }
 
-void DeviceAddress::IncreaseRefCount(size_t increase_cnt) {
-  address_common_->pointer_ref_count_->IncreaseRefCount(increase_cnt);
-}
+void DeviceAddress::IncreaseRefCount(size_t increase_cnt) { pointer_ref_count_->IncreaseRefCount(increase_cnt); }
 
-size_t DeviceAddress::DecreaseRefCount() { return address_common_->pointer_ref_count_->DecreaseRefCount(); }
+size_t DeviceAddress::DecreaseRefCount() { return pointer_ref_count_->DecreaseRefCount(); }
 
 void DeviceAddress::set_dynamic_ref_count(int32_t dynamic_ref_count) {
-  address_common_->pointer_ref_count_->set_dynamic_ref_count(dynamic_ref_count);
+  pointer_ref_count_->set_dynamic_ref_count(dynamic_ref_count);
 }
 
-int32_t DeviceAddress::dynamic_ref_count() const { return address_common_->pointer_ref_count_->dynamic_ref_count(); }
+int32_t DeviceAddress::dynamic_ref_count() const { return pointer_ref_count_->dynamic_ref_count(); }
 
 void DeviceAddress::IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
-  address_common_->pointer_ref_count_->IncreaseDynamicRefCount(op_object, increase_cnt);
+  pointer_ref_count_->IncreaseDynamicRefCount(op_object, increase_cnt);
 }
 
 void DeviceAddress::IncreaseDynamicRefCount(const std::string &op_object) {
-  address_common_->pointer_ref_count_->IncreaseDynamicRefCount(op_object);
+  pointer_ref_count_->IncreaseDynamicRefCount(op_object);
 }
 
 int32_t DeviceAddress::DecreaseDynamicRefCount(const std::string &op_object) {
-  return address_common_->pointer_ref_count_->DecreaseDynamicRefCount(op_object);
+  return pointer_ref_count_->DecreaseDynamicRefCount(op_object);
 }
 
 bool DeviceAddress::IsPtrValid() const {
@@ -414,18 +411,72 @@ bool DeviceAddress::need_sync_user_data() { return need_sync_user_data_; }
 
 void DeviceAddress::set_need_sync_user_data(bool need_sync_user_data) { need_sync_user_data_ = need_sync_user_data; }
 
-const PointerRefCountPtr &DeviceAddress::pointer_ref_count() const { return address_common_->pointer_ref_count_; }
+const PointerRefCountPtr &DeviceAddress::pointer_ref_count() const { return pointer_ref_count_; }
 
 void DeviceAddress::set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt) {
   MS_EXCEPTION_IF_NULL(ptr_ref_cnt);
-  address_common_->pointer_ref_count_ = ptr_ref_cnt;
+  pointer_ref_count_ = ptr_ref_cnt;
 }
 
 void DeviceAddress::set_is_view(bool is_view) { is_view_ = is_view; }
 
 bool DeviceAddress::is_view() const { return is_view_; }
 
-AddressCommonPtr DeviceAddress::address_common() const { return address_common_; }
-void DeviceAddress::set_address_common(const AddressCommonPtr &address_common) { address_common_ = address_common; }
+DeviceAddressPtr DeviceAddress::CloneDeviceAddress() { return std::make_shared<DeviceAddress>(*this); }
+
+void DeviceAddress::set_data(tensor::TensorDataPtr &&data) {
+  if (GetDeviceType() == device::DeviceType::kCPU) {
+    data_ = std::move(data);
+  } else {
+    MS_LOG(DEBUG) << "Skip device address set_data";
+  }
+}
+
+const tensor::TensorDataPtr &DeviceAddress::data() const {
+  if (GetDeviceType() == device::DeviceType::kCPU) {
+    return data_;
+  } else {
+    MS_LOG(EXCEPTION) << "Not implement exception";
+  }
+}
+
+bool DeviceAddress::has_data() const {
+  if (GetDeviceType() == device::DeviceType::kCPU) {
+    return data_ != nullptr;
+  } else {
+    return false;
+  }
+}
+
+namespace {
+DevicePtrDeleterMakerFunc GetDevicePtrDeleterMaker(device::DeviceType device_type) {
+  auto maker = g_deleter_func[static_cast<int>(device_type)];
+  return maker;
+}
+}  // namespace
+
+void DeviceAddress::SetDevicePtrDeleter() {
+  if (pointer_ref_count_ == nullptr) {
+    return;
+  }
+  auto deleter = GetDevicePtrDeleterMaker(GetDeviceType());
+  if (deleter != nullptr) {
+    pointer_ref_count_->set_deleter(deleter);
+  } else {
+    MS_LOG(INFO) << "Get device ptr deleter function failed, device type: "
+                 << device::GetDeviceNameByType(GetDeviceType());
+  }
+}
+
+void DeviceAddress::ClearDeviceMemory() {
+  if (pointer_ref_count_ == nullptr) {
+    return;
+  }
+  auto deleter = pointer_ref_count_->deleter();
+  if (GetDevicePtr() != nullptr && from_mem_pool() && deleter) {
+    deleter(GetDevicePtr(), from_mem_pool());
+    SetDevicePtr(nullptr);
+  }
+}
 }  // namespace device
 }  // namespace mindspore

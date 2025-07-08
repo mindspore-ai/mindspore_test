@@ -31,7 +31,7 @@
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "kernel/framework_utils.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "backend/ge_backend/executor/ge_graph_executor.h"
 
 namespace mindspore {

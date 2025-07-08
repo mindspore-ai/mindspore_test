@@ -935,7 +935,8 @@ bool AnfRuntimeAlgorithm::OutputAddrExist(const AnfNodePtr &node, size_t output_
   }
   auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel_info_ptr);
   MS_EXCEPTION_IF_NULL(kernel_info);
-  return kernel_info->OutputAddrExist(output_idx);
+  auto device_address = kernel_info->GetOutputAddr(output_idx);
+  return device_address != nullptr && device_address->GetDeviceType() != device::DeviceType::kUnknown;
 }
 
 bool AnfRuntimeAlgorithm::WorkspaceAddrExist(const AnfNodePtr &node, size_t output_idx) {

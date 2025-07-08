@@ -143,9 +143,6 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->ToString();
     }
-    if (address_common_ != nullptr) {
-      return ofs.str() + " address common:" + address_common_->ToString();
-    }
     return ofs.str() + "device address:0";
   }
 
@@ -157,7 +154,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void SetShape(const abstract::BaseShapePtr &shape);
 
   // Get the shape vector for Tensor/Sequence/Scalar.
-  const ShapeVector &GetShapeVector() const { return address_common_->shape_vector_; }
+  const ShapeVector &GetShapeVector() const { return device_address_->GetShapeVector(); }
 
   // Set the shape vector for Tensor/Sequence/Scalar.
   void SetShapeVector(const ShapeVector &shape_vector);
@@ -199,10 +196,10 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   }
 
   // Get the data enum type id of the KernelTensor.
-  TypeId dtype_id() const { return address_common_->dtype_id_; }
+  TypeId dtype_id() const { return device_address_->type_id(); }
 
   // Set the data enum type id of the KernelTensor.
-  void set_dtype_id(TypeId dtype_id) { address_common_->dtype_id_ = dtype_id; }
+  void set_dtype_id(TypeId dtype_id) { device_address_->set_type_id(dtype_id); }
 
   // Set the value for the KernelTensor.
   void SetValue(const ValuePtr &value) { value_ = value; }
@@ -238,7 +235,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
     // There is a origin value in KernelTensor(maybe come from a ValueNode).
-    if (address_common_->dtype_id_ == kMetaTypeNone) {
+    if (device_address_->type_id() == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid scalar value.";
       return std::nullopt;
     }
@@ -268,7 +265,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     std::lock_guard<std::mutex> lock(host_info_->value_mutex_);
 
     // There is a origin value in KernelTensor(maybe come from a ValueNode).
-    if (address_common_->dtype_id_ == kMetaTypeNone) {
+    if (device_address_->type_id() == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid value for vector or string.";
       return std::nullopt;
     }
@@ -293,7 +290,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   template <typename T, typename std::enable_if<!IsValidContainer<T>::value && !std::is_pointer_v<T> &&
                                                 !std::is_scalar<std::decay_t<T>>::value>::type * = nullptr>
   std::optional<T> GetValue() {
-    if (address_common_->dtype_id_ == kMetaTypeNone) {
+    if (device_address_->type_id() == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid value.";
       return std::nullopt;
     }
@@ -313,10 +310,10 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   }
 
   // Get the data format.
-  mindspore::Format format() const { return address_common_->format_; }
+  mindspore::Format format() const;
 
   // Set the data format.
-  void set_format(mindspore::Format format) { address_common_->format_ = format; }
+  void set_format(mindspore::Format format);
 
   // Get the data format of string type.
   std::string GetStringFormat() const;
@@ -325,68 +322,53 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void SetStringFormat(const std::string &format);
 
   // Get pointer and reference count.
-  const PointerRefCountPtr &pointer_ref_count() const { return address_common_->pointer_ref_count_; }
+  const PointerRefCountPtr &pointer_ref_count() const { return device_address_->pointer_ref_count(); }
 
   // Set pointer and reference count.
   void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt) {
-    address_common_->pointer_ref_count_ = ptr_ref_cnt;
-  }
-
-  void set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref_cnt) {
-    if (ptr_ref_cnt == nullptr || address_common_ == nullptr || address_common_->pointer_ref_count_ == nullptr) {
-      return;
-    }
-    address_common_->pointer_ref_count_->set_ptr(ptr_ref_cnt->ptr());
-    address_common_->pointer_ref_count_->set_from_mem_pool(ptr_ref_cnt->from_mem_pool());
-    address_common_->pointer_ref_count_->set_original_ref_count(ptr_ref_cnt->original_ref_count());
-    address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
-    address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
-    address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
-    address_common_->pointer_ref_count_->set_allocator(ptr_ref_cnt->allocator());
-    address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
-    address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
+    device_address_->set_pointer_ref_count(ptr_ref_cnt);
   }
 
   //  Set the pointer and reference count to nullptr, resource reclaiming of the device pointer is automatically
   //  released.
-  void ReleaseDeviceRes() { address_common_->pointer_ref_count_ = nullptr; }
+  void ReleaseDeviceRes() { device_address_->set_pointer_ref_count(nullptr); }
 
   // Set pointer resource destructor.
-  void set_deleter(const Deleter &deleter) { address_common_->pointer_ref_count_->set_deleter(deleter); }
+  void set_deleter(const Deleter &deleter) { device_address_->pointer_ref_count()->set_deleter(deleter); }
 
   void set_allocator(std::shared_ptr<AddressAllocator> allocator) {
-    address_common_->pointer_ref_count_->set_allocator(allocator);
+    device_address_->pointer_ref_count()->set_allocator(allocator);
   }
 
   // Get pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void *device_ptr() const { return address_common_->pointer_ref_count_->ptr(); }
+  void *device_ptr() const { return device_address_->pointer_ref_count()->ptr(); }
 
   // Set pointer to the device side that corresponds to KernelTensor, used in runtime.
-  void set_device_ptr(void *ptr) { address_common_->pointer_ref_count_->set_ptr(ptr); }
+  void set_device_ptr(void *ptr) { device_address_->pointer_ref_count()->set_ptr(ptr); }
 
   // Get the memory size in byte of the KernelTensor.
-  size_t size() const { return address_common_->size_; }
+  size_t size() const { return device_address_->size(); }
 
   // Set the memory size in byte of the KernelTensor.
-  void set_size(size_t size) { address_common_->size_ = size; }
+  void set_size(size_t size) { device_address_->SetSize(size); }
 
   // Get device target name, such "GPU","Ascend".
-  const std::string &device_name() const { return address_common_->device_name_; }
+  device::DeviceType GetDeviceType() const { return device_address_->GetDeviceType(); }
 
   // Set device target name, such "GPU","Ascend".
-  void set_device_name(const std::string &device_name) { address_common_->device_name_ = device_name; }
+  void SetDeviceType(const device::DeviceType &device_type) { device_address_->SetDeviceType(device_type); }
 
   // Get device id.
-  uint32_t device_id() const { return address_common_->device_id_; }
+  uint32_t device_id() const { return device_address_->device_id(); }
 
   // Set device id.
-  void set_device_id(uint32_t device_id) { address_common_->device_id_ = device_id; }
+  void set_device_id(uint32_t device_id) { device_address_->set_device_id(device_id); }
 
   // Get logical stream id.
-  uint32_t stream_id() const { return address_common_->stream_id_; }
+  uint32_t stream_id() const { return device_address_->stream_id(); }
 
   // Set logical stream id.
-  void set_stream_id(uint32_t stream_id) { address_common_->stream_id_ = stream_id; }
+  void set_stream_id(uint32_t stream_id) { device_address_->set_stream_id(stream_id); }
 
   // Get task id on stream.
   std::shared_ptr<int64_t> task_id_on_stream() const { return task_id_on_stream_; }
@@ -396,9 +378,9 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     task_id_on_stream_ = task_id_on_stream;
   }
 
-  bool managed_by_somas() const { return address_common_->managed_by_somas_; }
+  bool managed_by_somas() const { return device_address_->managed_by_somas(); }
 
-  void set_managed_by_somas(bool managed_by_somas) { address_common_->managed_by_somas_ = managed_by_somas; }
+  void set_managed_by_somas(bool managed_by_somas) { device_address_->set_managed_by_somas(managed_by_somas); }
 
   ContinuousDeviceAddressesPtr continuous_device_addresses() const;
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
@@ -451,7 +433,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   // max shape is only used in compute-depended ops
   ShapeVector GetMaxShape() const;
 
-  const TensorStorageInfoPtr tensor_storage_info() const { return address_common_->tensor_storage_info_; }
+  const TensorStorageInfoPtr tensor_storage_info() const { return device_address_->GetTensorStorageInfo(); }
   void set_tensor_storage_info(const TensorStorageInfoPtr &storage_info) {
     if (storage_info) {
       auto ori_shape = storage_info->ori_shape;
@@ -459,12 +441,7 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
       storage_info->ori_size =
         std::accumulate(ori_shape.begin(), ori_shape.end(), type_size, std::multiplies<size_t>());
     }
-    address_common_->tensor_storage_info_ = storage_info;
-  }
-
-  const device::DeviceType GetDeviceType() const {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->GetDeviceType();
+    device_address_->set_tensor_storage_info(storage_info);
   }
 
   size_t GetSize() const {
@@ -477,14 +454,13 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     MS_EXCEPTION_IF_NULL(device_address_);
     return device_address_->flag();
   }
-  size_t original_ref_count() const { return address_common_->pointer_ref_count_->original_ref_count(); }
-  size_t ref_count() const { return address_common_->pointer_ref_count_->ref_count(); }
-  int32_t dynamic_ref_count() const { return address_common_->pointer_ref_count_->dynamic_ref_count(); }
-  size_t new_ref_count() const { return address_common_->pointer_ref_count_->new_ref_count(); }
+  size_t original_ref_count() const { return device_address_->original_ref_count(); }
+  size_t ref_count() const { return device_address_->ref_count(); }
+  int32_t dynamic_ref_count() const { return device_address_->dynamic_ref_count(); }
+  size_t new_ref_count() const { return device_address_->new_ref_count(); }
 
   const DeviceAddressPtr &device_address() const;
   void set_device_address(const DeviceAddressPtr &device_address);
-  const AddressCommonPtr address_common() const { return address_common_; }
 
   // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
   // user data to device ptr.
@@ -567,7 +543,6 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
 
   // device address info
   DeviceAddressPtr device_address_{nullptr};
-  AddressCommonPtr address_common_{nullptr};
   ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;

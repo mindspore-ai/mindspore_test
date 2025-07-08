@@ -184,7 +184,6 @@ mindspore/mindspore/ops/kernel/cpu/eltwise_grad_cpu_kernel.cc:mindspore::kernel:
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
 mindspore/mindspore/python/mindspore/common/api.py:_convert_python_data
 mindspore/mindspore/ops/kernel/cpu/crop_and_resize_cpu_kernel.cc:mindspore::kernel::CropAndResizeCpuKernelMod::LaunchKernel
-mindspore/mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_address.cc:mindspore::device::cpu::CPUDeviceAddress::SyncHostToDevice
 mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc:mindspore::kernel::Cast
 mindspore/mindspore/ccsrc/frontend/ir/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId

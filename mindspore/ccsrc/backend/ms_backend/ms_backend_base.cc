@@ -1361,7 +1361,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
   auto tensor_device_size = device_tensor->GetSize();
   MS_EXCEPTION_IF_NULL(tensor_device_ptr);
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
 

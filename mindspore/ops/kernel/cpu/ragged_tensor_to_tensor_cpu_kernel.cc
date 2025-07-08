@@ -24,7 +24,6 @@
 #include <type_traits>
 #include <iostream>
 #include <numeric>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

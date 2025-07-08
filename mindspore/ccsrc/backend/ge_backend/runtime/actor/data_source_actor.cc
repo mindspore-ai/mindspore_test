@@ -274,7 +274,7 @@ void HostQueueDataSourceActor::ReleaseData() {
     }
     // If the address from input tensor and the address is not used by runtime.
     if (old_address->original_ref_count() == SIZE_MAX && !old_address->is_ptr_persisted()) {
-      device::ResKey res_key{device::GetDeviceTypeByName(old_address->device_name()), old_address->device_id()};
+      device::ResKey res_key{old_address->GetDeviceType(), old_address->device_id()};
       auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
       MS_EXCEPTION_IF_NULL(res_manager);
 

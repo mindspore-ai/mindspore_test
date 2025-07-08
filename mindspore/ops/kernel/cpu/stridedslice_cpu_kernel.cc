@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <complex>
 #include "include/common/thread_pool.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "common/kernel_utils.h"
 
 namespace mindspore {

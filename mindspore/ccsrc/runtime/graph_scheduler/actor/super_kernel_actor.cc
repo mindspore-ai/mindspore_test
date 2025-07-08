@@ -1411,7 +1411,7 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   }
   if (device_context->GetDeviceType() != node_device_tensor->GetDeviceType()) {
     device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {node_device_tensor->device_name(), node_device_tensor->device_id()});
+      {device::GetDeviceNameByType(node_device_tensor->GetDeviceType()), node_device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   }

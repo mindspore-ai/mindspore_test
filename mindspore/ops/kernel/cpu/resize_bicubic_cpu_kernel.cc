@@ -21,7 +21,6 @@
 #include <memory>
 #include "common/kernel_utils.h"
 #include "mindspore/ops/infer/ops_func_impl/resize_bicubic.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

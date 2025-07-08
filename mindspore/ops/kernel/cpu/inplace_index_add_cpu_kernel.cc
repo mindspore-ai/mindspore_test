@@ -23,7 +23,6 @@
 
 #include "include/common/thread_pool.h"
 #include "mindspore/ops/infer/inplace_index_add.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

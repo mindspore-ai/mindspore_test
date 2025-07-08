@@ -16,7 +16,6 @@
 
 #include <iostream>
 #include "kernel/cpu/csr_sparse_matrix_to_sparse_tensor_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

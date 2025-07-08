@@ -17,7 +17,6 @@
 #include "kernel/cpu/parallel_concat_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

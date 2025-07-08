@@ -18,7 +18,6 @@
 #include <string>
 #include "common/kernel_utils.h"
 #include "mindapi/base/type_id.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

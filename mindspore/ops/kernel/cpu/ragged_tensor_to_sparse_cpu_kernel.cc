@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <cstdio>
 #include "include/common/thread_pool.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 namespace mindspore {
 namespace kernel {
 namespace ragged_tensor_to_sparse_cpu {

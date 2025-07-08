@@ -20,7 +20,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

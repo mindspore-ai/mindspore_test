@@ -25,7 +25,6 @@
 #include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
 #include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {

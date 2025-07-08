@@ -21,7 +21,6 @@
 #include <map>
 #include <vector>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

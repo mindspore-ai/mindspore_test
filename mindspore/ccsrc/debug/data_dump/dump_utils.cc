@@ -240,7 +240,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
     size_t host_size = LongToSize(out_tensor->DataNBytes());
     auto clone_device_address = res_manager->CreateDeviceAddress(
       addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
-      addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
+      addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id(), addr.stream_id());
     MS_EXCEPTION_IF_NULL(out_tensor->device_address());
     ret = SyncCopy(out_tensor->device_address(), clone_device_address, addr.stream_id());
     if (!ret) {
@@ -337,7 +337,7 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
       clone_dst_device_address->SetShapeVector(corrected_host_shape);
       auto clone_src_device_address = res_manager->CreateDeviceAddress(
         addr.GetMutablePtr(), addr.GetSize(), addr.GetShapeVector(), kernel::GetFormatFromStrToEnum(addr.format()),
-        addr.type_id(), addr.device_name(), addr.device_id(), addr.stream_id());
+        addr.type_id(), device::GetDeviceNameByType(addr.GetDeviceType()), addr.device_id(), addr.stream_id());
       MS_EXCEPTION_IF_NULL(clone_src_device_address);
       MS_LOG(DEBUG) << "src device address:" << addr.ToString() << " clone:" << clone_src_device_address->ToString()
                     << "dst device address shape:" << corrected_host_shape << " size:" << host_size

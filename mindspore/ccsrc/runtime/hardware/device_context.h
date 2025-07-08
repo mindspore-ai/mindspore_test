@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "common/device_address.h"
 #include "common/kernel.h"
 #include "common/kernel_tensor.h"

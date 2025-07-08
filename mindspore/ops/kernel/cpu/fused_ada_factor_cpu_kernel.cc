@@ -17,7 +17,6 @@
 #include <functional>
 #include <algorithm>
 #include "mindspore/ops/infer/fused_ada_factor.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

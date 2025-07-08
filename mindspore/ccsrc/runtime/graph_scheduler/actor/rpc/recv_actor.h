@@ -24,11 +24,10 @@
 #include <memory>
 #include <condition_variable>
 #include "runtime/graph_scheduler/actor/rpc/rpc_actor.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+#include "common/device_address.h"
 
 namespace mindspore {
 namespace runtime {
-using CPUDeviceAddress = device::cpu::CPUDeviceAddress;
 // RecvActor inherits from RpcActor and it's used to receive data from other processes.
 class RecvActor : public RpcActor {
  public:
@@ -111,7 +110,7 @@ class RecvActor : public RpcActor {
 
   // The received data which should be allocated by framework.
   // It will be used for copying the buffer from the kernel function.
-  std::shared_ptr<CPUDeviceAddress> recv_data_;
+  std::shared_ptr<device::DeviceAddress> recv_data_;
 
  private:
   // Create abstract and add to the abstract list.

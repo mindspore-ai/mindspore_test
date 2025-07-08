@@ -748,7 +748,7 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
     MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The output position is out of range.";
   }
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
   to_actor->device_contexts_[output_position] = device_context;
 }
 
@@ -1597,12 +1597,12 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-  auto address_common = kernel_tensor->address_common();
-  MS_EXCEPTION_IF_NULL(address_common);
+  auto device_address = kernel_tensor->device_address();
+  MS_EXCEPTION_IF_NULL(device_address);
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
-    address_common->format_, address_common->dtype_id_, device_context->device_context_key().device_name_,
-    device_context->device_context_key().device_id_, address_common->stream_id_, kernel_tensor->user_data());
+    device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
+    kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
+    device_context->device_context_key().device_id_, device_address->stream_id(), kernel_tensor->user_data());
   new_device_address->set_host_shape(kernel_tensor->host_shape());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_device_address(new_device_address);

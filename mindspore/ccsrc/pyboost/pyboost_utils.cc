@@ -209,7 +209,7 @@ DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &devic
   GilReleaseWithCheck gil_release;
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {old_device_address->device_name(), old_device_address->device_id()});
+    {device::GetDeviceNameByType(old_device_address->GetDeviceType()), old_device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();

@@ -18,7 +18,6 @@
 #include <memory>
 #include "kernel/cpu/adaptive_avg_pool_3d_grad_cpu_kernel.h"
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

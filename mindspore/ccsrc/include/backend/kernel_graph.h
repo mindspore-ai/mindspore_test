@@ -29,7 +29,7 @@
 #include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #include "common/device_address.h"
 #include "backend/backend_manager/backend_jit_config.h"
 #include "include/backend/visible.h"

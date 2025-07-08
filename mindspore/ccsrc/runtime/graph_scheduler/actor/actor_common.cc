@@ -486,7 +486,7 @@ void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceCo
   // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.
   if ((device_context == nullptr) || (device_context->GetDeviceType() != device_tensor->GetDeviceType())) {
     const auto &new_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(new_device_context);
     new_device_context->device_res_manager_->FreeMemory(device_tensor);
   } else {
@@ -984,7 +984,7 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
   }
 
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
 
   if (device_tensor->GetPtr() == nullptr) {
     auto mem_type = device_tensor->new_ref_count() == SIZE_MAX ? memory::mem_pool::MemType::kWeight

@@ -427,19 +427,16 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
-
-  auto address_common = old_kernel_tensor->address_common();
-  MS_EXCEPTION_IF_NULL(address_common);
   auto new_device_address = res_manager->CreateDeviceAddress(
-    address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
-    address_common->format_, address_common->dtype_id_, device_name, device_id, address_common->stream_id_,
+    old_device_address->pointer_ref_count()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
+    old_kernel_tensor->format(), old_device_address->type_id(), device_name, device_id, old_device_address->stream_id(),
     old_kernel_tensor->user_data());
   new_device_address->set_host_shape(old_kernel_tensor->host_shape());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_address(new_device_address);
 
-  new_kernel_tensor->set_device_name(device_name);
+  new_kernel_tensor->SetDeviceType(device::GetDeviceTypeByName(device_name));
   new_kernel_tensor->set_device_id(device_id);
   new_kernel_tensor->set_device_ptr(nullptr);
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << " type:" << new_device_address->type_id();

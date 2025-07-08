@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "kernel/cpu/segment_mean_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

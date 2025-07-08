@@ -385,23 +385,24 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
   MS_EXCEPTION_IF_NULL(res_manager);
 
   if (device::GetDeviceTypeByName(device_name) != node_device_tensor->GetDeviceType()) {
-    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got " << node_device_tensor->device_name();
+    MS_LOG(EXCEPTION) << "GE backend only support Ascend, but got "
+                      << device::GetDeviceNameByType(node_device_tensor->GetDeviceType());
   }
 
   if (copy_input_kernel_tensors_[i] == nullptr) {
     MS_EXCEPTION_IF_NULL(node_kernel_tensor);
-    auto address_common = node_kernel_tensor->address_common();
-    MS_EXCEPTION_IF_NULL(address_common);
+    auto node_device_address = node_kernel_tensor->device_address();
+    MS_EXCEPTION_IF_NULL(node_device_address);
     // create device address with correct context.
     auto new_device_address = res_manager->CreateDeviceAddress(
-      address_common->pointer_ref_count_->ptr(), address_common->size_, address_common->shape_vector_,
-      address_common->format_, address_common->dtype_id_, device_name, device_id, address_common->stream_id_,
-      node_kernel_tensor->user_data());
+      node_device_address->pointer_ref_count()->ptr(), node_device_address->size(),
+      node_device_address->GetShapeVector(), node_kernel_tensor->format(), node_device_address->type_id(), device_name,
+      device_id, node_device_address->stream_id(), node_kernel_tensor->user_data());
     new_device_address->set_host_shape(node_kernel_tensor->host_shape());
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     new_kernel_tensor->set_device_address(new_device_address);
-    new_kernel_tensor->set_device_name(node_device_tensor->device_name());
+    new_kernel_tensor->SetDeviceType(node_device_tensor->GetDeviceType());
     new_kernel_tensor->set_device_id(node_device_tensor->device_id());
     new_kernel_tensor->set_device_ptr(nullptr);
 

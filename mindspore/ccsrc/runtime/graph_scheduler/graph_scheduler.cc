@@ -2761,7 +2761,7 @@ DeviceContext *GetFromActorDeviceContext(AbstractActor *const from_actor, Abstra
       AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second, false);
     MS_EXCEPTION_IF_NULL(device_tensor);
     from_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     return from_device_context;
   }
   auto position = from_actor->FetchNodePosition({from_kernel_with_output_idx.first, 0});
@@ -3551,7 +3551,7 @@ void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
           auto device_tensor = AnfAlgo::GetMutableOutputAddr(real_from_kernel, real_from_index, false);
           MS_EXCEPTION_IF_NULL(device_tensor);
           auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-            {device_tensor->device_name(), device_tensor->device_id()});
+            {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
           SchedulerHelper::AddResultParameter(from_actor, to_actor, front_output_with_index, device_context,
                                               output_position);
         } else {

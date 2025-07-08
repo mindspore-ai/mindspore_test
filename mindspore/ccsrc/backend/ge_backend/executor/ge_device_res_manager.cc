@@ -19,9 +19,10 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
+#include "utils/ms_context.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace backend {
@@ -195,8 +196,8 @@ bool GeDeviceResManager::SyncCopyStream() const {
 device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress() const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_address = std::make_shared<device::ascend::AscendDeviceAddress>();
-  device_address->set_device_name(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET));
+  auto device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, kAscendDevice);
+  device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
   device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }

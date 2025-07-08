@@ -24,7 +24,6 @@
 #include "plugin/res_manager/gpu/device_context_conf/op_tuning_conf.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_pin_mem_pool.h"
-#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
 #include "include/backend/distributed/collective/collective_manager.h"
@@ -388,8 +387,8 @@ void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
 }  // namespace
 
 DeviceAddressPtr GPUResManager::CreateDeviceAddress() const {
-  auto device_address = std::make_shared<GPUDeviceAddress>();
-  device_address->set_device_name(GetDeviceNameByType(res_key_.device_name_));
+  auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kGPUDevice);
+  device_address->SetDeviceType(res_key_.device_name_);
   device_address->set_device_id(res_key_.device_id_);
   return device_address;
 }
@@ -398,16 +397,13 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
                                                     const Format &format, TypeId type_id,
                                                     const std::string &device_name, uint32_t device_id,
                                                     uint32_t stream_id, const UserDataPtr &user_data) const {
-  auto real_device_name = device_name;
   auto real_device_id = device_id;
   if (device_name.empty()) {
-    real_device_name = GetDeviceNameByType(res_key_.device_name_);
     real_device_id = res_key_.device_id_;
-    MS_LOG(DEBUG) << "Create device address with real device name: " << real_device_name
-                  << ", real device id: " << real_device_id;
+    MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
   }
-  auto device_address = std::make_shared<GPUDeviceAddress>(ptr, size, shape_vector, format, type_id, real_device_name,
-                                                           real_device_id, stream_id);
+  auto device_address =
+    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kGPUDevice, real_device_id, stream_id);
 
   if (user_data != nullptr) {
     SetUserData(device_address.get(), user_data);
@@ -785,6 +781,12 @@ MS_REGISTER_HAL_COPY_FUNC(
     return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);
+
+REGISTER_DEVICE_PTR_DELETER_MAKER(device::DeviceType::kGPU, ([](void *ptr, bool from_mem_pool) {
+                                    if (ptr != nullptr && from_mem_pool) {
+                                      GPUMemoryAllocator::GetInstance().FreeTensorMem(ptr);
+                                    }
+                                  }));
 }  // namespace gpu
 }  // namespace device
 }  // namespace mindspore

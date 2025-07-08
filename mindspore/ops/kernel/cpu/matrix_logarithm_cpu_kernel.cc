@@ -19,7 +19,7 @@
 #include <complex>
 #include <cmath>
 #include <chrono>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "Eigen/Core"
 #include "unsupported/Eigen/CXX11/Tensor"
 

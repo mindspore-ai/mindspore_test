@@ -21,7 +21,6 @@
 #include <utility>
 #include <numeric>
 
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 
 namespace mindspore {

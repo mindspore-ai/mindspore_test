@@ -17,7 +17,7 @@
 #include "kernel/cpu/lin_space_cpu_kernel.h"
 #include <algorithm>
 #include <map>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "common/common_utils.h"
 
 namespace mindspore {

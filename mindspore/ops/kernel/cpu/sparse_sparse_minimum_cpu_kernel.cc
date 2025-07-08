@@ -16,7 +16,6 @@
 #include "kernel/cpu/sparse_sparse_minimum_cpu_kernel.h"
 #include <utility>
 #include "Eigen/Core"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

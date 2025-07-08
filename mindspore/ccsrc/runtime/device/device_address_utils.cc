@@ -44,7 +44,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
@@ -1408,9 +1408,10 @@ device::DeviceAddressPtr DeviceAddressUtils::ConvertContiguousDeviceAddress(
   const DeviceContext *input_device_context, const device::DeviceAddressPtr &old_device_address, bool is_sync) {
   MS_EXCEPTION_IF_NULL(old_device_address);
 
-  const DeviceContext *device_context = input_device_context == nullptr
-                                          ? runtime::OpRunner::GetDeviceContext(old_device_address->device_name())
-                                          : input_device_context;
+  const DeviceContext *device_context =
+    input_device_context == nullptr
+      ? runtime::OpRunner::GetDeviceContext(device::GetDeviceNameByType(old_device_address->GetDeviceType()))
+      : input_device_context;
   MS_EXCEPTION_IF_NULL(device_context);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 

@@ -608,7 +608,8 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
   runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-    MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
-    device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+    MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(device_address->GetDeviceType()),
+    device_address->GetPtr(), device_address->type_id(), device_address->GetShapeVector(),
+    device_address->GetTensorStorageInfo());
 }
 }  // namespace mindspore::compile

@@ -68,7 +68,7 @@ void Gather(const device::DeviceAddressPtr &device_address) {
   auto dtype = device_address->type_id();
   MemcpyToBuf(&dtype, sizeof(int));
 
-  const auto &storage_info = device_address->address_common()->tensor_storage_info_;
+  const auto &storage_info = device_address->GetTensorStorageInfo();
   if (storage_info != nullptr) {
     // strides
     MemcpyToBuf(storage_info->strides.data(), static_cast<int64_t>(storage_info->strides.size() * sizeof(int64_t)));

@@ -32,28 +32,19 @@ using device::DeviceType;
 
 class TestDeviceAddress : public DeviceAddress {
  public:
-  TestDeviceAddress() : DeviceAddress() {}
-  TestDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
+  TestDeviceAddress() = delete;
   TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
-                                bool sync_on_demand) const {
-    return true;
-  }
-  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                                const std::string &format) const {
-    return true;
-  }
-  virtual void ClearDeviceMemory() {}
-  DeviceType GetDeviceType() const override { return DeviceType::kCPU; }
+  void ClearDeviceMemory() {}
+  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
 
-  void set_data(tensor::TensorDataPtr &&data) override { data_ = std::move(data); }
+  void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
 
-  const tensor::TensorDataPtr &data() const override { return data_; }
+  const tensor::TensorDataPtr &data() const { return data_; }
 
-  bool has_data() const override { return data_ != nullptr; }
+  bool has_data() const { return data_ != nullptr; }
 
  private:
   // the data for numpy object.

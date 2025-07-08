@@ -22,7 +22,7 @@
 #include <complex>
 #include <utility>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "ir/primitive.h"
 #include "ir/dtype/type.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"

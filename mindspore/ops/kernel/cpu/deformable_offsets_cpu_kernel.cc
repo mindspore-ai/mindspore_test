@@ -17,7 +17,6 @@
 #include "kernel/cpu/deformable_offsets_cpu_kernel.h"
 #include <memory>
 #include "infer/deformable_offsets.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

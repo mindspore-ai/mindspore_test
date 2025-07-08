@@ -44,7 +44,7 @@ void TensorToRawMemory(const tensor::TensorPtr &tensor, DeviceAddress *const dev
   if (tensor->Size() == 0) {
     return;
   }
-  if (device_address->device_name() == "CPU") {
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
     MS_EXCEPTION_IF_NULL(device_address->GetMutablePtr());
     auto cpu_tensor = tensor->cpu();
     MS_EXCEPTION_IF_NULL(cpu_tensor->data_c());
@@ -341,10 +341,11 @@ void UserDataToRawMemory(DeviceAddress *const device_address) {
   device_address->SetSize(GetSizeForAbstract(abstract));
 
   MS_LOG(DEBUG) << "Infer abstract:" << abstract->ToString() << " size:" << device_address->GetSize()
-                << " device name:" << device_address->device_name() << " device id:" << device_address->device_id();
+                << " device name:" << device::GetDeviceNameByType(device_address->GetDeviceType())
+                << " device id:" << device_address->device_id();
 
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_address->device_name(), device_address->device_id()});
+    {device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
   if (device_address->GetPtr() != nullptr) {

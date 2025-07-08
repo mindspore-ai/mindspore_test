@@ -15,7 +15,6 @@
  */
 
 #include "kernel/cpu/unique_with_pad_cpu_kernel.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

@@ -31,7 +31,6 @@
 #include "plugin/res_manager/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/res_manager/ascend/device_context_conf/op_tuning_conf.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "debug/profiler/profiling.h"
 #include "runtime/hardware/device_context_manager.h"

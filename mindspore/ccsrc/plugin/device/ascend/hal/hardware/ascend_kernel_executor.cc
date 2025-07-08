@@ -1491,16 +1491,16 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kPyNativeOutput,
                                                  output_addr->GetSize(), output_addr.get());
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, "PyNative", input_addr->device_name(),
-                                                 input_addr->GetPtr(), input_addr->type_id(),
-                                                 input_addr->GetShapeVector(), input_addr->GetTensorStorageInfo());
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsInput, "PyNative", device::GetDeviceNameByType(input_addr->GetDeviceType()), input_addr->GetPtr(),
+    input_addr->type_id(), input_addr->GetShapeVector(), input_addr->GetTensorStorageInfo());
   if (output_addr->GetPtr() == nullptr) {
     if (!device_context->device_res_manager_->AllocateMemory(output_addr.get())) {
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   }
-  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
-  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  const auto &input_storage_info = input_addr->GetTensorStorageInfo();
+  const auto &output_storage_info = output_addr->GetTensorStorageInfo();
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
                 << ", input address size:" << input_addr->GetSize()
@@ -1508,9 +1508,9 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
 
   // Inplace output need be front
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", output_addr->device_name(),
-                                                 output_addr->GetPtr(), output_addr->type_id(),
-                                                 output_addr->GetShapeVector(), output_addr->GetTensorStorageInfo());
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+    MarkTensorAsOutput, "PyNative", device::GetDeviceNameByType(output_addr->GetDeviceType()), output_addr->GetPtr(),
+    output_addr->type_id(), output_addr->GetShapeVector(), output_addr->GetTensorStorageInfo());
   MS_LOG(DEBUG) << "Launch end";
 }
 
@@ -1555,8 +1555,8 @@ bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task
       MS_LOG(EXCEPTION) << "input_addr_list.size() or output_addr_list.size() is invalid, input_addr_list.size():"
                         << input_addr_list.size() << ", output_addr_list.size():" << output_addr_list.size();
     }
-    if (std::dynamic_pointer_cast<device::cpu::CPUDeviceAddress>(input_addr_list[0]) != nullptr &&
-        std::dynamic_pointer_cast<device::cpu::CPUDeviceAddress>(output_addr_list[0]) != nullptr) {
+    if (input_addr_list[0] != nullptr && input_addr_list[0]->GetDeviceType() == device::DeviceType::kCPU &&
+        output_addr_list[0] != nullptr && output_addr_list[0]->GetDeviceType() == device::DeviceType::kCPU) {
       // for unrefmode, the output is on host, just copy the device ptr
       output_addr_list[0]->set_ptr(input_addr_list[0]->GetMutablePtr());
     } else {
@@ -1592,8 +1592,8 @@ bool AscendKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task
       MS_LOG(EXCEPTION) << "Allocate memory failed";
     }
   }
-  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
-  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  const auto &input_storage_info = input_addr->GetTensorStorageInfo();
+  const auto &output_storage_info = output_addr->GetTensorStorageInfo();
   MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
                 << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
                 << ", input address size:" << input_addr->GetSize()

@@ -17,7 +17,6 @@
 #include "kernel/cpu/fractional_avg_pool_grad_cpu_kernel.h"
 #include <map>
 #include <functional>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

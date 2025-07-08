@@ -21,8 +21,6 @@
 #include <memory>
 #include <map>
 
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
-
 namespace mindspore {
 namespace kernel {
 namespace sparse_apply_proximal_gradient_descent_cpu {

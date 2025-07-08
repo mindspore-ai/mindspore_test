@@ -10,11 +10,9 @@ if(ENABLE_CPU)
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(_mindspore_plugin_res_manager_cpu_obj PRIVATE CPU_RES_MANAGER_DLL)
     endif()
-    add_subdirectory(cpu_device_address)
     add_subdirectory(cpu_mem_manager)
 
     list(APPEND CPU_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_cpu_obj>)
-    list(APPEND CPU_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_cpu_cpu_device_address_obj>)
     list(APPEND CPU_RES_MANAGER_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_res_manager_cpu_cpu_mem_manager_obj>)
 
     add_library(mindspore_cpu_res_manager SHARED ${CPU_RES_MANAGER_OBJECTS_SRC})

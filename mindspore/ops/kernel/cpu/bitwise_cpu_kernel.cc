@@ -24,7 +24,7 @@
 #include <utility>
 
 #include "mindspore/ops/op_def/math_ops.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 

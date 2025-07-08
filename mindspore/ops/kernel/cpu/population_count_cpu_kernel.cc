@@ -17,7 +17,6 @@
 #include "kernel/cpu/population_count_cpu_kernel.h"
 #include <functional>
 #include <type_traits>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

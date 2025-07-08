@@ -22,7 +22,7 @@
 #include <map>
 #include <memory>
 #include "include/backend/visible.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
 
 namespace mindspore {
 namespace dump {

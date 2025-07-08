@@ -18,7 +18,6 @@
 #include <cmath>
 #include <string>
 #include <thread>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

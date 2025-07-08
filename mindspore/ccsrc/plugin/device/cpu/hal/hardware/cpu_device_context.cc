@@ -19,7 +19,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_memory_manager.h"
 #include "plugin/device/cpu/optimizer/reg_cpu_const_input_to_attr.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"

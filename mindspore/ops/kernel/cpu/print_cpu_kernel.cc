@@ -23,7 +23,6 @@
 #include "ir/tensor.h"
 #include "ir/tensor_new.h"
 #include "infer/print.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

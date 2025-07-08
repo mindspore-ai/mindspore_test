@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #include "common/common_utils.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "kernel/cpu/nnacl/fp32/adam_fp32.h"
 #include "mindspore/ops/infer/apply_adam_with_amsgradv2.h"
 #include "utils/ms_utils.h"

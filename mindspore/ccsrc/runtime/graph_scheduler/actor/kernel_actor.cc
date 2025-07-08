@@ -73,18 +73,18 @@ void TrackInputOutputMemory(const std::vector<KernelTensor *> &input_launch_tens
     if (device_addr == nullptr || !device_addr->IsPtrValid()) {
       continue;
     }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, actor_name, device_addr->device_name(),
-                                                   device_addr->GetPtr(), device_addr->type_id(),
-                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsInput, actor_name, device::GetDeviceNameByType(device_addr->GetDeviceType()), device_addr->GetPtr(),
+      device_addr->type_id(), device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
   }
   for (size_t i = 0, end = output_launch_tensors.size(); i < end; i++) {
     auto device_addr = output_launch_tensors[i]->device_address().get();
     if (device_addr == nullptr || !device_addr->IsPtrValid()) {
       continue;
     }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, actor_name, device_addr->device_name(),
-                                                   device_addr->GetPtr(), device_addr->type_id(),
-                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+      MarkTensorAsOutput, actor_name, device::GetDeviceNameByType(device_addr->GetDeviceType()), device_addr->GetPtr(),
+      device_addr->type_id(), device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
   }
 }
 

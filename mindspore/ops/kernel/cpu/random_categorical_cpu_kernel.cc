@@ -20,7 +20,7 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
+
 #include "infer/random_categorical.h"
 #include "kernel/philox_random.h"
 

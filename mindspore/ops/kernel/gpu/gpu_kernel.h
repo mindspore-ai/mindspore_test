@@ -36,13 +36,14 @@
 #include "common/ms_factory.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
-#include "plugin/res_manager/gpu/device/gpu_device_address.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "common/kernel_build_info.h"
 #include "common/common_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"
+#include "utils/ms_context.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
@@ -217,7 +218,7 @@ T GetDimValue(const std::vector<KernelTensor *> &inputs, const int index, const 
               const TypeId &dim_type) {
   size_t size = abstract::TypeIdSize(dim_type);
   auto dim_gpu_addr =
-    std::make_shared<device::gpu::GPUDeviceAddress>(inputs[index]->device_ptr(), size, kOpFormat_DEFAULT, dim_type);
+    std::make_shared<device::DeviceAddress>(inputs[index]->device_ptr(), size, kOpFormat_DEFAULT, dim_type, kGPUDevice);
   int res = 0;
   device::ResKey res_key{device::DeviceType::kGPU, dim_gpu_addr->device_id()};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);

@@ -20,7 +20,6 @@
 #include <complex>
 #include <unordered_map>
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {

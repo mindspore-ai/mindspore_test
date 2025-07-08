@@ -168,7 +168,7 @@ void OutputActor::FreeOutputNodeMem() {
       continue;
     }
     const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {output_device_tensor->device_name(), output_device_tensor->device_id()});
+      {device::GetDeviceNameByType(output_device_tensor->GetDeviceType()), output_device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(device_context);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Free device address:" << output_device_tensor << " for actor:" << GetAID();
@@ -243,7 +243,7 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     MS_EXCEPTION_IF_NULL(device_contexts_[output_position]);
     if (device_contexts_[output_position]->GetDeviceType() != device_tensor->GetDeviceType()) {
       device_contexts_[output_position] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {device_tensor->device_name(), device_tensor->device_id()});
+        {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     }
     // Create the device address and put it into host tensor.
     if (old_to_new_device_address_.count(device_tensor) > 0) {
@@ -258,13 +258,13 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
       kernel_tensor->SetShape(parameter_kernel_tensor->GetShape());
       kernel_tensor->set_stream_id(device_tensor->stream_id());
       kernel_tensor->set_tensor_storage_info(device_tensor->GetTensorStorageInfo());
+      auto tensor_device_address = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(tensor_device_address);
       if (device_tensor->GetTensorStorageInfo() != nullptr) {
-        kernel_tensor->address_common()->shape_vector_ = parameter_kernel_tensor->address_common()->shape_vector_;
+        tensor_device_address->SetShapeVector(device_tensor->GetShapeVector());
       }
       // SetShape will calculate a default size by host shape, need to set real device size for special format.
       kernel_tensor->set_size(device_tensor->GetSize());
-      auto tensor_device_address = kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(tensor_device_address);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Create kernel tensor:" << kernel_tensor->ToString() << " output node:" << output_node->fullname_with_scope()
         << " output position:" << output_position << ", origin output device tensor: " << device_tensor;
@@ -548,7 +548,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   if (device_context->GetDeviceType() != device_tensor->GetDeviceType()) {
     auto old_device_context = device_context;
     device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     MS_LOG(INFO) << "Update device context from:" << old_device_context->GetDeviceType()
                  << " to:" << device_context->GetDeviceType();
   }
@@ -606,7 +606,7 @@ void HandleEmptySequenceOutput(KernelTensor *const kernel_tensor, const tensor::
   MS_EXCEPTION_IF_NULL(tensor);
   MS_LOG(DEBUG) << "Empty sequence shape for input tensor index:" << index;
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_tensor->device_name(), device_tensor->device_id()});
+    {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free kernel tensor:" << kernel_tensor << " for actor:" << actor_name;
   MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_context, actor_name);
@@ -708,7 +708,7 @@ void OutputActor::HandleOutput() {
       tensor_device_address->set_user_data(device_tensor->user_data());
     }
     const auto &real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {device_tensor->device_name(), device_tensor->device_id()});
+      {device::GetDeviceNameByType(device_tensor->GetDeviceType()), device_tensor->device_id()});
     MS_EXCEPTION_IF_NULL(real_device_context);
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
     // memory.
@@ -719,8 +719,9 @@ void OutputActor::HandleOutput() {
                                                               GetAID().Name());
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-      MarkTensorAsOutput, GetAID().Name(), device_tensor->device_name(), device_tensor->GetPtr(),
-      device_tensor->type_id(), device_tensor->GetShapeVector(), device_tensor->GetTensorStorageInfo());
+      MarkTensorAsOutput, GetAID().Name(), device::GetDeviceNameByType(device_tensor->GetDeviceType()),
+      device_tensor->GetPtr(), device_tensor->type_id(), device_tensor->GetShapeVector(),
+      device_tensor->GetTensorStorageInfo());
   }
 }
 
