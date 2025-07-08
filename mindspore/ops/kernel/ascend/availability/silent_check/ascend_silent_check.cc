@@ -377,8 +377,9 @@ void CheckObject::LaunchInplaceCopy(const DynamicCheckStatePtr &state) {
   MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Call " << op->primitive()->name() << " start";
 
   auto &src_tensor = square_op_->outputs()[kIndex0];
+  auto non_blocking = std::make_shared<BoolImm>(false);
 
-  OpRunner::InferOpOutput(op, state->avg, src_tensor);
+  OpRunner::InferOpOutput(op, state->avg, src_tensor, non_blocking);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), state->avg, src_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
