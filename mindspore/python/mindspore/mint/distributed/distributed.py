@@ -1349,7 +1349,7 @@ def reduce_scatter_tensor(output, input, op=ReduceOp.SUM, group=None, async_op=F
 def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=ReduceOp.SUM, group=None, async_op=False):
     r"""
     Reduce tensors from the specified communication group and scatter to the output tensor
-        according to `input_split_sizes`.
+    according to `input_split_sizes`.
 
     Note:
         - The input tensor must have identical shape and format across all processes.
