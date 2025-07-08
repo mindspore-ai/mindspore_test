@@ -70,6 +70,7 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
 void SetRunMode(const FuncGraphPtr &func_graph, std::string *kbk_reason = nullptr);
 bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph);
 AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param);
+std::vector<PassItem> JitPipeline(const ResourcePtr &resource, bool build_top_graph = true);
 }  // namespace pipeline
 }  // namespace mindspore
 
