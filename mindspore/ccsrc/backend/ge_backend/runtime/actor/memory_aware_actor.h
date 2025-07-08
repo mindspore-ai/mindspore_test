@@ -17,9 +17,9 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_MEMORY_AWARE_ACTOR_H_
 #define MINDSPORE_CCSRC_RUNTIME_FRAMEWORK_ACTOR_MEMORY_AWARE_ACTOR_H_
 
-#include <string>
 #include <memory>
-#include <mutex>
+#include <string>
+
 #include "backend/ge_backend/runtime/actor/abstract_actor.h"
 #include "backend/ge_backend/runtime/device_tensor_store.h"
 
