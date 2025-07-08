@@ -1613,7 +1613,10 @@ class Cell(Cell_):
 
         if not kwargs:
             self._dynamic_shape_inputs = inputs
-            _pynative_executor.set_dynamic_input(self, *self._dynamic_shape_inputs)
+            if context._get_mode() == context.PYNATIVE_MODE:
+                _pynative_executor.set_dynamic_input(self, *self._dynamic_shape_inputs)
+            else:
+                self._check_construct_args(*inputs)
         else:
             self._dynamic_shape_inputs = _process_dyn_args(self.construct, kwargs)
 
