@@ -27,7 +27,7 @@ namespace mindspore {
 namespace tensor {
 class COMMON_EXPORT TensorWrapper {
  public:
-  TensorWrapper() { empty_tensor_ = PackTensor(nullptr); }
+  explicit TensorWrapper(bool has_side_effect) { empty_tensor_ = PackTensor(nullptr, has_side_effect); }
 
   PyObject *value() const { return empty_tensor_; }
 
@@ -41,17 +41,17 @@ class COMMON_EXPORT TensorWrapper {
 };
 
 // Helper function to create a std::tuple with N elements of type T
-template <typename T, size_t N, size_t... I>
+template <typename T, size_t N, bool Flag, size_t... I>
 auto MakeTupleImpl(std::index_sequence<I...>) {
   // Use fold expression to create a tuple with N default-constructed elements
-  return std::make_tuple((void(I), T())...);
+  return std::make_tuple((void(I), T(Flag))...);
 }
 
 // Main function to create a std::tuple with N elements of type T
-template <typename T, size_t N>
+template <typename T, size_t N, bool Flag>
 auto MakeTuple() {
   // Generate an index sequence and delegate to the implementation
-  return MakeTupleImpl<T, N>(std::make_index_sequence<N>{});
+  return MakeTupleImpl<T, N, Flag>(std::make_index_sequence<N>{});
 }
 
 // Helper function to apply a transformation to each element of the tuple

@@ -158,6 +158,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
         cast_args_str = self._get_cast_to_value_str(op_proto)
         op_input_args_str = self._get_input_args_str(op_proto)
         output_num_str = len(op_proto.op_returns)
+        is_view_str = 'true' if op_proto.op_view else 'false'
         pyboost_core_body_tpl = self._get_pyboost_core_body_tpl(op_proto)
         if op_proto.op_view:
             implicit_cast_str = ''
@@ -179,6 +180,7 @@ class PyboostFunctionsImplGenerator(BaseGenerator):
                                              call_args=call_args_str,
                                              cast_args=cast_args_str,
                                              output_num=output_num_str,
+                                             is_view=is_view_str,
                                              operator_name=op_proto.op_name)
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
