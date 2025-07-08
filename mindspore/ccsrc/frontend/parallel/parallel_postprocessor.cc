@@ -84,14 +84,6 @@
 namespace mindspore {
 namespace parallel {
 namespace {
-AnfNodePtr ParamNodeForMoveMirror(const CNodePtr &micro_mirror) {
-  return GetInputNodeWithFilter(micro_mirror, [&](const CNodePtr &cnode) {
-    bool filter = IsPrimitiveCNode(cnode, prim::kPrimMirrorMicroStep) || IsPrimitiveCNode(cnode, prim::kPrimLoad) ||
-                  IsPrimitiveCNode(cnode, prim::kPrimDepend) || IsPrimitiveCNode(cnode, prim::kPrimMicroStepAllGather);
-    return std::make_pair(filter, 1);
-  });
-}
-
 static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
   AnfNodePtr ret_after = root->get_return();
   MS_EXCEPTION_IF_NULL(ret_after);
@@ -102,61 +94,23 @@ static void MoveMicroMirrorOutCallFunc(const FuncGraphPtr &root) {
       continue;
     }
     auto micro_mirror = node->cast<CNodePtr>();
-    auto param_anf_node = ParamNodeForMoveMirror(micro_mirror);
-    MS_EXCEPTION_IF_NULL(param_anf_node);
-    if (!param_anf_node->isa<Parameter>()) {
+    if (micro_mirror->HasAttr(kPipelineSendSharedParam)) {
       continue;
     }
-    auto param = param_anf_node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param);
-    if (param->has_default()) {
-      continue;
-    }
-    auto sub_func_graph = param_anf_node->func_graph();
-    auto call_cnodes_map = sub_func_graph->func_graph_cnodes_index();
-    auto sub_graph_parameters = sub_func_graph->parameters();
-    auto curr_param_iter = std::find(sub_graph_parameters.begin(), sub_graph_parameters.end(), param_anf_node);
-    if (curr_param_iter == sub_graph_parameters.end()) {
-      MS_LOG_WITH_NODE(EXCEPTION, param_anf_node)
-        << "Cannot find param " << param_anf_node->DebugString() << " in current sub_graph";
-    }
-    size_t curr_param_index = static_cast<size_t>(curr_param_iter - sub_graph_parameters.begin());
-    AnfNodePtr call_nodes_common_param_input = nullptr;
-    FuncGraphPtr call_nodes_func_graph = nullptr;
-    for (const auto &node_pair : call_cnodes_map) {
-      if (!node_pair.first->first->isa<CNode>() || node_pair.first->second > 0) {
-        continue;
+    size_t max_loop = 0;
+    while (micro_mirror != nullptr && micro_mirror->func_graph() != root && max_loop < SIZE_FOUR) {
+      auto anf_micro_mirror = MoveSingeMirrorOutCallFunc(micro_mirror);
+      if (anf_micro_mirror != nullptr) {
+        micro_mirror = anf_micro_mirror->cast<CNodePtr>();
+      } else {
+        micro_mirror = nullptr;
       }
-      auto cnode = node_pair.first->first->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      call_nodes_func_graph = cnode->func_graph();
-      auto cnode_input = cnode->input(curr_param_index + 1);
-      if (!call_nodes_common_param_input) {
-        call_nodes_common_param_input = cnode_input;
-      }
-      if (call_nodes_common_param_input != cnode_input) {
-        call_nodes_common_param_input = nullptr;
-        break;
-      }
+      max_loop++;
     }
-    if (!call_nodes_common_param_input || !call_nodes_func_graph) {
-      continue;
+    if (micro_mirror != nullptr && micro_mirror->func_graph() != root) {
+      DumpGraph(root, "move_mirror_failed");
+      MS_LOG(EXCEPTION) << "Move mirror operator to root graph failed, micro_mirror:" << micro_mirror->DebugString();
     }
-    // Insert new MicroMirror in root func
-    if (!IsPrimitiveCNode(call_nodes_common_param_input, prim::kPrimMirrorMicroStep)) {
-      auto new_mirror_node =
-        NewMicroMirrorPrimByMicroMirror(call_nodes_func_graph, micro_mirror, call_nodes_common_param_input);
-      for (const auto &node_pair : call_cnodes_map) {
-        if (!node_pair.first->first->isa<CNode>() || node_pair.first->second > 0) {
-          continue;
-        }
-        manager->SetEdge(node_pair.first->first, curr_param_index + 1, new_mirror_node);
-      }
-    }
-
-    // Remove MicroMirror in call_func
-    MS_EXCEPTION_IF_NULL(micro_mirror);
-    (void)manager->Replace(micro_mirror, micro_mirror->input(kIndex1));
   }
 }
 

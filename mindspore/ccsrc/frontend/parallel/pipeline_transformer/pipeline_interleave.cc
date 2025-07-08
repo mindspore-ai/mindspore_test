@@ -49,6 +49,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "frontend/parallel/parallel_node_check.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
@@ -62,6 +63,8 @@
 
 namespace mindspore {
 namespace parallel {
+constexpr char kSharedParamMirrorNode[] = "shared_param_mirror_node";
+
 static AbstractBasePtr GetRealAbstract(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimDepend)) {
     MS_EXCEPTION_IF_NULL(node->cast<CNodePtr>());
@@ -1271,6 +1274,24 @@ AnfNodePtr PipelinePostProcess::GenNewNodeFromOld(const AnfNodePtr &node, const 
   return new_node;
 }
 
+AnfNodePtr PipelinePostProcess::GenNewParamRecv(const AnfNodePtr &new_recv, const ParameterPtr &param) {
+  AnfNodePtr new_node = new_recv;
+  auto param_users = GetOutputNodesWithFilter(param, [&](auto anode) {
+    return IsPrimitiveCNode(anode, prim::kPrimLoad) || IsPrimitiveCNode(anode, prim::kPrimCast);
+  });
+  for (const auto &param_user : param_users) {
+    if (!IsPrimitiveCNode(param_user.first, prim::kPrimMicroStepAllGather)) {
+      continue;
+    }
+    (void)manager_->SetEdge(param_user.first, kIndex1, new_recv);
+    new_node = param_user.first;
+    if (param->has_user_data(kSharedParamMirrorNode)) {
+      new_node = param->user_data<AnfNode>(kSharedParamMirrorNode);
+    }
+  }
+  return new_node;
+}
+
 std::vector<AnfNodePtr> PipelinePostProcess::GenerateMainGraphSend(const std::vector<AnfNodePtr> &nodes,
                                                                    const AnfNodePtr &node, const ValuePtr &micro,
                                                                    const ValuePtr &index) {
@@ -1327,6 +1348,9 @@ AnfNodePtr PipelinePostProcess::GenerateMainGraphRecv(const AnfNodePtr &fg_node,
       const auto &recv_param_info = param_node->param_info();
       if (recv_param_info != nullptr) {
         recv_param_info->set_is_pipeline_shared_param(true);
+      }
+      if (NeededHandleShardParam()) {
+        new_recv = GenNewParamRecv(new_recv, param_node);
       }
     }
   } else {
@@ -1505,7 +1529,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
     auto index = cusr->GetPrimalAttr(INDEX);
     auto temp_sends = GenerateMainGraphSend(sends, new_usr, micro, index);
     if (temp_sends.empty()) {
-      manager_->Replace(usr, new_usr);
+      (void)manager_->Replace(usr, new_usr);
     }
     main_graph_sends.insert(main_graph_sends.end(), temp_sends.begin(), temp_sends.end());
     for (auto &recv : recvs) {
@@ -1524,6 +1548,42 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
     }
   }
   return main_graph_sends;
+}
+
+void PipelinePostProcess::MoveSharedParamMirrorOutCall(const std::vector<AnfNodePtr> &all_nodes) {
+  for (const auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimReceive)) {
+      continue;
+    }
+    auto crecv = node->cast<CNodePtr>();
+    if (!crecv->HasPrimalAttr(PIPELINE_PARAM)) {
+      continue;
+    }
+    auto param_node = crecv->user_data<AnfNode>(INPUT_PARAM);
+    MS_EXCEPTION_IF_NULL(param_node);
+    auto param = param_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
+
+    auto accu_parameter = FindGradAccuParameter(root_->parameters(), param->name());
+    if (!accu_parameter) {
+      continue;
+    }
+    auto accu_param_users = manager_->node_users()[accu_parameter];
+    CNodePtr mirror_micro_node = nullptr;
+    for (const auto &accu_param_user : accu_param_users) {
+      if (!IsPrimitiveCNode(accu_param_user.first, prim::kPrimMirrorMicroStep)) {
+        continue;
+      }
+      mirror_micro_node = accu_param_user.first->cast<CNodePtr>();
+    }
+    if (mirror_micro_node) {
+      auto new_mirror_node = MoveSingeMirrorOutCallFunc(mirror_micro_node);
+      MS_EXCEPTION_IF_NULL(new_mirror_node);
+      MS_EXCEPTION_IF_NULL(new_mirror_node->cast<CNodePtr>());
+      new_mirror_node->cast<CNodePtr>()->AddAttr(kPipelineSendSharedParam, MakeValue(true));
+      param->set_user_data(kSharedParamMirrorNode, new_mirror_node);
+    }
+  }
 }
 
 void PipelinePostProcess::RemoveUselessOriginSharedCell() {
@@ -1605,6 +1665,9 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
 
 void PipelinePostProcess::GraphPartition(const std::vector<AnfNodePtr> &all_nodes) {
   LabelInterleaveIndex();
+  if (NeededHandleShardParam()) {
+    MoveSharedParamMirrorOutCall(all_nodes);
+  }
   std::vector<AnfNodePtr> send_ops;
   auto no_need_clone_stage = is_v_shape_ ? 0 : stage_num_ - 1;
   for (size_t i = 0; i < LongToSize(chunk_num_); ++i) {
@@ -1658,6 +1721,17 @@ void PipelinePostProcess::HandleSendParam() {
     }
     auto param_ptr = param->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_ptr);
+    if (NeededHandleShardParam()) {
+      auto base_shape = param_ptr->Shape();
+      auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
+      auto slice_shape = shape_ptr->shape();
+      auto prim = GetCNodePrimitive(cnode);
+      auto value = MakeValue(slice_shape);
+      prim->set_attr(SHAPE, value);
+      param_ptr->set_user_data(kPipelineSendSharedParam, std::make_shared<bool>(true));
+      continue;
+    }
+
     auto accu_parameter = FindGradAccuParameter(parameters, param_ptr->name());
     if (!accu_parameter) {
       continue;

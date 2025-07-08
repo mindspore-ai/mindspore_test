@@ -64,6 +64,9 @@ bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(recv_node);
+    if (recv_node->HasPrimalAttr(PIPELINE_PARAM)) {
+      return false;
+    }
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
     }
