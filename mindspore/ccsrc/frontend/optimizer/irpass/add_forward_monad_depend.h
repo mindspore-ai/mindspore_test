@@ -143,6 +143,10 @@ void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr
  * \return True if root func graph changed, else false.
  **/
 bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
+  auto scheduler = parallel::ParallelContext::GetInstance()->pipeline_scheduler();
+  if (scheduler == mindspore::parallel::ZBV) {
+    return false;
+  }
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(opt);
   auto manager = opt->manager();

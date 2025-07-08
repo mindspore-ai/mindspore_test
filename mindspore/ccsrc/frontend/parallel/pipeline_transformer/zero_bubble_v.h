@@ -1,5 +1,5 @@
 /**
- * Copyright 2025Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,13 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_PIPELINE_TRANSFORMER_ZERO_BUBBLE_V_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_PIPELINE_TRANSFORMER_ZERO_BUBBLE_V_H_
 
+#include <string>
 #include <queue>
 #include <vector>
 #include <memory>
-#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
+#include <utility>
 #include "frontend/parallel/pipeline_transformer/detach_backward.h"
+#include "frontend/parallel/pipeline_transformer/pipeline_scheduler.h"
 #include "frontend/parallel/step_parallel_utils.h"
 
 namespace mindspore {
@@ -35,6 +37,16 @@ class ZeroBubbleV : public PipelineScheduler {
   virtual ~ZeroBubbleV() = default;
   void Reorder() override;
   void GetBorderNode() override;
+
+ protected:
+  void InsertCallControlOrder(const std::vector<BorderPair> &borders,
+                              const std::string &tags = "zero_bubble_v_control");
+  void InsertControlOrder(const std::vector<BorderPair> &borders, size_t start, size_t end,
+                          const std::string &tags = "zero_bubble_v_control");
+  void ReorderInnerOverlap(const std::vector<BorderPair> &borders,
+                           const std::vector<std::pair<size_t, size_t>> &overlap_border,
+                           const std::pair<size_t, size_t> &border_step4,
+                           const std::pair<size_t, size_t> &border_step5);
 
  private:
   static int64_t CalculateOffset(ZeroBubbleV *self) {
@@ -86,6 +98,9 @@ class ZeroBubbleV : public PipelineScheduler {
   void ProcessStep6(const PipelineState &state, BorderVecPtr exec_order);
   void ProcessStep7(const PipelineState &state, BorderVecPtr exec_order);
   void ProcessStep8(const PipelineState &state, BorderVecPtr exec_order);
+  void ReorderShardedParam(const BorderVecPtr &exec_order);
+  void ReorderFor1b1fOverlap(const std::vector<BorderPair> borders, const std::pair<size_t, size_t> &border_step4,
+                             const std::pair<size_t, size_t> &border_step5);
   std::vector<BorderPair> dw_border_;
   std::vector<PPInfo> need_detach_info_;
   BorderQueuePtr fwd_b_ph0_;
