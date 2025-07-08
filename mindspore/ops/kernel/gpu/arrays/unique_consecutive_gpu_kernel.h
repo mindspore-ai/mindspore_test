@@ -62,8 +62,8 @@ class UniqueConsecutiveGpuKernelMod : public NativeGpuKernelMod {
   void InitUniqueConsecutiveAttrs(const std::vector<KernelTensor *> &inputs);
 
  private:
-  void *stream_ptr_;
-  bool is_null_input_;
+  void *stream_ptr_ = nullptr;
+  bool is_null_input_{true};
   bool return_idx_{false};
   bool return_counts_{false};
   bool is_flattend_{false};

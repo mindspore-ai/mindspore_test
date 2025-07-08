@@ -45,7 +45,7 @@ class UniqueConsecutiveHelperBase : public GpuKernelHelperBase {
   bool return_idx_{false};
   bool return_counts_{false};
   bool is_flattend_{true};
-  int64_t axis_;
+  int64_t axis_{0};
 };
 
 template <typename T, typename S>
