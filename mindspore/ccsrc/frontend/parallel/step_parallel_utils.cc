@@ -1123,6 +1123,7 @@ AnfNodePtr GetChildCastNode(const AnfNodePtr &node_ptr, const NodeUsersMap &node
   }
   auto users = node_users_map.at(node_ptr);
   for (auto &node_user : users) {
+    MS_EXCEPTION_IF_NULL(node_user.first);
     cnode = node_user.first->cast<CNodePtr>();
     if (!cnode || !cnode->in_forward_flag()) {
       continue;
@@ -1962,7 +1963,9 @@ void UpdateUserGraphAndReplaceCall(const std::pair<AnfNodePtr, int> &fg_users, c
 bool HandleFuncConcatSlice(const FuncGraphManagerPtr &manager, const std::pair<AnfNodePtr, int> &pair,
                            const CNodePtr &concat_cnode, const ShapeVector &concat_output_shape_element,
                            int64_t concat_axis) {
+  MS_EXCEPTION_IF_NULL(pair.first);
   auto fg = pair.first->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
   auto fg_map = fg->func_graph_cnodes_index();
   if (fg_map.size() > 1) {
     return false;

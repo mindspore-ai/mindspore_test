@@ -154,6 +154,7 @@ CNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) 
   MS_EXCEPTION_IF_NULL(input_node);
   auto idx = NewValueNode(SizeToLong(output_index));
   MS_EXCEPTION_IF_NULL(idx);
+  MS_EXCEPTION_IF_NULL(input_node->func_graph());
   auto getitem = input_node->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleGetItem), input_node, idx});
   MS_EXCEPTION_IF_NULL(getitem);
   getitem->set_scope(input_node->scope());
@@ -305,6 +306,7 @@ int64_t GetUDMaskIndex(int index, int64_t pos, int64_t split_num) {
 
 void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shape, int64_t *fa_b, int64_t *fa_s1,
                    int64_t *fa_h1, int64_t *fa_s2, int64_t *fa_n1, int64_t *input_layout) {
+  MS_EXCEPTION_IF_NULL(fa_score_node);
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
   MS_EXCEPTION_IF_NULL(operator_info);
   auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
