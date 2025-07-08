@@ -132,7 +132,6 @@ std::vector<PrimitivePtr> GkUtils::GetValidOps(const std::vector<OpWithLevel> &o
 }
 
 std::vector<PrimitivePtr> GkUtils::FilterExcludedOps(const std::vector<PrimitivePtr> &ops) {
-#ifndef MSLITE_ENABLE_GRAPH_KERNEL
   if (Callback::Instance()->GetTargetFromContext() != kGPUDevice) {
     return ops;
   }
@@ -165,9 +164,6 @@ std::vector<PrimitivePtr> GkUtils::FilterExcludedOps(const std::vector<Primitive
     }
   }
   return dst_ops;
-#else
-  return ops;
-#endif
 }
 
 void GkUtils::CheckOpLevel(const AnfNodePtr &node, const std::vector<OpWithLevel> &ops_with_level,

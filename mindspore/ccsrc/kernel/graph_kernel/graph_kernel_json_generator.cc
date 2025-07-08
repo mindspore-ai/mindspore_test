@@ -29,14 +29,8 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
-#ifdef MSLITE_ENABLE_GRAPH_KERNEL
-#ifdef ENABLE_GPU
-#include <cuda.h>
-#endif
-#else
 #include "common/oplib/oplib.h"
 #include "runtime/hardware/device_context_manager.h"
-#endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::graphkernel {
@@ -773,9 +767,6 @@ OpInfoPtr GraphKernelJsonGenerator::ExtractOpInfo(const AnfNodePtr &anf_node) co
     OpInfoExtractor e;
     return e.Run(anf_node);
   } else {
-#ifdef MSLITE_ENABLE_GRAPH_KERNEL
-    MS_LOG(EXCEPTION) << "OpLib is not supported.";
-#else
     OpImplyType imply_type;
     const auto &flags = GraphKernelFlags::GetInstance();
 
@@ -785,7 +776,6 @@ OpInfoPtr GraphKernelJsonGenerator::ExtractOpInfo(const AnfNodePtr &anf_node) co
       imply_type = OpImplyType::kImplyAKG;
     }
     return kernel::OpLib::FindOp(AnfUtils::GetCNodeName(anf_node), imply_type);
-#endif
   }
 }
 
@@ -1385,45 +1375,6 @@ void GetCpuInfo(nlohmann::json *target_info) {
   return;
 }
 
-#ifdef MSLITE_ENABLE_GRAPH_KERNEL
-#ifdef ENABLE_GPU
-bool GetGpuInfo(nlohmann::json *target_info) {
-  int major_version = -1;
-  auto ret = cuDeviceGetAttribute(&major_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, 0);
-  if (ret != CUDA_SUCCESS) {
-    const char *msg = nullptr;
-    cuGetErrorName(ret, &msg);
-    MS_LOG(WARNING) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR fail, error message: " << msg;
-    return false;
-  }
-  int minor_version = -1;
-  auto ret = cuDeviceGetAttribute(&minor_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, 0);
-  if (ret != CUDA_SUCCESS) {
-    const char *msg = nullptr;
-    cuGetErrorName(ret, &msg);
-    MS_LOG(WARNING) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR fail, error message: " << msg;
-    return false;
-  }
-  int sm_count = -1;
-  auto ret = cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
-  if (ret != CUDA_SUCCESS) {
-    const char *msg = nullptr;
-    cuGetErrorName(ret, &msg);
-    MS_LOG(WARNING) << "Get CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT fail, error message: " << msg;
-    return false;
-  }
-  if (major_version == -1 || minor_version == -1 || sm_count == -1) {
-    return false;
-  } else {
-    (*target_info)[kJsonKeyComputeCapability] = std::to_string(major_version) + "." + std::to_string(minor_version);
-    (*target_info)[kJsonKeySmCount] = sm_count;
-  }
-  return true;
-}
-#else
-bool GetGpuInfo(nlohmann::json *target_info) { return false; }
-#endif
-#else
 bool GetGpuInfo(nlohmann::json *target_info) {
   const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {kGPUDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
@@ -1441,7 +1392,6 @@ bool GetGpuInfo(nlohmann::json *target_info) {
   }
   return true;
 }
-#endif
 }  // namespace
 
 void TargetInfoSetter::GetTargetInfo() {

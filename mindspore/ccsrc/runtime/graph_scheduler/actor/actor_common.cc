@@ -27,7 +27,6 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/runtime_conf/runtime_conf.h"
-#ifndef BUILD_LITE
 #include "runtime/graph_scheduler/parameter_store.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
@@ -37,7 +36,6 @@
 #include "runtime/device/device_address_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/graph_scheduler/pipeline/runtime_pipeline.h"
-#endif
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
 namespace mindspore {
@@ -376,11 +374,9 @@ bool EnableRuntimePipeline() {
     return false;
   }
 
-#ifndef BUILD_LITE
   if (distributed::recovery::RecoveryContext::GetInstance()->enable_recovery()) {
     return false;
   }
-#endif
 
   return true;
 }
@@ -416,7 +412,6 @@ size_t GetDefragMemoryStepFreq() {
 
 bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std::string &name,
                                bool wait_kernel_launch_finish) {
-#ifndef BUILD_LITE
   uint64_t start_time = 0;
   PROFILER_START(start_time);
 
@@ -444,9 +439,6 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
     return false;
   }
   return true;
-#else
-  return true;
-#endif
 }
 
 bool Copy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor) {

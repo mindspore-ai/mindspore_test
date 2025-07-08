@@ -37,9 +37,7 @@
 #endif
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/config_manager.h"
-#if !defined(BUILD_LITE)
 #include "include/backend/distributed/collective/collective_manager.h"
-#endif
 
 namespace mindspore {
 #ifndef MINDIR_EXPORT_TENSOR_LAYOUT_CLIP
@@ -97,11 +95,7 @@ namespace {
 std::string GetCompileCacheDir() {
   static const std::string user_defined_path = Common::GetUserDefineCachePath();
 
-#if !defined(BUILD_LITE)
   bool is_distributed = distributed::collective::CollectiveManager::instance()->initialized();
-#else
-  bool is_distributed = !IsStandAlone();
-#endif
   static const uint32_t rank_id = is_distributed ? GetRank() : 0;
   static const std::string compile_cache_dir = user_defined_path + "rank_" + std::to_string(rank_id);
   return compile_cache_dir;

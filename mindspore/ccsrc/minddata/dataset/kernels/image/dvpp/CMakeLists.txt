@@ -48,6 +48,6 @@ set(DVPP_IMAGE_SOURCE
 endif()
 
 add_library(kernels-dvpp-image OBJECT ${DVPP_IMAGE_SOURCE})
-if(ENABLE_ACL OR MSLITE_ENABLE_ACL)
+if(ENABLE_ACL)
     add_subdirectory(utils)
 endif()

@@ -25,10 +25,8 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#ifndef BUILD_LITE
 #include "backend/ge_backend/runtime/actor/memory_manager_actor.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
-#endif
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {

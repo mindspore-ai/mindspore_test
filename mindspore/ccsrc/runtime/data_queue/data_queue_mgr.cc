@@ -250,7 +250,6 @@ DataQueueStatus DataQueueMgr::SetThreadDevice(const std::string &channel_name) c
   return DataQueueStatus::SUCCESS;
 }
 
-#ifndef BUILD_LITE
 void UpdateGetNextWithDataQueueItems(const AnfNodePtr &data_kernel, const std::vector<device::DataQueueItem> &data) {
   auto kernel_info = dynamic_cast<device::KernelInfo *>(data_kernel->kernel_info());
   std::vector<std::shared_ptr<device::DeviceAddress>> device_tensors;
@@ -334,6 +333,5 @@ void UpdateGetNextNode(const PrimitivePtr &primitive, const std::vector<kernel::
   UpdateGetNextWithDataQueueItems(inputs, outputs, data, output_size_list);
 }
 
-#endif
 }  // namespace device
 }  // namespace mindspore

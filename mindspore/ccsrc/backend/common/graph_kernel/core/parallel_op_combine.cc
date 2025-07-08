@@ -229,44 +229,7 @@ bool ParallelOpCombiner::AutoUpdateInfo(const CNodePtr &to_update) {
                   << to_update->size();
     return false;
   }
-#ifndef MSLITE_ENABLE_GRAPH_KERNEL
   Callback::Instance()->ResetKernelInfo(to_update);
-#else
-  auto rep_input = to_update->input(1);
-  // NOTE: We assume the inputs' formats and types are consistent with outputs'.
-  std::string input_format = Callback::Instance()->GetTargetFromContext() == kAscendDevice ? "" : kOpFormat_NCHW;
-  auto GetPrevOutFormat = [&input_format](const CNodePtr &cnode) -> bool {
-    if (cnode == nullptr || !cnode->HasAttr(kOutputsFormat)) {
-      return false;
-    }
-    auto prev_of = GetValue<std::vector<std::string> >(cnode->GetAttr(kOutputsFormat));
-    if (prev_of.size() > 0) {
-      input_format = prev_of[0];
-      return true;
-    }
-    return false;
-  };
-  if (AnfUtils::IsRealKernel(rep_input)) {
-    (void)GetPrevOutFormat(rep_input->cast<CNodePtr>());
-  }
-  if (input_format.empty()) {
-    auto it = children_map_.find(rep_input);
-    if (it != children_map_.end()) {
-      for (auto orig_user : it->second) {
-        if (GetPrevOutFormat(orig_user->cast<CNodePtr>())) {
-          break;
-        }
-      }
-    }
-  }
-  if (input_format.empty()) {
-    MS_LOG(WARNING) << "Cannot find prev node's input format, use " << layout_
-                    << " by default and that may cause error.";
-    input_format = layout_;
-  }
-  std::vector<std::string> outputs_formats(AnfUtils::GetOutputTensorNum(to_update), input_format);
-  to_update->AddAttr(kOutputsFormat, MakeValue(outputs_formats));
-#endif
   return true;
 }
 

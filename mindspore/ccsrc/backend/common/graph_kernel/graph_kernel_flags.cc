@@ -230,17 +230,6 @@ void GraphKernelFlags::SaveJitConfig(const std::map<std::string, std::string> &j
 }
 
 std::pair<std::string, bool> GraphKernelFlags::GetGraphKernelConfig() {
-#ifdef MSLITE_ENABLE_GRAPH_KERNEL
-  std::string flags = common::GetEnv("MS_DEV_GRAPH_KERNEL_FLAGS");
-  if (flags != "") {
-    return std::make_pair(flags, false);
-  }
-  const auto &jit_config = GetJitConfig();
-  if (jit_config.find("graph_kernel_flags") != jit_config.end()) {
-    flags = jit_config.at("graph_kernel_flags");
-  }
-  return std::make_pair(flags, false);
-#else
   const auto &jit_config = GetJitConfig();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -270,11 +259,9 @@ std::pair<std::string, bool> GraphKernelFlags::GetGraphKernelConfig() {
     flags = iter->second;
   }
   return std::make_pair(flags, enable_gk);
-#endif
 }
 
 void GraphKernelFlags::CheckSupport() const {
-#ifndef MSLITE_ENABLE_GRAPH_KERNEL
   if (IsEnableGraphKernel()) {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
@@ -312,7 +299,6 @@ void GraphKernelFlags::CheckSupport() const {
 #endif
     }
   }
-#endif
 }
 
 void GraphKernelFlags::Refresh() {
@@ -327,11 +313,9 @@ void GraphKernelFlags::Refresh() {
          "valid flags, please refer to the source code file graph_kernel_flags.h at "
          "https://gitee.com/mindspore/mindspore.";
   }
-#ifndef MSLITE_ENABLE_GRAPH_KERNEL
   if (IsEnableGraphKernel()) {
     CheckSupport();
   }
-#endif
   // If enable graphkernel, Dump flags so that people can check the setting.
   if (IsEnableGraphKernel()) {
     MS_LOG(INFO) << "graph_kernel_flags = \"" << flags_cache_ << "\", all flags: " << DumpAllFlags();
@@ -432,9 +416,7 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   }
 
   if (is_ascend && !has_kernel_generator) {
-#ifndef MSLITE_ENABLE_GRAPH_KERNEL
     kernel_generator = "DVM";
-#endif
   }
   if (kernel_generator == "DVM" && !has_enable_dynamic_shape_fusion) {
     enable_dynamic_shape_fusion = true;

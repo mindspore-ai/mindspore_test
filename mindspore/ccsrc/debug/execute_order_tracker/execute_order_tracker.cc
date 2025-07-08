@@ -237,18 +237,12 @@ std::vector<uint32_t> ExecuteOrderTracker::GetCommRanks(const std::string &group
   if (group_name == "hccl_world_group") {
     uint32_t rank_size = 1;
 
-#if !defined(BUILD_LITE)
     rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
-#endif
 
     comm_ranks.resize(rank_size);
     std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
   } else {
-#if !defined(BUILD_LITE)
     comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
-#else
-    comm_ranks = {0};
-#endif
   }
 
   comm_ranks_cache_[group_name] = comm_ranks;

@@ -16,12 +16,7 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_LOG_ADAPTER_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_LOG_ADAPTER_H_
 
-#if defined(ENABLE_MINDDATA_PYTHON)
 #include "utils/log_adapter.h"
 #define DATASET_SRC_FILE_NAME FILE_NAME
-#else
-#include "mindspore/lite/src/common/log_adapter.h"
-#define DATASET_SRC_FILE_NAME LITE_FILE_NAME
-#endif
 
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_LOG_ADAPTER_H_

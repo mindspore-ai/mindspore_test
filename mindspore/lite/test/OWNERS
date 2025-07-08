@@ -1,9 +1,0 @@
-approvers:
-- jpc_chenjianping
-- fatmouse007fatmouse007 # zhuguodong
-- YeFeng_24 #
-reviewers:
-- chengfeng27
-
-options:
-    no_parent_owners: false

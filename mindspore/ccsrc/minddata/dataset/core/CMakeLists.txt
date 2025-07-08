@@ -33,12 +33,10 @@ if(ENABLE_D)
         )
 endif()
 
-if(NOT MSLITE_ENABLE_ACL)
-    set(DATASET_CORE_SRC_FILES
-        ${DATASET_CORE_SRC_FILES}
-        types.cc # in lite, src code has types.cc impl
-        )
-endif()
+set(DATASET_CORE_SRC_FILES
+    ${DATASET_CORE_SRC_FILES}
+    types.cc # in lite, src code has types.cc impl
+    )
 
 ms_protobuf_generate(EXAMPLE_SRCS EXAMPLE_HDRS example.proto)
 ms_protobuf_generate(FEATURE_SRCS FEATURE_HDRS feature.proto)

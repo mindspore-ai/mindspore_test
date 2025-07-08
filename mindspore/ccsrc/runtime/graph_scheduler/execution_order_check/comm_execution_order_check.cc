@@ -79,9 +79,7 @@ uint32_t Process::GetRankSize() {
   static uint32_t rank_size = 1;
   static bool is_initialized = false;
   if (!is_initialized) {
-#if !defined(BUILD_LITE)
     rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
-#endif
     is_initialized = true;
   }
 
@@ -92,11 +90,9 @@ std::string Process::GetRankID() {
   static uint32_t rank_id = 0;
   static bool is_initialized = false;
   if (!is_initialized) {
-#if !defined(BUILD_LITE)
     if (distributed::collective::CollectiveManager::instance()->initialized()) {
       rank_id = CommManager::GetInstance().GetRank();
     }
-#endif
     is_initialized = true;
   }
 
@@ -462,11 +458,7 @@ void Process::FetchCommRanksCache(const std::string &group_name) {
     comm_ranks.resize(GetRankSize());
     std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
   } else {
-#if !defined(BUILD_LITE)
     comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
-#else
-    comm_ranks = {0};
-#endif
   }
   comm_rank_cache_[group_name] = comm_ranks;
 }

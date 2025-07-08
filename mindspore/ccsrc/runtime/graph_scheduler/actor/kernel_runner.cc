@@ -126,17 +126,11 @@ void AddNodeToGraphTracker(const CNodePtr cnode, const std::string &actor_name) 
     std::vector<uint32_t> comm_ranks;
     if (group_name == "hccl_world_group") {
       uint32_t rank_size = 1;
-#if !defined(BUILD_LITE)
       rank_size = distributed::collective::CollectiveManager::instance()->global_rank_size();
-#endif
       comm_ranks.resize(rank_size);
       std::iota(comm_ranks.begin(), comm_ranks.end(), 0);
     } else {
-#if !defined(BUILD_LITE)
       comm_ranks = distributed::collective::CollectiveManager::instance()->GetGroupRanks(group_name);
-#else
-      comm_ranks = {0};
-#endif
     }
     std::string comm_ranks_str = std::accumulate(
       comm_ranks.begin(), comm_ranks.end(), std::string(),
