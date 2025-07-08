@@ -50,10 +50,11 @@ std::set<std::string> check_invalid_dout_bprop_graph;
 
 namespace {
 using BaseRefPtr = std::shared_ptr<std::function<BaseRef(const VectorRef &)>>;
-static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {
-  prim::kPrimStopGradient, prim::kPrimUpdateState,      prim::kPrimMirror,
-  prim::kPrimVirtualDiv,   prim::kPrimMutable,          prim::kPrimInsertGradientOf,
-  prim::kPrimHookBackward, prim::kPrimCellBackwardHook, prim::kPrimPrintShapeType};
+static const std::vector<PrimitivePtr> UNREUSED_PRIM_LIST = {prim::kPrimStopGradient,   prim::kPrimUpdateState,
+                                                             prim::kPrimMirror,         prim::kPrimVirtualDiv,
+                                                             prim::kPrimMutable,        prim::kPrimInsertGradientOf,
+                                                             prim::kPrimHookBackward,   prim::kPrimCellBackwardHook,
+                                                             prim::kPrimPrintShapeType, prim::kPrimLoad};
 
 // Optimizes the forward function graph.
 FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool need_renormalize = false) {

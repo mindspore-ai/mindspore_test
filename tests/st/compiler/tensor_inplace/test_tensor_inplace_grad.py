@@ -411,3 +411,27 @@ def test_inplace_backward_param_replace2():
     net = Net()
     grads = func(x, y, net)
     assert grads == 2
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+def test_inplace_backward():
+    """
+    Feature: Support inplace grad in grad_jit
+    Description: Support inplace grad in grad_jit
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, value):
+            y = ops.abs(x)
+            z = y * value
+            y.mul_(value)
+            return z
+
+    net = Net()
+    ms.set_context(mode=1)
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = ms.grad(net, grad_position=(0, 1))(Tensor([[1, 2], [3, 4]], dtype=ms.float32),
+                                                 Tensor(2, dtype=ms.float32))
+    assert (out_jit[0].asnumpy() == np.array([[2, 2], [2, 2]])).all()
+    assert out_jit[1] == 10
