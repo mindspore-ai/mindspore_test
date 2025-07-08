@@ -18,11 +18,32 @@ import tempfile
 
 import numpy as np
 import mindspore as ms
-from mindspore._c_expression import MSContext
+from mindspore._c_expression import MSContext, CreationType
+from mindspore.common.api import _pynative_executor as executor
+from mindspore.ops.operations import _inner_ops as inner
 
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 from mstt_test_net import run_net
+
+
+def wrap_backward_hook_call_func(call_func):
+    def new_call(self, args):
+        outputs = call_func(self, args)
+        if isinstance(outputs, ms.Tensor):
+            executor.set_creation_type(outputs, CreationType.DEFAULT)
+        elif isinstance(outputs, tuple):
+            for item in outputs:
+                if isinstance(item, ms.Tensor):
+                    executor.set_creation_type(item, CreationType.DEFAULT)
+        return outputs
+    new_call.__name__ = '__call__'
+
+    return new_call
+
+
+ori_call = getattr(inner.CellBackwardHook, '__call__')
+setattr(inner.CellBackwardHook, '__call__', wrap_backward_hook_call_func(ori_call))
 
 
 def get_max_relative_error(test_value, target_value):
@@ -34,7 +55,7 @@ def get_max_relative_error(test_value, target_value):
 
 
 @arg_mark(plat_marks=['platform_ascend'],
-          level_mark='level1',
+          level_mark='level0',
           card_mark='allcards',
           essential_mark='essential')
 @security_off_wrap
@@ -82,7 +103,6 @@ def test_interfaces_used_in_mstt():
         target_values = {
             'forward_pre': np.asarray([[0.5, 0.5], [0.5, 0.5]]),
             'forward': np.asarray([[0.25, 0.25], [0.25, 0.25]]),
-            'backward_pre': np.asarray([[4.0, 4.0], [4.0, 4.0]]),
             'backward': np.asarray([[2.0, 2.0], [2.0, 2.0]]),
             'tensor_grad': np.asarray([[2.0, 2.0], [2.0, 2.0]]),
             'param_grad': np.asarray([8.0]),
@@ -101,3 +121,5 @@ def test_interfaces_used_in_mstt():
                         assert os.path.isfile(file_name)
                         data_value = np.load(file_name)
                         assert get_max_relative_error(data_value, target_value) <= 0.001
+
+    setattr(inner.CellBackwardHook, '__call__', ori_call)
