@@ -172,18 +172,18 @@ class AclAdapter {
 
   Status DvppSysExit();
 
-  Status DvppVdecCreateChnl(int64_t pType, int64_t *chnl);
+  Status DvppVdecCreateChnl(int64_t payload_type, int64_t *chnl);
 
-  Status DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame);
+  Status DvppVdecStartGetFrame(int64_t chn_id, int64_t total_frame);
 
-  Status DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
-                            std::shared_ptr<DeviceBuffer> *out);
+  Status DvppVdecSendStream(int64_t chn_id, const std::shared_ptr<DeviceBuffer> &input, int64_t out_format,
+                            bool display, std::shared_ptr<DeviceBuffer> *out);
 
-  Status DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output);
+  Status DvppVdecStopGetFrame(int64_t chn_id, int64_t total_frame, std::shared_ptr<DeviceBuffer> *output);
 
-  Status DvppVdecDestroyChnl(int64_t chnId);
+  Status DvppVdecDestroyChnl(int64_t chn_id);
 
-  Status DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
+  Status DvppMemcpy(void *dst, size_t dest_max, const void *src, size_t count, int kind);
 
   // acl
   APP_ERROR GetSocName(std::string *soc_name);

@@ -27,6 +27,7 @@
 
 namespace mindspore::dataset {
 Status StreamContainer::AddStream(std::shared_ptr<Stream> stream) {
+  RETURN_UNEXPECTED_IF_NULL(stream);
   CHECK_FAIL_RETURN_UNEXPECTED(stream->GetAVStream()->index == streams_.size(), "Not all the streams have been added.");
 
   switch (stream->GetAVStream()->codecpar->codec_type) {
@@ -68,12 +69,12 @@ Status Container::Init() {
   format_context_->opaque = reinterpret_cast<void *>(this);
 
   CHECK_FAIL_RETURN_UNEXPECTED(avformat_open_input(&format_context_, name_.c_str(), nullptr, nullptr) == 0,
-                               "Failed to open the file " + name_ + ".");
+                               "Failed to open the file: " + name_);
   input_was_opened_ = true;
 
   if (avformat_find_stream_info(format_context_, nullptr) < 0) {
     avformat_close_input(&format_context_);
-    RETURN_STATUS_UNEXPECTED("Failed to find stream info");
+    RETURN_STATUS_UNEXPECTED("Failed to find stream info.");
   }
 
   for (unsigned int i = 0; i < format_context_->nb_streams; ++i) {
@@ -83,7 +84,7 @@ Status Container::Init() {
     if (codec != nullptr) {
       AVCodecContext *codec_context = avcodec_alloc_context3(codec);
       CHECK_FAIL_RETURN_UNEXPECTED(avcodec_parameters_to_context(codec_context, stream->codecpar) >= 0,
-                                   "avcodec_parameters_to_context failed.");
+                                   "Failed to call avcodec_parameters_to_context.");
       codec_context->pkt_timebase = stream->time_base;
       RETURN_IF_NOT_OK(WrapCodecContext(codec_context, codec, &py_codec_context));
     } else {
@@ -122,7 +123,7 @@ Status Container::Demux(const std::shared_ptr<Stream> &stream, std::vector<std::
       if (ret == AVERROR_EOF) {
         break;
       } else {
-        RETURN_STATUS_UNEXPECTED("av_read_frame failed, ret: " + std::to_string(ret));
+        RETURN_STATUS_UNEXPECTED("Failed to call av_read_frame, ret: " + std::to_string(ret));
       }
     }
     if (include_stream[packet->packet_->stream_index]) {
@@ -177,7 +178,7 @@ Status Container::Seek(int64_t offset, bool backward, bool any_frame, const std:
     stream_index = stream->GetIndex();
   }
   CHECK_FAIL_RETURN_UNEXPECTED(av_seek_frame(format_context_, stream_index, offset, static_cast<int>(flags)) >= 0,
-                               "av_seek_frame failed.");
+                               "Failed to call av_seek_frame.");
 
   RETURN_IF_NOT_OK(FlushBuffers());
   return Status::OK();

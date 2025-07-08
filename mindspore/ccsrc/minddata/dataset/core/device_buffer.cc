@@ -92,7 +92,7 @@ DeviceBuffer::DeviceBuffer(const std::shared_ptr<DeviceBuffer> &other, ptrdiff_t
 }
 
 DeviceBuffer::~DeviceBuffer() {
-  if (own_data_ && ptr_ != nullptr && device_context_ != nullptr) {
+  if (own_data_ && ptr_ != nullptr && device_context_ != nullptr && device_context_->device_res_manager_ != nullptr) {
     device_context_->device_res_manager_->FreeMemory(ptr_);
     ptr_ = nullptr;
   }

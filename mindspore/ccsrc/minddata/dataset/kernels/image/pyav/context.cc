@@ -64,7 +64,7 @@ Status CodecContext::Open(bool strict) {
     CHECK_FAIL_RETURN_UNEXPECTED(!strict, "CodecContext is already open.");
     return Status::OK();
   }
-  CHECK_FAIL_RETURN_UNEXPECTED(avcodec_open2(codec_context_, codec_, nullptr) == 0, "avcodec_open2 failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(avcodec_open2(codec_context_, codec_, nullptr) == 0, "Failed to call avcodec_open2.");
   is_open_ = true;
   return Status::OK();
 }
@@ -73,7 +73,7 @@ Status CodecContext::SendPacketAndRecv(const std::shared_ptr<Packet> &packet,
                                        std::vector<std::shared_ptr<Frame>> *frames) {
   RETURN_UNEXPECTED_IF_NULL(frames);
   CHECK_FAIL_RETURN_UNEXPECTED(avcodec_send_packet(codec_context_, packet->GetAVPacket()) == 0,
-                               "avcodec_send_packet failed.");
+                               "Failed to call avcodec_send_packet.");
 
   while (true) {
     std::shared_ptr<Frame> frame;
@@ -97,7 +97,7 @@ Status CodecContext::RecvFrame(std::shared_ptr<Frame> *frame) {
   if (res == AVERROR(EAGAIN) || res == AVERROR_EOF) {
     return Status::OK();
   }
-  CHECK_FAIL_RETURN_UNEXPECTED(res == 0, "avcodec_receive_frame failed.");
+  CHECK_FAIL_RETURN_UNEXPECTED(res == 0, "Failed to call avcodec_receive_frame.");
 
   *frame = next_frame_;
   next_frame_ = nullptr;

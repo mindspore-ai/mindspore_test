@@ -523,8 +523,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         if hasattr(self, 'eof') and self.eof is not None:
             self.eof.set()
             # send QUIT flag to workers, and the worker's while loop could check the eof flag
-            for idx in len(self.workers):
-                self.workers[idx].put("QUIT")
+            for worker in self.workers:
+                worker.put("QUIT")
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)

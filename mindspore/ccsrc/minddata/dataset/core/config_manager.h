@@ -339,8 +339,12 @@ class ConfigManager {
   // @return - Indicate the multiprocessing start method
   std::string get_multiprocessing_start_method() { return start_method_; }
 
+  /// \brief Set the backend used to decode video.
+  /// \param[in] backend Type of the video backend.
   void set_video_backend(const std::string &backend) { video_backend_ = backend; }
 
+  /// \brief Get the currently active backend used to decode video.
+  /// \return Backend used to decode video.
   std::string get_video_backend() { return video_backend_; }
 
  private:

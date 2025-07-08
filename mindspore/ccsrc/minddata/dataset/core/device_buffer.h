@@ -40,14 +40,25 @@ class DeviceBuffer : public std::enable_shared_from_this<DeviceBuffer> {
 
   ~DeviceBuffer();
 
+  /// \brief Get the size of the DeviceBuffer in bytes.
+  /// \return The size of the DeviceBuffer in bytes.
   size_t GetBufferSize() const;
 
+  /// \brief Get the buffer pointer of the DeviceBuffer.
+  /// \return The buffer pointer of the DeviceBuffer.
   void *GetBuffer();
 
+  /// \brief Create a view of an existing DeviceBuffer.
+  /// \param[in] other The DeviceBuffer to view.
+  /// \param[in] offset The offset in the DeviceBuffer to start the view.
   DeviceBuffer(const std::shared_ptr<DeviceBuffer> &other, ptrdiff_t offset);
 
+  /// \brief Get the shape of the DeviceBuffer.
+  /// \return The shape of the DeviceBuffer.
   std::vector<size_t> GetShape();
 
+  /// \brief Get the strides of the DeviceBuffer.
+  /// \return The strides of the DeviceBuffer.
   std::vector<size_t> GetStrides();
 
  private:

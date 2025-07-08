@@ -34,13 +34,13 @@ enum class ChnStatus { CREATED, DESTROYED };
 
 int64_t dvpp_sys_init();
 int64_t dvpp_sys_exit();
-int64_t dvpp_vdec_create_chnl(int64_t pType);
-int64_t dvpp_vdec_start_get_frame(int64_t chnId, int64_t totalFrame);
-int64_t dvpp_vdec_send_stream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
-                              std::shared_ptr<DeviceBuffer> *out);
-std::shared_ptr<DeviceBuffer> dvpp_vdec_stop_get_frame(int64_t chnId, int64_t totalFrame);
-int64_t dvpp_vdec_destroy_chnl(int64_t chnId);
-int64_t dvpp_memcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest);
+int64_t dvpp_vdec_create_chnl(int64_t payload_type);
+int64_t dvpp_vdec_start_get_frame(int64_t chn_id, int64_t total_frame);
+int64_t dvpp_vdec_send_stream(int64_t chn_id, const std::shared_ptr<DeviceBuffer> &input, int64_t out_format,
+                              bool display, std::shared_ptr<DeviceBuffer> *out);
+std::shared_ptr<DeviceBuffer> dvpp_vdec_stop_get_frame(int64_t chn_id, int64_t total_frame);
+int64_t dvpp_vdec_destroy_chnl(int64_t chn_id);
+int64_t dvpp_memcpy(void *dst, size_t dest_max, const void *src, size_t count, int kind);
 
 class VideoDecoder {
  public:
@@ -70,11 +70,10 @@ class VideoDecoder {
                    hi_vdec_stream *stream, hi_s32 milli_sec);
   hi_s32 release_frame(hi_vdec_chn chn, const hi_video_frame_info *frame_info);
 
-  device::DeviceContext *device_context_;
-
  private:
-  std::mutex channelMutex_[VDEC_MAX_CHNL_NUM];
-  ChnStatus channelStatus_[VDEC_MAX_CHNL_NUM];
+  std::mutex channel_mutex_[VDEC_MAX_CHNL_NUM];
+  ChnStatus channel_status_[VDEC_MAX_CHNL_NUM];
+  device::DeviceContext *device_context_;
 };
 }  // namespace dataset
 }  // namespace mindspore

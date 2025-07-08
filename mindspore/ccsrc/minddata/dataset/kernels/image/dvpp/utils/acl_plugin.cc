@@ -632,25 +632,27 @@ int64_t PluginDvppSysInit() { return mindspore::dataset::dvpp_sys_init(); }
 
 int64_t PluginDvppSysExit() { return mindspore::dataset::dvpp_sys_exit(); }
 
-int64_t PluginDvppVdecCreateChnl(int64_t pType) { return mindspore::dataset::dvpp_vdec_create_chnl(pType); }
-
-int64_t PluginDvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame) {
-  return mindspore::dataset::dvpp_vdec_start_get_frame(chnId, totalFrame);
+int64_t PluginDvppVdecCreateChnl(int64_t payload_type) {
+  return mindspore::dataset::dvpp_vdec_create_chnl(payload_type);
 }
 
-int64_t PluginDvppVdecSendStream(int64_t chnId, const std::shared_ptr<mindspore::dataset::Tensor> &input,
-                                 int64_t outFormat, bool display,
+int64_t PluginDvppVdecStartGetFrame(int64_t chn_id, int64_t total_frame) {
+  return mindspore::dataset::dvpp_vdec_start_get_frame(chn_id, total_frame);
+}
+
+int64_t PluginDvppVdecSendStream(int64_t chn_id, const std::shared_ptr<mindspore::dataset::DeviceBuffer> &input,
+                                 int64_t out_format, bool display,
                                  std::shared_ptr<mindspore::dataset::DeviceBuffer> *out) {
-  return mindspore::dataset::dvpp_vdec_send_stream(chnId, input, outFormat, display, out);
+  return mindspore::dataset::dvpp_vdec_send_stream(chn_id, input, out_format, display, out);
 }
 
-std::shared_ptr<mindspore::dataset::DeviceBuffer> PluginDvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame) {
-  return mindspore::dataset::dvpp_vdec_stop_get_frame(chnId, totalFrame);
+std::shared_ptr<mindspore::dataset::DeviceBuffer> PluginDvppVdecStopGetFrame(int64_t chn_id, int64_t total_frame) {
+  return mindspore::dataset::dvpp_vdec_stop_get_frame(chn_id, total_frame);
 }
 
-int64_t PluginDvppVdecDestroyChnl(int64_t chnId) { return mindspore::dataset::dvpp_vdec_destroy_chnl(chnId); }
+int64_t PluginDvppVdecDestroyChnl(int64_t chn_id) { return mindspore::dataset::dvpp_vdec_destroy_chnl(chn_id); }
 
-int64_t PluginDvppMemcpy(const std::shared_ptr<mindspore::dataset::DeviceBuffer> &src, void *dest) {
-  return mindspore::dataset::dvpp_memcpy(src, dest);
+int64_t PluginDvppMemcpy(void *dst, size_t dest_max, const void *src, size_t count, int kind) {
+  return mindspore::dataset::dvpp_memcpy(dst, dest_max, src, count, kind);
 }
 #endif
