@@ -177,6 +177,7 @@ JIT
     mindspore.ms_memory_recycle
     mindspore.mutable
     mindspore.constexpr
+    mindspore.enable_dynamic
     mindspore.lazy_inline
     mindspore.no_inline
     mindspore.set_recursion_limit

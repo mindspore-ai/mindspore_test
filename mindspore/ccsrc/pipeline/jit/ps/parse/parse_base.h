@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,7 @@ const char PYTHON_MOD_CHECK_ATTRS[] = "check_attrs";
 const char PYTHON_MOD_CHECK_IS_SUBCLASS[] = "check_is_subclass";
 const char PYTHON_MOD_GET_METHOD_INFO[] = "get_method_info";
 const char PYTHON_MOD_CAN_CONSTANT_FOLD[] = "can_constant_fold";
+const char PYTHON_MOD_HOOK_WRAPPER[] = "hook_wrapper";
 
 const char PYTHON_PARSE_GET_ARGS[] = "get_args";
 const char PYTHON_PARSE_GET_ARGS_DEFAULT_VALUES[] = "get_args_default_values";
@@ -197,6 +198,22 @@ const char SEGMENT_NAME[] = "_pipeline_segment";
 
 // Define python cell attributes and methods
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
+const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
+
+const char CELL_FORWARD_PRE_HOOK[] = "_forward_pre_hook";
+const char CELL_JIT_FORWARD_PRE_HOOK[] = "_jit_forward_pre_hook";
+
+const char CELL_FORWARD_HOOK[] = "_forward_hook";
+const char CELL_JIT_FORWARD_HOOK[] = "_jit_forward_hook";
+
+const char CELL_BACKWARD_PRE_HOOK[] = "_backward_pre_hook";
+const char CELL_JIT_BACKWARD_PRE_HOOK[] = "_jit_backward_pre_hook";
+
+const char CELL_BACKWARD_HOOK[] = "_backward_hook";
+const char CELL_JIT_BACKWARD_HOOK[] = "_jit_backward_hook";
+
+// Define ref tensor user data keys.
+const char REF_TENSOR_BACKWARD_HOOK[] = "backward_hook";
 
 // Define the Namespace name.
 const char RESOLVE_NAMESPACE_NAME_AST[] = "Ast";                   // For ast type namespace.

@@ -369,6 +369,8 @@ class JEvaluator final : public Evaluator {
   std::string ToString() const override { return identifier_ + "_" + evaluator_->ToString(); }
 
  private:
+  void AddHooksForPrimalFunc(const AbstractBasePtrList &args_abs_list);
+
   EvaluatorPtr evaluator_;
   AbstractFunctionPtr primal_func_;
 };

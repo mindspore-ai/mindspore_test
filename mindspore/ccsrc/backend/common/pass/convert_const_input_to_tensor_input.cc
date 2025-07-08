@@ -24,6 +24,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
@@ -108,7 +109,9 @@ const AnfNodePtr ConvertConstInputToTensorInput::Process(const FuncGraphPtr &fun
   if (node == nullptr || func_graph == nullptr || common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimTupleGetItem) ||
       common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimMakeTuple) ||
       common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimDepend) ||
-      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute)) {
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute) ||
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimJoinedStr) ||
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimRaise)) {
     return nullptr;
   }
   if (!node->isa<CNode>()) {

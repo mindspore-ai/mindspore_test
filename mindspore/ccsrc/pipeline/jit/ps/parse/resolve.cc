@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@
 #include "frontend/optimizer/irpass/symbol_resolver.h"
 #include "include/common/fallback.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "include/common/utils/hook.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/utils/tensor_py_wrapper.h"
@@ -53,6 +54,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
+#include "mindspore/ccsrc/include/common/pynative/variable.h"
 
 namespace mindspore {
 namespace parse {
@@ -628,6 +630,143 @@ py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symb
   return res;
 }
 
+bool IsCellHookExist(const py::object &obj, const std::string &hook_dict_name) {
+  const auto &hook_obj = py::getattr(obj, hook_dict_name.c_str(), py::none());
+  if (!py::isinstance<py::dict>(hook_obj)) {
+    return false;
+  }
+
+  const auto &dict = py::cast<py::dict>(hook_obj);
+  return (dict.size() != 0);
+}
+
+bool IsCellHookExistAny(const py::object &obj, const std::vector<std::string> &hook_dict_names) {
+  return std::any_of(hook_dict_names.begin(), hook_dict_names.end(),
+                     [&obj](const auto &name) { return IsCellHookExist(obj, name); });
+}
+
+FuncGraphPtr ResolveCellHook(const py::object &obj, const std::string &hook_dict_name,
+                             const std::string &hook_func_name) {
+  if (!IsCellHookExist(obj, hook_dict_name)) {
+    return nullptr;
+  }
+
+  const auto &value = py::getattr(obj, hook_func_name.c_str());
+  auto hook_func = parse::ParsePythonCode(value);
+  MS_EXCEPTION_IF_NULL(hook_func);
+  return hook_func;
+}
+
+namespace {
+FuncGraphPtr MakeDummyForwardPreHook() {
+  auto forward_pre_hook = std::make_shared<FuncGraph>();
+  std::ostringstream ss;
+  ss << "dummy_jit_forward_pre_hook_";
+  if (forward_pre_hook->debug_info() != nullptr) {
+    forward_pre_hook->debug_info()->set_name(ss.str());
+  }
+  auto input = forward_pre_hook->add_parameter();
+  forward_pre_hook->set_output(input);
+  return forward_pre_hook;
+}
+
+AnfNodePtr ApplyForwardPreHook(const FuncGraphPtr &func_graph, const py::object &obj,
+                               const FuncGraphManagerPtr &manager, const AnfNodePtr &tupled_input) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+
+  FuncGraphPtr hook_func = ResolveCellHook(obj, CELL_FORWARD_PRE_HOOK, CELL_JIT_FORWARD_PRE_HOOK);
+  if (hook_func == nullptr) {
+    if (!IsCellHookExist(obj, CELL_BACKWARD_HOOK)) {
+      return tupled_input;
+    } else {
+      hook_func = MakeDummyForwardPreHook();
+    }
+  }
+
+  hook_func->set_manager(manager);
+  hook_func->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+  hook_func->set_flag(FUNC_GRAPH_FLAG_FORWARD_PRE_HOOK, true);
+
+  auto pre_hooked_input = func_graph->NewCNodeInOrder({NewValueNode(hook_func), tupled_input});
+  func_graph->AddNode(pre_hooked_input);
+
+  for (size_t i = 0; i < func_graph->parameters().size(); ++i) {
+    auto users_sub = manager->node_users()[func_graph->parameters()[i]];
+    auto getitem_cnode = func_graph->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimTupleGetItem), pre_hooked_input, NewValueNode(SizeToLong(i))});
+    func_graph->AddNode(getitem_cnode);
+    for (const auto &user_sub : users_sub) {
+      auto user_subc = user_sub.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_subc);
+      user_subc->set_input(user_sub.second, getitem_cnode);
+    }
+  }
+
+  return pre_hooked_input;
+}
+
+void ApplyForwardHook(const FuncGraphPtr &func_graph, const py::object &obj, const FuncGraphManagerPtr &manager,
+                      const AnfNodePtr &hook_input_node) {
+  if (func_graph == nullptr) {
+    return;
+  }
+
+  auto hook_func = ResolveCellHook(obj, CELL_FORWARD_HOOK, CELL_JIT_FORWARD_HOOK);
+  if (hook_func == nullptr) {
+    return;
+  }
+
+  hook_func->set_manager(manager);
+
+  const auto &output = func_graph->output();
+  auto hook_cnode = func_graph->NewCNodeInOrder({NewValueNode(hook_func), hook_input_node, output});
+  func_graph->set_output(hook_cnode);
+}
+
+void MarkDeferInlineForHookedCell(const FuncGraphPtr &func_graph, const py::object &obj) {
+  auto mark_when_hook_is = [&func_graph, &obj](const char *hook_type) -> void {
+    MS_EXCEPTION_IF_NULL(hook_type);
+
+    if (!py::hasattr(obj, hook_type)) {
+      return;
+    }
+
+    const auto &dict = py::cast<py::dict>(py::getattr(obj, hook_type));
+    if (dict.size() == 0) {
+      return;
+    }
+
+    func_graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+  };
+
+  mark_when_hook_is(CELL_BACKWARD_PRE_HOOK);
+  mark_when_hook_is(CELL_BACKWARD_HOOK);
+}
+
+void ApplyCellHooks(const AnfNodePtr &resolved_node, const py::object &obj, const FuncGraphManagerPtr &manager) {
+  if (!IsCellHookExistAny(obj,
+                          {CELL_FORWARD_PRE_HOOK, CELL_FORWARD_HOOK, CELL_BACKWARD_PRE_HOOK, CELL_BACKWARD_HOOK})) {
+    return;
+  }
+  auto resolved_graph = GetValueNode<FuncGraphPtr>(resolved_node);
+  if (resolved_graph == nullptr) {
+    return;
+  }
+
+  std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < resolved_graph->parameters().size(); ++i) {
+    (void)inputs.emplace_back(resolved_graph->parameters()[i]);
+  }
+  auto tupled_input = resolved_graph->NewCNodeInOrder(inputs);
+  resolved_graph->AddNode(tupled_input);
+
+  auto pre_hooked_input = ApplyForwardPreHook(resolved_graph, obj, manager, tupled_input);
+  ApplyForwardHook(resolved_graph, obj, manager, pre_hooked_input);
+
+  MarkDeferInlineForHookedCell(resolved_graph, obj);
+}
+}  // namespace
+
 AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space,
                                    const SymbolPtr &symbol, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -685,6 +824,12 @@ AnfNodePtr Resolver::ResolveSymbol(const FuncGraphManagerPtr &manager, const Nam
       MS_LOG(DEBUG) << "Update top graph's parameters debug info with user top graph's parameters";
     }
   }
+
+  const auto compile_cell_hook = "__compile_cell_hook__";
+  if (name_space->module() != RESOLVE_NAMESPACE_NAME_ENTRY || py::hasattr(obj, compile_cell_hook)) {
+    ApplyCellHooks(resolved_node, obj, manager);
+  }
+
   return resolved_node;
 }
 
@@ -998,6 +1143,46 @@ bool ResolveAll(const FuncGraphManagerPtr &manager) {
     }
   }
   return true;
+}
+
+TensorHookMapPtr ResolveTensorHooks(const pipeline::ResourceBasePtr &resource, const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  const auto &grad_meta_data = tensor->auto_grad_meta_data();
+  if (grad_meta_data == nullptr) {
+    MS_LOG(DEBUG) << "The grad_meta_data of " << tensor->ToString() << " is nullptr.";
+    return nullptr;
+  }
+
+  const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
+  if (grad_node == nullptr) {
+    return nullptr;
+  }
+  const auto &backward_hooks = grad_node->py_tensor_pre_hooks();
+
+  TensorHookMapPtr hooks = std::make_shared<TensorHookMap>();
+  for (const auto &[id, hook] : backward_hooks) {
+    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+    py::object wrappered_hook = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_HOOK_WRAPPER, hook->hook_fn_);
+    auto func = parse::ParsePythonCode(wrappered_hook);
+    MS_EXCEPTION_IF_NULL(func);
+
+    // Hook may have side effects.
+    func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+    func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+
+    pipeline::ResourceBasePtr res = (resource != nullptr ? resource : std::make_shared<pipeline::Resource>());
+    (void)parse::ResolveFuncGraph(func, res, false);
+
+    func->set_reserved(true);
+    for (auto &fg : func->func_graphs_used_total()) {
+      MS_EXCEPTION_IF_NULL(fg);
+      fg->set_reserved(true);
+    }
+
+    hooks->emplace(id, func);
+  }
+
+  return hooks;
 }
 
 // If any mixed precision flag add a cast node after the parameter node.

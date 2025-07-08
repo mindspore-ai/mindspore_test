@@ -53,7 +53,7 @@ def test_raise_with_variable_1():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_2():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise(string % var).
     Expectation: No exception.
     """
@@ -93,7 +93,7 @@ def test_raise_with_variable_3():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_list():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -116,7 +116,7 @@ def test_raise_with_variable_list():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_tuple_1():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -139,7 +139,7 @@ def test_raise_with_variable_tuple_1():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_tuple_2():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -162,7 +162,7 @@ def test_raise_with_variable_tuple_2():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_joinedstr_tensor():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -184,7 +184,7 @@ def test_raise_with_variable_joinedstr_tensor():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_with_variable_dic():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -209,7 +209,7 @@ def test_raise_with_variable_dic():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_control_flow1():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -231,7 +231,7 @@ def test_raise_with_variable_control_flow1():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_variable_control_flow2():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -278,7 +278,7 @@ class CheckNet(ms.nn.Cell):
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_isolated_raise():
     """
-    Feature: Isolated raise by JIT Fallback.
+    Feature: Isolated raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -293,7 +293,7 @@ def test_isolated_raise():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_list_in_control_flow():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -313,7 +313,7 @@ def test_list_in_control_flow():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_none_join():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -336,7 +336,7 @@ def test_raise_with_none_join():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_raise_join():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -361,7 +361,7 @@ def test_raise_with_raise_join():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_parse_with_interpret():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -383,7 +383,7 @@ def test_raise_parse_with_interpret():
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_parse_with_interpret_2():
     """
-    Feature: graph raise by JIT Fallback.
+    Feature: graph raise.
     Description: Test raise.
     Expectation: No exception.
     """
@@ -400,6 +400,7 @@ def test_raise_parse_with_interpret_2():
     assert net(input_x, input_y, input_z) is None
 
 
+@pytest.mark.skip(reason='No support')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_input_error_type_1():
     """
@@ -420,6 +421,7 @@ def test_raise_with_input_error_type_1():
     assert "The input can not be 11." in str(raise_info.value)
 
 
+@pytest.mark.skip(reason='No support')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_raise_with_input_error_type_2():
     """

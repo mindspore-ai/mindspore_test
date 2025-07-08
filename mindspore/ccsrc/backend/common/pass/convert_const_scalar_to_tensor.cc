@@ -18,6 +18,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -64,7 +65,9 @@ AnfNodePtr ConvertTensorInput(const KernelGraphPtr &kernel_graph, const AnfNodeP
 const AnfNodePtr ConvertConstScalarToTensor::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                      const EquivPtr &) const {
   if (node == nullptr || func_graph == nullptr || common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimTupleGetItem) ||
-      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute)) {
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPyExecute) ||
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimJoinedStr) ||
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimRaise)) {
     return nullptr;
   }
   // input is scalar, and link to graph return

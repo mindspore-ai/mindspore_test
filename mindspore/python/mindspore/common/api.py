@@ -50,10 +50,11 @@ from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcas
     _is_parallel_mode
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
-from mindspore.common._utils import is_shape_unknown
+from mindspore.common._utils import is_shape_unknown, get_func
 from mindspore.common.mutable import mutable, _check_element_type
-from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
-    get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
+from mindspore.common.dynamic_shape.auto_dynamic_shape import get_auto_dynamic_shape_args, \
+    update_auto_dynamic_shape_phase
+from mindspore.common.dynamic_shape.enable_dynamic import generate_dynamic_tensor_args, ENABLE_DYNAMIC
 from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
 from mindspore.common.jit_context import jit_context
@@ -72,6 +73,56 @@ _PYNATIVE_PARALLEL_FUNC_NAME = "after_shard"
 
 ARG_SPECIFIED = "arg_specified_infos"
 TOTAL_ARG_LEN = "total_arg_length"
+
+
+def _cells_hook_hash(fn, obj):
+    """
+    Generate cells hook hash.
+    """
+    fn_set = set({})
+
+    def collect_cell_free_var(fn, cells_set):
+        if not fn or not hasattr(fn, "__closure__") or not fn.__closure__:
+            return
+        if fn in fn_set:
+            return
+
+        fn_set.add(fn)
+        for free_var in fn.__closure__:
+            obj = free_var.cell_contents
+            if isinstance(obj, (types.FunctionType, types.MethodType)):
+                collect_cell_free_var(obj, cells_set)
+            elif isinstance(obj, ms.nn.Cell):
+                cells_set.add(obj)
+
+    cells_set = set({})
+    if isinstance(obj, ms.nn.Cell):
+        cells_set.add(obj)
+    collect_cell_free_var(fn, cells_set)
+
+    def collect_cells(cell, cells):
+        if cell in cells:
+            return
+
+        cells.add(cell)
+        for sub_cell in cell.cells():
+            collect_cells(sub_cell, cells)
+
+    cells = set({})
+    for cell in cells_set:
+        collect_cells(cell, cells)
+
+    hash_value = 0
+    for cell in cells:
+        hash_value += cell.modify_hook
+    return hash_value
+
+
+def _real_phase(phase, obj):
+    real_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+    if hasattr(obj, "cells_hook_hash") and obj.cells_hook_hash:
+        real_phase += "." + str(obj.cells_hook_hash)
+    return real_phase
 
 
 def _check_recompile_args(compile_args, kwargs):
@@ -538,9 +589,11 @@ def _get_parameter_ids(args, kwargs):
             parameter_ids += str(id(value))
     return parameter_ids
 
+
 def _get_tensor_hook_key(tensor):
     """Get the hook key of Tensor/Parameter"""
     return ".".join(map(str, map(id, tensor.hooks())))
+
 
 def _get_hook_key(*args, **kwargs):
     """Get the hook key of Tensors/Parameters"""
@@ -588,6 +641,8 @@ class _JitExecutor:
 
         self.fn = fn
         self.input_signature = input_signature
+        self.dynamic_args_shapes = getattr(get_func(fn), ENABLE_DYNAMIC, None)
+        self.enable_jit_dynamic = self.dynamic_args_shapes is not None
         self.obj = None
         if obj and hasattr(obj, fn.__name__):
             self.obj = obj
@@ -684,18 +739,13 @@ class _JitExecutor:
 
     def compile(self, method_name, *args, **kwargs):
         """Returns pipeline for the given args."""
-        # Check whether hook function registered on Cell object.
-        if self.obj and hasattr(self.obj, "_hook_fn_registered"):
-            if self.obj._hook_fn_registered():
-                logger.warning(f"For 'Cell', it's not support hook function when using 'jit' decorator. "
-                               f"If you want to use hook function, please use context.set_context to set "
-                               f"pynative mode and remove 'jit' decorator.")
         # Chose dynamic shape tensors or actual input tensors as compile args.
         compile_args = self._generate_compile_args(args)
         key_id = self._get_key_id()
-        compile_args = get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id,
-                                                                              self.input_signature,
-                                                                              self._enable_auto_dynamic)
+        if self.input_signature is None:
+            compile_args = get_auto_dynamic_shape_args(
+                compile_args, key_id, self._enable_auto_dynamic, self.enable_jit_dynamic
+            )
 
         # Add mutable for compile_args for two scene:
         # 1) Origin args is mutable.
@@ -744,9 +794,14 @@ class _JitExecutor:
 
         phase = generate_name + '.' + str(key)
 
-        update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
+        if self.input_signature is None:
+            update_auto_dynamic_shape_phase(compile_args, key_id, phase)
 
         phase = phase + self._cell_cache_key_extend
+
+        cells_hook_hash = _cells_hook_hash(self.fn, self.obj)
+        if cells_hook_hash:
+            phase += "." + str(cells_hook_hash)
 
         if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
@@ -765,16 +820,9 @@ class _JitExecutor:
 
         if self.obj is None:
             # Set an attribute to fn as an identifier.
-            if isinstance(self.fn, types.MethodType):
-                setattr(self.fn.__func__, "__jit_function__", True)
-            else:
-                setattr(self.fn, "__jit_function__", True)
-            is_compile = self._graph_executor.compile(
-                self.fn, compile_args, kwargs, phase, jit_config_dict)
-            if isinstance(self.fn, types.MethodType):
-                delattr(self.fn.__func__, "__jit_function__")
-            else:
-                delattr(self.fn, "__jit_function__")
+            setattr(get_func(self.fn), "__jit_function__", True)
+            is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase, jit_config_dict)
+            delattr(get_func(self.fn), "__jit_function__")
         else:
             if isinstance(self.obj, ms.nn.Cell):
                 self._graph_executor.set_weights_values(self.obj.parameters_dict())
@@ -831,41 +879,70 @@ class _JitExecutor:
         if enable_compile_cache is True or enable_compile_cache == "1":
             self._graph_executor.set_compile_cache_dep_files(_get_compile_cache_dep_files())
 
+    def _generate_compile_args_by_enable_dynamic(self, args_list):
+        """Generate compile args by enable_dynamic."""
+        compile_args = generate_dynamic_tensor_args(args_list, self.dynamic_args_shapes)
+        compile_args = _add_mutable_attr(args_list, compile_args, _pynative_executor.requires_grad())
+        if self.obj is not None:
+            _pynative_executor.set_dynamic_input(self.obj, *compile_args)
+        else:
+            _pynative_executor.set_dynamic_input(self.fn, *compile_args)
+        logger.info(f"dynamic shape compile_args: {compile_args}")
+        return compile_args
+
+    def _generate_compile_args_by_set_inputs(self, args_list):
+        """Generate compile args by set_inputs."""
+        compile_args = _generate_dyn_compile_args(args_list, self.obj.get_inputs())
+        if len(compile_args) != len(args_list):
+            raise ValueError(f"The number of actual input tensors: {len(args_list)} is not equal to the number of "
+                             f"dynamic shape tensors: {len(compile_args)}.")
+        self._graph_executor.check_argument_consistency(compile_args, args_list, "set_inputs")
+        Validator.check_symbolic_shape(compile_args, args_list)
+        return compile_args
+
+    def _generate_compile_args_by_input_signature(self, args_list):
+        """Generate compile args by input_signature."""
+        compile_args = list(_generate_dyn_compile_args(args_list, self.input_signature))
+        dyn_shape = any([is_shape_unknown(elem.shape) for elem in compile_args if isinstance(elem, PythonTensor)])
+        Validator.check_symbolic_shape(self.input_signature, args_list)
+        if dyn_shape:
+            # Checkout whether the `sens` has been added to args_list.
+            if len(compile_args) == len(args_list) - 1:
+                logger.warning(f"The number of actual input args '{len(args_list)}' is one more than the number "
+                               f"of input_signature args '{len(compile_args)}'. The last actual args may "
+                               f"be 'sens' and added it to compile args.")
+                compile_args.append(args_list[-1])
+            compile_args = tuple(compile_args)
+            self._graph_executor.check_argument_consistency(compile_args, args_list, "input_signature")
+            if self.obj is not None:
+                _pynative_executor.set_dynamic_input(self.obj, *compile_args)
+            else:
+                _pynative_executor.set_dynamic_input(self.fn, *compile_args)
+        else:
+            if not verify_inputs_signature(compile_args, args_list):
+                raise ValueError("The input args is incompatible with the args in `input_signature`!")
+        return compile_args
+
+    def _check_set_inputs(self):
+        """Check if the `set_inputs()` of Cell object has been set."""
+        return self.fn.__name__ == 'construct' and isinstance(self.obj, ms.nn.Cell) and self.obj.get_inputs()
+
     def _generate_compile_args(self, args_list):
         """Chose dynamic shape tensors or actual input tensors as compile args."""
-        # Case: If the shape of input args is dynamic, get dynamic shape tensor from context and use it to compile.
-        compile_args = _pynative_executor.get_dynamic_input(args_list)
+        # Case: The `enable_dynamic` is provided and `set_inputs()` of Cell object has been set.
+        if self.enable_jit_dynamic and self._check_set_inputs():
+            raise ValueError("When `enable_dynamic` is provided, the `set_inputs()` cannot be set!")
+        # Case: The `enable_dynamic` is provided.
+        if self.enable_jit_dynamic:
+            return self._generate_compile_args_by_enable_dynamic(args_list)
         # Case: The `set_inputs()` of Cell object has been set, using these dynamic shape args as compile args.
-        if self.fn.__name__ == 'construct' and isinstance(self.obj, ms.nn.Cell) and self.obj.get_inputs():
-            compile_args = _generate_dyn_compile_args(args_list, self.obj.get_inputs())
-            if len(compile_args) != len(args_list):
-                raise ValueError(f"The number of actual input tensors: {len(args_list)} is not equal to the number of "
-                                 f"dynamic shape tensors: {len(compile_args)}.")
-            self._graph_executor.check_argument_consistency(compile_args, args_list, "input_signature")
-            Validator.check_symbolic_shape(compile_args, args_list)
-
+        if self._check_set_inputs():
+            return self._generate_compile_args_by_set_inputs(args_list)
         # Case: If dynamic shape tensors have been assigned to `input_signature`, they are preferred as compile args.
         if self.input_signature is not None:
-            compile_args = list(_generate_dyn_compile_args(args_list, self.input_signature))
-            dyn_shape = any([is_shape_unknown(elem.shape) for elem in compile_args if isinstance(elem, PythonTensor)])
-            Validator.check_symbolic_shape(self.input_signature, args_list)
-            if dyn_shape:
-                # Checkout whether the `sens` has been added to args_list.
-                if len(compile_args) == len(args_list) - 1:
-                    logger.warning(f"The number of actual input args '{len(args_list)}' is one more than the number "
-                                   f"of input_signature args '{len(compile_args)}'. The last actual args may "
-                                   f"be 'sens' and added it to compile args.")
-                    compile_args.append(args_list[-1])
-                compile_args = tuple(compile_args)
-                self._graph_executor.check_argument_consistency(compile_args, args_list, "input_signature")
-                if self.obj is not None:
-                    _pynative_executor.set_dynamic_input(self.obj, *compile_args)
-                else:
-                    _pynative_executor.set_dynamic_input(self.fn, *compile_args)
-            else:
-                if not verify_inputs_signature(compile_args, args_list):
-                    raise ValueError("The input args is incompatible with the args in `input_signature`!")
-        return compile_args
+            return self._generate_compile_args_by_input_signature(args_list)
+        # Case: If the shape of input args is dynamic, get dynamic shape tensor from context and use it to compile.
+        return _pynative_executor.get_dynamic_input(args_list)
 
     def _generate_run_args(self, args_list, kwargs):
         """
@@ -1077,10 +1154,7 @@ def _jit_ast(hash_obj, dynamic, jit_config, jit_graph_name):
                 process_obj = args[0]
             # Handle auto mixed precision strategy.
             if not hasattr(func, "amp_strategy"):
-                if isinstance(func, types.MethodType):
-                    setattr(func.__func__, "amp_strategy", get_curr_amp_strategy())
-                else:
-                    setattr(func, "amp_strategy", get_curr_amp_strategy())
+                setattr(get_func(func), "amp_strategy", get_curr_amp_strategy())
 
             jit_graph_name = ''
             if hasattr(staging_specialize, "__jit_graph_name__"):
@@ -2033,7 +2107,8 @@ class _CellGraphExecutor:
         if parameter_ids != "":
             obj.arguments_key = obj.arguments_key + '.' + parameter_ids
         raw_phase = phase
-        phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        obj.cells_hook_hash = _cells_hook_hash(None, obj)
+        phase = _real_phase(phase, obj)
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
@@ -2088,15 +2163,15 @@ class _CellGraphExecutor:
         return self._graph_executor.updata_param_node_default_input(phase, new_param)
 
     def _get_shard_strategy(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_strategy(real_phase)
 
     def _get_num_parallel_ops(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_num_parallel_ops(real_phase)
 
     def _get_allreduce_fusion(self, obj):
-        real_phase = obj.phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        real_phase = _real_phase(obj.phase, obj)
         return self._graph_executor.get_allreduce_fusion(real_phase)
 
     def __call__(self, obj, *args, phase='predict'):
@@ -2148,10 +2223,10 @@ class _CellGraphExecutor:
             Tensor/Tuple, return execute result.
         """
         if phase == 'save':
-            exe_phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+            exe_phase = _real_phase(phase, obj)
             return self._graph_executor((), exe_phase)
 
-        phase_real = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        phase_real = _real_phase(phase, obj)
         if self.has_compiled(phase_real):
             return self._exec_pip(obj, *args, phase=phase_real)
         raise KeyError('{} graph is not exist.'.format(phase_real))
@@ -2178,7 +2253,8 @@ class _CellGraphExecutor:
 
     def get_optimize_graph_proto(self, obj):
         """Return optimize graph binary proto."""
-        exec_id = obj.phase + "." + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
+        exec_id = obj.phase + "." + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key + "." \
+            + str(obj.cells_hook_hash)
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
         graph_proto = self._graph_executor.get_optimize_graph_proto(exec_id)

@@ -54,7 +54,7 @@ class SpecialOpEliminater : public OptimizerCaller {
   AnfNodePtr operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) override;
 
  private:
-  OptimizerCallerPtr insert_gradient_of_, stop_gradient_, hook_backward_, cell_backward_hook_, print_shape_type_,
+  OptimizerCallerPtr insert_gradient_of_, stop_gradient_, hook_backward_, print_shape_type_,
     mirror_, virtual_div_, mutable_;
   std::vector<OptimizerCallerPtr> eliminaters_{};
 };

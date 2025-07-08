@@ -41,7 +41,9 @@ class PartialDeferInline : public AnfVisitor {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     constexpr auto func_index = 1;
-    auto func_abs = cnode->input(func_index)->abstract();
+    auto inp1 = cnode->input(func_index);
+    MS_EXCEPTION_IF_NULL(inp1);
+    auto func_abs = inp1->abstract();
     MS_EXCEPTION_IF_NULL(func_abs);
     auto real_func = dyn_cast<abstract::FuncGraphAbstractClosure>(func_abs);
     if (real_func != nullptr) {

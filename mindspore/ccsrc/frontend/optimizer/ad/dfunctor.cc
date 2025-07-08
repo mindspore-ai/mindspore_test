@@ -106,8 +106,7 @@ bool PrimitiveNeedSkip(const AnfNodePtr &node) {
     return false;
   }
 
-  return IsPrimitiveEquals(prim, prim::kPrimReturn) || IsPrimitiveEquals(prim, prim::kPrimHookBackward) ||
-         IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
+  return IsPrimitiveEquals(prim, prim::kPrimReturn) || IsPrimitiveEquals(prim, prim::kPrimHookBackward);
 }
 
 void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
@@ -174,12 +173,13 @@ void DuplicateSideEffectNodes(const FuncGraphManagerPtr &manager, const FuncGrap
 }  // namespace
 
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
-                   bool is_view_inplace)
+                   bool is_view_inplace, bool is_grad_by_j)
     : primal_graph_(primal_graph),
       resources_(resources),
       need_cut_(false),
       is_top_(is_top),
-      is_view_inplace_(is_view_inplace) {
+      is_view_inplace_(is_view_inplace),
+      is_grad_by_j_(is_grad_by_j) {
   {
     TraceGuard guard(MakeTraceInfo<TraceGradFprop>(primal_graph->debug_info()));
     k_graph_ = std::make_shared<FuncGraph>();
@@ -197,6 +197,9 @@ DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBas
   tape_->set_segment(primal_graph->segment());
 
   dout_ = tape_->add_parameter();
+
+  dout_ = ApplyBackwardPreHook(dout_);
+
   if (is_view_inplace && is_top_) {
     auto get_dout_tuple = std::make_shared<prim::GenerateBpropOutTuple>("get_dout_tuple");
     dout_ = tape_->NewCNodeInOrder({NewValueNode(get_dout_tuple), dout_});
@@ -251,11 +254,11 @@ void DFunctor::BackPropagateFv(const AnfNodePtr &fv, const AnfNodePtr &din) {
         auto parent_adjoint = FindAdjoint(fv);
         AdjointPtr adjoint = nullptr;
         if (parent_adjoint != nullptr) {
-          adjoint = std::make_shared<Adjoint>(fv, parent_adjoint->k(), tape_, is_view_inplace_);
+          adjoint = std::make_shared<Adjoint>(fv, parent_adjoint->k(), tape_, is_view_inplace_, is_grad_by_j_);
         } else {
           MS_LOG(DEBUG) << "Can not find adjoint definition fv, add a k hole " << fv->func_graph()->ToString() << " "
                         << fv->ToString() << ".";
-          adjoint = std::make_shared<Adjoint>(fv, nullptr, tape_, is_view_inplace_);
+          adjoint = std::make_shared<Adjoint>(fv, nullptr, tape_, is_view_inplace_, is_grad_by_j_);
         }
         anfnode_to_adjoin_indirect_fv_[fv] = adjoint;
         fv_adjoint = anfnode_to_adjoin_indirect_fv_.find(fv);
@@ -347,7 +350,7 @@ static bool HasSideEffectBackPropMem(const CNodePtr &cnode) {
 
 static AnfNodePtr SkipHookNodeInBackProp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  if (IsPrimitiveCNode(node, prim::kPrimHookBackward) || IsPrimitiveCNode(node, prim::kPrimCellBackwardHook)) {
+  if (IsPrimitiveCNode(node, prim::kPrimHookBackward)) {
     MS_LOG(WARNING) << "Hook operation does not work in graph mode or functions decorated with 'jit', it will be "
                        "eliminated during compilation.";
     auto output_cnode = node->cast_ptr<CNode>();
@@ -381,7 +384,7 @@ static AnfNodePtr SkipHookNodeInBackProp(const AnfNodePtr &node) {
     auto tuple_get_item = node->cast_ptr<CNode>();
     MS_EXCEPTION_IF_NULL(tuple_get_item);
     auto inp = tuple_get_item->input(1);
-    if (IsPrimitiveCNode(inp, prim::kPrimHookBackward) || IsPrimitiveCNode(inp, prim::kPrimCellBackwardHook)) {
+    if (IsPrimitiveCNode(inp, prim::kPrimHookBackward)) {
       MS_LOG(WARNING) << "Hook operation does not work in graph mode or functions decorated with 'jit', it will be "
                          "eliminated during compilation.";
       constexpr size_t idx = 2;
@@ -571,18 +574,27 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     {NewValueNode(prim::kPrimTupleGetItem), node_adjoint->k_app(), NewValueNode(static_cast<int64_t>(1))});
   // Call with delimited continuation dout.
   CNodePtr bprop_app;
+
+  auto fg = GetCNodeFuncGraph(node_adjoint->primal());
+  auto hooked_dout = node_adjoint->dout();
+  bool is_backward_hook_applyed = false;
+  if (fg != nullptr && fg->has_flag(FUNC_GRAPH_FLAG_FORWARD_PRE_HOOK)) {
+    hooked_dout = ApplyBackwardHook(node_adjoint);
+    is_backward_hook_applyed = true;
+  }
+
   if (HasSideEffectBackProp(cnode_morph)) {
     if (is_view_inplace_) {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInOrder({bprop, hooked_dout});
     } else {
-      bprop_app = tape_->NewCNodeInFront({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInFront({bprop, hooked_dout});
     }
     tape_->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
   } else {
     if (common::GetCompileConfig("PUT_ALL_CNODE_INTO_ORDER_LIST") == "0") {
-      bprop_app = tape_->NewCNode({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNode({bprop, hooked_dout});
     } else {
-      bprop_app = tape_->NewCNodeInOrder({bprop, node_adjoint->dout()});
+      bprop_app = tape_->NewCNodeInOrder({bprop, hooked_dout});
     }
   }
 
@@ -594,7 +606,11 @@ void DFunctor::BackPropagate(const CNodePtr &cnode_morph, const AdjointPtr &node
     bprop_app->AddAttr(kAttrSideEffectBpropAppPropagate, MakeValue(true));
     k_graph_->set_flag(kAttrSideEffectBpropAppPropagate, true);
   }
-  node_adjoint->RegisterDoutUser(bprop_app, 1);
+
+  if (!is_backward_hook_applyed) {
+    node_adjoint->RegisterDoutUser(bprop_app, 1);
+  }
+
   // Special case for switch_layer
   if (IsPrimitiveCNode(cnode_morph, prim::kPrimSwitchLayer)) {
     auto din =
@@ -697,7 +713,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   auto forward_app =
     k_graph_->NewCNode({NewValueNode(prim::kPrimTupleGetItem), k_app, NewValueNode(static_cast<int64_t>(0))});
   // K:: cnode -> forward_app
-  auto node_adjoint = std::make_shared<Adjoint>(morph, forward_app, tape_, is_view_inplace_);
+  auto node_adjoint = std::make_shared<Adjoint>(morph, forward_app, tape_, is_view_inplace_, is_grad_by_j_);
   node_adjoint->set_k_app(k_app);
   node_adjoint->set_side_effect_bprop_app_propagate(side_effect_bprop_app_propagate);
   UpdateAdjoint(node_adjoint);
@@ -818,7 +834,7 @@ void DFunctor::MapMorphism() {
 
   // Handle free morphism before output, because in some case, free morphism might depend on output's fv tangent
   MapFreeMorphism();
-  // Skip HookBackward op and CellBackwardHook op when it is the output node.
+  // Skip HookBackward op when it is the output node.
   auto output_node = primal_graph_->output();
   output_node = SkipHookNodeInBackProp(output_node);
   // Handle morphism from output.
@@ -879,6 +895,7 @@ void DFunctor::MapMorphism() {
     param_adjoints[i]->RegisterDoutUser(tape_output, i + offset_num);
   }
   tape_->set_output(tape_output);
+
   // Set output for k_graph_, K:: cnode->forward_app.
   auto forward_app = output_adjoint->second->k();
   auto output = k_graph_->NewCNode({NewValueNode(prim::kPrimMakeTuple), forward_app, NewValueNode(tape_)});
@@ -924,13 +941,72 @@ FuncGraphPtr DFunctor::KUserDefined(const FuncGraphPtr &primal) {
     // Reset defer_inline to enable successive inlining
     primal->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
 
-    auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_view_inplace_);
+    auto functor = std::make_shared<DFunctor>(primal, resources_, false, is_view_inplace_, is_grad_by_j_);
     functor->Init();
     functor->k_graph_ = fg;
 
     return fg;
   }
   return nullptr;
+}
+
+namespace {
+FuncGraphPtr ResolveCellBackwardHook(const ValuePtr &python_obj, const std::string &hook_dict_name,
+                                     const std::string &hook_func_name) {
+  if (python_obj == nullptr) {
+    return nullptr;
+  }
+
+  auto py_obj_wrapper = python_obj->cast<parse::PyObjectWrapperPtr>();
+  if (py_obj_wrapper == nullptr) {
+    return nullptr;
+  }
+  auto obj = py_obj_wrapper->obj();
+
+  return parse::ResolveCellHook(obj, hook_dict_name, hook_func_name);
+}
+
+FuncGraphPtr MakeDummyBackwardHook() {
+  auto backward_hook = std::make_shared<FuncGraph>();
+  auto din = backward_hook->add_parameter();
+  (void)backward_hook->add_parameter();
+  backward_hook->set_output(din);
+  return backward_hook;
+}
+}  // namespace
+
+AnfNodePtr DFunctor::ApplyBackwardPreHook(const AnfNodePtr &dout) {
+  auto hook_func = ResolveCellBackwardHook(primal_graph_->python_obj(), parse::CELL_BACKWARD_PRE_HOOK,
+                                           parse::CELL_JIT_BACKWARD_PRE_HOOK);
+  if (hook_func == nullptr) {
+    return dout;
+  }
+
+  hook_func->set_manager(primal_graph_->manager());
+
+  hook_func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+  hook_func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+
+  AnfNodePtrList hook_inputs = {NewValueNode(hook_func), dout};
+  auto hooked_dout = tape_->NewCNodeInFront(hook_inputs);
+  return hooked_dout;
+}
+
+AnfNodePtr DFunctor::ApplyBackwardHook(const AdjointPtr &node_adjoint) {
+  FuncGraphPtr hook_func =
+    ResolveCellBackwardHook(primal_graph_->python_obj(), parse::CELL_BACKWARD_HOOK, parse::CELL_JIT_BACKWARD_HOOK);
+  if (hook_func == nullptr) {
+    hook_func = MakeDummyBackwardHook();
+  }
+
+  hook_func->set_manager(primal_graph_->manager());
+  hook_func->set_flag(mindspore::kFuncGraphFlagBackPropEntry, true);
+  hook_func->set_flag(mindspore::kFuncGraphFlagReAutoMonad, true);
+
+  AnfNodePtrList hook_inputs{NewValueNode(hook_func), node_adjoint->dout(), dout_};
+  auto hooked_dins = tape_->NewCNodeInOrder(hook_inputs);
+  node_adjoint->RegisterDoutUser(hooked_dins, 1);
+  return hooked_dins;
 }
 
 bool StopGradientForScalar(const CNodePtr &cnode) {
@@ -1018,7 +1094,7 @@ AnfNodePtr DFunctor::MapFuncGraphToK(const AnfNodePtr &primal) {
     (void)k_user_defined->transforms().emplace("custom_bprop_primal", FuncGraphTransform(func_graph));
     return NewValueNode(k_user_defined);
   }
-  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_view_inplace_);
+  auto functor = std::make_shared<DFunctor>(func_graph, resources_, false, is_view_inplace_, is_grad_by_j_);
   functor->Init();
   functor->MapObject();
   functor->MapMorphism();
@@ -1065,15 +1141,15 @@ void DFunctor::MapFvObject() {
     AdjointPtr adjoint = nullptr;
     auto parent_adjoint = FindAdjoint(node);
     if (parent_adjoint != nullptr) {
-      adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_view_inplace_);
+      adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_view_inplace_, is_grad_by_j_);
     } else {
       if (is_top_ || node->isa<Parameter>()) {
         // Out of ad scope, add adjoint for free variables.
-        adjoint = std::make_shared<Adjoint>(node, node, tape_, is_view_inplace_);
+        adjoint = std::make_shared<Adjoint>(node, node, tape_, is_view_inplace_, is_grad_by_j_);
         UpdateAdjoint(adjoint);
       } else {
         MS_LOG(DEBUG) << "Fail to find parent adjoint for nontop fv " << node->ToString() << ".";
-        adjoint = std::make_shared<Adjoint>(node, nullptr, tape_, is_view_inplace_);
+        adjoint = std::make_shared<Adjoint>(node, nullptr, tape_, is_view_inplace_, is_grad_by_j_);
       }
     }
     if (adjoint == nullptr) {
@@ -1088,7 +1164,7 @@ void DFunctor::MapParamObject() {
   for (auto &p : primal_graph_->parameters()) {
     ScopeGuard scope_guard(p->scope());
     MS_LOG(DEBUG) << "The parameter " << p->ToString() << ".";
-    auto adjoint = std::make_shared<Adjoint>(p, MapParameterToK(p), tape_, is_view_inplace_);
+    auto adjoint = std::make_shared<Adjoint>(p, MapParameterToK(p), tape_, is_view_inplace_, is_grad_by_j_);
     UpdateAdjoint(adjoint);
     anfnode_to_adjoin_[p] = adjoint;
   }
@@ -1108,7 +1184,7 @@ void DFunctor::MapValueObject() {
     auto node = value_pair.first;
     auto parent_adjoint = FindAdjoint(node);
     if (parent_adjoint != nullptr) {
-      auto adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_view_inplace_);
+      auto adjoint = std::make_shared<Adjoint>(node, parent_adjoint->k(), tape_, is_view_inplace_, is_grad_by_j_);
       anfnode_to_adjoin_[node] = adjoint;
       continue;
     }
@@ -1128,15 +1204,15 @@ void DFunctor::MapValueObject() {
       }
       auto cnode = users.begin()->first->cast<CNodePtr>();  // We just use the first user.
       auto index = users.begin()->second;
-      adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_, is_view_inplace_);
+      adjoint = std::make_shared<Adjoint>(node, MapPrimitiveToK(cnode, index), tape_, is_view_inplace_, is_grad_by_j_);
     } else if (IsValueNode<FuncGraph>(node)) {  // FuncGraph
       MS_LOG(DEBUG) << "Map FuncGraph node " << node->DebugString() << ".";
-      adjoint = std::make_shared<Adjoint>(node, MapFuncGraphToK(node), tape_, is_view_inplace_);
+      adjoint = std::make_shared<Adjoint>(node, MapFuncGraphToK(node), tape_, is_view_inplace_, is_grad_by_j_);
     } else if (node->isa<Parameter>()) {  // Parameter, hardly reach here.
       MS_LOG(DEBUG) << "Map Parameter node " << node->DebugString() << ".";
-      adjoint = std::make_shared<Adjoint>(node, MapParameterToK(node), tape_, is_view_inplace_);
+      adjoint = std::make_shared<Adjoint>(node, MapParameterToK(node), tape_, is_view_inplace_, is_grad_by_j_);
     } else {
-      adjoint = std::make_shared<Adjoint>(node, node, tape_, is_view_inplace_);
+      adjoint = std::make_shared<Adjoint>(node, node, tape_, is_view_inplace_, is_grad_by_j_);
     }
     UpdateAdjoint(adjoint);
     anfnode_to_adjoin_[node] = adjoint;
@@ -1189,10 +1265,10 @@ void DFunctor::CallDoutHoleOnTape() const {
   // Call dout hole of all adjoint.
   for (auto &f : func_graph_to_functor_) {
     for (auto &adjoint : f.second->anfnode_to_adjoin_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
     for (auto &adjoint : f.second->anfnode_to_adjoin_indirect_fv_) {
-      adjoint.second->CallDoutHole();
+      adjoint.second->CallDoutHole(resources_);
     }
   }
 }

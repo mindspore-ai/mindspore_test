@@ -23,12 +23,14 @@
 
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
+#include "mindspore/ccsrc/pipeline/jit/ps/resource_base.h"
 
 namespace mindspore {
 namespace ad {
 class Adjoint {
  public:
-  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace);
+  Adjoint(const AnfNodePtr &primal, const AnfNodePtr &k, const FuncGraphPtr &caller, bool is_view_inplace,
+          bool is_grad_by_j = false);
   ~Adjoint() = default;
   AnfNodePtr primal();
   AnfNodePtr k();
@@ -38,7 +40,7 @@ class Adjoint {
   AnfNodePtr real_dout() const { return dout_; }
   void AccumulateDout(const AnfNodePtr &dout_factor);
   void RegisterDoutUser(const CNodePtr &user, size_t index);
-  void CallDoutHole();
+  void CallDoutHole(const pipeline::ResourceBasePtr &resources);
   FuncGraphPtr caller() const { return caller_; }
   bool side_effect_bprop_app_propagate() { return side_effect_bprop_app_propagate_; }
   void set_side_effect_bprop_app_propagate(bool side_effect_bprop_app_propagate) {
@@ -50,6 +52,8 @@ class Adjoint {
   void set_back_bproped(bool back_bproped) { back_bproped_ = back_bproped; }
 
  private:
+  AnfNodePtr ApplyTensorHookForDout(const pipeline::ResourceBasePtr &resources);
+
   AnfNodePtr primal_;
   FuncGraphPtr caller_;
   // For ```def f(x): return expr```, The representation graph k is ```def kf(kx): return expr, bprop{expr}```.
@@ -62,6 +66,7 @@ class Adjoint {
   bool back_bproped_{false};
   bool side_effect_bprop_app_propagate_{false};
   CNodePtr k_app_;
+  bool is_grad_by_j_;
 };
 
 using AdjointPtr = std::shared_ptr<Adjoint>;

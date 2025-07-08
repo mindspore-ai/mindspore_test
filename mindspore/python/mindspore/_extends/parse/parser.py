@@ -1,6 +1,6 @@
 # This is the Python adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
 #
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2020-2025 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,17 +103,6 @@ parse_expr_statement_white_list = (
     "append", "insert", "clear", "reverse", "extend", "update", "register_hook",
 )
 
-# Methods that need to reorder after it's caller is used before
-# e.g. We need to reorder `x.register_hook` after x is used in `out = x + 1` when `register_hook` is called.
-# def construct(x):
-#     out = x + 1
-#     x.register_hook(hook_fn)
-#     return out
-# equals to:
-# def construct(x):
-#     x = x.register_hook(hook_fn) # register_hook will return itself when it is called in the graph (in `GRAPH_MODE`).
-#     out = x + 1
-#     return out
 _need_reorder_methods = (
     "register_hook",
 )
@@ -907,6 +896,15 @@ def can_constant_fold(obj):
     """Check if the obj is the function can be constantly folded."""
     return obj in constant_fold_functions
 
+
+def hook_wrapper(hook_fn):
+    def inner(dout):
+        fdout = hook_fn(dout)
+        if fdout is None:
+            dout = ops.Depend()(dout, fdout)
+            return dout
+        return fdout
+    return inner
 
 class Parser:
     """

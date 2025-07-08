@@ -25,19 +25,43 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+bool ContainsVariableAbstractDict(const AbstractBasePtr &abstract) {
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    return abstract->BuildValue() == kValueAny;
+  }
+  if (!abstract->isa<abstract::AbstractSequence>()) {
+    return false;
+  }
+  auto abstract_sequence = abstract->cast<abstract::AbstractSequencePtr>();
+  const auto &elements = abstract_sequence->elements();
+  return std::any_of(elements.begin(), elements.end(), [](const auto &e) { return ContainsVariableAbstractDict(e); });
+}
+}  // namespace
+
 class JoinedStrInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
-    return std::make_shared<abstract::NoShape>();
+    return std::make_shared<abstract::Shape>(ShapeVector({1}));
   }
 
-  TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
-    return std::make_shared<String>();
+  TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
+    for (const AbstractBasePtr &abstract : input_args) {
+      if (ContainsVariableAbstractDict(abstract)) {
+        MS_LOG(EXCEPTION) << "For JoinedStr, do not support dict input with variable elements, current abstract is: "
+                          << abstract->ToString();
+      }
+    }
+    return std::make_shared<TensorType>(kInt64);
   }
 
   ValuePtr InferValue(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
     std::string res;
     for (const auto &arg : input_args) {
+      if (ContainsVariableAbstractDict(arg)) {
+        MS_LOG(EXCEPTION) << "For JoinedStr, do not support dict input with variable elements, current abstract is : "
+                          << arg->ToString();
+      }
       auto arg_value = arg->GetValue();
       MS_EXCEPTION_IF_NULL(arg_value);
       res += arg_value->ToString();

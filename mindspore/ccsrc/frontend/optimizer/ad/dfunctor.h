@@ -52,7 +52,7 @@ extern bool lift_fv_before_grad;
 class DFunctor : public std::enable_shared_from_this<DFunctor> {
  public:
   DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top,
-           bool is_view_inplace);
+           bool is_view_inplace, bool is_grad_by_j = false);
   ~DFunctor() = default;
   // Map object in D category to K category.
   void MapObject();
@@ -117,6 +117,8 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   void ReplaceEquivdout(const CNodePtr &k_app, const CNodePtr &cnode_morph);
 
   void AccumulateInputGradients(const CNodePtr &cnode_morph, const AdjointPtr &node_adjoint, const CNodePtr bprop_app);
+  AnfNodePtr ApplyBackwardPreHook(const AnfNodePtr &dout);
+  AnfNodePtr ApplyBackwardHook(const AdjointPtr &node_adjoint);
 
   mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_;
   // Cache for indirect fv backpropagation, K o K can only do backprop layer by layer.
@@ -138,6 +140,7 @@ class DFunctor : public std::enable_shared_from_this<DFunctor> {
   static mindspore::HashMap<FuncGraphPtr, std::shared_ptr<DFunctor>> func_graph_to_functor_;
   static mindspore::HashMap<AnfNodePtr, AdjointPtr> anfnode_to_adjoin_definition_;
   bool is_view_inplace_;
+  bool is_grad_by_j_;
 };
 
 // D Functor's rules to map primitive object.
