@@ -246,7 +246,11 @@ void PreLaunchComm::PreLaunchCommKernel(runtime::ActorSet *actor_set) {
   Launch(hccl_nodes_vec_receive_after_bucket, SORTED_BY_RECV_SEQUENTAIL);
 }
 
-void PreLaunchComm::CachePreLaunchOrder(uint32_t graph_id) { (void)orders_.emplace_back(graph_id); }
+void PreLaunchComm::CachePreLaunchOrder(uint32_t graph_id) {
+  if (std::count(orders_.begin(), orders_.end(), graph_id) == 0) {
+    (void)orders_.emplace_back(graph_id);
+  }
+}
 std::vector<uint32_t> PreLaunchComm::GetPreLaunchOrder(bool force_launch) {
   if (force_launch) {
     is_pre_launch_comm_.clear();
