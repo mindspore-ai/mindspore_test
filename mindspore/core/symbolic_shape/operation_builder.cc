@@ -158,7 +158,7 @@ bool OperationBuilder::CheckOutputValue(const SymbolPtr &v) const {
 
 SymbolPtr TransparentInput(OperationBuilder *b) {
   auto symbols = b->GetSymbolsOfDepend();
-  return symbols.size() == 1 ? symbols[0] : nullptr;
+  return symbols.size() == 1 ? symbols[0] : ListSymbol::Make(std::move(symbols));
 }
 
 const OperationBuilderInfo *OperationBuilderInfoRegistry::GetBuildInfo(const std::string &name) {
