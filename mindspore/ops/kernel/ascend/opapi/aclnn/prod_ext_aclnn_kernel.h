@@ -37,7 +37,7 @@ class ProdExtAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  int64_t axis_;
+  int64_t axis_{0};
   bool keep_dims_{false};
   TypeId dtype_;
   bool is_all_reduce_{false};

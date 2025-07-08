@@ -47,7 +47,7 @@ class SplitWithSizeAscend : public AclnnKernelMod {
 
  protected:
   std::vector<int64_t> dims_{};
-  int64_t axis_;
+  int64_t axis_{0};
 };
 }  // namespace split_with_size
 }  // namespace kernel

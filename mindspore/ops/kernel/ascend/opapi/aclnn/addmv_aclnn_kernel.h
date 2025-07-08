@@ -36,7 +36,7 @@ class AddmvAclnnKernelMod : public AclnnKernelMod {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
  private:
-  int8_t cube_math_type_;
+  int8_t cube_math_type_ = 0;
   ScalarPtr beta_ = nullptr;
   ScalarPtr alpha_ = nullptr;
 

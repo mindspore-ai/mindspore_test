@@ -34,10 +34,10 @@ class RandIntAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  protected:
-  int64_t seed_;
-  int64_t offset_;
-  int64_t from_;
-  int64_t to_;
+  int64_t seed_{0};
+  int64_t offset_{0};
+  int64_t from_{0};
+  int64_t to_{1};
   size_t input_idx_shift_{0};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };

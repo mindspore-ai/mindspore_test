@@ -36,7 +36,7 @@ class InplaceIndexAddExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  int64_t axis_;
+  int64_t axis_ = 0;
   ScalarPtr alpha_ = nullptr;
 };
 }  // namespace inplace_index_add
