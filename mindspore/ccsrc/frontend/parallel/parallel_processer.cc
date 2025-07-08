@@ -1310,11 +1310,82 @@ static void StepReplace(const std::vector<AnfNodePtr> &all_nodes) {
     }
   }
 }
+
+OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cnode_ptr, int *input_pos_ptr,
+                                          bool *using_func_param_op_info_ptr) {
+  MS_EXCEPTION_IF_NULL(next_cnode_ptr);
+  MS_EXCEPTION_IF_NULL(input_pos_ptr);
+  MS_EXCEPTION_IF_NULL(using_func_param_op_info_ptr);
+  auto next_cnode = *next_cnode_ptr;
+  int input_pos = *input_pos_ptr;
+  bool using_func_param_op_info = *using_func_param_op_info_ptr;
+  OperatorInfoPtr next_distribute_operator = nullptr;
+  if (IsValueNode<FuncGraph>(next_cnode->input(0))) {
+    auto fg = GetValueNode<FuncGraphPtr>(next_cnode->input(0));
+    auto fg_parameters = fg->parameters();
+    auto param = fg_parameters[IntToSize(input_pos - 1)];
+    if (param->has_user_data(INDEX_OPERATOR_INFO)) {
+      auto index_operator_info = param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
+      MS_EXCEPTION_IF_NULL(index_operator_info);
+      using_func_param_op_info = index_operator_info->count(pos_in_param) != 0 ? true : false;
+    }
+    if (using_func_param_op_info) {
+      MS_LOG(INFO) << "Func call node:" << next_cnode->DebugString() << " has operator info.";
+      next_distribute_operator = param->template user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO)->at(pos_in_param);
+      const auto &abstract = param->abstract();
+      MS_EXCEPTION_IF_NULL(abstract);
+      bool is_tuple_param = false;
+      size_t param_input_size = 1;
+      if (abstract->template isa<abstract::AbstractSequence>()) {
+        const auto &sequence_abs = abstract->template cast_ptr<abstract::AbstractSequence>();
+        MS_EXCEPTION_IF_NULL(sequence_abs);
+        const auto &ele = sequence_abs->elements();
+        param_input_size = ele.size();
+        is_tuple_param = param_input_size > 1 ? true : false;
+      }
+      if (is_tuple_param) {
+        auto input = next_cnode->input(input_pos);
+        const auto &func_graph = next_cnode->func_graph();
+        if (!IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+          std::vector<AnfNodePtr> make_tuple_inputs;
+          make_tuple_inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
+          for (size_t i = 0; i < param_input_size; i++) {
+            std::vector<AnfNodePtr> tuple_get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), input,
+                                                          CreatInt64Imm(UlongToLong(i))};
+            auto tuple_get_item = func_graph->NewCNode(tuple_get_item_inputs);
+            MS_EXCEPTION_IF_NULL(tuple_get_item);
+            make_tuple_inputs.push_back(tuple_get_item);
+          }
+          auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
+          MS_EXCEPTION_IF_NULL(make_tuple);
+          FuncGraphManagerPtr manager = func_graph->manager();
+          MS_EXCEPTION_IF_NULL(manager);
+          (void)manager->SetEdge(next_cnode, input_pos, make_tuple);
+          input = make_tuple;
+        }
+        next_cnode = input->cast<CNodePtr>();
+        input_pos = pos_in_param + 1;
+      }
+      using_func_param_op_info = true;
+    } else {
+      next_distribute_operator = GetDistributeOperator(next_cnode);
+    }
+  } else {
+    next_distribute_operator = GetDistributeOperator(next_cnode);
+  }
+  *next_cnode_ptr = next_cnode;
+  *input_pos_ptr = input_pos;
+  *using_func_param_op_info_ptr = using_func_param_op_info;
+  return next_distribute_operator;
+}
+
 }  // namespace
 
-void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, int> &node_pair, const AnfNodePtr &pre_node,
-                                       const std::vector<int> &get_item_index) {
+void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, PosPair> &node_pair, const AnfNodePtr &pre_node,
+                                       const std::vector<int> &get_item_index,
+                                       std::pair<AnfNodePtr, int> *new_next_node) {
   MS_LOG(DEBUG) << "Do Redistribution for " << node_pair.first->fullname_with_scope();
+  MS_EXCEPTION_IF_NULL(new_next_node);
   auto next_cnode = node_pair.first->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(next_cnode);
   auto func_graph = next_cnode->func_graph();
@@ -1324,26 +1395,15 @@ void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, int> &node_pa
   auto distribute_operator = GetDistributeOperator(pre_cnode);
   MS_EXCEPTION_IF_NULL(distribute_operator);
   auto dev_list = distribute_operator->stage_device_list();
-  OperatorInfoPtr next_distribute_operator;
   bool using_func_param_op_info = false;
-  if (IsValueNode<FuncGraph>(next_cnode->input(0))) {
-    auto fg = GetValueNode<FuncGraphPtr>(next_cnode->input(0));
-    auto fg_parameters = fg->parameters();
-    auto param = fg_parameters[IntToSize(node_pair.second - 1)];
-    if (param->has_user_data<OperatorInfo>()) {
-      MS_LOG(INFO) << "Func call node:" << next_cnode->DebugString() << " has operator info.";
-      next_distribute_operator = param->user_data<OperatorInfo>();
-      using_func_param_op_info = true;
-    } else {
-      next_distribute_operator = GetDistributeOperator(next_cnode);
-    }
-  } else {
-    next_distribute_operator = GetDistributeOperator(next_cnode);
-  }
-  MS_LOG(DEBUG) << "Redistribution for pre_node: " << pre_cnode->DebugString()
-                << " next_node: " << next_cnode->DebugString();
+  auto pos_pair = node_pair.second;
+  auto input_pos = pos_pair.first;
+  auto pos_in_param = pos_pair.second;
+  OperatorInfoPtr next_distribute_operator =
+    GetNextDistributeOperator(pos_in_param, &next_cnode, &input_pos, &using_func_param_op_info);
+  new_next_node->first = next_cnode;
+  new_next_node->second = input_pos;
   MS_EXCEPTION_IF_NULL(next_distribute_operator);
-
   auto tensor_redistribution = next_distribute_operator->CreateTensorRedistribution();
   tensor_redistribution->SetPreAndNextCNode(pre_cnode, next_cnode);
   MS_LOG(DEBUG) << "Redistribution for pre_node: " << pre_cnode->DebugString()
@@ -1355,8 +1415,8 @@ void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, int> &node_pa
     return;
   }
   TensorLayout tensorlayout_out;
-  auto status = ObtainOutputTensorLayout(next_distribute_operator, node_pair, next_cnode, using_func_param_op_info,
-                                         &tensorlayout_out);
+  auto status = ObtainOutputTensorLayout(next_distribute_operator, {next_cnode, input_pos}, next_cnode,
+                                         using_func_param_op_info, &tensorlayout_out);
   if (status != SUCCESS) {
     return;
   }
@@ -1372,9 +1432,9 @@ void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, int> &node_pa
     MS_LOG_WITH_NODE(EXCEPTION, pre_cnode) << "Failure:tensor_redistribution init failed";
   }
   if (tensorlayout_in.GetVirtualRank().size() > 1 || tensorlayout_out.GetVirtualRank().size() > 1) {
-    auto real_pre_node = next_cnode->input(node_pair.second);
-    InsertRedistributionForMicroInterleaved(tensor_redistribution, {node_pair.first, node_pair.second}, func_graph,
-                                            pre_cnode, real_pre_node);
+    auto real_pre_node = next_cnode->input(input_pos);
+    InsertRedistributionForMicroInterleaved(tensor_redistribution, {next_cnode, input_pos}, func_graph, pre_cnode,
+                                            real_pre_node);
     return;
   }
   RedistributionOpListPtr redistribution_oplist_ptr = tensor_redistribution->InferTensorRedistributionOperatorList();
@@ -1392,9 +1452,9 @@ void ParallelProcessor::Redistribution(const std::pair<AnfNodePtr, int> &node_pa
   MS_LOG(DEBUG) << "Redistribution size " << redistribution_oplist_ptr->first.size();
   if (!redistribution_oplist_ptr->first.empty()) {
     // the last one is the pos of node in maketuple
-    tensor_redistribution->CreateAssembledDynamicMapping(next_cnode, pre_cnode, func_graph, node_pair.second);
+    tensor_redistribution->CreateAssembledDynamicMapping(next_cnode, pre_cnode, func_graph, input_pos);
     // insert node before next node
-    InsertRedistribution(redistribution_oplist_ptr, next_cnode, func_graph, node_pair.second, pre_cnode,
+    InsertRedistribution(redistribution_oplist_ptr, next_cnode, func_graph, input_pos, pre_cnode,
                          tensor_redistribution);
   }
   // Rollback to dynamic shape.
@@ -1416,7 +1476,7 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   }
   // Find Redistribution next_nodes
   // next_node.first.second = (pos in next node input(don't need to -1), pos in tuple(need to -1))
-  std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> next_nodes;
+  std::vector<std::pair<std::pair<AnfNodePtr, PosPair>, std::vector<int>>> next_nodes;
   RedistributionNextNode(cnode, manager, node_users_map, {-1}, -1, &next_nodes);
   if (next_nodes.empty()) {
     return;
@@ -1429,27 +1489,36 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
   }
   // Insert Redistribution nodes between pre_nodes and next_nodes
   for (auto &pre_node : pre_nodes) {
-    RedistributionDumpHandlerPtr redistribution_dump_handler =
-      std::make_shared<RedistributionParallelTensorDumpHandler>(pre_nodes, next_nodes, manager);
+    std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> next_nodes_tensor_dump;
     for (auto &next_node : next_nodes) {
       MS_LOG(INFO) << "===========Do Redistribution start============" << std::endl
                    << pre_node->fullname_with_scope() << "->" << next_node.first.first->fullname_with_scope() << "("
                    << next_node.first.second << ")";
-      Redistribution(next_node.first, pre_node, next_node.second);
+      std::pair<AnfNodePtr, int> new_next_node;
+      Redistribution(next_node.first, pre_node, next_node.second, &new_next_node);
       MS_LOG(INFO) << "===========Do Redistribution end  ============";
+      next_nodes_tensor_dump.push_back(std::make_pair(new_next_node, next_node.second));
     }
+    RedistributionDumpHandlerPtr redistribution_dump_handler =
+      std::make_shared<RedistributionParallelTensorDumpHandler>(pre_nodes, next_nodes_tensor_dump, manager);
     (void)redistribution_dump_handler->HandleDumpAfterRedistributionNode();
     for (const auto &next_node : next_nodes) {
-      if (!next_node.first.first->has_user_data(FUNC_PARAM)) {
+      if (!next_node.first.first->has_user_data(PARAM_OUT_INDEX)) {
         continue;
       }
       if (pre_node->func_graph() == next_node.first.first->func_graph()) {
         continue;
       }
-      auto param = next_node.first.first->user_data<AnfNode>(FUNC_PARAM);
-      auto distribute_operator = GetDistributeOperator(pre_node->cast<CNodePtr>());
+      auto param_out = next_node.first.first->user_data<ParamOutIndex>(PARAM_OUT_INDEX);
+      const auto &param = param_out->first;
       MS_EXCEPTION_IF_NULL(param);
-      param->set_user_data<OperatorInfo>(distribute_operator);
+      auto distribute_operator = GetDistributeOperator(pre_node->cast<CNodePtr>());
+      auto index_operator_info = std::make_shared<IndexOperatorMap>();
+      if (param->has_user_data(INDEX_OPERATOR_INFO)) {
+        *index_operator_info = *(param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO));
+      }
+      index_operator_info->emplace(param_out->second, distribute_operator);
+      param->set_user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO, index_operator_info);
       break;
     }
   }

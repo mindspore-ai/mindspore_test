@@ -32,6 +32,12 @@
 
 namespace mindspore {
 namespace parallel {
+// for tuple as a graph input
+using IndexOperatorMap = std::map<size_t, OperatorInfoPtr>;
+using ParamOutIndex = std::pair<AnfNodePtr, size_t>;
+// the first index is pos in next node's input
+// the second index is pos in tuple when the input is multi input node
+using PosPair = std::pair<int, size_t>;
 
 bool IsDynamicShapeInput(const CNodePtr &node, const AnfNodePtr &input);
 // maybe the input value is dynamic for these ops
@@ -118,7 +124,7 @@ void RedistributionPreNode(const CNodePtr &cnode, const FuncGraphManagerPtr &man
 void RedistributionNextNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager,
                             const NodeUsersMap &node_users_map, const std::vector<int> &get_item_index,
                             int64_t make_tuple_index,
-                            std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> *next_nodes);
+                            std::vector<std::pair<std::pair<AnfNodePtr, PosPair>, std::vector<int>>> *next_nodes);
 AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const CNodePtr &micro_mirror,
                                            const AnfNodePtr &micro_mirror_new_input);
 // for specific scenarios

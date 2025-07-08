@@ -547,9 +547,9 @@ std::vector<int> RemovePlaceholderIdx(const std::vector<int> &get_item_index) {
 }
 
 void RedistributionNextNodeInMakeTuple(
-  const CNodePtr &use_cnode, const std::pair<std::shared_ptr<AnfNode>, int> &node_pair,
+  const CNodePtr &use_cnode, const std::pair<std::shared_ptr<AnfNode>, size_t> &node_pair,
   const std::vector<int> &get_item_index, int64_t *make_tuple_index,
-  std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> *next_nodes) {
+  std::vector<std::pair<std::pair<AnfNodePtr, PosPair>, std::vector<int>>> *next_nodes) {
   auto modified_get_item_idx = RemovePlaceholderIdx(get_item_index);
   const std::string kIncreFlashAttentionName = "IncreFlashAttention";
   if (*make_tuple_index != -1) {
@@ -561,27 +561,24 @@ void RedistributionNextNodeInMakeTuple(
     auto real_node = GetRealKernelNode(use_cnode->input(node_pos), -1, nullptr);
     if (IsPrimitiveCNode(real_node.first, prim::kPrimMakeTuple) &&
         std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
-          return n_pair.first.first == real_node.first && n_pair.first.second == (*make_tuple_index) + 1 &&
+          auto next_node_input_pos = n_pair.first.second.first;
+          return n_pair.first.first == real_node.first && next_node_input_pos == (*make_tuple_index) + 1 &&
                  n_pair.second == modified_get_item_idx;
         }) == next_nodes->end()) {
-      next_nodes->push_back(
-        std::make_pair(std::make_pair(real_node.first, (*make_tuple_index) + 1), modified_get_item_idx));
+      next_nodes->push_back(std::make_pair(std::make_pair(real_node.first, std::make_pair((*make_tuple_index) + 1, 0)),
+                                           modified_get_item_idx));
       *make_tuple_index = -1;
       return;
     }
   }
   if (std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
-        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
+        size_t next_node_input_pos = n_pair.first.second.first;
+        return n_pair.first.first == node_pair.first && next_node_input_pos == node_pair.second &&
                n_pair.second == modified_get_item_idx;
       }) == next_nodes->end()) {
-    next_nodes->push_back(std::make_pair(node_pair, modified_get_item_idx));
-  }
-}
-
-void SetAnfNode(const AnfNodePtr &param,
-                std::vector<std::pair<std::pair<AnfNodePtr, std::vector<int>>, std::vector<int>>> *next_nodes) {
-  for (const auto &next_node : *next_nodes) {
-    next_node.first.first->set_user_data<AnfNode>(FUNC_PARAM, param);
+    const auto &pos_pair = std::make_pair(node_pair.second, 0);
+    const auto &next_node = std::make_pair(node_pair.first, pos_pair);
+    next_nodes->push_back(std::make_pair(next_node, modified_get_item_idx));
   }
 }
 
@@ -605,7 +602,7 @@ std::vector<std::pair<AnfNodePtr, int>> NextNodeUsers(const AnfNodePtr &node) {
 void FindFuncGraphNextNode(const CNodePtr &use_cnode, const std::pair<AnfNodePtr, int> &node_pair,
                            const FuncGraphManagerPtr &manager, const NodeUsersMap &node_users_map,
                            const std::vector<int> &get_item_index, int64_t make_tuple_index,
-                           std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> *next_nodes) {
+                           std::vector<std::pair<std::pair<AnfNodePtr, PosPair>, std::vector<int>>> *next_nodes) {
   auto cur_fg = use_cnode->func_graph();
   auto fg = GetValueNode<FuncGraphPtr>(use_cnode->input(0));
   MS_EXCEPTION_IF_NULL(fg);
@@ -615,24 +612,35 @@ void FindFuncGraphNextNode(const CNodePtr &use_cnode, const std::pair<AnfNodePtr
   auto fg_parameters = fg->parameters();
   auto param = fg_parameters[IntToSize(node_pair.second - 1)];
   MS_EXCEPTION_IF_NULL(param);
-  if (param->has_user_data<OperatorInfo>() &&
-      std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
-        return n_pair.first.first == node_pair.first && n_pair.first.second == node_pair.second &&
-               n_pair.second == RemovePlaceholderIdx(get_item_index);
-      }) == next_nodes->end()) {
-    next_nodes->push_back(std::make_pair(node_pair, RemovePlaceholderIdx(get_item_index)));
+  size_t index = make_tuple_index == -1 ? 0 : make_tuple_index;
+  bool has_operator_info = false;
+  if (param->has_user_data(INDEX_OPERATOR_INFO)) {
+    const auto &index_operator_map = param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
+    if (index_operator_map->find(index) != index_operator_map->end()) {
+      has_operator_info = true;
+    }
+  }
+  if (has_operator_info && std::find_if(next_nodes->begin(), next_nodes->end(), [&](const auto n_pair) {
+                             int next_node_input_pos = n_pair.first.second.first;
+                             return n_pair.first.first == node_pair.first && next_node_input_pos == node_pair.second &&
+                                    n_pair.second == RemovePlaceholderIdx(get_item_index);
+                           }) == next_nodes->end()) {
+    const auto &pos_pair = std::make_pair(node_pair.second, index);
+    const auto &next_node = std::make_pair(node_pair.first, pos_pair);
+    next_nodes->push_back(std::make_pair(next_node, RemovePlaceholderIdx(get_item_index)));
     return;
   }
   RedistributionNextNode(param, manager, node_users_map, get_item_index, make_tuple_index, next_nodes);
   for (const auto &next_node : *next_nodes) {
-    next_node.first.first->set_user_data<AnfNode>(FUNC_PARAM, param);
+    auto param_out_index = std::make_shared<ParamOutIndex>(param, index);
+    next_node.first.first->set_user_data<ParamOutIndex>(PARAM_OUT_INDEX, param_out_index);
   }
 }
 
 void RedistributionNextNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager,
                             const NodeUsersMap &node_users_map, const std::vector<int> &get_item_index,
                             int64_t make_tuple_index,
-                            std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> *next_nodes) {
+                            std::vector<std::pair<std::pair<AnfNodePtr, PosPair>, std::vector<int>>> *next_nodes) {
   MS_EXCEPTION_IF_NULL(node);
   if (node_users_map.count(node) == 0) {
     return;
