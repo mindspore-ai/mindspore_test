@@ -54,6 +54,7 @@ size_t AscendGmemAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) const 
 }
 
 size_t AscendGmemAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size) const {
+  MS_EXCEPTION_IF_NULL(addr);
   MS_LOG(DEBUG) << "Enter ascend eager free device mem, addr : " << addr << ", size : " << size << ".";
   if (size == 0) {
     MS_LOG(WARNING) << "Eager free device mem, addr : " << addr << ", size is zero.";
