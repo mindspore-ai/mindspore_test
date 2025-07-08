@@ -332,6 +332,7 @@ bool IsMemoryPoolRecycle() {
   static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool disable_ge_kernel = IsDisableGeKernel();
   auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
   return disable_ge_kernel && optimize_mem && mode == kGraphMode && task_sink;
