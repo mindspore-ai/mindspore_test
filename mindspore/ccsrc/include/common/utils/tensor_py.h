@@ -445,7 +445,7 @@ COMMON_EXPORT py::object PackTensorToPyObject(TensorPtr tensor);
 /// \return The python Tensor.
 COMMON_EXPORT py::object GetPythonTensor();
 
-COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor);
+COMMON_EXPORT PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect = false);
 COMMON_EXPORT PyObject *PackStubTensor(const stub::StubNodePtr &stub_node);
 COMMON_EXPORT PyObject *Wrap(const TensorPtr &tensor);
 COMMON_EXPORT PyObject *Wrap(const std::vector<TensorPtr> &tensors);

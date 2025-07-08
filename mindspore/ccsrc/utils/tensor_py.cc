@@ -450,7 +450,7 @@ py::object PackTensorToPyObject(TensorPtr tensor) {
   return py::reinterpret_steal<py::object>(tensor_py);
 }
 
-PyObject *PackTensor(const TensorPtr &tensor) {
+PyObject *PackTensor(const TensorPtr &tensor, bool has_side_effect) {
   PyObject *python_tensor_class = PyObject_GetAttrString(PyObjManager::Get().GetTensorModule(), "Tensor");
   auto tensor_py_type = reinterpret_cast<PyTypeObject *>(python_tensor_class);
   PyObject *obj = tensor_py_type->tp_alloc(tensor_py_type, 0);
@@ -461,6 +461,7 @@ PyObject *PackTensor(const TensorPtr &tensor) {
   auto result = (PyType<TensorPy> *)obj;
   new (&result->value) TensorPy(tensor);
   result->value.SetInitFinished(true);
+  result->value.set_has_side_effect(has_side_effect);
   return reinterpret_cast<PyObject *>(result);
 }
 
