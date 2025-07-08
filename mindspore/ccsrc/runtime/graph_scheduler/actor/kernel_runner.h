@@ -132,6 +132,7 @@ class KernelRunner {
   SomasInfo *somas_info() const { return somas_info_; }
   const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
   const std::vector<const DeviceContext *> &device_contexts() const { return device_contexts_; }
+  const DeviceContext *real_output_device_context() const { return real_output_device_context_; }
   const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs() const { return parameter_indexs_; }
   inline const AID &GetAID() const { return id; }
   const mindspore::HashMap<size_t, size_t> &increase_ref_count_size() const { return increase_ref_count_size_; }
@@ -197,6 +198,7 @@ class KernelRunner {
                                OpContext<KernelTensor> *const context) const;
 
   std::vector<const DeviceContext *> device_contexts_;
+  const DeviceContext *real_output_device_context_;
 
   KernelTransformType type_;
 

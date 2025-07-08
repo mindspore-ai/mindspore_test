@@ -244,6 +244,7 @@ KernelRunner::KernelRunner(const std::string &name, const CNodePtr &kernel, cons
   debug_aid_ = debug_aid;
   recorder_aid_ = recorder_aid;
   (void)device_contexts_.emplace_back(device_context);
+  real_output_device_context_ = device_context;
   is_dynamic_shape_ = common::AnfAlgo::IsDynamicShape(kernel_) || common::AnfAlgo::IsDynamicSequence(kernel_);
 
   kernel_async_infer_aid_ = KernelAsyncInferActor::GetInstance()->GetAID();
@@ -305,6 +306,14 @@ void KernelRunner::Init() {
   InitInputInfo();
   InitOutputInfo();
   InitWorkspaceInfo();
+  if (!output_kernel_tensors_.empty() && output_kernel_tensors_[0] && output_kernel_tensors_[0]->heterogeneous_info()) {
+    real_output_device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {kCPUDevice, device_contexts_[0]->device_context_key().device_id_});
+    MS_EXCEPTION_IF_NULL(real_output_device_context_);
+    if (!real_output_device_context_->initialized()) {
+      const_cast<DeviceContext *>(real_output_device_context_)->Initialize();
+    }
+  }
 
   // Set flag to check input contiguous
   if (kernel::NeedCheckInputContiguous(kernel_)) {
@@ -793,10 +802,13 @@ void KernelRunner::TraceDynamicMemory() {
   for (size_t i = 0; i < output_kernel_tensors_.size(); i++) {
     const auto &kernel_tensor = output_kernel_tensors_[i];
     if (!is_output_kernel_[i] && kernel_tensor->pointer_ref_count()->new_ref_count() != SIZE_MAX) {
+      void *ptr = real_output_device_context_ == device_contexts_[0] ? kernel_tensor->device_ptr()
+                                                                     : kernel_tensor->heterogeneous_info()->host_ptr_;
+      MS_EXCEPTION_IF_NULL(ptr);
       MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
-        std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                                 kOutputMem, i, kernel_tensor.get()),
-        device_contexts_[0]);
+        std::make_shared<KernelMemoryTraceBlock>(kernel_, ptr, kernel_tensor->size(), kOutputMem, i,
+                                                 kernel_tensor.get(), real_output_device_context_),
+        real_output_device_context_);
     }
   }
 
@@ -804,7 +816,7 @@ void KernelRunner::TraceDynamicMemory() {
     const auto &kernel_tensor = workspace_kernel_tensors_[i];
     MemoryTraceManager::GetInstance().AddKernelMemoryTraceBlock(
       std::make_shared<KernelMemoryTraceBlock>(kernel_, kernel_tensor->device_ptr(), kernel_tensor->size(),
-                                               kWorkspaceMem, i, kernel_tensor.get()),
+                                               kWorkspaceMem, i, kernel_tensor.get(), device_contexts_[0]),
       device_contexts_[0]);
   }
 }
