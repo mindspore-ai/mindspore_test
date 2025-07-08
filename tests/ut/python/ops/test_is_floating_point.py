@@ -20,6 +20,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore.common.api import _cell_graph_executor
+from mindspore.common import dtype as mstype
 
 
 class Roll(nn.Cell):
@@ -36,3 +37,13 @@ def test_compile_is_floating_point():
     net = Roll()
     x = ms.Tensor([1, 2, 3], ms.float32)
     _cell_graph_executor.compile(net, x)
+
+
+def test_ops_is_floating_point():
+    """
+    Feature: Test is floating point
+    Description: Test the functionality of is floating point
+    Expectation: Success
+    """
+    for t in mstype.float_type:
+        assert ops.is_floating_point(ms.Tensor([1, 2, 3], dtype=t))
