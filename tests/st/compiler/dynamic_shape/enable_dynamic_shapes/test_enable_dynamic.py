@@ -17,6 +17,7 @@ import pytest
 import subprocess
 import numpy as np
 import mindspore as ms
+from mindspore import nn, context
 from tests.mark_utils import arg_mark
 
 
@@ -142,3 +143,31 @@ def test_invalid_args_dtype():
         b = ms.Tensor(np.random.randn(3, 4), ms.float32)
         func(a, b)
     assert "tensor dtypes are not the same" in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_in_graph_mode():
+    """
+    Features: Dynamic shape.
+    Description: Test enable_dynamic.
+    Expectation: Raise expected exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.num = 2
+
+        @ms.jit
+        @ms.enable_dynamic(x=ms.Tensor(shape=None, dtype=ms.int32))
+        def construct(self, x, y):
+            z = x + y
+            return self.num * z
+
+    context.set_context(mode=context.GRAPH_MODE)
+
+    a = ms.Tensor(np.random.randn(1, 2), ms.int32)
+    b = ms.Tensor(np.random.randn(1, 2), ms.int32)
+    with pytest.raises(ValueError) as raise_info:
+        net = Net()
+        net(a, b)
+    assert "the 'enable_dynamic' cannot be set" in str(raise_info.value)

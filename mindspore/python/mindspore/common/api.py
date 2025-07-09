@@ -2090,6 +2090,11 @@ class _CellGraphExecutor:
         if not hasattr(obj, obj.__parse_method__):
             raise AttributeError(
                 'The class {} does not have method {}'.format(obj.__class__.__name__, obj.__parse_method__))
+        inner_func = inspect.unwrap(obj.construct)
+        if hasattr(get_func(inner_func), ENABLE_DYNAMIC):
+            raise ValueError(
+                "When using set_context(mode=GRAPH_MODE) together with nn.Cell, the 'enable_dynamic' cannot be set!"
+            )
         key_id = str(id(obj)) + str(obj.create_time)
         args = get_auto_dynamic_shape_args(args, key_id)
 

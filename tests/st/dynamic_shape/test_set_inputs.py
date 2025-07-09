@@ -249,7 +249,7 @@ def test_dyn_mul_case2(mode):
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
 def test_cell_jit_case(mode):
     """
     Feature: incremental mode support different unset input.

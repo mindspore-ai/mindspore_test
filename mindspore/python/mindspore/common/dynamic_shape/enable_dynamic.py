@@ -47,6 +47,7 @@ def _check_arg_shape_valid(arg, name):
         return True
     return False
 
+
 def _check_arg_type_valid(arg, name):
     """Check if the type of arg is valid."""
     if isinstance(arg, Tensor):
@@ -55,6 +56,7 @@ def _check_arg_type_valid(arg, name):
         return True
     raise TypeError(f"The decorator enable_dynamic only supports Tensor " \
                     f"or a tuple/list of Tensor, but the argument : {name} is type of:{type(arg)}.")
+
 
 def _check_input_valid(arg):
     """Check if real argument is valid."""
@@ -67,6 +69,7 @@ def _check_input_valid(arg):
         return True
     raise TypeError(f"When using decorator enable_dynamic, the corresponding inputs only supports Tensor " \
                     f"or a tuple/list of Tensor.")
+
 
 def _check_arg_type_shape(arg, dyn_arg, name):
     """Check the type, shape and dtype of real argument."""
@@ -89,6 +92,7 @@ def _check_arg_type_shape(arg, dyn_arg, name):
         raise TypeError(f"When using decorator enable_dynamic, the type between argument '{name}' " \
                         f"and corresponding input are not the same.")
     return True
+
 
 def generate_dynamic_sequence_args(args_list, dyn_args_list):
     """Generate dynamic shapes for input sequence"""
@@ -116,6 +120,7 @@ def generate_dynamic_tensor_args(args_list, dynamic_shapes):
     logger.debug(f"args_list: {args_list}, dynamic_shapes: {dynamic_shapes}, " \
                  f"new_compile_args: {new_compile_args}")
     return new_compile_args
+
 
 def enable_dynamic(**kwargs):
     """
