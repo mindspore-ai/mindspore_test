@@ -37,9 +37,9 @@ class GridSampler3DGradAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
   std::vector<uint8_t> output_mask_{1, 1};
-  int64_t interpolation_mode_;
-  int64_t padding_mode_;
-  int64_t align_corners_;
+  int64_t interpolation_mode_{0};
+  int64_t padding_mode_{0};
+  bool align_corners_{false};
 };
 }  // namespace grid_sampler_3d_grad
 }  // namespace kernel

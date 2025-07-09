@@ -37,7 +37,7 @@ class IsInfAscend final : public AclnnKernelMod {
  private:
   KernelTensor abs_out_;
   ScalarPtr inf_ptr_;
-  bool is_int_val_;
+  bool is_int_val_{false};
 
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnAbs, Abs)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnEqScalar, EqScalar)

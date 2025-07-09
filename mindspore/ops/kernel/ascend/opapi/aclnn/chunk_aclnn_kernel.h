@@ -37,8 +37,8 @@ class ChunkAscend : public AclnnKernelMod {
 
  private:
   std::vector<int64_t> split_sizes_{};
-  int64_t split_size_ = 0;
-  int64_t dims_;
+  int64_t split_size_{0};
+  int64_t dims_{0};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
   int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;

@@ -36,9 +36,8 @@ class BatchNormGradExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  bool training_;
-  double eps_;
-  int64_t axis_;
+  bool training_{false};
+  double eps_{1e-6};
   std::vector<uint8_t> output_mask_{};
 };
 }  // namespace batch_norm_grad_ext

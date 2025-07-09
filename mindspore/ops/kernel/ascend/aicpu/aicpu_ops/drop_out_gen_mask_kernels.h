@@ -30,8 +30,8 @@ class DropOutGenMaskKernel : public KernelBase {
   uint64_t seed1_;
   float keep_prob_;
   uint64_t count_;
-  uint64_t g_key[2];
-  uint64_t g_offset[2];
+  uint64_t g_key[2] = {0, 0};
+  uint64_t g_offset[2] = {0, 0};
 
  protected:
   uint32_t DoCompute() override;

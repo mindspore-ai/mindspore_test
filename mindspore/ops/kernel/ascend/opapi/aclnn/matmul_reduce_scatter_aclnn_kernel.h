@@ -38,12 +38,12 @@ class MatmulReduceScatterAscend : public AclnnKernelMod {
   std::pair<KernelTensor *, bool> input_;
   std::pair<KernelTensor *, bool> x2_;
   std::string group_;
-  int64_t world_size_;
+  int64_t world_size_ = 0;
   std::string hccl_inner_comm_name_;
   std::string reduce_op_;
-  int64_t comm_turn_;
-  bool trans_input_;
-  bool trans_x2_;
+  int64_t comm_turn_ = 0;
+  bool trans_input_ = false;
+  bool trans_x2_ = false;
   int64_t stream_mode_ = 1;
 };
 }  // namespace matmul_reduce_scatter
