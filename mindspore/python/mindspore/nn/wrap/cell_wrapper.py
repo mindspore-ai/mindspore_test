@@ -988,6 +988,9 @@ class PipelineCell(Cell):
                            "found in 'network' : {}".format(config_dict, network))
 
 
+    def shard(self, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
+        raise ValueError("For 'PipelineCell', no 'shard' on 'PipelineCell' is allowed.")
+
     def construct(self, *inputs):
         ret = None
         for i in range(self.micro_size):

@@ -199,6 +199,8 @@ const char SEGMENT_NAME[] = "_pipeline_segment";
 // Define python cell attributes and methods
 const char CELL_PARAMETERS_AND_NAMES[] = "parameters_and_names";
 const char CELL_CELLS_AND_NAMES[] = "cells_and_names";
+const char CELL_IN_STRATEGY[] = "_in_strategy";
+const char CELL_OUT_STRATEGY[] = "_out_strategy";
 
 const char CELL_FORWARD_PRE_HOOK[] = "_forward_pre_hook";
 const char CELL_JIT_FORWARD_PRE_HOOK[] = "_jit_forward_pre_hook";
