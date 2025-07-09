@@ -73,3 +73,6 @@ mla_preprocess:
     name: mla_preprocess
   class:
     name: MlaPreprocess
+  dispatch:
+      enable: True
+      InternalOpAscend: AutoGen

@@ -858,10 +858,7 @@ class InternalOpCppCodeGenerator:
         args_list = args_list[:-2]
         if args_list:
             create_input_address = f'PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), {args_list});\n'
-        if op_proto.op_args_signature and op_proto.op_args_signature.rw_write:
-            create_output_address = ''
-        else:
-            create_output_address = 'PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);\n'
+        create_output_address = 'PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);\n'
 
         return create_input_address, create_output_address
 
