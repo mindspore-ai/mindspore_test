@@ -14,33 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_LITE_DEVICE_ADDRESS_H_
-#define MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_LITE_DEVICE_ADDRESS_H_
+#ifndef MINDSPORE_LITE_SRC_EXTENDRT_LITE_DEVICE_ADDRESS_H_
+#define MINDSPORE_LITE_SRC_EXTENDRT_LITE_DEVICE_ADDRESS_H_
 
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "abstract/abstract_function.h"
 #include "common/device_address.h"
-#include "common/kernel_tensor.h"
-#include "common/kernel_utils.h"
-#include "common/common_utils.h"
-#include "kernel/framework_utils.h"
 
 namespace mindspore {
 namespace runtime {
 namespace test {
-using abstract::AbstractFuncUnion;
-using abstract::AbstractTensor;
-using abstract::AbstractTensorPtr;
-using abstract::AnalysisContext;
-using abstract::FuncGraphAbstractClosure;
 using device::DeviceAddress;
 using device::DeviceAddressPtr;
 using device::DeviceType;
-using kernel::AddressPtr;
-using kernel::KernelTensorPtr;
 
 class TestDeviceAddress : public DeviceAddress {
  public:
@@ -74,4 +62,4 @@ class TestDeviceAddress : public DeviceAddress {
 }  // namespace test
 }  // namespace runtime
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_DEVICE_RES_MANAGER_LITE_DEVICE_ADDRESS_H_
+#endif  // MINDSPORE_LITE_SRC_EXTENDRT_LITE_DEVICE_ADDRESS_H_
