@@ -373,10 +373,7 @@ bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullpt
   if (call_node->GetVobj() == nullptr || call_node->GetVobj()->GetPyObject().ptr() == nullptr) {
     return false;
   }
-  if (guard_success) {
-    return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());
-  }
-  return false;
+  return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());
 }
 
 // dict.items()

@@ -15,6 +15,8 @@
  */
 
 #include "runtime/device/res_manager/test_device_address.h"
+#include <utility>
+#include <unordered_map>
 #include "ir/device_address_maker.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
