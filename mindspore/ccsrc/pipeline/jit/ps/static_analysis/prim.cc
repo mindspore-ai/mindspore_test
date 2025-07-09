@@ -3979,13 +3979,13 @@ class ScanEvaluator : public Evaluator {
     auto loop_func_ptr = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>();
     MS_EXCEPTION_IF_NULL(loop_func_ptr);
     const FuncGraphPtr &loop_func_node = loop_func_ptr->func_graph();
+    MS_EXCEPTION_IF_NULL(loop_func_node);
     constexpr size_t loop_func_expect_input_size = 2;
     auto loop_func_params = loop_func_node->get_inputs();
     auto loop_func_input_size = loop_func_params.size();
     if (loop_func_input_size != loop_func_expect_input_size) {
       MS_EXCEPTION(ValueError) << "For `Scan` op, loop_func expects two arguments, but got: " << loop_func_input_size;
     }
-    MS_EXCEPTION_IF_NULL(loop_func_node);
     return loop_func_node;
   }
 
@@ -4827,6 +4827,7 @@ class TraceGraphEvaluator final : public TransitionPrimEvaluator {
   MS_DECLARE_PARENT(TraceGraphEvaluator, TransitionPrimEvaluator);
   EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
                          const AnfNodeConfigPtr &out_conf) override {
+    MS_EXCEPTION_IF_NULL(out_conf);
     const auto &node = out_conf->node();
     MS_EXCEPTION_IF_NULL(node);
     const auto &cnode = node->cast<CNodePtr>();
@@ -4876,7 +4877,6 @@ class TraceGraphEvaluator final : public TransitionPrimEvaluator {
     const py::list &linenos = output[1];
     const py::tuple &output_args = output[2];
     const auto &func_graph = trace_recorder->BuildEndGraph(file_names, linenos, py::args(output_args), true);
-    MS_EXCEPTION_IF_NULL(out_conf);
     auto eng = out_conf->engine();
     AddToManager(eng, trace_top_graph);
     AnfNodePtrList new_inputs{NewValueNode(trace_top_graph)};
