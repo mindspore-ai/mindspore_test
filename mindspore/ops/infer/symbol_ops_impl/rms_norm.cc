@@ -31,7 +31,7 @@ REG_SYMBOL_OP_BUILDER("RmsNorm").SetShapeDepend({DependOn::kShape}).SetShapeFunc
 
 REG_SYMBOL_OP_BUILDER("RmsNormGrad")
   .SetShapeDepend({DependOn::kNone, DependOn::kShape, DependOn::kNone, DependOn::kShape})
-  .SetShapeFunc([](OperationBuilder *b) { return ListSymbol::Make(b->GetSymbolsOfDepend()); });
+  .SetShapeFunc(TransparentInput);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
