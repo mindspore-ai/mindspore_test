@@ -505,11 +505,7 @@ std::string MsContext::GetJitLevel() const {
   static bool first_call = true;
   std::string jit_level = "";
   if (jit_status_ != JitStatus::kNotJit) {
-    const auto &jit_config = PhaseManager::GetInstance().jit_config();
-    auto iter = jit_config.find("jit_level");
-    if (iter != jit_config.end()) {
-      jit_level = iter->second;
-    }
+    jit_level = PhaseManager::GetInstance().GetJitLevel();
   }
 
   auto global_jit_level = get_param<std::string>(MS_CTX_JIT_LEVEL);
@@ -548,11 +544,7 @@ std::string MsContext::GetJitLevel() const {
 std::string MsContext::GetBackend() {
   std::string backend = "";
   if (jit_status_ != JitStatus::kNotJit) {
-    const auto &jit_config = PhaseManager::GetInstance().jit_config();
-    auto iter = jit_config.find("backend");
-    if (iter != jit_config.end()) {
-      backend = iter->second;
-    }
+    backend = PhaseManager::GetInstance().GetJitBackend();
   }
 
   if (backend.empty()) {
@@ -573,9 +565,7 @@ bool MsContext::IsKByKExecutorMode() {
     CheckHcclBufferSize(jit_level);
   }
 
-  const auto &jit_config = PhaseManager::GetInstance().jit_config();
-  if (jit_status_ != JitStatus::kNotJit && jit_config.find("backend") != jit_config.end() &&
-      jit_config.at("backend") == kBackendGE) {
+  if (jit_status_ != JitStatus::kNotJit && PhaseManager::GetInstance().GetJitBackend() == kBackendGE) {
     MS_LOG(INFO) << "Enable graph_sink executor for ge backend.";
     return false;
   }
