@@ -172,14 +172,14 @@ PLUGIN_METHOD(DvppVdecCreateChnl, int64_t, int64_t);
 
 PLUGIN_METHOD(DvppVdecStartGetFrame, int64_t, int64_t, int64_t);
 
-PLUGIN_METHOD(DvppVdecSendStream, int64_t, int64_t, const std::shared_ptr<mindspore::dataset::Tensor> &, int64_t, bool,
-              std::shared_ptr<mindspore::dataset::DeviceBuffer> *);
+PLUGIN_METHOD(DvppVdecSendStream, int64_t, int64_t, const std::shared_ptr<mindspore::dataset::DeviceBuffer> &, int64_t,
+              bool, std::shared_ptr<mindspore::dataset::DeviceBuffer> *);
 
 PLUGIN_METHOD(DvppVdecStopGetFrame, std::shared_ptr<mindspore::dataset::DeviceBuffer>, int64_t, int64_t);
 
 PLUGIN_METHOD(DvppVdecDestroyChnl, int64_t, int64_t);
 
-PLUGIN_METHOD(DvppMemcpy, int64_t, const std::shared_ptr<mindspore::dataset::DeviceBuffer> &, void *);
+PLUGIN_METHOD(DvppMemcpy, int64_t, void *, size_t, const void *, size_t, int);
 
 // acl
 PLUGIN_METHOD(GetSocName, int, std::string *);

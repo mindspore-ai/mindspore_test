@@ -751,7 +751,7 @@ def _decode_video_dvpp(decode_params, frames, pts_per_frame):
     for packet in container.demux(stream):
         if packet.pts is not None:
             frame = frames[packet.pts].frame
-            input_tensor = frame
+            input_tensor = cde.DeviceBuffer.from_numpy(frame)
 
             if start_offset <= int(packet.pts) <= end_offset:
                 display = True
@@ -761,7 +761,7 @@ def _decode_video_dvpp(decode_params, frames, pts_per_frame):
                 output_tensor = cde.DeviceBuffer([])
             # 12:rgb888packed; 13:bgr888packed; 69:rgb888planer; 70:bgr888planer. Packed is HWC, planer is CHW
             # use CHW to avoid memory copy
-            cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
+            cde.decode_video_send_stream(chn, input_tensor, 69, display, output_tensor)
 
     # ret_tensor is ordered by pts
     ret_tensor_dvpp = cde.decode_video_stop_get_frame(chn, total_frame)
@@ -867,7 +867,7 @@ def _read_from_stream_ffmpeg(container, start_offset, end_offset, pts_unit, stre
                 continue
             break
 
-    # ensure that the results are sorted wrt the pts
+    # ensure that the results are sorted with the pts
     result = [frames[i] for i in sorted(frames) if start_offset <= frames[i].pts <= end_offset]
     if frames and start_offset > 0 and start_offset not in frames:
         # if there is no frame that exactly matches the pts of start_offset
@@ -1229,7 +1229,7 @@ class VideoDecoder:
                 if frames_count == len(frames_in_group):
                     break
                 frame = frames[packet.pts].frame
-                input_tensor = frame
+                input_tensor = cde.DeviceBuffer.from_numpy(frame)
                 if packet.pts // pts_per_frame in frames_in_group:
                     display = True
                     frames_count += 1
@@ -1238,7 +1238,7 @@ class VideoDecoder:
                 else:
                     display = False
                     output_tensor = cde.DeviceBuffer([])
-                cde.decode_video_send_stream(chn, cde.Tensor(input_tensor), 69, display, output_tensor)
+                cde.decode_video_send_stream(chn, input_tensor, 69, display, output_tensor)
 
     def _decode_video_dvpp_frames(self, decode_params, frames, pts_per_frame, indices):
         """ Send frames to Ascend and using DVPP to decode. """

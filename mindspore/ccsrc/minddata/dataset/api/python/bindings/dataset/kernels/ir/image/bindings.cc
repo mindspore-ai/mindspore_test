@@ -1032,17 +1032,17 @@ PYBIND_REGISTER(DvppCodec, 1, ([](py::module *m) {
 
                   (void)m->def(
                     "decode_video_start_get_frame",
-                    [](int chnId, int totalFrame) {
-                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStartGetFrame(chnId, totalFrame));
+                    [](int chn_id, int total_frame) {
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStartGetFrame(chn_id, total_frame));
                     },
                     py::call_guard<py::gil_scoped_release>());
 
                   (void)m->def(
                     "decode_video_send_stream",
-                    [](int chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat, bool display,
+                    [](int chn_id, const std::shared_ptr<DeviceBuffer> &input, int64_t out_format, bool display,
                        std::shared_ptr<DeviceBuffer> *out) {
                       Status status =
-                        AclAdapter::GetInstance().DvppVdecSendStream(chnId, input, outFormat, display, out);
+                        AclAdapter::GetInstance().DvppVdecSendStream(chn_id, input, out_format, display, out);
                       if (status.IsError()) {
                         MS_LOG(WARNING) << status.ToString();
                       }
@@ -1051,17 +1051,17 @@ PYBIND_REGISTER(DvppCodec, 1, ([](py::module *m) {
 
                   (void)m->def(
                     "decode_video_stop_get_frame",
-                    [](int chnId, int totalFrame) {
+                    [](int chn_id, int total_frame) {
                       std::shared_ptr<DeviceBuffer> output;
-                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStopGetFrame(chnId, totalFrame, &output));
+                      THROW_IF_ERROR(AclAdapter::GetInstance().DvppVdecStopGetFrame(chn_id, total_frame, &output));
                       return output;
                     },
                     py::call_guard<py::gil_scoped_release>());
 
                   (void)m->def(
                     "decode_video_destroy_chnl",
-                    [](int chnId) {
-                      Status status = AclAdapter::GetInstance().DvppVdecDestroyChnl(chnId);
+                    [](int chn_id) {
+                      Status status = AclAdapter::GetInstance().DvppVdecDestroyChnl(chn_id);
                       if (status.IsError()) {
                         MS_LOG(WARNING) << status.ToString();
                       }

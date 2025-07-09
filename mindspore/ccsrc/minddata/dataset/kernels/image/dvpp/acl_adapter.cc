@@ -751,12 +751,12 @@ Status AclAdapter::DvppSysExit() {
   return Status::OK();
 }
 
-Status AclAdapter::DvppVdecCreateChnl(int64_t pType, int64_t *chnl) {
+Status AclAdapter::DvppVdecCreateChnl(int64_t payload_type, int64_t *chnl) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_create_chnl_fun_obj_ != nullptr,
                                "Failed to load dvpp_vdec_create_chnl method.");
 
-  *chnl = dvpp_vdec_create_chnl_fun_obj_(pType);
+  *chnl = dvpp_vdec_create_chnl_fun_obj_(payload_type);
   if (*chnl == -1) {
     RETURN_IF_NOT_OK(DvppSysExit());
     RETURN_STATUS_UNEXPECTED("Failed to call dvpp_vdec_create_chnl method.");
@@ -764,55 +764,55 @@ Status AclAdapter::DvppVdecCreateChnl(int64_t pType, int64_t *chnl) {
   return Status::OK();
 }
 
-Status AclAdapter::DvppVdecStartGetFrame(int64_t chnId, int64_t totalFrame) {
+Status AclAdapter::DvppVdecStartGetFrame(int64_t chn_id, int64_t total_frame) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_start_get_frame_fun_obj_ != nullptr,
                                "Failed to load dvpp_vdec_start_get_frame method.");
 
-  int64_t ret = dvpp_vdec_start_get_frame_fun_obj_(chnId, totalFrame);
+  int64_t ret = dvpp_vdec_start_get_frame_fun_obj_(chn_id, total_frame);
   if (ret != 0) {
-    RETURN_IF_NOT_OK(DvppVdecDestroyChnl(chnId));
+    RETURN_IF_NOT_OK(DvppVdecDestroyChnl(chn_id));
     RETURN_IF_NOT_OK(DvppSysExit());
     RETURN_STATUS_UNEXPECTED("Failed to call dvpp_vdec_start_get_frame method, errno: " + std::to_string(ret));
   }
   return Status::OK();
 }
 
-Status AclAdapter::DvppVdecSendStream(int64_t chnId, const std::shared_ptr<Tensor> &input, int64_t outFormat,
+Status AclAdapter::DvppVdecSendStream(int64_t chn_id, const std::shared_ptr<DeviceBuffer> &input, int64_t out_format,
                                       bool display, std::shared_ptr<DeviceBuffer> *out) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_send_stream_fun_obj_ != nullptr,
                                "Failed to load dvpp_vdec_send_stream method.");
 
-  int64_t ret = dvpp_vdec_send_stream_fun_obj_(chnId, input, outFormat, display, out);
+  int64_t ret = dvpp_vdec_send_stream_fun_obj_(chn_id, input, out_format, display, out);
   CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_vdec_send_stream method, errno: " + std::to_string(ret));
   return Status::OK();
 }
 
-Status AclAdapter::DvppVdecStopGetFrame(int64_t chnId, int64_t totalFrame, std::shared_ptr<DeviceBuffer> *output) {
+Status AclAdapter::DvppVdecStopGetFrame(int64_t chn_id, int64_t total_frame, std::shared_ptr<DeviceBuffer> *output) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_stop_get_frame_fun_obj_ != nullptr,
                                "Failed to load dvpp_vdec_stop_get_frame method.");
 
-  *output = dvpp_vdec_stop_get_frame_fun_obj_(chnId, totalFrame);
+  *output = dvpp_vdec_stop_get_frame_fun_obj_(chn_id, total_frame);
   return Status::OK();
 }
 
-Status AclAdapter::DvppVdecDestroyChnl(int64_t chnId) {
+Status AclAdapter::DvppVdecDestroyChnl(int64_t chn_id) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_vdec_destroy_chnl_fun_obj_ != nullptr,
                                "Failed to load dvpp_vdec_destroy_chnl method.");
 
-  int64_t ret = dvpp_vdec_destroy_chnl_fun_obj_(chnId);
+  int64_t ret = dvpp_vdec_destroy_chnl_fun_obj_(chn_id);
   CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_vdec_destroy_chnl method, errno: " + std::to_string(ret));
   return Status::OK();
 }
 
-Status AclAdapter::DvppMemcpy(const std::shared_ptr<DeviceBuffer> &src, void *dest) {
+Status AclAdapter::DvppMemcpy(void *dst, size_t dest_max, const void *src, size_t count, int kind) {
   CHECK_FAIL_RETURN_UNEXPECTED(HasAclPlugin(), "Load libdvpp_utils.so failed.");
   CHECK_FAIL_RETURN_UNEXPECTED(dvpp_memcpy_fun_obj_ != nullptr, "Failed to load dvpp_memcpy method.");
 
-  int64_t ret = dvpp_memcpy_fun_obj_(src, dest);
+  int64_t ret = dvpp_memcpy_fun_obj_(dst, dest_max, src, count, kind);
   CHECK_FAIL_RETURN_UNEXPECTED(ret == 0, "Failed to call dvpp_memcpy method, errno: " + std::to_string(ret));
   return Status::OK();
 }
