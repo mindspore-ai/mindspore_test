@@ -39,8 +39,8 @@ class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
   void InitializeCommonAttributes();
   std::pair<KernelTensor *, bool> input_a_;
   std::pair<KernelTensor *, bool> input_b_;
-  bool trans_a_;
-  bool trans_b_;
+  bool trans_a_ = false;
+  bool trans_b_ = false;
   std::string group_;
   std::string hccl_inner_comm_name_;
   int64_t comm_turn_ = 0;

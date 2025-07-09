@@ -34,8 +34,8 @@ class RandExtAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  uint64_t seed_;
-  uint64_t offset_;
+  uint64_t seed_{0};
+  uint64_t offset_{0};
   double from_{0.};
   double to_{1.};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()

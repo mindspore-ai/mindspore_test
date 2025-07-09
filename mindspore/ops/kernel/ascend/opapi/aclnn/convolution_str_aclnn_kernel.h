@@ -43,7 +43,7 @@ class ConvolutionStrAscend : public AclnnKernelMod {
 
   std::vector<int64_t> stride_;
   std::vector<int64_t> dilation_;
-  int64_t padding_;
+  int64_t padding_{0};
   int64_t groups_{0};
   bool transposed_{false};
   bool need_ConstantPadNd_{false};

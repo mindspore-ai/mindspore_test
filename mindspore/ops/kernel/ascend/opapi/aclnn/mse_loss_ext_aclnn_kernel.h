@@ -53,7 +53,7 @@ class MSELossExtAclnnKernelMod : public AclnnKernelMod {
   KernelTensor input_expand_;
   KernelTensor target_expand_;
 
-  int64_t reduction_value_;
+  int64_t reduction_value_{0};
 };
 
 }  // namespace mse_loss_ext

@@ -35,8 +35,8 @@ class InplaceUniformAscend : public AclnnKernelMod {
  private:
   double from_{0.};
   double to_{1.};
-  uint64_t seed_;
-  uint64_t offset_;
+  uint64_t seed_{0};
+  uint64_t offset_{0};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace inplace_uniform
