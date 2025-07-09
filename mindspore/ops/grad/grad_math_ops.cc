@@ -1093,7 +1093,7 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
     int64_t dout_optim_rank_for_dw = abstract::TensorShape::kShapeDimAny;
     int64_t dout_perm_rank = abstract::TensorShape::kShapeDimAny;
 
-    if (!IsDynamicRank(inputs[0]) && !IsDynamicRank(inputs[1])) {
+    if (!IsDynamic(inputs[0]) && !IsDynamic(inputs[1])) {
       auto &input_shape = inputs.at(i0);
       auto &weight_shape = inputs.at(i1);
       auto &dout_shape = inputs.at(i2);
