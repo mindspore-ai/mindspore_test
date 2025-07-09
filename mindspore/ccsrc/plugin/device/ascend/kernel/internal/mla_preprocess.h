@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_MLA_PREPROCESS_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_MLA_PREPROCESS_H_
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
-#include <memory>
+#include <string>
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include <utility>
+
+#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "include/internal.h"
 
 namespace mindspore {
-namespace ops {
-class OPS_API MatmulSplitSiluOut2FuncImpl : public OpFuncImpl {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
-
-}  // namespace ops
+namespace kernel {
+auto kMlaPreprocessParamCacheModeIndex = 26;
+DECLARE_INTERNAL_KERNEL_MOD(MlaPreprocess)
+}  // namespace kernel
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_INTERNAL_MLA_PREPROCESS_H_

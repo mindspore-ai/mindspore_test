@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_Q_MATMUL_SPLIT_SILU_MUL_OUT1_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_Q_MATMUL_SPLIT_SILU_MUL_OUT1_H_
 #include <memory>
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API MatmulSplitSiluOut2FuncImpl : public OpFuncImpl {
+class OPS_API QMatmulSplitSiluMulOut1FuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -31,4 +31,4 @@ class OPS_API MatmulSplitSiluOut2FuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_SPLIT_SILU_OUT2_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_Q_MATMUL_SPLIT_SILU_MUL_OUT1_H_

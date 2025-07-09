@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/matmul_split_silu_out2.h"
+#include "infer/ops_func_impl/matmul_split_silu_fastgelu_add_mul_out1.h"
 #include "infer/ops_func_impl/matmul_fusion_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
@@ -24,14 +24,14 @@
 namespace mindspore {
 namespace ops {
 
-BaseShapePtr MatmulSplitSiluOut2FuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return MatmulFusionUtils::InferenceMultiMatmulInferShape(primitive, input_args);
+BaseShapePtr MatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferShape(
+  const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+  return MatmulFusionUtils::InferenceMultiMatmulInferShapeFused(primitive, input_args);
 }
 
-TypePtr MatmulSplitSiluOut2FuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const std::vector<AbstractBasePtr> &input_args) const {
-  return MatmulFusionUtils::InferenceMultiMatmulInferType(primitive, input_args);
+TypePtr MatmulSplitSiluFastgeluAddMulOut1FuncImpl::InferType(const PrimitivePtr &primitive,
+                                                             const std::vector<AbstractBasePtr> &input_args) const {
+  return MatmulFusionUtils::InferenceMultiMatmulInfer1OutputType(primitive, input_args);
 }
 
 }  // namespace ops
