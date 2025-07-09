@@ -1327,10 +1327,7 @@ bool MicroInterLeavedOrderControlPass(const ResourcePtr &resource) {
   if (IsPassDisableForGPTO()) {
     return true;
   }
-  std::string enable_recovery = common::GetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY");
-  common::SetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY", "1");
   parallel::MicroInterleavedOrderControl(resource->func_graph());
-  common::SetEnv("MS_DEV_ENABLE_PASS_CIRCLE_RECOVERY", enable_recovery.c_str());
   return true;
 }
 
