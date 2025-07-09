@@ -15,8 +15,9 @@
 import os
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context, mint, ops
+from mindspore import context, mint, ops, jit
 from tests.mark_utils import arg_mark
+from tests.st.compiler.utils import match_array
 
 context.set_context(jit_config={"jit_level": "O0"})
 
@@ -619,3 +620,64 @@ def test_tensor_select_slice_index_read():
         assert ms.ops.all(out == ms.Tensor([[1, 1]], dtype=ms.int32))
     finally:
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_getitem_setitem_by_slice_v1():
+    """
+    Feature: Test Tensor getitem/setitem.
+    Description: Test two tensors getitem by slice, and the slice is a variable.
+    Expectation: no exception, no graph break.
+    """
+
+    def fn(x, kv_cache, pe_cache, start: int):
+        B = x.shape[0]
+        y = x + 1
+        # start is mutable, so the slice is variable, not constant.
+        kv_cache[:B, start : start + 1] = y
+        pe_cache[:B, start : start + 1] = y + 1
+        return kv_cache + pe_cache
+
+    x = ops.randn(2, 1, 2, dtype=ms.float32)
+    kv_cache1 = ops.zeros((2, 2, 2), dtype=ms.float32)
+    pe_cache1 = ops.zeros((2, 2, 2), dtype=ms.float32)
+    start = ms.mutable(1)  # Use mutable to ensure the slice is variable
+
+    o1 = fn(x, kv_cache1, pe_cache1, start)
+
+    compiled_fn = jit(fn, capture_mode='ast', fullgraph=True)
+    kv_cache2 = ops.zeros((2, 2, 2), dtype=ms.float32)
+    pe_cache2 = ops.zeros((2, 2, 2), dtype=ms.float32)
+    o2 = compiled_fn(x, kv_cache2, pe_cache2, start)
+
+    match_array(o1, o2)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_getitem_setitem_by_slice_v2():
+    """
+    Feature: Test Tensor getitem/setitem.
+    Description: Test two tensors getitem by slice, and the slice is a variable.
+    Expectation: no exception, no graph break.
+    """
+
+    def fn(x, kv_cache, pe_cache, start: int):
+        y = x + 1
+        # start is mutable, so the slice is variable, not constant.
+        kv_cache[start : start + 1] = y
+        pe_cache[start : start + 1] = y + 1
+        return kv_cache + pe_cache
+
+    x = ops.randn(1, 2, dtype=ms.float32)
+    kv_cache1 = ops.zeros((2, 2), dtype=ms.float32)
+    pe_cache1 = ops.zeros((2, 2), dtype=ms.float32)
+    start = ms.mutable(1)  # Use mutable to ensure the slice is variable
+
+    o1 = fn(x, kv_cache1, pe_cache1, start)
+
+    compiled_fn = jit(fn, capture_mode='ast', fullgraph=True)
+    kv_cache2 = ops.zeros((2, 2), dtype=ms.float32)
+    pe_cache2 = ops.zeros((2, 2), dtype=ms.float32)
+    o2 = compiled_fn(x, kv_cache2, pe_cache2, start)
+
+    match_array(o1, o2)
