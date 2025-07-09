@@ -112,35 +112,19 @@ uint64_t UCEException::ExtractUceTime(const char *error_msg) {
   }
 }
 
-bool UCEException::enable_arf() {
-  static bool is_enable_arf = [this]() {
-    if (!arf_env_) {
-      return false;
-    }
-    if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
-      MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, ARF can not be enabled.";
-      return false;
-    }
-    return true;
-  }();
-  return is_enable_arf;
-}
+bool UCEException::enable_arf() { return arf_env_ && is_graph_pipeline_compiled_; }
 
 bool UCEException::IsEnableUCE() {
   static bool is_enable_uce = []() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optUCE = "UCE:1";
     if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos)) {
-      if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
-        MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, UCE can not be enabled.";
-        return false;
-      }
-      MS_LOG(WARNING) << "UCE enabled.";
+      MS_LOG(WARNING) << "MS_ENABLE_TFT=" << tftEnv << ", UCE enabled.";
       return true;
     }
     return false;
   }();
-  return is_enable_uce;
+  return is_enable_uce && UCEException::GetInstance().is_graph_pipeline_compiled_;
 }
 
 bool UCEException::IsEnableHCCE() {
@@ -148,15 +132,11 @@ bool UCEException::IsEnableHCCE() {
     auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
     constexpr std::string_view optHCCE = "HCCE:1";
     if (!tftEnv.empty() && (tftEnv.find(optHCCE) != std::string::npos)) {
-      if (!UCEException::GetInstance().is_graph_pipeline_compiled_) {
-        MS_LOG(WARNING) << "For network which was not compiled by graph pipeline, HCCE can not be enabled.";
-        return false;
-      }
-      MS_LOG(WARNING) << "HCCE enabled.";
+      MS_LOG(WARNING) << "MS_ENABLE_TFT=" << tftEnv << ", HCCE enabled.";
       return true;
     }
     return false;
   }();
-  return is_enable_hcce;
+  return is_enable_hcce && UCEException::GetInstance().is_graph_pipeline_compiled_;
 }
 }  // namespace mindspore
