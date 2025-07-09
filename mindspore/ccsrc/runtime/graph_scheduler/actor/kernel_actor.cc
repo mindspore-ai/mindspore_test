@@ -1314,8 +1314,10 @@ void KernelActor::FetchOutputDeviceTensor(OpContext<KernelTensor> *const context
 
   // May exist in the kernel which does not support the dynamic shape.
   if (output_kernel_tensors.size() != output_size_list.size()) {
-    std::string error_info = "The outputs number(" + std::to_string(output_size_list.size()) + ") is wrong, " +
-                             GetAID().Name() + " may not support the dynamic shape, please check.";
+    std::string error_info =
+      "For " + GetAID().Name() + ", the expected outputs number: " + std::to_string(output_kernel_tensors.size()) +
+      ", but the number of output size list after Resize: " + std::to_string(output_size_list.size()) +
+      ", this kernel may not support the dynamic shape, please check.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, (*context), error_info);
   }
 
