@@ -7,7 +7,7 @@ scalar_cast:
 
         Args:
             input_x (scalar): The input scalar. Only constant value is allowed.
-            input_y (mindspore.dtype): The type to be cast. Only constant value is allowed. And the value should only be mindspore.int64, mindspore.float64, or mindspore.bool_.
+            input_y (mindspore.dtype): The type to be cast. Only constant value is allowed. And the value should only be mindspore.int64, mindspore.float64, or mindspore.bool.
 
         Returns:
             Scalar. The type is the same as the python type corresponding to `input_y`.

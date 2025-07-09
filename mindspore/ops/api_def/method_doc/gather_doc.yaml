@@ -61,7 +61,7 @@ gather:
           On CPU and GPU, an error is raised if an out of bound indice is found. On Ascend, the results may be
           undefined.
         - The data type of self cannot be
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ on Ascend
+          `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ on Ascend
           platform currently.
 
     Args:

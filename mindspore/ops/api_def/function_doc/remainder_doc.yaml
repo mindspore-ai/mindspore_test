@@ -18,10 +18,10 @@ remainder:
         input (Union[Tensor, numbers.Number, bool]): The dividend is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, numbers.Number, bool]): The divisor is a numbers.Number or
-            a bool or a tensor whose data type is number or bool\_ when the dividend is a tensor.
-            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool\_.
+            a bool or a tensor whose data type is number or bool when the dividend is a tensor.
+            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool.
 
     Returns:
         Tensor, with dtype promoted and shape broadcasted.

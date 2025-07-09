@@ -53,7 +53,7 @@ count_nonzero:
         keep_dims (bool, optional): Whether to maintain dimensions specified by `axis`.
             If true, keep these reduced dimensions and the length is 1.
             If false, don't keep these dimensions. Default: ``False`` .
-        dtype (Union[Number, mindspore.bool\_], optional): The data type of the output tensor.
+        dtype (Union[Number, mindspore.bool], optional): The data type of the output tensor.
             Default: ``None`` .
 
     Returns:

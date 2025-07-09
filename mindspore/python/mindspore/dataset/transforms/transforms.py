@@ -609,7 +609,7 @@ class Mask(TensorOperation):
             ``Relational.GT``, ``Relational.LE``, ``Relational.GE``, take ``Relational.EQ`` as example,
             EQ refers to equal.
         constant (Union[str, int, float, bool]): Constant to be compared to.
-        dtype (mindspore.dtype, optional): Type of the generated mask. Default: ``mstype.bool_``.
+        dtype (mindspore.dtype, optional): Type of the generated mask. Default: ``mstype.bool``.
 
     Raises:
         TypeError: `operator` is not of type Relational.
@@ -650,7 +650,7 @@ class Mask(TensorOperation):
     """
 
     @check_mask_op_new
-    def __init__(self, operator, constant, dtype=mstype.bool_):
+    def __init__(self, operator, constant, dtype=mstype.bool):
         super().__init__()
         self.operator = operator
         self.dtype = mstype_to_detype(dtype)

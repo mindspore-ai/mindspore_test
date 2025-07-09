@@ -17,16 +17,21 @@
 #ifndef MINDSPORE_CORE_IR_DTYPE_NUMBER_H_
 #define MINDSPORE_CORE_IR_DTYPE_NUMBER_H_
 
+#include <vector>
+#include <unordered_map>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <string>
 #include "utils/hash_map.h"
+#include "utils/log_adapter.h"
 #include "base/base.h"
 #include "ir/named.h"
 #include "ir/dtype/type.h"
 
 namespace mindspore {
+inline TypePtr ToRealType(TypeId type_id, std::string type_name);
+inline TypePtr ToComplexType(TypeId type_id, std::string type_name);
 /// \brief Number defines an Object class whose type is number.
 class MS_CORE_API Number : public Object {
  public:
@@ -73,6 +78,34 @@ class MS_CORE_API Number : public Object {
     return oss.str();
   }
 
+  size_t ItemSize() const {
+    constexpr int kBitsPerByte = 8;
+    return nbits_ < kBitsPerByte ? 1 : nbits_ / kBitsPerByte;
+  }
+
+  bool IsSigned() const {
+    static const std::vector<int> unsigned_types = {kObjectTypeNumber, kNumberTypeBool,  kNumberTypeUInt,
+                                                    kNumberTypeGLUInt, kNumberTypeUInt8, kNumberTypeUInt16,
+                                                    kNumberTypeUInt32, kNumberTypeUInt64};
+    return std::find(unsigned_types.begin(), unsigned_types.end(), number_type_) == unsigned_types.end();
+  }
+
+  bool IsFloatingPoint() const {
+    static const std::vector<int> floating_point_types = {
+      kNumberTypeFloat,    kNumberTypeFloat8E4M3FN, kNumberTypeFloat8E5M2, kNumberTypeHiFloat8, kNumberTypeFloat16,
+      kNumberTypeBFloat16, kNumberTypeFloat32,      kNumberTypeFloat64,    kNumberTypeDouble};
+    return std::find(floating_point_types.begin(), floating_point_types.end(), number_type_) !=
+           floating_point_types.end();
+  }
+
+  bool IsComplex() const {
+    static const std::vector<int> complex_types = {kNumberTypeComplex, kNumberTypeComplex64, kNumberTypeComplex128};
+    return std::find(complex_types.begin(), complex_types.end(), number_type_) != complex_types.end();
+  }
+
+  TypePtr ToReal() const { return ToRealType(number_type_, ToReprString()); }
+  TypePtr ToComplex() const { return ToComplexType(number_type_, ToReprString()); }
+
  private:
   const TypeId number_type_;
   const int nbits_;
@@ -94,7 +127,7 @@ class MS_CORE_API Bool : public Number {
   TypeId generic_type_id() const override { return kNumberTypeBool; }
   TypePtr DeepCopy() const override { return std::make_shared<Bool>(); }
   std::string ToString() const override { return "Bool"; }
-  std::string ToReprString() const override { return "bool_"; }
+  std::string ToReprString() const override { return "bool"; }
   std::string DumpText() const override { return "Bool"; }
 };
 
@@ -123,7 +156,7 @@ class MS_CORE_API Int : public Number {
   }
 
   std::string ToString() const override { return GetTypeName("Int"); }
-  std::string ToReprString() const override { return nbits() == 0 ? "int_" : GetTypeName("int"); }
+  std::string ToReprString() const override { return GetTypeName("int"); }
   std::string DumpText() const override {
     return nbits() == 0 ? std::string("Int") : std::string("I") + std::to_string(nbits());
   }
@@ -214,7 +247,7 @@ class MS_CORE_API Float : public Number {
     if (type_id() == kNumberTypeHiFloat8) {
       return "hifloat8";
     }
-    return nbits() == 0 ? "float_" : GetTypeName("float");
+    return GetTypeName("float");
   }
   std::string DumpText() const override {
     if (type_id() == kNumberTypeFloat8E4M3FN) {
@@ -255,7 +288,7 @@ class MS_CORE_API BFloat : public Number {
   }
 
   std::string ToString() const override { return GetTypeName("BFloat"); }
-  std::string ToReprString() const override { return nbits() == 0 ? "bfloat" : GetTypeName("bfloat"); }
+  std::string ToReprString() const override { return GetTypeName("bfloat"); }
   std::string DumpText() const override {
     return nbits() == 0 ? std::string("BFloat") : std::string("BF") + std::to_string(nbits());
   }
@@ -314,6 +347,46 @@ GVAR_DEF(TypePtr, kBFloat, std::make_shared<BFloat>());
 GVAR_DEF(TypePtr, kNumber, std::make_shared<Number>());
 GVAR_DEF(TypePtr, kComplex64, std::make_shared<Complex>(static_cast<int>(BitsNum::eBits64)));
 GVAR_DEF(TypePtr, kComplex128, std::make_shared<Complex>(static_cast<int>(BitsNum::eBits128)));
+
+inline TypePtr ToRealType(TypeId type_id, std::string type_name) {
+  static const std::unordered_map<TypeId, TypePtr> type_map = {{kNumberTypeComplex64, kFloat32},
+                                                               {kNumberTypeComplex128, kFloat64},
+                                                               {kNumberTypeBool, kBool},
+                                                               {kNumberTypeInt4, kInt4},
+                                                               {kNumberTypeInt8, kInt8},
+                                                               {kNumberTypeInt16, kInt16},
+                                                               {kNumberTypeInt32, kInt32},
+                                                               {kNumberTypeInt64, kInt64},
+                                                               {kNumberTypeUInt8, kUInt8},
+                                                               {kNumberTypeUInt16, kUInt16},
+                                                               {kNumberTypeUInt32, kUInt32},
+                                                               {kNumberTypeUInt64, kUInt64},
+                                                               {kNumberTypeFloat8E4M3FN, kFloat8E4M3FN},
+                                                               {kNumberTypeFloat8E5M2, kFloat8E5M2},
+                                                               {kNumberTypeHiFloat8, kHiFloat8},
+                                                               {kNumberTypeFloat16, kFloat16},
+                                                               {kNumberTypeFloat32, kFloat32},
+                                                               {kNumberTypeFloat64, kFloat64},
+                                                               {kNumberTypeBFloat16, kBFloat16}};
+  auto it = type_map.find(type_id);
+  if (it == type_map.end()) {
+    MS_EXCEPTION(TypeError) << "Cannot convert type " << type_name << " to real type.";
+  }
+  return it->second;
+}
+
+inline TypePtr ToComplexType(TypeId type_id, std::string type_name) {
+  static const std::unordered_map<TypeId, TypePtr> type_map = {{kNumberTypeComplex64, kComplex64},
+                                                               {kNumberTypeBFloat16, kComplex64},
+                                                               {kNumberTypeFloat32, kComplex64},
+                                                               {kNumberTypeComplex128, kComplex128},
+                                                               {kNumberTypeFloat64, kComplex128}};
+  auto it = type_map.find(type_id);
+  if (it == type_map.end()) {
+    MS_EXCEPTION(TypeError) << "Cannot convert type " << type_name << " to complex type.";
+  }
+  return it->second;
+}
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_DTYPE_NUMBER_H_

@@ -24,13 +24,13 @@ logical_xor:
             >>> import mindspore
             >>> import numpy as np
             >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([True, False, True]), mindspore.bool_)
-            >>> other = Tensor(np.array([True, True, False]), mindspore.bool_)
+            >>> input = Tensor(np.array([True, False, True]), mindspore.bool)
+            >>> other = Tensor(np.array([True, True, False]), mindspore.bool)
             >>> output = input.logical_xor(other)
             >>> print(output)
             [ False True True]
-            >>> x = Tensor(1, mindspore.bool_)
-            >>> other = Tensor(0, mindspore.bool_)
+            >>> x = Tensor(1, mindspore.bool)
+            >>> other = Tensor(0, mindspore.bool)
             >>> output = input.logical_xor(other)
             >>> print(output)
             True

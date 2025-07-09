@@ -16,11 +16,11 @@ remainder:
 
         The dividend `self` is a tensor whose data type is
         `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-        `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Args:
         other (Union[Tensor, numbers.Number, bool]): The divisor is a numbers.Number or
-            a bool or a tensor whose data type is number or bool\_ when the dividend is a tensor.
+            a bool or a tensor whose data type is number or bool when the dividend is a tensor.
 
     Returns:
         Tensor, with dtype promoted and shape broadcasted.

@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, context
-from mindspore.common import dtype_to_nptype
+from mindspore.common.dtype import _dtype_to_nptype
 from mindspore.ops import fused_infer_attention_score
 from mindspore.ops.function.nn_func import prompt_flash_attention
 from mindspore.ops.function.nn_func import incre_flash_attention
@@ -46,7 +46,7 @@ def fias_forward_func(query, key, value, num_heads, input_layout, inner_precise=
 
 
 def generate_inputs(B, N1, N2, S1, S2, D, input_layout, dtype, return_tensor=True):
-    np_dtype = dtype_to_nptype(dtype)
+    np_dtype = _dtype_to_nptype(dtype)  # pylint:disable=protected-access
     if input_layout == "BSH":
         query = np.random.rand(B, S1, N1 * D).astype(np_dtype)
         key = np.random.rand(B, S2, N2 * D).astype(np_dtype)

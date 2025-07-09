@@ -10,7 +10,7 @@ mindspore.ops.add
         out_{i} = input_{i} + other_{i}
 
     .. note::
-        - 两个输入不能同时为bool类型。[True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)]等都为bool类型。
+        - 两个输入不能同时为bool类型。[True, Tensor(True), Tensor(np.array([True]))]等都为bool类型。
         - 支持广播，支持隐式类型转换、类型提升。
         - 当输入为tensor时，维度应大于等于1。
 

@@ -19,11 +19,11 @@ mindspore.mint.sub
         - **input** (Union[Tensor, number.Number, bool]) - 第一个输入是一个 number.Number、
           一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 或
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
+          `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
         - **other** (Union[Tensor, number.Number, bool]) - 第二个输入，是一个 number.Number、
           一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 或
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
+          `bool <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ 的Tensor。
 
     关键字参数：
         - **alpha** (number.Number，可选) - 应用于 `other` 的缩放因子，默认值为 ``1``。

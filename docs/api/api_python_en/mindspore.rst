@@ -41,10 +41,6 @@ DataType
     :template: classtemplate.rst
 
     mindspore.dtype
-    mindspore.dtype_to_nptype
-    mindspore.dtype_to_pytype
-    mindspore.pytype_to_dtype
-    mindspore.get_py_obj_dtype
     mindspore.QuantDtype
     mindspore.common.np_dtype
 

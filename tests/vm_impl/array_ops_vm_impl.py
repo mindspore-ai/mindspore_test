@@ -81,7 +81,7 @@ def vm_impl_cast(self):
             t = t.element_type()
         # update the src type
         x = x.asnumpy()
-        out = x.astype(mstype.dtype_to_nptype(typing.type_id_to_type(t)))
+        out = x.astype(mstype._dtype_to_nptype(typing.type_id_to_type(t)))  # pylint:disable=protected-access
         return Tensor(out)
 
     return vm_impl
@@ -154,7 +154,7 @@ def vm_impl_fill(self):
     """Generate vm_impl function for Fill"""
 
     def vm_impl(dtype, dims, x):
-        x_nptype = mstype.dtype_to_nptype(dtype)
+        x_nptype = mstype._dtype_to_nptype(dtype)  # pylint:disable=protected-access
         if isinstance(x, int):
             ret = np.full(dims, x, x_nptype)
         else:
@@ -419,7 +419,7 @@ def vm_impl_sum_ext(self):
         x = x.asnumpy()
         nptype = None
         if dtype is not None:
-            nptype = mstype.dtype_to_nptype(typing.type_id_to_type(dtype))
+            nptype = mstype._dtype_to_nptype(typing.type_id_to_type(dtype))  # pylint:disable=protected-access
         if axis is None or axis == ():
             out = np.sum(x, keepdims=keep_dims, dtype=nptype)
         else:

@@ -29,7 +29,7 @@ from mindspore import nn
 from mindspore.train.model import Model
 from mindspore.train.dataset_helper import connect_network_with_dataset
 from mindspore.parallel._utils import _need_to_full, _to_full_tensor
-from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.dtype import _pytype_to_dtype
 from mindspore._c_expression import init_exec_dataset
 from mindspore.train.train_thor.dataset_helper import DatasetHelper
 
@@ -46,7 +46,7 @@ def _convert_to_ms_type(types):
     """
     ms_types = []
     for numpy_type in types:
-        ms_type = pytype_to_dtype(numpy_type)
+        ms_type = _pytype_to_dtype(numpy_type)  # pylint:disable=protected-access
         ms_types.append(ms_type)
     return ms_types
 

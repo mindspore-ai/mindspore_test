@@ -12,7 +12,7 @@ mindspore.mint.xlogy
 
 
     参数：
-        - **input** (Union[Tensor, numbers.Number, bool]) - 第一个输入为数值型、bool或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
+        - **input** (Union[Tensor, numbers.Number, bool]) - 第一个输入为数值型、bool或数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或 `bool <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
         - **other** (Union[Tensor, numbers.Number, bool]) - 第二个输入为数值型、bool或数据类型为数值型或bool的Tensor。当第一个输入是Tensor时，则第二个输入是数值型、bool或数据类型为数值型或bool的Tensor。当第一个输入是Scalar时，则第二个输入必须是数据类型为数值型或bool的Tensor。
 
     返回：
