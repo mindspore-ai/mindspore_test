@@ -526,9 +526,6 @@ size_t GetDefragMemoryStepFreq();
 bool AsyncCopyForParameter(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
                            size_t stream_id = SIZE_MAX);
 
-bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_device_tensor,
-               size_t stream_id = SIZE_MAX);
-
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context);
 // The memory free for the pynative bprop graph which is managed by the value node.
 void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor);

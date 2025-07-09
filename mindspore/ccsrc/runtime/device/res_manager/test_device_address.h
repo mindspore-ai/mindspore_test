@@ -18,6 +18,10 @@
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_TEST_DEVICE_ADDRESS_H_
 
 #include <memory>
+#include <utility>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "abstract/abstract_function.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
@@ -119,17 +123,15 @@ class TestDeviceResManager : public device::DeviceResManager {
   void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
   void FreeMemory(void *const ptr) const {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                               const std::vector<size_t> &keep_addr_sizes) const {}
-  DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format,
-                                               TypeId type_id, const ShapeVector &shape,
-                                               const UserDataPtr &user_data = nullptr) const {
+                       const std::vector<size_t> &keep_addr_sizes) const {}
+  DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
+                                       const ShapeVector &shape, const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU", 0);
   }
 
-  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                               const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id,
-                                               const UserDataPtr &user_data = nullptr) const {
+  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
+                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
   }
 
@@ -270,7 +272,6 @@ class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, Tes
   }
   ~TestDeviceContext() override = default;
 
-
   void Initialize() {}
   void Destroy() {}
   DeviceType GetDeviceType() const { return DeviceType::kCPU; }
@@ -281,7 +282,7 @@ class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, Tes
 
 class TestResManager : public device::HalResBase {
  public:
-  TestResManager(const device::ResKey &res_key) : device::HalResBase(res_key) {}
+  explicit TestResManager(const device::ResKey &res_key) : device::HalResBase(res_key) {}
 
   ~TestResManager() override = default;
 
