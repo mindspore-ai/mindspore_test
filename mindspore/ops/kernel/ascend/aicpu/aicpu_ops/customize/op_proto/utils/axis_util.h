@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2022-2022 Huawei Technologies Co., Ltd.  All rights reserved.
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * https://gitee.com/ascend/metadef/blob/r1.1/third_party/transformer/inc/axis_util.h
+ *
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2022
  */
 
 /*!
