@@ -681,12 +681,10 @@ class _JitExecutor:
         else:  # get compiled args to generate run args by _generate_run_args
             compile_args = self._generate_compile_args(args_list)
             key_id = self._get_key_id()
-            compile_args = get_auto_dynamic_shape_args_with_check_input_signature(
-                compile_args,
-                key_id,
-                self.input_signature,
-                self._enable_auto_dynamic
-            )
+            if self.input_signature is None:
+                compile_args = get_auto_dynamic_shape_args(
+                    compile_args, key_id, self._enable_auto_dynamic
+                )
             self._compile_args = compile_args
 
         new_inputs = self._generate_run_args(args_list, kwargs)
