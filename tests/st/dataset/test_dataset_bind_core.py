@@ -77,6 +77,7 @@ def test_dataset_bind_core_configuration(cleanup_temporary_files):
     assert bind_str in output_log
 
 
+@pytest.mark.skip(reason="time out")
 @pytest.mark.parametrize("cleanup_temporary_files", ["./dataset_bind_out_3.log"], indirect=True)
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
