@@ -1,5 +1,7 @@
 /**
-* Copyright 2022-2023 Huawei Technologies Co., Ltd
+ # Adapted from
+ # https://gitee.com/ascend/samples/blob/master/cplusplus/common/acllite/include/AclLiteUtils.h
+* Copyright (c) Huawei Technologies Co., Ltd. 2020-2022. All rights reserved.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -12,6 +14,9 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
+
+* File utils.h
+* Description: handle file operations
 */
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_KERNELS_IMAGE_DVPP_UTILS_ACL_LITE_UTILS_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_KERNELS_IMAGE_DVPP_UTILS_ACL_LITE_UTILS_H_
