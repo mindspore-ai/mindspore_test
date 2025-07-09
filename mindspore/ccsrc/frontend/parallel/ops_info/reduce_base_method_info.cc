@@ -191,6 +191,11 @@ Status ReduceMeanInfo::InferForwardCommunication() {
       return FAILED;
     }
 
+    if (forward_group.size() == kSizeOne) {
+      MS_LOG(DEBUG) << name_ << ": The group size is 1, no need to insert forward op.";
+      return SUCCESS;
+    }
+
     auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
     forward_op_ = CreateReduceMeanForwardOp(forward_group, element_type);
   }

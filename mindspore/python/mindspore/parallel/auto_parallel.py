@@ -685,7 +685,9 @@ class AutoParallel(Cell):
                   and optimizer parallel allgather communication if True. Currently, do not support
                   `O2 <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.JitConfig.html>`_
                   Default: False.
-                - computation_communication_fusion_level (int): Enable the fusion between compute and communicate.
+                - computation_communication_fusion_level (int): Enable the fusion between compute and communicate,
+                  which fuses communication tasks and computing tasks, allows for partial pipelining and parallel
+                  execution of these tasks during operation, thereby enhancing performance.
                   Default: ``0``. Note: This function must be used with Ascend Training Solution 24.0.RC2 or later.
                   This is an experimental configuration, may be changed or canceled in the future.
 
@@ -696,6 +698,12 @@ class AutoParallel(Cell):
                   - 2: Apply fusion to backward nodes.
 
                   - 3: Apply fusion to all nodes.
+
+                  .. warning::
+                      After setting ``export MS_ENABLE_LCCL=on``, the fusion operator based on memory semantics will be
+                      used. Please note that this operator is still in an experimental stage and may be changed or
+                      removed in the future.
+
                 - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
                   support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
 
