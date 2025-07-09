@@ -81,13 +81,8 @@ inline void IndicesCheckPositiveVector(const string &arg_name, const ArrayValue<
 
 TypeIdList MaxPoolWithIndicesFuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
-  const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,  kNumberTypeInt64,
-                                        kNumberTypeUInt8,   kNumberTypeUInt16,  kNumberTypeUInt32, kNumberTypeUInt64,
-                                        kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64};
   const auto &input_type = input_infos[kIndex0]->GetType();
-  CheckAndConvertUtils::CheckTypeIdValid("input", input_type, valid_types, primitive->name());
   auto output_dtype = input_type;
-
   auto number_type_opt = input_infos[kIndex6]->GetScalarValue<int64_t>();
   MS_CHECK_VALUE(number_type_opt.has_value(), primitive->name() + " error: argmax dtype should be valid.");
   auto target_type = static_cast<TypeId>(number_type_opt.value());
@@ -96,7 +91,6 @@ TypeIdList MaxPoolWithIndicesFuncImpl::InferType(const PrimitivePtr &primitive,
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    CheckAndConvertUtils::CheckTypeIdValid("input", input_type, {kNumberTypeFloat32}, primitive->name());
     if (target_type != kNumberTypeInt64) {
       MS_LOG(WARNING) << "While running in Ascend, the attribute `argmax_type` of " << primitive->name()
                       << " is disabled, DO NOT set it.";
