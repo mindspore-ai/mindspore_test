@@ -205,7 +205,7 @@ Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithInde
 }
 
 bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index,
-                                                    const std::vector<ParameterPtr> &parameters) {
+                                                    const std::vector<AnfNodePtr> &parameters) {
   bool isDyn = false;
   auto &llm_manager = LLMManager::GetInstance();
   auto enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
@@ -317,27 +317,21 @@ Tensor *GraphParameterStore::FlattenInputTensorByArg(size_t arg_index, const Ker
     return nullptr;
   }
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  std::vector<tensor::TensorPtr> flatten_tensors;
   tensor::TensorPtr tensor = nullptr;
   if (GetPositionTensor(arg_index)) {
     tensor = utils::cast<tensor::TensorPtr>((*input_args_)[arg_index]);
     MS_EXCEPTION_IF_NULL(tensor);
-    flatten_tensors.emplace_back(tensor);
+    buffers_[arg_index].emplace_back(tensor);
   } else {
-    AnfAlgo::FlattenInputArg((*input_args_)[arg_index], front_node.first, &flatten_tensors);
+    AnfAlgo::FlattenInputArg((*input_args_)[arg_index], front_node.first, &(buffers_[arg_index]));
     auto input_tensor_index = FetchInputTensorIndex(front_node);
-    if (input_tensor_index >= flatten_tensors.size()) {
+    if (input_tensor_index >= buffers_[arg_index].size()) {
       MS_LOG(INFO) << "Input tensor index out of args range, index is " << input_tensor_index << " and tensors size is "
-                   << flatten_tensors.size();
+                   << buffers_[arg_index].size();
       return nullptr;
     }
-    tensor = flatten_tensors[input_tensor_index];
+    tensor = buffers_[arg_index][input_tensor_index];
   }
-  // Return if already push into buffers.
-  if (buffers_[arg_index].size() > 0) {
-    return tensor.get();
-  }
-  buffers_[arg_index] = flatten_tensors;
 
   return tensor.get();
 }

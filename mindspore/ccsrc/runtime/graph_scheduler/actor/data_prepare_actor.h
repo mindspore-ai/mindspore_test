@@ -142,6 +142,7 @@ class DataPrepareActor : public DebugAwareActor {
   void PrepareWeightForInputOptimize(const KernelWithIndex &node_with_index, OpContext<KernelTensor> *const context);
   void RecordInputAndConvertStatic(const std::vector<TensorPtr> &host_tensors,
                                    const std::vector<size_t> &host_param_indexes, bool isDyn);
+  void RecordGraphInputsForInputOptimize(const VectorRef &args);
 
   // Remove after refact.
   bool enable_prepare_case() {
@@ -187,6 +188,9 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Record enable infer boost for reprepare and record graph input.
   bool is_enable_infer_boost_{false};
+
+  std::vector<size_t> inference_input_indexes_;
+  std::vector<AnfNodePtr> inference_parameters_;
 };  // namespace runtime
 
 using DataPrepareActorPtr = std::shared_ptr<DataPrepareActor>;
