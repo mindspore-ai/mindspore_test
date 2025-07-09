@@ -1,9 +1,9 @@
 mindspore.parallel.nn.Pipeline
 ============================================================================
 
-.. py:class:: mindspore.parallel.nn.Pipeline(network, micro_size, stage_config=None)
+.. py:class:: mindspore.parallel.nn.Pipeline(network, micro_size, stage_config=None, segment_config=None)
 
-    指定流水线并行的micro_batch个数及stage的划分规则。
+    指定流水线并行的micro_batch个数、stage和segment的划分规则。
 
     .. note::
         `micro_size` 必须大于等于 `pipeline_stages`。
@@ -12,6 +12,7 @@ mindspore.parallel.nn.Pipeline
         - **network** (Cell) - 将进行pp并行的网络。
         - **micro_size** (int) - MicroBatchsize。
         - **stage_config** (dict，可选) - 流水线并行对于每个cell的stage配置。默认值： ``None``。
+        - **segment_config** (dict，可选) - 流水线并行对于每个cell的segment配置。默认值： ``None``。
 
     异常：
         - **TypeError** - `net` 不是cell类型输入。

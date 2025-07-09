@@ -28,7 +28,8 @@ from mindspore import log as logger
 
 class PipelineCell(Cell):
     """
-    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training.
+    Slice MiniBatch into finer-grained MicroBatch for use in pipeline-parallel training,
+    and specify the segment info.
 
     Note:
         micro_size must be greater or equal to pipeline stages.
@@ -38,6 +39,7 @@ class PipelineCell(Cell):
         micro_size (int): MicroBatch size.
         stage_config (dict, optional): The stage configuration for each cell's execution in pipeline parallel.
         segment_config (dict, optional): The segment configuration for each cell's execution in pipeline parallel.
+            Default ``None``.
 
     Supported Platforms:
         ``Ascend``
@@ -151,7 +153,8 @@ class PipelineCell(Cell):
 
 class Pipeline(PipelineCell):
     """
-    Specify the number of micro_batch for pipeline parallelism and the division rules for stage.
+    Specify the number of micro_batch for pipeline parallelism and the division rules for stage,
+    and specify the segment info.
 
     Note:
         micro_size must be greater or equal to pipeline stages.
@@ -160,6 +163,8 @@ class Pipeline(PipelineCell):
         network (Cell): The target network to wrap.
         micro_size (int): MicroBatch size.
         stage_config (dict, optional): Stage configuration for cell's execution in pipeline parallel. Default ``None``.
+        segment_config (dict, optional): The segment configuration for each cell's execution in pipeline parallel.
+            Default ``None``.
 
     Raises:
         TypeError: The type of `net` is not cell.
