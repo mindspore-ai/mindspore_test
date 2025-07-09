@@ -31,7 +31,6 @@ from mindspore.communication.management import (create_group, get_group_size,
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.ops import operations as P
 from mindspore.common import Tensor
-from mindspore import context
 import mindspore.nn as nn
 
 
@@ -152,16 +151,21 @@ class FlopsUtilizationCollector(Callback):
         """
         Check whether FlopsUtilizationCollector is working in the current environment
         """
-        if context.get_context("mode") != context.GRAPH_MODE:
-            if self.verbose:
-                raise ValueError("FlopsUtilizationCollector now only support graph mode.")
-            logger.info("FlopsUtilizationCollector now only support graph mode.")
-            return False
         cb_params = run_context.original_args()
         if cb_params.mode == 'train':
             network = cb_params.train_network
+            if not network.compiled:
+                if self.verbose:
+                    raise ValueError("FlopsUtilizationCollector now only support graph mode.")
+                logger.info("FlopsUtilizationCollector now only support graph mode.")
+                return False
         elif cb_params.mode == 'eval':
             network = cb_params.eval_network
+            if not network.compiled:
+                if self.verbose:
+                    raise ValueError("FlopsUtilizationCollector now only support graph mode.")
+                logger.info("FlopsUtilizationCollector now only support graph mode.")
+                return False
         else:
             if self.verbose:
                 raise ValueError('FlopsUtilizationCollector only support train and eval mode!')

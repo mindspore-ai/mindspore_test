@@ -23,7 +23,7 @@ from types import FunctionType, MethodType
 
 from mindspore import log as logger
 from mindspore.parallel._utils import _get_device_num, _get_gradients_mean,\
-    _get_parallel_mode, _get_enable_parallel_optimizer, _is_pynative_parallel
+    _get_parallel_mode, _get_enable_parallel_optimizer
 from mindspore.context import ParallelMode
 from mindspore import _checkparam as validator
 from mindspore import ops, nn
@@ -397,8 +397,7 @@ class TrainOneStepCell(Cell):
         self.reducer_flag = False
         self.grad_reducer = nn.Identity()
         self.parallel_mode = _get_parallel_mode()
-        self.reducer_flag = self.parallel_mode in (ParallelMode.DATA_PARALLEL, ParallelMode.HYBRID_PARALLEL) or \
-                            _is_pynative_parallel()
+        self.reducer_flag = self.parallel_mode in (ParallelMode.DATA_PARALLEL, ParallelMode.HYBRID_PARALLEL)
         if self.reducer_flag:
             self.mean = _get_gradients_mean()
             self.degree = _get_device_num()

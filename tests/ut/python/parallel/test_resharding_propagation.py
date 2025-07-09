@@ -249,6 +249,7 @@ def test_reshard_with_tuple_as_input():
     assert "Reshard only support type mindspore.parallel.Layout" in str(err.value)
 
 
+@pytest.mark.skip(reason="Disable shard pynative support.")
 def test_parameter_plan_with_strategy_4x1_pynative():
     """
     Feature: shard nested shard
@@ -262,6 +263,7 @@ def test_parameter_plan_with_strategy_4x1_pynative():
     assert error_msg in str(err.value)
 
 
+@pytest.mark.skip(reason="Disable shard pynative support.")
 def test_parameter_plan_with_layout_4x1_pynative():
     """
     Feature: shard nested shard

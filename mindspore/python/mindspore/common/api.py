@@ -1162,6 +1162,8 @@ def _jit_ast(hash_obj, dynamic, jit_config, jit_graph_name):
             jit_executor = _JitExecutor(
                 func, hash_obj, None, process_obj, jit_config, dynamic, jit_graph_name)
             out = jit_executor(*args, **kwargs)
+            if isinstance(process_obj, ms.nn.Cell):
+                _clear_auto_parallel_context(process_obj)
             return out
 
         # `inspect.getfullargspec(func)` will get the specification of the decorated function by default. By set

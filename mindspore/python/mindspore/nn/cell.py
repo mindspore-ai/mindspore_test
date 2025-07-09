@@ -208,6 +208,7 @@ class Cell(Cell_):
         super().__setattr__("_lazy_construct_sig", None)
         super().__setattr__("_jit_graph_name", '')
         super().__setattr__("modify_hook", 0)
+        super().__setattr__("_compiled", False)
         init_pipeline()
 
         # call gc to release GE session resources used by non-used cell objects
@@ -427,6 +428,10 @@ class Cell(Cell_):
         Get whether cell custom bprop debug is enabled.
         """
         return self._bprop_debug
+
+    @property
+    def compiled(self):
+        return self._compiled
 
     @bprop_debug.setter
     def bprop_debug(self, value):
@@ -1124,9 +1129,6 @@ class Cell(Cell_):
             >>> net = nn.Dense(3, 4)
             >>> net.set_data_parallel()
         """
-        if context._get_mode() == context.PYNATIVE_MODE:
-            raise ValueError("set_data_parallel: does not support PyNative mode.")
-
         all_prims = self._get_prims_recursively()
         for prim in all_prims:
             prim.add_prim_attr("strategy_gen_mode", "data_parallel")
@@ -1205,8 +1207,6 @@ class Cell(Cell_):
             ...             out = self.blocks[i](out)
             ...         return out
         """
-        if context._get_mode() == context.PYNATIVE_MODE:
-            raise ValueError("The Cell offload does not support PyNative mode now.")
         if isinstance(backward_prefetch, str):
             Validator.check_string(backward_prefetch, ['Auto'], 'backward_prefetch', self.cls_name)
         else:
@@ -1315,6 +1315,7 @@ class Cell(Cell_):
     def __call__(self, *args, **kwargs):
         # Run in Graph mode.
         if context._get_mode() == context.GRAPH_MODE and os.getenv("MS_JIT") != '0':
+            self._compiled = True
             if kwargs:
                 bound_arguments = self._construct_sig.bind(*args, **kwargs)
                 bound_arguments.apply_defaults()
