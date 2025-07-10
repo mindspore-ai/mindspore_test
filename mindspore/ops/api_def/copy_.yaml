@@ -5,10 +5,3 @@ copy_:
     CPU: pyboost
     GPU: py_method
     interface: tensor
-
-  - op_yaml: deprecated/inplace_copy_method.yaml
-    py_method: deprecated_tensor_copy_
-    Ascend: py_method
-    CPU: py_method
-    GPU: py_method
-    interface: tensor
