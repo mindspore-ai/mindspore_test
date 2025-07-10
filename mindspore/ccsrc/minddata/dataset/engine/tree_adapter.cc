@@ -49,6 +49,7 @@
 #include "minddata/dataset/util/gil_scoped.h"
 #include "minddata/dataset/util/ftok_key.h"
 #endif
+#include "minddata/dataset/util/sig_handler.h"
 #ifdef WITH_BACKEND
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -584,6 +585,9 @@ void TreeAdapter::SubprocessExit(int exit_code) {
 
   // release the gil
   py::gil_scoped_release release;
+
+  // release the shm queue & message queue for map/batch process
+  ReleaseShmAndMsg();
 
   // independent will exit
   _exit(exit_code);

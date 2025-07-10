@@ -524,7 +524,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             self.eof.set()
             # send QUIT flag to workers, and the worker's while loop could check the eof flag
             for worker in self.workers:
-                worker.put("QUIT")
+                if not worker.queue_full():
+                    worker.put("QUIT")
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
             self.cleaning_process.join(timeout=5)
@@ -666,6 +667,9 @@ class _GeneratorWorkerMt(threading.Thread):
             return False
         return True
 
+    def queue_full(self):
+        return sef.idx_queue.full()
+
 
 class _GeneratorWorkerMp(multiprocessing.Process):
     """
@@ -706,6 +710,9 @@ class _GeneratorWorkerMp(multiprocessing.Process):
             logger.warning("res_queue is not empty.")
             return False
         return True
+
+    def queue_full(self):
+        return self.idx_queue.full()
 
     def __del__(self):
         # del all the Queue & SharedQueue when the iter had been deleted from ITERATORS_LIST
