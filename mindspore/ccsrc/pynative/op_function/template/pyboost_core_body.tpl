@@ -2,7 +2,7 @@ PYNATIVE_EXPORT PyObject* ${func_name}_OP(const PrimitivePtr &prim, const std::v
   MS_LOG(DEBUG) << "Run ${func_name} start";
   auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
   op_run_info->source_type = source_type;
-  auto py_output = tensor::MakeTuple<tensor::TensorWrapper, ${output_num}, ${is_view}>();
+  auto py_output = tensor::MakeTuple<tensor::TensorWrapper, ${output_num}, ${has_side_effect}>();
   auto promises = tensor::TransformPromise(py_output);
 
   DispatchOp(
