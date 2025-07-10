@@ -75,7 +75,7 @@ bool PatternMap::Emplace(const std::string &name, const AnfNodePtr &node) {
   auto iter = node_map_.find(name);
   if (iter == node_map_.end()) {
     node_map_.emplace(name, node);
-  } else if (!opt::AnfEqual(node, iter->second)) {
+  } else if (!AnfUtils::AnfEqual(node, iter->second)) {
     MS_EXCEPTION_IF_NULL(iter->second);
     MS_LOG(INFO) << "The value of key: " << name
                  << " is not equal to origin value, value: " + node->fullname_with_scope()
@@ -110,7 +110,7 @@ bool PatternMap::Emplace(const std::string &name, const std::vector<AnfNodePtr> 
     for (size_t i = 0; i < v.size(); i++) {
       MS_EXCEPTION_IF_NULL(v[i]);
       MS_EXCEPTION_IF_NULL(origin_v[i]);
-      if (!opt::AnfEqual(v[i], origin_v[i])) {
+      if (!AnfUtils::AnfEqual(v[i], origin_v[i])) {
         MS_LOG(INFO) << "The value of key: " << name
                      << " is not equal to origin value, value: " + v[i]->fullname_with_scope()
                      << " origin value: " << origin_v[i]->fullname_with_scope();
@@ -127,7 +127,9 @@ void PatternMap::Clear() {
   seq_map_.clear();
 }
 
-bool PatternMap::Check(const std::string &name, const AnfNodePtr &node) const { return opt::AnfEqual(node, Get(name)); }
+bool PatternMap::Check(const std::string &name, const AnfNodePtr &node) const {
+  return AnfUtils::AnfEqual(node, Get(name));
+}
 
 SrcPattern &SrcPattern::AddVar(const std::string &name, const PatternConditionFunc &f) {
   if (ref_map_.find(name) != ref_map_.end()) {
@@ -256,7 +258,7 @@ bool SrcPattern::match(const std::string &name, const AnfNodePtr &node, const Eq
       // prim
       MS_EXCEPTION_IF_NULL(pattern_node.p_);
       MS_EXCEPTION_IF_NULL(match_node);
-      if (!opt::AnfEqual(pattern_node.p_, match_node)) {
+      if (!AnfUtils::AnfEqual(pattern_node.p_, match_node)) {
         MS_LOG(EXCEPTION) << "The value of Primitive is not equal to matched value, pattern value: " +
                                pattern_node.p_->ToString()
                           << " matched value: " + match_node->ToString() + ", node name: " + name;
@@ -367,7 +369,7 @@ DstPattern &DstPattern::AddCNode(const string &name, const std::initializer_list
     for (size_t i = 0; i < anf_inputs.size(); i++) {
       MS_EXCEPTION_IF_NULL(anf_inputs[i]);
       MS_EXCEPTION_IF_NULL(cnode->input(i));
-      if (!opt::AnfEqual(anf_inputs[i], cnode->input(i))) {
+      if (!AnfUtils::AnfEqual(anf_inputs[i], cnode->input(i))) {
         MS_LOG(INTERNAL_EXCEPTION)
           << "The actual input does not correspond to the input of the pattern, the input index: " << i
           << ", actual input: " << anf_inputs[i]->DebugString()

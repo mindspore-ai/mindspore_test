@@ -218,8 +218,6 @@ BACKEND_COMMON_EXPORT std::shared_ptr<std::vector<std::pair<AnfNodePtr, int>>> G
   const FuncGraphPtr &graph, const AnfNodePtr &node, size_t output_index);
 bool IsNotRealUsedByOthers(const FuncGraphPtr &graph, const AnfNodePtr &node);
 
-bool AnfEqual(const BaseRef &a, const BaseRef &b);
-
 bool CNodeTypeEqual(const BaseRef &a, const BaseRef &b);
 
 AnfNodePtr SexpToNode(const BaseRef &sexp, const BaseRef &graph, PrimitiveVarMap *primitive_vars,

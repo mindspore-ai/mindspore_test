@@ -15,7 +15,7 @@
  */
 
 #include "include/backend/optimizer/inplace_node_pass.h"
-#include "include/backend/optimizer/helper.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -40,7 +40,7 @@ AnfNodePtr InplaceNodePass::Run(const FuncGraphPtr &, const AnfNodePtr &node) {
     for (size_t i = 0; i < inputs.size(); i++) {
       MS_EXCEPTION_IF_NULL(inputs[i]);
       MS_EXCEPTION_IF_NULL(pre_inputs[i]);
-      if (!opt::AnfEqual(inputs[i], pre_inputs[i])) {
+      if (!AnfUtils::AnfEqual(inputs[i], pre_inputs[i])) {
         MS_LOG_WITH_NODE(EXCEPTION, node)
           << "InplaceNodePass ERROR, the pass modify node: " << node->DebugString() << ", pass name: " << name()
           << ", before node " << i << ":" << inputs[i]->DebugString() << ", after node " << i << ":"

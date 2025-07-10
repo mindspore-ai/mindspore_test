@@ -18,6 +18,7 @@
 #include "ir/anf.h"
 #include "utils/convert_utils_base.h"
 #include "include/backend/optimizer/helper.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 static int GetNextTag() {
@@ -270,7 +271,7 @@ EquivPtr PatternEngine::Match(const BaseRef &pattern, const BaseRef &expr, const
   }
 
   // 2. check equal
-  if (opt::AnfEqual(pattern_ref, expr_ref)) {
+  if (AnfUtils::AnfEqual(pattern_ref, expr_ref)) {
     return equiv;
   }
 

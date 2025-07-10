@@ -94,6 +94,8 @@ class MS_CORE_API AnfUtils {
   static bool IsNodeInGraphKernel(const AnfNodePtr &node);
   // check whether the node is a KernelPacket node.
   static bool IsKernelPacket(const AnfNodePtr &node);
+  // check whether two node is same
+  static bool AnfEqual(const BaseRef &a, const BaseRef &b);
   // Set dump flag to CNode's primitive.
   static void SetDumpFlag(const AnfNodePtr &node);
   // Get dump flag from CNode's primitive.

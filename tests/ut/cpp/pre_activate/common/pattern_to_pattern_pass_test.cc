@@ -223,19 +223,19 @@ TEST_F(TestPatternToPatternPass, Mul0) {
   ASSERT_TRUE(check.build_pattern_map(new_node));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("a"), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("b"), b));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("c"), c));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("a"), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("b"), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("c"), c));
   ASSERT_EQ(check.m_->Get("bc")->cast<CNodePtr>()->size(), 3);
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(0),
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(0),
                             NewValueNode(std::make_shared<Primitive>(kAddOpName))));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(1), b));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(2), c));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(1), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("bc")->cast<CNodePtr>()->input(2), c));
   ASSERT_EQ(check.m_->Get("mul")->cast<CNodePtr>()->size(), 3);
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
                             NewValueNode(std::make_shared<Primitive>(kMulOpName))));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), check.m_->Get("bc")));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), check.m_->Get("bc")));
 }
 
 /// Feature: PatternToPattern Pass
@@ -263,13 +263,13 @@ TEST_F(TestPatternToPatternPass, Mul1) {
   ASSERT_TRUE(check.build_pattern_map(new_node));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("a"), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("b"), NewValueNode(1)));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("a"), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("b"), NewValueNode(1)));
   ASSERT_EQ(check.m_->Get("mul")->cast<CNodePtr>()->size(), 3);
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
                             NewValueNode(std::make_shared<Primitive>(kMulOpName))));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), NewValueNode(1)));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), NewValueNode(1)));
 }
 
 /// Feature: PatternToPattern Pass
@@ -297,13 +297,13 @@ TEST_F(TestPatternToPatternPass, Mul2) {
   ASSERT_TRUE(check.build_pattern_map(new_node));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("a"), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("b"), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("a"), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("b"), b));
   ASSERT_EQ(check.m_->Get("mul")->cast<CNodePtr>()->size(), 3);
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(0),
                             NewValueNode(std::make_shared<Primitive>(kMulOpName))));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), b));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(1), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("mul")->cast<CNodePtr>()->input(2), a));
 }
 
 /// Feature: PatternToPattern Pass
@@ -331,13 +331,13 @@ TEST_F(TestPatternToPatternPass, Mul3) {
   ASSERT_TRUE(check.build_pattern_map(new_node));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("a"), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("b"), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("a"), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("b"), b));
   ASSERT_EQ(check.m_->Get("add")->cast<CNodePtr>()->size(), 3);
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(0),
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(0),
                             NewValueNode(std::make_shared<Primitive>(kAddOpName))));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(1), a));
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(2), b));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(1), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("add")->cast<CNodePtr>()->input(2), b));
 }
 
 /// Feature: PatternToPattern Pass
@@ -361,7 +361,7 @@ TEST_F(TestPatternToPatternPass, EmptySeq) {
   ASSERT_TRUE(check.build_pattern_map(new_node));
 
   // check
-  ASSERT_TRUE(opt::AnfEqual(check.m_->Get("c_a"), a));
+  ASSERT_TRUE(AnfUtils::AnfEqual(check.m_->Get("c_a"), a));
 }
 
 /// Feature: PatternToPattern Pass

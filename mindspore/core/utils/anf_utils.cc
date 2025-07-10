@@ -480,6 +480,65 @@ bool AnfUtils::IsKernelPacket(const AnfNodePtr &node) {
   return func_graph != nullptr && func_graph->has_attr(FUNC_GRAPH_ATTR_KERNEL_PACKET);
 }
 
+bool AnfUtils::AnfEqual(const BaseRef &a, const BaseRef &b) {
+  if (utils::isa<AnfNodePtr>(a) && utils::isa<AnfNodePtr>(b)) {
+    auto a_node = utils::cast<AnfNodePtr>(a);
+    auto b_node = utils::cast<AnfNodePtr>(b);
+    MS_EXCEPTION_IF_NULL(a_node);
+    MS_EXCEPTION_IF_NULL(b_node);
+    if (IsValueNode<Primitive>(a_node) && IsValueNode<Primitive>(b_node)) {
+      auto a_value_node = a_node->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(a_value_node);
+      auto a_value = a_value_node->value();
+      MS_EXCEPTION_IF_NULL(a_value);
+      auto a_prim = a_value->cast<PrimitivePtr>();
+      MS_EXCEPTION_IF_NULL(a_prim);
+
+      auto b_value_node = b_node->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(b_value_node);
+      auto b_value = b_value_node->value();
+      MS_EXCEPTION_IF_NULL(b_value);
+      auto b_prim = b_value->cast<PrimitivePtr>();
+      MS_EXCEPTION_IF_NULL(b_prim);
+
+      return a_prim->name() == b_prim->name();
+    } else if (a_node->isa<ValueNode>() && b_node->isa<ValueNode>()) {
+      auto a_value_node_ptr = a_node->cast<ValueNodePtr>();
+      if (a_value_node_ptr == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail, node: " << a_node->DebugString();
+      }
+      auto a_value_ptr = a_value_node_ptr->value();
+      if (a_value_ptr == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr, node: " << a_node->DebugString();
+      }
+
+      auto b_value_node_ptr = b_node->cast<ValueNodePtr>();
+      if (b_value_node_ptr == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail, node: " << b_node->DebugString();
+      }
+      auto b_value_ptr = b_value_node_ptr->value();
+      if (b_value_ptr == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr, node: " << b_node->DebugString();
+      }
+      if (a_value_ptr->isa<tensor::Tensor>() && b_value_ptr->isa<tensor::Tensor>()) {
+        auto a_tensor_ptr = a_value_ptr->cast<tensor::TensorPtr>();
+        auto b_tensor_ptr = b_value_ptr->cast<tensor::TensorPtr>();
+        if (a_tensor_ptr == nullptr || b_tensor_ptr == nullptr) {
+          MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail.";
+        }
+        return a_tensor_ptr->ValueEqual(*b_tensor_ptr);
+      } else {
+        return (*a_value_ptr) == (*b_value_ptr);
+      }
+    }
+    MS_LOG(DEBUG) << "check AnfNodePtr equal";
+  }
+  if (utils::isa<FuncGraphPtr>(a) && utils::isa<FuncGraphPtr>(b)) {
+    MS_LOG(DEBUG) << "check GraphPtr equal";
+  }
+  return a == b;
+}
+
 bool AnfUtils::IsNodeInGraphKernel(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   return node->func_graph() != nullptr && node->func_graph()->has_attr(FUNC_GRAPH_ATTR_GRAPH_KERNEL);
