@@ -1059,6 +1059,16 @@ int ConvertReductionForAclnn(Reduction reduction) {
   return iter->second;
 }
 
+const char *ConvertReductionStrForAclnn(int64_t reduction) {
+  static const std::unordered_map<int64_t, const char *> reduction_map = {{0, "sum"}, {1, "mean"}, {2, "none"}};
+
+  auto iter = reduction_map.find(reduction);
+  if (iter == reduction_map.end()) {
+    throw std::runtime_error("For ConvertReductionForAclnn, the value of reduction must be 'sum', 'mean' or 'none'.");
+  }
+  return iter->second;
+}
+
 size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size) {
   size_t output_size = 1;
   for (const int64_t &size_value : output_shape) {

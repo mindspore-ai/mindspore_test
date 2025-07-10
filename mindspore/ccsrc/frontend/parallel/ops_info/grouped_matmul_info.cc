@@ -434,8 +434,11 @@ Status GroupedMatmulInfo::InferForwardCommunication() {
 
   MS_LOG(INFO) << name_ << ": Need push_back op num: " << outputs_shape_new_.size();
   for (size_t i = 0; i < outputs_shape_new_.size(); i++) {
-    Operator op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
-    forward_op_.push_back(op);
+    ForwardOp sum_op_list;
+    Operator op;
+    op = CreateAllReduceOp(REDUCE_OP_SUM, group_list[0].name());
+    sum_op_list.push_back(op);
+    forward_op_list_.push_back(sum_op_list);
   }
 
   MS_LOG(INFO) << name_ << ": The group name of forward communication is " << group_list[0].name();

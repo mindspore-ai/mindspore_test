@@ -1,0 +1,40 @@
+#operator cross_entropy_loss
+cross_entropy_loss:
+  args:
+    input:
+      dtype: tensor
+    target:
+      dtype: tensor
+    weight:
+      dtype: tensor
+      default: None
+    reduction:
+      dtype: int
+      default: "'mean'"
+      arg_handler: str_to_enum
+    ignore_index:
+      dtype: int
+      default: -100
+    label_smoothing:
+      dtype: float
+      default: 0.0
+    lse_square_scale_for_zloss:
+      dtype: float
+      default: 0.0
+    return_zloss:
+      dtype: bool
+      default: False
+  returns:
+    loss:
+      dtype: tensor
+    log_prob:
+      dtype: tensor
+    zloss:
+      dtype: tensor
+    lse_for_zloss:
+      dtype: tensor
+  class:
+      name: CrossEntropyLoss
+  dispatch:
+    enable: True
+    Ascend: CrossEntropyLossAscend

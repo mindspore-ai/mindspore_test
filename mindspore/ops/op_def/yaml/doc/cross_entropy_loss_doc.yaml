@@ -1,0 +1,95 @@
+cross_entropy_loss:
+    description: |
+        Computes the cross entropy loss between input and target.
+
+        Assume the number of classes :math:`C` in the range :math:`[0, C)`,
+        the loss with reduction=none can be described as:
+
+        .. math::
+
+            \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad
+            l_n = - w_{y_n} \log \frac{\exp(x_{n,y_n})}{\sum_{c=1}^C \exp(x_{n,c})}
+            \cdot \mathbb{1}\{y_n \not= \text{ignore_index}\}
+
+        where :math:`x` is the inputs, :math:`y` is the target, :math:`w` is the weight, :math:`N` is the batch size,
+        :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of classes.
+
+        If `reduction` is not ``None`` (default ``'mean'`` ), then
+
+        .. math::
+
+            \ell(x, y) = \begin{cases}
+                \sum_{n=1}^N \frac{1}{\sum_{n=1}^N w_{y_n} \cdot \mathbb{1}\{y_n \not= \text{ignore_index}\}} l_n, &
+                \text{if reduction} = \text{'mean',}\\
+                \sum_{n=1}^N l_n,  &
+                \text{if reduction} = \text{'sum'.}
+                \end{cases}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Inputs:
+            - **input** (Tensor) - Tensor of shape of :math:`(N, C)` where `C = number of classes`, data type must be bfloat16, float16 or float32.
+            - **target** (Tensor) - For class indices, tensor of shape :math:`(N)`, data type must be int64. The value must be in range [0, C).
+            - **weight** (Tensor, optional) - A rescaling weight applied to the loss of each batch element.
+              If not None, the shape is :math:`(C,)`, data type must be float32. Default: ``None`` .
+            - **reduction** (str, optional) - Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+              ``'sum'`` . Default: ``'mean'`` .
+
+              - ``'none'``: no reduction will be applied.
+              - ``'mean'``: compute and return the weighted mean of elements in the output.
+              - ``'sum'``: the output elements will be summed.
+
+            - **ignore_index** (int, optional) - Specifies a target value that is ignored and does not contribute to the input
+              gradient. When set to negative values, no target value is ignored. It should be int64.
+              Default: ``-100`` .
+            - **label_smoothing** (float, optional) - Label smoothing values, a regularization tool used to prevent the model
+              from overfitting when calculating Loss. This value must be 0.0 currently. Default: ``0.0`` .
+            - **lse_square_scale_for_zloss** (float, optional) - The value range is [0.0, 1.0), not enabled for now, can only be 0.0. Default: ``0.0`` .
+            - **return_zloss** (float, optional) - Not enabled for now, can only be ``False``. Default: ``False`` .
+
+        Outputs:
+            A tuple consisting of 4 Tensors.
+
+            - **loss** (Tensor) - loss between `input` and `target`, the dtype is the same as `input`.
+
+              - If `reduction` is ``'none'`` , the shape is :math:`(N,)` .
+              - If `reduction` is ``'sum'` or ``'mean'`, the shape is :math:`(1,)` .
+
+            - **log_prob** (Tensor) - the shape is :math:`(N, C)` with the same dtype as `input`.
+            - **zloss** (Tensor) - the shape is :math:`(N,)` if `return_zloss` is True, or the shape is :math:`(0,)` with the same dtype as `input`. This parameter is disabled for now.
+            - **lse_for_zloss** (Tensor) - the shape is :math:`(N,)` if `lse_square_scale_for_zloss` is not 0.0, or the shape is :math:`(0,)` with the same dtype as `input`. This parameter is disabled for now.
+
+
+        Raises:
+            ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
+            TypeError: If `input`, `target` or `weight` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, nn, ops
+            >>> 
+            >>> 
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.cross_entropy_loss = ops.auto_generate.CrossEntropyLoss()
+            ... 
+            ...     def construct(self, input, target, weight):
+            ...         result = self.cross_entropy_loss(input, target, weight)
+            ...         return result
+            ... 
+            >>> 
+            >>> net = Net()
+            >>> input = Tensor(np.array([[0.2, 0.7, 0.1], [0.2, 0.7, 0.1]]), mindspore.float32)
+            >>> target = Tensor(np.array([0, 1]), mindspore.int64)
+            >>> weight = Tensor(np.array([1, 0.5, 0.5]), mindspore.float32)
+            >>> output = net(input, target, weight)
+            >>> print(output[:2])
+            (Tensor(shape=[1], dtype=Float32, value= [ 1.10128295e+00]), Tensor(shape=[2, 3], dtype=Float32, value=
+            [[-1.26794958e+00, -7.67949641e-01, -1.36794960e+00],
+             [-1.26794958e+00, -7.67949641e-01, -1.36794960e+00]]))

@@ -170,7 +170,7 @@ int PriorityReplayBufferUpdateCpuKernel::Resize(const std::vector<KernelTensor *
 bool PriorityReplayBufferUpdateCpuKernel::Launch(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &,
                                                  const std::vector<KernelTensor *> &outputs) {
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == 2, "inputs must be 2.");
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == kSizeTwo, "inputs must be 2.");
   std::vector<size_t> indices(indices_shape_[kIndex0]);
   std::vector<float> priorities(priorities_shape_[kIndex0]);
   MS_EXCEPTION_IF_CHECK_FAIL(
