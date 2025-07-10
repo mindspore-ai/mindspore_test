@@ -512,13 +512,13 @@ class AutoParallel(Cell):
             raise ValueError("For 'AutoParallel.pipeline', the argument 'stages' "
                              "must be larger than zero, but got value: {}.".format(stages))
         if not isinstance(output_broadcast, bool):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'output_broadcast' "
                             "must be bool type, but got the type : {}.".format(type(output_broadcast)))
         if not isinstance(interleave, bool):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'interleave' "
                             "must be bool type, but got the type : {}.".format(type(interleave)))
         if not isinstance(scheduler, str):
-            raise TypeError("For 'AutoParallel.pipeline', the argument 'stages' "
+            raise TypeError("For 'AutoParallel.pipeline', the argument 'scheduler' "
                             "must be str type, but got the type : {}.".format(type(scheduler)))
         if scheduler not in ("1f1b", "gpipe", "seqpipe", "seqvpp", "seqsmartvpp", "zero_bubble_v"):
             raise ValueError("For 'AutoParallel.pipeline', the argument "
