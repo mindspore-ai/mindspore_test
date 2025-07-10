@@ -13,7 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """ut for file system"""
-from mindspore.common.file_system import FileSystem, _register_basic_file_system, _register_mindio_file_system
+import pytest
+
+from mindspore.common.file_system import FileSystem, _register_basic_file_system, _register_mindio_file_system, \
+    set_mindio_server_info, mindio_preload
 
 
 def test_register_file_system():
@@ -25,11 +28,27 @@ def test_register_file_system():
     fs = FileSystem()
     ret = _register_basic_file_system(fs)
     assert ret is True
-    assert fs.create == open # pylint: disable=comparison-with-callable
+    assert fs.create == open  # pylint: disable=comparison-with-callable
     assert fs.create_args == ("ab",)
-    assert fs.open == open # pylint: disable=comparison-with-callable
+    assert fs.open == open  # pylint: disable=comparison-with-callable
     assert fs.open_args == ("rb",)
 
     ret = _register_mindio_file_system(fs)
     # MindIO module is not installed in ut environment
     assert ret is False
+
+
+def test_mindio_func():
+    """
+    Feature: Validate MindIO File System.
+    Description: Test error handling and edge cases in MindIO setup.
+    Expectation: Success.
+    """
+    with pytest.raises(ValueError):
+        set_mindio_server_info(-200)
+    with pytest.raises(TypeError):
+        mindio_preload(100)
+    res = set_mindio_server_info(200)
+    assert res is None
+    res = mindio_preload("./tmp.ckpt")
+    assert res is False

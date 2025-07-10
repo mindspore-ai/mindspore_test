@@ -114,6 +114,7 @@ INT_64_MAX = 9223372036854775807
 cpu_cast = Cast().set_device("CPU")
 
 _ckpt_fs = FileSystem()
+_ckpt_fs_initialized = False
 
 
 def init_ckpt_file_system(fs: FileSystem):
@@ -123,8 +124,12 @@ def init_ckpt_file_system(fs: FileSystem):
     _register_basic_file_system(fs)
 
 
-# Initialize checkpoint file system
-init_ckpt_file_system(_ckpt_fs)
+def _ensure_ckpt_fs_initialized():
+    """Ensure checkpoint file system is initialized"""
+    global _ckpt_fs_initialized
+    if not _ckpt_fs_initialized:
+        init_ckpt_file_system(_ckpt_fs)
+        _ckpt_fs_initialized = True
 
 
 def _wait_async_process_save_ckpt():
@@ -458,7 +463,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                                f"simultaneously modified a file.")
             elif _ckpt_fs.backend != "mindio":
                 os.rename(tmp_name, ckpt_file_name)
-            os.chmod(ckpt_file_name, stat.S_IRUSR)
+                os.chmod(ckpt_file_name, stat.S_IRUSR)
     except BaseException as e:
         logger.critical("Failed to save the checkpoint file %s. Maybe don't have the permission to write files, "
                         "or the disk space is insufficient and so on.", ckpt_file_name)
@@ -718,6 +723,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
     start_save_time = time.time()
+    _ensure_ckpt_fs_initialized()
     ckpt_file_name = _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format)
     integrated_save = Validator.check_bool(integrated_save)
     async_save = _check_async_save(async_save)
@@ -1386,6 +1392,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     """
     start_load_time = time.time()
     vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
+    _ensure_ckpt_fs_initialized()
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
     dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
