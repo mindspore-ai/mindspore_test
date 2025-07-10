@@ -251,7 +251,9 @@ void AscendProfiler::StartFwkMemProfiling() {
 void AscendProfiler::StopFwkMemProfiling() {
   if (config_.profileMemory) {
     device::ascend::AscendMemoryPool::GetInstance().SetEnableTimeEvent(false);
-    device::ascend::AscendMemoryPool::SetEnhancedMemoryPool(false);
+    if (!common::IsEnableAllocConfig(common::kAllocMemoryTracker)) {
+      device::ascend::AscendMemoryPool::SetEnhancedMemoryPool(false);
+    }
     MS_LOG(INFO) << "Stop framework memory profiling, save path: " << config_.frameworkDataPath;
   }
 }
