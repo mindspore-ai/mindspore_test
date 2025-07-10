@@ -164,7 +164,7 @@ struct PyBoost {
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void DoGrad(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
-  static void MarkSideEffect(PyObject *arg);
+  PYNATIVE_EXPORT static void MarkSideEffect(PyObject *arg);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
                                const AbstractBasePtr &abstract, const ValuePtr &real_out);
