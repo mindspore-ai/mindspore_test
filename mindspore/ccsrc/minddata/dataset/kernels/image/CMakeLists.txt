@@ -33,7 +33,7 @@ else()
     endif()
 
     if(ENABLE_D)
-        include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+        include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
     endif()
 
     add_library(kernels-image OBJECT

@@ -41,11 +41,7 @@ check_on_off()
 
 update_submodule()
 {
-  git submodule update --init graphengine
-  cd "${BASEPATH}/graphengine"
-  GRAPHENGINE_SUBMODULE="910/metadef"
-  git submodule update --init ${GRAPHENGINE_SUBMODULE}
-  cd "${BASEPATH}"
+  git submodule update --init metadef
   if [[ "X$ENABLE_AKG" = "Xon" ]]; then
     if [[ "X$ENABLE_D" == "Xon" ]]; then
       git submodule update --init akg

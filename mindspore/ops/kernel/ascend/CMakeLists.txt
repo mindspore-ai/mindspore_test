@@ -1,4 +1,4 @@
-include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 
 # AICPU
 add_subdirectory(aicpu/aicpu_ops)

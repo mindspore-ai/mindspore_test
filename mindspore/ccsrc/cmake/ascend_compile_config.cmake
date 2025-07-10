@@ -1,4 +1,4 @@
-include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/ascend)
 add_subdirectory(plugin/res_manager/ascend)
 add_subdirectory(plugin/res_manager/ascend/collective)
