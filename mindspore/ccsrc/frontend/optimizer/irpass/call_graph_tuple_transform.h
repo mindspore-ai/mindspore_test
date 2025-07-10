@@ -50,7 +50,8 @@ bool FlattenArgs(const FuncGraphPtr &fg, const AnfNodePtrList &args, size_t star
     const auto &arg = args[i];
     auto abs = arg->abstract();
     if (abs == nullptr) {
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, arg) << "Null abs of arg:" << arg->DebugString();
+      MS_LOG(DEBUG) << "Arg has no abstract, skip this pass. Arg: " << arg->DebugString();
+      return false;
     }
     // Dynamic length sequence input can not be flattened.
     if (!IsSequenceExpandable(arg->abstract())) {
