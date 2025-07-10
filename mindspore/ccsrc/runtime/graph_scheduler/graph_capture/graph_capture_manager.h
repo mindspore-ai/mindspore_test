@@ -26,11 +26,10 @@
 #include "runtime/device/res_manager/capture_graph.h"
 #include "runtime/graph_scheduler/actor/kernel_runner.h"
 #include "runtime/graph_scheduler/graph_parameter_store.h"
+#include "runtime/graph_scheduler/actor/super_kernel_actor.h"
 
 namespace mindspore {
 namespace runtime {
-class SuperKernelActor;
-
 // The GraphCaptureManager class is used to manage graph capture and replay functionality in kbk mode. It dynamically
 // captures kernel launch operations during execution, translates them into a captured graph to sink execution.
 // This class provides capabilities for graph capture, replay, and automatic graph partitioning.

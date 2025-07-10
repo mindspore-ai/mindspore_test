@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#include <string>
 #include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
+#include <string>
 #include "include/common/runtime_conf/runtime_conf.h"
-#include "runtime/graph_scheduler/actor/super_kernel_actor.h"
 #include "utils/llm_manager.h"
 
 namespace mindspore {
@@ -179,7 +178,9 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
     if (executor.first == CAPTURE_GRAPH) {
       size_t start = capture_kernel_range_positions_[executor.second].first;
       size_t end = capture_kernel_range_positions_[executor.second].second;
-      capture_graphs_[executor.second]->CaptureBegin(0);
+      const auto &cur_capture_graph = capture_graphs_[executor.second];
+      MS_EXCEPTION_IF_NULL(cur_capture_graph);
+      cur_capture_graph->CaptureBegin(0);
       MS_LOG(DEBUG) << "Begin captrue graph, executor index: " << i << ", range[" << start << ", " << end << "].";
 
       for (size_t j = start; j <= end; j++) {
@@ -193,10 +194,10 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
           return false;
         }
       }
-      capture_graphs_[executor.second]->CaptureEnd(0);
+      cur_capture_graph->CaptureEnd(0);
       MS_LOG(DEBUG) << "Begin replay captrue graph, executor index: " << i << ", range[" << start << ", " << end
                     << "].";
-      capture_graphs_[executor.second]->ExecuteCaptureGraph(0);
+      cur_capture_graph->ExecuteCaptureGraph(0);
     } else {
       auto &kernel_runner = kernel_runners[executor.second];
       MS_LOG(DEBUG) << "Begin launch kernel, executor order index: " << executor.second
@@ -219,6 +220,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
   for (size_t i = 0; i < executor_num; i++) {
     auto &executor = executors_[i];
     if (executor.first == CAPTURE_GRAPH) {
+      MS_EXCEPTION_IF_NULL(capture_graphs_[executor.second]);
       capture_graphs_[executor.second]->ExecuteCaptureGraph(0);
     } else {
       auto &kernel_runner = kernel_runners[executor.second];
