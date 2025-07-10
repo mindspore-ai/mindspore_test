@@ -41,6 +41,10 @@ class MS_CORE_API DeviceManagerConf {
     device_id_ = device_id;
     is_default_device_id_ = is_default_device_id;
   }
+  void distributed_refresh_device_id(uint32_t device_id) {
+    MS_LOG(INFO) << "Refresh device id to " << device_id << " for distributed.";
+    device_id_ = device_id;
+  }
   const std::string &GetDeviceTarget() {
     auto it = device_type_to_name_map_.find(device_type_);
     if (it == device_type_to_name_map_.end()) {
