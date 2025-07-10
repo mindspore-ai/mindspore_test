@@ -260,10 +260,12 @@ void EnableGraphInputZeroCopy(const KernelGraphPtr &graph) {
   for (const auto &input : input_nodes) {
     MS_EXCEPTION_IF_NULL(input);
     if (AnfAlgo::OutputAddrExist(input, 0)) {
-      auto input_address = AnfAlgo::GetMutableOutputAddr(input, 0, false);
+      auto input_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input, 0, false);
+      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+      auto input_address = input_kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(input_address);
       input_address->set_is_ptr_persisted(false);
-      input_address->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      input_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       MS_LOG(INFO) << "Enable zero copy for input " << input->DebugString();
     }
   }

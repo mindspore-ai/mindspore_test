@@ -133,14 +133,16 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
   for (size_t i = 0; i < host_queue_ds_actor->data_nodes().size(); ++i) {
     const auto &data_node = host_queue_ds_actor->data_nodes()[i];
     MS_EXCEPTION_IF_NULL(data_node.first);
-    const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(data_node.first, data_node.second, false);
+    const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(data_node.first, data_node.second, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     ofs << "\t\t\tnode_order_number:" << i << "\tnode_name:" << data_node.first->fullname_with_scope()
         << "\tdebug_name:" << data_node.first->DebugString() << "\tindex:" << data_node.second
         << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
         << "\tstream id:" << device_tensor->stream_id()
         << "\toriginal_ref_count:" << device_tensor->original_ref_count()
-        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << device_tensor->flag() << "\n ";
+        << "\tdynamic_ref_count:" << device_tensor->dynamic_ref_count() << "\tflag:" << kernel_tensor->flag() << "\n ";
   }
 
   DumpAbstractActor(actor, ofs);

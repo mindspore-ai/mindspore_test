@@ -43,9 +43,9 @@ class BACKEND_EXPORT DeviceAddressUtils {
   static void CopyNoneTensorDataToDevice(const device::DeviceContext *device_context,
                                          const KernelTensorPtr &kernel_tensor, const ShapeVector &shape = {});
   static void CreateParameterDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
-  static device::DeviceAddressPtrList CreateDeviceAddressForTensorValue(const DeviceContext *device_context,
-                                                                        const ValuePtr &node_value, size_t output_idx,
-                                                                        const ValueNodePtr &value_node);
+  static std::vector<KernelTensorPtr> CreateKernelTensorForTensorValue(const DeviceContext *device_context,
+                                                                       const ValuePtr &node_value, size_t output_idx,
+                                                                       const ValueNodePtr &value_node);
   static void CreateValueNodeDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph);
   static void CreateKernelOutputDeviceAddress(const DeviceContext *device_context, const KernelGraphPtr &graph,
                                               bool is_gradient_out);

@@ -352,9 +352,9 @@ void GeGraphExecutor::SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph) {
   for (const auto &param_node : param_list) {
     MS_EXCEPTION_IF_NULL(param_node);
     if (param_node->has_user_data(backend::ge_backend::kNoNeedAllocDeviceAddress)) {
-      auto output_addr = AnfAlgo::GetMutableOutputAddr(param_node, 0, false);
-      MS_EXCEPTION_IF_NULL(output_addr);
-      output_addr->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+      auto output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(param_node, 0, false);
+      MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+      output_kernel_tensor->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
       MS_LOG(INFO) << "Node " << param_node->fullname_with_scope()
                    << " does not need device memory, so set kDeviceAddressFlagIgnoreDevicePtr.";
     }

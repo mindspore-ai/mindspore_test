@@ -650,4 +650,19 @@ mindspore::Format KernelTensor::format() const { return kernel::GetFormatFromStr
 void KernelTensor::set_format(mindspore::Format format) {
   device_address_->set_format(kernel::GetFormatFromEnumToStr(format));
 }
+size_t KernelTensor::flag() const { return flag_; }
+
+void KernelTensor::set_flag(size_t flag) { flag_ = flag; }
+
+void KernelTensor::UpdateFlag(size_t flag) { SET_FLAG(flag_, flag); }
+
+void KernelTensor::ClearFlag(size_t flag) { CLEAR_FLAG(flag_, flag); }
+
+bool KernelTensor::IsNotNeedAlloc() const {
+  return device_address_->IsPtrValid() || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
+}
+
+bool KernelTensor::IsNotNeedAllocWOLock() const {
+  return (device_ptr() != nullptr) || TEST_FLAG(flag(), device::kDeviceAddressFlagNotUsed);
+}
 }  // namespace mindspore::kernel

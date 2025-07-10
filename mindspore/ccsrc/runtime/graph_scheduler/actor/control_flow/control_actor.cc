@@ -50,7 +50,7 @@ void ControlActor::Init() {
     }
     if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i] &&
         data->data_ != nullptr && data->data_->device_address() != nullptr) {
-      data->data_->device_address()->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      data->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
       MS_LOG(INFO) << "Add null flag for device address:" << data->data_->device_address().get()
                    << " in actor:" << GetAID();
     }
@@ -377,12 +377,12 @@ void ControlActor::IncreaseNewRefCounts(OpContext<KernelTensor> *const context) 
                                " index:" + std::to_string(output_data_[i].first->index_);
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
-    const auto &device_tensor = output_data_[i].first->data_->device_address();
-    MS_EXCEPTION_IF_NULL(device_tensor);
+    const auto &kernel_tensor = output_data_[i].first->data_;
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
     if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i]) {
-      MS_LOG(DEBUG) << "Disable dynamic ref count for device address:" << device_tensor
-                    << " ptr:" << device_tensor->GetPtr() << " for actor:" << GetAID();
-      device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      MS_LOG(DEBUG) << "Disable dynamic ref count for kernel tensor:" << kernel_tensor
+                    << " info:" << kernel_tensor->ToString() << " for actor:" << GetAID();
+      kernel_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
       continue;
     }
     IncreaseNewRefCount(output_data_[i].first.get());

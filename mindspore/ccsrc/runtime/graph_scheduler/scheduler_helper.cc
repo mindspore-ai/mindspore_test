@@ -67,7 +67,7 @@ void CollectControlActors(const ActorSet *actor_set, std::vector<AbstractActorPt
 }
 
 void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_index,
-                             const DeviceTensorPtr &device_tensor) {
+                             const KernelTensorPtr &kernel_tensor) {
   MS_LOG(DEBUG) << "Process shape depend attribute for actor : " << to_actor->GetAID().Name();
   bool need_increase_ref_count = true;
   auto to_kernel_actor = dynamic_cast<KernelActor *>(to_actor);
@@ -96,7 +96,7 @@ void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_inde
     }
   }
   if (!need_increase_ref_count) {
-    device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+    kernel_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
   }
 }
 }  // namespace
@@ -216,7 +216,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
       MS_LOG(DEBUG) << "Add graph parameter store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
                     << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType()
                     << ", outer idx:" << outer_idx;
-      device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       device_tensor->set_new_ref_count(SIZE_MAX);
       return;
     }
@@ -224,7 +224,7 @@ void SchedulerHelper::AddDeviceTensorStore(const AnfNodePtr &anf_node, const Ker
   MS_LOG(DEBUG) << "Add device tensor store:" << kernel_tensor << " for node:" << anf_node.get()->DebugString()
                 << " node addr:" << anf_node.get() << " device type:" << kernel_tensor->GetDeviceType();
   DeviceTensorStore::GetInstance().Insert(const_cast<AnfNode *>(anf_node.get()), kernel_tensor);
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
 }
 
 void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
@@ -531,18 +531,20 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
     return;
   }
   // Update the reference count of from_kernel.
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel, from_output_index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, from_output_index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // The superkernel actor is linked by input parameter, maybe the not used parameter.
   if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
-    device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // The device address of super kernel actor can't be changed, so set the max reference count.
   if (!(IsControlFlowActor(to_actor->type()) || (((from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
                                                   (to_actor->type_ == KernelTransformType::kSuperKernelActor)) &&
                                                  !EnableKbkSubGraphExecute()))) {
-    UpdateDataArrowRefCount(to_actor, to_input_index, device_tensor);
-    GetUnusedRefCount(from_actor, to_actor, from_output_index, to_input_index, device_tensor);
+    UpdateDataArrowRefCount(to_actor, to_input_index, kernel_tensor);
+    GetUnusedRefCount(from_actor, to_actor, from_output_index, to_input_index, kernel_tensor);
   }
 
   if (IsControlFlowActor(to_actor->type())) {
@@ -552,9 +554,11 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
 
 void SchedulerHelper::GetUnusedRefCount(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                         size_t from_input_index, size_t to_input_index,
-                                        const DeviceTensorPtr &device_tensor) {
+                                        const KernelTensorPtr &kernel_tensor) {
   MS_EXCEPTION_IF_NULL(from_actor);
   MS_EXCEPTION_IF_NULL(to_actor);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (from_actor->type() != KernelTransformType::kKernelActor ||
       to_actor->type() != KernelTransformType::kKernelActor) {
@@ -584,7 +588,7 @@ void SchedulerHelper::GetUnusedRefCount(AbstractActor *const from_actor, Abstrac
     return;
   }
   if (only_depend_shape[to_input_index]) {
-    device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+    kernel_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
     from_kernel_actor->output_free_index_.emplace_back(from_input_index);
     MS_LOG(DEBUG) << "Add output free index:" << from_input_index
                   << " and null flag to device address:" << device_tensor
@@ -638,12 +642,14 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
   size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(front_node_with_idx.first.get());
   // The index of the font node is flattened
   size_t real_inner_idx = front_node_with_idx.second;
-  auto cur_device_tensor =
-    AnfAlgo::GetMutableOutputAddr(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second, false);
+  auto cur_kernel_tensor =
+    AnfAlgo::GetOutputKernelTensor(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second, false);
+  MS_EXCEPTION_IF_NULL(cur_kernel_tensor);
+  auto cur_device_tensor = cur_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(cur_device_tensor);
   // The superkernel actor is linked by input parameter, maybe the not used parameter.
   if (to_actor->type() != KernelTransformType::kSuperKernelActor) {
-    cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    cur_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // Cal ref count
   auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl(from_kernel_with_output_idx).first;
@@ -663,7 +669,7 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
                   << " front node:" << front_node_with_idx.first->DebugString() << " out index:" << real_outer_idx
                   << " inner index:" << real_inner_idx << " device address:" << cur_device_tensor->ToString();
     cur_graph_parameter_store->IncreaseUserCnt(real_outer_idx, real_inner_idx);
-    cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    cur_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   if (IsControlFlowActor(to_actor->type())) {
     cur_device_tensor->SetNodeIndex(from_kernel_with_output_idx.first, from_kernel_with_output_idx.second);
@@ -671,7 +677,7 @@ void SchedulerHelper::InsertParameterIndexsForActor(AbstractActor *const to_acto
   // Save to_actor info into parameter_index
   ParameterInfo cur_param_info{front_node_with_idx, real_outer_idx};
   to_actor->InsertParameterIndexs(to_kernel_with_input_idx.second, cur_param_info);
-  UpdateDataArrowRefCount(to_actor, to_kernel_with_input_idx.second, cur_device_tensor);
+  UpdateDataArrowRefCount(to_actor, to_kernel_with_input_idx.second, cur_kernel_tensor);
 }
 
 void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, OutputActor *const to_actor,
@@ -698,12 +704,11 @@ void SchedulerHelper::AddResultParameter(AbstractActor *const from_actor, Output
 
   const auto &kernel_tensor = graph_parameter_store->Fetch(outer_idx, front_node_with_index.second);
   if (kernel_tensor != nullptr && kernel_tensor->device_address() != nullptr) {
-    auto device_tensor = kernel_tensor->device_address().get();
-    device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+    kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
     MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
                   << " to actor:" << to_actor->GetAID() << " from kernel"
                   << (from_kernel == nullptr ? "null" : from_kernel->DebugString())
-                  << " device address:" << device_tensor;
+                  << " kernel tensor:" << kernel_tensor;
   }
 
   // Set the device contexts of to_actor.
@@ -733,9 +738,11 @@ void SchedulerHelper::AddResultArrow(AbstractActor *const from_actor, OutputActo
       << "#dmsg#Runtime error info:#dmsg#" << from_kernel->DebugString() << " index:" << from_output_index
       << " device address does not exist";
   }
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(from_kernel, from_output_index, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(from_kernel, from_output_index, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   // The output actor need use the relevant information of node to create output tensor.
   device_tensor->SetNodeIndex(from_kernel, from_output_index);
   MS_LOG(DEBUG) << "Add result arrow from actor:" << (from_actor != nullptr ? from_actor->GetAID().Name() : "null")
@@ -886,7 +893,7 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
     (void)from_actor->ref_node_formal_parameter_kernel_tensors_[from_index].insert(kernel_tensor);
   }
 
-  device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   device_tensor->SetNodeIndex(input_node, 0);
 }
 
@@ -900,10 +907,10 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
   MS_EXCEPTION_IF_NULL(need_converted_node);
 
   // Skip the ref node because its reference count cann‘t be recalculated correctly.
-  auto device_tensor =
-    AnfAlgo::GetMutableOutputAddr(need_converted_node, IntToSize(data_arrow->from_output_index_), false);
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagRefNode)) {
+  auto kernel_tensor =
+    AnfAlgo::GetOutputKernelTensor(need_converted_node, IntToSize(data_arrow->from_output_index_), false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagRefNode)) {
     MS_LOG(INFO) << "Skip the invalid data arrow of ref node, from actor:" << from_actor->GetAID().Name()
                  << ", from index:" << data_arrow->from_output_index_ << ", to actor:" << to_actor->GetAID().Name()
                  << ", to index:" << data_arrow->to_input_index_;

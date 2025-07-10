@@ -34,9 +34,9 @@ using KernelTensorPtr = kernel::KernelTensorPtr;
 class BACKEND_EXPORT DeviceAddressUtils {
  public:
   static void CreateParameterDeviceAddress(const KernelGraphPtr &graph);
-  static device::DeviceAddressPtrList CreateDeviceAddressForTensorValue(const ValuePtr &node_value, size_t output_idx,
-                                                                        const ValueNodePtr &value_node,
-                                                                        const KernelGraphPtr &graph);
+  static std::vector<KernelTensorPtr> CreateKernelTensorForTensorValue(const ValuePtr &node_value, size_t output_idx,
+                                                                       const ValueNodePtr &value_node,
+                                                                       const KernelGraphPtr &graph);
   static void CreateValueNodeDeviceAddress(const KernelGraphPtr &graph);
 
   static void CreateDeviceAddressByMapTensorNode(const AnfNodePtr &node, size_t index);

@@ -49,7 +49,7 @@ void ControlActor::Init() {
     }
     if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i] &&
         data->data_ != nullptr) {
-      data->data_->device_address()->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      data->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
       MS_LOG(INFO) << "Add null flag for device address:" << data->data_ << " in actor:" << GetAID();
     }
     (void)output_data_by_output_index_[IntToSize(data_arrow->from_output_index_)].emplace_back(data);
@@ -349,7 +349,7 @@ void ControlActor::IncreaseDynamicRefCounts(OpContext<KernelTensor> *const conte
     if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i]) {
       MS_LOG(DEBUG) << "Disable dynamic ref count for device address:" << output_data_[i].first->data_
                     << " ptr:" << output_data_[i].first->data_->device_address()->GetPtr() << " for actor:" << GetAID();
-      output_data_[i].first->data_->device_address()->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      output_data_[i].first->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
       continue;
     }
     IncreaseDynamicRefCount(output_data_[i].first.get());

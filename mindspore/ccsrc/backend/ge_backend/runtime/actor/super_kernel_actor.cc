@@ -66,7 +66,7 @@ inline bool InputDataNoNeedCopy(const AnfNodePtr &input_node, const KernelTensor
 
   UpdateShape(input_node, node_kernel_tensor, input_kernel_tensor, type);
 
-  if (TEST_FLAG(node_device_tensor->flag(), device::kDeviceAddressFlagNotUsed) ||
+  if (TEST_FLAG(node_kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed) ||
       input_device_tensor->GetPtr() == node_device_tensor->GetPtr()) {
     return true;
   }
@@ -217,7 +217,7 @@ void SuperKernelActor::Run(OpContext<KernelTensor> *const context) {
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto &device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      if (device_tensor->IsNotNeedAlloc()) {
+      if (kernel_tensor->IsNotNeedAlloc()) {
         continue;
       }
       if (memory::mem_pool::IsNeedProfilieMemoryLog()) {

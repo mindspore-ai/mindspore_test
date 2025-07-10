@@ -44,8 +44,8 @@ void AbstractActor::RunOpData(OpData<KernelTensor> *const input_data, OpContext<
   const auto &device_tensor = input_data->data_->device_address().get();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (!ActorDispatcher::enable_async_launch_kernel() && !device_tensor->IsPtrValid() &&
-      (!TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed) &&
-       !TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNullptr))) {
+      (!TEST_FLAG(input_data->data_->flag(), device::kDeviceAddressFlagNotUsed) &&
+       !TEST_FLAG(input_data->data_->flag(), device::kDeviceAddressFlagNullptr))) {
     std::stringstream error_info;
     error_info << "The input_data does not have a valid ptr of actor:" << GetAID().Name()
                << " with index:" << input_data->index_ << ", kernel tensor:" << input_data->data_->ToString();

@@ -40,7 +40,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
     auto device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
-    if (device_tensor->IsNotNeedAlloc()) {
+    if (kernel_tensor->IsNotNeedAlloc()) {
       continue;
     }
 
@@ -85,7 +85,7 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     auto device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(device_tensor);
     // Unused device address need skip to reduce memory use.
-    if (device_tensor->IsNotNeedAllocWOLock()) {
+    if (kernel_tensor->IsNotNeedAllocWOLock()) {
       continue;
     }
     try {
@@ -254,7 +254,7 @@ void MemoryManagerActor::AllocateBatchMemory(const std::vector<KernelTensorPtr> 
     MS_EXCEPTION_IF_NULL(device_tensor);
     MS_EXCEPTION_IF_NULL(device_context);
     // Unused device address need skip to reduce memory use.
-    if (device_tensor->IsNotNeedAlloc()) {
+    if (kernel_tensor->IsNotNeedAlloc()) {
       continue;
     }
 

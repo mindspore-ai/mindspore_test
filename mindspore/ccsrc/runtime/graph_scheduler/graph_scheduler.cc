@@ -3010,9 +3010,9 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
   // If the copy actor already exists, only need link between copy actor and to actor.
   SchedulerHelper::AddDataArrow(copy_actor, to_actor, 0, to_kernel_with_input_idx.second, nullptr);
   MS_EXCEPTION_IF_NULL(copy_actor->output_);
-  auto copy_output_device_address = copy_actor->output_->device_address();
-  MS_EXCEPTION_IF_NULL(copy_output_device_address);
-  copy_output_device_address->ClearFlag(device::kDeviceAddressFlagNotUsed);
+  auto copy_output_kernel_tensor = copy_actor->output_;
+  MS_EXCEPTION_IF_NULL(copy_output_kernel_tensor);
+  copy_output_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
                                       to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
     return;
@@ -4086,7 +4086,7 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
             << "\tsize:" << device_tensor->GetSize() << "\tnew_ref_count:" << device_tensor->new_ref_count()
-            << "\tflag:" << device_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
+            << "\tflag:" << kernel_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
             << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
       }
     }
@@ -4113,7 +4113,7 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
       auto device_tensor = kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(device_tensor);
       ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
-          << "\tsize:" << device_tensor->GetSize() << "\tflag:" << device_tensor->flag()
+          << "\tsize:" << device_tensor->GetSize() << "\tflag:" << kernel_tensor->flag()
           << "\tdevice_type:" << device_tensor->GetDeviceType()
           << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
     }
@@ -4146,7 +4146,7 @@ void GraphScheduler::DumpDeviceTensorStore(const GraphCompilerInfo &graph_compil
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
             << "\tsize:" << device_tensor->GetSize() << "\tstream id:" << device_tensor->stream_id()
-            << "\tflag:" << device_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
+            << "\tflag:" << kernel_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
             << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
       }
     }

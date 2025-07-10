@@ -2437,13 +2437,13 @@ void ControlNodeScheduler::LinkArrowForRootGraphEntranceActor(const ActorSet *ac
       size_t real_outer_idx = cur_graph_parameter_store->GetFrontNodeToIndex(formal_parameter.first.get());
       // parameter-weight not support tuple
       size_t real_inner_idx = formal_parameter.second;
-      auto kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
-      if (kernel_tensor == nullptr) {
+      auto cur_kernel_tensor = cur_graph_parameter_store->Fetch(real_outer_idx, real_inner_idx);
+      if (cur_kernel_tensor == nullptr) {
         continue;
       }
-      auto cur_device_tensor = kernel_tensor->device_address().get();
+      auto cur_device_tensor = cur_kernel_tensor->device_address().get();
       MS_EXCEPTION_IF_NULL(cur_device_tensor);
-      cur_device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      cur_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       cur_graph_parameter_store->SetUserCnt(real_outer_idx, real_inner_idx,
                                             (common::AnfAlgo::HasAbstractRef(formal_parameter.first) ? SIZE_MAX : 1));
       MS_LOG(DEBUG) << "Set parameter store ref count to max for outer index:" << real_outer_idx

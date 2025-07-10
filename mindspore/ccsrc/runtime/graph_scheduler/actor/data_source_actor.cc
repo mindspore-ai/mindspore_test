@@ -218,7 +218,7 @@ void CopyHostTensorToKernelTensor(const tensor::TensorPtr &host_tensor, const ke
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   // No used device address need skip.
-  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
     device_tensor->IncreaseNewRefCount("data source actor");
     MS_LOG(DEBUG) << "Data source actor input kernel tensor is not used:" << kernel_tensor->ToString();
     return;
@@ -349,7 +349,9 @@ void HostQueueDataSourceActor::ReleaseData() {
     if (!AnfAlgo::OutputAddrExist(data_node_with_index.first, data_node_with_index.second)) {
       continue;
     }
-    auto old_address = AnfAlgo::GetMutableOutputAddr(data_node_with_index.first, data_node_with_index.second);
+    auto old_kernel_tensor = AnfAlgo::GetOutputKernelTensor(data_node_with_index.first, data_node_with_index.second);
+    MS_EXCEPTION_IF_NULL(old_kernel_tensor);
+    auto old_address = old_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(old_address);
     if (old_address->GetPtr() == nullptr) {
       // The Address memory is already freed.
@@ -362,7 +364,6 @@ void HostQueueDataSourceActor::ReleaseData() {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Create device tensor:" << new_address << " type:" << new_address->type_id();
       new_address->set_new_ref_count(old_address->new_ref_count());
-      new_address->set_flag(old_address->flag());
       new_address->set_ptr(nullptr);
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);

@@ -394,8 +394,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   // Return whether DeviceAddress has a valid ptr.
   bool IsPtrValid() const;
-  bool IsNotNeedAlloc() const;
-  bool IsNotNeedAllocWOLock() const;
 
   using SyncUserDataHandler = void (*)(DeviceAddress *const device_address);
   // Return the valid device ptr.
@@ -429,11 +427,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // Free the ptr in user data when the ref count is 0.
   void ClearUserData() {}
 
-  // The interface of flag.
-  size_t flag() const;
-  void set_flag(size_t flag);
-  void UpdateFlag(size_t flag);
-  void ClearFlag(size_t flag);
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
   void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
   void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
@@ -484,9 +477,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   // The padding type corresponds to data format.
   std::string padding_type_;
-
-  // The device address flag.
-  size_t flag_{0};
 
   // Indicating whether the address is the input of view op.
   // If yes, the device address cannot be reused with the host address in CPU.

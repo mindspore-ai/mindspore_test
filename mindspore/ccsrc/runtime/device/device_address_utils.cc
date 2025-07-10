@@ -57,9 +57,8 @@ namespace runtime {
 namespace {
 constexpr auto kParameterDeviceUserDataName = "parameter_device";
 
-device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceContext *device_context,
-                                                               const ValueNodePtr &value_node) {
-  device::DeviceAddressPtr address = nullptr;
+KernelTensorPtr CreateKernelTensorForScalarAndString(const DeviceContext *device_context,
+                                                     const ValueNodePtr &value_node) {
   KernelTensorPtr kernel_tensor = nullptr;
   const auto &node_value = value_node->value();
   MS_EXCEPTION_IF_NULL(node_value);
@@ -77,7 +76,6 @@ device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceConte
       {value_node, 0}, nullptr, tensor_size, kOpFormat_DEFAULT, kObjectTypeString, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = kernel_tensor->device_address();
   } else if (node_value->isa<Scalar>()) {
     auto scalar_value = node_value->cast<ScalarPtr>();
     MS_EXCEPTION_IF_NULL(scalar_value);
@@ -88,17 +86,15 @@ device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceConte
       {value_node, 0}, nullptr, GetTypeByte(TypeIdToType(type_id)), kOpFormat_DEFAULT, type_id, ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = kernel_tensor->device_address();
   } else if (node_value->isa<None>()) {
     kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, 0, kOpFormat_DEFAULT, kTypeNone->type_id(), ShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(value_node));
-    address = kernel_tensor->device_address();
   }
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
 
-  return address;
+  return kernel_tensor;
 }
 
 Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVector &tensor_shape) {
@@ -166,7 +162,7 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   // Break copy data to device address if has the device_address has flag ignore.
-  if (TEST_FLAG(device_address->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
     MS_LOG(DEBUG) << "Address " << device_address << " has flag ignore device address, so skip copy tensor to device";
     return;
   }
@@ -331,7 +327,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
             !input_param->IsUsedByRealKernelInGraph(graph->graph_id())) {
           MS_LOG(INFO) << "Node:" << item->fullname_with_scope() << " debug name:" << item->DebugString()
                        << " is not used in the graph " << graph->graph_id();
-          device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
+          kernel_tensor->UpdateFlag(device::kDeviceAddressFlagNotUsed);
         }
       }
       if (origin_device_context != real_device_context) {
@@ -350,17 +346,17 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   }
 }
 
-device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorValue(const DeviceContext *device_context,
-                                                                                   const ValuePtr &node_value,
-                                                                                   size_t output_idx,
-                                                                                   const ValueNodePtr &value_node) {
+std::vector<KernelTensorPtr> DeviceAddressUtils::CreateKernelTensorForTensorValue(const DeviceContext *device_context,
+                                                                                  const ValuePtr &node_value,
+                                                                                  size_t output_idx,
+                                                                                  const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(node_value);
   MS_EXCEPTION_IF_NULL(value_node);
   const auto &ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
-  device::DeviceAddressPtrList address_list;
+  std::vector<KernelTensorPtr> kernel_tensor_list;
   if (node_value->isa<tensor::Tensor>()) {
     auto tensor = node_value->cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
@@ -369,10 +365,12 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
       if (output_address->GetDeviceType() == device_context->GetDeviceType()) {
         // We need to set tensor->device_address to ValueNode even if the tensor is a forward_output tensor
         // in PyNative Bprop graph. ValueNode device_address is necessary for GraphSchedule::Transform.
-        AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx++,
+        AnfAlgo::SetOutputAddr(std::static_pointer_cast<device::DeviceAddress>(tensor->device_address()), output_idx,
                                value_node);
-        (void)address_list.emplace_back(output_address);
-        return address_list;
+        auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(value_node, output_idx, false);
+        MS_EXCEPTION_IF_NULL(kernel_tensor);
+        (void)kernel_tensor_list.emplace_back(kernel_tensor);
+        return kernel_tensor_list;
       }
       auto cpu_tensor = tensor->cpu();
       value_node->set_value(cpu_tensor);
@@ -406,8 +404,8 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
   MS_EXCEPTION_IF_NULL(address);
   address->set_from_persistent_mem(true);
   AnfAlgo::SetOutputKernelTensor(kernel_tensor, output_idx, value_node.get());
-  (void)address_list.emplace_back(address);
-  return address_list;
+  (void)kernel_tensor_list.emplace_back(kernel_tensor);
+  return kernel_tensor_list;
 }
 
 mindspore::HashSet<mindspore::AnfNodePtr> FetchValueNodesNeedDevicePtr(const KernelGraphPtr &graph) {
@@ -492,17 +490,17 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const DeviceContext *devic
     const auto &node_value = value_node->value();
     MS_EXCEPTION_IF_NULL(node_value);
     if (node_value->isa<tensor::Tensor>() || node_value->isa<ValueSequence>()) {
-      auto address_list = CreateDeviceAddressForTensorValue(device_context, node_value, 0, value_node);
+      auto kernel_tensor_list = CreateKernelTensorForTensorValue(device_context, node_value, 0, value_node);
       // Deal with tensor and tuple
       if (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end()) {
-        for (const auto &address : address_list) {
+        for (const auto &kernel_tensor : kernel_tensor_list) {
 #ifdef ENABLE_DEBUGGER
           if (enable_debug) {
             continue;
           }
 #endif
-          MS_EXCEPTION_IF_NULL(address);
-          address->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+          MS_EXCEPTION_IF_NULL(kernel_tensor);
+          kernel_tensor->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
           MS_LOG(DEBUG) << "Find node " << value_node->DebugString() << " has init args";
         }
       }
@@ -512,22 +510,24 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const DeviceContext *devic
       continue;
     }
 
-    device::DeviceAddressPtr address = CreateDeviceAddressForScalarAndString(device_context, value_node);
+    KernelTensorPtr kernel_tensor = CreateKernelTensorForScalarAndString(device_context, value_node);
     // Deal with string and scalar; Address will be nullptr if the input is a type.
-    if (address && (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end())) {
-      address->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+    if (kernel_tensor && (value_nodes_without_init_args.find(value_node) == value_nodes_without_init_args.end())) {
+      kernel_tensor->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
       MS_LOG(DEBUG) << "Find node " << value_node->DebugString() << " has init args";
 #ifdef ENABLE_DEBUGGER
       if (enable_debug) {
-        address->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+        kernel_tensor->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
       }
 #endif
     }
-    if (address != nullptr) {
+    if (kernel_tensor != nullptr) {
+      auto address = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(address);
       MS_LOG(DEBUG) << "Create addr for node:" << common::AnfAlgo::GetNodeDebugString(value_node)
                     << " addr:" << address;
       address->set_from_persistent_mem(true);
-      AnfAlgo::SetOutputAddr(address, 0, value_node);
+      AnfAlgo::SetOutputKernelTensor(kernel_tensor, 0, value_node.get());
     } else {
       MS_LOG(INFO) << "No device address for value node:" << value_node->fullname_with_scope()
                    << ", debug name:" << common::AnfAlgo::GetNodeDebugString(value_node);
@@ -850,7 +850,9 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
   // If the output of ref node is parameter, need add the monad attr(for example Transdata/Cast node to ref
   // parameter).
   UpdateDeviceAddressMonadFlag(cur_pair, origin_pair);
-  auto origin_node_output_addr = AnfAlgo::GetMutableOutputAddr(origin_pair.first, origin_pair.second, false);
+  auto origin_node_output_kt = AnfAlgo::GetOutputKernelTensor(origin_pair.first, origin_pair.second, false);
+  MS_EXCEPTION_IF_NULL(origin_node_output_kt);
+  auto origin_node_output_addr = origin_node_output_kt->device_address();
   MS_EXCEPTION_IF_NULL(origin_node_output_addr);
   auto cur_node_output_addr = AnfAlgo::GetMutableOutputAddr(cur_pair.first, cur_pair.second, false);
   MS_EXCEPTION_IF_NULL(cur_node_output_addr);
@@ -862,7 +864,7 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
   }
 
   // Update the device address flag.
-  origin_node_output_addr->UpdateFlag(device::kDeviceAddressFlagRefNode);
+  origin_node_output_kt->UpdateFlag(device::kDeviceAddressFlagRefNode);
 
   if (origin_node_output_addr->pointer_ref_count() != cur_node_output_addr->pointer_ref_count()) {
     // Check the device target whether consistent.
@@ -881,7 +883,7 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
                  << "; cur device address " << cur_node_output_addr << " kernel is "
                  << cur_pair.first->fullname_with_scope() << ", index is " << cur_pair.second;
     cur_node_output_addr->set_pointer_ref_count(origin_node_output_addr->pointer_ref_count());
-    cur_node_output_addr->UpdateFlag(device::kDeviceAddressFlagRefNode);
+    origin_node_output_kt->UpdateFlag(device::kDeviceAddressFlagRefNode);
   } else {
     MS_LOG(DEBUG) << "No need update device address: ref origin kernel is " << origin_pair.first->fullname_with_scope()
                   << ", index is " << origin_pair.second << "; cur kernel is " << cur_pair.first->fullname_with_scope()

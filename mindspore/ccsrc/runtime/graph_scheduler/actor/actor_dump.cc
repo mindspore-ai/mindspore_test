@@ -241,12 +241,14 @@ void DumpDSActor(const DataSourceActor *actor, std::ofstream &ofs) {
     for (size_t i = 0; i < host_queue_ds_actor->data_nodes().size(); ++i) {
       const auto &data_node = host_queue_ds_actor->data_nodes()[i];
       MS_EXCEPTION_IF_NULL(data_node.first);
-      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(data_node.first, data_node.second, false);
+      const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(data_node.first, data_node.second, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      auto device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       ofs << "\t\t\tnode_order_number:" << i << "\tnode_name:" << data_node.first->fullname_with_scope()
           << "\tdebug_name:" << data_node.first->DebugString() << "\tindex:" << data_node.second
           << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-          << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag() << "\n ";
+          << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << kernel_tensor->flag() << "\n ";
     }
   }
 
@@ -357,7 +359,9 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
   const auto &somas_graph_output_indexes = actor->somas_graph_output_indexes();
   const auto &copy_output_kernel_tensors = actor->copy_output_kernel_tensors();
   for (size_t i = 0; i < AnfAlgo::GetOutputTensorNum(kernel); ++i) {
-    const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, i, false);
+    const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, false);
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto device_tensor = output_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     const auto &iter = copy_output_kernel_tensors.find(i);
     std::string copy_output_info = "";
@@ -370,7 +374,7 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
         << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
-        << "\tflag:" << device_tensor->flag()
+        << "\tflag:" << output_kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
@@ -384,7 +388,7 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
     auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     ofs << "\t\t\tworkspace_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_workspace, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
@@ -433,7 +437,9 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
   const auto &somas_graph_output_indexes = actor->somas_graph_output_indexes();
   const auto &copy_output_kernel_tensors = actor->copy_output_kernel_tensors();
   for (size_t i = 0; i < AnfAlgo::GetOutputTensorNum(kernel); ++i) {
-    const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, i, false);
+    const auto &output_kernel_tensor = AnfAlgo::GetOutputKernelTensor(kernel, i, false);
+    MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+    auto device_tensor = output_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     const auto &iter = copy_output_kernel_tensors.find(i);
     std::string copy_output_info = "";
@@ -446,7 +452,7 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
         << "\tstream id:" << device_tensor->stream_id() << "\tnew_ref_count:" << device_tensor->new_ref_count()
-        << "\tflag:" << device_tensor->flag()
+        << "\tflag:" << output_kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_outputs, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_outputs, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_outputs, i)
@@ -460,7 +466,7 @@ void DumpKernelActorV2(const KernelRunner *actor, std::ofstream &ofs) {
     auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
     ofs << "\t\t\tworkspace_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag()
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << kernel_tensor->flag()
         << "\tis_somas_enable:" << kernel_info->IsTensorEnableSomas(somas_workspace, i)
         << "\tsomas_offset:" << kernel_info->GetTensorSomasOffset(somas_workspace, i)
         << "\tsomas_aligned_size:" << kernel_info->GetTensorSomasAlignedSize(somas_workspace, i) << "\n ";
@@ -647,7 +653,7 @@ void DumpCopyActor(const CopyActor *actor, std::ofstream &ofs) {
   const auto &device_tensor = kernel_tensor->device_address().get();
   if (device_tensor != nullptr) {
     ofs << "\t\toutput_index:" << 0 << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()
-        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << device_tensor->flag() << "\n ";
+        << "\tstream id:" << device_tensor->stream_id() << "\tflag:" << kernel_tensor->flag() << "\n ";
   }
 
   DumpAbstractActor(actor, ofs);

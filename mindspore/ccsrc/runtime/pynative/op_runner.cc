@@ -165,7 +165,9 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
   MS_EXCEPTION_IF_CHECK_FAIL(device_address != nullptr,
                              "Tensor device address is nullptr, id is " + std::to_string(tensor->id()));
   // Break copy data to device address if has the device_address has flag ignore.
-  if (TEST_FLAG(device_address->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  if (TEST_FLAG(kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
     MS_LOG(DEBUG) << "Node " << node->DebugString() << " with address " << device_address
                   << " has flag ignore device address, so skip copy tensor to device";
     return;
@@ -297,7 +299,7 @@ bool MallocForKernelInput(const std::shared_ptr<OpRuntimeInfo> &runtime_info,
     auto input_address = input_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(input_address);
-    if (TEST_FLAG(input_address->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+    if (TEST_FLAG(input_kernel_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
       MS_LOG(DEBUG) << "Node " << node->DebugString() << " input[" << i << "] with address " << input_address
                     << " has flag ignore device address, so skip malloc device address";
       continue;
