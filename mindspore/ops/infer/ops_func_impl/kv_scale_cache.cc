@@ -60,8 +60,8 @@ BaseShapePtr KvScaleCacheFuncImpl::InferShape(const PrimitivePtr &primitive,
       "rank of vscale", SizeToLong(value_scale_shape_ptr->GetShapeVector().size()), kEqual, input_num_dims, primitive));
 
   const size_t batch_valid_size = batch_valid_shape.size();
-  (void)CheckAndConvertUtils::CheckInteger(batch_valid_size + "batch_valid_size must be greater than 0, but got:",
-                                           batch_valid_size, kGreaterEqual, 0, op_name);
+  (void)CheckAndConvertUtils::CheckInteger("batch_valid_size must be greater than 0, but got:", batch_valid_size,
+                                           kGreaterEqual, 0, op_name);
 
   if (!IsDynamic(key_scale_cache_shape) && !IsDynamic(batch_valid_shape)) {
     const size_t key_scale_cache_dim = key_scale_cache_shape[0];
