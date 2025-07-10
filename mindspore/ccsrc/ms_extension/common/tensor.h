@@ -19,6 +19,7 @@
 #include <set>
 #include <memory>
 #include <vector>
+#include <optional>
 #include "pybind11/pybind11.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
