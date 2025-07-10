@@ -16,13 +16,14 @@ import os
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import context, Tensor, Parameter
+from mindspore import context, Tensor, Parameter, ops, jit
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 from mindspore.ops.auto_generate.gen_ops_prim import InplaceAddExt
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE)
+
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
@@ -32,6 +33,7 @@ def test_tensor_inplace_add():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             P.AssignAdd()(x, y)
@@ -53,6 +55,7 @@ def test_tensor_inplace_add_input_parameter():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             P.AssignAdd()(x, y)
@@ -175,6 +178,7 @@ def test_tensor_inplace_add_func_sub():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def add_func(self, x1, y1):
             P.AssignAdd()(x1, y1)
@@ -204,6 +208,7 @@ def test_tensor_inplace_add_func_sub_control_flow():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def add_func(self, x1, y1):
             if x1 != y1:
@@ -236,6 +241,7 @@ def test_tensor_inplace_add_func_sub_control_flow_2():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def func(self, x1, y1):
             if x1 == y1:
@@ -269,6 +275,7 @@ def test_tensor_inplace_add_sub_func_3():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def func(self, x1, y1):
             if x1 == y1:
@@ -296,6 +303,7 @@ def test_tensor_inplace_multi_inplace_ops():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             if x > y:
@@ -322,6 +330,7 @@ def test_tensor_inplace_add_parameter():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -350,6 +359,7 @@ def test_tensor_inplace_add_control_flow_multi():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -378,6 +388,7 @@ def test_tensor_inplace_add_control_flow_multi_2():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -408,6 +419,7 @@ def test_tensor_inplace_index_add():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -434,6 +446,7 @@ def test_tensor_inplace_order_list():
     Description: Support tensor inplace with right order.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             P.Assign()(y, 2)
@@ -477,11 +490,13 @@ def test_tensor_augassign():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
             self.input_x = Tensor([2.0, 3.0, 4.0, 5.0], mstype.float32)
             self.relu = nn.ReLU()
+
         def construct(self, input_y):
             self.input_x[:] **= input_y
             out = self.relu(self.input_x)
@@ -489,6 +504,7 @@ def test_tensor_augassign():
 
     input_me = Tensor([1, 2, 3, 4], mstype.float32)
     net = Net()
+
     @ms.jit(capture_mode='ast', jit_level="O0", backend="ms_backend")
     def net_forward(net, x):
         return net(x)
@@ -507,6 +523,7 @@ def test_zerolike_fill_zero():
     Description: Support tensor inplace.
     Expectation: Run success.
     """
+
     class ZerosLikeNet(nn.Cell):
         def __init__(self):
             super(ZerosLikeNet, self).__init__()
@@ -532,6 +549,7 @@ def test_inplace_isolated_node():
     Description: Support tensor inplace isolated node.
     Expectation: Run success.
     """
+
     def get_input(x, value):
         return (P.AssignAdd()(x, value), x)
 
@@ -547,3 +565,33 @@ def test_inplace_isolated_node():
     net.construct = ms.jit(net.construct)
     output_jit = net(Tensor([1]), Tensor([2]))
     assert output_expect == output_jit
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_list_inplace():
+    """
+    Feature: Support tensor inplace in list.
+    Description: Support tensor inplace in list.
+    Expectation: Run success.
+    """
+
+    def fn(x1, x2):
+        lst = [x1, x2]
+        y = x2 + 1
+        inplace_copy(lst, y)
+        return ops.cat(lst)
+
+    def inplace_copy(tensor_list, x):
+        for tensor in tensor_list:
+            tensor.copy_(x)
+
+    x1 = ms.tensor([1, 2, 3])
+    y1 = ms.tensor([2, 3, 3])
+    pynative_ouput = fn(x1, y1)
+
+    compiled_fn = jit(fn, backend='ms_backend')
+    x2 = ms.tensor([1, 2, 3])
+    y2 = ms.tensor([2, 3, 3])
+    graph_output = compiled_fn(x2, y2)
+
+    assert (pynative_ouput == graph_output).all()
