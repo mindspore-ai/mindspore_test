@@ -21,7 +21,7 @@
 #include <random>
 #include <vector>
 #include "securec.h"
-#include "graphengine/910/inc/run/aicpu/aicpu_kernel/inc/cpu_tensor.h"
+#include "aicpu/cpu_tensor.h"
 #include "utils/kernel_util.h"
 #include "context/inc/cpu_kernel_utils.h"
 namespace aicpu {
