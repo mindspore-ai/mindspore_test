@@ -137,7 +137,9 @@ void VirtualViewGradInsertInner(const FuncGraphPtr &root, const FuncGraphManager
       // 3. If view_node is nullptr, and is_view_output is false, inplace input is not a view output, just ignore
       if (view_node == nullptr) {
         if (is_view_output) {
-          MS_LOG(EXCEPTION) << "Inplace modification of the output of view op is not supported in control flow.";
+          MS_LOG(EXCEPTION) << "Inplace modification of the output of view op is not supported in control flow. cnode:"
+                            << cnode->DebugString() << ". Please check your codes which location is as follows:"
+                            << trace::GetDebugInfoStr(cnode->debug_info());
         }
         continue;
       }
@@ -151,8 +153,8 @@ bool CheckControlFlow(const PrimitivePtr &prim, const CNodePtr &cnode) {
     const auto &input = cnode->input(prim->rw_write_input_indexes()[index] + 1);
     const auto &input_abs = input->abstract();
     if (!input_abs->isa<abstract::AbstractRefTensor>()) {
-      MS_LOG(EXCEPTION) << "The rw_write input of inplace op abstract is not ref:" << input_abs->ToString()
-                        << ", inplace operation is: " << cnode->DebugString();
+      MS_LOG(INTERNAL_EXCEPTION) << "The abstract of rw_write input of inplace op is not ref:" << input_abs->ToString()
+                                 << ", inplace operation is: " << cnode->DebugString();
     }
     auto input_ref = input_abs->cast<abstract::AbstractRefPtr>();
     if (input_ref->is_view_output()) {
@@ -183,8 +185,8 @@ void MarkViewOp(const AnfNodePtr &node, bool *control_flow_scene) {
     MS_EXCEPTION_IF_NULL(abs);
     auto ref = abs->cast<abstract::AbstractRefPtr>();
     if (ref == nullptr) {
-      MS_LOG(EXCEPTION) << "The view op abstract is not ref:" << ref->ToString()
-                        << ", view operation is: " << node->DebugString();
+      MS_LOG(INTERNAL_EXCEPTION) << "The view op abstract is not ref:" << ref->ToString()
+                                 << ", view operation is: " << node->DebugString();
     }
     auto cnode = node->cast<CNodePtr>();
     ref->set_user_data<CNode>(kOriginalViewOp, cnode);
@@ -276,7 +278,7 @@ bool RemoveRedundantVirtualOps(const FuncGraphPtr &root, const opt::OptimizerPtr
       if (cur_node_users.size() == kMinUsersSizeScene1 &&
           IsPrimitiveCNode(cur_node_users.front().first, prim::kPrimUpdateState)) {
         const auto &use_node = cur_node_users.front().first;
-        MS_LOG(DEBUG) << "Need remove reduandant virtual view grad op: " << node->DebugString();
+        MS_LOG(DEBUG) << "Need remove redundant virtual view grad op: " << node->DebugString();
         manager->Replace(use_node, use_node->cast<CNodePtr>()->input(kIndex1));
       }
     } else if (IsVirtualViewCNode(node)) {
@@ -311,7 +313,7 @@ bool RemoveRedundantVirtualOps(const FuncGraphPtr &root, const opt::OptimizerPtr
       // are same node)
       auto refkey1 = GetRefKey(vv_view_output);
       if (!refkey1.empty() && refkey1 == GetRefKey(vvg_view_output)) {
-        MS_LOG(DEBUG) << "Need remove reduandant virtual view op: " << vv_node->DebugString()
+        MS_LOG(DEBUG) << "Need remove redundant virtual view op: " << vv_node->DebugString()
                       << " , and virtual view grad op: " << vvg_node->DebugString();
         // VirtualViewGrad(y, %3, %4)   ==> Depend(y, %4)
         auto depend_for_view_input =
