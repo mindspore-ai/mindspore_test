@@ -16,10 +16,7 @@
 
 #include "frontend/optimizer/irpass/virtualview_op.h"
 
-#include <map>
-#include <string>
-#include <vector>
-#include <utility>
+#include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/view_inplace_utils.h"
 
 namespace mindspore {
@@ -27,6 +24,8 @@ namespace opt {
 namespace irpass {
 
 void VirtualViewInsertProcesser::Run() {
+  InitViewInfoFromParams();
+
   for (const auto &node : TopoSort(func_graph_->get_return())) {
     auto cnode = node->cast<CNodePtr>();
     if (cnode == nullptr || IsPrimitiveCNode(node, prim::kPrimVirtualViewGrad) ||
@@ -47,15 +46,115 @@ void VirtualViewInsertProcesser::Run() {
   DoVirtualViewInputReplace();
 }
 
-AnfNodePtr VirtualViewInsertProcesser::CreateVirtualViewNode(const CNodePtr &view_output, AnfNodePtr *last_umonad) {
-  const auto &inputs = view_output->inputs();
+AnfNodePtr VirtualViewInsertProcesser::ReplaceWithParameter(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!is_viewed_param_existed_) {
+    return node;
+  }
+  auto refkey = GetRefKey(node);
+  if (refkey.empty()) {
+    return node;
+  }
+
+  auto it = refkey_to_param_.find(refkey);
+  if (it != refkey_to_param_.end()) {
+    return it->second;
+  }
+
+  return node;
+}
+
+std::pair<AnfNodePtr, AnfNodePtrList> VirtualViewInsertProcesser::GetViewInfo(const AnfNodePtr &param) {
+  MS_EXCEPTION_IF_NULL(param);
+  AnfNodePtr current_node = param;
+  AnfNodePtrList view_chain;
+  CNodePtr view_node;
+  while (true) {
+    // m = View(y), n = View(m), u = View(n)
+    // 1) param_x
+    // param_x ---> nullptr
+    // return {param_x, []}
+    // 2) param_m:
+    // param_m ---> m ---> [param_m] ---> y
+    // y ---> nullptr
+    // return {y, [param_m]}
+    // 3) param_u
+    // param_u ---> u ---> [param_u] ---> n
+    // n ---> n ---> [n, param_u] ---> m
+    // m ---> m ---> [param, n, param_u]
+    // return {y, [param, n, param_u]}
+    view_node = std::get<0>(IsCreatedByViewOp(current_node));
+    if (view_node == nullptr) {
+      MS_LOG(DEBUG) << "GetViewInfo param: " << param->DebugString() << " view_chain.size(): " << view_chain.size();
+      return {ReplaceWithParameter(current_node), std::move(view_chain)};
+    }
+
+    auto view_node_param = ReplaceWithParameter(view_node);
+
+    auto it_chain = view_chains_.find(view_node_param);
+    auto it_dep = view_dependencies_.find(view_node_param);
+    if (it_chain != view_chains_.end() && it_dep != view_dependencies_.end()) {
+      const auto &existing_chain = it_chain->second;
+      view_chain.insert(view_chain.begin(), existing_chain.begin(), existing_chain.end());
+      MS_LOG(DEBUG) << "GetViewInfo from existing chain param: " << param->DebugString()
+                    << " view_chain.size(): " << view_chain.size()
+                    << " view_node_param: " << view_node_param->DebugString();
+      return {it_dep->second, std::move(view_chain)};
+    } else {
+      view_chain.insert(view_chain.begin(), view_node_param);
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(view_node->inputs().size() > kIndex1,
+                               "Input size should be larger than 1, view_node: " + view_node->DebugString());
+    current_node = view_node->input(1);
+  }
+}
+
+void VirtualViewInsertProcesser::InitViewInfoFromParams() {
+  if (!is_viewed_param_existed_) {
+    return;
+  }
+
+  for (const auto &param : params_) {
+    auto refkey = GetRefKey(param);
+    if (refkey.empty()) {
+      continue;
+    }
+    refkey_to_param_[refkey] = param;
+  }
+
+  bool is_viewed_param_existed = false;
+  for (const auto &param : params_) {
+    MS_EXCEPTION_IF_NULL(param);
+    auto [root_node, view_chain] = GetViewInfo(param);
+    if (root_node == nullptr || view_chain.empty()) {
+      MS_LOG(DEBUG) << "Fail to get view info from param: " << param->DebugString();
+      continue;
+    }
+
+    is_viewed_param_existed = true;
+    view_chains_[param] = view_chain;
+    view_dependencies_[param] = root_node;
+    view_modifications_[root_node][param] = false;
+  }
+  is_viewed_param_existed_ = is_viewed_param_existed;
+  MS_LOG(DEBUG) << "is_viewed_param_existed_ updated: " << is_viewed_param_existed_;
+}
+
+AnfNodePtr VirtualViewInsertProcesser::CreateVirtualViewNode(const AnfNodePtr &view_output, AnfNodePtr *last_umonad) {
+  const auto &view_node = std::get<0>(IsCreatedByViewOp(view_output));
+  MS_EXCEPTION_IF_NULL(view_node);
+  MS_EXCEPTION_IF_CHECK_FAIL(view_node->inputs().size() > kIndex2,
+                             "Input size should be larger than 2, view_node: " + view_node->DebugString());
+  const auto &inputs = view_node->inputs();
   AnfNodePtrList new_inputs(inputs.begin(), inputs.end() - 1);
+  auto &input = new_inputs[1];
+  input = ReplaceWithParameter(input);
   new_inputs.push_back(*last_umonad);
 
   auto virtual_view_node = func_graph_->NewCNodeInOrder(new_inputs);
-  virtual_view_node->set_abstract(view_output->abstract());
+  virtual_view_node->set_abstract(view_node->abstract());
   virtual_view_node->AddAttr(kIsVirtualViewOp, MakeValue(true));
-  virtual_view_node->set_user_data<CNode>(kIsVirtualViewOp, view_output);
+  virtual_view_node->set_user_data<AnfNode>(kIsVirtualViewOp, view_output);
 
   auto new_umonad =
     func_graph_->NewCNodeInOrder({NewValueNode(prim::kPrimUpdateState), *last_umonad, virtual_view_node});
@@ -86,18 +185,14 @@ void VirtualViewInsertProcesser::ResetViewModificationStatus(const AnfNodePtr &v
   }
 }
 
-void VirtualViewInsertProcesser::VirtualViewInsertAction(const CNodePtr &cnode, const CNodePtr &view_cnode) {
+void VirtualViewInsertProcesser::VirtualViewInsertAction(const CNodePtr &cnode, const AnfNodePtr &view_node) {
   MS_EXCEPTION_IF_NULL(cnode);
-  MS_EXCEPTION_IF_NULL(view_cnode);
+  MS_EXCEPTION_IF_NULL(view_node);
 
   AnfNodePtr umonad = cnode->inputs().back();
-  const auto &umonad_abstract = umonad->abstract();
-  if (umonad_abstract == nullptr || !umonad_abstract->isa<abstract::AbstractUMonad>()) {
-    MS_LOG(EXCEPTION) << "Invalid cnode, should have umonad as the last input, but got cnode: "
-                      << umonad->DebugString();
-  }
+  (void)CheckUMonad(umonad);
 
-  auto view_chain_it = view_chains_.find(view_cnode);
+  auto view_chain_it = view_chains_.find(view_node);
   if (view_chain_it == view_chains_.end()) {
     return;
   }
@@ -152,68 +247,16 @@ void VirtualViewInsertProcesser::UpdateViewModificationStatus(const AnfNodePtr &
   }
 }
 
-void VirtualViewInsertProcesser::UpdateViewChains(const CNodePtr &view_cnode) {
-  if (view_cnode->inputs().size() < 2) {
-    MS_LOG(DEBUG) << "Invalid viewed cnode, should have at least one input: " << view_cnode->DebugString();
-    return;
-  }
-
-  auto input_node = view_cnode->input(1);
-  if (view_chains_.count(input_node)) {
-    // n = View(m)
-    // view_chains[m] = [m]
-    // view_chains_: {m: [m], n: [m, n]}
-    auto new_chain = view_chains_[input_node];
-    new_chain.push_back(view_cnode);
-    view_chains_[view_cnode] = std::move(new_chain);
-  } else {
-    // m = View(y)
-    // view_chains_: {}
-    // view_chains_: {m: [m]}
-    view_chains_[view_cnode] = {view_cnode};
-  }
-}
-
-AnfNodePtr VirtualViewInsertProcesser::FindViewRootNode(const CNodePtr &view_cnode) {
-  // m = View(y), n = View(m)
-  // view_chains_: {m: [m], n: [m, n]}
-  // [m, n] --> m
-  // m --> y
-  auto chain_it = view_chains_.find(view_cnode);
-  if (chain_it == view_chains_.end()) {
-    MS_LOG(DEBUG) << "View chain not found for node: " << view_cnode->DebugString();
-    return nullptr;
-  }
-
-  const auto &view_chain = chain_it->second;
-  if (view_chain.empty()) {
-    MS_LOG(DEBUG) << "Empty view chain for node: " << view_cnode->DebugString();
-    return nullptr;
-  }
-
-  AnfNodePtr front_node = view_chain.front();
-  auto root_view_node = front_node->cast<CNodePtr>();
-  if (root_view_node == nullptr) {
-    MS_LOG(DEBUG) << "Root view node is not a CNode, view_cnode:" << view_cnode->DebugString();
-    return nullptr;
-  }
-
-  if (root_view_node->inputs().size() < 2) {
-    MS_LOG(DEBUG) << "Invalid root_view_node, should have at least one input: " << root_view_node->DebugString();
-    return nullptr;
-  }
-
-  return root_view_node->input(1);
-}
-
 void VirtualViewInsertProcesser::ProcessViewNode(const CNodePtr &cnode) {
   // m = View(y), n = View(m)
   // ---> view_chains: {m: [m], n: [m, n]}
   // ---> view_dependencies: {m: y, n: y}
   // ---> view_modifications: {y: {m: false, n: false}}
-  UpdateViewChains(cnode);
-  auto root_node = FindViewRootNode(cnode);
+  auto [root_node, view_chain] = GetViewInfo(cnode);
   MS_EXCEPTION_IF_NULL(root_node);
+  MS_EXCEPTION_IF_CHECK_FAIL(!view_chain.empty(),
+                             "View node's chain should contain itself, cnode: " + cnode->DebugString());
+  view_chains_[cnode] = view_chain;
   view_dependencies_[cnode] = root_node;
   view_modifications_[root_node][cnode] = false;
 }
@@ -232,12 +275,7 @@ void VirtualViewInsertProcesser::CheckAndInsertVirtualViewOp(const CNodePtr &cno
   // view_dependencies: {m: y} --> y
   // view_modifications: {y: {m: true}} --> true
   // Insert VirtualView op of m
-  for (const auto &input : cnode->inputs()) {
-    auto input_node = input->cast<CNodePtr>();
-    if (input_node == nullptr) {
-      continue;
-    }
-
+  for (const auto &input_node : cnode->inputs()) {
     auto dep_it = view_dependencies_.find(input_node);
     if (dep_it == view_dependencies_.end()) {
       continue;
@@ -256,11 +294,11 @@ void VirtualViewInsertProcesser::CheckAndInsertVirtualViewOp(const CNodePtr &cno
 }
 
 void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
-  std::map<AnfNodePtr, AnfNodePtr> virtual_view_input;
+  std::unordered_map<AnfNodePtr, AnfNodePtr> virtual_view_input;
   auto manager = func_graph_->manager();
   MS_EXCEPTION_IF_NULL(manager);
   for (auto node : TopoSort(func_graph_->return_node())) {
-    if (!irpass::IsCNode(node)) {
+    if (!irpass::IsCNode(node) || node->func_graph() != func_graph_) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
@@ -287,7 +325,7 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
     }
 
     if (cnode->HasAttr(kIsVirtualViewOp)) {
-      auto view_op = cnode->user_data<CNode>(kIsVirtualViewOp);
+      auto view_op = cnode->user_data<AnfNode>(kIsVirtualViewOp);
       if (view_op == nullptr) {
         MS_LOG(INFO) << "The virtual view op has no user data: " << node->DebugString();
         continue;
@@ -299,6 +337,7 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
       auto &entry = virtual_view_input[view_op];
       if (entry == nullptr) {
         entry = cnode;
+        MS_LOG(INFO) << "Record cnode as virtual view node: " << cnode->DebugString();
         continue;
       }
 
@@ -319,7 +358,7 @@ void VirtualViewInsertProcesser::ChangeVirtualViewInputInner() {
 }
 
 void VirtualViewInsertProcesser::DoVirtualViewInputReplace() {
-  const auto &all_nodes = TopoSort(func_graph_->return_node(), SuccDeeperSimple);
+  const auto &all_nodes = TopoSort(func_graph_->return_node());
   bool exist_virtual_view_nodes = std::any_of(all_nodes.begin(), all_nodes.end(),
                                               [this](const AnfNodePtr &node) { return IsVirtualViewCNode(node); });
   if (!exist_virtual_view_nodes) {
@@ -334,10 +373,12 @@ bool VirtualViewInsert(const FuncGraphPtr &root, const opt::OptimizerPtr &opt) {
   auto manager = opt->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
-  VirtualViewInsertProcesser(root, manager).Run();
+  PreprocessForVirtualViewGradInsert(root, opt);
+
+  VirtualViewInsertProcesser(root, manager, false).Run();
   auto sub_graphs = root->func_graphs_used_total();
   for (const auto &sub_graph : sub_graphs) {
-    VirtualViewInsertProcesser(sub_graph, manager).Run();
+    VirtualViewInsertProcesser(sub_graph, manager, true).Run();
   }
   return false;
 }
@@ -348,7 +389,7 @@ AnfNodePtr VirtualViewEliminater::operator()(const OptimizerPtr &, const AnfNode
     return nullptr;
   }
   auto cnode = node->cast<CNodePtr>();
-  auto original_cnode = cnode->user_data<CNode>(kIsVirtualViewOp);
+  auto original_cnode = cnode->user_data<AnfNode>(kIsVirtualViewOp);
   MS_EXCEPTION_IF_NULL(original_cnode);
   auto depend_node =
     func_graph->NewCNode({NewValueNode(prim::kPrimDepend), original_cnode, CheckUMonad(cnode->inputs().back())});

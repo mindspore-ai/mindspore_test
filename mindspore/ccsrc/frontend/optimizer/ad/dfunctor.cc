@@ -713,8 +713,8 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   // Do forward computation
   AnfNodePtr forward_app = nullptr;
   if (opt::irpass::IsVirtualViewCNode(morph)) {
-    const auto &original_cnode = morph->user_data<CNode>(opt::irpass::kIsVirtualViewOp);
-    auto node_adjoint_iter = anfnode_to_adjoin_.find(original_cnode);
+    const auto &original_node = morph->user_data<AnfNode>(opt::irpass::kIsVirtualViewOp);
+    auto node_adjoint_iter = anfnode_to_adjoin_.find(original_node);
     if (node_adjoint_iter != anfnode_to_adjoin_.end()) {
       // VirtualView op: k_app ==> Call_virtual_view_fprop(..., U1{TupleGetitem, updatestate_fprop_caller, 0})
       // From {TupleGetitem, k_app, 0} ==> {Depend, original_view_op, U1}

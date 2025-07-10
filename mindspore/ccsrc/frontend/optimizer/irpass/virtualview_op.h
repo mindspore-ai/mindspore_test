@@ -17,7 +17,9 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIRTUALVIEW_INSERT_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_VIRTUALVIEW_INSERT_H_
 
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/irpass.h"
 
@@ -26,8 +28,11 @@ namespace opt {
 namespace irpass {
 class VirtualViewInsertProcesser {
  public:
-  VirtualViewInsertProcesser(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager)
-      : func_graph_(func_graph), manager_(manager) {}
+  VirtualViewInsertProcesser(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager,
+                             bool is_viewed_param_existed)
+      : func_graph_(func_graph), manager_(manager), is_viewed_param_existed_(is_viewed_param_existed) {
+    params_ = func_graph_->parameters();
+  }
   virtual ~VirtualViewInsertProcesser() = default;
 
   void Run();
@@ -35,17 +40,18 @@ class VirtualViewInsertProcesser {
  private:
   using ViewDependenceMap = std::unordered_map<AnfNodePtr, AnfNodePtr>;
   using ViewModificationMap = std::unordered_map<AnfNodePtr, std::unordered_map<AnfNodePtr, bool>>;
-  using ViewChainMap = std::unordered_map<AnfNodePtr, CNodePtrList>;
+  using ViewChainMap = std::unordered_map<AnfNodePtr, AnfNodePtrList>;
 
   static constexpr auto kIsVirtualViewOp = "is_virtual_view_op";
   static constexpr auto kOriginalViewOp = "view_op";
 
-  AnfNodePtr CreateVirtualViewNode(const CNodePtr &view_output, AnfNodePtr *last_umonad);
+  void InitViewInfoFromParams();
+  AnfNodePtr ReplaceWithParameter(const AnfNodePtr &node);
+  std::pair<AnfNodePtr, AnfNodePtrList> GetViewInfo(const AnfNodePtr &param);
+  AnfNodePtr CreateVirtualViewNode(const AnfNodePtr &view_output, AnfNodePtr *last_umonad);
   void ResetViewModificationStatus(const AnfNodePtr &view_output);
-  void VirtualViewInsertAction(const CNodePtr &cnode, const CNodePtr &view_cnode);
+  void VirtualViewInsertAction(const CNodePtr &cnode, const AnfNodePtr &view_node);
   void UpdateViewModificationStatus(const AnfNodePtr &input_node);
-  void UpdateViewChains(const CNodePtr &view_cnode);
-  AnfNodePtr FindViewRootNode(const CNodePtr &view_cnode);
   void ProcessViewNode(const CNodePtr &cnode);
   void ProcessInplaceNode(const CNodePtr &cnode);
   void CheckAndInsertVirtualViewOp(const CNodePtr &cnode);
@@ -54,6 +60,9 @@ class VirtualViewInsertProcesser {
 
   FuncGraphPtr func_graph_;
   FuncGraphManagerPtr manager_;
+  bool is_viewed_param_existed_;
+  AnfNodePtrList params_;
+  std::unordered_map<std::string, AnfNodePtr> refkey_to_param_;
   // m = View(y), n = View(m) -> {m: y, n: y}
   ViewDependenceMap view_dependencies_;
   // m = View(y), n = View(m), Inplace(y) -> {y: {m: true, n: true}}

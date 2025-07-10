@@ -308,7 +308,7 @@ bool RemoveRedundantVirtualOps(const FuncGraphPtr &root, const opt::OptimizerPtr
       // ==> vvg_view_output: %3 = VirtualViewGrad(y, %2)  ==> get second arg ==> %2
       // ==> vv_view_output:  %4 = VirtualView(%3)[original_node: %1]  ==> get original_node ==> %1
       const auto vvg_view_output = vvg_inputs[kIndex2];
-      const auto &vv_view_output = vv_node->user_data<CNode>(kIsVirtualViewOp);
+      const auto &vv_view_output = vv_node->user_data<AnfNode>(kIsVirtualViewOp);
       // Temp: Use refkey to check whether virtual_view_ori_view and virtual_view_grad_ori_view are the same (%2 and %1
       // are same node)
       auto refkey1 = GetRefKey(vv_view_output);
