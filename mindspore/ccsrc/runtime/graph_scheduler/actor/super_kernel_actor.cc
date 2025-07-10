@@ -1253,7 +1253,6 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
                               ActorDispatcher::enable_static_shape();
     bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph() &&
                              ActorDispatcher::enable_static_shape();
-
     if (!need_capture_graph && !need_replay_graph) {
       if (!LaunchAllKernels(context)) {
         MS_INTERNAL_EXCEPTION(RuntimeError)

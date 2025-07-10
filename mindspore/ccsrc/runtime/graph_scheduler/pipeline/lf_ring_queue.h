@@ -27,6 +27,8 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore {
+namespace runtime {
+constexpr size_t kQueueElemAlignSize = 128;
 // This is a lock-free queue implementation that supports multiple producers and a single consumer, improves performance
 // through spinning, and supports inplacement construct element, pause and continue the queue, the queue is in pause
 // status after creation.
@@ -185,18 +187,19 @@ class LFRingQueue {
 
   // Bitmask for fast modulo.
   static constexpr uint64_t mask_ = Capacity - 1;
-  alignas(128) Element buffer_[Capacity];
-  alignas(128) std::atomic<uint64_t> head_{0};
-  alignas(128) std::atomic<uint64_t> tail_{0};
+  alignas(kQueueElemAlignSize) Element buffer_[Capacity];
+  alignas(kQueueElemAlignSize) std::atomic<uint64_t> head_{0};
+  alignas(kQueueElemAlignSize) std::atomic<uint64_t> tail_{0};
 
   // Indicates whether the queue is currently paused or in execution state.
-  alignas(128) std::atomic<bool> running_{false};
+  alignas(kQueueElemAlignSize) std::atomic<bool> running_{false};
   // Indicates whether the queue is currently in a closed state.
-  alignas(128) std::atomic<bool> alive_{true};
+  alignas(kQueueElemAlignSize) std::atomic<bool> alive_{true};
 
   // Lock the status for pause or execution state.
   std::mutex mtx_;
   std::condition_variable pause_cv_;
 };
+}  // namespace runtime
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_GRAPH_SCHEDULER_PIPELINE_LF_RING_QUEUE_H_
