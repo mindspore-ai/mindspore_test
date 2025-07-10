@@ -490,71 +490,73 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
                             true);
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(graph_parameter_store);
-  if (EnableKbkSubGraphExecute()) {
-    if (inference_input_indexes_.empty()) {
-      size_t non_weight_parameter_num = graph_parameter_store->GetNonWeightParameterNum();
-      size_t current_data_num = 0;
-      for (size_t i = 0; i < graph_compiler_info_->origin_parameters_order_.size(); ++i) {
-        if (current_data_num == non_weight_parameter_num) {
-          break;
+  if (!EnableKbkSubGraphExecute()) {
+    return;
+  }
+  if (inference_input_indexes_.empty()) {
+    size_t non_weight_parameter_num = graph_parameter_store->GetNonWeightParameterNum();
+    size_t current_data_num = 0;
+    for (size_t i = 0; i < graph_compiler_info_->origin_parameters_order_.size(); ++i) {
+      if (current_data_num == non_weight_parameter_num) {
+        break;
+      }
+      // The input data is front of the parameter weight.
+      if (graph_parameter_store->GetPositionWeight(i)) {
+        MS_LOG(DEBUG) << "Skip the prepare host data for parameter: "
+                      << graph_compiler_info_->origin_parameters_order_[i]->fullname_with_scope();
+        continue;
+      }
+      const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[i];
+      MS_EXCEPTION_IF_NULL(origin_parameter);
+      if (i >= args.size()) {
+        MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
+        continue;
+      }
+      inference_input_indexes_.emplace_back(i);
+      inference_parameters_.emplace_back(origin_parameter);
+      ++current_data_num;
+    }
+  }
+  for (size_t i = 0; i < inference_input_indexes_.size(); ++i) {
+    auto index = inference_input_indexes_[i];
+    std::vector<tensor::TensorPtr> flatten_tensors;
+    AnfAlgo::FlattenInputArg(args[index], inference_parameters_[i], &flatten_tensors);
+    // Push flatten tensors into store buffers.
+    graph_parameter_store->FillBuffer(index, flatten_tensors);
+  }
+  auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(inference_input_indexes_, inference_parameters_);
+  MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
+               << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
+               << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
+               << ", graph phase: " << graph_compiler_info_->graph_phase_;
+  if (has_dynamic_shape_) {
+    ActorDispatcher::set_enable_static_shape(!isDyn);
+    const auto &phase = graph_compiler_info_->graph_phase_;
+    bool is_increment_graph = (phase.find("increment") != std::string::npos);
+    if (enable_trace_memory_ && is_increment_graph) {
+      if (has_continuous_memory()) {
+        MS_LOG(EXCEPTION)
+          << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
+      }
+      if (!ActorDispatcher::enable_static_shape()) {
+        ActorDispatcher::set_enable_trace_dynamic_memory(true);
+      } else {
+        ActorDispatcher::set_enable_use_trace_memory(true);
+        ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
+        if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
+          MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
+                       << ", graph phase: " << graph_compiler_info_->graph_phase_;
         }
-        // The input data is front of the parameter weight.
-        if (graph_parameter_store->GetPositionWeight(i)) {
-          MS_LOG(DEBUG) << "Skip the prepare host data for parameter: "
-                        << graph_compiler_info_->origin_parameters_order_[i]->fullname_with_scope();
-          continue;
-        }
-        const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[i];
-        MS_EXCEPTION_IF_NULL(origin_parameter);
-        if (i >= args.size()) {
-          MS_LOG(DEBUG) << "Arg index out of args range, index is " << i << " and args size is " << args.size();
-          continue;
-        }
-        inference_input_indexes_.emplace_back(i);
-        inference_parameters_.emplace_back(origin_parameter);
-        ++current_data_num;
       }
     }
-    for (auto index : inference_input_indexes_) {
-      std::vector<tensor::TensorPtr> flatten_tensors;
-      AnfAlgo::FlattenInputArg(args[index], inference_parameters_[index], &flatten_tensors);
-      // Push flatten tensors into store buffers.
-      graph_parameter_store->FillBuffer(index, flatten_tensors);
-    }
-    auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(inference_input_indexes_, inference_parameters_);
-    MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
-                 << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
-                 << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
-                 << ", graph phase: " << graph_compiler_info_->graph_phase_;
-    if (has_dynamic_shape_) {
-      ActorDispatcher::set_enable_static_shape(!isDyn);
-      const auto &phase = graph_compiler_info_->graph_phase_;
-      bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (enable_trace_memory_ && is_increment_graph) {
-        if (has_continuous_memory()) {
-          MS_LOG(EXCEPTION)
-            << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
-        }
-        if (!ActorDispatcher::enable_static_shape()) {
-          ActorDispatcher::set_enable_trace_dynamic_memory(true);
-        } else {
-          ActorDispatcher::set_enable_use_trace_memory(true);
-          ActorDispatcher::set_enable_parallel_dispatch_kernel_for_cur_actor_set(EnableParallelDispatchKernel());
-          if (ActorDispatcher::enable_parallel_dispatch_kernel_for_cur_actor_set()) {
-            MS_LOG(INFO) << "Enable parallel dispatch kernel for current actor set: " << graph_compiler_info_->name_
-                         << ", graph phase: " << graph_compiler_info_->graph_phase_;
-          }
-        }
-      }
-    }
+  }
 
-    if (EnableRuntimeNewPipeline() && ActorDispatcher::enable_static_shape() &&
-        ActorDispatcher::enable_runtime_multi_pipeline()) {
-      // Not need infer and resize queue work in spin state when convert dynamic shape to static shape.
-      RuntimePipeline::GetInstance().infer_queue()->Pause();
-      RuntimePipeline::GetInstance().resize_queue()->Pause();
-      ActorDispatcher::set_enable_runtime_multi_pipeline(false);
-    }
+  if (EnableRuntimeNewPipeline() && ActorDispatcher::enable_static_shape() &&
+      ActorDispatcher::enable_runtime_multi_pipeline()) {
+    // Not need infer and resize queue work in spin state when convert dynamic shape to static shape.
+    RuntimePipeline::GetInstance().infer_queue()->Pause();
+    RuntimePipeline::GetInstance().resize_queue()->Pause();
+    ActorDispatcher::set_enable_runtime_multi_pipeline(false);
   }
 }
 
