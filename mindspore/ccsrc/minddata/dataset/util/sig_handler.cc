@@ -250,7 +250,6 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
       return;
     }
   }
-  MS_LOG(INFO) << "End got SIGCHLD signal";
 }
 #endif
 
