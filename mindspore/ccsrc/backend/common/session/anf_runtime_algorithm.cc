@@ -1101,7 +1101,7 @@ std::vector<KernelTensor *> AnfRuntimeAlgorithm::GetOrCreateAllOutputKernelTenso
 KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
   const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
   const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id, const UserDataPtr &user_data,
-  uint32_t stream_id) {
+  uint32_t stream_id, bool is_remote) {
   abstract::BaseShapePtr shape;
   TypePtr type;
   ValuePtr value;
@@ -1130,7 +1130,7 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
                 << ", Value: " << (value ? value->ToString() : "nullptr");
 
   auto out_tensor = CreateKernelTensor(shape, type, value, device_ptr, size, format, dtype_id, host_shape, device_name,
-                                       device_id, user_data);
+                                       device_id, user_data, is_remote);
   if (info) {
     out_tensor->set_tensor_storage_info(info);
   }
@@ -1141,13 +1141,15 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
                                                         const ValuePtr &value, void *device_ptr, size_t size,
                                                         const std::string &format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
-                                                        uint32_t device_id, const UserDataPtr &user_data) {
+                                                        uint32_t device_id, const UserDataPtr &user_data,
+                                                        bool is_remote) {
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);
   auto device_address =
     res_manager->CreateDeviceAddress(device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id,
                                      device_name, device_id, 0, user_data);
+  device_address->set_remote(is_remote);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
@@ -1158,7 +1160,8 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
 
 KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                                         const ShapeVector &host_shape, const string &device_name,
-                                                        uint32_t device_id, const UserDataPtr &user_data) {
+                                                        uint32_t device_id, const UserDataPtr &user_data,
+                                                        bool is_remote) {
   device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
   MS_EXCEPTION_IF_NULL(res_manager);

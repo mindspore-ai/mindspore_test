@@ -463,6 +463,9 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   void ClearDeviceMemory() override;
 
+  bool remote() const { return remote_; }
+  void set_remote(bool remote) { remote_ = remote; }
+
  protected:
   // Set a device pointer destructor to kernel tensor, used to release resource reclaiming of the device pointer
   // automatically when DeviceAddress destructed.
@@ -532,6 +535,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // this Tuple is {2}.
   ShapeVector shape_vector_{};
   bool managed_by_somas_{false};
+  bool remote_{false};
 
   friend class KernelRuntime;
   friend class MemoryManager;

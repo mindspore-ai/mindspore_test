@@ -224,8 +224,9 @@ DeviceAddressPtr AscendDeviceResManager::CreateDeviceAddress(void *ptr, size_t s
                                                              const std::string &device_name, uint32_t device_id,
                                                              uint32_t stream_id, const UserDataPtr &user_data) const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
-                                                  stream_id, user_data);
+  auto ret = ascend_res_manager_->CreateDeviceAddress(ptr, size, shape_vector, format, type_id, device_name, device_id,
+                                                      stream_id, user_data);
+  return ret;
 }
 
 bool AscendDeviceResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {

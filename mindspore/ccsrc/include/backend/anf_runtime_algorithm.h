@@ -161,7 +161,7 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
   static KernelTensorPtr CreateOutputKernelTensorWithDeviceInfo(
     const AnfWithOutIndex &node_with_index, void *const device_ptr, size_t size, const string &format, TypeId dtype_id,
     const ShapeVector &host_shape, const std::string &device_name, uint32_t device_id,
-    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0);
+    const UserDataPtr &user_data = nullptr, uint32_t stream_id = 0, bool is_remote = false);
 
   // Get all input memory size list for node.
   static std::vector<size_t> GetNodeInputSizeList(const AnfNodePtr &node);
@@ -351,10 +351,11 @@ class BACKEND_COMMON_EXPORT AnfRuntimeAlgorithm {
                                             const ValuePtr &value, void *device_ptr, size_t size,
                                             const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
                                             const string &device_name, uint32_t device_id,
-                                            const UserDataPtr &user_data = nullptr);
+                                            const UserDataPtr &user_data = nullptr, bool is_remote = false);
   static KernelTensorPtr CreateKernelTensor(void *device_ptr, size_t size, Format format, TypeId dtype_id,
                                             const ShapeVector &host_shape, const string &device_name,
-                                            uint32_t device_id, const UserDataPtr &user_data = nullptr);
+                                            uint32_t device_id, const UserDataPtr &user_data = nullptr,
+                                            bool is_remote = false);
   // check if is GE backend
   static bool IsBackendGe();
   // check if is ms_backend backend
