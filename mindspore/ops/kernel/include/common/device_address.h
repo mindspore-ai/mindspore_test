@@ -370,7 +370,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_format(const std::string &format);
   const std::string &padding_type() const;
   void set_padding_type(const std::string &padding_type);
-  TypeId type_id() const;
+  TypeId type_id() const override;
   void set_type_id(TypeId type_id);
   bool from_mem_pool() const;
   void set_from_mem_pool(bool from_mem_pool) const;
