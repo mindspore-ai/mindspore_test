@@ -650,7 +650,7 @@ class _AutoParallelContext:
             raise ValueError("The interface is deprecated. To use gradient accumulation, "
                              "please use GradAccumulationCell in mindspore.nn.wrap.cell_wrapper.")
         self.check_context_handle()
-        Validator.check_positive_int(grad_accumulation_step)
+        Validator.check_positive_int(grad_accumulation_step, prim_name='grad_accumulation_step')
         self._context_handle.set_grad_accumulation_step(grad_accumulation_step)
 
     def get_grad_accumulation_step(self):
@@ -1062,7 +1062,7 @@ class _AutoParallelContext:
 
         if threshold_name in parallel_optimizer_config:
             Validator.check_non_negative_int(
-                parallel_optimizer_config[threshold_name])
+                parallel_optimizer_config[threshold_name], prim_name=threshold_name)
             self._context_handle.set_parallel_optimizer_threshold(
                 parallel_optimizer_config[threshold_name])
 
