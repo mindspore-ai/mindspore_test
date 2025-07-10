@@ -20,6 +20,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <shared_mutex>
 #include "mindapi/base/macros.h"
 
 namespace mindspore {
@@ -51,22 +52,33 @@ class MS_CORE_API PhaseManager {
   void ClearPhase() { phase_ = ""; }
 
   /// \brief Clear jit_config.
-  void ClearJitConfig() { jit_config_.clear(); }
+  void ClearJitConfig();
 
   /// \brief Set jit config.
   ///
   /// \param[in] The current jit config.
-  void set_jit_config(const std::map<std::string, std::string> &jit_config) { jit_config_ = jit_config; }
+  void set_jit_config(const std::map<std::string, std::string> &jit_config);
 
   /// \brief Get the current jit config.
   ///
   /// \return The current jit config.
-  const std::map<std::string, std::string> &jit_config() const { return jit_config_; }
+  const std::map<std::string, std::string> &jit_config() const;
+
+  /// \brief Get the backend param in current jit config.
+  ///
+  /// \return The backend param in current jit config.
+  std::string GetJitBackend() const;
+
+  /// \brief Get the jit_level param in current jit config.
+  ///
+  /// \return The jit_level param in current jit config.
+  std::string GetJitLevel() const;
 
  private:
   PhaseManager() = default;
   std::string phase_ = "";
   std::map<std::string, std::string> jit_config_;
+  mutable std::shared_mutex rw_jit_mutex_;
 };
 
 inline bool IsTwoPhaseInfer() {

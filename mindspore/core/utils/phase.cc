@@ -21,4 +21,37 @@ PhaseManager &PhaseManager::GetInstance() noexcept {
   static PhaseManager instance;
   return instance;
 }
+
+void PhaseManager::ClearJitConfig() {
+  std::unique_lock<std::shared_mutex> lock(rw_jit_mutex_);
+  jit_config_.clear();
+}
+
+void PhaseManager::set_jit_config(const std::map<std::string, std::string> &jit_config) {
+  std::unique_lock<std::shared_mutex> lock(rw_jit_mutex_);
+  jit_config_ = jit_config;
+}
+
+const std::map<std::string, std::string> &PhaseManager::jit_config() const {
+  std::shared_lock<std::shared_mutex> lock(rw_jit_mutex_);
+  return jit_config_;
+}
+
+std::string PhaseManager::GetJitBackend() const {
+  std::shared_lock<std::shared_mutex> lock(rw_jit_mutex_);
+  auto iter = jit_config_.find("backend");
+  if (iter == jit_config_.end()) {
+    return "";
+  }
+  return iter->second;
+}
+
+std::string PhaseManager::GetJitLevel() const {
+  std::shared_lock<std::shared_mutex> lock(rw_jit_mutex_);
+  auto iter = jit_config_.find("jit_level");
+  if (iter == jit_config_.end()) {
+    return "";
+  }
+  return iter->second;
+}
 }  // namespace mindspore
