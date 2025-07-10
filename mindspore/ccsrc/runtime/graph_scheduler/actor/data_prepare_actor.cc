@@ -370,6 +370,7 @@ void DataPrepareActor::Init() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   is_enable_infer_boost_ = ms_context->IsEnableInferBoost();
+  enable_trace_memory_ = EnableTraceMemory();
 }
 
 void DataPrepareActor::UpdateDynamicShapeAndSize(const AnfNodePtr &input_node, const TensorPtr &input_tensor) const {
@@ -521,12 +522,15 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
       graph_parameter_store->FillBuffer(index, flatten_tensors);
     }
     auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(inference_input_indexes_, inference_parameters_);
+    MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
+                 << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
+                 << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
+                 << ", graph phase: " << graph_compiler_info_->graph_phase_;
     if (has_dynamic_shape_) {
-      MS_LOG(INFO) << "The run actor set: " << graph_compiler_info_->name_ << " by static shape: " << (!isDyn);
       ActorDispatcher::set_enable_static_shape(!isDyn);
       const auto &phase = graph_compiler_info_->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (EnableTraceMemory() && is_increment_graph) {
+      if (enable_trace_memory_ && is_increment_graph) {
         if (has_continuous_memory()) {
           MS_LOG(EXCEPTION)
             << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
@@ -906,6 +910,7 @@ void DataPrepareActor::RecordGraphInputs(const std::vector<TensorPtr> &host_tens
     const auto &origin_parameter = graph_compiler_info_->origin_parameters_order_[param_index];
     // host_tensor must not be nullptr
     llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), host_tensor->data_ptr());
+    MS_LOG(DEBUG) << "Add input tensor data for input parameter: " << origin_parameter->fullname_with_scope();
   }
 }
 
@@ -913,12 +918,17 @@ void DataPrepareActor::RecordInputAndConvertStatic(const std::vector<TensorPtr> 
                                                    const std::vector<size_t> &host_param_indexes, bool isDyn) {
   if (is_enable_infer_boost_ && EnableKbkSubGraphExecute()) {
     RecordGraphInputs(host_tensors, host_param_indexes);
+    MS_LOG(INFO) << "[Run into old runtime procedure] Prepare for actor set: " << graph_compiler_info_->name_
+                 << ", convert static shape: " << (!isDyn) << ", dynamic shape: " << has_dynamic_shape_
+                 << ", enable trace memory: " << enable_trace_memory_
+                 << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
+                 << ", graph phase: " << graph_compiler_info_->graph_phase_;
     if (has_dynamic_shape_) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
 
       const auto &phase = graph_compiler_info_->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
-      if (EnableTraceMemory() && is_increment_graph) {
+      if (enable_trace_memory_ && is_increment_graph) {
         if (has_continuous_memory()) {
           MS_LOG(EXCEPTION)
             << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";

@@ -234,6 +234,7 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
     input_tensor->set_name(origin_parameter->fullname_with_scope());
     MS_LOG(DEBUG) << "Add graph input: " << origin_parameter->fullname_with_scope();
     llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
+    MS_LOG(DEBUG) << "Add input tensor data for input parameter: " << origin_parameter->fullname_with_scope();
   }
   return isDyn;
 }

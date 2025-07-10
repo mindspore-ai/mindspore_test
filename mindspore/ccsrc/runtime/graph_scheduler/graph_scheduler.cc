@@ -388,7 +388,8 @@ void TryEnableInputOptimize(const GraphCompilerInfo &graph_compiler_info, ActorS
   actor_set->enable_input_optimize_ = CheckInputOptimizeCondition(graph_compiler_info);
   UpdateInputOptimizeForCurActorSet(actor_set);
   if (EnableInputOptimize()) {
-    MS_LOG(INFO) << "Enable input optimize for actor set: " << actor_set->name_;
+    MS_LOG(INFO) << "Enable input optimize for actor set: " << actor_set->name_
+                 << ", phase: " << graph_compiler_info.graph_phase_;
   }
 }
 
@@ -407,7 +408,7 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
     if (!graph->enable_kbk_sub_graph_execute() ||
         (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty())) {
       MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
-                   << ", enable kbk sub graph execute: " << graph->enable_kbk_sub_graph_execute()
+                   << ", has PyExecute(fallback) kernel: " << !graph->enable_kbk_sub_graph_execute()
                    << ", graph mode: " << device::run_mode_to_name_map.at(graph->RunMode())
                    << ", has inline sub graph: " << !(graph->inline_sub_graph_kernels().empty());
       return false;
@@ -467,7 +468,8 @@ void TryEnableKbkSubGraphExecMode(const GraphCompilerInfo &graph_compiler_info, 
   // Adaptive operator direct Launch mode (no message mechanism).
   ChangeGraphMode(graph_compiler_info);
   if (EnableKbkSubGraphExecute()) {
-    MS_LOG(INFO) << "Enable kbk subgraph execute mode for actor set: " << actor_set->name_;
+    MS_LOG(INFO) << "Enable kbk subgraph execute mode for actor set: " << actor_set->name_
+                 << ", phase: " << graph_compiler_info.graph_phase_;
   }
 }
 
@@ -568,6 +570,90 @@ void ContinuePipelineByCondition() {
     if (ActorDispatcher::enable_async_launch_kernel()) {
       RuntimePipeline::GetInstance().launch_queue()->BindDevice(RuntimePipeline::GetInstance().GetAllDeviceContexts());
     }
+  }
+}
+
+void CheckInferPerformanceFeature(const GraphCompilerInfo &graph_compiler_info, const ActorSet *actor_set) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (!enable_infer_boost) {
+    return;
+  }
+
+  if (!EnableKbkSubGraphExecute()) {
+    MS_LOG(WARNING) << "Executing the inference network without enabling KBK subgraph mode may not achieve optimal "
+                       "performance, please check whether exist PyExecute kernel in graphs: "
+                    << graph_compiler_info.name_;
+  } else {
+    MS_EXCEPTION_IF_NULL(actor_set);
+    for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
+      MS_EXCEPTION_IF_NULL(super_kernel_actor);
+      const auto &kernel_runners = super_kernel_actor->kernel_actors();
+      for (auto &kernel_runner : kernel_runners) {
+        MS_EXCEPTION_IF_NULL(kernel_runner);
+        auto *kernel_mod = kernel_runner->kernel_mod();
+        MS_EXCEPTION_IF_NULL(kernel_mod);
+        if (kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+          MS_EXCEPTION_IF_NULL(kernel_runner->kernel());
+          MS_EXCEPTION_IF_NULL(super_kernel_actor->graph());
+          MS_LOG(EXCEPTION) << "The kernel(" << kernel_runner->kernel()->fullname_with_scope()
+                            << ") need update output shape after launch, this kernel does not support converting "
+                               "dynamic shape to static "
+                               "shape feature of llm inference. The graph info: "
+                            << super_kernel_actor->graph()->ToString();
+        }
+      }
+    }
+  }
+
+  bool is_increment_graph = (graph_compiler_info.graph_phase_.find("increment") != std::string::npos);
+  if (!is_increment_graph) {
+    return;
+  }
+
+  bool enable_trace_memory = EnableTraceMemory();
+  auto multi_sub_graph = graph_compiler_info.graphs_.size() > 1;
+  // The trace memory can not use in multi-stream and multi-subgraph case.
+  if (enable_trace_memory) {
+    for (auto &graph : graph_compiler_info.graphs_) {
+      MS_EXCEPTION_IF_NULL(graph);
+      if (graph->enable_multi_stream()) {
+        MS_LOG(EXCEPTION)
+          << "The trace memory feature doesn't support multi-stream case, please eliminate "
+             "multi-stream(communication and computing pperators use different stream), or disable "
+             "trace memory feature by export MS_ENABLE_TRACE_MEMORY=off. Note: Disabling the trace "
+             "memory feature will degrade memory management performance. Additionally, it will automatically disable "
+             "the kernel group launch(parallel launch) and graph capture features, which may reduce network execution "
+             "performance.";
+      }
+    }
+
+    if (multi_sub_graph) {
+      MS_LOG(EXCEPTION)
+        << "The increment/decode graph(" << graph_compiler_info.name_
+        << ") has multi sub graph, it may be due to the cutting of graphs caused by "
+           "heterogeneity(cpu kernel) or control flow."
+        << " Sub graphs num: " << graph_compiler_info.graphs_.size()
+        << ". The trace memory feature can not work in this case. Please eliminate heterogeneity(cpu "
+           "kernel) and control flow, or disable trace memory feature by export MS_ENABLE_TRACE_MEMORY=off. Note: "
+           "Disabling the trace "
+           "memory feature will degrade memory management performance. Additionally, it will automatically disable the "
+           "kernel group launch(parallel launch) and graph capture features, which may reduce network execution "
+           "performance.";
+    }
+  }
+
+  // The parallel dispatch feature can not use in multi-subgraph case.
+  bool enable_parallel_dispatch = EnableParallelDispatchKernel();
+  if (enable_parallel_dispatch && multi_sub_graph) {
+    MS_LOG(EXCEPTION)
+      << "The increment/decode graph(" << graph_compiler_info.name_
+      << ") has multi sub graph, it may be due to the cutting of graphs caused by "
+         "heterogeneity(cpu kernel) or control flow."
+      << " Sub graphs num: " << graph_compiler_info.graphs_.size()
+      << ". The kernel group launch(parallel launch) feature can not work in this case. Please "
+         "eliminate heterogeneity(cpu kernel) and control flow, or disable kernel group launch feature.";
   }
 }
 }  // namespace
@@ -958,6 +1044,8 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   actor_set->all_actors_ = SchedulerHelper::CollectActors(actor_set.get());
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, start_time_0,
                                   profiler::GetClockSyscnt(), 1);
+
+  CheckInferPerformanceFeature(graph_compiler_info, actor_set.get());
   return actor_set.get();
 }
 
