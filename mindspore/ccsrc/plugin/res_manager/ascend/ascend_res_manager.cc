@@ -437,7 +437,6 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
     stream_id = address->stream_id();
   }
 
-
   device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
                                                   address->need_recycle(), stream_id);
   if (!device_ptr) {
@@ -688,12 +687,31 @@ bool AscendResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Dev
   return AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
 }
 
+namespace {
+bool SyncStreamForCopy(const AscendResManager *const res_manager, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(res_manager);
+  bool ret = res_manager->SyncStream(stream_id);
+  if (!ret) {
+    MS_LOG(WARNING) << "Uce flag: " << UCEException::GetInstance().get_uce_flag()
+                    << ", force stop flag: " << UCEException::GetInstance().get_force_stop_flag();
+    if (UCEException::GetInstance().get_uce_flag()) {
+      MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
+    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    }
+    MS_LOG(EXCEPTION) << "Sync stream error!";
+  }
+  MS_LOG(DEBUG) << "SyncStream Finish!";
+  return true;
+}
+}  // namespace
+
 bool AscendResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                                         size_t stream_id) const {
   if (!AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id)) {
     return false;
   }
-  return SyncStream(stream_id);
+  return SyncStreamForCopy(this, stream_id);
 }
 
 bool AscendResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
@@ -701,7 +719,7 @@ bool AscendResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, co
   if (!AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id, false)) {
     return false;
   }
-  return SyncStream(stream_id);
+  return SyncStreamForCopy(this, stream_id);
 }
 
 bool AscendResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
@@ -709,7 +727,7 @@ bool AscendResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, 
   if (!AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id)) {
     return false;
   }
-  return SyncStream(stream_id);
+  return SyncStreamForCopy(this, stream_id);
 }
 
 namespace {
@@ -805,7 +823,7 @@ bool AscendResManager::Copy(void *dst, const void *src, uint64_t size, CopyType 
     MS_LOG(ERROR) << "Failed to copy from:" << dst << " to:" << src << " size:" << size << " kind:" << kind;
     return false;
   }
-  return SyncStream(stream_id);
+  return SyncStreamForCopy(this, stream_id);
 }
 
 bool AscendResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
@@ -893,7 +911,7 @@ bool AscendResManager::CopyDeviceToHostForDiffFormat(const DeviceAddress *dst_de
     MS_LOG(ERROR) << "Failed async copy for format transform, src device address:" << src_device_address->ToString();
     return false;
   }
-  if (!SyncStream(stream_id)) {
+  if (!SyncStreamForCopy(this, stream_id)) {
     MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
     return false;
   }
@@ -946,7 +964,7 @@ bool AscendResManager::CopyDeviceToHostForDiffType(const DeviceAddress *dst_devi
     MS_LOG(ERROR) << "Failed async copy for type transform, src device address:" << src_device_address->ToString();
     return false;
   }
-  if (!SyncStream(stream_id)) {
+  if (!SyncStreamForCopy(this, stream_id)) {
     MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
     return false;
   }
@@ -978,8 +996,8 @@ bool AscendResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, c
   MS_EXCEPTION_IF_NULL(dst_device_address);
   MS_EXCEPTION_IF_NULL(src_device_address);
   if (src_device_address->GetTensorStorageInfo() != nullptr || dst_device_address->GetTensorStorageInfo() != nullptr) {
-    MS_LOG(EXCEPTION) << "Invalid sync device to host for tensor storage info in device address:"
-                      << src_device_address->ToString() << " and:" << dst_device_address->ToString();
+    MS_LOG(WARNING) << "Invalid sync device to host for tensor storage info in device address:"
+                    << src_device_address->ToString() << " and:" << dst_device_address->ToString();
   }
   BindDeviceToCurrentThread(false);
   // Check hete info.
@@ -1052,7 +1070,7 @@ bool AscendResManager::CopyHostToDevice(const DeviceAddress *dst_device_address,
     MS_LOG(ERROR) << "Copy string head failed for device address:" << dst_device_address->ToString();
     return false;
   }
-  SyncStream(stream_id);
+  SyncStreamForCopy(this, stream_id);
   // sync string body (real contents) from device to host
   if (!BaseCopy(static_cast<void *>(static_cast<char *>(dst_device_address->GetDevicePtr()) + sizeof(ge::StringHead)),
                 src, size, ACL_MEMCPY_HOST_TO_DEVICE, stream_id, src_device_sync)) {
@@ -1128,7 +1146,7 @@ bool AscendResManager::CopyHostToDeviceForDiffFormat(const DeviceAddress *dst_de
     MS_LOG(ERROR) << "Failed async copy";
     return false;
   }
-  ret = SyncStream(stream_id);
+  ret = SyncStreamForCopy(this, stream_id);
   if (!ret) {
     MS_LOG(ERROR) << "Failed sync stream";
     return false;
@@ -1167,7 +1185,7 @@ bool AscendResManager::CopyHostToDeviceForDiffType(const DeviceAddress *dst_devi
                   << " dst device address:" << dst_device_address->ToString();
     return false;
   }
-  if (!SyncStream(stream_id)) {
+  if (!SyncStreamForCopy(this, stream_id)) {
     MS_LOG(ERROR) << "Failed sync stream : " << stream_id;
     return false;
   }

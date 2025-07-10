@@ -257,8 +257,11 @@ bool CPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const Device
     auto ret_code = memcpy_s(dst_ptr, src_device_address->GetSize(), src_ptr, src_device_address->GetSize());
     // Return ERANGE when the copy size is larger than SECUREC_MEM_MAX_LEN.
     if (ret_code == ERANGE) {
+      MS_LOG(DEBUG) << "Copy for same type and return erange from device address:" << src_device_address->ToString()
+                    << " to:" << dst_device_address->ToString();
       ConvertSameType(dst_device_address->GetMutablePtr(), src_device_address->GetMutablePtr(),
                       dst_device_address->GetSize(), src_type_id);
+      return true;
     } else if (ret_code != EOK) {
       MS_LOG(ERROR) << "Failed to copy tensor from device address:" << src_device_address
                     << " to :" << dst_device_address;

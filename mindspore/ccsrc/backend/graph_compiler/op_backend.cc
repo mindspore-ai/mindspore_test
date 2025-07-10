@@ -488,7 +488,7 @@ tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoP
   // when infer type is not equal to device type.
   const auto &address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
-  auto tensor = tensor::empty(address->type_id(), kernel_tensor->host_shape(), device::DeviceType::kNone);
+  auto tensor = tensor::empty(address->type_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
   // Put device tensor into host tensor.
   address->SetNodeIndex(output_node, output_index);
