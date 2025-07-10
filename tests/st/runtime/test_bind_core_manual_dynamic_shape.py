@@ -17,6 +17,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as P
 from mindspore import Tensor, jit
+from mindspore import dtype as mstype
 from mindspore.common import Parameter
 
 steps = 30
@@ -47,6 +48,8 @@ class Net(nn.Cell):
 
 base_shape = (2, 3)
 net = Net()
+dyn_input_data = Tensor(shape=[2, None], dtype=mstype.float32)
+net.set_inputs(dyn_input_data)
 
 for i in range(steps):
     input_data = Tensor(np.full(base_shape, i).astype(np.float32))
