@@ -135,6 +135,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
         "parallel_strategy": True,
         "data_simplification": False,
         "profile_memory": True,
+        "analyse": True
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -173,7 +174,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
         # check step_trace_time.csv
         step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
-        FileChecker.check_file_line_count(step_trace_time_path, 2)
+        FileChecker.check_file_line_count(step_trace_time_path, 3)
         # Check operate_memory.csv
         operate_memory_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
@@ -208,6 +209,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
         "parallel_strategy": True,
         "data_simplification": False,
         "profile_memory": True,
+        "analyse": True
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -247,7 +249,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
         # check step_trace_time.csv
         step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
-        FileChecker.check_file_line_count(step_trace_time_path, 2)
+        FileChecker.check_file_line_count(step_trace_time_path, 3)
         # Check operate_memory.csv
         operate_memory_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
@@ -282,6 +284,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
         "parallel_strategy": True,
         "data_simplification": False,
         "profile_memory": True,
+        "analyse": True
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -320,7 +323,7 @@ def test_tiny_transformer_o2_with_dynamic_profiler():
         # check step_trace_time.csv
         step_trace_time_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
-        FileChecker.check_file_line_count(step_trace_time_path, 2)
+        FileChecker.check_file_line_count(step_trace_time_path, 3)
         # Check operate_memory.csv
         operate_memory_path = glob.glob(f"{profiler_path}/*_ascend_ms/"
                                         f"ASCEND_PROFILER_OUTPUT/operator_memory.csv")[0]
