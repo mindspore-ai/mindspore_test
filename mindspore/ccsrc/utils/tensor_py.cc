@@ -98,6 +98,7 @@ void TensorPy::SetDevice(const std::string &dev) { device_ = dev; }
 
 TensorPtr TensorPy::GetTensor() const {
   if (tensor_ == nullptr) {
+    MS_EXCEPTION_IF_NULL(stub_);
     return std::static_pointer_cast<Tensor>(stub_->WaitValue());
   }
   return tensor_;
