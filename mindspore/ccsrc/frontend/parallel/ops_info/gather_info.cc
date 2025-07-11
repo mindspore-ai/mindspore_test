@@ -816,8 +816,7 @@ Status ShardBatchAxisAndSpImpl::InferTensorMap() {
 Status ShardBatchAxisAndDpImpl::InferBias() {
   CheckGlobalDeviceManager();
   int64_t rank = g_device_manager->rank_index_in_stage();
-  Shape input_shape;
-  input_shape = inputs_shape_.at(0);
+  Shape input_shape = inputs_shape_.at(0);
   MS_EXCEPTION_IF_ZERO("param_strategy_[0]", param_strategy_[0]);
   if (axis_ == 0) {
     slice_size_ = input_shape[0] / param_strategy_[0];
@@ -1312,8 +1311,7 @@ Status GatherInfo::CheckProductValidity(const Dimensions &param_strategy, const 
 
 Status GatherInfo::CheckStrategyParam(const Shape &param_strategy, const Shape &indices_strategy,
                                       const int64_t param_idx) {
-  Shape param_shape;
-  param_shape = inputs_shape_[param_idx];
+  Shape param_shape = inputs_shape_[param_idx];
   if (name_.find(EMBEDDING) != std::string::npos && name_.find(EMBEDDING_LOOKUP) == std::string::npos &&
       CheckProductValidity(param_strategy, indices_strategy) != SUCCESS) {
     return FAILED;
