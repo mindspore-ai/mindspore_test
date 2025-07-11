@@ -22,8 +22,8 @@ mindspore.ops.flash_attention_score
     .. math::
         \begin{array}{ll} \\
             \text { attention_out }=\operatorname{Dropout}\left(\operatorname{Softmax}\left(\text
-            { Mask(scale } *\left(\text { query } * \mathrm{key}^{\top}\right)+\text { pse }\right)\text
-            {, atten_mask), keep_prob) } *\right. \text { value }
+            { Mask(scale } *\left(\text { query } * \mathrm{key}^{\top}\right)+\text { pse }\right)
+            \text{, atten_mask), keep_prob) } *\right. \text { value }
         \end{array}
 
     .. warning::
