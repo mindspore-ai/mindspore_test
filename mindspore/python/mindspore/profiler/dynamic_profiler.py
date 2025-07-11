@@ -554,7 +554,7 @@ def worker_dyno_func(loop_flag, poll_interval, shm, rank_id):
     if not ret:
         logger.warning("Rank %d init dynolog failed !")
         return
-    logger.info("Rank %d init dynolog success !")
+    print_msg("Init dynolog success !")
 
     while loop_flag.value:
         try:
@@ -723,11 +723,11 @@ if sys.version_info >= (3, 8):
 
         def __init__(self, cfg_path=None, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
             if DynamicProfilerUtils.is_dyno_mode() and cfg_path is not None:
-                logger.warning("If you export 'KINETO_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
+                logger.warning("If you export 'MSMONITOR_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
                 cfg_path = None
 
             if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
-                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
+                raise TypeError("If you set 'MSMONITOR_USE_DAEMON' to not 1, The cfg_path must be a string.")
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "
                                f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
@@ -876,11 +876,11 @@ else:
 
         def __init__(self, cfg_path=None, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
             if DynamicProfilerUtils.is_dyno_mode() and cfg_path is not None:
-                logger.warning("If you export 'KINETO_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
+                logger.warning("If you export 'MSMONITOR_USE_DAEMON=1', your 'cfg_path' parameter will be invalid!")
                 cfg_path = None
 
             if not DynamicProfilerUtils.is_dyno_mode() and not isinstance(cfg_path, str):
-                raise TypeError("If you set 'KINETO_USE_DAEMON' to not 1, The cfg_path must be a string.")
+                raise TypeError("If you set 'MSMONITOR_USE_DAEMON' to not 1, The cfg_path must be a string.")
 
             if not isinstance(output_path, str):
                 logger.warning(f"The output_path must be a string, "

@@ -39,7 +39,7 @@ class TestDynamicProfilerUtils(unittest.TestCase):
         """Test that is_dyno_mode returns False and logs error when DYNO_DAEMON has invalid value."""
         with mock.patch.dict(os.environ, {DynoMode.DYNO_DAEMON: "abc"}):
             self.assertFalse(DynamicProfilerUtils.is_dyno_mode())
-            mock_logger_error.assert_called_with("Environment variable 'KINETO_USE_DAEMON' "
+            mock_logger_error.assert_called_with("Environment variable 'MSMONITOR_USE_DAEMON' "
                                                  "value not valid, will be set to 0 !")
 
     @mock.patch("mindspore.communication.get_rank", side_effect=RuntimeError("Mock error"))
