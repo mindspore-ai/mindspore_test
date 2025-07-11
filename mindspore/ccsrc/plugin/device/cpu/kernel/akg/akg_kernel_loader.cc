@@ -23,11 +23,7 @@
 #include <cerrno>
 #include <iostream>
 
-#ifdef BUILD_LITE
-#include "src/common/log_adapter.h"
-#else
 #include "utils/log_adapter.h"
-#endif
 
 namespace mindspore {
 namespace kernel {

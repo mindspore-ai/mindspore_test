@@ -135,9 +135,7 @@ static uint64_t GetPid() {
 
 int32_t GetDeviceId() {
   int32_t device_id = 0;
-#if !defined(BUILD_LITE)
   device_id = static_cast<int32_t>(DistributedMeta::GetInstance()->local_rank_id());
-#endif
   return device_id;
 }
 

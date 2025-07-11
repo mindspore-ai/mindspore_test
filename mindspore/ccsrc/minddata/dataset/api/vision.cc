@@ -93,11 +93,9 @@
 #include "minddata/dataset/kernels/ir/vision/vertical_flip_ir.h"
 #include "minddata/dataset/util/log_adapter.h"
 
-#if defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/ir/vision/pad_ir.h"
 #include "minddata/dataset/kernels/ir/vision/rescale_ir.h"
 #include "minddata/dataset/kernels/ir/vision/swap_red_blue_ir.h"
-#endif
 
 #include "minddata/dataset/kernels/image/image_utils.h"
 #if defined(ENABLE_FFMPEG)
@@ -650,12 +648,7 @@ Pad::Pad(const std::vector<int32_t> &padding, const std::vector<uint8_t> &fill_v
     : data_(std::make_shared<Data>(padding, fill_value, padding_mode)) {}
 
 std::shared_ptr<TensorOperation> Pad::Parse() {
-#if defined(ENABLE_MINDDATA_PYTHON)
   return std::make_shared<PadOperation>(data_->padding_, data_->fill_value_, data_->padding_mode_);
-#else
-  MS_LOG(ERROR) << "Unsupported Pad.";
-  return nullptr;
-#endif
 }
 
 // PadToSize Transform Operation.
@@ -1239,12 +1232,7 @@ struct Rescale::Data {
 Rescale::Rescale(float rescale, float shift) : data_(std::make_shared<Data>(rescale, shift)) {}
 
 std::shared_ptr<TensorOperation> Rescale::Parse() {
-#if defined(ENABLE_MINDDATA_PYTHON)
   return std::make_shared<RescaleOperation>(data_->rescale_, data_->shift_);
-#else
-  MS_LOG(ERROR) << "Unsupported Rescale.";
-  return nullptr;
-#endif
 }
 
 // Resize Transform Operation.
@@ -1409,14 +1397,7 @@ std::shared_ptr<TensorOperation> Solarize::Parse() { return std::make_shared<Sol
 
 // SwapRedBlue Transform Operation.
 SwapRedBlue::SwapRedBlue() = default;
-std::shared_ptr<TensorOperation> SwapRedBlue::Parse() {
-#if defined(ENABLE_MINDDATA_PYTHON)
-  return std::make_shared<SwapRedBlueOperation>();
-#else
-  MS_LOG(ERROR) << "Unsupported SwapRedBlue.";
-  return nullptr;
-#endif
-}
+std::shared_ptr<TensorOperation> SwapRedBlue::Parse() { return std::make_shared<SwapRedBlueOperation>(); }
 
 // ToTensor Transform Operation.
 struct ToTensor::Data {

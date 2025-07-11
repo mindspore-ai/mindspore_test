@@ -385,11 +385,7 @@ int ArithmeticBroadCastConstTensor(ArithmeticStruct *arithmetic) {
 
   CalcStructMultiplesAndStrides(arithmetic);
 
-#ifdef PARALLEL_INFERENCE
-  bool prefer_explicit_broadcast = false;
-#else
   bool prefer_explicit_broadcast = arithmetic->ndim_ != 1;
-#endif
   prefer_explicit_broadcast =
     prefer_explicit_broadcast && (arithmetic->base_.in_[FIRST_INPUT]->data_type_ != kNumberTypeBool);
 

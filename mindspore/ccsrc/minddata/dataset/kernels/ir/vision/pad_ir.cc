@@ -18,9 +18,7 @@
 
 #include <algorithm>
 
-#if defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/image/pad_op.h"
-#endif
 #if defined(ENABLE_D)
 #include "minddata/dataset/kernels/image/dvpp/ascend910b/dvpp_pad_op.h"
 #endif
@@ -30,7 +28,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#if defined(ENABLE_MINDDATA_PYTHON)
 // PadOperation
 PadOperation::PadOperation(const std::vector<int32_t> &padding, const std::vector<uint8_t> &fill_value,
                            BorderType padding_mode, const std::string &device_target)
@@ -150,7 +147,6 @@ MapTargetDevice PadOperation::Type() {
     return MapTargetDevice::kInvalid;
   }
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

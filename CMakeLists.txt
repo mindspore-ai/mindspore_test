@@ -48,7 +48,6 @@ endif()
 
 if(ENABLE_PYTHON)
     add_compile_definitions(ENABLE_PYTHON)
-    add_compile_definitions(ENABLE_MINDDATA_PYTHON)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

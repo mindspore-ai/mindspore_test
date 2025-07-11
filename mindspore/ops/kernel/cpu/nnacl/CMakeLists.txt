@@ -241,7 +241,7 @@ if(PLATFORM_ARM)
         COMPILE_FLAGS "${CMAKE_C_FLAGS} -fno-fast-math")
 endif()
 
-add_library(nnacl_mid OBJECT ${KERNEL_SRC} ${TRAIN_SRC} ${ASSEMBLY_SRC} ${MS_X86_SIMD_SRC})
+add_library(nnacl_mid OBJECT ${KERNEL_SRC} ${ASSEMBLY_SRC} ${MS_X86_SIMD_SRC})
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(nnacl_mid PRIVATE ENABLE_DEBUG)

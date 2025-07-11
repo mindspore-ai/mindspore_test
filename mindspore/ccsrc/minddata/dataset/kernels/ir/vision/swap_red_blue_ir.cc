@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 #include "minddata/dataset/kernels/ir/vision/swap_red_blue_ir.h"
-
-#if defined(ENABLE_MINDDATA_PYTHON)
 #include "minddata/dataset/kernels/image/swap_red_blue_op.h"
-#endif
 
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#if defined(ENABLE_MINDDATA_PYTHON)
 // SwapRedBlueOperation.
 SwapRedBlueOperation::SwapRedBlueOperation() = default;
 
@@ -42,7 +38,6 @@ Status SwapRedBlueOperation::from_json(nlohmann::json op_params, std::shared_ptr
   *operation = std::make_shared<vision::SwapRedBlueOperation>();
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

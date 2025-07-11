@@ -69,7 +69,6 @@ const AnfNodePtr AddAttrToDump::Process(const FuncGraphPtr &func_graph, const An
   auto primitive = GetCNodePrimitive(cnode);
   MS_EXCEPTION_IF_NULL(primitive);
 
-#if !defined(BUILD_LITE)
   if (common::GetDumpSliceSize() > 0) {
     constexpr int64_t kMegaBytes = 1LL << 20;
     int64_t slice_size_in_bytes = common::GetDumpSliceSize() * kMegaBytes;
@@ -77,7 +76,6 @@ const AnfNodePtr AddAttrToDump::Process(const FuncGraphPtr &func_graph, const An
     (void)primitive->AddAttr("wait_time", MakeValue<int>(common::GetDumpWaitTime()));
     (void)primitive->AddAttr("slice_sync", MakeValue<bool>(true));
   }
-#endif
 
   return cnode;
 }

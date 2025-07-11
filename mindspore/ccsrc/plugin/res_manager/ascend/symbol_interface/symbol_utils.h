@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_TRANSFORM_SYMBOL_SYMBOL_UTILS_H_
 #include <string>
 #include "utils/log_adapter.h"
-#ifndef BUILD_LITE
 #include "acl/acl.h"
 #include "utils/ms_exception.h"
 #include "include/backend/visible.h"
@@ -54,7 +53,6 @@ inline mindspore::UCEError GetErrorType(int error_code) {
       return mindspore::UCEError::kUnknownError;
   }
 }
-#endif
 
 template <typename Function, typename... Args>
 auto RunAscendApi(Function f, const char *file, int line, const char *call_f, const char *func_name, Args... args) {

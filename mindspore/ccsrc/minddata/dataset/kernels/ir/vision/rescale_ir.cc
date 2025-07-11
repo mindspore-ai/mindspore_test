@@ -21,7 +21,6 @@
 namespace mindspore {
 namespace dataset {
 namespace vision {
-#if defined(ENABLE_MINDDATA_PYTHON)
 // RescaleOperation
 RescaleOperation::RescaleOperation(float rescale, float shift) : rescale_(rescale), shift_(shift) {}
 
@@ -60,7 +59,6 @@ Status RescaleOperation::from_json(nlohmann::json op_params, std::shared_ptr<Ten
   *operation = std::make_shared<vision::RescaleOperation>(rescale, shift);
   return Status::OK();
 }
-#endif
 }  // namespace vision
 }  // namespace dataset
 }  // namespace mindspore

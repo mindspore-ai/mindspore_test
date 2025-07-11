@@ -28,10 +28,8 @@
 #include "utils/callback_handler.h"
 #include "include/backend/visible.h"
 #include "include/backend/data_queue/data_queue.h"
-#ifndef BUILD_LITE
 #include "ir/anf.h"
 #include "common/kernel.h"
-#endif
 
 namespace mindspore {
 namespace device {
@@ -143,7 +141,6 @@ class BACKEND_EXPORT DataQueueMgr {
   HANDLER_DEFINE(bool, CleanTdtHandle);
   HANDLER_DEFINE(bool, DestoryTdtHandle);
 };
-#ifndef BUILD_LITE
 BACKEND_EXPORT void UpdateGetNextNode(const AnfNodePtr &data_kernel);
 
 BACKEND_EXPORT void UpdateGetNextNode(const PrimitivePtr &primitive, const std::vector<kernel::KernelTensor *> &inputs,
@@ -161,7 +158,6 @@ BACKEND_EXPORT void UpdateGetNextWithDataQueueItems(const std::vector<kernel::Ke
 BACKEND_EXPORT void RetryPeakItemFromDataQueue(const AnfNodePtr &data_kernel,
                                                const std::shared_ptr<BlockingQueue> &data_queue,
                                                std::vector<device::DataQueueItem> *data);
-#endif
 #define REGISTER_DATA_QUEUE_CREATOR(device_name, creator)                         \
   struct device_name##DataQueueCreatorClass {                                     \
     device_name##DataQueueCreatorClass() {                                        \

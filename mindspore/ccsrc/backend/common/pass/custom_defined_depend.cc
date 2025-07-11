@@ -58,13 +58,11 @@ bool FileExists(const string &filename) {
 
 std::string GetRankID() {
   uint32_t rank_id = 0;
-#if !defined(BUILD_LITE)
   if (distributed::collective::CollectiveManager::instance()->initialized()) {
     rank_id = CommManager::GetInstance().GetRank();
   } else {
     rank_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   }
-#endif
   return std::to_string(rank_id);
 }
 

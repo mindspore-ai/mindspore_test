@@ -16,22 +16,15 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_CORE_DATA_TYPE_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_CORE_DATA_TYPE_H_
 
-#if defined(ENABLE_MINDDATA_PYTHON)
 #include <opencv2/core/hal/interface.h>
-#endif
 
 #include <string>
 #include <utility>
 
-#ifdef ENABLE_MINDDATA_PYTHON
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 #include "minddata/dataset/core/pybind_support.h"
 namespace py = pybind11;
-#else
-#include "base/bfloat16.h"
-#include "base/float16.h"
-#endif
 #include "minddata/dataset/include/dataset/constants.h"
 
 namespace mindspore {
@@ -67,7 +60,6 @@ class DataType {
     const uint8_t cvType_;                      // OpenCv matching type
   };
 
-#ifdef ENABLE_MINDDATA_PYTHON
   static inline const TypeInfo kTypeInfo[] = {
     // name, sizeInBytes, pybindType, pybindFormatDescriptor, openCV
     {"unknown", 0, "object", "", kCVInvalidType},                                        // DE_UNKNOWN
@@ -87,50 +79,7 @@ class DataType {
     {"bytes", 0, "bytes", "S", CV_8U},                                                   // DE_BYTES
     {"python", 0, "object", "O", kCVInvalidType}                                         // DE_PYTHON
   };
-#else
-#if defined(ENABLE_MINDDATA_PYTHON)
-  static inline const TypeInfo kTypeInfo[] = {
-    // name, sizeInBytes, pybindTypem formatDescriptor, openCV
-    {"unknown", 0, "object", "", kCVInvalidType},  // DE_UNKNOWN
-    {"bool", 1, "bool", "", CV_8U},                // DE_BOOL
-    {"int8", 1, "int8", "", CV_8S},                // DE_INT8
-    {"uint8", 1, "uint8", "", CV_8U},              // DE_UINT8
-    {"int16", 2, "int16", "", CV_16S},             // DE_INT16
-    {"uint16", 2, "uint16", "", CV_16U},           // DE_UINT16
-    {"int32", 4, "int32", "", CV_32S},             // DE_INT32
-    {"uint32", 4, "uint32", "", kCVInvalidType},   // DE_UINT32
-    {"int64", 8, "int64", "", kCVInvalidType},     // DE_INT64
-    {"uint64", 8, "uint64", "", kCVInvalidType},   // DE_UINT64
-    {"float16", 2, "float16", "", CV_16F},         // DE_FLOAT16
-    {"float32", 4, "float32", "", CV_32F},         // DE_FLOAT32
-    {"float64", 8, "double", "", CV_64F},          // DE_FLOAT64
-    {"string", 0, "str", "", kCVInvalidType},      // DE_STRING
-    {"bytes", 0, "bytes", "", CV_8U},              // DE_BYTES
-    {"python", 0, "object", "O", kCVInvalidType}   // DE_PYTHON
-  };
-#else
-  // android and no python
-  static inline const TypeInfo kTypeInfo[] = {
-    // name, sizeInBytes, formatDescriptor
-    {"unknown", 0, "object", "", kCVInvalidType},  // DE_UNKNOWN
-    {"bool", 1, "bool", ""},                       // DE_BOOL
-    {"int8", 1, "int8", ""},                       // DE_INT8
-    {"uint8", 1, "uint8", ""},                     // DE_UINT8
-    {"int16", 2, "int16", ""},                     // DE_INT16
-    {"uint16", 2, "uint16", ""},                   // DE_UINT16
-    {"int32", 4, "int32", ""},                     // DE_INT32
-    {"uint32", 4, "uint32", "", kCVInvalidType},   // DE_UINT32
-    {"int64", 8, "int64", "", kCVInvalidType},     // DE_INT64
-    {"uint64", 8, "uint64", "", kCVInvalidType},   // DE_UINT64
-    {"float16", 2, "float16", ""},                 // DE_FLOAT16
-    {"float32", 4, "float32", ""},                 // DE_FLOAT32
-    {"float64", 8, "double", ""},                  // DE_FLOAT64
-    {"string", 0, "str", "", kCVInvalidType},      // DE_STRING
-    {"bytes", 0, "bytes", ""},                     // DE_BYTES
-    {"python", 0, "object", "O", kCVInvalidType}   // DE_PYTHON
-  };
-#endif
-#endif
+
   // No arg constructor to create an unknown shape
   DataType() : type_(DE_UNKNOWN) {}
 
@@ -165,7 +114,6 @@ class DataType {
   /// \return the number of bytes of the type.
   uint8_t SizeInBytes() const;
 
-#if defined(ENABLE_MINDDATA_PYTHON)
   // Convert from DataType to OpenCV type
   /// \return
   uint8_t AsCVType() const;
@@ -174,7 +122,6 @@ class DataType {
   /// \param cv_type
   /// \return
   static DataType FromCVType(int cv_type);
-#endif
 
   // Returns a string representation of the type
   /// \return
@@ -207,7 +154,6 @@ class DataType {
   template <typename T>
   static DataType FromCType();
 
-#ifdef ENABLE_MINDDATA_PYTHON
   // Convert from DataType to Pybind type
   /// \return
   py::dtype AsNumpyType() const;
@@ -221,7 +167,6 @@ class DataType {
   /// \param py array
   /// \return
   static DataType FromNpArray(const py::array &arr);
-#endif
 
   // Get the buffer string format of the current type. Used in pybind buffer protocol.
   /// \return
