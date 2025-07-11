@@ -175,7 +175,6 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimBiasAddGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimFillV2},
   {kAscendDevice, OpLevel_0, prim::kPrimGeLU},
-  {kAscendDevice, OpLevel_0, prim::kPrimGelu},
   {kAscendDevice, OpLevel_0, prim::kPrimFastGelu},
   {kAscendDevice, OpLevel_0, prim::kPrimFastGeluGrad},
   {kAscendDevice, OpLevel_0, prim::kPrimFastGeLU},
@@ -218,7 +217,6 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimTanh},
   {kAscendDevice, OpLevel_0, prim::kPrimCosh},
   {kAscendDevice, OpLevel_0, prim::kPrimSinh},
-  {kAscendDevice, OpLevel_0, prim::kPrimClampScalar},
   {kAscendDevice, OpLevel_0, prim::kPrimDivMod},
   {kAscendDevice, OpLevel_2, prim::kPrimBCEWithLogitsLoss},  // will split to multiple sub graphs
   // mint ops
@@ -230,7 +228,6 @@ const std::vector<OpWithLevel> expand_ops_with_level_dvm = {
   {kAscendDevice, OpLevel_0, prim::kPrimAsinhExt},
   {kAscendDevice, OpLevel_0, prim::kPrimEluExt},
   {kAscendDevice, OpLevel_0, prim::kPrimSoftplusExt},
-  {kAscendDevice, OpLevel_0, prim::kPrimSoftplusGradExt},
   {kAscendDevice, OpLevel_0, prim::kPrimLeakyReLUExt},
   {kAscendDevice, OpLevel_0, prim::kPrimZerosLikeExt},
   {kAscendDevice, OpLevel_2, prim::kSoftmaxGradExt},
