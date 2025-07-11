@@ -598,12 +598,10 @@ void HandleEmptySequenceOutput(KernelTensor *const kernel_tensor, const tensor::
   MS_EXCEPTION_IF_NULL(device_context);
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Free kernel tensor:" << kernel_tensor << " for actor:" << actor_name;
   MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor, device_context, actor_name);
-  if (device_tensor->user_data() != nullptr && tensor->device_address() != nullptr) {
-    auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
-    MS_EXCEPTION_IF_NULL(tensor_device_address);
-    tensor_device_address->set_user_data(device_tensor->user_data());
+  if (kernel_tensor->user_data() != nullptr && tensor != nullptr) {
+    tensor->CloneUserData(*(kernel_tensor->user_data()));
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Set user data from device address:" << device_tensor << " to tensor device address:" << tensor_device_address;
+      << "Set user data from device address:" << device_tensor << " to tensor:" << tensor;
   }
 }
 
@@ -703,7 +701,9 @@ void OutputActor::HandleOutput() {
         << " device type:" << tensor_device_address->GetDeviceType();
       // Move the device ptr from device_tensor to tensor_device_address.
       device_tensor->Swap(tensor_device_address.get());
-      tensor_device_address->set_user_data(device_tensor->user_data());
+      if (kernel_tensor->user_data()) {
+        tensor->CloneUserData(*(kernel_tensor->user_data()));
+      }
     }
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
     // memory.

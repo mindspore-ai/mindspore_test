@@ -145,7 +145,7 @@ bool IsTupleOutputOfAnyType(const abstract::AbstractBasePtr &abstract, const ten
     return false;
   }
   auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  return device_tensor != nullptr && device_tensor->user_data() == nullptr && tensor->base_shape_ptr() != nullptr &&
+  return device_tensor != nullptr && tensor->base_shape_ptr() != nullptr &&
          tensor->base_shape_ptr()->isa<abstract::SequenceShape>();
 }
 
@@ -1436,7 +1436,6 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
       // create new device_address because they may have same ptr but different shape
       auto device_address = output_node_tensor_map[output_addr->pointer_ref_count()];
       tensor_device_address->set_pointer_ref_count(device_address->pointer_ref_count());
-      tensor_device_address->set_need_sync_user_data(device_address->need_sync_user_data());
     } else {
       output_node_tensor_map[output_addr->pointer_ref_count()] = tensor_device_address;
       MS_LOG(DEBUG) << "Swap from device tensor:" << output_addr->ToString()

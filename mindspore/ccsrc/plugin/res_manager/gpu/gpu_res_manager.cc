@@ -386,21 +386,6 @@ void GPUResManager::ResetMaxMemoryAllocated() {
   mem_manager_->ResetMaxMemoryAllocated();
 }
 
-namespace {
-// Create data in user data for device address.
-void SetUserData(DeviceAddress *device_address, const UserDataPtr &user_data) {
-  MS_EXCEPTION_IF_NULL(device_address);
-  MS_EXCEPTION_IF_NULL(user_data);
-
-  device_address->set_user_data(user_data);
-  const auto &user_data_type = user_data->get<UserDataType>(kUserDataType);
-  if (user_data_type == nullptr) {
-    return;
-  }
-  MS_LOG(EXCEPTION) << "Invalid user data type:" << *user_data_type;
-}
-}  // namespace
-
 DeviceAddressPtr GPUResManager::CreateDeviceAddress() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -414,7 +399,7 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress() const {
 DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                     const Format &format, TypeId type_id,
                                                     const std::string &device_name, uint32_t device_id,
-                                                    uint32_t stream_id, const UserDataPtr &user_data) const {
+                                                    uint32_t stream_id) const {
   auto real_device_id = device_id;
   if (device_name.empty()) {
     auto context = MsContext::GetInstance();
@@ -425,10 +410,6 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   }
   auto device_address =
     std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kGPUDevice, real_device_id, stream_id);
-
-  if (user_data != nullptr) {
-    SetUserData(device_address.get(), user_data);
-  }
 
   return device_address;
 }

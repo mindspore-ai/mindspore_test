@@ -164,17 +164,6 @@ tensor::TensorPtr CPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   return tensor;
 }
 
-namespace {
-// Create user data content and set user data reference into device_address.
-void FillUserData(const UserDataPtr &user_data, DeviceAddress *device_address) {
-  MS_EXCEPTION_IF_NULL(user_data);
-  MS_EXCEPTION_IF_NULL(device_address);
-
-  // Save reference of user data in device address.
-  device_address->set_user_data(user_data);
-}
-}  // namespace
-
 DeviceAddressPtr CPUResManager::CreateDeviceAddress() const {
   auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kCPUDevice);
   auto context = MsContext::GetInstance();
@@ -189,7 +178,7 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress() const {
 DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                     const Format &format, TypeId type_id,
                                                     const std::string &device_name, uint32_t device_id,
-                                                    uint32_t stream_id, const UserDataPtr &user_data) const {
+                                                    uint32_t stream_id) const {
   auto real_device_id = device_id;
   if (device_name.empty()) {
     auto context = MsContext::GetInstance();
@@ -200,10 +189,6 @@ DeviceAddressPtr CPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   }
   auto device_address =
     std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kCPUDevice, real_device_id, stream_id);
-
-  if (user_data != nullptr) {
-    FillUserData(user_data, device_address.get());
-  }
 
   return device_address;
 }

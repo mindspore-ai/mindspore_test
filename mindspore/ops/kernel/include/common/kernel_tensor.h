@@ -116,12 +116,14 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   KernelTensor(const abstract::BaseShapePtr &shape, const TypePtr &type, const ValuePtr &value);
 
   // Constructor of KernelTensor by device info.
-  KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_id, const ShapeVector &host_shape);
+  KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_id, const ShapeVector &host_shape,
+               const UserDataPtr &user_data = nullptr);
 
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
                const ValuePtr &value, void *device_ptr, size_t size, const std::string &format, TypeId dtype_id,
-               const ShapeVector &host_shape, const string &device_name, uint32_t device_id);
+               const ShapeVector &host_shape, const string &device_name, uint32_t device_id,
+               const UserDataPtr &user_data = nullptr);
 
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
@@ -140,7 +142,8 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
     ofs << this << " shape:" << (GetShape() == nullptr ? "null" : GetShape()->ToString())
         << " type:" << (GetType() == nullptr ? "null" : GetType()->ToString())
         << " value:" << (value_ == nullptr ? "null" : value_->ToString());
-    ofs << " flag:" << flag_;
+    ofs << " flag:" << flag_ << " user data:" << (user_data_ != nullptr)
+        << " need sync user data:" << need_sync_user_data_;
     if (device_address_ != nullptr) {
       return ofs.str() + " device address:" + device_address_->ToString();
     }
@@ -387,19 +390,32 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
 
   // Get user data maintained by the KernelTensor.
-  UserDataPtr user_data() const {
-    if (device_address_ == nullptr) {
-      return nullptr;
-    }
-    return device_address_->user_data();
-  }
-
+  UserDataPtr user_data() const { return user_data_; }
   // Set user data to the KernelTensor.
-  void set_user_data(const UserDataPtr &user_data) {
-    if (device_address_ == nullptr) {
+  void set_user_data(const UserDataPtr &user_data) { user_data_ = user_data; }
+
+  // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
+  // user data to device ptr.
+  bool need_sync_user_data() { return need_sync_user_data_; }
+  void set_need_sync_user_data(bool need_sync_user_data) { need_sync_user_data_ = need_sync_user_data; }
+
+  // Return the valid device ptr.
+  void *GetValidPtr(size_t);
+
+  using SyncUserDataHandler = void (*)(KernelTensor *const kernel_tensor);
+
+  inline void TouchSyncHandler() {
+    if (!need_sync_user_data_ || user_data() == nullptr) {
       return;
     }
-    device_address_->set_user_data(user_data);
+    std::lock_guard<std::mutex> lock(ptr_mutex_);
+    auto sync_handler = user_data()->get<SyncUserDataHandler>(kSyncUserDataHandler);
+    if (sync_handler == nullptr) {
+      MS_LOG(WARNING) << "For device address:" << this << ", the sync user data handler is null.";
+      return;
+    }
+    (*sync_handler)(this);
+    need_sync_user_data_ = false;
   }
 
   HeterogeneousInfoPtr heterogeneous_info() const {
@@ -465,23 +481,13 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   const DeviceAddressPtr &device_address() const;
   void set_device_address(const DeviceAddressPtr &device_address);
 
-  // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
-  // user data to device ptr.
-  bool need_sync_user_data() {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->need_sync_user_data();
-  }
-  void set_need_sync_user_data(bool need_sync_user_data) {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->set_need_sync_user_data(need_sync_user_data);
-  }
-
   void Swap(KernelTensor *other) {
     MS_EXCEPTION_IF_NULL(other);
     auto other_device_address = other->device_address().get();
     MS_EXCEPTION_IF_NULL(device_address_);
     device_address_->Swap(other_device_address);
-    set_task_id_on_stream(other->task_id_on_stream());
+    other->set_task_id_on_stream(task_id_on_stream());
+    other->set_need_sync_user_data(need_sync_user_data());
   }
 
   // Return whether KernelTensor has a valid ptr.
@@ -549,6 +555,12 @@ class OPS_KERNEL_COMMON_API KernelTensor : public AbstractBase {
   ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
   // The kernel tensor flag.
   size_t flag_{0};
+
+  UserDataPtr user_data_{nullptr};
+  // Handler for sync data from user data.
+  bool need_sync_user_data_{false};
+  // Thread lock for ptr_.
+  mutable std::mutex ptr_mutex_;
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 

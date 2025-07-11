@@ -133,13 +133,13 @@ std::string GenerateIDForGraph(const std::vector<KernelTensorPtr> &kernel_tensor
       MS_LOG(EXCEPTION) << "Empty device tensor index:" << index;
     }
     auto device_tensor = kernel_tensor->device_address().get();
-    if (device_tensor->user_data() == nullptr) {
+    if (kernel_tensor->user_data() == nullptr) {
       get_shape_and_type_string(device_tensor->host_shape(), device_tensor->type_id());
       continue;
     }
 
     const auto &user_data_obj =
-      device_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+      kernel_tensor->user_data()->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
     if (user_data_obj == nullptr) {
       MS_LOG(ERROR) << "Failed to get user data from input index:" << index
                     << " kernel tensor:" << kernel_tensor->ToString();

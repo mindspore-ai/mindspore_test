@@ -1146,13 +1146,13 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(const abstract::BaseShap
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
 
   auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0,
-    user_data);
+    device_ptr, size, host_shape, kernel::GetFormatFromStrToEnum(format), dtype_id, device_name, device_id, 0);
   // Currently, address_common and device_address are not unified. Kernel tensor may use info from address_common
   // or device_address, so all info keep to kernel tensor.
   // Only device address are keep for construct after unified.
-  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size,
-                                                              format, dtype_id, host_shape, device_name, device_id);
+  auto kernel_tensor =
+    std::make_shared<kernel::KernelTensor>(device_address, shape, type, value, device_ptr, size, format, dtype_id,
+                                           host_shape, device_name, device_id, user_data);
   return kernel_tensor;
 }
 
@@ -1163,9 +1163,9 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateKernelTensor(void *device_ptr, size_t
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    device_ptr, size, host_shape, format, dtype_id, device_name, device_id, 0, user_data);
-  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape);
+  auto device_address = host_context->device_res_manager_->CreateDeviceAddress(device_ptr, size, host_shape, format,
+                                                                               dtype_id, device_name, device_id, 0);
+  auto kernel_tensor = std::make_shared<kernel::KernelTensor>(device_address, dtype_id, host_shape, user_data);
   return kernel_tensor;
 }
 

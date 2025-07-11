@@ -223,8 +223,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceResManager {
 
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id,
-                                               const UserDataPtr &user_data = nullptr) const = 0;
+                                               uint32_t device_id, uint32_t stream_id) const = 0;
 
   // Create a stream with assigning a stream id, the assigned stream id will be written to the parameter '*stream_id'.
   virtual bool CreateStream(size_t *stream_id) const {

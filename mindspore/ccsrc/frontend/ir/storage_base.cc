@@ -33,7 +33,7 @@ device::DeviceAddressPtr CreateTempDeviceAddress(const device::DeviceAddressPtr 
     device_address->GetMutablePtr(), device_address->size(), shape,
     kernel::GetFormatFromStrToEnum(device_address->format()), device_address->type_id(),
     device::GetDeviceNameByType(device_address->GetDeviceType()), device_address->device_id(),
-    device_address->stream_id(), nullptr);
+    device_address->stream_id());
   new_device_address->set_from_mem_pool(false);
   return new_device_address;
 }

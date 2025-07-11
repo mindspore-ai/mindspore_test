@@ -36,6 +36,7 @@
 #include "include/common/utils/callbacks.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/fallback.h"
 #include "include/common/runtime_conf/runtime_env.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/anf.h"
@@ -485,7 +486,9 @@ bool IsTupleOutputOfAnyType(const abstract::AbstractBasePtr &abstract, const ten
     return false;
   }
   auto device_tensor = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-  return device_tensor != nullptr && device_tensor->user_data() == nullptr && tensor->base_shape_ptr() != nullptr &&
+  const auto &user_data_obj =
+    tensor->GetUserData().get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+  return device_tensor != nullptr && user_data_obj == nullptr && tensor->base_shape_ptr() != nullptr &&
          tensor->base_shape_ptr()->isa<abstract::SequenceShape>();
 }
 
