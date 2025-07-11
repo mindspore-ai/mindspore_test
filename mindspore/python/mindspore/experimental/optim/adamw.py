@@ -118,8 +118,9 @@ class AdamW(Optimizer):
             &\rule{180mm}{0.4pt}                                                          \\[-1.ex]
        \end{aligned}
 
-    For more details about Adam Weight Decay algorithm, please refer to `Decoupled Weight Decay Regularization
-    <https://arxiv.org/abs/1711.05101>`_.
+    More details of the AdamW algorithm can be found in the paper `Decoupled Weight Decay Regularization
+    <https://arxiv.org/abs/1711.05101>`_ and `On the Convergence of Adam and Beyond
+    <https://openreview.net/forum?id=ryQu7f-RZ>`_.
 
     .. warning::
         This is an experimental optimizer API that is subject to change.
