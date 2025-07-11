@@ -1,4 +1,4 @@
-# Copyright 2023-2024 Huawei Technologies Co., Ltd
+# Copyright 2020 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# https://gitee.com/ascend/samples/tree/0.5.0/cplusplus/level1_single_api/4_op_dev/1_custom_op/cmake/util/aicpu_parser_ini.py
+#
+# Additional modifications made by Huawei Technologies Co., Ltd in 2023
 """
 aicpu ini parser
 """
