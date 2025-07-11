@@ -96,7 +96,7 @@ class GraphSequenceParamTransform {
       bool ret = tr.Replace(item.first, item.second);
       if (ret == false) {
         MS_LOG(ERROR) << "replace failed" << item.first->DebugString() << " with__"
-                      << item.second->DebugString(SizeToInt(kIndex2));
+                      << item.second->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
     }
     tr.SetParameters(new_fg, new_params);

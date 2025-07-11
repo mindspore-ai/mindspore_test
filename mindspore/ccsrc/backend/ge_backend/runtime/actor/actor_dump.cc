@@ -634,7 +634,7 @@ void FetchInputDeviceTensorStore(const AnfNodePtr &key, size_t index, const Abst
   MS_EXCEPTION_IF_NULL(actor_inputs);
   std::string input_name = "%";
   if (key->isa<Parameter>()) {
-    input_name += key->DebugString(0);
+    input_name += key->DebugString(AnfNode::DebugStringLevel::kLevel0);
   } else if (key->isa<ValueNode>()) {
     const auto &value_node = key->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(value_node);
@@ -678,7 +678,7 @@ void FetchInputForHostQueueDSActor(AbstractActor *actor, ActorInputMap *actor_in
       continue;
     }
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_pair.first, node_pair.second, false);
-    (*actor_inputs)[i] = {node_pair.first->DebugString(0), kernel_tensor};
+    (*actor_inputs)[i] = {node_pair.first->DebugString(AnfNode::DebugStringLevel::kLevel0), kernel_tensor};
   }
 }
 

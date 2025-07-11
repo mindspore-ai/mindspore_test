@@ -2088,7 +2088,7 @@ void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, In
   }
   for (const auto &pair : control_actor->local_kernel_tensors()) {
     MS_EXCEPTION_IF_NULL(pair.second.second);
-    std::string name = pair.second.second->DebugString(0);
+    std::string name = pair.second.second->DebugString(AnfNode::DebugStringLevel::kLevel0);
     if (pair.second.second->isa<ValueNode>()) {
       name = GetValueNodeName(pair.second.second->cast<ValueNodePtr>());
     }
@@ -2139,7 +2139,8 @@ std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const Contr
     for (size_t i = 0; i < entrance_actor->formal_parameters().size(); ++i) {
       const auto &formal_parameter = entrance_actor->formal_parameters()[i];
       MS_EXCEPTION_IF_NULL(formal_parameter.first);
-      input_aids[i] = {formal_parameter.first->DebugString(0), formal_parameter.second};
+      input_aids[i] = {formal_parameter.first->DebugString(AnfNode::DebugStringLevel::kLevel0),
+                       formal_parameter.second};
     }
     return input_aids;
   }
@@ -2149,7 +2150,7 @@ std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const Contr
   // Get all inputs by device tensor store.
   for (const auto &pair : actor->device_tensor_store_keys()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    std::string name = pair.second->DebugString(0);
+    std::string name = pair.second->DebugString(AnfNode::DebugStringLevel::kLevel0);
     if (pair.second->isa<ValueNode>()) {
       name = GetValueNodeName(pair.second->cast<ValueNodePtr>());
     }

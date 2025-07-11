@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,9 @@ static inline void CheckSwitchCallValid(const CNodePtr &switch_call) {
   MS_EXCEPTION_IF_NULL(switch_call);
   if (switch_call->size() > 1) {
     // Means call switch(arg1, ...) has args.
-    constexpr auto recursive_count = 2;
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, switch_call)
       << "After switch_call_monad_eliminater pass, the call switch node should not has args."
-      << " The call_switch_cnode is: " << switch_call->DebugString(recursive_count);
+      << " The call_switch_cnode is: " << switch_call->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
 }
 

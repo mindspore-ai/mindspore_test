@@ -22,7 +22,15 @@ namespace mindspore {
 // Define python 'CNode' class.
 void RegCNode(const py::module *m) {
   (void)py::class_<CNode, CNodePtr>(*m, "CNode")
-    .def("expanded_str", (std::string(CNode::*)(int32_t) const) & CNode::DebugString,
-         "Get CNode string representation with specified expansion level.");
+    .def(
+      "expanded_str",
+      [](const CNode &node, int level) {
+        constexpr int level_max = static_cast<int>(AnfNode::DebugStringLevel::kLevelMax);
+        if (level < 0 || level >= level_max) {
+          throw std::runtime_error("Debug level out of range [0, " + std::to_string(level_max) + ").");
+        }
+        return node.DebugString(static_cast<AnfNode::DebugStringLevel>(level));
+      },
+      "Get CNode string representation with specified expansion level.");
 }
 }  // namespace mindspore

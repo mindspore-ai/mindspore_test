@@ -257,8 +257,7 @@ std::vector<std::pair<CNodePtr, size_t>> GetFreeVariable(const FuncGraphPtr &fun
       auto &input = cnode->input(i);
       if (input->func_graph() != nullptr && input->func_graph() != func_graph) {
         (void)free_variables.emplace_back(std::make_pair(cnode, i));
-        constexpr auto recur_2 = 2;
-        MS_LOG(DEBUG) << "Found FV: input[" << i << "] of " << cnode->DebugString(recur_2);
+        MS_LOG(DEBUG) << "Found FV: input[" << i << "] of " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
     }
   }
@@ -280,8 +279,7 @@ void Parser::LiftRolledBodyGraphFV() {
       // Change the free variable to the parameter.
       auto parameter = rolled_graph->add_parameter();
       cnode->set_input(index, parameter);
-      constexpr auto recur_2 = 2;
-      MS_LOG(DEBUG) << "Change FV: " << cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "Change FV: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
     }
   }
 }
@@ -308,8 +306,7 @@ void Parser::LiftIfBranchGraphFV() {
       cnode->set_input(index, parameter);
       // Add a unused parameter in other branch.
       (void)false_branch_graph->add_parameter();
-      constexpr auto recur_2 = 2;
-      MS_LOG(DEBUG) << "True branch, change FV: " << cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "True branch, change FV: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
     }
     // Handle false branch.
     for (auto &free_node_pair : false_free_variables) {
@@ -324,8 +321,7 @@ void Parser::LiftIfBranchGraphFV() {
       cnode->set_input(index, parameter);
       // Add a unused parameter in other branch.
       (void)true_branch_graph->add_parameter();
-      constexpr auto recur_2 = 2;
-      MS_LOG(DEBUG) << "False branch, change FV: " << cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "False branch, change FV: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
     }
   }
 }
@@ -446,19 +442,20 @@ bool CheckMiddleGraphOutputContainScalar(
     if (middle_call_graph->get_return() == nullptr) {
       continue;
     }
-    constexpr auto recur_2 = 2;
     const auto &middle_graph_output_pair = GetRealOutputNodes(middle_call_graph);
     const auto middle_graph_output_cnode = middle_graph_output_pair.first;
     MS_EXCEPTION_IF_NULL(middle_graph_output_cnode);
     auto middle_graph_output_cnode_size = middle_graph_output_cnode->size();
     if (middle_graph_output_cnode_size <= 1) {
-      MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, " << middle_graph_output_cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, "
+                    << middle_graph_output_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
       return false;
     }
 
     static const auto transform_if_const_scalar = (common::GetCompileConfig("IF_PARALLEL_CALL") == "2");
     if (!transform_if_const_scalar && IsOutputContainScalar(middle_graph_output_cnode)) {
-      MS_LOG(DEBUG) << "CNode's inputs contain const scalar, " << middle_graph_output_cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "CNode's inputs contain const scalar, "
+                    << middle_graph_output_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
       contains_scalar.push_back(true);
     } else {
       contains_scalar.push_back(false);
@@ -478,13 +475,13 @@ bool CheckMiddleGraphOutputPyInterpret(
     if (middle_call_graph->get_return() == nullptr) {
       continue;
     }
-    constexpr auto recur_2 = 2;
     const auto &middle_graph_output_pair = GetRealOutputNodes(middle_call_graph);
     const auto middle_graph_output_cnode = middle_graph_output_pair.first;
     MS_EXCEPTION_IF_NULL(middle_graph_output_cnode);
     auto middle_graph_output_cnode_size = middle_graph_output_cnode->size();
     if (middle_graph_output_cnode_size <= 1) {
-      MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, " << middle_graph_output_cnode->DebugString(recur_2);
+      MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, "
+                    << middle_graph_output_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
       return false;
     }
     bool exist_interpret = std::any_of(
@@ -527,14 +524,15 @@ void Parser::TransformParallelCall() {
         MS_LOG(INFO) << "middle_graph_return is null, middle_call_graph: " << middle_call_graph->ToString();
         continue;
       }
-      constexpr auto recur_3 = 3;
-      constexpr auto recur_2 = 2;
-      MS_LOG(DEBUG) << "Tail call graphs return: {former: " << former_call_graph->get_return()->DebugString(recur_3)
-                    << ", middle: " << middle_call_graph->get_return()->DebugString(recur_3) << "}";
+      MS_LOG(DEBUG) << "Tail call graphs return: {former: "
+                    << former_call_graph->get_return()->DebugString(AnfNode::DebugStringLevel::kLevel3)
+                    << ", middle: " << middle_call_graph->get_return()->DebugString(AnfNode::DebugStringLevel::kLevel3)
+                    << "}";
       const auto &[middle_graph_output_cnode, middle_graph_dependency_node] = GetRealOutputNodes(middle_call_graph);
       auto middle_graph_output_cnode_size = middle_graph_output_cnode->size();
       if (middle_graph_output_cnode_size <= 1) {
-        MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, " << middle_graph_output_cnode->DebugString(recur_2);
+        MS_LOG(DEBUG) << "CNode's inputs size should exceed 1, "
+                      << middle_graph_output_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
         continue;
       }
 
@@ -545,7 +543,8 @@ void Parser::TransformParallelCall() {
       // Transform the call of {former_graph -> middle_graph}.
       auto latter_call_graph = GetValueNode<FuncGraphPtr>(latter_graph_node);
       if (latter_call_graph == nullptr) {
-        MS_LOG(ERROR) << "The latter graph node is not FuncGraph, " << latter_graph_node->DebugString(recur_2);
+        MS_LOG(ERROR) << "The latter graph node is not FuncGraph, "
+                      << latter_graph_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
         continue;
       }
       if (latter_call_graphs_set.find(latter_call_graph) != latter_call_graphs_set.end()) {
@@ -556,8 +555,10 @@ void Parser::TransformParallelCall() {
       TransformParallelCallFormerToMiddle(former_call_graph, latter_call_graph, middle_graph_output_cnode_size,
                                           use_arguments_pack);
 
-      MS_LOG(DEBUG) << "Parallel call graphs return: {former: " << former_call_graph->get_return()->DebugString(recur_3)
-                    << ", middle: " << middle_call_graph->get_return()->DebugString(recur_3) << "}";
+      MS_LOG(DEBUG) << "Parallel call graphs return: {former: "
+                    << former_call_graph->get_return()->DebugString(AnfNode::DebugStringLevel::kLevel3)
+                    << ", middle: " << middle_call_graph->get_return()->DebugString(AnfNode::DebugStringLevel::kLevel3)
+                    << "}";
     }
   }
 
@@ -1041,10 +1042,9 @@ bool Parser::HandleSetAttrClassMemberForInplace(const FunctionBlockPtr &block, c
   if (!IsPrimitiveCNode(call_node, prim::kPrimGetAttr)) {
     return false;
   }
-  constexpr int recursive_level = 2;
   // call_cnode: self.attr.func
   auto call_cnode = call_node->cast<CNodePtr>();
-  MS_LOG(DEBUG) << "call cnode: " << call_cnode->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "call cnode: " << call_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   const auto &call_cnode_inputs = call_cnode->inputs();
   constexpr size_t attr_node_index = 1;
   constexpr size_t func_str_index = 2;
@@ -1066,7 +1066,7 @@ bool Parser::HandleSetAttrClassMemberForInplace(const FunctionBlockPtr &block, c
   // attr_cnode: self.attr
   auto attr_cnode = attr_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(attr_cnode);
-  MS_LOG(DEBUG) << "attr cnode: " << attr_cnode->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "attr cnode: " << attr_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   const auto &attr_cnode_inputs = attr_cnode->inputs();
   constexpr size_t target_index = 1;
   constexpr size_t attr_index = 2;
@@ -3381,8 +3381,8 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
     // Record the rolled body function, for later lifting operation.
     if (rolled_body_call != nullptr) {
       (void)rolled_body_calls_.emplace_back(std::make_pair(rolled_body_call, rolled_body_block));
-      constexpr int recursive_level = 2;
-      MS_LOG(DEBUG) << "Record rolled body call: {CNode: " << rolled_body_call->DebugString(recursive_level)
+      MS_LOG(DEBUG) << "Record rolled body call: {CNode: "
+                    << rolled_body_call->DebugString(AnfNode::DebugStringLevel::kLevel2)
                     << ", rolled_graph: " << rolled_body_block->ToString() << "}";
     }
   }
@@ -4345,14 +4345,13 @@ AnfNodePtr Parser::MakeInterpretNode(const FunctionBlockPtr &block, const AnfNod
 
   auto local_dict_node = ParseDictByKeysAndValues(block, filter_keys, filter_values);
   // Update the valued node if it need interpreting.
-  constexpr int recursive_level = 2;
   MS_EXCEPTION_IF_NULL(block->func_graph());
   AnfNodePtr interpreted_node = block->MakeInterpret(new_script_text, global_dict_node, local_dict_node, value_node);
   MS_LOG(INFO) << "[" << block->func_graph()->ToString() << "] script_text: `" << new_script_text
-               << "`,\nvalue_node: " << value_node->DebugString(recursive_level)
+               << "`,\nvalue_node: " << value_node->DebugString(AnfNode::DebugStringLevel::kLevel2)
                << ",\nglobal_dict_node: " << global_dict_node->ToString()
-               << ",\nlocal_dict_node: " << local_dict_node->DebugString(recursive_level)
-               << ",\ninterpreted_node: " << interpreted_node->DebugString(recursive_level);
+               << ",\nlocal_dict_node: " << local_dict_node->DebugString(AnfNode::DebugStringLevel::kLevel2)
+               << ",\ninterpreted_node: " << interpreted_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
 
   // Print a hint for user.
   auto line_info = trace::GetDebugInfoStr(value_node->debug_info());
@@ -5093,15 +5092,14 @@ void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNod
   }
   std::vector<AnfNodePtr> states;
   (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
-  constexpr int recursive_level = 2;
   for (const auto &node : isolated_nodes) {
     MS_EXCEPTION_IF_NULL(node);
-    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
+    MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2) << " in "
                   << func_graph->ToString();
     if (node->func_graph() == func_graph) {
       (void)states.emplace_back(node);
     } else {
-      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
+      MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2) << " in "
                    << func_graph->ToString();
     }
   }
@@ -5147,7 +5145,7 @@ void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNod
   depend_node->AddAttr(kAttrTopoSortRhsFirst, MakeValue(true));
   MS_EXCEPTION_IF_NULL(state);
   MS_LOG(INFO) << "Attached for side-effect nodes, depend_node: " << depend_node->DebugString()
-               << ", state: " << state->DebugString(recursive_level);
+               << ", state: " << state->DebugString(AnfNode::DebugStringLevel::kLevel2);
   func_graph->set_output(depend_node, true);
   // Update new return node's debug_info with old one.
   if (return_node != nullptr && return_node->debug_info() != nullptr) {

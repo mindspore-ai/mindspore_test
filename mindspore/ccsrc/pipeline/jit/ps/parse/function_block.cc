@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,10 +121,9 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " write var `" << var_name << "` with node "
                 << node->DebugString();
-  constexpr auto kRecursiveLevel = 2;
   // a[::][::] = b will be translated to c = a[::] c[::] = b and the c is a no named variable.
   if (var_name.empty()) {
-    MS_LOG(DEBUG) << "The node is " << node->DebugString(kRecursiveLevel)
+    MS_LOG(DEBUG) << "The node is " << node->DebugString(AnfNode::DebugStringLevel::kLevel2)
                   << "added in the isolated list.\nBlock: " << this << "/"
                   << (func_graph_ ? func_graph_->ToString() : "FG(Null)")
                   << ", Line: " << trace::GetDebugInfoStr(node->debug_info(), "", kSourceLineTipDiscard);
@@ -144,8 +143,9 @@ void FunctionBlock::WriteVariable(const std::string &var_name, const AnfNodePtr 
     auto is_isolated = CanBeIsolatedNode(var_name, hidden_node);
     if (!is_used && is_isolated) {
       MS_EXCEPTION_IF_NULL(hidden_node);
-      MS_LOG(INFO) << "Isolated node found(Hidden), hidden_node: " << hidden_node->DebugString(kRecursiveLevel)
-                   << " is hidden by " << node->DebugString(kRecursiveLevel)
+      MS_LOG(INFO) << "Isolated node found(Hidden), hidden_node: "
+                   << hidden_node->DebugString(AnfNode::DebugStringLevel::kLevel2) << " is hidden by "
+                   << node->DebugString(AnfNode::DebugStringLevel::kLevel2)
                    << " with the same name, var_name: " << var_name << ", block: " << this << "/"
                    << (func_graph_ ? func_graph_->ToString() : "FG(Null)")
                    << ", Line: " << trace::GetDebugInfoStr(hidden_node->debug_info(), "", kSourceLineTipDiscard);
@@ -835,9 +835,9 @@ void FunctionBlock::SetStateAssign(const AnfNodePtr &target, const AnfNodePtr &s
   const std::string module_name("mindspore.ops.functional");
   ValueNodePtr assign_op = NewValueNode(prim::GetPythonOps(primitive_name, module_name, true));
   auto assign_node = func_graph_->NewCNodeInOrder({assign_op, target, source});
-  const int recursive_level = 2;
-  MS_LOG(DEBUG) << "Isolated node found(Assign), assign_node: " << assign_node->DebugString(recursive_level)
-                << ", block: " << this << "/" << func_graph_->ToString()
+  MS_LOG(DEBUG) << "Isolated node found(Assign), assign_node: "
+                << assign_node->DebugString(AnfNode::DebugStringLevel::kLevel2) << ", block: " << this << "/"
+                << func_graph_->ToString()
                 << ", Line: " << trace::GetDebugInfoStr(assign_node->debug_info(), "", kSourceLineTipDiscard);
   AddIsolatedNode(assign_node);
 }
@@ -847,8 +847,7 @@ void FunctionBlock::ConvertUnusedNodesToIsolated(const std::string &var_name, co
     return;
   }
   if (CanBeIsolatedNode(var_name, node)) {
-    const int recursive_level = 2;
-    MS_LOG(INFO) << "Isolated node found(NoUse), node: " << node->DebugString(recursive_level)
+    MS_LOG(INFO) << "Isolated node found(NoUse), node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2)
                  << ", var_name: " << var_name << ", block: " << this << "/"
                  << (func_graph() ? func_graph()->ToString() : "FG(Null)")
                  << ", Line: " << trace::GetDebugInfoStr(node->debug_info(), "", kSourceLineTipDiscard);

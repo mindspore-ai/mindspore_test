@@ -142,10 +142,10 @@ AnfNodePtr NewUpdateStateWithAttach(const CNodePtr &update_state, const AnfNodeP
 
 AnfNodePtr EliminateUpdateStateWithDepend(const CNodePtr &update_state) {
   auto depend = update_state->input(kAttachIndex)->cast<CNodePtr>();
-  constexpr auto recur_2 = 2;
   // If same Depend CNode is used by multiple UpdateState CNode, it may be replaced by previous elimination.
   if (depend == nullptr) {
-    MS_LOG(DEBUG) << "UpdateState's input 2 Depend had been replaced: " << update_state->DebugString(recur_2);
+    MS_LOG(DEBUG) << "UpdateState's input 2 Depend had been replaced: "
+                  << update_state->DebugString(AnfNode::DebugStringLevel::kLevel2);
     return nullptr;
   }
   auto input_monad = depend->inputs().back();
@@ -165,7 +165,8 @@ AnfNodePtr EliminateUpdateStateWithDepend(const CNodePtr &update_state) {
   // u3 and x1 should not match otherwise u1 will be lost; u2 and x1 can match.
   if (IsPrimitiveCNode(update_monad, prim::kPrimUpdateState) &&
       update_monad->cast<CNodePtr>()->input(kAttachIndex) == depend) {
-    MS_LOG(DEBUG) << "UpdateState should not be replaced. node: " << update_state->DebugString(recur_2);
+    MS_LOG(DEBUG) << "UpdateState should not be replaced. node: "
+                  << update_state->DebugString(AnfNode::DebugStringLevel::kLevel2);
     return nullptr;
   }
   // Check monad inputs.
@@ -528,7 +529,7 @@ AnfNodePtr EliminateUpdateStateForLoads(const CNodePtr &old_update_state, const 
 
   if (make_tuple_inputs.size() == 1) {
     // This should not happen.
-    MS_LOG(WARNING) << "No loads for " << old_update_state->DebugString(2);
+    MS_LOG(WARNING) << "No loads for " << old_update_state->DebugString(AnfNode::DebugStringLevel::kLevel2);
     return nullptr;
   }
   // Create the new UpdateState node with a MakeTuple, replace the old UpdateStateNode.

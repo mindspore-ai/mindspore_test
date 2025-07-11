@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -685,10 +685,10 @@ class SideEffectFinder {
         FixSwitchBranch(caller, branch);
         // The number of parameter should matched after fix.
         if (caller_input_size + extra_input_size != branch->parameters().size()) {
-          constexpr auto recursive_count = 2;
           MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, caller)
-            << "Fix switch branch parameters failed! " << caller->DebugString(recursive_count)
-            << ", branch: " << branch->ToString() << ", branch node: " << branch_node->DebugString(recursive_count)
+            << "Fix switch branch parameters failed! " << caller->DebugString(AnfNode::DebugStringLevel::kLevel2)
+            << ", branch: " << branch->ToString()
+            << ", branch node: " << branch_node->DebugString(AnfNode::DebugStringLevel::kLevel2)
             << ", size: " << caller_input_size << " + " << extra_input_size << " not equal to "
             << branch->parameters().size();
         }

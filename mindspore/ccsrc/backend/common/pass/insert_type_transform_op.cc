@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -761,12 +761,12 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfoldForSkipOp(const F
           auto new_get_item_inputs =
             ProcessTupleToTupleUnfoldForTupleGetItem(func_graph, input, get_item, &new_get_item_prim);
           constexpr size_t kIndex2 = 2;
-          constexpr int kRecLevel = 2;
           new_get_item_inputs.emplace_back(get_item->input(kIndex2));
           auto new_get_item = CreateNewNode(func_graph, new_get_item_inputs, get_item);
           MS_LOG(DEBUG) << "Create new node " << new_get_item->fullname_with_scope() << " "
-                        << new_get_item->DebugString(kRecLevel) << " to replace " << get_item->fullname_with_scope()
-                        << " " << get_item->DebugString(kRecLevel)
+                        << new_get_item->DebugString(AnfNode::DebugStringLevel::kLevel2) << " to replace "
+                        << get_item->fullname_with_scope() << " "
+                        << get_item->DebugString(AnfNode::DebugStringLevel::kLevel2)
                         << " build info:" << AnfAlgo::GetSelectKernelBuildInfo(new_get_item)->ToString();
           new_inputs.emplace_back(new_get_item);
         }

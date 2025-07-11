@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1248,7 +1248,7 @@ void FetchGraphParameterStore(const AbstractActor *const actor, ActorInputMap *a
   for (const auto &parameter_index : actor->parameter_indexs()) {
     auto index = parameter_index.first;
     auto parameter_info = parameter_index.second;
-    input_name += parameter_info.first.first->DebugString(0);
+    input_name += parameter_info.first.first->DebugString(AnfNode::DebugStringLevel::kLevel0);
     if (actor_inputs->find(index) != actor_inputs->end()) {
       MS_LOG(INFO) << "Invalid index:" << index << " for actor:" << actor->GetAID()
                    << " input aid:" << parameter_info.first.first->DebugString()
@@ -1270,7 +1270,7 @@ void FetchInputDeviceTensorStore(const AnfNodePtr &key, size_t index, const Abst
   MS_EXCEPTION_IF_NULL(actor_inputs);
   std::string input_name = "%";
   if (key->isa<Parameter>()) {
-    input_name += key->DebugString(0);
+    input_name += key->DebugString(AnfNode::DebugStringLevel::kLevel0);
   } else if (key->isa<ValueNode>()) {
     const auto &value_node = key->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(value_node);
@@ -1311,7 +1311,7 @@ void FetchInputForHostQueueDSActor(AbstractActor *actor, ActorInputMap *actor_in
       continue;
     }
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node_pair.first, node_pair.second, false);
-    (*actor_inputs)[i] = {node_pair.first->DebugString(0), kernel_tensor};
+    (*actor_inputs)[i] = {node_pair.first->DebugString(AnfNode::DebugStringLevel::kLevel0), kernel_tensor};
   }
 }
 

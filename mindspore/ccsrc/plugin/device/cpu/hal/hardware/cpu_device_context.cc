@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,10 +190,9 @@ void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<ke
 
   auto [is_match, index] = match_result;
   if (!is_match) {
-    constexpr auto recursive_level = 2;
     MS_LOG_WITH_NODE(EXCEPTION, apply_kernel)
       << apply_kernel->fullname_with_scope() << " does not support this kernel data type: " << build_info->ToString()
-      << ", node debug name: " << apply_kernel->DebugString(recursive_level);
+      << ", node debug name: " << apply_kernel->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
 
   auto kernel_info = dynamic_cast<device::KernelInfo *>(apply_kernel->kernel_info());
@@ -512,9 +511,8 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
       };
       auto expand_ret = expander::TryExpandCNode(node, f);
       if (!expand_ret) {
-        constexpr auto recursive_level = 2;
         MS_EXCEPTION(etype) << "#umsg#Kernel select failed:#umsg#" << msg
-                            << "\nnode: " << node->DebugString(recursive_level);
+                            << "\nnode: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
       MS_LOG(INFO) << msg << " but expand success.";
       do_expand = true;

@@ -25,7 +25,7 @@ from mindspore.ops.operations._scalar_ops import bit_or, bit_and
 from mindspore.ops import signature as sig
 from mindspore.ops.operations.math_ops import _infer_shape_reduce
 from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register, Primitive, \
-    _run_op, _check_contains_variable
+    _check_contains_variable
 from mindspore._c_expression import TensorPy as Tensor_
 from mindspore._c_expression import typing, HookType
 from mindspore._c_expression import pyboost_generator, pyboost_cell_backward_hook

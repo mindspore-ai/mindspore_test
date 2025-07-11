@@ -1262,15 +1262,14 @@ EvalResultPtr InterpretGetAttrNode(const AbstractBasePtrList &args_abs_list, con
     CheckObjAttrValid(data_type, item_name, data_args);
   }
 
-  constexpr auto debug_recursive_level = 2;
   const auto &debug_info = trace::GetSourceCodeDebugInfo(out_node->debug_info());
   if (debug_info == nullptr || debug_info->location() == nullptr) {
-    MS_LOG(WARNING) << "Location info is null, node: " << out_node->DebugString(debug_recursive_level);
+    MS_LOG(WARNING) << "Location info is null, node: " << out_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
     return nullptr;
   }
   const auto expr = debug_info->location()->expr_src();
   if (expr.empty()) {
-    MS_LOG(WARNING) << "Location's expr is empty, node: " << out_node->DebugString(debug_recursive_level);
+    MS_LOG(WARNING) << "Location's expr is empty, node: " << out_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
 
   constexpr auto item_index = 1;
@@ -1315,9 +1314,8 @@ EvalResultPtr InterpretSetAttrNode(const AbstractBasePtrList &args_abs_list, con
   }
   auto owner_value = owner_abs->BuildValue();
   auto owner_node = cnode->input(1);
-  constexpr auto debug_recursive_level = 2;
   MS_EXCEPTION_IF_NULL(owner_value);
-  MS_LOG(DEBUG) << "node: " << out_conf->node()->DebugString(debug_recursive_level)
+  MS_LOG(DEBUG) << "node: " << out_conf->node()->DebugString(AnfNode::DebugStringLevel::kLevel2)
                 << ", owner_value: " << owner_value->ToString();
   if (owner_value->isa<parse::InterpretedObject>()) {
     const auto &interpreted_value = dyn_cast<parse::InterpretedObject>(owner_value);
@@ -1356,7 +1354,7 @@ EvalResultPtr InterpretSetAttrNode(const AbstractBasePtrList &args_abs_list, con
 
   const auto setattr_node =
     fallback::CreatePyExecuteCNode(cnode, NewValueNode(script_setattr_str), NewValueNode(key_tuple), value_tuple_node);
-  MS_LOG(DEBUG) << "setattr_node: " << setattr_node->DebugString(debug_recursive_level);
+  MS_LOG(DEBUG) << "setattr_node: " << setattr_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
 
   // Save abstract for getattr.
   constexpr auto value_abs_index = 2;
@@ -1745,9 +1743,8 @@ EvalResultPtr GetEvaluatedValueForAttrOrMethodNotInMap(const AnalysisEnginePtr &
                                  << trace::GetDebugInfoStr(out_conf->node()->debug_info());
   }
 
-  constexpr auto recursive_level = 3;
   MS_LOG(DEBUG) << "Evaluate " << data_type->ToString() << " attribute: " << item_name
-                << ".\nnode: " << out_conf->node()->DebugString(recursive_level) << "\n"
+                << ".\nnode: " << out_conf->node()->DebugString(AnfNode::DebugStringLevel::kLevel3) << "\n"
                 << trace::GetDebugInfoStr(out_conf->node()->debug_info());
   auto res = InterpretGetAttrNode(args_abs_list, out_conf);
   if (res == nullptr) {
@@ -1964,9 +1961,8 @@ EvalResultPtr StaticGetter(const AnalysisEnginePtr &engine, const AbstractBasePt
   MS_EXCEPTION_IF_NULL(item_args);
   MS_EXCEPTION_IF_NULL(out_conf);
   MS_EXCEPTION_IF_NULL(out_conf->node());
-  constexpr auto recursive_level = 2;
   MS_LOG(DEBUG) << "StaticGetter, data: " << data_args->ToString() << ", item: " << item_args->ToString()
-                << ", node: " << out_conf->node()->DebugString(recursive_level);
+                << ", node: " << out_conf->node()->DebugString(AnfNode::DebugStringLevel::kLevel2);
   ScopePtr scope = out_conf->node()->scope();
   ScopeGuard scope_guard(scope);
   ValuePtr item_value = item_args->BuildValue();
@@ -2296,10 +2292,9 @@ EvalResultPtr PrimitiveArgsToInputsEvaluator::EvalPrim(const AnalysisEnginePtr &
                     std::back_inserter(getattr_inputs));
     new_node = ConvertArgsToInputs(prim_, getattr_inputs, fg, engine, out_conf);
   } else {
-    constexpr int recursive_level = 2;
     new_node = ConvertArgsToInputs(prim_, cnode->weak_inputs(), fg, engine, out_conf);
     MS_LOG(DEBUG) << "Convert args to inputs for Operator[" << prim_->name()
-                  << "], node: " << cnode->DebugString(recursive_level);
+                  << "], node: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
 
   new_node->set_debug_info(cnode->debug_info());
@@ -2499,10 +2494,10 @@ EvalResultPtr PrimInstanceEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
 
   auto new_cnode = fg->NewCNodeInOrder(new_inputs);
   auto new_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
-  constexpr auto recursive_level = 2;
-  MS_LOG(DEBUG) << "For Primitive[" << prim_name_ << "], using old node " << cnode->DebugString(recursive_level)
-                << " and instance node " << partial_cnode->DebugString(recursive_level) << "to create new node "
-                << new_cnode->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "For Primitive[" << prim_name_ << "], using old node "
+                << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2) << " and instance node "
+                << partial_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2) << "to create new node "
+                << new_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   return engine->ForwardConfig(out_conf, new_conf);
 }
 
@@ -2550,9 +2545,9 @@ EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
     };
     new_cnode = prim::ConvertFunctionalToPrimitive(name_, inputs_list, args_abs_list, cnode, eval_func, is_method_);
   }
-  constexpr auto debug_recursive_level = 2;
-  MS_LOG(DEBUG) << "Convert Functional[" << name_ << "]. Origin cnode: " << cnode->DebugString(debug_recursive_level)
-                << ", new cnode: " << new_cnode->DebugString(debug_recursive_level);
+  MS_LOG(DEBUG) << "Convert Functional[" << name_
+                << "]. Origin cnode: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                << ", new cnode: " << new_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   auto fn_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
   return engine->ForwardConfig(out_conf, fn_conf);
 }

@@ -434,6 +434,9 @@ class Cell(Cell_):
 
     @property
     def compiled(self):
+        """
+        Get whether cell is compiled.
+        """
         return self._compiled
 
     @bprop_debug.setter

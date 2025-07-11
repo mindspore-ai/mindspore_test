@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ using kernel::OpIOInfo;
 namespace {
 constexpr int kCurrentInfoVersion = 2;
 constexpr auto kAttrParallelDimInfoSize = 2;
-constexpr auto kDebugStrDepth = 2;
 
 std::vector<int64_t> GetDynInputSizes(const AnfNodePtr &anf_node) {
   std::vector<int64_t> dyn_input_sizes;
@@ -80,8 +79,8 @@ std::vector<std::pair<AnfNodePtr, std::pair<size_t, size_t>>> GetInputIndex(cons
     const NodeUsersMap &users = mng->node_users();
     auto input_users = users.find(input);
     if (input_users == users.end() || input_users->second.empty()) {
-      MS_EXCEPTION(ArgumentError) << "Input [" << i << "][" << input->DebugString(kDebugStrDepth) << "] of ["
-                                  << input->func_graph()->ToString() << "] has no users.";
+      MS_EXCEPTION(ArgumentError) << "Input [" << i << "][" << input->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                                  << "] of [" << input->func_graph()->ToString() << "] has no users.";
     }
     bool found = false;
     for (auto const &input_user : input_users->second) {
@@ -118,8 +117,8 @@ std::vector<std::pair<AnfNodePtr, std::pair<size_t, size_t>>> GetInputIndex(cons
     if (found) {
       continue;
     }
-    MS_EXCEPTION(ArgumentError) << "Input [" << i << "][" << input->DebugString(kDebugStrDepth) << "] of ["
-                                << input->func_graph()->ToString() << "] found no related kernel info.";
+    MS_EXCEPTION(ArgumentError) << "Input [" << i << "][" << input->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                                << "] of [" << input->func_graph()->ToString() << "] found no related kernel info.";
   }
   return input_index;
 }
@@ -144,8 +143,8 @@ std::vector<std::pair<AnfNodePtr, size_t>> GetOutputIndex(const std::vector<AnfN
       found = true;
     }
     if (!found) {
-      MS_EXCEPTION(ArgumentError) << "Output [" << i << "][" << output->DebugString(kDebugStrDepth) << "] of ["
-                                  << output->func_graph()->ToString() << "] found no related kernel info.";
+      MS_EXCEPTION(ArgumentError) << "Output [" << i << "][" << output->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                                  << "] of [" << output->func_graph()->ToString() << "] found no related kernel info.";
     }
   }
   return output_index;
@@ -499,7 +498,7 @@ bool GraphKernelJsonGenerator::CreateInputDescJson(const AnfNodePtr &anf_node, c
       auto input_shape = this->cb_->GetInputShape(anf_node, real_input_index);
       if (!is_basic_op_ && GetInputTensorValue(anf_node, real_input_index, &input_shape, &input_desc_json)) {
         MS_LOG(DEBUG) << "Pick value [" << input_desc_json[kJsonKeyValue] << "] from input[" << real_input_index
-                      << "] of node [" << anf_node->DebugString(kDebugStrDepth);
+                      << "] of node [" << anf_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
       if (input_shape.empty()) {
         input_shape.push_back(1);

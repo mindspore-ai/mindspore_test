@@ -118,10 +118,9 @@ EvalResultPtr GetEvalResult(const AnfNodeConfigPtr &conf) {
     MS_EXCEPTION_IF_NULL(eval_result);
     return eval_result;
   } catch (const std::exception &e) {
-    constexpr int recursive_level = 2;
     static const bool enable_pre_lift = (common::GetCompileConfig("PRE_LIFT") == "1");
     if (enable_pre_lift && IsPrimitiveCNode(conf->node(), prim::kPrimPartial)) {
-      MS_LOG(ERROR) << "node: " << conf->node()->DebugString(recursive_level);
+      MS_LOG(ERROR) << "node: " << conf->node()->DebugString(AnfNode::DebugStringLevel::kLevel2);
       auto abs_res = std::make_shared<AbstractNone>();
       auto eval_result = std::make_shared<EvalResult>(abs_res, std::make_shared<AttrValueMap>());
       return eval_result;
@@ -187,17 +186,16 @@ bool CanSpecializeValueNode(const AnfNodePtr &node) {
 
 void PurifyAbstractOfSequence(ProgramSpecializer *const specializer) {
   MS_EXCEPTION_IF_NULL(specializer);
-  constexpr int recursive_level = 2;
   for (auto &abstract_and_node : specializer->sequence_abstract_list()) {
     auto &sequence_abs = abstract_and_node.first;
     MS_EXCEPTION_IF_NULL(sequence_abs);
     MS_EXCEPTION_IF_NULL(abstract_and_node.second);
     if (!sequence_abs->PurifyElements()) {
       MS_LOG(INFO) << "Purify elements failed, abstract: " << sequence_abs->ToString()
-                   << ", node: " << abstract_and_node.second->DebugString(recursive_level);
+                   << ", node: " << abstract_and_node.second->DebugString(AnfNode::DebugStringLevel::kLevel2);
     } else {
       MS_LOG(DEBUG) << "Purify elements, abstract: " << sequence_abs->ToString()
-                    << ", node: " << abstract_and_node.second->DebugString(recursive_level);
+                    << ", node: " << abstract_and_node.second->DebugString(AnfNode::DebugStringLevel::kLevel2);
     }
   }
 }
@@ -233,8 +231,8 @@ void EliminateCollectedSequenceNodes(ProgramSpecializer *const specializer) {
         continue;
       }
 
-      constexpr int recursive_level = 2;
-      MS_LOG(DEBUG) << "Erase elements[" << pos << "] DeadNode as zero for " << cnode->DebugString(recursive_level);
+      MS_LOG(DEBUG) << "Erase elements[" << pos << "] DeadNode as zero for "
+                    << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
       // Change the node.
       auto zero_value = NewValueNode(MakeValue<int64_t>(0));
       zero_value->set_abstract(
@@ -246,7 +244,7 @@ void EliminateCollectedSequenceNodes(ProgramSpecializer *const specializer) {
       auto sequence_abs = dyn_cast_ptr<AbstractSequence>(node->abstract());
       if (sequence_abs != nullptr && !sequence_abs->PurifyElements()) {
         MS_LOG(ERROR) << "Purify elements failed, abstract: " << sequence_abs->ToString()
-                      << ", node: " << node->DebugString(recursive_level);
+                      << ", node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
       continue;
     }
@@ -273,9 +271,8 @@ void EliminateCollectedSequenceNodes(ProgramSpecializer *const specializer) {
       (*flags)[pos] = false;  // Change the use flag as 0.
       auto sequence_abs = dyn_cast_ptr<AbstractSequence>(node->abstract());
       if (sequence_abs != nullptr && !sequence_abs->PurifyElements()) {
-        constexpr int recursive_level = 2;
         MS_LOG(ERROR) << "Purify elements failed, abstract: " << sequence_abs->ToString()
-                      << ", node: " << node->DebugString(recursive_level);
+                      << ", node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
     }
   }
@@ -549,9 +546,8 @@ AnfNodePtr FuncGraphSpecializer::ReplicateDisconnectedNode(const AnfNodePtr &nod
   }
   std::shared_ptr<FuncGraphSpecializer> specializer = GetTopSpecializer(node);
   if (specializer == nullptr) {
-    constexpr auto recursive_level = 2;
-    MS_LOG(INTERNAL_EXCEPTION) << "Specializer should not be null, node: " << node->DebugString(recursive_level)
-                               << ", NodeInfo: \n"
+    MS_LOG(INTERNAL_EXCEPTION) << "Specializer should not be null, node: "
+                               << node->DebugString(AnfNode::DebugStringLevel::kLevel2) << ", NodeInfo: \n"
                                << trace::GetDebugInfoStr(node->debug_info()) << "\n"
                                << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " has no parent context?";
   }
@@ -613,9 +609,8 @@ void FuncGraphSpecializer::UpdateNewCNodeInputs(const AnfNodePtr &node, const An
 AnfNodePtr FuncGraphSpecializer::GetReplicatedNode(const AnfNodePtr &node) {
   std::shared_ptr<FuncGraphSpecializer> specializer = GetTopSpecializer(node);
   if (specializer == nullptr) {
-    constexpr auto recursive_level = 2;
-    MS_LOG(INTERNAL_EXCEPTION) << "Specializer should not be null, node: " << node->DebugString(recursive_level)
-                               << ", NodeInfo: \n"
+    MS_LOG(INTERNAL_EXCEPTION) << "Specializer should not be null, node: "
+                               << node->DebugString(AnfNode::DebugStringLevel::kLevel2) << ", NodeInfo: \n"
                                << trace::GetDebugInfoStr(node->debug_info()) << "\n"
                                << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " has no parent context?";
   }
@@ -648,8 +643,8 @@ std::shared_ptr<FuncGraphSpecializer> FuncGraphSpecializer::GetTopSpecializer(co
                      << ", NodeInfo: " << trace::GetDebugInfoStr(node->debug_info());
         specializer = specializer_->GetFuncGraphSpecializer(top_context);
         if (specializer == nullptr) {
-          constexpr auto recursive_level = 2;
-          MS_LOG(INTERNAL_EXCEPTION) << "Specializer must not be null, node: " << node->DebugString(recursive_level)
+          MS_LOG(INTERNAL_EXCEPTION) << "Specializer must not be null, node: "
+                                     << node->DebugString(AnfNode::DebugStringLevel::kLevel2)
                                      << ", NodeInfo: " << trace::GetDebugInfoStr(node->debug_info());
         }
       } else {
@@ -1058,12 +1053,11 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
           auto zero_value = NewValueNode(MakeValue<int64_t>(0));
           zero_value->set_abstract(std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(0)));
           (void)inputs.emplace_back(zero_value);
-          constexpr int recursive_level = 2;
-          MS_LOG(DEBUG) << "Erase elements[" << i << "] as zero for " << cnode->DebugString(recursive_level);
+          MS_LOG(DEBUG) << "Erase elements[" << i << "] as zero for "
+                        << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
         } else if (IsDeadNode(old_input)) {
-          constexpr int recursive_level = 2;
           MS_LOG(DEBUG) << "Collect for erasing elements[" << i << "] DeadNode as zero for " << cnode << "/"
-                        << cnode->DebugString(recursive_level);
+                        << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
           (void)specializer_->dead_node_list().emplace_back(std::pair(cnode, i));
           (void)inputs.emplace_back(old_input);
         } else {
@@ -1293,14 +1287,14 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNode(const CNodePtr &cnode, con
       const auto err_dead_value = std::make_shared<ValueProblem>(ValueProblemType::kDead);
       const auto err_dead_abstract = std::make_shared<AbstractProblem>(err_dead_value, func);
       specialized_node = BuildValueNode(err_dead_value, cnode, err_dead_abstract);
-      constexpr auto recursive_level = 2;
-      MS_LOG(DEBUG) << "DEAD for func: " << func->DebugString(recursive_level) << ", abstract: " << abs->ToString();
+      MS_LOG(DEBUG) << "DEAD for func: " << func->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                    << ", abstract: " << abs->ToString();
     } else if (errcode == kSpecializePoly) {
       const auto error_poly_value = std::make_shared<ValueProblem>(ValueProblemType::kPoly);
       const auto error_poly_abstract = std::make_shared<AbstractProblem>(error_poly_value, func);
       specialized_node = BuildValueNode(error_poly_value, cnode, error_poly_abstract);
-      constexpr auto recursive_level = 2;
-      MS_LOG(DEBUG) << "POLY for func: " << func->DebugString(recursive_level) << ", abstract: " << abs->ToString();
+      MS_LOG(DEBUG) << "POLY for func: " << func->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                    << ", abstract: " << abs->ToString();
     } else {
       MS_LOG(INTERNAL_EXCEPTION) << "Failed to build specialized func, func: " << func->DebugString()
                                  << ", abstract: " << abs->ToString();
@@ -1376,10 +1370,9 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNodeInner(const CNodePtr &cnode
     }
   }
 
-  constexpr auto recursive_level = 2;
   MS_LOG(DEBUG) << "Specialize function graph: " << context->func_graph()->ToString() << ", args: " << args_abs_list
-                << ", func: " << func->DebugString(recursive_level) << ", context: " << context.get() << ", "
-                << context->ToString();
+                << ", func: " << func->DebugString(AnfNode::DebugStringLevel::kLevel2) << ", context: " << context.get()
+                << ", " << context->ToString();
   MS_EXCEPTION_IF_NULL(context->func_graph());
   if (context->func_graph()->stub()) {
     MS_EXCEPTION_IF_NULL(context->func_graph()->get_return());
@@ -1677,9 +1670,8 @@ void FuncGraphSpecializer::ProcessCNodeEnd(const CNodePtr &cnode, const AnfNodeW
   if (enable_eliminate_unused_element && !enable_only_mark_unused_element) {
     EliminateUnusedSequenceItem(cnode);
   }
-  constexpr auto recursive_level = 2;
   // Only success processed node can be added to seen.
-  MS_LOG(DEBUG) << "New CNode: " << cnode->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "New CNode: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   specializer_->AddSeen(cnode);
 }
 
@@ -1802,8 +1794,7 @@ bool FuncGraphSpecializer::ProcessCNode(const CNodePtr &cnode) {
   if (specializer_->seen().count(cnode) > 0) {
     return true;
   }
-  constexpr auto recursive_level = 2;
-  MS_LOG(DEBUG) << "Handle CNode: " << cnode->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "Handle CNode: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   auto new_inputs = GetCNodeRealInputs(cnode);
   const AnfNodePtr &func = new_inputs[0].lock();
 
@@ -1833,7 +1824,7 @@ bool FuncGraphSpecializer::ProcessCNode(const CNodePtr &cnode) {
         return false;
       }
       MS_LOG(DEBUG) << "Partial closure or parameter call is handled, wrapped_node: "
-                    << wrapped_node->DebugString(recursive_level);
+                    << wrapped_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       new_inputs[0] = wrapped_node;
       cnode->func_graph()->AddOwnNode(wrapped_node);
     }
@@ -1861,8 +1852,10 @@ bool FuncGraphSpecializer::ProcessCNode(const CNodePtr &cnode) {
 
       new_inputs[0] = specialized_func_node;
       cnode->func_graph()->AddOwnNode(specialized_func_node);
-      MS_LOG(DEBUG) << "Specalize func: " << func->type_name() << "/" << func->DebugString(recursive_level)
-                    << ", new_func: " << new_inputs[0].lock()->DebugString(recursive_level) << ", args: " << args;
+      MS_LOG(DEBUG) << "Specalize func: " << func->type_name() << "/"
+                    << func->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                    << ", new_func: " << new_inputs[0].lock()->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                    << ", args: " << args;
     }
   }
 
@@ -1875,8 +1868,8 @@ bool FuncGraphSpecializer::ProcessCNode(const CNodePtr &cnode) {
         return false;
       }
 
-      MS_LOG(DEBUG) << "Specalize arg[" << i << "]: " << old_node->DebugString(recursive_level)
-                    << ", new_node: " << new_node->DebugString(recursive_level);
+      MS_LOG(DEBUG) << "Specalize arg[" << i << "]: " << old_node->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                    << ", new_node: " << new_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
       new_inputs[i] = new_node;
       cnode->func_graph()->AddOwnNode(new_node);
     }

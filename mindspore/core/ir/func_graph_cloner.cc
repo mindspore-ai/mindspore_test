@@ -733,9 +733,8 @@ void Cloner::AddInputs(const FuncGraphPtr &func_graph_user, const FuncGraphPtr &
   AnfNodeWeakPtrList inputs;
   AnfNodeWeakPtrList add_params;
   if (!FilterMonadInput(cnode->weak_inputs(), &inputs, &input_u_monad, &input_io_monad)) {
-    constexpr auto recursive_level = 2;
     MS_LOG(INTERNAL_EXCEPTION) << "Cannot have multiple U Monad or multiple IO Monad in one CNode, cnode: "
-                               << cnode->DebugString(recursive_level);
+                               << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
   if (!FilterMonadInput(params, &add_params, &param_u_monad, &param_io_monad)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Cannot have multiple U Monad or multiple IO Monad in Parameters list, func_graph: "

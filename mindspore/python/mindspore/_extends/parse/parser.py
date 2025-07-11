@@ -898,6 +898,16 @@ def can_constant_fold(obj):
 
 
 def hook_wrapper(hook_fn):
+    """
+    Decorator wrapper for gradient hook functions.
+    Handles custom logic when the hook returns None to ensure execution dependencies.
+
+    Args:
+        hook_fn (function): The original hook function to be wrapped.
+
+    Returns:
+        function: Wrapped inner hook function with dependency handling logic.
+    """
     def inner(dout):
         fdout = hook_fn(dout)
         if fdout is None:
@@ -905,6 +915,7 @@ def hook_wrapper(hook_fn):
             return dout
         return fdout
     return inner
+
 
 class Parser:
     """

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,17 +135,18 @@ AnfNodePtrList TopoSort(const AnfNodePtr &root, const SuccFunc &succ, const Incl
         if (fg != nullptr && fg->return_node() == next) {
           continue;
         }
-        constexpr auto recursive_level = 2;
         if (exclude_circle_node) {
-          MS_LOG(INFO) << "Graph cycle exists, exclude circle strike node: " << next->DebugString(recursive_level);
+          MS_LOG(INFO) << "Graph cycle exists, exclude circle strike node: "
+                       << next->DebugString(AnfNode::DebugStringLevel::kLevel2);
           continue;
         }
         // To dump all nodes in a circle.
-        MS_LOG(ERROR) << "Graph cycle exists, strike node: " << next->DebugString(recursive_level) << "\nCircle is: ";
+        MS_LOG(ERROR) << "Graph cycle exists, strike node: " << next->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                      << "\nCircle is: ";
         auto circle_len = DumpSortingCircleList(todo, next, seen);
         DumpSortingCircleIr(todo, next, seen);
         MS_LOG(INTERNAL_EXCEPTION) << "Graph cycle exists, size: " << circle_len
-                                   << ", strike node: " << next->DebugString(recursive_level);
+                                   << ", strike node: " << next->DebugString(AnfNode::DebugStringLevel::kLevel2);
       }
     } else if (incl > EXCLUDE) {  // Not NOFOLLOW or EXCLUDE
       MS_LOG(INTERNAL_EXCEPTION) << "The result of include(node) must be one of: \"follow\", \"nofollow\", \"exclude\"";

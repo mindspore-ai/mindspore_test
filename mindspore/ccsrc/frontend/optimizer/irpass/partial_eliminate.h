@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,8 @@ class PartialEliminater : public AnfVisitor {
     }
     // {X, Ys, Xs} if Xs has monad
     if (!IsValueNode<FuncGraph>(X_)) {
-      constexpr auto recursive_level = 2;
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
-        << "Not support yet as X_ is not a funcgraph. node: " << node->DebugString(recursive_level);
+        << "Not support yet as X_ is not a funcgraph. node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
     }
     auto fg = GetValueNode<FuncGraphPtr>(X_);
     MS_EXCEPTION_IF_NULL(fg);
