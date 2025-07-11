@@ -1903,6 +1903,10 @@ def tensor_gelu(input, *, approximate):
     return gelu(input, approximate)
 
 
+def tensor_bernoulli_(input, p, seed, offset):
+    raise RuntimeError("'bernoulli_' is not supported on this device.")
+
+
 def deprecated_pixel_shuffle(input, upscale_factor):
     return F.pixel_shuffle(input, upscale_factor)
 

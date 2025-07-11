@@ -5149,6 +5149,18 @@ def bernoulli_ext(input, *, generator=None):
     return bernoulli_ext_(input, seed, offset)
 
 
+def bernoulli_(input, p=0.5, *, generator=None):
+    r"""
+    bernoulli_(input, p=0.5, *, generator=None) -> Tensor
+
+    In-place version of :func:`mindspore.ops.bernoulli_ext`.
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return ops.functional_overload.bernoulli_(input, p, seed, offset)
+
+
 def bessel_i1(x):
     r"""
     Computes the first order modified Bessel function of the first kind for each element input.

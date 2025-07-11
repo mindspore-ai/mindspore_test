@@ -1,0 +1,22 @@
+#operator bernoulli_
+inplace_bernoulli_tensor:
+    args:
+        input:
+            dtype: tensor
+        p:
+            dtype: tensor
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceBernoulliTensorAscend

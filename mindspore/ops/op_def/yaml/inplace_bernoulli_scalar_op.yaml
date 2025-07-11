@@ -1,0 +1,23 @@
+#operator bernoulli_
+inplace_bernoulli_scalar:
+    args:
+        input:
+            dtype: tensor
+        p:
+            dtype: float
+            type_cast: int, bool
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    labels:
+        side_effect_mem: True
+    dispatch:
+        enable: True
+        Ascend: InplaceBernoulliScalarAscend

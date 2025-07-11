@@ -1,0 +1,5 @@
+bernoulli_:
+  description: |
+    bernoulli_(input, p, seed, offset) -> Tensor
+
+    Inner function, used for Tensor.bernoulli_.
