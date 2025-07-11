@@ -379,6 +379,11 @@
         返回：
             OrderedDict类型，返回参数字典。
 
+    .. py:method:: pipeline_segment
+        :property:
+
+        `pipeline_segment` 表示当前Cell所在的segment。
+
     .. py:method:: pipeline_stage
         :property:
 
