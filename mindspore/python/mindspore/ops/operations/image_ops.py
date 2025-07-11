@@ -102,19 +102,19 @@ class AdjustContrastv2(Primitive):
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-    >>> images = Tensor([[[1.0, 2.0, 3.0],
-    ...       [4.0, 5.0, 6.0]],
-    ...     [[7.0, 8.0, 9.0],
-    ...       [10.0, 11.0, 12.0]]], mstype.float32)
-    >>> contrast_factor = Tensor(2., mstype.float32)
-    >>> adjustcontrastv2 = AdjustContrastv2()
-    >>> output = adjustcontrastv2(images, contrast_factor)
-    >>> print(output)
-    [[[-3.5 -2.5 -1.5]
-      [ 2.5  3.5  4.5]]
-    <BLANKLINE>
-     [[ 8.5  9.5 10.5]
-      [14.5 15.5 16.5]]]
+        >>> images = Tensor([[[1.0, 2.0, 3.0],
+        ...       [4.0, 5.0, 6.0]],
+        ...     [[7.0, 8.0, 9.0],
+        ...       [10.0, 11.0, 12.0]]], mstype.float32)
+        >>> contrast_factor = Tensor(2., mstype.float32)
+        >>> adjustcontrastv2 = AdjustContrastv2()
+        >>> output = adjustcontrastv2(images, contrast_factor)
+        >>> print(output)
+        [[[-3.5 -2.5 -1.5]
+          [ 2.5  3.5  4.5]]
+        <BLANKLINE>
+         [[ 8.5  9.5 10.5]
+          [14.5 15.5 16.5]]]
     """
 
     @prim_attr_register

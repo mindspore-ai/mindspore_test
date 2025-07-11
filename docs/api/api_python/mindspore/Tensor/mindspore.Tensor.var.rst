@@ -30,7 +30,7 @@ mindspore.Tensor.var
         - :func:`mindspore.Tensor.mean` ：通过对Tensor中的所有元素求平均值来减少Tensor的维数。
         - :func:`mindspore.Tensor.std` ：计算沿指定轴的标准差。
 
-    .. py:method:: Tensor.var(dim=None, *, correction=1, keepdim=False) -> Tensor
+    .. py:method:: mindspore.Tensor.var(dim=None, *, correction=1, keepdim=False) -> Tensor
         :noindex:
 
     计算指定维度 `dim` 上的方差。 `dim` 可以是单个维度、维度列表，也可以是 `None` ， 表示移除所有维度。
