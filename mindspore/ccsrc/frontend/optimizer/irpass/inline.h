@@ -172,11 +172,7 @@ class InlinerBase : public AnfVisitor {
       // we move the whole fg nodes.
       auto res_node = InlineForUniqueUse(node, fg, args, inputs);
       if (res_node != nullptr) {
-        auto node_abs = node->abstract();
-        auto res_node_abs = res_node->abstract();
-        if (node_abs != nullptr && (res_node_abs == nullptr || !res_node_abs->isa<abstract::AbstractRefTensor>())) {
-          res_node->set_abstract(node_abs);
-        }
+        SetAbstractForNewNode(node, res_node);
         return res_node;
       }
     } else {
@@ -412,6 +408,35 @@ class InlinerBase : public AnfVisitor {
     }
     graph_branch_cache_[fg] = has_branch;
     return has_branch;
+  }
+
+  void SetAbstractForNewNode(const AnfNodePtr &old_node, const AnfNodePtr &new_node) {
+    const auto &old_abs = old_node->abstract();
+    if (!old_abs) {
+      return;
+    }
+
+    auto new_abs = new_node->abstract();
+    if (!new_abs) {
+      new_node->set_abstract(old_abs);
+      return;
+    }
+
+    if (new_abs->isa<abstract::AbstractRefTensor>()) {
+      return;
+    }
+
+    const auto &old_value = old_abs->BuildValue();
+    const auto &new_value = new_abs->BuildValue();
+    if (old_value == kValueAny && new_value != kValueAny) {
+      MS_LOG(DEBUG) << "Skip setting abstract for new node: Old node has ValueAny while new node has concrete value.\n"
+                    << "Old node: " << old_node->DebugString() << ", New node: " << new_node->DebugString() << "\n"
+                    << "Old abstract: " << old_abs->ToString() << ", New abstract: " << new_abs->ToString() << "\n"
+                    << "Old value: " << old_value->ToString() << ", New value: " << new_value->ToString();
+      return;
+    }
+
+    new_node->set_abstract(old_abs);
   }
 
   bool is_checked_{false};

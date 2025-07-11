@@ -203,6 +203,21 @@ def test_inline(tag):
 
     return fns[tag]
 
+def test_inline_use_new_abstract(tag):
+    """
+    Feature: Inline.
+    Description: Use new abstract value after inline.
+    Expectation: New abstract value is used after inline.
+    """
+    fns = FnDict()
+
+    data = Tensor(np.arange(0, 2).astype(np.int32))
+
+    @fns
+    def func():
+        return data + 0
+
+    return fns[tag]
 
 def test_inline_successively(tag):
     """ test_inline_successively """

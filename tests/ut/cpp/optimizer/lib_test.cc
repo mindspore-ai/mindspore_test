@@ -116,6 +116,34 @@ TEST_F(TestOptLib, test_inline) {
   ASSERT_TRUE(CheckOpt(new_graph, after, patterns));
 }
 
+/// Feature: Inline.
+/// Description: Use new abstract value after inline.
+/// Expectation: New abstract value is used after inline.
+TEST_F(TestOptLib, test_inline_use_new_abstract) {
+  FuncGraphPtr func = getPyFun.CallAndParseRet("test_inline_use_new_abstract", "func");
+  // add infer and renormalize
+  std::shared_ptr<mindspore::pipeline::Resource> res = std::make_shared<mindspore::pipeline::Resource>();
+  AnalysisResult result = pipeline::AbstractAnalyze(res->engine(), func, {}, res->is_load());
+  FuncGraphPtr new_graph = pipeline::ProgramSpecialize(res->engine(), func, result.context);
+
+  FuncGraphPtr clone1 = BasicClone(new_graph);
+  OptimizerPtr optimizer1 = std::make_shared<Optimizer>("ut_test1", std::make_shared<pipeline::Resource>());
+  SubstitutionList transform1(std::vector<SubstitutionPtr>({irpass.arithmetic_simplify_}));
+  transform1(clone1, optimizer1);
+
+  FuncGraphPtr clone2 = BasicClone(clone1);
+  OptimizerPtr optimizer2 = std::make_shared<Optimizer>("ut_test2", std::make_shared<pipeline::Resource>());
+  SubstitutionList transform2(std::vector<SubstitutionPtr>({irpass.inline_}));
+  transform2(clone2, optimizer2);
+
+  auto output = clone2->output();
+  ASSERT_TRUE(output != nullptr);
+  auto abstract = output->abstract();
+  ASSERT_TRUE(abstract != nullptr);
+  auto tensor_value = abstract->BuildValue();
+  ASSERT_TRUE(tensor_value != kValueAny);
+}
+
 TEST_F(TestOptLib, test_inline_successively) {
   FuncGraphPtr before = getPyFun.CallAndParseRet("test_inline_successively", "before");
   FuncGraphPtr after = getPyFun.CallAndParseRet("test_inline_successively", "after");
