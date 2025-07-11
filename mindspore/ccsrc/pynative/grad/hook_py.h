@@ -17,6 +17,8 @@
 #ifndef MINDSPORE_CCSRC_PYBIND_API_IR_HOOK_PY_H_
 #define MINDSPORE_CCSRC_PYBIND_API_IR_HOOK_PY_H_
 
+#include <map>
+#include <unordered_map>
 #include <memory>
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
@@ -41,14 +43,6 @@ struct PyTensorBackwardNodePreHook : public BackwardNodePreHook {
   size_t output_idx_;
 };
 
-using CppHookFn = std::function<tensor::TensorPtr(const tensor::TensorPtr &)>;
-struct CppTensorBackwardNodePreHook : public BackwardNodePreHook {
-  CppTensorBackwardNodePreHook(CppHookFn hook_fn, size_t output_idx);
-  void operator()(ValuePtrList *grad) override;
-  CppHookFn hook_fn_;
-  size_t output_idx_;
-};
-
 struct RegisterHook {
   /// \brief Register a backward hook
   ///
@@ -61,8 +55,6 @@ struct RegisterHook {
   PYNATIVE_EXPORT static void RemoveTensorBackwardHookOfGraph(uint64_t tensor_id, uint64_t handle_id);
   PYNATIVE_EXPORT static void RemoveTensorBackwardHook(uint64_t handle_id);
   PYNATIVE_EXPORT static py::list GetHooks(const tensor::TensorPtr &tensor);
-  PYNATIVE_EXPORT static unsigned RegisterCppTensorBackwardHook(const tensor::TensorPtr &tensor, const CppHookFn &hook);
-  PYNATIVE_EXPORT static void RemoveCppTensorBackwardHook(const tensor::TensorPtr &tensor, unsigned hook_id);
 
   static void ClearHookMap();
 };
