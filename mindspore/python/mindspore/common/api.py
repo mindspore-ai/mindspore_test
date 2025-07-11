@@ -87,9 +87,17 @@ def _cells_hook_hash(fn, obj):
         if fn in fn_set:
             return
 
+        def _get_cell_contents(cell):
+            try:
+                return cell.cell_contents
+            except ValueError:
+                return None
+
         fn_set.add(fn)
         for free_var in fn.__closure__:
-            obj = free_var.cell_contents
+            obj = _get_cell_contents(free_var)
+            if obj is None:
+                continue
             if isinstance(obj, (types.FunctionType, types.MethodType)):
                 collect_cell_free_var(obj, cells_set)
             elif isinstance(obj, ms.nn.Cell):
@@ -2253,8 +2261,7 @@ class _CellGraphExecutor:
 
     def get_optimize_graph_proto(self, obj):
         """Return optimize graph binary proto."""
-        exec_id = obj.phase + "." + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key + "." \
-            + str(obj.cells_hook_hash)
+        exec_id = _real_phase(obj.phase, obj)
         if self._graph_executor.has_compiled(exec_id) is False:
             return None
         graph_proto = self._graph_executor.get_optimize_graph_proto(exec_id)
