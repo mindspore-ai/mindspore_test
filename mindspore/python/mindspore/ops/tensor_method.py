@@ -1858,6 +1858,8 @@ def all_gather_matmul(
 def conv3d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     raise NotImplementedError('conv3d only supports Ascend.')
 
+def tensor_remainder_(input, other):
+    return _tensor_mod(input, other)
 
 def tensor_floor_divide_(input, other):
     return _tensor_floordiv(input, other)
