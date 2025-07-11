@@ -14,6 +14,19 @@
 # limitations under the License.
 # ============================================================================
 
+package_check() {
+  absolute_path=$1
+  relative_path=${absolute_path#${BASEPATH}/}
+  expected_sha256=`git show HEAD:${relative_path} | grep sha256 | awk -F: '{print $NF}'`
+  actual_sha256=`sha256sum ${absolute_path} | awk '{print $1}'`
+  if [[ "${expected_sha256}" != "${actual_sha256}" ]]; then
+    echo "[ERROR] SHA256 hash of ${absolute_path} dose not match expected value"
+    echo "expected: ${expected_sha256}"
+    echo "actual: ${actual_sha256}"
+    exit 1
+  fi
+}
+
 if [[ -n "${MS_INTERNAL_KERNEL_HOME}" ]]; then
   echo "Use local MS_INTERNAL_KERNEL_HOME : ${MS_INTERNAL_KERNEL_HOME}"
   return
@@ -35,6 +48,8 @@ if [[ ${internal_file_lines} -eq 3 ]]; then
   echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
   return
 fi
+
+package_check ${internal_file_name}
 tar --warning=no-unknown-keyword -zxf ${internal_file_name} -C ${file_path}
 if [[ $? -ne 0 ]]; then
   echo "[WARNING] Unzip ms_kernels_internal.tar.gz FAILED!"
@@ -56,6 +71,8 @@ if [[ ${dependency_file_lines} -eq 3 ]]; then
   echo "[WARNING] 'git lfs install' and retry downloading using 'git lfs pull'."
   return
 fi
+
+package_check ${dependency_file_name}
 tar --warning=no-unknown-keyword -zxf ${dependency_file_name} -C ${file_path}
 if [[ $? -ne 0 ]]; then
   echo "[WARNING] Unzip ms_kernels_dependency.tar.gz FAILED!"
