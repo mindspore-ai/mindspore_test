@@ -1,7 +1,7 @@
 mindspore.experimental.optim.lr_scheduler.CyclicLR
 =======================================================
 
-.. py:class:: mindspore.experimental.optim.lr_scheduler.CyclicLR(optimizer, base_lr, max_lr, step_size_up=2000, step_size_down=None, mode='triangular', gamma=1., scale_fn=None, scale_mode='cycle', last_epoch=-1)
+.. py:class:: mindspore.experimental.optim.lr_scheduler.CyclicLR(optimizer, base_lr, max_lr, step_size_up=2000, step_size_down=None, mode='triangular', gamma=1.0, scale_fn=None, scale_mode='cycle', last_epoch=-1)
 
     根据循环学习率策略（CLR）设置每个参数组的学习率。该策略以恒定频率在两个边界之间循环学习率值，详情请参考论文 `Cyclical Learning Rates for Training Neural Networks <https://arxiv.org/abs/1506.01186>`_。两个边界之间的距离可以在每次迭代或每个周期的基础上缩放。
 
