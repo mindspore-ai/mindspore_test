@@ -96,6 +96,14 @@ class DynamicProfilerMonitorBase(Callback):
             run_context (RunContext): Context of the train running.
         """
         prof_json = self._get_prof_args()
+        if not prof_json:
+            return
+        if self._is_dyno:
+            # Dyno monitor process
+            if self.NPU_MONITOR_START in prof_json:
+                self._call_dyno_monitor(prof_json)
+                return
+
         prof_args = DynamicProfilerConfigContext(prof_json)
         if not prof_args.is_valid:
             logger.error("Dynamic profile json is not valid, please check the json file.")
