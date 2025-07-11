@@ -125,14 +125,16 @@ def get_args():
         default=-1,
         type=int,
         choices=[0, 1, 2, 3],
-        help="specifies simulation level. When this argument is set, msrun only spawns one process "
-             "but export RANK_SIZE with value worker_num and RANK_ID with value sim_rank_id."
+        help="specifies simulation level. This argument activates dryrun mode, functioning "
+             "equivalently to environment variable 'MS_SIMULATION_LEVEL' while having higher priority."
     )
     parser.add_argument(
         "--sim_rank_id",
         default=-1,
         type=int,
-        help="specifies simulation process's rank id. Only one process is spawned in simulation scenario."
+        help="specifies simulation process's rank id. When this argument is set, only one process "
+             "is spawned on dryrun mode, functioning equivalently to environment variable 'RANK_ID' "
+             "while having higher priority."
     )
     parser.add_argument(
         "--rank_table_file",

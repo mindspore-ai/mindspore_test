@@ -179,9 +179,12 @@ class _ProcessManager:
         self.is_simulation = self.sim_level != -1
         if self.is_simulation:
             os.environ["MS_SIMULATION_LEVEL"] = str(self.sim_level)
+            if self.sim_rank_id == -1:
+                self.sim_rank_id = int(os.getenv("RANK_ID", "-1"))
         elif os.getenv("MS_SIMULATION_LEVEL"):
             self.is_simulation = True
-            self.sim_rank_id = int(os.getenv("RANK_ID", "-1"))
+            if self.sim_rank_id == -1:
+                self.sim_rank_id = int(os.getenv("RANK_ID", "-1"))
             if os.getenv("RANK_SIZE"):
                 self.exported_rank_size = os.getenv("RANK_SIZE")
         # If sim_rank_id is set, single worker can be started.
