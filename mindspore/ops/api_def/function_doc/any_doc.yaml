@@ -20,6 +20,7 @@ any:
         Tensor(shape=[], dtype=Bool, value= True)
 
     .. function:: any(input, dim, keepdim=False) -> Tensor
+        :noindex:
 
     Check if ``True`` is present in the specified dimension of `input` .
 

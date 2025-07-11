@@ -130,7 +130,7 @@ def aclnn_cache(enable_global_cache=False, cache_queue_length=10000):
     Args:
         enable_global_cache (bool): Set the calnn cache to global when GRAPH_MODE.
             Default: ``False``.
-        cache_queue_length (int): Set the cache queue length.
+        cache_queue_length (int, optional): Set the cache queue length.
             Default: ``10000``.
 
     Examples:

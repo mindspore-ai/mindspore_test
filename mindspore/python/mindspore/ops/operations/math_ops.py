@@ -1231,7 +1231,7 @@ class Heaviside(Primitive):
             0, & \text { if x }<0 \\
             \text { values, } & \text { if x }==0 \\
             1, & \text { if x }>0
-            \end{array}\right
+            \end{array}\right.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

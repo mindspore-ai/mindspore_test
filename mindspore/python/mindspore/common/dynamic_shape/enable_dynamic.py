@@ -129,9 +129,9 @@ def enable_dynamic(**kwargs):
 
     Args:
         kwargs (dict): The input types are Tensor, tuple[Tensor] and list[Tensor]. If one or
-        more dimensions in the shape of the parameter need to be specified as dynamic shapes,
-        the corresponding dimensions in the shape can be set to None. If the shape that needs
-        to generate specified parameters is dynamic rank, the shape can be set to None.
+            more dimensions in the shape of the parameter need to be specified as dynamic shapes,
+            the corresponding dimensions in the shape can be set to None. If the shape that needs
+            to generate specified parameters is dynamic rank, the shape can be set to None.
 
     Returns:
         Function, return a function that specifies the dynamic shape information of the parameter.
