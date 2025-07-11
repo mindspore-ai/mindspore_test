@@ -435,7 +435,7 @@ bool OverlapGradReduce::DoOverlapGradReduce(const KernelGraphPtr &kernel_graph, 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto is_reorder_dw_dx_in_previous_pass =
-    (ms_context->get_param<bool>(MS_CTX_GRAD_COMM_OVERLAP) ||
+    (!ms_context->get_param<std::string>(MS_CTX_GRAD_COMM_OVERLAP).empty() ||
      parallel::ParallelContext::GetInstance()->enable_fine_grained_micro_interleaved());
   if (is_reorder_dw_dx_in_previous_pass) {
     // Insert depend according grad_reduce in order

@@ -137,7 +137,7 @@ void OverlapAll2All(const KernelGraphPtr &kernel_graph, const CNodeMapMap &forwa
         common::AnfAlgo::InsertDepend(forward_a2a_inputs.at(j), backward_a2a_output, manager, kernel_graph,
                                       "1b1f_depend1");
       }
-      if (j < forward_a2a_outputs.size() - 1) {
+      if (forward_a2a_outputs.count(j + 1) != 0) {
         for (const auto &forward_a2a_output : forward_a2a_outputs.at(j + 1)) {
           common::AnfAlgo::InsertDepend(backward_a2a_inputs.at(j), forward_a2a_output, manager, kernel_graph,
                                         "1b1f_depend2");
