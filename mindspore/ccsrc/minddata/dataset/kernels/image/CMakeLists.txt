@@ -86,5 +86,8 @@ add_library(kernels-image OBJECT
     vertical_flip_op.cc
     to_tensor_op.cc
     ${FFMPEG_DEPEND_FILES})
+if(ENABLE_D)
+    include(${CMAKE_SOURCE_DIR}/cmake/metadef_variables.cmake)
+endif()
 
 add_dependencies(kernels-image kernels-dvpp-image)
