@@ -460,6 +460,11 @@ void *AscendDeviceResManager::GetCopyDataStream() const {
   return ascend_res_manager_->GetCopyDataStream();
 }
 
+std::shared_ptr<AddressAllocator> AscendDeviceResManager::pin_mem_allocator() const {
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetPinMemAllocator();
+}
+
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

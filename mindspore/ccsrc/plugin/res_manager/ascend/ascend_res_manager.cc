@@ -293,6 +293,21 @@ void RegisterLoadCollectiveCallback(const std::function<CollectiveCommunicationL
   gLoadCollectiveCommLibCallback = func;
 }
 
+void *PinMemoryAllocator::Alloc(size_t size, uint32_t) {
+  MS_EXCEPTION_IF_NULL(swap_manager_);
+  auto host_ptr = swap_manager_->AllocHostMemory(size);
+  if (host_ptr == nullptr) {
+    MS_LOG(ERROR) << "Allocate pin memory failed, size: " << size;
+  }
+  return host_ptr;
+}
+
+bool PinMemoryAllocator::Free(void *address_ptr) {
+  MS_EXCEPTION_IF_NULL(swap_manager_);
+  swap_manager_->FreeHostMemory(address_ptr);
+  return true;
+}
+
 void AscendResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -351,6 +366,7 @@ void AscendResManager::Initialize() {
   }
 
   enable_memory_tracker_ = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  pin_mem_allocator_ = std::make_shared<PinMemoryAllocator>(swap_manager_);
   initialized_ = true;
 }
 
@@ -418,37 +434,24 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
     return false;
   }
   AscendHalManager::GetInstance().SetContext(device_id_);
-
-  void *device_ptr = nullptr;
-  if (address->GetDeviceType() == device::DeviceType::kCPU) {
-    auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
-    address->set_ptr(host_ptr);
-    address->set_from_mem_pool(true);
-    address->IncreaseNewRefCount();
-    return true;
+  if (stream_id == UINT32_MAX) {
+    stream_id = address->stream_id();
   }
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  AscendHalManager::GetInstance().SetContext(device_id);
-
-  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+  void *device_ptr = nullptr;
+  const auto &allocator = address->allocator();
   if (MS_UNLIKELY(allocator != nullptr)) {
     device_ptr = allocator->Alloc(address->GetSize(), stream_id);
   } else {
-    if (stream_id == UINT32_MAX) {
-      stream_id = address->stream_id();
-    }
     device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
                                                     address->need_recycle(), stream_id);
-    address->set_from_mem_pool(true);
   }
 
   if (!device_ptr) {
     return false;
   }
 
+  address->set_from_mem_pool(true);
   address->set_ptr(device_ptr);
   address->IncreaseNewRefCount();
   if (enable_memory_tracker_) {
@@ -514,26 +517,21 @@ void AscendResManager::FreeForHete(HeterogeneousInfoPtr hete_info) const {
 void AscendResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
   void *device_ptr = address->GetMutablePtr();
-  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+  auto allocator = address->allocator();
 
   if (device_ptr == nullptr) {
     return;
   }
 
+  if (!address->from_mem_pool()) {
+    MS_LOG(DEBUG) << "device address:" << address << " ptr:" << device_ptr << " not from pool";
+    return;
+  }
+
+  MS_LOG(DEBUG) << "Free memory from device address:" << address << " ptr:" << device_ptr;
   if (MS_UNLIKELY(allocator != nullptr)) {
     allocator->Free(device_ptr);
   } else {
-    if (!address->from_mem_pool()) {
-      MS_LOG(DEBUG) << "device address:" << address << " ptr:" << device_ptr << " not from pool";
-      return;
-    }
-
-    MS_LOG(DEBUG) << "Free memory from device address:" << address << " ptr:" << device_ptr;
-    if (address->GetDeviceType() == DeviceType::kCPU) {
-      swap_manager_->FreeHostMemory(device_ptr);
-      address->set_ptr(nullptr);
-      return;
-    }
     FreeMemory(device_ptr);
   }
   address->set_ptr(nullptr);

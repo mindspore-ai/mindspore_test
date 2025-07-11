@@ -984,21 +984,6 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
     return;
   }
 
-  if (graph_parameter_store->GetOffloaded(outer_index, inner_index)) {
-    MS_EXCEPTION_IF_NULL(tensor->device_address());
-    if (tensor->device_address()->GetDeviceType() != kernel_tensor->device_address()->GetDeviceType()) {
-      MS_LOG(EXCEPTION) << "Device type of tensor's DeviceAddress[" << tensor->device_address()->GetDeviceType()
-                        << "] is different from device type of KernelTensor's DeviceAddress["
-                        << kernel_tensor->device_address()->GetDeviceType() << "].";
-    }
-    const auto tensor_device_address = std::dynamic_pointer_cast<device::DeviceAddress>(tensor->device_address());
-    MS_EXCEPTION_IF_NULL(tensor_device_address);
-    MS_LOG(DEBUG) << "Set DeviceAddress[" << tensor_device_address.get()
-                  << "] to KernelTensor for offload parameter: " << node->fullname_with_scope();
-    kernel_tensor->set_device_address(tensor_device_address);
-    return;
-  }
-
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device_tensor->device_name(), device_tensor->device_id()});
 
@@ -1107,6 +1092,32 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   }
 }
 
+void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr& tensor_address,
+                               const KernelTensorPtr& kernel_tensor, const device::DeviceAddressPtr& device_address) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  MS_EXCEPTION_IF_NULL(tensor_address);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(device_address);
+  const auto tensor_address_type = tensor_address->GetDeviceType();
+  const auto device_address_type = device_address->GetDeviceType();
+  if (tensor_address_type != device_address_type) {
+    MS_LOG(EXCEPTION) << "Device type of tensor's DeviceAddress[" << tensor->device_address()->GetDeviceType()
+                      << "] is different from device type of KernelTensor's DeviceAddress["
+                      << kernel_tensor->device_address()->GetDeviceType() << "].";
+  }
+  auto allocator = device_address->allocator();
+  const auto size = device_address->GetSize();
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU && allocator != nullptr) {
+    tensor_address->set_allocator(allocator);
+    auto pin_mem_ptr = allocator->Alloc(size, kDefaultStreamIndex);
+    if (pin_mem_ptr != nullptr) {
+      memcpy_s(pin_mem_ptr, size, tensor_address->GetPtr(), size);
+    }
+    tensor_address->set_ptr(pin_mem_ptr);
+  }
+  kernel_tensor->set_device_address(tensor_address);
+}
+
 void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
                       bool is_first_user, size_t stream_id, bool enable_parallel_dispatch,
                       bool *has_h2d_copy = nullptr) {
@@ -1139,6 +1150,10 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   }
   auto device_tensor = kernel_tensor->device_address();
 
+  if (graph_parameter_store->GetOffloaded(outer_index, inner_index)) {
+    PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
+    MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
+  }
   if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
     PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
