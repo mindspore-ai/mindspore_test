@@ -16,7 +16,7 @@ target_link_directories(cust_ascendc_op_proto PRIVATE
 )
 target_link_libraries(
   cust_ascendc_op_proto
-  PRIVATE intf_pubs
+  PRIVATE intf_pub
           exe_graph
           register
           tiling_api

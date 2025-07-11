@@ -17,7 +17,7 @@ diff -uprN securec_original/CMakeLists.txt securec_modified/CMakeLists.txt
 +        SET(CMAKE_C_FLAGS "$ENV{CFLAGS} -fno-inline-functions -fno-omit-frame-pointer \
 +            -fstack-protector-all -fPIC -D_FORTIFY_SOURCE=2 -O2")
 +    else()
-+        SET(CMAKE_C_FLAGS "$ENV{CFLAGS} -fPIC -Wl,-z,relro,-z,now,-z,noexecstack -fvisibility=hidden \
++        SET(CMAKE_C_FLAGS "$ENV{CFLAGS} -fPIC -Wl,-z,relro,-z,now,-z,noexecstack \
 +            -Wno-nullability-completeness -fno-inline-functions -fno-omit-frame-pointer \
 +            -fstack-protector-all -fPIC -D_FORTIFY_SOURCE=2 -O2 -D_LIBCPP_INLINE_VISIBILITY='' \
 +            -D'_LIBCPP_EXTERN_TEMPLATE(...)='")
