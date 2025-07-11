@@ -216,7 +216,7 @@ class CannLibName:
 
 class DynoMode:
     """dyno mode"""
-    DYNO_DAEMON = "KINETO_USE_DAEMON"
+    DYNO_DAEMON = "MSMONITOR_USE_DAEMON"
 
 
 class HostSystem(Enum):
