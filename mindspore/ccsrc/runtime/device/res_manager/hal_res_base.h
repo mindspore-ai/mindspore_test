@@ -291,6 +291,8 @@ class RES_EXPORT HalResBase {
 
   virtual bool SyncAllEvents() { return false; }
 
+  virtual std::shared_ptr<AddressAllocator> GetPinMemAllocator() { return nullptr; };
+
  protected:
   ResKey res_key_;
 };

@@ -292,6 +292,7 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   for (const auto &item : nodes_list) {
     MS_EXCEPTION_IF_NULL(item);
     auto real_device_context = device::FetchRealDeviceContext(item, device_context);
+    auto origin_device_context = real_device_context;
     real_device_context = GetDeviceContextForOffloadedParameter(real_device_context, item);
     MS_EXCEPTION_IF_NULL(real_device_context);
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
@@ -329,6 +330,13 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
           MS_LOG(INFO) << "Node:" << item->fullname_with_scope() << " debug name:" << item->DebugString()
                        << " is not used in the graph " << graph->graph_id();
           device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
+        }
+      }
+      if (origin_device_context != real_device_context) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU
+            && origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+          device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
+          MS_LOG(DEBUG) << "Use PinMemoryAllocator for offloaded parameter. Parameter: " << item->fullname_with_scope();
         }
       }
       device_address->SetNodeIndex(item, index);
@@ -565,6 +573,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       }
 
       auto real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      auto origin_device_context = real_device_context;
       if (real_device_context != nullptr && is_move_to) {
         if (move_to == kToCpu) {
           real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
@@ -604,6 +613,14 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
       auto device_address = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (origin_device_context != real_device_context) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU
+            && origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+          device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
+          MS_LOG(DEBUG) << "Use PinMemoryAllocator for MoveTo cpu output. Kernel: " << kernel->fullname_with_scope();
+        }
+      }
       device_address->SetNodeIndex(kernel, i);
       if (is_from_persistent_mem) {
         device_address->set_from_persistent_mem(true);

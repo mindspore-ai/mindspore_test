@@ -310,6 +310,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
+  virtual std::shared_ptr<AddressAllocator> pin_mem_allocator() const { return nullptr; }
+
   virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";

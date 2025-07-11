@@ -140,6 +140,7 @@ class AscendDeviceResManager : public DeviceResManager {
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
+  std::shared_ptr<AddressAllocator> pin_mem_allocator() const override;
 
  private:
   bool AllocateForHete(DeviceAddress *const &address, HeterogeneousInfoPtr hete_info) const;
