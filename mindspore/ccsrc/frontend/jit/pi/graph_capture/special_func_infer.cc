@@ -59,7 +59,7 @@ bool JustCallAndSetRes(CallNode *call_node, GraphBuilder *unused) {
   }
 
   std::vector<py::object> args;
-  std::transform(call_node->getInputs().begin() + 1, call_node->getInputs().end(), std::back_inserter(args),
+  std::transform(call_node->inputs().begin() + 1, call_node->inputs().end(), std::back_inserter(args),
                  [](ValueNode *n) { return n->GetVobj() ? n->GetVobj()->GetPyObject() : py::object(); });
   auto pair = Utils::PackCallStackArgs(args, call_node->GetOpcode(), call_node->kw_names());
   if (pair.first.ptr() == nullptr) {
@@ -122,7 +122,7 @@ static bool CallNodeReturnConst(CallNode *call_node, Graph *sub_graph, AObject *
 
 bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guard_depth) {
   std::vector<std::pair<TracePtr, GuardLevel>> traces;
-  for (auto i : call_node->getInputs()) {
+  for (auto i : call_node->inputs()) {
     if (i->IsConstantValue()) {
       continue;
     }
@@ -185,7 +185,7 @@ static bool InferRegistryGet(CallNode *call_node, GraphBuilder *unused = nullptr
   JustCallAndSetRes(call_node);
 
   py::object func = call_node->GetVobj()->GetPyObject();
-  if (call_node->getInputs().back()->GetOpcode() == LOAD_CONST && func.ptr() != nullptr) {
+  if (call_node->inputs().back()->GetOpcode() == LOAD_CONST && func.ptr() != nullptr) {
     return CallNodeReturnConst(call_node, g, call_node->GetVobj());
   }
   return false;
@@ -217,7 +217,7 @@ void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param
 
   // prepare parameters
   bool param_ready = decorated->GetPyObject().ptr() != nullptr;
-  for (size_t i = 1; param_ready && i < call_node->getInputs().size(); ++i) {
+  for (size_t i = 1; param_ready && i < call_node->inputs().size(); ++i) {
     AObject *tmp = call_node->input(i)->GetVobj();
     stack_args.emplace_back(tmp != nullptr ? tmp->GetPyObject() : py::object());
     param_ready = stack_args.back().ptr() != nullptr;
@@ -299,7 +299,7 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
   Graph *graph = call_node->GetGraph();
   MS_EXCEPTION_IF_NULL(graph);
   bool guard_inputs = call_node->GetVobj()->GetType() == AObject::kTypeAnyValue;
-  const auto &call_node_inputs = call_node->getInputs();
+  const auto &call_node_inputs = call_node->inputs();
   for (size_t i = 1; i < call_node_inputs.size(); ++i) {
     auto cur_input = call_node_inputs[i];
     MS_EXCEPTION_IF_NULL(cur_input);
@@ -569,7 +569,7 @@ static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
     return false;
   }
   ValueNode *target = call_node->input(1 + is_descr);
-  const auto &elem = self->getInputs();
+  const auto &elem = self->inputs();
   if (self->GetOpcode() != BUILD_LIST || elem.end() == std::find(elem.begin(), elem.end(), target)) {
     return false;  // erase any value
   }
@@ -605,7 +605,7 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
 
   ValueNode *dict_node = self;
   ValueNode *key_node = call_node->input(1 + is_method_descriptor);
-  ValueNode *default_node = call_node->getInputs().size() > (kDictPopParamsNum + is_method_descriptor)
+  ValueNode *default_node = call_node->inputs().size() > (kDictPopParamsNum + is_method_descriptor)
                               ? call_node->input(kDictPopParamsNum + is_method_descriptor)
                               : nullptr;
   // get key from dict
@@ -659,7 +659,7 @@ static bool SetForbiddenFuncInfo(CallNode *call_node, GraphBuilder *unused = nul
 }
 
 bool InferMappingGet(CallNode *call_node, GraphBuilder *unused = nullptr) {
-  if (call_node->getInputs().size() == BoundMethodInputSize &&
+  if (call_node->inputs().size() == BoundMethodInputSize &&
       call_node->input(0)->GetVobj()->GetType() == AbstractObjectBase::kTypeBoundMethod) {
     auto func_node = call_node->input(0);
     auto self = func_node->input(0);
@@ -732,7 +732,7 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *builder) {
   py::object method = FuncGraphBuilder::ConvertMethod("Tensor", "__setitem__");
   MS_EXCEPTION_IF_NULL(method.ptr());
   std::vector<ValueNode *> args = {self};
-  for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
+  for (size_t i = 1 + is_not_method; i < call_node->inputs().size(); ++i) {
     args.push_back(call_node->input(i));
   }
   StopTraceReason stop_reason = StopTraceReason::kNonStopTrace;
@@ -1013,7 +1013,7 @@ static bool CheckReferenced(Graph *graph, ValueNode *target) {
     if (op.MayDelete()) {
       continue;  // only read the variable
     }
-    const auto &used = maybe_ref->getInputs();
+    const auto &used = maybe_ref->inputs();
     if (used.end() == std::find(used.begin(), used.end(), target)) {
       continue;  // not used target
     }

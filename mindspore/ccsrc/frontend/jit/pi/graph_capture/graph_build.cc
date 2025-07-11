@@ -229,7 +229,7 @@ bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is
     if (Opcode(node->GetOpcode()).MayDelete() && ref_op.find(node->GetOpcode()) == ref_op.end()) {
       return false;
     }
-    const auto &args = node->getInputs();
+    const auto &args = node->inputs();
     return std::any_of(args.begin(), args.end(), [&old_node](ValueNode *i) { return i == old_node; });
   });
   if (is_referenced != nullptr) {
@@ -372,7 +372,7 @@ bool GraphBuilder::UnpackSequenceElements(ValueNode *node) {
 bool GraphBuilder::UnpackElements(ValueNode *node) {
   int opcode = node->GetOpcode();
   if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
-    std::for_each(node->getInputs().begin(), node->getInputs().end(), [this](ValueNode *i) { this->push(i); });
+    std::for_each(node->inputs().begin(), node->inputs().end(), [this](ValueNode *i) { this->push(i); });
   } else if (node->IsConstantValue()) {
     std::vector<ValueNode *> nodes = UnpackConstObject(node->GetVobj()->GetPyObject());
     std::for_each(nodes.begin(), nodes.end(), [this](ValueNode *i) { this->push(i); });
@@ -385,7 +385,7 @@ bool GraphBuilder::UnpackElements(ValueNode *node) {
 bool GraphBuilder::UnpackDict(ValueNode *map) {
   PyObject *map_object = map->GetVobj() ? map->GetVobj()->GetPyObject().ptr() : nullptr;
   if (map->GetOpcode() == BUILD_MAP) {
-    std::for_each(map->getInputs().begin(), map->getInputs().end(), [this](ValueNode *n) { this->push(n); });
+    std::for_each(map->inputs().begin(), map->inputs().end(), [this](ValueNode *n) { this->push(n); });
   } else if (map_object != nullptr && PyDict_Check(map_object)) {
     auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
     // guard dict keys, transform to const key map......
@@ -425,7 +425,7 @@ Py_ssize_t GetIterableSize(const ValueNode *iterable) {
   MS_LOG(DEBUG) << "Get iterable size from python object.";
   int op = iterable->GetOpcode();
   if (op == BUILD_LIST || op == BUILD_TUPLE || op == BUILD_MAP) {
-    return iterable->getInputs().size();
+    return iterable->inputs().size();
   }
 
   AObject *seq = iterable->GetVobj();
@@ -462,7 +462,7 @@ bool GraphBuilder::DoUnpack(const Instr &instr) {
   size_t elements_size = frame_.GetStacks().size();
   int iterable_opcode = iterable->GetOpcode();
   if (iterable_opcode == BUILD_LIST || iterable_opcode == BUILD_TUPLE) {
-    std::for_each(iterable->getInputs().begin(), iterable->getInputs().end(), [this](ValueNode *i) { this->push(i); });
+    std::for_each(iterable->inputs().begin(), iterable->inputs().end(), [this](ValueNode *i) { this->push(i); });
   } else if (iterable->IsConstantValue()) {
     std::vector<ValueNode *> nodes = UnpackConstObject(iterable->GetVobj()->GetPyObject());
     std::for_each(nodes.begin(), nodes.end(), [this](ValueNode *i) { this->push(i); });
@@ -540,7 +540,7 @@ bool GraphBuilder::DoBuildMapWithUnpack(const Instr &instr) {
   std::vector<ValueNode *> keys_values;
   std::for_each(iterables.begin(), iterables.end(), [this, &keys_values](auto node) {
     if (node->GetOpcode() == BUILD_MAP) {
-      std::for_each(node->getInputs().begin(), node->getInputs().end(),
+      std::for_each(node->inputs().begin(), node->inputs().end(),
                     [&keys_values](ValueNode *input) { keys_values.push_back(input); });
     } else {
       PyObject *key = nullptr;
@@ -696,8 +696,8 @@ bool GraphBuilder::DoYieldValue(const Instr &instr) {
   ValueNode *value = seek(0);
   result->AddInput(value);
   const int YIELD_COUNT_THRESHOLD = 1000;
-  if (result->getInputs().size() % YIELD_COUNT_THRESHOLD == 0) {
-    MS_LOG(INFO) << "yield too many value: " << result->getInputs().size();
+  if (result->inputs().size() % YIELD_COUNT_THRESHOLD == 0) {
+    MS_LOG(INFO) << "yield too many value: " << result->inputs().size();
   }
   return true;
 }
@@ -707,7 +707,7 @@ bool GraphBuilder::DoReturn(const Instr &instr) {
   if (graph_->GetGeneratorResult() == nullptr) {
     return true;
   }
-  const auto &inputs = graph_->GetGeneratorResult()->getInputs();
+  const auto &inputs = graph_->GetGeneratorResult()->inputs();
   std::for_each(inputs.begin(), inputs.end(), [this](ValueNode *i) { this->push(i); });
   DoBuildOp({BUILD_TUPLE, SizeToInt(inputs.size())});
   ValueNode *new_node = pop();
@@ -1395,7 +1395,7 @@ ValueNode *GraphBuilder::TransformDictSetItem(ValueNode *map, ValueNode *key, Va
   PyObject *map_object = map->GetVobj()->GetPyObject().ptr();
   std::vector<ValueNode *> elements;
   if (map->GetOpcode() == BUILD_MAP) {
-    elements = map->getInputs();
+    elements = map->inputs();
   } else if (map_object != nullptr) {
     auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
     // guard dict keys, transform to const key map......
@@ -1520,7 +1520,7 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
   }
   std::vector<ValueNode *> elements;
   if (map->GetOpcode() == BUILD_LIST) {
-    elements = map->getInputs();
+    elements = map->inputs();
   } else if (UnpackElements(map)) {
     // check type when cast
     auto seq = dynamic_cast<AbstractSequence *>(map->GetVobj());
@@ -1684,8 +1684,8 @@ bool GraphBuilder::DoLoadConst(const Instr &instr) {
 bool GraphBuilder::DoListToTuple(const Instr &instr) {
   ValueNode *list = pop();
   if (list->GetOpcode() == BUILD_LIST) {
-    std::for_each(list->getInputs().begin(), list->getInputs().end(), [this](ValueNode *i) { this->push(i); });
-    return DoBuildOp({BUILD_TUPLE, SizeToInt(list->getInputs().size())});
+    std::for_each(list->inputs().begin(), list->inputs().end(), [this](ValueNode *i) { this->push(i); });
+    return DoBuildOp({BUILD_TUPLE, SizeToInt(list->inputs().size())});
   }
   AObject *vo = list->GetVobj();
   if (vo && vo->GetType() == AObject::kTypeList) {
@@ -1904,7 +1904,7 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     MS_LOG(INFO) << "Stack node should be BUILD_LIST or BUILD_MAP, but actual is: " << origin->ToString();
     return nullptr;
   }
-  std::vector<ValueNode *> build_inputs = origin->getInputs();
+  std::vector<ValueNode *> build_inputs = origin->inputs();
   int div = 2;
   if (opcode == LIST_APPEND) {
     build_inputs.push_back(arg);
@@ -1914,7 +1914,7 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     if (arg->IsConstantValue()) {
       build_inputs = UnpackConstObject(arg->GetConstantInfo()->value());
     } else if (arg->GetOpcode() == BUILD_LIST || arg->GetOpcode() == BUILD_TUPLE) {
-      build_inputs.insert(build_inputs.end(), arg->getInputs().begin(), arg->getInputs().end());
+      build_inputs.insert(build_inputs.end(), arg->inputs().begin(), arg->inputs().end());
     } else {
       int size = GetIterableSize(arg);
       if (size < 0) {
@@ -2385,11 +2385,11 @@ bool ApplyInlinePolicy(CallNode *call_node) {
   }
   for (auto i : g->GetTracedNodes()) {
     // check MAKE_FUNCTION is alive, it is incorrect that inline the function of different module with MAKE_FUNCTION
-    auto begin = i->getInputs().begin();
+    auto begin = i->inputs().begin();
     if (Opcode(i->GetOpcode()).IsCall() && static_cast<CallNode *>(i)->GetInlineReason() == InlineReason::kInline) {
       begin++;
     }
-    if (std::any_of(begin, i->getInputs().end(), [](ValueNode *n) { return n->GetOpcode() == MAKE_FUNCTION; })) {
+    if (std::any_of(begin, i->inputs().end(), [](ValueNode *n) { return n->GetOpcode() == MAKE_FUNCTION; })) {
       return false;
     }
   }
@@ -2420,7 +2420,7 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   // create empty container(list(),tuple(),dict(),zip())
   static const std::set<PyTypeObject *> support_empty_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyZip_Type};
-  if (call_node->getInputs().size() == 1 &&
+  if (call_node->inputs().size() == 1 &&
       support_empty_create_instance_type.find(tp) != support_empty_create_instance_type.end()) {
     return true;
   }
@@ -2431,7 +2431,7 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   static const std::set<PyTypeObject *> limit_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyUnicode_Type, &PyEnum_Type,
   };
-  if (call_node->getInputs().size() != 2) {
+  if (call_node->inputs().size() != 2) {
     return false;
   }
   ValueNode *iterable_node = call_node->input(1);
@@ -2540,7 +2540,7 @@ ValueNode *GraphBuilder::BuildCallClassNode(CallNode *call_node) {
     return call_node;
   }
 
-  const auto &params = call_node->getInputs();
+  const auto &params = call_node->inputs();
   AObject *instance = nullptr;
   bool support_create_instance = CheckSupportCreateInstance(call_node);
   bool constant = type == AObject::kTypePrimitive || type == AObject::kTypeTensor || IsMsClass(t->GetPyObject().ptr());
@@ -2744,7 +2744,7 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, const py::objec
   if (PyFunction_Check(func.ptr())) {
     args = GetNewArgs(call_node, AObject::Convert(func.ptr()), sg);
   } else {
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   }
 
@@ -3018,7 +3018,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   PyCodeWrapper co_wrapper(co);
   frame->ResizeLocal(co_wrapper.LocalSize());
 
-  std::vector<ValueNode *> params(call_node->getInputs().begin() + 1, call_node->getInputs().end());
+  std::vector<ValueNode *> params(call_node->inputs().begin() + 1, call_node->inputs().end());
   int op = call_node->GetOpcode();
   bool has_kw = call_node->kw_names().ptr() != nullptr;
   if (op == CALL_FUNCTION_EX && !UnpackCallExParams(&params, co->co_nlocals, &has_kw, call_node)) {
@@ -3188,7 +3188,7 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
     bool make_func = func_node->GetOpcode() == MAKE_FUNCTION;
     ValueNode *closures_node = nullptr;
     if (make_func) {
-      closures_node = *(func_node->getInputs().end() - 2 - (!IS_PYTHON_3_11_PLUS));
+      closures_node = *(func_node->inputs().end() - 2 - (!IS_PYTHON_3_11_PLUS));
     } else if (closure) {
       closures_node = TrackExtraAttrArgs(func_node, "__closure__");
     } else {
@@ -3207,7 +3207,7 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
         auto tmp = pop();
         // replaced
         MS_EXCEPTION_IF_CHECK_FAIL(graph_->GetTracedNodes().back() == tmp, "can't find the node");
-        freevar = graph_->NewCellNode(tmp->GetVobj(), BINARY_SUBSCR, 0, tmp->getInputs());
+        freevar = graph_->NewCellNode(tmp->GetVobj(), BINARY_SUBSCR, 0, tmp->inputs());
         graph_->GetTracedNodes().back() = freevar;
 
         auto infer_result = tmp->GetVobj()->GetPyObject().ptr();
@@ -3355,7 +3355,7 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
   if (!graph->GuardSequenceNodeLength(seq_node, seq_size)) {
     return false;
   }
-  auto input_nodes = seq_node->getInputs();
+  auto input_nodes = seq_node->inputs();
   for (size_t i = 1; i < input_nodes.size(); ++i) {
     ValueNode *input_node = input_nodes[i];
     if (input_node == nullptr) {
@@ -3505,7 +3505,7 @@ static bool CheckForIterZip(ValueNode *iter_node) {
   MS_EXCEPTION_IF_NULL(iter_node->GetGraph());
   Graph *graph = iter_node->GetGraph();
 
-  std::vector<ValueNode *> iterable_nodes = {zip_node->getInputs().begin() + 1, zip_node->getInputs().end()};
+  std::vector<ValueNode *> iterable_nodes = {zip_node->inputs().begin() + 1, zip_node->inputs().end()};
   auto iter = std::find_if(iterable_nodes.begin(), iterable_nodes.end(), [&graph](ValueNode *iterable_node) {
     PyObject *iterable = iterable_node->GetVobj()->GetPyObject().ptr();
     return iterable == nullptr || ((!PySequence_Check(iterable) || !GuardLoopSequence(graph, iterable_node)) &&
@@ -3530,7 +3530,7 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
 
   ValueNode *zip_node = iter_node->input(0);
   PyObject *zip = zip_node->GetVobj()->GetPyObject().ptr();
-  std::vector<ValueNode *> iterable_nodes = {zip_node->getInputs().begin() + 1, zip_node->getInputs().end()};
+  std::vector<ValueNode *> iterable_nodes = {zip_node->inputs().begin() + 1, zip_node->inputs().end()};
 
   // reduce iterable object
   PyObject *tuple = PyIter_Next(zip);
@@ -3717,7 +3717,7 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
 
   ValueNode *iterable_node = iter_node->iterable();
   MS_EXCEPTION_IF_NULL(iterable_node);
-  AObject *iterable = iter_node->getInputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
+  AObject *iterable = iter_node->inputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
   bool succ = false;
   if (iterable == nullptr) {
     MS_LOG(INFO) << "iterable is null!";
@@ -3800,11 +3800,11 @@ bool IsShapeOrDtypeRelatedNode(const ValueNode *node) {
 
 bool TryGuardEscape(ValueNode *cond_node) {
   if (cond_node->GetOpcode() == COMPARE_OP &&
-      std::any_of(cond_node->getInputs().begin(), cond_node->getInputs().end(),
+      std::any_of(cond_node->inputs().begin(), cond_node->inputs().end(),
                   [](const ValueNode *node) { return IsShapeOrDtypeRelatedNode(node); })) {
     return true;
   }
-  if (cond_node->GetOpcode() == COMPARE_OP && cond_node->getInputs().size() == 2 &&
+  if (cond_node->GetOpcode() == COMPARE_OP && cond_node->inputs().size() == 2 &&
       cond_node->input(0)->GetOpcode() == BINARY_SUBSCR && cond_node->input(1)->GetOpcode() == BINARY_SUBSCR) {
     return true;
   }
@@ -3813,7 +3813,7 @@ bool TryGuardEscape(ValueNode *cond_node) {
     return true;
   }
   if (Opcode(cond_node->GetOpcode()).IsCallFunc() &&
-      std::all_of(cond_node->getInputs().begin() + 1, cond_node->getInputs().end(),
+      std::all_of(cond_node->inputs().begin() + 1, cond_node->inputs().end(),
                   [](const ValueNode *node) { return IsShapeOrDtypeRelatedNode(node); })) {
     return true;
   }
@@ -4342,7 +4342,7 @@ std::pair<bool, std::vector<py::object>> GraphBuilder::GetConstantInputsObject(C
   if (PyFunction_Check(callable_info.ptr())) {
     args_value_node = GetNewArgs(call_node);
   } else {
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args_value_node));
   }
 
@@ -4527,7 +4527,7 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
     auto callable_value = iter->second;
     MS_LOG(INFO) << "Found built-in class type: " << class_type_name;
     std::vector<ValueNode *> args;
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     auto args_abstract_wrapper = HandleInputArgs(args);
 #if !IS_PYTHON_3_11_PLUS
@@ -4542,7 +4542,7 @@ bool GraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *c
   if (py_builtin_func.ptr() != nullptr) {
     MS_LOG(INFO) << "Convert python built-in function:" << py::str(callable_info) << " to " << py::str(py_builtin_func);
     std::vector<ValueNode *> args;
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     auto args_abstract_wrapper = HandleInputArgs(args);
 #if !IS_PYTHON_3_11_PLUS
@@ -4597,7 +4597,7 @@ py::object GraphBuilder::FGAddNodeAst(CallNode *call_node, const py::object &cal
   if (callable_info.ptr() != original_callable_info.ptr() && self_node != nullptr) {
     args.push_back(self_node);
   }
-  const auto &call_node_inputs = call_node->getInputs();
+  const auto &call_node_inputs = call_node->inputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   const auto &callable_object =
     py::isinstance<mindspore::Cell>(callable_info)
@@ -4621,7 +4621,7 @@ py::object GraphBuilder::FGAddNodeTensorOverload(CallNode *call_node, const py::
     MS_LOG(EXCEPTION) << "Get self failed for call_node " << call_node->ToString();
   }
   std::vector<ValueNode *> args{self_node};
-  const auto &call_node_inputs = call_node->getInputs();
+  const auto &call_node_inputs = call_node->inputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   const auto &name = GetTensorMethodName(callable_info);
   MS_EXCEPTION_IF_CHECK_FAIL(name != "", "Fail to get tensor method name");
@@ -4649,10 +4649,10 @@ py::object GraphBuilder::HandleMSCallable(CallNode *call_node, const py::object 
     if (self_node != nullptr) {
       args.insert(args.begin(), self_node);
     }
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   } else {
-    const auto &call_node_inputs = call_node->getInputs();
+    const auto &call_node_inputs = call_node->inputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
   }
   auto args_abstract_wrapper = HandleInputArgs(args);
@@ -4786,7 +4786,7 @@ py::object GraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &a
 
 void GraphBuilder::HandleCallType(CallNode *call_node, StopTraceReason *stop_reason) const {
   MS_LOG(DEBUG) << "Handle python builtin type()";
-  if (call_node->getInputs().size() != 2) {
+  if (call_node->inputs().size() != 2) {
     // Only support type(object).
     // type(name, bases, dict, **kwds) is not supported for now.
     MS_LOG(INFO) << "Only support type() with one argument";
@@ -4872,7 +4872,7 @@ bool GraphBuilder::HandleCallTensorClass(CallNode *call_node) {
   if (input_type == AObject::kTypeNone) {
     return false;  // tensor initialization without input_data, maybe constant
   }
-  ValueNode *dtype_node = call_node->getInputs().size() > 2 ? call_node->input(2) : nullptr;
+  ValueNode *dtype_node = call_node->inputs().size() > 2 ? call_node->input(2) : nullptr;
   py::object dtype_object = dtype_node == nullptr ? py::none() : dtype_node->GetVobj()->GetPyObject();
   bool is_default_dtype = dtype_object.ptr() == Py_None;
   MS_LOG(INFO) << "handle call tensor, input type is " << AObject::GetTypeDesc(input_type);
@@ -4968,7 +4968,7 @@ AbstractNamedTuple *MakeNamedtupleAObj(const CallNode *call_node) {
   MS_EXCEPTION_IF_NULL(callable);
   auto *abstract_type = static_cast<AbstractType *>(callable);
   // 1.create namedtuple python object
-  const auto &params = call_node->getInputs();
+  const auto &params = call_node->inputs();
   if (std::any_of(params.begin() + 1, params.end(), [](auto *node) { return !HasPyObj(node); })) {
     MS_LOG(INFO) << "Create namedtuple failed, has null argument";
     return nullptr;
@@ -5029,11 +5029,11 @@ bool GraphBuilder::CollectNamedtupleElements(const CallNode *call_node, const Ab
   }
   // 2.Collect ValueNodes of the namedtuple elements
   std::vector<ValueNode *> element_nodes;
-  ValueNode *cls_node = call_node->getInputs()[0];
+  ValueNode *cls_node = call_node->inputs()[0];
   try {
     // This method throws an exception when arguments matching fails, so try-catch is required.
     BindArgumentsHelper<ValueNode *> args_helper = PackInputsForFunc(
-      new_method, call_node->GetOpcode(), call_node->getInputs(), call_node->kw_names().ptr(), cls_node, false);
+      new_method, call_node->GetOpcode(), call_node->inputs(), call_node->kw_names().ptr(), cls_node, false);
     // The __new__ method of namedtuple does not have variable-length arguments, so we just ignore va_ and kw_va_.
     const std::vector<ValueNode *> &args = args_helper.results().args_;
     // The first argument is cls_node, it is not the data element of namedtuple, so we remove it.

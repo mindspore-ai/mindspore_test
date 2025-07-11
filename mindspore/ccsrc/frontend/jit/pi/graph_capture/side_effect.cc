@@ -203,7 +203,7 @@ bool SideEffect::CheckCallRecord(ValueNode *node, SideEffect::Type type, const s
     size_t index = 1;
     ValueNode *src_node = node->input(index++);
     py::object name = node->input(index++)->GetVobj()->GetPyObject();
-    ValueNode *attr_node = node->getInputs().size() == index ? nullptr : node->input(index);
+    ValueNode *attr_node = node->inputs().size() == index ? nullptr : node->input(index);
     data_->AddAttrData(PyUnicode_AsUTF8(name.ptr()), src_node, attr_node);
     return true;
   }
@@ -218,7 +218,7 @@ std::vector<ValueNode *> SideEffect::GetKeepAlive(const Entry &e) const {
   ValueNode *node = e.node_;
   Type type = e.type_;
   int opcode = node->GetOpcode();
-  std::vector<ValueNode *> alive = node->getInputs();
+  std::vector<ValueNode *> alive = node->inputs();
   if (Opcode(opcode).IsCall() && type >= kBuiltinMethod) {
     alive[0] = GetSelfFromKnownMethod(node);  // replace function
   }
@@ -342,7 +342,7 @@ void SideEffectHandler::Run() {
 std::vector<ValueNode *> SideEffectHandler::GetSideEffectInputs() const {
   std::set<ValueNode *> inputs;
   for (const auto &node : side_effect_nodes_) {
-    inputs.insert(node->getInputs().begin(), node->getInputs().end());
+    inputs.insert(node->inputs().begin(), node->inputs().end());
   }
   std::vector<ValueNode *> side_effect_inputs(inputs.begin(), inputs.end());
   return side_effect_inputs;
@@ -420,7 +420,7 @@ void SideEffectHandler::AnalyzeNodeScope(ValueNode *node) const {
     if (node->GetOpcode() == LOAD_GLOBAL) {
       node->SetScope(AObject::Scope::SCOPE_GLOBAL);
     } else {
-      node->getInputs().back()->AddScope(AObject::Scope::SCOPE_GLOBAL);
+      node->inputs().back()->AddScope(AObject::Scope::SCOPE_GLOBAL);
     }
   };
 
@@ -431,12 +431,12 @@ void SideEffectHandler::AnalyzeNodeScope(ValueNode *node) const {
 
   ScopeAnalyzer subscr_analyzer = [](ValueNode *node) {
     if (node->GetOpcode() == STORE_SUBSCR) {
-      if (node->getInputs()[1]->GetScope() & AObject::Scope::SCOPE_GLOBAL) {
-        node->getInputs().front()->AddScope(AObject::Scope::SCOPE_GLOBAL);
+      if (node->inputs()[1]->GetScope() & AObject::Scope::SCOPE_GLOBAL) {
+        node->inputs().front()->AddScope(AObject::Scope::SCOPE_GLOBAL);
       }
     } else {
       if (node->GetScope() == AObject::Scope::SCOPE_NOT_SPECIFIED) {
-        node->SetScope(node->getInputs()[0]->GetScope());
+        node->SetScope(node->inputs()[0]->GetScope());
       }
     }
   };
@@ -528,7 +528,7 @@ std::vector<ValueNode *> SideEffectHandler::CollectSideEffectOperations() const 
     if (opcode == STORE_FAST) {
       continue;
     }
-    if (opcode == STORE_SUBSCR && node->getInputs()[1]->GetScope() == AObject::Scope::SCOPE_LOCAL) {
+    if (opcode == STORE_SUBSCR && node->inputs()[1]->GetScope() == AObject::Scope::SCOPE_LOCAL) {
       continue;
     }
     if (Opcode(opcode).IsCall()) {
@@ -567,7 +567,7 @@ void SideEffectHandler::InitializeVersionNodeMaps(const std::vector<ValueNode *>
 
 void SideEffectHandler::RebaseObjectVersion(CallNode *call_node) const {
   MS_EXCEPTION_IF_NULL(call_node);
-  auto callable = call_node->getInputs().front();
+  auto callable = call_node->inputs().front();
   auto vobj = callable->GetVobj();
   MS_EXCEPTION_IF_NULL(vobj);
   auto obj = vobj->GetPyObject().ptr();
@@ -576,7 +576,7 @@ void SideEffectHandler::RebaseObjectVersion(CallNode *call_node) const {
   auto op = callable->GetOpcode();
   auto callable_check = !is_method || op == LOAD_ATTR || op == LOAD_METHOD;
   MS_EXCEPTION_IF_CHECK_FAIL(callable_check, "Should be a func or LoadNode, but got ." + callable->ToString());
-  auto &operand = is_method ? callable->getInputs().front() : call_node->getInputs()[1];
+  auto &operand = is_method ? callable->inputs().front() : call_node->inputs()[1];
   auto base = operand->GetOwnVobj()->GetBaseVersion();
   if (ex_var_base_2_node_.find(base) == ex_var_base_2_node_.end()) {
     return;
@@ -593,9 +593,9 @@ std::vector<ValueNode *> SideEffectHandler::RebaseObjectVersionInSideEffects(
     } else {
       auto has_obj = opcode == DELETE_ATTR || opcode == STORE_ATTR || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
       auto index = (opcode == DELETE_ATTR || opcode == DELETE_SUBSCR) ? 0 : 1;
-      auto base = has_obj ? side_effect_node->getInputs()[index]->GetVobj()->GetBaseVersion() : nullptr;
+      auto base = has_obj ? side_effect_node->inputs()[index]->GetVobj()->GetBaseVersion() : nullptr;
       if (ex_var_base_2_node_.find(base) != ex_var_base_2_node_.end()) {
-        side_effect_node->getInputs()[index] = ex_var_base_2_node_.at(base);
+        side_effect_node->inputs()[index] = ex_var_base_2_node_.at(base);
       }
     }
   }
@@ -616,7 +616,7 @@ std::vector<ValueNode *> SideEffectHandler::CorrectVariableOfStoreGlobal(const s
     MS_LOG(DEBUG) << "Side Effect operation from " << graph->GetCodeName() << " : " << side_effect_node->ToString();
     py::object obj = py::reinterpret_steal<py::object>(PyImport_ImportModule(module_name.c_str()));
     auto load = graph_->NewValueNode(AObject::Convert(obj), LOAD_CONST, -1, {});
-    auto var = side_effect_node->getInputs().front();
+    auto var = side_effect_node->inputs().front();
     side_effect_node = graph_->NewValueNode(nullptr, STORE_ATTR, 0, {var, load}, side_effect_node->GetName());
   });
   return side_effect_nodes;
@@ -647,7 +647,7 @@ std::vector<ValueNode *> SideEffectHandler::EliminateRedundantSideEffect(const s
     auto cache = cache_map.at(opcode);
     auto has_obj = opcode == DELETE_ATTR || opcode == STORE_ATTR || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
     auto idx = (opcode == DELETE_ATTR || opcode == DELETE_SUBSCR) ? 0 : 1;
-    auto base = has_obj ? node->getInputs()[idx]->GetVobj()->GetBaseVersion() : nullptr;
+    auto base = has_obj ? node->inputs()[idx]->GetVobj()->GetBaseVersion() : nullptr;
     auto is_int = opcode == DELETE_DEREF || opcode == STORE_DEREF || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
     auto arg = is_int ? std::to_string(node->GetOparg()) : node->GetName();
     if (cache->find(base) != cache->end() && cache->at(base).find(arg) != cache->at(base).end()) {
@@ -676,7 +676,7 @@ std::vector<ValueNode *> SideEffectHandler::MergeSideEffect(const std::vector<Va
     } else {
       auto has_obj = opcode == DELETE_ATTR || opcode == STORE_ATTR || opcode == DELETE_SUBSCR || opcode == STORE_SUBSCR;
       auto idx = (opcode == DELETE_ATTR || opcode == DELETE_SUBSCR) ? 0 : 1;
-      auto base = has_obj ? side_effect_nodes[index]->getInputs()[idx]->GetVobj()->GetBaseVersion() : nullptr;
+      auto base = has_obj ? side_effect_nodes[index]->inputs()[idx]->GetVobj()->GetBaseVersion() : nullptr;
       if (base != nullptr && base->GetType() == AObject::kTypeTensor) {
         to_be_opt[base].push_back(index);
       }

@@ -314,7 +314,7 @@ inline bool IsValidOutput(const ValueNode *node) {
 std::vector<ValueNode *> CollectInputs(const std::vector<ValueNode *> &nodes) {
   std::set<ValueNode *> inputs;
   for (const auto &node : nodes) {
-    inputs.insert(node->getInputs().begin(), node->getInputs().end());
+    inputs.insert(node->inputs().begin(), node->inputs().end());
   }
   for (const auto &node : nodes) {
     inputs.erase(node);
@@ -327,7 +327,7 @@ void ReplaceSequenceNoneElementWithConst(ValueNode *node, Graph *graph) {
   if (opcode != BUILD_LIST && opcode != BUILD_TUPLE) {
     return;
   }
-  for (auto iter = node->getInputs().begin(); iter != node->getInputs().end(); iter++) {
+  for (auto iter = node->inputs().begin(); iter != node->inputs().end(); iter++) {
     auto abstract_wrapper = (*iter)->abstract_wrapper();
     MS_EXCEPTION_IF_NULL(abstract_wrapper);
     auto abstract = abstract_wrapper->abstract();
@@ -346,7 +346,7 @@ void UpdateUseDefOrder(std::vector<ValueNode *> *nodes) {
   while (!node_list.empty()) {
     auto front = node_list.front();
     node_list.pop_front();
-    auto inputs = front->getInputs();
+    auto inputs = front->inputs();
     auto independent = std::all_of(inputs.begin(), inputs.end(), [&node_list](const auto &input) {
       return std::find(node_list.begin(), node_list.end(), input) == node_list.end();
     });
@@ -554,7 +554,7 @@ void GraphAnalyzer::ExpandGraphOutput() {
       MS_LOG(DEBUG) << "After mutate : " << node->ToString();
     }
     ADD_NODE(outputs_optimize.operations, node);
-    nodes.insert(node->getInputs().begin(), node->getInputs().end());
+    nodes.insert(node->inputs().begin(), node->inputs().end());
   }
 }
 
@@ -608,7 +608,7 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
       if (!node->IsSideEffectNode()) {
         ADD_NODE(outputs_optimize, node);
       }
-      nodes.insert(node->getInputs().begin(), node->getInputs().end());
+      nodes.insert(node->inputs().begin(), node->inputs().end());
       continue;
     }
     MS_EXCEPTION_IF_CHECK_FAIL(node->abstract_wrapper() && node->abstract_wrapper()->abstract(),
@@ -625,7 +625,7 @@ bool GraphAnalyzer::AnalyzeTopGraphAliveNodes(const std::vector<ValueNode *> &al
         ADD_NODE(outputs_optimize, MutateNamedtupleNode(sequence, node));
       }
       ADD_NODE(outputs_optimize, sequence);
-      nodes.insert(sequence->getInputs().begin(), sequence->getInputs().end());
+      nodes.insert(sequence->inputs().begin(), sequence->inputs().end());
     } else {
       MS_LOG(INTERNAL_EXCEPTION) << "the node can't add graph out and not handle by output optimize, it's missing ["
                                  << node->ToString();
@@ -901,15 +901,15 @@ bool CheckNewBreakBci(const Graph *graph, const ValueNode *new_break_point) {
 ValueNode *MutateFreeVarNode(ValueNode *node, std::vector<ValueNode *> *output_optimize) {
   MS_LOG(DEBUG) << "Reconstruct freevar node: " << node->ToString();
   output_optimize->push_back(node);
-  MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
-  ValueNode *binary_subscr = node->getInputs()[0];
+  MS_EXCEPTION_IF_CHECK_FAIL(node->inputs().size() == 1, "inputs.size() should be 1");
+  ValueNode *binary_subscr = node->inputs()[0];
   output_optimize->push_back(binary_subscr);
   constexpr size_t kBinarySubscrInputsSize = 2;
-  MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->getInputs().size() == kBinarySubscrInputsSize, "inputs.size() should be 2");
-  ValueNode *load_attr = binary_subscr->getInputs()[0];
+  MS_EXCEPTION_IF_CHECK_FAIL(binary_subscr->inputs().size() == kBinarySubscrInputsSize, "inputs.size() should be 2");
+  ValueNode *load_attr = binary_subscr->inputs()[0];
   output_optimize->push_back(load_attr);
-  MS_EXCEPTION_IF_CHECK_FAIL(node->getInputs().size() == 1, "inputs.size() should be 1");
-  return load_attr->getInputs()[0];
+  MS_EXCEPTION_IF_CHECK_FAIL(node->inputs().size() == 1, "inputs.size() should be 1");
+  return load_attr->inputs()[0];
 }
 }  // namespace
 
@@ -950,7 +950,7 @@ bool GraphAnalyzer::AnalyzeSubGraphAliveNodes(const std::vector<ValueNode *> &al
       if (!node->IsSideEffectNode()) {
         output_optimize.push_back(node);
       }
-      nodes.insert(nodes.end(), node->getInputs().begin(), node->getInputs().end());
+      nodes.insert(nodes.end(), node->inputs().begin(), node->inputs().end());
       continue;
     }
     MS_LOG(INFO) << "Add subgraph output failed: " << node->ToString();
@@ -1139,13 +1139,13 @@ void UpdateNodeInputs(Graph *graph, std::vector<ValueNode *> *nodes_p, std::map<
     // for each node check it's inputs
     for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
       auto node = *node_iter;
-      auto &in = node->getInputs();
+      auto &in = node->inputs();
       auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
       if (in_iter == in.end()) {
         continue;  // not find, do nothing
       }
       // collect latest node
-      std::vector<ValueNode *> new_in = node->getInputs();
+      std::vector<ValueNode *> new_in = node->inputs();
       for (; in_iter != in.end(); ++in_iter) {
         new_in[in_iter - in.begin()] = latest(*in_iter);
       }

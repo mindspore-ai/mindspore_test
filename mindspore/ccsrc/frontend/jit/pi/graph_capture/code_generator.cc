@@ -784,7 +784,7 @@ void CodeGenerator::MarkAlive() {
   }
   for (int index = nodes_->operations.size() - 1; index >= 0; --index) {
     ValueNode *node = nodes_->operations[index];
-    for (auto input : node->getInputs()) {
+    for (auto input : node->inputs()) {
       MarkAlive(input, index);
     }
   }
@@ -985,7 +985,7 @@ void CodeGenerator::BuildOper(ValueNode *node, int index) {
   }
 
   int load_args_offset = code_.co_code.size();
-  for (auto param : node->getInputs()) {
+  for (auto param : node->inputs()) {
     LoadValue(param);
   }
 #if IS_PYTHON_3_11_PLUS

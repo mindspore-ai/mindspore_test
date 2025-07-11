@@ -178,7 +178,7 @@ bool Graph::PrepareParameter(ValueNode *node) {
     if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR) {
       return false;
     }
-    for (const auto &in : node->getInputs()) {
+    for (const auto &in : node->inputs()) {
       if (!prepare_oper(in, oper)) {
         return false;
       }
@@ -349,7 +349,7 @@ static bool CheckObjPtr(ValueNode *node) {
 }
 
 bool GuardBuilder::PrepareTraceParam(ValueNode *node, TraceVector *tv, int depth, bool *has_unsupported) {
-  const std::vector<ValueNode *> &inputs = node->getInputs();
+  const std::vector<ValueNode *> &inputs = node->inputs();
   for (auto it : inputs) {
     if (it->GetTrace() != nullptr) {
       tv->push_back(it->GetTrace());
@@ -479,7 +479,7 @@ static bool IsAttrClosure(ValueNode *node) {
         if (opcode != LOAD_ATTR) {
           return false;
         } else {
-          auto inputs = node->getInputs();
+          auto inputs = node->inputs();
           if (inputs.size() == 0) {
             return false;
           }
@@ -522,7 +522,7 @@ TraceVector GuardBuilder::GetTraceClosure(ValueNode *node, bool *succ, int depth
               return {};
             }
           } else {
-            auto inputs = node->getInputs();
+            auto inputs = node->inputs();
             for (auto input : inputs) {
               if (done.find(input) != done.end()) {
                 continue;
@@ -648,7 +648,7 @@ std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids)
       continue;
     }
     if (new_node->GetOpcode() == LOAD_ATTR) {  // transform the alive attribute source
-      auto &attr_source = new_node->getInputs()[0];
+      auto &attr_source = new_node->inputs()[0];
       attr_source = this->GetSideEffect()->GetSource(attr_source);
     }
     node = new_node;
@@ -926,7 +926,7 @@ static void TraceInferFailed(std::ostream *out, ValueNode *node, int depth = 0) 
     return;
   }
   s << "<NULL>:" << std::endl;
-  for (size_t i = 0; i < node->getInputs().size(); ++i) {
+  for (size_t i = 0; i < node->inputs().size(); ++i) {
     TraceInferFailed(out, node->input(i), depth + 1);
   }
 }

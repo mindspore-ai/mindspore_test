@@ -107,7 +107,7 @@ std::string CallNode::ToString() const {
   s << this->ValueNode::ToString()
     << (kw_names().ptr() != nullptr ? ("kw:" + std::string(py::str(kw_names().ptr()))) : std::string())
     << " sub-graph=" << sub_graph_;
-  if (!getInputs().empty()) {
+  if (!inputs().empty()) {
     ValueNode *func_node = input(0);
     MS_EXCEPTION_IF_NULL(func_node);
     if (func_node->GetVobj() != nullptr && func_node->GetVobj()->GetPyObject().ptr() != nullptr) {
@@ -149,16 +149,18 @@ ValueNode *CallNode::GetSelf() const {
 }
 
 void CallNode::UpdateVobj() {
-  auto inputs = getInputs();
-  const auto &func = inputs[0]->GetOwnVobj()->GetPyObject();
+  MS_EXCEPTION_IF_CHECK_FAIL(!inputs().empty(), "inputs should not be empty!");
+  MS_EXCEPTION_IF_CHECK_FAIL(input(0) != nullptr && input(0)->GetOwnVobj() != nullptr, "input(0) has nullptr!");
+  const auto &func = input(0)->GetOwnVobj()->GetPyObject();
   std::vector<AObject *> args;
   auto self = GetSelf();
   if (self != nullptr) {
     args.push_back(self->GetOwnVobj());
   }
-  std::transform(inputs.begin() + 1, inputs.end(), std::back_inserter(args),
+  std::transform(inputs().begin() + 1, inputs().end(), std::back_inserter(args),
                  [](auto &input) { return input->GetOwnVobj(); });
   auto vobj = AObject::FuncAObjectUpdater(func, args);
+  MS_EXCEPTION_IF_NULL(vobj);
   if (vobj->GetType() != AObject::kTypeAnyValue) {
     SetVobj(vobj);
   }
@@ -213,8 +215,6 @@ std::string AbstractNode::ToString() const {
   s << "Node(" << this << ")";
   return s.str();
 }
-
-void ValueNode::SetParent(ValueNode *parent) { parent_ = std::make_optional<ValueNode *>(parent); }
 
 void CallNode::SetSubGraph(Graph *n) {
   sub_graph_ = n;
