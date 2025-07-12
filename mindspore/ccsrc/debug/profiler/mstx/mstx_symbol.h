@@ -117,7 +117,6 @@ auto RunMstxApi(Function f, const char *file, int line, const char *call_f, cons
   if (f == nullptr) {
     MS_LOG(EXCEPTION) << func_name << " is null.";
   }
-#ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
     if ((mindspore::UCEException::IsEnableUCE() || mindspore::UCEException::GetInstance().enable_arf()) && ret == 0) {
@@ -128,9 +127,6 @@ auto RunMstxApi(Function f, const char *file, int line, const char *call_f, cons
   } else {
     return f(args...);
   }
-#else
-  return f(args...);
-#endif
 }
 
 #define CALL_MSTX_API(func_name, ...) \

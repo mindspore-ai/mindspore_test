@@ -50,7 +50,3 @@ endif()
 if(ENABLE_PYTHON)
   target_include_directories(core PRIVATE ${pybind11_INCLUDE_DIRS})
 endif()
-
-if(MSLITE_ENABLE_CLOUD_MIND_DATA)
-  add_dependencies(core fbs_src)
-endif()

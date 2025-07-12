@@ -20,15 +20,13 @@ set -e
 process_options()
 {
   # Process the options
-  while getopts 'RdfhiorvyzA:B:D:E:F:G:H:I:K:L:M:P:S:V:W:a:b:c:e:g:j:k:l:n:p:s:t:' opt
+  while getopts 'RdfhiorvyzB:D:F:G:H:K:L:M:P:S:V:W:a:b:c:e:g:j:k:l:p:s:t:' opt
   do
     CASE_SENSIVE_ARG=${OPTARG}
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
       d)
         DEBUG_MODE="on" ;;
-      n)
-        build_option_proc_n ;;
       y)
         export ENABLE_SYM_FILE="on" ;;
       r)
@@ -81,15 +79,11 @@ process_options()
         build_option_proc_upper_d ;;
       z)
         build_option_proc_z ;;
-      I)
-        build_option_proc_upper_i ;;
       K)
         check_on_off $OPTARG K
         export ENABLE_AKG="$OPTARG" ;;
       B)
         build_option_proc_upper_b ;;
-      A)
-        build_option_proc_upper_a ;;
       W)
         build_option_proc_upper_w ;;
       F)
