@@ -33,31 +33,6 @@ set(jpeg_turbo_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack,-s")
 
 set(jpeg_turbo_USE_STATIC_LIBS ON)
 set(CMAKE_OPTION -DCMAKE_BUILD_TYPE=Release -DCMAKE_SKIP_RPATH=TRUE -DWITH_SIMD=ON)
-if(BUILD_LITE)
-    set(jpeg_turbo_USE_STATIC_LIBS OFF)
-    if(ANDROID_NDK)  #  compile android on x86_64 env
-        if(PLATFORM_ARM64)
-            set(CMAKE_OPTION  -DCMAKE_TOOLCHAIN_FILE=$ENV{ANDROID_NDK}/build/cmake/android.toolchain.cmake
-                              -DANDROID_NATIVE_API_LEVEL=19
-                              -DANDROID_NDK=$ENV{ANDROID_NDK}
-                              -DANDROID_ABI=arm64-v8a
-                              -DANDROID_TOOLCHAIN_NAME=aarch64-linux-android-clang
-                              -DANDROID_STL=c++_shared -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-        endif()
-        if(PLATFORM_ARM32)
-            set(CMAKE_OPTION  -DCMAKE_TOOLCHAIN_FILE=$ENV{ANDROID_NDK}/build/cmake/android.toolchain.cmake
-                              -DANDROID_NATIVE_API_LEVEL=19
-                              -DANDROID_NDK=$ENV{ANDROID_NDK}
-                              -DANDROID_ABI=armeabi-v7a
-                              -DANDROID_TOOLCHAIN_NAME=aarch64-linux-android-clang
-                              -DANDROID_STL=c++_shared -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-        endif()
-    elseif(TARGET_AOS_ARM)
-        set(CMAKE_OPTION ${CMAKE_OPTION} -DCMAKE_C_COMPILER=${C_COMPILER}
-                -DCMAKE_CXX_COMPILER=${CXX_COMPILER}
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
-    endif()
-endif()
 
 mindspore_add_pkg(jpeg_turbo
         VER 3.0.1

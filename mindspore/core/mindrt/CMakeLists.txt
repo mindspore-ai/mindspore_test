@@ -26,6 +26,10 @@ else()
             )
 endif()
 
+if(CMAKE_SYSTEM_NAME MATCHES "OHOS")
+    add_compile_definitions(BUILD_OHOS)
+endif()
+
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_compile_definitions(BUILDING_CORE_DLL)
 endif()

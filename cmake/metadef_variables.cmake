@@ -1,13 +1,9 @@
 # path variables for metadef submodule, it has to be included after mindspore/core
 # and minspore/ccsrc to prevent conflict of op headers
 
-if(MSLITE_ENABLE_ACL)
-    set(METADEF_PATH "${TOP_DIR}/metadef")
-else()
-    set(METADEF_PATH "${CMAKE_SOURCE_DIR}/metadef")
-endif()
+set(METADEF_PATH "${CMAKE_SOURCE_DIR}/metadef")
 
-if(ENABLE_TESTCASES OR ENABLE_D OR ENABLE_ACL OR MSLITE_ENABLE_ACL)
+if(ENABLE_TESTCASES OR ENABLE_D OR ENABLE_ACL)
     message("Note: compile cpp with include file: ${ASCEND_PATH}/latest/include/")
     include_directories(${ASCEND_PATH}/latest/include/)
     include_directories(${ASCEND_PATH}/latest/include/hccl)

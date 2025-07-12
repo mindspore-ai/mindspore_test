@@ -95,6 +95,7 @@
 "mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_declare/image_ops_declare.cc"  "unknownMacro"
 "mindspore/mindspore/ccsrc/frontend/operator/meta_dsl/func_op/"                         "syntaxError"
 "mindspore/mindspore/ccsrc/pyboost/customize/pixel_shuffle.cc"                                    "zerodivcond"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                 "syntaxError"
 
 # MindData
 "mindspore/mindspore/ccsrc/minddata/dataset/engine/dataset_iterator.cc"                               "useStlAlgorithm"
@@ -110,7 +111,6 @@
 "mindspore/mindspore/core/mindrt/src/thread/"                                                         "useStlAlgorithm"
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental"                               "unreadVariable"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/tbe/tbe_utils.cc"                      "knownConditionTrueFalse"
-"mindspore/mindspore/ops/kernel/cpu/nnacl/fp32/conv_sw_avx_fp32.c"                  "unknownMacro"
 
 # AICPU migration
 "mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/" "constVariable"

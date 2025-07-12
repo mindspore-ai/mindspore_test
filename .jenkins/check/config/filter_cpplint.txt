@@ -99,6 +99,8 @@
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_adapter.cc"                   "runtime/references"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/custom_op_infer.cc"              "runtime/references"
 "mindspore/mindspore/ops/kernel/cpu/grid_sampler_2d_grad_cpu_kernel.h"                           "legal/copyright"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                          "build/include"
+
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"
@@ -124,7 +126,6 @@
 "mindspore/mindspore/core/mindrt/include/async/try.h"                                              "runtime/explicit"
 "mindspore/mindspore/core/mindrt/include/async/failure.h"                                          "runtime/explicit"
 "mindspore/mindspore/core/mindrt/include/async/defer.h"                                            "runtime/explicit"
-"mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/gemm_mask_avx512/" "runtime/int"
 
 # AICPU migration
 "mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/" "build/include_subdir"
