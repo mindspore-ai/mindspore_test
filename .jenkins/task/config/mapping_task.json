@@ -266,10 +266,10 @@
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
       "version.txt",
+      ".jenkins/task/config/cann_version.txt",
       "mindspore/core/CMakeLists.txt",
       "build.sh",
       "akg",
-      "graphengine",
       "metadef",
       "mstt",
       "CMakeLists.txt",
@@ -662,7 +662,6 @@
       "mindspore/core/CMakeLists.txt",
       "mindspore/lite",
       "akg",
-      "graphengine",
       "metadef",
       "mstt",
       "CMakeLists.txt",
