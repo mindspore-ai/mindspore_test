@@ -169,10 +169,15 @@ class COMMON_EXPORT AnfAlgo {
   // Check whether the cnode update parameter
   static bool IsUpdateParameterKernel(const CNodePtr &node);
   static AnfNodePtr GetInputNode(const CNodePtr &node, size_t index);
+  // Return true if it is either compute communication fusion operator or pure communication operator
   static bool IsCommunicationOp(const std::string &prim_name);
   static bool IsCommunicationOp(const AnfNodePtr &node);
-  static bool IsCommFusionOp(const std::string &kernel_name);
-  static bool IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name);
+  // Return true if it is a compute communication fusion operator
+  static bool IsCommunicationFusionOp(const std::string &kernel_name);
+  static bool IsCommunicationFusionOp(const AnfNodePtr &node);
+  // Return true if it is a pure communication operator
+  static bool IsNaiveCommunicationOp(const std::string &kernel_name);
+  static bool IsNaiveCommunicationOp(const AnfNodePtr &node);
   static bool IsLcclCommunicationOp(const AnfNodePtr &node);
   static bool IsDtypeFormatSensitiveOp(const AnfNodePtr &node);
   static bool IsFusedCommunicationOp(const AnfNodePtr &node);

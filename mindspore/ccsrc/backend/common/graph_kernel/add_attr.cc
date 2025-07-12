@@ -41,7 +41,7 @@ bool AddAttr::Process(const AnfNodePtr &graph_kernel_node) const {
     auto prim = GetCNodePrimitive(node);
     if (prim != nullptr && kCommOpsNames.find(prim->name()) != kCommOpsNames.end()) {
       changed = true;
-      common::AnfAlgo::SetNodeAttrSafely("is_comm_op", MakeValue(true), graph_kernel_node);
+      common::AnfAlgo::SetNodeAttrSafely(kAttrIsCommOp, MakeValue(true), graph_kernel_node);
     }
   }
   if (is_duplicated) {

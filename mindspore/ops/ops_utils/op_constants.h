@@ -518,5 +518,6 @@ constexpr auto kSliceStart = "start";
 constexpr auto kSliceStop = "stop";
 constexpr auto kSliceStep = "step";
 constexpr auto kCustomInputsType = "custom_inputs_type";
+constexpr auto kAttrIsCommOp = "is_comm_op";
 }  // namespace mindspore
 #endif
