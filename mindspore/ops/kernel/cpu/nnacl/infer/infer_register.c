@@ -44,17 +44,6 @@
 #include "nnacl/infer/concat_infer.h"
 #include "nnacl/infer/constant_of_shape_infer.h"
 #include "nnacl/infer/decoder_layer_infer.h"
-
-#ifdef MSLITE_ENABLE_CONTROLFLOW
-#include "nnacl/infer/control/tensor_array_infer.h"
-#include "nnacl/infer/control/tensor_array_read_infer.h"
-#include "nnacl/infer/control/tensor_array_write_infer.h"
-#include "nnacl/infer/control/tensorlist_fromtensor_infer.h"
-#include "nnacl/infer/control/tensorlist_getitem_infer.h"
-#include "nnacl/infer/control/tensorlist_reserve_infer.h"
-#include "nnacl/infer/control/tensorlist_setitem_infer.h"
-#include "nnacl/infer/control/tensorlist_stack_infer.h"
-#endif
 #include "nnacl/infer/conv2d_grad_filter_infer.h"
 #include "nnacl/infer/conv2d_grad_input_infer.h"
 #include "nnacl/infer/conv2d_infer.h"
@@ -143,14 +132,6 @@
 #include "nnacl/infer/stack_infer.h"
 #include "nnacl/infer/strided_slice_grad_infer.h"
 #include "nnacl/infer/strided_slice_infer.h"
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-#include "nnacl/infer/string/custom_extract_features_infer.h"
-#include "nnacl/infer/string/custom_normalize_infer.h"
-#include "nnacl/infer/string/custom_predict_infer.h"
-#include "nnacl/infer/string/hashtable_lookup_infer.h"
-#include "nnacl/infer/string/lsh_projection_infer.h"
-#include "nnacl/infer/string/skip_gram_infer.h"
-#endif
 #include "nnacl/infer/tile_infer.h"
 #include "nnacl/infer/topk_infer.h"
 #include "nnacl/infer/transpose_infer.h"
@@ -215,16 +196,9 @@ void RegAllInferFunc1() {
   g_infer_func[PrimType_CropAndResize] = CropAndResizeInferShape;
   g_infer_func[PrimType_CumSum] = CumsumInferShape;
   g_infer_func[PrimType_Custom] = NULL;
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-  g_infer_func[PrimType_CustomExtractFeatures] = CustomExtractFeaturesInferShape;
-#endif
 }
 
 void RegAllInferFunc2() {
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-  g_infer_func[PrimType_CustomNormalize] = CustomNormalizeInferShape;
-  g_infer_func[PrimType_CustomPredict] = CustomPredictInferShape;
-#endif
   g_infer_func[PrimType_DeConv2DGradFilter] = NULL;
   g_infer_func[PrimType_Depend] = CommonInferShape;
   g_infer_func[PrimType_DepthToSpace] = DepthToSpaceInferShape;
@@ -261,9 +235,6 @@ void RegAllInferFunc2() {
   g_infer_func[PrimType_Greater] = ArithmeticCompareInferShape;
   g_infer_func[PrimType_GreaterEqual] = ArithmeticCompareInferShape;
   g_infer_func[PrimType_GRU] = GruInferShape;
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-  g_infer_func[PrimType_HashtableLookup] = HashtableLoopupInferShape;
-#endif
   g_infer_func[PrimType_InstanceNorm] = InstanceNormInferShape;
   g_infer_func[PrimType_InvertPermutation] = InvertPermutationInferShape;
   g_infer_func[PrimType_IsFinite] = IsFiniteInferShape;
@@ -285,9 +256,6 @@ void RegAllInferFunc3() {
   g_infer_func[PrimType_LogSoftmax] = LogSoftmaxInferShape;
   g_infer_func[PrimType_LpNormalization] = NULL;
   g_infer_func[PrimType_LRN] = CommonInferShapeWithNHWC;
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-  g_infer_func[PrimType_LshProjection] = LshProjectionInferShape;
-#endif
   g_infer_func[PrimType_LSTM] = LstmInferShape;
   g_infer_func[PrimType_LSTMGrad] = LstmGradInferShape;
   g_infer_func[PrimType_LSTMGradData] = LstmGradDataInferShape;
@@ -354,9 +322,6 @@ void RegAllInferFunc4() {
   g_infer_func[PrimType_SigmoidCrossEntropyWithLogitsGrad] = CommonInferShape;
   g_infer_func[PrimType_Sin] = CommonInferShape;
   g_infer_func[PrimType_Size] = SizeInferShape;
-#ifdef MSLITE_ENABLE_STRING_KERNEL
-  g_infer_func[PrimType_SkipGram] = SkipGramInferShape;
-#endif
   g_infer_func[PrimType_SliceFusion] = SliceInferShape;
   g_infer_func[PrimType_SmoothL1Loss] = CommonInferShape;
   g_infer_func[PrimType_SmoothL1LossGrad] = CommonInferShape;
@@ -384,16 +349,6 @@ void RegAllInferFunc4() {
 
 void RegAllInferFunc5() {
   g_infer_func[PrimType_Switch] = InvalidInferShape;
-#ifdef MSLITE_ENABLE_CONTROLFLOW
-  g_infer_func[PrimType_TensorArray] = TensorArrayInferShape;
-  g_infer_func[PrimType_TensorArrayRead] = TensorArrayReadInferShape;
-  g_infer_func[PrimType_TensorArrayWrite] = TensorArrayWriteInferShape;
-  g_infer_func[PrimType_TensorListFromTensor] = TensorListFromTensorInferShape;
-  g_infer_func[PrimType_TensorListGetItem] = TensorListGetItemInferShape;
-  g_infer_func[PrimType_TensorListReserve] = TensorListReserveInferShape;
-  g_infer_func[PrimType_TensorListSetItem] = TensorListSetItemInferShape;
-  g_infer_func[PrimType_TensorListStack] = TensorListStackInferShape;
-#endif
   g_infer_func[PrimType_TileFusion] = TileInferShape;
   g_infer_func[PrimType_TopKFusion] = TopKInferShape;
   g_infer_func[PrimType_Transpose] = TransposeInferShape;
