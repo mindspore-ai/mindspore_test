@@ -15,7 +15,7 @@
  */
 #include "dropout2d.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <random>
 #include <chrono>
 #include <algorithm>

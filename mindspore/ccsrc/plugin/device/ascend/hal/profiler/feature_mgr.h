@@ -24,7 +24,7 @@
 #include "acl/acl_prof.h"
 
 #include "utils/singleton.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 namespace mindspore {
 namespace profiler {
 namespace ascend {

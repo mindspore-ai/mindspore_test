@@ -25,5 +25,5 @@ add_library(ms_atb_boost SHARED ${MS_LLM_BOOST_910B})
 target_link_libraries(ms_atb_boost PRIVATE mindspore_backend_common mindspore_core mindspore_common mindspore_profiler
         mindspore_ms_backend)
 target_link_libraries(ms_atb_boost PRIVATE proto_input mindspore::protobuf)
-target_link_libraries(ms_atb_boost PRIVATE securec d_collective)
+target_link_libraries(ms_atb_boost PRIVATE mindspore::securec d_collective)
 target_link_libraries(ms_atb_boost PRIVATE mindspore::ssl mindspore::crypto)

@@ -19,6 +19,6 @@ if(ENABLE_CPU)
 
     add_library(mindspore_cpu_res_manager SHARED ${CPU_RES_MANAGER_OBJECTS_SRC})
     target_link_libraries(mindspore_cpu_res_manager PRIVATE mindspore_core mindspore_common mindspore_dump
-        mindspore_profiler mindspore_ops_kernel_common mindspore_res_manager mindspore_memory_pool securec)
+        mindspore_profiler mindspore_ops_kernel_common mindspore_res_manager mindspore_memory_pool mindspore::securec)
     set_target_properties(mindspore_cpu_res_manager PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/../..)
 endif()

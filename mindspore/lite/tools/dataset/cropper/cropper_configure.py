@@ -50,7 +50,6 @@ EXTERNAL_DEPS = [
     "graphengine/910/inc/external",
     "akg/third_party/fwkacllib/inc",
     "third_party",
-    "third_party/securec/include",
     "build/mindspore/_deps/sqlite-src",
     "build/mindspore/_deps/pybind11-src/include",
     "build/mindspore/_deps/tinyxml2-src",
@@ -62,6 +61,7 @@ EXTERNAL_DEPS = [
     "mindspore/lite/build/_deps/jpeg_turbo-src",
     "mindspore/lite/build/_deps/jpeg_turbo-src/_build",
     "mindspore/lite/build/_deps/nlohmann_json-src",
+    "mindspore/lite/build/_deps/securec-src/include",
 ]
 
 # API files which the corresponding objects and all objects for their dependencies must always be included.

@@ -493,7 +493,7 @@ install(
     COMPONENT mindspore
     FILES_MATCHING PATTERN "*.h"
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/third_party/securec
+install(DIRECTORY ${securec_INC}
     DESTINATION ${INSTALL_BASE_DIR}/include/third_party
     COMPONENT mindspore
     FILES_MATCHING PATTERN "*.h")

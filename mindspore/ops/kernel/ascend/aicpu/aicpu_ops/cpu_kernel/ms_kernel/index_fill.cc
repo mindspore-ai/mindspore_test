@@ -15,7 +15,7 @@
  */
 #include "cpu_kernel/ms_kernel/index_fill.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <map>
 #include <utility>
 #include <algorithm>

@@ -17,7 +17,7 @@
 #include "cpu_kernel/ms_kernel/environ/environ_set.h"
 #include <string>
 #include <memory>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/kernel_util.h"
 #include "cpu_kernel/ms_kernel/environ/aicpu_environ_manager.h"

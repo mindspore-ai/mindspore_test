@@ -16,7 +16,7 @@ if(ENABLE_D OR ENABLE_ACL)
     target_link_libraries(mindspore_ge_backend PRIVATE mindspore_core mindspore_ops mindspore_ascend_res_manager
             mindspore_common mindspore_backend_manager mindspore_backend_common proto_input mindspore_runtime_pipeline
             mindspore_memory_pool mindspore_graph_ir)
-    target_link_libraries(mindspore_ge_backend PRIVATE securec d_collective)
+    target_link_libraries(mindspore_ge_backend PRIVATE mindspore::securec d_collective)
 
     set_target_properties(mindspore_ge_backend PROPERTIES INSTALL_RPATH $ORIGIN:$ORIGIN/plugin:$ORIGIN/plugin/ascend)
 

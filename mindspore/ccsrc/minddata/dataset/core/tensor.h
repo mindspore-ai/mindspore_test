@@ -26,7 +26,7 @@
 #undef HAVE_STDLIB_H
 #endif
 
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "proto/example.pb.h"
 #ifdef ENABLE_PYTHON
 #include "pybind11/numpy.h"

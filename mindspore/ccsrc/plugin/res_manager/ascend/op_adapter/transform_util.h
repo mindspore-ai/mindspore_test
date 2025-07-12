@@ -21,7 +21,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ir/tensor.h"

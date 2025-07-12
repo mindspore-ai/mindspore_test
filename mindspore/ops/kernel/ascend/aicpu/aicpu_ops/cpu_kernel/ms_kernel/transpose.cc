@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/transpose.h"
 
-#include <securec.h>
+#include "include/securec.h"
 
 #include "context/inc/cpu_kernel_utils.h"
 #include "unsupported/Eigen/CXX11/Tensor"

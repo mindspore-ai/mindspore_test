@@ -15,7 +15,7 @@
  */
 #include "ms_kernel/resize_bicubic_grad.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <vector>
 #include <algorithm>
 #include <limits>

@@ -18,7 +18,7 @@
 #include "unsupported/Eigen/CXX11/Tensor"
 #include <algorithm>
 #include <vector>
-#include <securec.h>
+#include "include/securec.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

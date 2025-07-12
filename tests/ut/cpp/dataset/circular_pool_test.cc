@@ -21,7 +21,7 @@
 #include "common/common.h"
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
-#include "./securec.h"
+#include "include/securec.h"
 
 namespace common = mindspore::common;
 
