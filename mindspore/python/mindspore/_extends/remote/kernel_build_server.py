@@ -16,7 +16,7 @@
 import os
 from mindspore import log as logger
 from mindspore._extends.parallel_compile.akg_compiler.akg_process import create_akg_parallel_process, \
-    create_akg_v2_parallel_process
+    create_akg_mlir_parallel_process
 
 
 class Messager:
@@ -187,12 +187,12 @@ class AkgBuilder(AkgBuilderBase):
         self.akg_processor = create_akg_parallel_process(process_num, waitime, self.platform)
 
 
-class AkgV2Builder(AkgBuilderBase):
-    """Akg V2 building wrapper"""
+class AkgMlirBuilder(AkgBuilderBase):
+    """Akg Mlir building wrapper"""
 
     def create(self, process_num, waitime):
-        """ Create akg v2 processor"""
-        self.akg_processor = create_akg_v2_parallel_process(process_num, waitime, self.platform)
+        """ Create akg mlir processor"""
+        self.akg_processor = create_akg_mlir_parallel_process(process_num, waitime, self.platform)
 
 
 def get_logger():

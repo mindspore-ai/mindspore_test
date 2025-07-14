@@ -237,7 +237,7 @@ class BACKEND_COMMON_EXPORT AkgKernelBuildClient : public KernelBuildClient {
   AkgKernelBuildClient() { Open(); }
 };
 
-class BACKEND_COMMON_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
+class BACKEND_COMMON_EXPORT AkgMlirKernelBuildClient : public KernelBuildClient {
  public:
   // Server configure
   constexpr inline static auto kGetPathScript =
@@ -245,14 +245,14 @@ class BACKEND_COMMON_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
     "\""
     "import pkgutil;"
     "path = pkgutil"
-    ".get_loader(\\\"mindspore._extends.remote.kernel_build_server_akg_v2\\\")"  // Server module name
+    ".get_loader(\\\"mindspore._extends.remote.kernel_build_server_akg_mlir\\\")"  // Server module name
     ".get_filename();"
     "print('[~]' + path)"
     "\"";
 
-  constexpr inline static auto kServerScript = "kernel_build_server_akg_v2.py";
+  constexpr inline static auto kServerScript = "kernel_build_server_akg_mlir.py";
 
-  static AkgV2KernelBuildClient &Instance();
+  static AkgMlirKernelBuildClient &Instance();
 
   std::string GetEnv() override { return GetPyExe(); }
 
@@ -261,17 +261,17 @@ class BACKEND_COMMON_EXPORT AkgV2KernelBuildClient : public KernelBuildClient {
     return GetScriptFilePath(env, kGetPathScript, kServerScript);
   }
 
-  AkgV2KernelBuildClient(const AkgV2KernelBuildClient &) = delete;
-  AkgV2KernelBuildClient &operator=(const AkgV2KernelBuildClient &) = delete;
+  AkgMlirKernelBuildClient(const AkgMlirKernelBuildClient &) = delete;
+  AkgMlirKernelBuildClient &operator=(const AkgMlirKernelBuildClient &) = delete;
 
-  AkgV2KernelBuildClient(AkgV2KernelBuildClient &&) = delete;
-  AkgV2KernelBuildClient &operator=(AkgV2KernelBuildClient &&) = delete;
+  AkgMlirKernelBuildClient(AkgMlirKernelBuildClient &&) = delete;
+  AkgMlirKernelBuildClient &operator=(AkgMlirKernelBuildClient &&) = delete;
 
  protected:
-  ~AkgV2KernelBuildClient() override { Close(); }
+  ~AkgMlirKernelBuildClient() override { Close(); }
 
  private:
-  AkgV2KernelBuildClient() { Open(); }
+  AkgMlirKernelBuildClient() { Open(); }
 };
 }  // namespace kernel
 }  // namespace mindspore

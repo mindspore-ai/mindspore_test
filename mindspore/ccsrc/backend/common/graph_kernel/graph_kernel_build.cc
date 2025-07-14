@@ -121,8 +121,8 @@ void GraphKernelBuild::Init() {
 
   // Init AkgKernelBuilder.
   auto device_type = Callback::Instance()->GetTargetFromContext();
-  bool is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
-  kernel_builder_ = kernel::GraphKernelBuildManager::Instance().GetGraphKernelBuilder(device_type, is_akg_v2);
+  bool is_akg_mlir = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_MLIR");
+  kernel_builder_ = kernel::GraphKernelBuildManager::Instance().GetGraphKernelBuilder(device_type, is_akg_mlir);
   if (kernel_builder_ == nullptr) {
     MS_EXCEPTION(UnknownError) << "Can't find corresponding kernel builder for device: " << device_type
                                << ", and kernel_generator flag to be: "

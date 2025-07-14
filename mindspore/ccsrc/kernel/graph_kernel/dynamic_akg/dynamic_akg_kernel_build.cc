@@ -30,19 +30,19 @@ bool DynamicAkgKernelBuilder::ParallelBuild(const std::vector<JsonNodePair> &bui
   struct timeval start_time;
   struct timeval end_time;
   (void)gettimeofday(&start_time, nullptr);
-  MS_LOG(INFO) << "AKG V2 start parallel build. kernel count: " << build_args.size();
+  MS_LOG(INFO) << "AKG MLIR start parallel build. kernel count: " << build_args.size();
 
   KernelPool kp;
   auto ret = kp.Init(build_args);
   if (ret != 0) {
-    MS_LOG(ERROR) << "KernelPool for AKG V2 init failed.";
+    MS_LOG(ERROR) << "KernelPool for AKG MLIR init failed.";
     return false;
   }
 
   std::set<size_t> fetched_ids;
   ret = kp.FetchKernels(&fetched_ids);
   if (ret != 0) {
-    MS_LOG(ERROR) << "KernelPool for AKG V2 FetchKernels failed.";
+    MS_LOG(ERROR) << "KernelPool for AKG MLIR FetchKernels failed.";
     return false;
   }
 
@@ -52,32 +52,32 @@ bool DynamicAkgKernelBuilder::ParallelBuild(const std::vector<JsonNodePair> &bui
     auto dyn_akg_client = GetClient();
     MS_EXCEPTION_IF_NULL(dyn_akg_client);
     if (!dyn_akg_client->CompilerStart(PROCESS_NUM, TIME_OUT, platform)) {
-      MS_LOG(ERROR) << "AKG V2 start failed.";
+      MS_LOG(ERROR) << "AKG MLIR start failed.";
       return false;
     }
     auto attrs = CollectBuildAttrs();
     if (!attrs.empty() && !dyn_akg_client->CompilerSendAttr(attrs)) {
-      MS_LOG(ERROR) << "AKG V2 send attr failed.";
+      MS_LOG(ERROR) << "AKG MLIR send attr failed.";
       return false;
     }
     if (!dyn_akg_client->CompilerSendData(jsons)) {
-      MS_LOG(ERROR) << "AKG V2 send data failed.";
+      MS_LOG(ERROR) << "AKG MLIR send data failed.";
       return false;
     }
     if (!dyn_akg_client->CompilerWait()) {
-      MS_LOG(ERROR) << "AKG V2 compile failed.";
+      MS_LOG(ERROR) << "AKG MLIR compile failed.";
       return false;
     }
   }
 
   ret = kp.UpdateAndWait(fetched_ids);
   if (ret != 0) {
-    MS_LOG(ERROR) << "KernelPool for AKG V2 UpdateAndWait failed.";
+    MS_LOG(ERROR) << "KernelPool for AKG MLIR UpdateAndWait failed.";
     return false;
   }
 
   if (kp.Release() != 0) {
-    MS_LOG(ERROR) << "KernelPool for AKG V2 release failed.";
+    MS_LOG(ERROR) << "KernelPool for AKG MLIR release failed.";
     return false;
   }
 
@@ -85,7 +85,7 @@ bool DynamicAkgKernelBuilder::ParallelBuild(const std::vector<JsonNodePair> &bui
   const uint64_t kUSecondInSecond = 1000000;
   uint64_t cost = kUSecondInSecond * static_cast<uint64_t>(end_time.tv_sec - start_time.tv_sec);
   cost += static_cast<uint64_t>(end_time.tv_usec - start_time.tv_usec);
-  MS_LOG(INFO) << "AKG V2 kernel build time: " << cost << " us.";
+  MS_LOG(INFO) << "AKG MLIR kernel build time: " << cost << " us.";
 
   return true;
 }

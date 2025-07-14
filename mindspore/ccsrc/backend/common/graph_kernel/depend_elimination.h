@@ -34,7 +34,7 @@ class DependElimination : public opt::Pass {
 };
 
 /**
- * @brief the atomic add kernel compilation on Ascend or by AKG_V2 is failed, this kernel will be inlined to main graph.
+ * @brief the atomic add kernel compilation on Ascend or by AKG_MLIR is failed, this kernel will be inlined to main graph.
  * Then there will be unnecessary nodes in the main graph. This pass is used to eliminate these unnecessary nodes.
  * @example
  * Before atomic clean pass, the graph is:

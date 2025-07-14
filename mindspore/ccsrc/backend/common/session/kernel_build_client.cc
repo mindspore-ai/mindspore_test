@@ -112,8 +112,8 @@ AkgKernelBuildClient &AkgKernelBuildClient::Instance() {
   return instance;
 }
 
-AkgV2KernelBuildClient &AkgV2KernelBuildClient::Instance() {
-  static AkgV2KernelBuildClient instance{};
+AkgMlirKernelBuildClient &AkgMlirKernelBuildClient::Instance() {
+  static AkgMlirKernelBuildClient instance{};
   return instance;
 }
 }  // namespace kernel

@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""kernel build server for akg v2 kernels"""
+"""kernel build server for akg mlir kernels"""
 import sys
 import warnings
-from mindspore._extends.remote.kernel_build_server import Messager, get_logger, AkgV2Builder
+from mindspore._extends.remote.kernel_build_server import Messager, get_logger, AkgMlirBuilder
 
 
-class AkgV2Messager(Messager):
+class AkgMlirMessager(Messager):
     '''
-    Default Messager for akg v2 kernels.
+    Default Messager for akg mlir kernels.
     It works as a server, communicating with c++ client.
     '''
 
     def __init__(self, fdin, fdout):
         super().__init__(fdin, fdout)
-        get_logger().info("[TRACE] AKG V2 Messager init...")
-        self.akg_v2_builder = AkgV2Builder("default")
+        get_logger().info("[TRACE] AKG MLIR Messager init...")
+        self.akg_mlir_builder = AkgMlirBuilder("default")
 
     def handle(self):
         """
@@ -36,13 +36,13 @@ class AkgV2Messager(Messager):
         """
         arg = self.get_message()
         if "AKG" in arg:
-            self.akg_v2_builder.handle(self, arg)
+            self.akg_mlir_builder.handle(self, arg)
         else:
             self.send_ack(False)
             self.exit()
 
     def exit(self):
-        get_logger().info("[TRACE] AKG V2 Messager Exit...")
+        get_logger().info("[TRACE] AKG MLIR Messager Exit...")
         exit()
 
 
@@ -51,5 +51,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 3:
         raise Exception(f"Incorrect argv: {sys.argv}")
     get_logger().debug(f"[TRACE] argv: {str(sys.argv)}")
-    messager = AkgV2Messager(int(sys.argv[1]), int(sys.argv[2]))
+    messager = AkgMlirMessager(int(sys.argv[1]), int(sys.argv[2]))
     messager.run()

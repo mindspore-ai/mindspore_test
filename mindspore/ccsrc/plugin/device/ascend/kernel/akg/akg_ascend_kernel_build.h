@@ -46,7 +46,7 @@ class DynamicAkgAscendKernelBuilder : public DynamicAkgKernelBuilder {
   DynamicAkgAscendKernelBuilder() = default;
   ~DynamicAkgAscendKernelBuilder() = default;
 
-  kernel::KernelBuildClient *GetClient() override { return &(kernel::AkgV2KernelBuildClient::Instance()); }
+  kernel::KernelBuildClient *GetClient() override { return &(kernel::AkgMlirKernelBuildClient::Instance()); }
   void LoadCache() override { return; }
   KernelPackPtr SearchKernelCache(const std::string &kernel_name) override;
   KernelPackPtr InsertKernelCache(const std::string &kernel_name) override;
