@@ -15,7 +15,7 @@
  *
  * https://gitee.com/ascend/metadef/blob/r1.1/third_party/transformer/inc/axis_util.h
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2022
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2022.
  */
 
 /*!

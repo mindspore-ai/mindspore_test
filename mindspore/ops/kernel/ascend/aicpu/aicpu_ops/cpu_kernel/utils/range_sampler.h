@@ -15,7 +15,7 @@
  *
  * https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/range_sampler.h
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2023
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2023.
  ==============================================================================*/
 
 #ifndef SRC_COMMON_RANGE_SAMPLER_H_

@@ -15,7 +15,7 @@
  *
  * https://gitee.com/mindspore/graphengine/blob/v1.1.0/ge/common/formats/format_transfers/format_transfer_transpose.cc
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2021
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2021.
  */
 #include "cpu_kernel/format_transfer/format_transfer_transpose.h"
 
