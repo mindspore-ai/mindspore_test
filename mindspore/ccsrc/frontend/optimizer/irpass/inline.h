@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -283,11 +283,11 @@ class InlinerBase : public AnfVisitor {
                      const FuncGraphPtr &fg) const {
     auto params = fg->parameters();
     auto old_size = params.size();
-    constexpr auto print_deep = 10;
     if (old_size != new_params.size()) {
       MS_EXCEPTION_IF_NULL(fg->output());
-      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->output()) << "Parameter size not match." << old_size << " new "
-                                                         << new_params.size() << fg->output()->DebugString(print_deep);
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->output())
+        << "Parameter size not match." << old_size << " new " << new_params.size()
+        << fg->output()->DebugString(AnfNode::DebugStringLevel::kLevel10);
     }
     for (size_t i = 0; i < old_size; i++) {
       (void)mng->Replace(params[i], new_params[i]);
@@ -412,12 +412,12 @@ class InlinerBase : public AnfVisitor {
 
   void SetAbstractForNewNode(const AnfNodePtr &old_node, const AnfNodePtr &new_node) {
     const auto &old_abs = old_node->abstract();
-    if (!old_abs) {
+    if (old_abs == nullptr) {
       return;
     }
 
     auto new_abs = new_node->abstract();
-    if (!new_abs) {
+    if (new_abs == nullptr) {
       new_node->set_abstract(old_abs);
       return;
     }

@@ -647,8 +647,7 @@ static void AddParallelAttrs(const CNodePtr &k_app_c, const CNodePtr &morph_c) {
 
 // Map a morphism.
 AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
-  constexpr int recursive_level = 4;
-  MS_LOG(DEBUG) << "Start: " << morph->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "Start: " << morph->DebugString(AnfNode::DebugStringLevel::kLevel4);
   // MapMorphism All type except CNode should already be mapped by MapObject.
   if (!morph->isa<CNode>()) {
     return nullptr;
@@ -719,7 +718,7 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   node_adjoint->set_side_effect_bprop_app_propagate(side_effect_bprop_app_propagate);
   UpdateAdjoint(node_adjoint);
   anfnode_to_adjoin_[morph] = node_adjoint;
-  MS_LOG(DEBUG) << "End, node: " << morph->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "End, node: " << morph->DebugString(AnfNode::DebugStringLevel::kLevel4);
 
   if (!is_view_inplace_) {
     // Do sens backpropagation.
@@ -1324,11 +1323,10 @@ bool DFunctor::AllReferencesStopped(const CNodePtr &node) {
 }
 
 CNodePtr GetJUser(const NodeUsersMap &node_user_map, const CNodePtr &cnode, int index) {
-  constexpr auto recursive_level = 2;
   auto it = node_user_map.find(cnode);
   if (it == node_user_map.end()) {
     MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
-      << "J CNode not used {" << cnode->DebugString(recursive_level) << "/" << index << "}";
+      << "J CNode not used {" << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2) << "/" << index << "}";
   }
   auto &j_users = it->second;
   auto size = j_users.size();
@@ -1355,8 +1353,8 @@ CNodePtr GetJUser(const NodeUsersMap &node_user_map, const CNodePtr &cnode, int 
       DumpIR("J_User_Ex_" + cnode->func_graph()->ToString() + ".ir", cnode->func_graph());
 #endif
       MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
-        << "Incorrect J CNode user size: " << size << ", of {" << cnode->DebugString(recursive_level) << "/" << index
-        << "}\nUser Info:\n"
+        << "Incorrect J CNode user size: " << size << ", of {" << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2)
+        << "/" << index << "}\nUser Info:\n"
         << user_info.str();
     } else {
       return j_call_user;
@@ -1388,7 +1386,8 @@ CNodePtr GetPrimalUser(const CNodePtr &j_user, const std::map<FuncGraphPtr, std:
                  << ", J operation: " << j_user->DebugString() << ", Primal call: ";
     size_t count = 0;
     for (const auto &user : primal_users) {
-      MS_LOG(INFO) << "[ " << ++count << " ] : " << user->DebugString(2) << trace::DumpSourceLines(user, false);
+      MS_LOG(INFO) << "[ " << ++count << " ] : " << user->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                   << trace::DumpSourceLines(user, false);
     }
     return nullptr;
   }

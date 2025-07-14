@@ -478,8 +478,9 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
       MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
                               << "but got " << type->ToString() << ".";
     }
-    MS_LOG(DEBUG) << "Function " << func_name << "'s input " << i << " " << param->DebugString(2) << " abs "
-                  << args_abs_list[i]->ToString() << " type " << type->ToString() << ".";
+    MS_LOG(DEBUG) << "Function " << func_name << "'s input " << i << " "
+                  << param->DebugString(AnfNode::DebugStringLevel::kLevel2) << " abs " << args_abs_list[i]->ToString()
+                  << " type " << type->ToString() << ".";
     input_types.push_back(type);
     op_inputs.push_back(param);
   }

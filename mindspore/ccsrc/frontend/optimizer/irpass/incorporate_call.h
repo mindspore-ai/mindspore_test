@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,8 +150,8 @@ class IncorporateCall : public AnfVisitor {
         // double check;
         const size_t attach_index = 2;
         if (update_state_cnode->input(attach_index) == fg_call_cnode_) {
-          constexpr int recursive_level = 2;
-          MS_LOG(DEBUG) << "Replace UpdateState node: " << update_state_cnode->DebugString(recursive_level)
+          MS_LOG(DEBUG) << "Replace UpdateState node: "
+                        << update_state_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2)
                         << ", input 2 with: " << new_node->DebugString();
           manager->SetEdge(update_state_cnode, attach_index, new_node);
         }

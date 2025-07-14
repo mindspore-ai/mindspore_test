@@ -211,11 +211,34 @@ class MS_CORE_API AnfNode : public Base {
   /// \return The unique name of this AnfNode.
   std::string UniqueName();
 
+  enum class DebugStringLevel : int {
+    kLevel0 = 0,
+    kLevel1 = 1,
+    kLevel2 = 2,
+    kLevel3 = 3,
+    kLevel4 = 4,
+    kLevel5 = 5,
+    kLevel6 = 6,
+    kLevel7 = 7,
+    kLevel8 = 8,
+    kLevel9 = 9,
+    kLevel10 = 10,
+    kLevelMax
+  };
+
+  friend constexpr DebugStringLevel operator-(DebugStringLevel level, int value) {
+    int raw = static_cast<int>(level) - value;
+    constexpr int level_max = static_cast<int>(DebugStringLevel::kLevelMax);
+    MS_EXCEPTION_IF_CHECK_FAIL((raw >= 0 && raw < level_max),
+                               "Debug level out of range [0, " + std::to_string(level_max) + ").");
+    return static_cast<DebugStringLevel>(raw);
+  }
+
   /// \brief Obtain the display information of this AnfNode.
   ///
   /// \param[in] recursive_level Recursion level when displayed.
   /// \return Information to be displayed.
-  virtual std::string DebugString(int recursive_level = 1) const;
+  virtual std::string DebugString(DebugStringLevel recursive_level = DebugStringLevel::kLevel1) const;
 
   /// \brief Obtain the display information of this AnfNode.
   ///
@@ -434,7 +457,8 @@ class MS_CORE_API CNode final : public AnfNode, public EffectInfoHolder {
   /// \param[in] full_name The fullname_with_scope.
   void set_fullname_with_scope(const std::string full_name);
 
-  std::string DebugString(int recursive_level = 1) const override;
+  std::string DebugString(
+    AnfNode::DebugStringLevel recursive_level = AnfNode::DebugStringLevel::kLevel1) const override;
   std::string DebugString(bool recursive) const override;
 
   /// \brief Set in_forward_flag for this CNode.
@@ -672,7 +696,8 @@ class MS_CORE_API Parameter final : public ANode {
   MS_DECLARE_PARENT(Parameter, ANode);
 
   void accept(AnfIrVisitor *v) override;
-  std::string DebugString(int recursive_level = 1) const override;
+  std::string DebugString(
+    AnfNode::DebugStringLevel recursive_level = AnfNode::DebugStringLevel::kLevel1) const override;
 
   /// \brief Get the name of this Parameter.
   ///
@@ -927,7 +952,8 @@ class MS_CORE_API ValueNode final : public ANode {
   void set_used_graph_count(size_t used_graph_count);
 
   std::string ToString() const override;
-  std::string DebugString(int recursive_level = 1) const override;
+  std::string DebugString(
+    AnfNode::DebugStringLevel recursive_level = AnfNode::DebugStringLevel::kLevel1) const override;
   std::string DebugString(bool recursive) const override;
 
   bool operator==(const AnfNode &other) const override;

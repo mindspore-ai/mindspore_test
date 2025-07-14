@@ -36,7 +36,6 @@ namespace mindspore {
 namespace ge_backend {
 namespace runtime {
 namespace {
-constexpr auto kDebugStrDepthTwo = 2;
 // Check if node is a value node need to create a device tensor.
 bool IsFrontValueNode(const KernelWithIndex &node_with_index) {
   const auto &node = node_with_index.first;
@@ -2571,7 +2570,7 @@ void ControlNodeParser::PrintParseInfo() {
       if (input_pair.first != nullptr) {
         MS_LOG(WARNING) << "Kernel graph group:" << group->group_name_
                         << " input node:" << input_pair.first->fullname_with_scope()
-                        << " debug string:" << input_pair.first->DebugString(kDebugStrDepthTwo)
+                        << " debug string:" << input_pair.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                         << " index:" << input_pair.second;
       }
     }
@@ -2579,10 +2578,10 @@ void ControlNodeParser::PrintParseInfo() {
       if (output_pair.first.first != nullptr && output_pair.second.first != nullptr) {
         MS_LOG(WARNING) << "Kernel graph group:" << group->group_name_
                         << " output node:" << output_pair.first.first->fullname_with_scope()
-                        << " debug string:" << output_pair.first.first->DebugString(kDebugStrDepthTwo)
+                        << " debug string:" << output_pair.first.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                         << " index:" << output_pair.first.second
                         << " backend node:" << output_pair.second.first->fullname_with_scope()
-                        << " debug string:" << output_pair.second.first->DebugString(kDebugStrDepthTwo)
+                        << " debug string:" << output_pair.second.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                         << " index:" << output_pair.second.second;
       }
     }
@@ -2590,17 +2589,17 @@ void ControlNodeParser::PrintParseInfo() {
   for (const auto &f_to_b : front_to_backend_kernels_) {
     if (f_to_b.first.first != nullptr && f_to_b.second.first != nullptr) {
       MS_LOG(WARNING) << "Front to backend map front node:" << f_to_b.first.first->fullname_with_scope()
-                      << " debug string:" << f_to_b.first.first->DebugString(kDebugStrDepthTwo)
+                      << " debug string:" << f_to_b.first.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                       << " index:" << f_to_b.first.second
                       << " backend node:" << f_to_b.second.first->fullname_with_scope()
-                      << " debug string:" << f_to_b.second.first->DebugString(kDebugStrDepthTwo)
+                      << " debug string:" << f_to_b.second.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                       << " index:" << f_to_b.second.second;
     }
   }
   for (const auto &pair : front_node_to_kernel_graph_) {
     if (pair.first != nullptr && pair.second != nullptr) {
       MS_LOG(WARNING) << "Front node:" << pair.first->fullname_with_scope()
-                      << " debug string:" << pair.first->DebugString(kDebugStrDepthTwo)
+                      << " debug string:" << pair.first->DebugString(AnfNode::DebugStringLevel::kLevel2)
                       << " to kernel graph:" << pair.second->ToString();
     }
   }

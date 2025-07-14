@@ -613,8 +613,7 @@ void BuildTopGraph(const FuncGraphPtr &func_graph, const py::object &input,
     }
   }
   auto output = func_graph->NewCNodeInOrder(inputs);
-  constexpr auto recursive_level = 2;
-  MS_LOG(DEBUG) << "output: " << output->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "output: " << output->DebugString(AnfNode::DebugStringLevel::kLevel2);
   func_graph->set_output(output);
 }
 }  // namespace
@@ -757,8 +756,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
       (void)new_node_inputs.insert(new_node_inputs.end(), fvs.cbegin(), fvs.cend());
       AnfNodePtr out = g->NewCNodeBefore(g->get_return(), new_node_inputs);
       g->set_output(out);
-      const int recursive_level = 4;
-      MS_LOG(DEBUG) << "Combine graph newout:" << out->DebugString(recursive_level);
+      MS_LOG(DEBUG) << "Combine graph newout:" << out->DebugString(AnfNode::DebugStringLevel::kLevel4);
     }
     MS_LOG(DEBUG) << "End combine graph:" << it->first;
   }

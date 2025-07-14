@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,10 @@ std::vector<AnfNodePtr> GetCNodeList(const FuncGraphPtr &func_graph) {
   std::vector<AnfNodePtr> nodes = TopoSort(func_graph->get_return());
   std::vector<AnfNodePtr> lst;
   for (auto &node : nodes) {
-    MS_LOG(INFO) << "nodes: " << node->DebugString(10);
+    MS_LOG(INFO) << "nodes: " << node->DebugString(AnfNode::DebugStringLevel::kLevel10);
     if (node->isa<CNode>() && IsValueNode<Primitive>(node->cast<CNodePtr>()->input(0)) &&
         !IsPrimitiveCNode(node, prim::kPrimReturn)) {
-      MS_LOG(INFO) << "push in anf_node list: " << node->DebugString(10);
+      MS_LOG(INFO) << "push in anf_node list: " << node->DebugString(AnfNode::DebugStringLevel::kLevel10);
       lst.push_back(node);
     }
   }

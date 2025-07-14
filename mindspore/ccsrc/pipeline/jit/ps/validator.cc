@@ -284,10 +284,12 @@ void ValidateScope(const AnfNodePtr &node, const std::string &pass_name) {
     return;
   }
   if (node->scope() == nullptr || node->scope() == kDefaultScope) {
-    MS_LOG(ERROR) << "In " << pass_name << ", failed to find scope for node " << node->DebugString(2);
+    MS_LOG(ERROR) << "In " << pass_name << ", failed to find scope for node "
+                  << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
   if (node->scope() == kDefaultScopeUnderGuard) {
-    MS_LOG(INFO) << "In " << pass_name << ", encounter kDefaultScopeUnderGuard for node: " << node->DebugString(2);
+    MS_LOG(INFO) << "In " << pass_name << ", encounter kDefaultScopeUnderGuard for node: "
+                 << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
   }
 }
 

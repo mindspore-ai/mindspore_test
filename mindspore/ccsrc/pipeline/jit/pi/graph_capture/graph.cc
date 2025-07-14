@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -768,7 +768,7 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
 static void PrintAnfNode(std::ostream *out, mindspore::AnfNode *anf_node, const std::string &prefix) {
   auto &s = *out;
   std::string str;
-  str += anf_node->DebugString(1) + " ";
+  str += anf_node->DebugString(AnfNode::DebugStringLevel::kLevel1) + " ";
   str += anf_node->abstract() == nullptr ? "<NULL>" : anf_node->abstract()->ToString();
   std::replace(str.begin(), str.end(), '\n', ' ');
   s << " AnfNode(" << anf_node << ") [" << str << "]";

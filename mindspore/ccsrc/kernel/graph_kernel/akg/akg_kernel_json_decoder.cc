@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,8 +305,7 @@ class CNodeDecoder {
     builder->SetOutputsDeviceType(std::vector<TypeId>{StringToTypeId(value_json[kJsonKeyDataType])});
     AnfAlgo::SetSelectKernelBuildInfo(builder->Build(), value_node.get());
     func_graph->AddValueNode(value_node);
-    const int kDebugLevel = 2;
-    MS_LOG(DEBUG) << "decode value node success, " << value_node->DebugString(kDebugLevel);
+    MS_LOG(DEBUG) << "decode value node success, " << value_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
     return value_node;
   }
 

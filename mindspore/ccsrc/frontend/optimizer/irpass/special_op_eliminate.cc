@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2024 Huawei Technologies Co., Ltd
+ * Copyright 2020-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -438,7 +438,7 @@ AnfNodePtr PynativeEliminater::OperatorHandle1(const PatternNode<AnfNodePtr> &ar
       auto value_node = rep->cast<ValueNodePtr>();
       auto new_value_node = NewValueNode(FillZero(value_node->value(), node));
       new_value_node->set_has_new_value(value_node->has_new_value());
-      MS_LOG(DEBUG) << "Zeros_like replace ok " << rep->DebugString(4);
+      MS_LOG(DEBUG) << "Zeros_like replace ok " << rep->DebugString(AnfNode::DebugStringLevel::kLevel4);
       return new_value_node;
     }
   }
@@ -452,7 +452,7 @@ AnfNodePtr PynativeEliminater::OperatorHandle2(const PatternNode<AnfNodePtr> &ar
       auto value_node = rep->cast<ValueNodePtr>();
       auto new_value_node = NewValueNode(FillZero(value_node->value(), node));
       new_value_node->set_has_new_value(value_node->has_new_value());
-      MS_LOG(DEBUG) << "Zeros_like replace ok 2 " << rep->DebugString(4);
+      MS_LOG(DEBUG) << "Zeros_like replace ok 2 " << rep->DebugString(AnfNode::DebugStringLevel::kLevel4);
       return new_value_node;
     }
   }
@@ -485,7 +485,7 @@ AnfNodePtr PynativeEliminater::OperatorHandle4(const PatternNode<AnfNodePtr> &ar
   auto rep = (arg).GetNode(node);
   if (rep != nullptr) {
     if (rep->isa<ValueNode>()) {
-      MS_LOG(DEBUG) << "Rep is " << rep->DebugString(4);
+      MS_LOG(DEBUG) << "Rep is " << rep->DebugString(AnfNode::DebugStringLevel::kLevel4);
       ValueNodePtr new_node;
       auto value_node = rep->cast<ValueNodePtr>();
       auto rep1 = (arg1).GetNode(node);
@@ -499,7 +499,7 @@ AnfNodePtr PynativeEliminater::OperatorHandle4(const PatternNode<AnfNodePtr> &ar
           new_node->set_has_new_value(value_node->has_new_value());
         }
       }
-      MS_LOG(DEBUG) << "Fill getitem  replace ok " << new_node->DebugString(4);
+      MS_LOG(DEBUG) << "Fill getitem  replace ok " << new_node->DebugString(AnfNode::DebugStringLevel::kLevel4);
       return new_node;
     }
   }
@@ -507,7 +507,7 @@ AnfNodePtr PynativeEliminater::OperatorHandle4(const PatternNode<AnfNodePtr> &ar
 }
 
 AnfNodePtr PynativeEliminater::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
-  MS_LOG(DEBUG) << "Start replace node " << node->DebugString(4);
+  MS_LOG(DEBUG) << "Start replace node " << node->DebugString(AnfNode::DebugStringLevel::kLevel4);
   PatternNode<AnfNodePtr> symbol_str_vnode;
   PatternNode<AnfNodePtr> c_vnode;
   PatternNode<AnfNodePtr> zeros_like_vnode;
@@ -524,7 +524,7 @@ AnfNodePtr PynativeEliminater::operator()(const OptimizerPtr &, const AnfNodePtr
       return new_value_node;
     }
   }
-  MS_LOG(DEBUG) << "End replace 1 " << node->DebugString(4);
+  MS_LOG(DEBUG) << "End replace 1 " << node->DebugString(AnfNode::DebugStringLevel::kLevel4);
   // {prim:getattr, {prim::resolve, SymbolStr, zeros_like}, Xy} ->Tensor(0, shape(Xy))
   auto resolve1 = PPrimitive(prim::kPrimResolve, symbol_str_vnode, zeros_like_vnode);
   auto pattern1 = PCNode(resolve1, arg);
@@ -559,7 +559,7 @@ AnfNodePtr PynativeEliminater::operator()(const OptimizerPtr &, const AnfNodePtr
     }
   }
 
-  MS_LOG(DEBUG) << "End Replace " << node->DebugString(4);
+  MS_LOG(DEBUG) << "End Replace " << node->DebugString(AnfNode::DebugStringLevel::kLevel4);
   return nullptr;
 }
 

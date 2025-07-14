@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2024 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -848,9 +848,8 @@ EvalResultPtr AnalysisEngine::InterpretedNodeCall(const CNodePtr &cnode, const A
   // Check if the operator input is PyExecute CNode.
   const auto &func_node = cnode->input(0);
   MS_EXCEPTION_IF_NULL(func_node);
-  constexpr auto recursive_level = 2;
-  MS_LOG(DEBUG) << "Current CNode: " << cnode->DebugString(recursive_level)
-                << ", func_node: " << func_node->DebugString(recursive_level);
+  MS_LOG(DEBUG) << "Current CNode: " << cnode->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                << ", func_node: " << func_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
   auto prim = GetCNodePrimitiveWithoutDoSignature(func_node);
   if (!IsPrimitiveEquals(prim, prim::kPrimResolve) && !IsPrimitiveEquals(prim, prim::kPrimGetAttr) &&
       !IsPrimitiveEquals(prim, prim::kPrimPyExecute) && !IsPrimitiveEquals(prim, prim::kPrimPyInterpret)) {
@@ -1586,14 +1585,13 @@ FuncGraphPtr GetFuncGraphFromBranchNode(const AnfNodePtr &branch_node) {
 
 std::string JoinBranchesFailedInfo(const AbstractBasePtr &abs, const AbstractBasePtr &last_out_abs,
                                    const AnfNodePtr &node, const std::string &error_info) {
-  constexpr int recursive_level = 2;
   std::ostringstream buffer;
   buffer << "Cannot join the return values of different branches, perhaps you need to make them equal.\n"
          << error_info
          << "#dmsg#Framework Error Message:#dmsg#The abstract type of the return value of the current branch is:\n"
          << abs->ToString() << ",\n and that of the previous branch is:\n"
          << last_out_abs->ToString() << ".\n"
-         << "The node is " << node->DebugString(recursive_level);
+         << "The node is " << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
   if (!node->isa<CNode>()) {
     buffer << "\n";
     return buffer.str();

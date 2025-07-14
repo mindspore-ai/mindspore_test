@@ -227,8 +227,8 @@ bool HasVariableLenAttr(const py::object &obj) {
 AnfNodePtr ConvertInterpretedObjForResolve(const AnfNodePtr &origin_node, const ValuePtr &convert_result,
                                            const FuncGraphPtr &func_graph) {
   if (convert_result->isa<InterpretedObject>() && !origin_node->has_user_data("__py_interpret_local_value_flag__")) {
-    constexpr auto recursive_level = 2;
-    MS_LOG(DEBUG) << "Convert InterpretedObj for resolve, node: " << origin_node->DebugString(recursive_level);
+    MS_LOG(DEBUG) << "Convert InterpretedObj for resolve, node: "
+                  << origin_node->DebugString(AnfNode::DebugStringLevel::kLevel2);
     auto interpreted_value = dyn_cast<InterpretedObject>(convert_result);
     const auto &key = interpreted_value->name();
     if (interpreted_value->has_converted()) {
@@ -604,8 +604,8 @@ std::pair<NameSpacePtr, SymbolPtr> GetNamespaceAndSymbol(const AnfNodePtr &node)
     auto symbol = GetValueNode<SymbolPtr>(symbol_node);
     return {name_space, symbol};
   }
-  constexpr auto recursive_level = 2;
-  MS_LOG(INTERNAL_EXCEPTION) << "It's not prim::Resolve CNode, node: " << node->DebugString(recursive_level);
+  MS_LOG(INTERNAL_EXCEPTION) << "It's not prim::Resolve CNode, node: "
+                             << node->DebugString(AnfNode::DebugStringLevel::kLevel2);
 }
 
 py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node) {

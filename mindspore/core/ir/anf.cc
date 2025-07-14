@@ -167,9 +167,11 @@ std::string AnfNode::fullname_with_scope() { return ""; }
 
 std::string AnfNode::UniqueName() { return fullname_with_scope() + "_" + UniqueId(); }
 
-std::string AnfNode::DebugString(int recursive_level) const { return ToString(); }
+std::string AnfNode::DebugString(DebugStringLevel recursive_level) const { return ToString(); }
 
-std::string AnfNode::DebugString(bool recursive) const { return DebugString(recursive ? 1 : 0); }
+std::string AnfNode::DebugString(bool recursive) const {
+  return DebugString(recursive ? AnfNode::DebugStringLevel::kLevel1 : AnfNode::DebugStringLevel::kLevel0);
+}
 
 void AnfNode::dump() const { std::cout << DebugString() << std::endl; }
 
@@ -459,9 +461,9 @@ const AnfNodeWeakPtr &CNode::weak_input(size_t i) const {
   return weak_inputs_.at(i);
 }
 
-std::string CNode::DebugString(int recursive_level) const {
+std::string CNode::DebugString(AnfNode::DebugStringLevel recursive_level) const {
   std::ostringstream buffer;
-  if (recursive_level > 0) {
+  if (recursive_level > AnfNode::DebugStringLevel::kLevel0) {
     if (func_graph() != nullptr) {
       buffer << "@" << func_graph()->ToString() << ":";
     }
@@ -558,7 +560,9 @@ void CNode::set_stop_gradient(bool stop_gradient) { flags_[kStopGradient] = stop
 
 void CNode::set_fullname_with_scope(const std::string full_name) { fullname_with_scope_ = full_name; }
 
-std::string CNode::DebugString(bool recursive) const { return DebugString(recursive ? 1 : 0); }
+std::string CNode::DebugString(bool recursive) const {
+  return DebugString(recursive ? AnfNode::DebugStringLevel::kLevel1 : AnfNode::DebugStringLevel::kLevel0);
+}
 
 void CNode::set_in_forward_flag(bool flag) { flags_[kInForwardFlag] = flag; }
 
@@ -726,9 +730,9 @@ void Parameter::set_hidden_size(int64_t hidden_size) { format_attrs_.hidden_size
 
 int64_t Parameter::hidden_size() const { return format_attrs_.hidden_size; }
 
-std::string Parameter::DebugString(int recursive_level) const {
+std::string Parameter::DebugString(AnfNode::DebugStringLevel recursive_level) const {
   std::ostringstream buffer;
-  if (recursive_level > 0) {
+  if (recursive_level > AnfNode::DebugStringLevel::kLevel0) {
     if (func_graph() != nullptr) {
       buffer << "@" << func_graph()->ToString() << ":";
     }
@@ -841,7 +845,9 @@ int64_t ValueNode::fracz_group() const { return format_attr_.fracz_group; }
 
 void ValueNode::set_used_graph_count(size_t used_graph_count) { used_graph_count_ = used_graph_count; }
 
-std::string ValueNode::DebugString(bool recursive) const { return DebugString(recursive ? 1 : 0); }
+std::string ValueNode::DebugString(bool recursive) const {
+  return DebugString(recursive ? AnfNode::DebugStringLevel::kLevel1 : AnfNode::DebugStringLevel::kLevel0);
+}
 
 bool ValueNode::operator==(const AnfNode &other) const {
   if (!other.isa<ValueNode>()) {
@@ -862,7 +868,7 @@ std::string ValueNode::ToString() const {
   return buffer.str();
 }
 
-std::string ValueNode::DebugString(int) const {
+std::string ValueNode::DebugString(AnfNode::DebugStringLevel) const {
   MS_EXCEPTION_IF_NULL(value_);
   std::ostringstream buffer;
   buffer << "ValueNode<" << value_->type_name() << "> " << value_->ToString();

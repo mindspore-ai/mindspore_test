@@ -1,5 +1,5 @@
 /**
- * Copyright 2023-2024 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,9 +264,8 @@ AnfNodePtr ConvertPyObjectToPyExecute(const FuncGraphPtr &fg, const std::string 
   const auto interpreted_cnode =
     CreatePyExecuteCNode(fg, NewValueNode(script_str), NewValueNode(std::make_shared<ValueTuple>(keys)),
                          NewValueNode(std::make_shared<ValueTuple>(values)), node->debug_info());
-  constexpr auto debug_recursive_level = 2;
-  MS_LOG(DEBUG) << "original node: " << node->DebugString(debug_recursive_level)
-                << ", interpreted_cnode: " << interpreted_cnode->DebugString(debug_recursive_level);
+  MS_LOG(DEBUG) << "original node: " << node->DebugString(AnfNode::DebugStringLevel::kLevel2)
+                << ", interpreted_cnode: " << interpreted_cnode->DebugString(AnfNode::DebugStringLevel::kLevel2);
   if (replace) {
     fg->ReplaceInOrder(node, interpreted_cnode);
   }

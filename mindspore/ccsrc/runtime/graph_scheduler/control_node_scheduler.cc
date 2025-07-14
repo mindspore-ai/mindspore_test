@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2704,7 +2704,7 @@ void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, In
   }
   for (const auto &pair : control_actor->local_kernel_tensors()) {
     MS_EXCEPTION_IF_NULL(pair.second.second);
-    std::string name = pair.second.second->DebugString(0);
+    std::string name = pair.second.second->DebugString(AnfNode::DebugStringLevel::kLevel0);
     if (pair.second.second->isa<ValueNode>()) {
       name = GetValueNodeName(pair.second.second->cast<ValueNodePtr>());
     }
@@ -2738,7 +2738,7 @@ void GetAllInputByArrow(AbstractActor *const actor,
           name = input_actor->input_data_arrow_aids()[0].first.Name();
         } else if (input_actor->device_tensor_store_keys().size() == 1 &&
                    input_actor->device_tensor_store_keys()[0].second != nullptr) {
-          name = input_actor->device_tensor_store_keys()[0].second->DebugString(0);
+          name = input_actor->device_tensor_store_keys()[0].second->DebugString(AnfNode::DebugStringLevel::kLevel0);
         }
       }
       GetNameForStubActor(actor, pair.second, &name, &index);
@@ -2755,7 +2755,7 @@ void GetAllInputByStore(AbstractActor *const actor, std::map<size_t, InputInfo> 
   // Get all inputs by device tensor store.
   for (const auto &pair : actor->device_tensor_store_keys()) {
     MS_EXCEPTION_IF_NULL(pair.second);
-    std::string name = pair.second->DebugString(0);
+    std::string name = pair.second->DebugString(AnfNode::DebugStringLevel::kLevel0);
     if (pair.second->isa<ValueNode>()) {
       name = GetValueNodeName(pair.second->cast<ValueNodePtr>());
     }
@@ -2765,7 +2765,7 @@ void GetAllInputByStore(AbstractActor *const actor, std::map<size_t, InputInfo> 
   // Get all inputs by parameter store.
   for (const auto &pair : actor->parameter_indexs()) {
     MS_EXCEPTION_IF_NULL(pair.second.first.first);
-    std::string name = pair.second.first.first->DebugString(0);
+    std::string name = pair.second.first.first->DebugString(AnfNode::DebugStringLevel::kLevel0);
     (*input_aids)[pair.first] = {name, 0};
     *max_index = (*max_index > pair.first ? *max_index : pair.first);
   }
@@ -2785,7 +2785,8 @@ std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const Contr
     for (size_t i = 0; i < entrance_actor->formal_parameters().size(); ++i) {
       const auto &formal_parameter = entrance_actor->formal_parameters()[i];
       MS_EXCEPTION_IF_NULL(formal_parameter.first);
-      input_aids[i] = {formal_parameter.first->DebugString(0), formal_parameter.second};
+      input_aids[i] = {formal_parameter.first->DebugString(AnfNode::DebugStringLevel::kLevel0),
+                       formal_parameter.second};
     }
     return input_aids;
   }

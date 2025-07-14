@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,11 +147,10 @@ class AnfNodeConfig final : public Config {
 
   std::string ToString() const override {
     std::ostringstream buffer;
-    constexpr int recursive_level = 2;
     buffer << "Node: " << node_ << "/"
-           << (node_ == nullptr
-                 ? "null"
-                 : node_->DebugString(recursive_level) + std::string("-uid(") + node_->UniqueId() + std::string(")"))
+           << (node_ == nullptr ? "null"
+                                : node_->DebugString(AnfNode::DebugStringLevel::kLevel2) + std::string("-uid(") +
+                                    node_->UniqueId() + std::string(")"))
            << ", Context: " << context_ << "/" << (context_ == nullptr ? "null" : context_->ToString())
            << ", FuncGraph: " << func_graph_ << "/" << (func_graph_ == nullptr ? "null" : func_graph_->ToString());
     return buffer.str();
