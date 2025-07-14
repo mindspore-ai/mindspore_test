@@ -891,6 +891,10 @@ def get_method_info(obj):
     if not (inspect.ismethod(obj) or 'built-in method' in repr(obj)):
         return None, None
     class_name_and_method_name = obj.__qualname__.split('.')
+    if len(class_name_and_method_name) != 2:
+        # Might be a monkey-patch method
+        logger.debug("Method '%s' has no class name", obj.__qualname__)
+        return None, None
     return class_name_and_method_name[0], class_name_and_method_name[1]
 
 

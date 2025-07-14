@@ -1103,7 +1103,7 @@ py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
   py::tuple method_info = GetMethodInfo(obj);
   py::object class_name_obj = method_info[0];
   if (py::isinstance<py::none>(class_name_obj)) {
-    MS_LOG(INFO) << "Can not get the method info of " << py::str(obj);
+    MS_LOG(DEBUG) << "Can not get the method info of " << py::str(obj);
     return py::object();
   }
   auto class_name = class_name_obj.cast<std::string>();
@@ -1138,10 +1138,14 @@ py::object FuncGraphBuilder::ConvertMethod(const std::string &class_name, const 
       MS_LOG(DEBUG) << "Can not find the method '" << require.cast<std::string>() << "' defined in standard_method.";
       return py::object();
     }
+    MS_LOG(DEBUG) << "Convert method '" << class_name << "." << method_name
+                  << "' to function in standard_method: " << require.cast<std::string>();
     return fn;
   } else if (require.is<PrimitivePtr>()) {
     auto ops_mod = python_adapter::GetPyModule("mindspore.ops");
     auto primitive_class = python_adapter::GetPyObjAttr(ops_mod, "Primitive");
+    MS_LOG(DEBUG) << "Convert method '" << class_name << "." << method_name
+                  << "' to Primitive: " << require.cast<PrimitivePtr>()->name();
     return primitive_class(require.cast<PrimitivePtr>()->name());
   }
   MS_LOG(DEBUG) << "The method or attr should be a string or a Primitive, but got " << require.ToString();
