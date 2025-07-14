@@ -1,6 +1,5 @@
 approvers:
 - ginfung #
-- liangzhibo
 - huangbingjian
 - Margaret_wangrui
 - zh_qh
@@ -14,3 +13,6 @@ reviewers:
 - yuanqi1104
 - chaijinwei
 - nuohang
+
+options:
+    no_parent_owners: true
