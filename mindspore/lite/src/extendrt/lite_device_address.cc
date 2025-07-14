@@ -222,7 +222,8 @@ MS_REGISTER_HAL_COPY_FUNC(DeviceType::kCPU,
                               size_t stream_id) { return LiteSyncCopy(dst_device_sync, src_device_sync, stream_id); }),
                           ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
                               size_t stream_id,
-                              bool) { return LiteSyncCopy(dst_device_sync, src_device_sync, stream_id); }));
+                              bool) { return LiteSyncCopy(dst_device_sync, src_device_sync, stream_id); }),
+                          ([](void *dst, const void *src, uint64_t size, size_t stream_id) { return true; }));
 
 }  // namespace test
 }  // namespace runtime

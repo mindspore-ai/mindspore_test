@@ -60,6 +60,11 @@ class DeviceSync {
   virtual void set_user_data(const UserDataPtr &user_data) { MS_LOG(EXCEPTION) << "Not implement exception"; }
 
   virtual device::DeviceType GetDeviceType() const { return device::DeviceType::kUnknown; }
+  virtual void set_data(tensor::TensorDataPtr &&data) { MS_LOG(DEBUG) << "Skip device address set_data"; }
+  virtual const tensor::TensorDataPtr &data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
+  virtual bool has_data() const { return false; }
+
+ protected:
   // Copy device memory to host side synchronously.
   virtual bool SyncDeviceToHost(void *host_ptr, const void *device_ptr, size_t size, const std::string &device_name,
                                 uint32_t device_id, mindspore::Format format, const ShapeVector &shape,
@@ -73,12 +78,6 @@ class DeviceSync {
                                 size_t stream_id, const UserDataPtr &user_data = nullptr) const {
     return true;
   }
-
-  virtual void set_data(tensor::TensorDataPtr &&data) { MS_LOG(DEBUG) << "Skip device address set_data"; }
-  virtual const tensor::TensorDataPtr &data() const { MS_LOG(EXCEPTION) << "Not implement exception"; }
-  virtual bool has_data() const { return false; }
-
- protected:
   // Used to sync data between different device addresses, only need the data size and data ptr. The CPU device doesn't
   // need use the interfaces, so need the default implementation.
   virtual bool SyncDeviceToHost(size_t, void *) const { return true; }
@@ -102,20 +101,24 @@ class DeviceSync {
 using DeviceSyncPtr = std::shared_ptr<DeviceSync>;
 using SyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t)>;
 using AsyncCopyFunc = std::function<bool(const DeviceSyncPtr &, const DeviceSyncPtr &, size_t, bool)>;
-MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func);
+using SyncPtrFunc = std::function<bool(void *, const void *, uint64_t, size_t)>;
+
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
+                             SyncPtrFunc &&sync_ptr_func);
 
 template <device::DeviceType t>
 struct MS_CORE_API CopyFuncRegister {
-  explicit CopyFuncRegister(SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func) {
-    SetCopyFunc(t, std::move(sync_func), std::move(async_func));
+  explicit CopyFuncRegister(SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func, SyncPtrFunc &&sync_ptr_func) {
+    SetCopyFunc(t, std::move(sync_func), std::move(async_func), std::move(sync_ptr_func));
   }
 };
 
-#define MS_REGISTER_HAL_COPY_FUNC(device_type, sync_func, async_func)           \
-  namespace {                                                                   \
-  static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func); \
+#define MS_REGISTER_HAL_COPY_FUNC(device_type, sync_func, async_func, sync_ptr_func)           \
+  namespace {                                                                                  \
+  static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func, sync_ptr_func); \
   }
-
+MS_CORE_API bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size,
+                            size_t stream_id);
 MS_CORE_API bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id);
 MS_CORE_API bool AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
                            bool keep_src = true);

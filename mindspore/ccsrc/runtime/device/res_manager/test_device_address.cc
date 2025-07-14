@@ -232,7 +232,8 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
-  }));
+  }),
+  ([](void *dst, const void *src, uint64_t size, size_t stream_id) { return true; }));
 
 MS_REGISTER_HAL_RES_MANAGER(kCPUDevice, DeviceType::kCPU, TestResManager);
 }  // namespace test

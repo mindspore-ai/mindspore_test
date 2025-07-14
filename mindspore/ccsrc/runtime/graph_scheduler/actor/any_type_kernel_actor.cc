@@ -87,6 +87,15 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const c
       << " by key:" << device_tensor_store_key.second->DebugString() << " index:" << device_tensor_store_key.first
       << " for actor:" << GetAID();
   }
+  for (const auto &parameter_index : extern_parameter_indexs_) {
+    // Collect the input kernel tensor.
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    input_kernel_tensors_[parameter_index.first] = kernel_tensor;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Fetch parameter store:" << kernel_tensor->ToString() << " by outer index:" << parameter_index.second.second
+      << " inner index:" << parameter_index.second.first.second << " for actor:" << GetAID();
+  }
 }
 namespace {
 GraphSegmentPtr BuildSegmentByGraph(const KernelGraphPtr &graph) {
@@ -633,6 +642,7 @@ void AnyTypeKernelActor::Init() {
       std::make_shared<DataArrow>(data_arrow->from_output_index_, data_arrow->to_op_id_, data_arrow->to_input_index_));
   }
   extern_device_tensor_store_keys_.swap(device_tensor_store_keys_);
+  extern_parameter_indexs_.swap(parameter_indexs_);
 }
 
 void AnyTypeKernelActor::UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,

@@ -333,8 +333,8 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
         }
       }
       if (origin_device_context != real_device_context) {
-        if (device_address->GetDeviceType() == device::DeviceType::kCPU
-            && origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU &&
+            origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
           device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
           MS_LOG(DEBUG) << "Use PinMemoryAllocator for offloaded parameter. Parameter: " << item->fullname_with_scope();
         }
@@ -603,8 +603,6 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data->set(kGetValueByUserDataHandler,
                        std::make_shared<ValuePtr (*)(const UserDataPtr &)>(pyexecute::GetValueFromUserData));
         graph->set_has_kernel_need_user_data(true);
-        // Note: Kbk sub graph mode doesn't support PyExecutor kernel currently.
-        graph->set_enable_kbk_sub_graph_execute(false);
       }
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {kernel, i}, nullptr, address_size, output_format, output_type, AnfAlgo::GetRuntimePaddingShape(kernel, i),
@@ -615,8 +613,8 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
       if (origin_device_context != real_device_context) {
-        if (device_address->GetDeviceType() == device::DeviceType::kCPU
-            && origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU &&
+            origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
           device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
           MS_LOG(DEBUG) << "Use PinMemoryAllocator for MoveTo cpu output. Kernel: " << kernel->fullname_with_scope();
         }
