@@ -909,6 +909,38 @@ def test_export_sumext():
         raise RuntimeError(f"Export operator SumExt to ONNX failed!")
 
 
+class SquareNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.square = ops.Square()
+
+    def construct(self, x):
+        return self.square(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_square():
+    """
+    Feature: Export ops.Square to onnx
+    Description: Export ops.Square to onnx
+    Expectation: success
+    """
+    np_x = np.random.randn(2, 4, 8, 16, 8, 4).astype(np.float16)
+    x = Tensor(np_x)
+    net = SquareNet()
+    ms_output = net(x)
+    onnx_file = './square_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+
+
 class SiLUNet(nn.Cell):
     def __init__(self):
         super().__init__()
