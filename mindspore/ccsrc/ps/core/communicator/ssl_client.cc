@@ -39,10 +39,11 @@ SSLClient::~SSLClient() { CleanSSL(); }
 
 void SSLClient::InitSSL() {
   CommUtil::InitOpensslLib();
-  ssl_ctx_ = SSL_CTX_new(SSLv23_client_method());
+  ssl_ctx_ = SSL_CTX_new(TLS_server_method());
   if (!ssl_ctx_) {
     MS_LOG(EXCEPTION) << "SSL_CTX_new failed";
   }
+  SSL_CTX_set_min_proto_version(ssl_ctx_, TLS1_2_VERSION);
   std::unique_ptr<Configuration> config_ =
     std::make_unique<FileConfiguration>(PSContext::instance()->config_file_path());
   MS_EXCEPTION_IF_NULL(config_);
