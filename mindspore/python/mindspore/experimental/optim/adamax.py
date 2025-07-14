@@ -1,16 +1,6 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# The code implementation refers to the following files from pytorch:
+# - https://github.com/pytorch/pytorch/blob/v1.13.0/torch/optim/adamax.py
+# Additional modifications are made by Huawei Technologies Co., Ltd in 2023.
 # ============================================================================
 """adamax"""
 from __future__ import absolute_import
@@ -66,6 +56,9 @@ class Adamax(Optimizer):
         This is an experimental optimizer API that is subject to change.
         This module must be used with lr scheduler module in `LRScheduler Class
         <https://www.mindspore.cn/docs/en/master/api_python/mindspore.experimental.html#lrscheduler-class>`_ .
+
+    For more details about Adamax algorithm, please refer to `Adam: A Method for Stochastic Optimization
+    <https://arxiv.org/abs/1412.6980>`_.
 
     Args:
         params (Union[list(Parameter), list(dict)]): list of parameters to optimize or dicts defining

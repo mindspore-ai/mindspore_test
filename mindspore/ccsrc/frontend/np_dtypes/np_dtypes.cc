@@ -13,7 +13,7 @@ limitations under the License.
 ==============================================================================*/
 
 /**
- * This software incorporates work derived from the ml_dtypes project:
+ * The code implementation refers to the following files from ml_dtypes:
  * - https://github.com/jax-ml/ml_dtypes/tree/v0.4.0/ml_dtypes/_src/custom_float.h
  * - https://github.com/jax-ml/ml_dtypes/tree/v0.4.0/ml_dtypes/_src/ufuncs.h
  * - https://github.com/jax-ml/ml_dtypes/tree/v0.4.0/ml_dtypes/_src/common.h
