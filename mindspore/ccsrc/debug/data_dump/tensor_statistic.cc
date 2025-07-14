@@ -88,9 +88,8 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
 
   size_t task_id = 0;  // Under the kbyk, there is no concept of task_id. The default setting is 0.
   uint64_t timestamp = Common::GetTimeStamp();
-  auto tensor_stream_id = tensor->stream_id();
   string io = (tensor_info.is_input ? kInput : kOutput);
-  TensorStat stat(tensor_info.op_type, tensor_info.op_name, task_id, tensor_stream_id, timestamp, io, tensor_info.slot,
+  TensorStat stat(tensor_info.op_type, tensor_info.op_name, task_id, stream_id, timestamp, io, tensor_info.slot,
                   data_size, data_type, shape, max_value, min_value, mean_value, norm_value, data_count);
   return stat;
 }
