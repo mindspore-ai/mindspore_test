@@ -212,7 +212,6 @@ void RunPyTensorHook(const BackwardNodePtr &grad_node, ValuePtrList *grad_in) {
                                      kTensorHook, false);
   MS_EXCEPTION_IF_NULL(grad_in);
   MS_EXCEPTION_IF_NULL(grad_node);
-  runtime::Pipeline::Get().WaitFrontend();
   for (const auto &[hook_id, hook] : grad_node->py_tensor_pre_hooks()) {
     MS_LOG(DEBUG) << "Run hook id T" << hook_id;
     MS_EXCEPTION_IF_NULL(hook);
@@ -240,7 +239,10 @@ void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *gr
     RunCppTensorHook(grad_node, grad_in);
   }
   if (const auto &py_pre_hook = grad_node->py_pre_hook()) {
+    MS_EXCEPTION_IF_NULL(py_pre_hook);
     (*py_pre_hook)(grad_in);
+    // Ensure all operations within python hooks have been dispatched to the backend stage
+    runtime::Pipeline::Get().WaitFrontend();
   }
   for (const auto &[output_idx, hook] : grad_node->retain_grad_hooks()) {
     const auto &grad = (*grad_in)[output_idx];
@@ -250,8 +252,10 @@ void CallBackwardNodePreHooks(const BackwardNodePtr &grad_node, ValuePtrList *gr
 
 void CallBackwardNodePostHooks(const BackwardNodePtr &grad_node, ValuePtrList *grad_inputs,
                                const ValuePtrList &grad_outputs) {
+  MS_EXCEPTION_IF_NULL(grad_inputs);
   if (const auto &py_post_hook = grad_node->py_post_hook()) {
-    return (*py_post_hook)(grad_inputs, grad_outputs);
+    (*py_post_hook)(grad_inputs, grad_outputs);
+    runtime::Pipeline::Get().WaitFrontend();
   }
 }
 
