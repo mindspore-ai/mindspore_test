@@ -15,7 +15,7 @@
  *
  * https://gitee.com/mindspore/graphengine/blob/v1.1.0/ge/common/formats/format_transfers/format_transfer_fractal_nz.cc
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2022
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2022.
  */
 #include "cpu_kernel/format_transfer/format_transfer_fractal_nz.h"
 

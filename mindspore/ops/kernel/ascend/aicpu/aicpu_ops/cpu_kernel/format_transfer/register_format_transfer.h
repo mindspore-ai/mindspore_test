@@ -15,7 +15,7 @@
  *
  * https://gitee.com/mindspore/graphengine/blob/v0.1.0-alpha/src/ge/common/formats/format_transfers/format_transfer.h
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2022
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2022.
  */
 #ifndef AICPU_KERNELS_HOST_FORMAT_TRANSFER_REGISTER_FORMAT_TRANSFER_H
 #define AICPU_KERNELS_HOST_FORMAT_TRANSFER_REGISTER_FORMAT_TRANSFER_H

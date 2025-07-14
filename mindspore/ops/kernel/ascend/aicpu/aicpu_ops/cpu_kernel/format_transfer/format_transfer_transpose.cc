@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * https://gitee.com/mindspore/graphengine/blob/v0.1.0-alpha/src/ge/common/formats/format_transfers/format_transfer_transpose.cc
+ * https://gitee.com/mindspore/graphengine/blob/v1.1.0/ge/common/formats/format_transfers/format_transfer_transpose.cc
+ *
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2021.
  */
 #include "cpu_kernel/format_transfer/format_transfer_transpose.h"
 

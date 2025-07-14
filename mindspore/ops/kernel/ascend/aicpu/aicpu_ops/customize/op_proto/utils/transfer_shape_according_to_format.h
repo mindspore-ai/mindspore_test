@@ -15,7 +15,7 @@
  *
  * https://gitee.com/ascend/metadef/blob/master/third_party/transformer/inc/transfer_shape_according_to_format.h
  *
- * Additional modifications made by Huawei Technologies Co., Ltd in 2022
+ * Additional modifications made by Huawei Technologies Co., Ltd in 2022.
  */
 
 /*!
