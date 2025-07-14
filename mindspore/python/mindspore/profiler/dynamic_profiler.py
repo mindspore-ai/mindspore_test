@@ -43,7 +43,7 @@ def print_msg(msg):
 
 class DynamicProfilerMonitorBase(Callback):
     """
-    Dynamic profile callback base class implementing the dynamic profile functionality.
+    Dynamic profiler callback base class implementing the dynamic profiler functionality.
     """
 
     NPU_MONITOR_START = "NPU_MONITOR_START"
@@ -90,7 +90,7 @@ class DynamicProfilerMonitorBase(Callback):
     @no_exception_func()
     def step_begin(self, run_context):
         """
-        Start profile at the begin of step.
+        Start profiler at the begin of step.
 
         Args:
             run_context (RunContext): Context of the train running.
@@ -106,7 +106,7 @@ class DynamicProfilerMonitorBase(Callback):
 
         prof_args = DynamicProfilerConfigContext(prof_json)
         if not prof_args.is_valid:
-            logger.error("Dynamic profile json is not valid, please check the json file.")
+            logger.error("Dynamic profiler json is not valid, please check the json file.")
             return
 
         if prof_args.start_step in (-1, self._last_start_step):
@@ -119,8 +119,8 @@ class DynamicProfilerMonitorBase(Callback):
         # Prevent repeated calls of the start function within a complete interval
         if step_num == start_step:
             if self._is_started:
-                logger.error("Dynamic profile is already started at step %d, "
-                             "please wait the first profile finished at step %d.",
+                logger.error("Dynamic profiler is already started at step %d, "
+                             "please wait the first profiler finished at step %d.",
                              self._last_start_step, self._last_stop_step)
                 return
 
@@ -194,7 +194,7 @@ class DynamicProfilerMonitorBase(Callback):
     @no_exception_func()
     def step_end(self, run_context):
         """
-        Stop profile at the end of step.
+        Stop profiler at the end of step.
 
         Args:
             run_context (RunContext): Context of the train running.
@@ -203,7 +203,7 @@ class DynamicProfilerMonitorBase(Callback):
         prof_args = DynamicProfilerConfigContext(prof_json)
 
         if not prof_args.is_valid:
-            logger.error("Dynamic profile json is not valid, please check the json file.")
+            logger.error("Dynamic profiler json is not valid, please check the json file.")
             return
 
         if prof_args.stop_step == -1:
@@ -330,7 +330,7 @@ class DynamicProfilerMonitorBase(Callback):
 
         prof_args = DynamicProfilerConfigContext(prof_json)
         if not prof_args.is_valid:
-            logger.error("Dynamic profile config is not valid, please check the json or dyno config.")
+            logger.error("Dynamic profiler config is not valid, please check the json or dyno config.")
             return
         self._handle_profiler_setup(prof_args)
 
@@ -352,7 +352,7 @@ class DynamicProfilerMonitorBase(Callback):
             if not (start_step >= 0 and 0 <= start_step <= stop_step):
                 self._profiler = None
                 logger.error(
-                    "Rank %d Dynamic profile start at step %d and stop at step %d must be "
+                    "Rank %d Dynamic profiler start at step %d and stop at step %d must be "
                     "greater than or equal to 0, and stop step should not be less than start step",
                     self._rank_id, start_step, stop_step
                 )
@@ -366,7 +366,7 @@ class DynamicProfilerMonitorBase(Callback):
             )
             print_msg(f"Rank {self._rank_id} create output path {prof_path}")
             print_msg(
-                f"Rank {self._rank_id} Dynamic profile start at step {start_step}, "
+                f"Rank {self._rank_id} Dynamic profiler start at step {start_step}, "
                 f"will stop at step {stop_step}"
             )
             profiler_config = self.get_prof_config(args, prof_path, start_step, stop_step, start_profile=True,
@@ -590,10 +590,10 @@ if sys.version_info >= (3, 8):
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
-        This class to enable the dynamic profile monitoring of MindSpore neural networks.
+        This class to enable the dynamic profiler monitoring of MindSpore neural networks.
 
         Args:
-            cfg_path (str): (Ascend only) Dynamic profile json config file directory. The requirement is a shared path
+            cfg_path (str): (Ascend only) Dynamic profiler json config file directory. The requirement is a shared path
                 that can be accessed by all nodes. The parameters of the json configuration file are as follows:
 
                 - start_step (int, required) - Sets the step number at which the Profiler starts collecting data.
@@ -839,10 +839,10 @@ else:
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
-        This class to enable the dynamic profile monitoring of MindSpore neural networks.
+        This class to enable the dynamic profiler monitoring of MindSpore neural networks.
 
         Args:
-            cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
+            cfg_path (str): Dynamic profiler json config file directory. The requirement is a shared path
                 that can be accessed by all nodes.
             output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): The polling period of the monitoring process, in seconds.
