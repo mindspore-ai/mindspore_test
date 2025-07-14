@@ -1035,6 +1035,12 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
       MS_LOG(EXCEPTION) << "Allocate memory failed, outer index: " << outer_index << ", inner index: " << inner_index
                         << ", for kernel tensor: " << kernel_tensor->ToString();
     }
+  } else {
+    if (!(graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(node))) {
+      MS_LOG(EXCEPTION) << "The device ptr is not nullptr, there is memory leak for outer size: " << outer_index
+                        << ", inner size: " << inner_index << ", device tensor info: " << device_tensor->ToString()
+                        << ", node: " << node->fullname_with_scope();
+    }
   }
 
   auto tensor_size = LongToSize(tensor->data().nbytes());
