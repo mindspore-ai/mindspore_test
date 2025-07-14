@@ -21,7 +21,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <securec.h>
+#include "include/securec.h"
 #include "utils/eigen_tensor.h"
 #include "utils/kernel_util.h"
 #include "context/inc/cpu_kernel_utils.h"

@@ -23,7 +23,7 @@
 #include "cpu_kernel/format_transfer/format_transfer_utils.h"
 #include "cpu_kernel/format_transfer/formats_definitions.h"
 #include "inc/kernel_log.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/kernel_util.h"
 
 namespace aicpu {

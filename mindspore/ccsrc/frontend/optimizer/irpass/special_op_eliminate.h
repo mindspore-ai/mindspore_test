@@ -17,12 +17,12 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_SPECIAL_OP_ELIMINATE_H_
 #define MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_IRPASS_SPECIAL_OP_ELIMINATE_H_
 
-#include <securec.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
 #include <string>
 
+#include "include/securec.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -54,8 +54,8 @@ class SpecialOpEliminater : public OptimizerCaller {
   AnfNodePtr operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) override;
 
  private:
-  OptimizerCallerPtr insert_gradient_of_, stop_gradient_, hook_backward_, print_shape_type_,
-    mirror_, virtual_div_, mutable_;
+  OptimizerCallerPtr insert_gradient_of_, stop_gradient_, hook_backward_, print_shape_type_, mirror_, virtual_div_,
+    mutable_;
   std::vector<OptimizerCallerPtr> eliminaters_{};
 };
 

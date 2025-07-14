@@ -15,10 +15,12 @@
  */
 
 #include "common/random_utils.h"
-#include <securec.h>
+
 #include <random>
 #include <string>
 #include <vector>
+
+#include "include/securec.h"
 #include "utils/philox_random.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "common/kernel_log.h"

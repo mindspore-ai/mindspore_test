@@ -26,7 +26,7 @@
 #include <tuple>
 
 #include "context/inc/cpu_kernel_utils.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/kernel_util.h"
 
 namespace aicpu {

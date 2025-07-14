@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "pack.h"
-#include <securec.h>
+#include "include/securec.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

@@ -16,7 +16,7 @@
 #ifndef AICPU_KERNELS_NORMALIZED_RAGGED_TENSOR_TO_SPARSE_H_
 #define AICPU_KERNELS_NORMALIZED_RAGGED_TENSOR_TO_SPARSE_H_
 
-#include <securec.h>
+#include "include/securec.h"
 #include <memory>
 #include <vector>
 

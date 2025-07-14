@@ -19,7 +19,7 @@
 
 #include <string>
 #include <memory>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

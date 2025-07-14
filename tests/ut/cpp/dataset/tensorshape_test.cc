@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <string>
-#include "./securec.h"
+#include "include/securec.h"
 #include "minddata/dataset/core/data_type.h"
 #include "minddata/dataset/core/tensor_shape.h"
 #include "minddata/dataset/engine/data_schema.h"

@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/instance_norm_v2.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <Eigen/Dense>
 #include <map>
 #include <vector>

@@ -34,7 +34,7 @@ if(ENABLE_D OR ENABLE_ACL)
         add_library(ms_ascend_native_boost SHARED ${MS_LLM_BOOST_910B})
         target_link_libraries(ms_ascend_native_boost PRIVATE mindspore_backend_common mindspore_core mindspore_common
                               mindspore_profiler mindspore_ms_backend)
-        target_link_libraries(ms_ascend_native_boost PRIVATE securec d_collective)
+        target_link_libraries(ms_ascend_native_boost PRIVATE mindspore::securec d_collective)
         target_link_libraries(ms_ascend_native_boost PRIVATE ${ASCENDCL})
         target_link_libraries(ms_ascend_native_boost PRIVATE ${LLAMA_OP} ${MS_KERNELS_LIB} ${LCAL_LIB})
         set_target_properties(ms_ascend_native_boost PROPERTIES INSTALL_RPATH

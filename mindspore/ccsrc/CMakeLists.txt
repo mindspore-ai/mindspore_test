@@ -63,8 +63,8 @@ endforeach()
 
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_frontend SHARED ${SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module securec
-                      mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
+target_link_libraries(mindspore_frontend PRIVATE mindspore_ms_backend mindspore_core mindspore::pybind11_module
+                      mindspore::securec mindspore_pyboost mindspore_common mindspore_ops mindspore_ops_kernel_common
                       mindspore_backend_manager proto_input mindspore_profiler mindspore_runtime_pipeline
                       mindspore_backend_common mindspore_res_manager)
 if(NOT WIN32)
@@ -122,7 +122,8 @@ endforeach()
 
 
 add_library(mindspore_common SHARED ${COMMON_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input securec mindspore_profiler)
+target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input
+                      mindspore::securec mindspore_profiler)
 set_target_properties(mindspore_common PROPERTIES INSTALL_RPATH $ORIGIN)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
@@ -204,8 +205,8 @@ target_link_libraries(mindspore_ms_backend PRIVATE mindspore_core mindspore_ops
         mindspore_common mindspore_ops_kernel_common mindspore_backend_manager proto_input mindspore_res_manager
         mindspore_profiler mindspore_runtime_pipeline mindspore_backend_common mindspore_memory_pool)
 
-target_link_libraries(mindspore_backend_common PRIVATE securec)
-target_link_libraries(mindspore_ms_backend PRIVATE securec)
+target_link_libraries(mindspore_backend_common PRIVATE mindspore::securec)
+target_link_libraries(mindspore_ms_backend PRIVATE mindspore::securec)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(mindspore_backend_common PROPERTIES MACOSX_RPATH ON)
     set_target_properties(mindspore_backend_common PROPERTIES INSTALL_RPATH @loader_path)

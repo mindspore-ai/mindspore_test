@@ -13,7 +13,7 @@ if(ENABLE_MPI AND ENABLE_CPU)
     set_property(SOURCE ${MPI_SRC_LIST}
         PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
     add_library(mpi_adapter SHARED ${MPI_SRC_LIST})
-    target_link_libraries(mpi_adapter PRIVATE mindspore::ompi mindspore::pybind11_module -ldl ${SECUREC_LIBRARY})
+    target_link_libraries(mpi_adapter PRIVATE mindspore::ompi mindspore::pybind11_module -ldl mindspore::securec)
 endif()
 
 set_property(SOURCE ${DEVICE_SRC_LIST}}

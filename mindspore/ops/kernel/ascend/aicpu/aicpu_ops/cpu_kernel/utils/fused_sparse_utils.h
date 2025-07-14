@@ -18,7 +18,7 @@
 #define AICPU_UTILS_FUSED_SPARSE_UTIL_H_
 
 #include "inc/cpu_context.h"
-#include <securec.h>
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 
 namespace aicpu {

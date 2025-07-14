@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/histogram.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <functional>
 #include <mutex>

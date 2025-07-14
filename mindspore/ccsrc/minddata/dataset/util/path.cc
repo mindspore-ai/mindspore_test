@@ -25,7 +25,7 @@
 #define stat _stat64  //  for file size exceeds (1<<31)-1 bytes
 #endif
 
-#include "./securec.h"
+#include "include/securec.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 #include "minddata/dataset/util/log_adapter.h"

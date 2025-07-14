@@ -21,13 +21,13 @@
 #include <netinet/tcp.h>
 #include <sys/eventfd.h>
 #include <sys/socket.h>
-#include <securec.h>
 #include <unistd.h>
 #include <utility>
 #include <atomic>
 #include <string>
 #include <thread>
 
+#include "include/securec.h"
 #include "actor/log.h"
 #include "utils/convert_utils_base.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"

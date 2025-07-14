@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/identityn.h"
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <vector>
 

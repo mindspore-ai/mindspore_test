@@ -16,7 +16,7 @@
 #include "cpu_kernel/utils/allocator_utils.h"
 #include <unordered_set>
 #include <vector>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 
 #include "cce/fwk_adpt_struct.h"
 #include "inc/kernel_log.h"

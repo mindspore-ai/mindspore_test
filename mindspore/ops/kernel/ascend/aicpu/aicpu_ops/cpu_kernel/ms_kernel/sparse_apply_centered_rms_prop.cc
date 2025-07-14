@@ -16,13 +16,13 @@
 
 #include "cpu_kernel/ms_kernel/sparse_apply_centered_rms_prop.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <securec.h>
+#include "include/securec.h"
 
 #include "inc/kernel_log.h"
 #include "context/inc/cpu_kernel_utils.h"

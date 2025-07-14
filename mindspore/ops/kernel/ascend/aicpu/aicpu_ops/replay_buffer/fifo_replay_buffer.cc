@@ -19,7 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "common/kernel_log.h"
 
 namespace aicpu {

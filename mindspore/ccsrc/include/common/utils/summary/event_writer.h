@@ -21,7 +21,7 @@
 #include <string>
 
 #include "pybind11/pybind11.h"
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "include/common/visible.h"
 
 namespace mindspore {

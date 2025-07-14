@@ -16,7 +16,7 @@
 #include "cpu_kernel/ms_kernel/sparse_addmm.h"
 #include <vector>
 #include <algorithm>
-#include <securec.h>
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"

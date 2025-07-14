@@ -21,7 +21,7 @@
 #include <memory>
 #include <algorithm>
 #include <limits>
-#include "securec/include/securec.h"
+#include "include/securec.h"
 #include "common/kernel_log.h"
 
 namespace aicpu {

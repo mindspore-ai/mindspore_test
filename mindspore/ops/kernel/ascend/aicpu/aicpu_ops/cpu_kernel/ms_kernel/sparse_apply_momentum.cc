@@ -19,7 +19,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <securec.h>
+#include "include/securec.h"
 
 #include "inc/kernel_log.h"
 #include "context/inc/cpu_kernel_utils.h"

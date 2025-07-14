@@ -17,10 +17,11 @@
 #ifndef AI_CPU_RANDOM_DISTRIBUTIONS_H
 #define AI_CPU_RANDOM_DISTRIBUTIONS_H
 
-#include <securec.h>
 #include <string.h>
 #include <cmath>
 #include <array>
+
+#include "include/securec.h"
 #include "ms_kernel/random/utils.h"
 #include "utils/philox_random.h"
 #include "unsupported/Eigen/CXX11/Tensor"

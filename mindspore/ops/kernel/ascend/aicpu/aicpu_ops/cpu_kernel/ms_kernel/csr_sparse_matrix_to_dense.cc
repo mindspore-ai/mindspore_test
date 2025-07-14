@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/csr_sparse_matrix_to_dense.h"
 
-#include <securec.h>
+#include "include/securec.h"
 #include <algorithm>
 #include <complex>
 #include <numeric>
