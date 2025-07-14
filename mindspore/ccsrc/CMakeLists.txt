@@ -164,7 +164,7 @@ set_property(SOURCE ${BACKEND_COMMON_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIO
         SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend_common SHARED ${BACKEND_COMMON_SUB_OBJECTS_SRC})
 target_link_libraries(mindspore_backend_common PRIVATE mindspore_core mindspore_ops mindspore_common
-        mindspore_ops_kernel_common proto_input mindspore_backend_manager mindspore_memory_pool
+        mindspore_ops_kernel_common proto_input mindspore_memory_pool
         mindspore_res_manager mindspore_profiler mindspore_runtime_pipeline mindspore_dump)
 
 
