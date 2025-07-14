@@ -1,0 +1,21 @@
+diff --git a/mindformers/experimental/infer/core/parallel_paged_attention_mgr.py b/mindformers/experimental/infer/core/parallel_paged_attention_mgr.py
+index de0fbc9fb..794feaeac 100644
+--- a/mindformers/experimental/infer/core/parallel_paged_attention_mgr.py
++++ b/mindformers/experimental/infer/core/parallel_paged_attention_mgr.py
+@@ -48,14 +48,14 @@ class ParallelPagedAttentionMgr(nn.Cell):
+             self.key_cache = create_empty_parameter(
+                 shape=kv_shape,
+                 dtype=compute_dtype,
+-                device="CPU",
++                device="Ascend",
+                 name="key_cache",
+                 requires_grad=False,
+             )
+             self.value_cache = create_empty_parameter(
+                 shape=kv_shape,
+                 dtype=compute_dtype,
+-                device="CPU",
++                device="Ascend",
+                 name="value_cache",
+                 requires_grad=False,
+             )
