@@ -668,7 +668,7 @@ class _GeneratorWorkerMt(threading.Thread):
         return True
 
     def queue_full(self):
-        return sef.idx_queue.full()
+        return self.idx_queue.full()
 
 
 class _GeneratorWorkerMp(multiprocessing.Process):

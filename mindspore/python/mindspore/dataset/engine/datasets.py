@@ -3742,6 +3742,9 @@ class MapDataset(UnionBaseDataset):
         # c_op(s) + py_op(s) / PyFunc  true                    no
         run_in_thread = not self.python_multiprocessing or (count_pyfunc == 0 and count_py_ops == 0) or get_debug_mode()
 
+        if self.python_multiprocessing and platform.system().lower() == 'windows':
+            run_in_thread = True
+
         if count_new_transforms + count_pyfunc == len(operations):
             prev_op = None
             for op in operations:

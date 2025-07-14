@@ -634,6 +634,11 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
   // 1. convert TensorRow to shared memory
   RETURN_IF_NOT_OK(shm_queues_[worker_id]->FromTensorTable(*input, &info, concat_batch));
 
+  // message queue id maybe -1 when process is started in spawn mode and independent mode
+  if (msg_queues_[worker_id]->msg_queue_id_ == -1) {
+    RETURN_IF_NOT_OK(msg_queues_[worker_id]->GetOrCreateMessageQueueID());
+  }
+
   std::string current_pid = std::to_string(getpid());
   // register the shm_id & msg_id by MainProcessPID_WorkerPID
   RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
