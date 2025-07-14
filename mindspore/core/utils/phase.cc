@@ -15,6 +15,7 @@
  */
 
 #include "utils/phase.h"
+#include <mutex>
 
 namespace mindspore {
 PhaseManager &PhaseManager::GetInstance() noexcept {
