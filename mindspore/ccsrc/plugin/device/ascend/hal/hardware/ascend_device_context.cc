@@ -47,6 +47,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_compiler_symbol.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tdt_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "acl/acl_dump.h"
 #include "debug/dump/tensordump_control.h"
@@ -138,16 +139,16 @@ void AscendDeviceContext::Initialize() {
 
   InitDump();
   // open tsd
-  if (!GetDeprecatedInterface()->OpenTsd(ms_context)) {
+  if (!TdtManager::GetInstance().OpenTsd(ms_context)) {
     MS_LOG(EXCEPTION) << "Open tsd failed";
   }
   initialized_ = true;
-  pid_ = GetCurrentPID();  // set the pid when first initialize
+  pid_ = getpid();  // set the pid when first initialize
   MS_LOG(INFO) << "End initializing device context.";
 }
 
 void AscendDeviceContext::Destroy() {
-  if (pid_ != GetCurrentPID()) {
+  if (pid_ != getpid()) {
     // Check whether the device context needs to be released.
     // The device context is copied by the dataset independent process, but does not need to be released
     // in the dataset independent process.
@@ -167,9 +168,7 @@ void AscendDeviceContext::Destroy() {
   if (hccl::HcclAdapter::GetInstance().Inited()) {
     (void)hccl::HcclAdapter::GetInstance().FinalizeHccl();
   }
-  if (deprecated_interface_ != nullptr) {
-    (void)deprecated_interface_->CloseTsd(MsContext::GetInstance(), true);
-  }
+  (void)TdtManager::GetInstance().CloseTsd(MsContext::GetInstance(), true);
   initialized_ = false;
 }
 
@@ -180,14 +179,6 @@ void AscendDeviceContext::InitDump() const {
   }
   auto &dump_parser = DumpJsonParser::GetInstance();
   dump_parser.Parse();
-}
-
-DeprecatedInterface *AscendDeviceContext::GetDeprecatedInterface() {
-  // need lock when multi-threads
-  if (deprecated_interface_ == nullptr) {
-    deprecated_interface_ = std::make_unique<AscendDeprecatedInterface>();
-  }
-  return deprecated_interface_.get();
 }
 
 uint32_t AscendDeviceContext::GetDeviceCount() { return AscendHalManager::GetInstance().GetDeviceCount(); }

@@ -95,7 +95,6 @@ FRONTEND_EXPORT uint32_t GetHcclRankId();
 FRONTEND_EXPORT uint32_t GetHcclRankSize();
 FRONTEND_EXPORT void InitPipeline();
 
-void CloseTsd(bool force = false);
 FRONTEND_EXPORT void BindDeviceCtx();
 
 FRONTEND_EXPORT FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,

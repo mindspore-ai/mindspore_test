@@ -27,6 +27,7 @@
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "backend/common/backend_common_callback.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 #include "common/oplib/oplib.h"
@@ -1375,14 +1376,18 @@ void GetCpuInfo(nlohmann::json *target_info) {
 }
 
 bool GetGpuInfo(nlohmann::json *target_info) {
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {kGPUDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto deprecated_ptr = device_context->GetDeprecatedInterface();
-  MS_EXCEPTION_IF_NULL(deprecated_ptr);
-  auto major_version = deprecated_ptr->GetGPUCapabilityMajor();
-  auto minor_version = deprecated_ptr->GetGPUCapabilityMinor();
-  auto sm_count = deprecated_ptr->GetGPUMultiProcessorCount();
+  static const auto get_gpu_capability_major_func =
+    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUCapabilityMajor");
+  static const auto get_gpu_capability_minor_func =
+    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUCapabilityMinor");
+  static const auto get_gpu_multi_processor_count_func =
+    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUMultiProcessorCount");
+  MS_EXCEPTION_IF_NULL(get_gpu_capability_major_func);
+  MS_EXCEPTION_IF_NULL(get_gpu_capability_minor_func);
+  MS_EXCEPTION_IF_NULL(get_gpu_multi_processor_count_func);
+  auto major_version = get_gpu_capability_major_func();
+  auto minor_version = get_gpu_capability_minor_func();
+  auto sm_count = get_gpu_multi_processor_count_func();
   if (major_version == -1 || minor_version == -1 || sm_count == -1) {
     return false;
   } else {

@@ -659,16 +659,6 @@ void Pipeline::Run() {
       } else if (action.first == last_compile_action) {
         CheckInterpretNodeLineInfos();
         CacheFuncGraph(resource_);
-#ifdef WITH_BACKEND
-        MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
-        if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-          const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-            {kAscendDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-          MS_EXCEPTION_IF_NULL(device_context);
-          MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-          device_context->GetDeprecatedInterface()->DumpProfileParallelStrategy(resource_->func_graph());
-        }
-#endif
         ResetId(resource_);
       }
       FuncGraphPtr graph = resource_->func_graph();
@@ -729,11 +719,7 @@ bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t ba
   std::string name = ms_context->backend_policy();
 #ifdef WITH_BACKEND
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-    if (!device_context->GetDeprecatedInterface()->IsTsdOpened(ms_context)) {
+    if (ms_context->get_param<uint32_t>(MS_CTX_TSD_REF) <= 0) {
       InitPipeline();
     }
   }

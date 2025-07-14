@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 #include <map>
-#include "plugin/device/ascend/hal/hardware/ascend_deprecated_interface.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "utils/ms_context.h"
@@ -51,8 +50,6 @@ class AscendDeviceContext : public DeviceInterface<GeKernelExecutor, AscendDevic
 
   void Destroy() override;
 
-  DeprecatedInterface *GetDeprecatedInterface() override;
-
   static uint32_t GetDeviceCount();
   static std::string GetDeviceName(uint32_t);
   static AscendDeviceProperties GetDeviceProperties(uint32_t);
@@ -62,8 +59,8 @@ class AscendDeviceContext : public DeviceInterface<GeKernelExecutor, AscendDevic
 
   void InitDump() const;
 
-  std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
   mutable bool initialized_aclop_{false};
+  pid_t pid_;  // Indicates the process id which creates the context.
 };
 }  // namespace ascend
 }  // namespace device

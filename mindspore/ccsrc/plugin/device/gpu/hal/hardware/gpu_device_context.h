@@ -25,7 +25,6 @@
 #include <unordered_map>
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "plugin/device/gpu/hal/hardware/gpu_deprecated_interface.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
 #include "plugin/res_manager/gpu/gpu_res_manager.h"
 
@@ -210,8 +209,6 @@ class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUDeviceResM
   // Release device memory, stream, cudnn and cublas handle, etc.
   void Destroy() override;
 
-  DeprecatedInterface *GetDeprecatedInterface() override;
-
   static uint32_t GetDeviceCount();
   static std::string GetDeviceName(uint32_t device_id);
   static std::tuple<int, int> GetDeviceCapability(uint32_t device_id);
@@ -220,7 +217,6 @@ class GPUDeviceContext : public DeviceInterface<GPUKernelExecutor, GPUDeviceResM
 
  private:
   DISABLE_COPY_AND_ASSIGN(GPUDeviceContext);
-  std::unique_ptr<GPUDeprecatedInterface> deprecated_interface_;
 };
 }  // namespace gpu
 }  // namespace device
