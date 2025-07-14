@@ -16,12 +16,12 @@
 import os
 import json
 import warnings
-from typing import Optional, Dict, Callable, Any
+from typing import Optional, Dict, Callable, Any, Iterable
 from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
-from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget
+from mindspore.profiler.common.constant import ProfilerStepNameConstant, DeviceTarget, ProfilerActivity
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
 from mindspore.profiler.profiler_action_controller import ProfilerActionController
@@ -697,38 +697,32 @@ class Profile:
     correspondence, cluster, etc data analysis.
 
     Args:
-        start_profile (bool, optional): The start_profile parameter controls whether to enable or disable performance
-            data collection based on conditions. Default: ``True`` .
-        activities (list, optional): The activities to collect.
+        activities (Iterable, optional): The activities to collect.
             Default: ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
 
             - ProfilerActivity.CPU: Collect MindSpore framework data.
             - ProfilerActivity.NPU: Collect CANN software stack and NPU data.
             - ProfilerActivity.GPU: Collect GPU data.
-        schedule (schedule, optional): Sets the action strategy for the capture, defined by the schedule class,
-            to be used with the step interface. Default: ``None``. Performance data of all steps is collected.
-            For details, see :class:`mindspore.profiler.schedule` .
-        on_trace_ready (Callable, optional): Sets the callback function to be executed when the performance data
-            is collected. Default: ``None``. It indicates that only performance data is collected, but not resolved.
-            For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
+        with_stack (bool, optional): (Ascend only) Whether to collect frame host call stack data
+            on the Python side. This
+            data is presented in the form of a flame graph in the timeline. When using this parameter, `activities` must
+            include ``ProfilerActivity.CPU``. Default value: ``False`` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
             Collecting operator memory data when the graph compilation level is O2 requires collecting from the
             first step. Default: ``False`` . The operator name currently collected by this parameter is incomplete.
             This issue will be resolved in later versions. It is recommended to use the environment variable
             ``MS_ALLOC_CONF`` instead.
-        with_stack (bool, optional): (Ascend only) Whether to collect frame host call stack data
-            on the Python side. This
-            data is presented in the form of a flame graph in the timeline. When using this parameter, `activities` must
-            include ``ProfilerActivity.CPU``. Default value: ``False`` .
-        hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,
-            collect when True. Default: ``False`` .
-        pcie (bool, optional): (Ascend only) Whether to collect PCIe bandwidth data, collect when True.
-            Default: ``False`` .
         data_process (bool, optional): (Ascend/GPU) Whether to collect data to prepare performance data.
             Default value: ``False`` .
         parallel_strategy (bool, optional): (Ascend only) Whether to collect parallel policy performance data.
             Default value: ``False`` .
+        start_profile (bool, optional): The start_profile parameter controls whether to enable or disable performance
+            data collection based on conditions. Default: ``True`` .
+        hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,
+            collect when True. Default: ``False`` .
+        pcie (bool, optional): (Ascend only) Whether to collect PCIe bandwidth data, collect when True.
+            Default: ``False`` .
         sync_enable (bool, optional): (GPU only) Whether the profiler collects operators in a synchronous way.
             Default: ``True`` .
 
@@ -740,6 +734,12 @@ class Profile:
         record_shapes (bool, optional): (Ascend only) Whether to collect operator input tensor shapes data, collect
             when ``True`` . When using this parameter, `activities` must include ``ProfilerActivity.CPU``.
             Default: ``False``.
+        schedule (Callable, optional): Sets the action strategy for the capture, defined by the schedule class,
+            to be used with the step interface. Default: ``None``. Performance data of all steps is collected.
+            For details, see :class:`mindspore.profiler.schedule` .
+        on_trace_ready (Callable, optional): Sets the callback function to be executed when the performance data
+            is collected. Default: ``None``. It indicates that only performance data is collected, but not resolved.
+            For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
         experimental_config (_ExperimentalConfig, optional): expandable parameters can be configured in this
               configuration item. For details, see :class:`mindspore.profiler._ExperimentalConfig` .
     Raises:
@@ -805,7 +805,7 @@ class Profile:
     """
 
     def __init__(self,
-                 activities: Optional[list] = None,
+                 activities: Optional[Iterable[ProfilerActivity]] = None,
                  with_stack: bool = False,
                  profile_memory: bool = False,
                  data_process: bool = False,
@@ -817,7 +817,7 @@ class Profile:
                  record_shapes: bool = False,
                  schedule: Optional[Callable[[int], ProfilerAction]] = None,
                  on_trace_ready: Optional[Callable[..., Any]] = None,
-                 experimental_config: _ExperimentalConfig = None):
+                 experimental_config: Optional[_ExperimentalConfig] = None):
         self._metadata: Dict[str, str] = {}
         self._prof_context: ProfilerContext = ProfilerContext()
         kwargs = {
