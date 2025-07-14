@@ -26,6 +26,8 @@ namespace nllloss_cpu {
 namespace {
 constexpr size_t kNLLLossInputsNum = 5;
 constexpr size_t kNLLLossOutputsNum = 2;
+constexpr size_t kNLLLossLogitsDim = 2;
+constexpr size_t kNLLLossLabelsDim = 1;
 constexpr int minLabelNum = 0;
 constexpr auto kReductionIdx = 3;
 constexpr auto kIgnoreIndexIdx = 4;
@@ -53,6 +55,27 @@ int NLLLossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   ignore_index_ = inputs[kIgnoreIndexIdx]->GetValueWithCheck<int64_t>();
 
   auto logits_shape = inputs[kIndex0]->GetShapeVector();
+  auto labels_shape = inputs[kIndex1]->GetShapeVector();
+  auto weight_shape = inputs[kIndex2]->GetShapeVector();
+  size_t logits_dim = logits_shape.size();
+  size_t labels_dim = labels_shape.size();
+  size_t weight_dim = weight_shape.size();
+  if (logits_dim != kNLLLossLogitsDim) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dimension of 'logits' should be 2, but got: " << logits_dim;
+  }
+  if ((labels_dim != kNLLLossLabelsDim) || (weight_dim != kNLLLossLabelsDim)) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_
+                      << "', the dimension of 'labels' and 'weight' should all be 1, but got: " << labels_dim << " and "
+                      << weight_dim << " respectively.";
+  }
+  if ((logits_shape[kIndex0] != labels_shape[kIndex0]) || (logits_shape[kIndex1] != weight_shape[kIndex0])) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_
+                      << "', logits_shape[0] should be equal to labels_shape[0], logits_shape[1] should be equal "
+                         "to weight_shape[kIndex0], but got logits_shape: "
+                      << logits_shape << ", labels_shape: " << labels_shape << ", weight_shape: " << weight_shape
+                      << ".";
+  }
+
   nllloss_param_.batch_ = LongToInt(logits_shape[kIndex0]);
   nllloss_param_.class_num_ = LongToInt(logits_shape[kIndex1]);
 
@@ -81,12 +104,8 @@ bool NLLLossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
     if (labels[i] == ignore_index_) {
       continue;
     }
-    if (labels[i] < minLabelNum || labels[i] > nllloss_param_.class_num_) {
+    if (labels[i] < minLabelNum || labels[i] >= nllloss_param_.class_num_) {
       MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', the label must in scope[0, C-1], but got" << labels[i];
-    }
-    if (!(labels[i] < nllloss_param_.class_num_)) {
-      MS_EXCEPTION(ValueError) << "For '" << kernel_name_
-                               << "', the labels should be smaller than the number of classes, but got " << labels[i];
     }
     int index = i * nllloss_param_.class_num_ + labels[i];
     float n_weight = weight[labels[i]];

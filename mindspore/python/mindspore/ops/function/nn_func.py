@@ -4303,6 +4303,15 @@ def nll_loss(inputs, target, weight=None, ignore_index=-100, reduction='mean', l
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
 
+    .. warning::
+        - In GE mode, the rank of `inputs` should be 1D or 2D, the rank of `target` and `weight` should be 1D,
+          and the following restraints should be met:
+
+          - when `inputs` is 1D: target_shape[0] == 1 and weight_shape[0] == inputs_shape[0].
+          - when `inputs` is 2D: target_shape[0] == inputs_shape[0] and weight_shape[0] == inputs_shape[1].
+
+        - On GPU or CPU, `inputs` should be 2D.
+
     Args:
         inputs (Tensor): :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
             in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.

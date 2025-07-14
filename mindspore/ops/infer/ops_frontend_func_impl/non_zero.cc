@@ -29,16 +29,6 @@ class NonZeroFrontendFuncImpl : public OpFrontendFuncImpl {
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
     const auto &x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x_rank = SizeToLong(x_shape.size());
-
-    auto context_ptr = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context_ptr);
-    auto jit_level = context_ptr->GetJitLevel();
-    auto execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
-    // GE mode circumvention: 910A and 910B have different results and different errors.
-    if (x_shape.size() < kDim1 && execution_mode == kGraphMode && jit_level == "O2") {
-      MS_EXCEPTION(RuntimeError)
-        << "For 'Nonzero' op, the dimension of 'x' must be greater than or equal to 1, but got " << x_rank << ".";
-    }
     if (IsDynamicRank(x_shape)) {
       x_rank = abstract::Shape::kShapeDimAny;
     }

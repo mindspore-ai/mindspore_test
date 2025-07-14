@@ -24,6 +24,8 @@ namespace kernel {
 namespace {
 constexpr auto kReductionIdx = 3;
 constexpr auto kIgnoreIndexIdx = 4;
+constexpr size_t kNLLLossLogitsDim = 2;
+constexpr size_t kNLLLossLabelsDim = 1;
 }  // namespace
 bool NLLLossGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
@@ -45,6 +47,27 @@ int NLLLossGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   reduction_ = kEnumReductionModeMap[reduction];
   ignore_index_ = inputs[kIgnoreIndexIdx]->GetValueWithCheck<int64_t>();
   auto logits_shape = inputs[kIndex0]->GetShapeVector();
+  auto labels_shape = inputs[kIndex1]->GetShapeVector();
+  auto weight_shape = inputs[kIndex2]->GetShapeVector();
+  size_t logits_dim = logits_shape.size();
+  size_t labels_dim = labels_shape.size();
+  size_t weight_dim = weight_shape.size();
+  if (logits_dim != kNLLLossLogitsDim) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dimension of 'logits' should be 2, but got: " << logits_dim;
+  }
+  if ((labels_dim != kNLLLossLabelsDim) || (weight_dim != kNLLLossLabelsDim)) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_
+                      << "', the dimension of 'labels' and 'weight' should all be 1, but got: " << labels_dim << " and "
+                      << weight_dim << " respectively.";
+  }
+  if ((logits_shape[kIndex0] != labels_shape[kIndex0]) || (logits_shape[kIndex1] != weight_shape[kIndex0])) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_
+                      << "', logits_shape[0] should be equal to labels_shape[0], logits_shape[1] should be equal "
+                         "to weight_shape[kIndex0], but got logits_shape: "
+                      << logits_shape << ", labels_shape: " << labels_shape << ", weight_shape: " << weight_shape
+                      << ".";
+  }
+
   label_size_ = logits_shape[0];
   num_classes_ = logits_shape[1];
   return KRET_OK;
