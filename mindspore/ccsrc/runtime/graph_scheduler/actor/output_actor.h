@@ -83,7 +83,7 @@ class OutputActor : public AbstractActor {
   const std::vector<KernelTensorPtr> &output_kernel_tensors() const { return output_kernel_tensors_; }
   const std::vector<TypePtr> &output_types() const { return output_types_; }
 
-  void ResetState() {
+  void ResetState(OpContext<KernelTensor> *const context) {
     current_outputs_num_ = 0;
     current_count_ = 0;
   }

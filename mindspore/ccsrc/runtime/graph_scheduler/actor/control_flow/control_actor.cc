@@ -697,7 +697,7 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<KernelTensor> *const
                 << " for empty addr list";
 }
 
-void ControlActor::ResetState() {
+void ControlActor::ResetState(OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Start free control actor " << GetAID();
   while (!memory_free_lists_.empty()) {
     auto kernel_tensors = memory_free_lists_.front();

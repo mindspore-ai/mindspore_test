@@ -1065,27 +1065,27 @@ void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
 }
 
 template <typename T>
-void ResetActorState(const std::vector<T> &actors) {
+void ResetActorState(const std::vector<T> &actors, OpContext<KernelTensor> *const context) {
   for (auto &actor : actors) {
     if (actor != nullptr) {
-      actor->ResetState();
+      actor->ResetState(context);
     }
   }
 }
 
-void ClearControlActorDataForUce(ActorSet *const actor_set) {
+void ClearControlActorDataForUce(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Start to clean control actors data.";
   if (actor_set->control_actors_ != nullptr) {
-    ResetActorState(actor_set->control_actors_->entrance_actors_);
-    ResetActorState(actor_set->control_actors_->gather_actors_);
-    ResetActorState(actor_set->control_actors_->switch_actors_);
-    ResetActorState(actor_set->control_actors_->stack_actors_);
-    ResetActorState(actor_set->control_actors_->exit_actors_);
+    ResetActorState(actor_set->control_actors_->entrance_actors_, context);
+    ResetActorState(actor_set->control_actors_->gather_actors_, context);
+    ResetActorState(actor_set->control_actors_->switch_actors_, context);
+    ResetActorState(actor_set->control_actors_->stack_actors_, context);
+    ResetActorState(actor_set->control_actors_->exit_actors_, context);
   }
   MS_LOG(INFO) << "End to clean control actors data.";
 }
 
-void ClearKernelActorDataForUce(ActorSet *const actor_set) {
+void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
   MS_LOG(INFO) << "Start to clean kernel actors data.";
   for (auto &kernel_actor : actor_set->kernel_actors_) {
     if (kernel_actor == nullptr) {
@@ -1099,7 +1099,7 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
         output_device_tensor->set_new_ref_count(0);
       }
     }
-    kernel_actor->ResetState();
+    kernel_actor->ResetState(context);
   }
   for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
     if (super_kernel_actor == nullptr) {
@@ -1119,11 +1119,12 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set) {
       }
       kernel_actor->ResetState();
     }
+    super_kernel_actor->ResetState(context);
   }
   MS_LOG(INFO) << "End to clean kernel actors data.";
 }
 
-void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
+void GraphScheduler::ProcessUceError(ActorSet *const actor_set, OpContext<KernelTensor> *const context) {
   if (!(UCEException::IsEnableUCE() || UCEException::IsEnableHCCE() || UCEException::GetInstance().enable_arf())) {
     return;
   }
@@ -1138,11 +1139,11 @@ void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
       MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
     }
     MS_LOG(WARNING) << "Clear state start.";
-    ClearKernelActorDataForUce(actor_set);
-    ClearControlActorDataForUce(actor_set);
+    ClearKernelActorDataForUce(actor_set, context);
+    ClearControlActorDataForUce(actor_set, context);
 
-    actor_set->loop_count_actor_->ResetState();
-    actor_set->output_actor_->ResetState();
+    actor_set->loop_count_actor_->ResetState(context);
+    actor_set->output_actor_->ResetState(context);
     actor_set->is_execution_failed_ = false;
     ClearActorData(actor_set);
     if (actor_set != nullptr && actor_set->control_actors_ != nullptr) {
@@ -1261,7 +1262,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     ResetPipelineAndTraceMemoryStatus();
 
     // Reset actor state and throw uce exception.
-    ProcessUceError(actor_set);
+    ProcessUceError(actor_set, &op_context);
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
     MsException::Instance().CheckException();

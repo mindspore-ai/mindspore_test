@@ -130,7 +130,7 @@ class KernelActor : public DebugAwareActor {
   }
 
   // Reset state for UCE.
-  void ResetState() override;
+  void ResetState(OpContext<KernelTensor> *const context) override;
 
   const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
   const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
