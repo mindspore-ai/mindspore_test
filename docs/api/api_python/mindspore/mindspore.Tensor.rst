@@ -238,7 +238,6 @@ mindspore.Tensor
     mindspore.Tensor.maximum
     mindspore.Tensor.mean
     mindspore.Tensor.median
-    mindspore.Tensor.t
     mindspore.Tensor.mH
     mindspore.Tensor.min
     mindspore.Tensor.minimum
