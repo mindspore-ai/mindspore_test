@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# https://gitee.com/ascend/samples/tree/0.5.0/cplusplus/level1_single_api/4_op_dev/1_custom_op/cmake/util/aicpu_parser_ini.py
+# https://gitee.com/ascend/samples/blob/r1.6/cplusplus/level1_single_api/4_op_dev/1_custom_op/cmake/util/aicpu_parser_ini.py
 #
-# Additional modifications made by Huawei Technologies Co., Ltd in 2023
+# Additional modifications made by Huawei Technologies Co., Ltd in 2023.
 """
 aicpu ini parser
 """
