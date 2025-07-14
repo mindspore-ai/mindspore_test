@@ -79,10 +79,22 @@ AbstractObjectBase::Resource::Resource() : pool_(__FILE__, __LINE__, "AObject") 
   MS_EXCEPTION_IF_CHECK_FAIL(weak_this_.empty(), "can't reentrant");
   weak_this_.push_back(this);
 }
+
 AbstractObjectBase::Resource::~Resource() {
   MS_EXCEPTION_IF_CHECK_FAIL(weak_this_.size() == 1, "can't reentrant");
   Release();
   weak_this_.pop_back();
+}
+
+const std::unordered_map<const PyObject *, AObject *> &AbstractObjectBase::Resource::GetObjMap() const {
+  return obj_2_aobj_;
+}
+
+void AbstractObjectBase::Resource::AddVobj(const py::object &obj, AObject *aobj) {
+  if (obj.ptr() == nullptr) {
+    return;
+  }
+  obj_2_aobj_[obj.ptr()] = aobj;
 }
 
 std::unordered_map<AObject::Type, PyTypeObject *> AbstractObjectBase::aobj_type_map = {
@@ -137,6 +149,11 @@ static const std::vector<std::pair<PyTypeObject *, AObject::Type>> sub_type_map 
 constexpr size_t fast_type_mask = Py_TPFLAGS_LONG_SUBCLASS | Py_TPFLAGS_LIST_SUBCLASS | Py_TPFLAGS_TUPLE_SUBCLASS |
                                   Py_TPFLAGS_UNICODE_SUBCLASS | Py_TPFLAGS_DICT_SUBCLASS | Py_TPFLAGS_TYPE_SUBCLASS;
 
+PyTypeObject *AbstractObjectBase::GetPyTypeObject(const Type &type) const {
+  auto iter = aobj_type_map.find(type);
+  return iter == aobj_type_map.end() ? nullptr : iter->second;
+}
+
 const char *AbstractObjectBase::GetTypeDesc(AObject::Type type) {
 #define ABSTRACT_TYPE_DEF(unit)       \
   if (type == AObject::kType##unit) { \
@@ -165,8 +182,8 @@ void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print_type) 
   AObject::Type t = AObject::GetPyType(obj.ptr());
   switch (t) {
     case AObject::kTypeTensor:
-      s << "Tensor:{shape=" << std::string(py::str(obj.attr("shape"))) << ", type="
-        << std::string(py::str(obj.attr("dtype"))) << "}";
+      s << "Tensor:{shape=" << std::string(py::str(obj.attr("shape")))
+        << ", type=" << std::string(py::str(obj.attr("dtype"))) << "}";
       break;
     case AObject::kTypeBoundMethod:
       s << "<bound method " << AbstractObjectBase::ToString(PyMethod_GET_FUNCTION(op)) << " of "
@@ -505,11 +522,13 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
     {kTypeString, [](const py::object &obj,
                      const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractString>(obj); }},
     {kTypeTensor,
-     [](const py::object &obj, const std::vector<AObject *>
-                                 &elements) { return Resource::Current()->pool()->New<AbstractTensor>(obj, false); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return Resource::Current()->pool()->New<AbstractTensor>(obj, false);
+     }},
     {kTypeTuple,
-     [](const py::object &obj,
-        const std::vector<AObject *> &elements) { return ConstructAbstract<AbstractTuple>(obj, elements); }},
+     [](const py::object &obj, const std::vector<AObject *> &elements) {
+       return ConstructAbstract<AbstractTuple>(obj, elements);
+     }},
     {kTypeNamedTuple, [&tp](const py::object &obj,
                             const std::vector<AObject *>
                               &elements) { return Resource::Current()->pool()->New<AbstractNamedTuple>(obj, tp); }},
@@ -977,6 +996,10 @@ AbstractSequence::AbstractSequence(Type type, const std::vector<AObject *> &elem
   }
 }
 
+std::size_t AbstractSequence::size() const {
+  return (elements_.empty() && value_.ptr() != nullptr) ? py::len(value_) : elements_.size();
+}
+
 AObject *AbstractSequence::GetItem(AObject *k) {
   MS_EXCEPTION_IF_NULL(k);
   auto subscript = Utils::FormatSubscript(k->GetPyObject(), size());
@@ -1185,6 +1208,10 @@ bool AbstractNamedTuple::IsNamedTuple(PyTypeObject *tp) {
   return py::hasattr(obj, "_fields") && py::hasattr(obj, "_make");
 }
 
+bool AbstractNamedTuple::HasKey(const std::string &name) const {
+  return std::find(keys_.begin(), keys_.end(), name) != keys_.end();
+}
+
 int AbstractNamedTuple::GetIndexOfKey(const std::string &name) const {
   for (size_t i = 0; i < keys_.size(); ++i) {
     if (keys_[i] == name) {
@@ -1306,6 +1333,10 @@ AbstractDict::AbstractDict(const std::vector<AObject *> &key_values)
 }
 
 bool AbstractDict::IsMindSporeSupportedType() { return false; }
+
+std::size_t AbstractDict::size() const {
+  return value_.ptr() == nullptr ? key_values_.size() : PyObject_Size(value_.ptr());
+}
 
 std::string AbstractDict::ToString() const {
   std::stringstream s;

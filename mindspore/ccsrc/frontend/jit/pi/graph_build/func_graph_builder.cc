@@ -223,6 +223,16 @@ AnfNodePtr ResolveParameter(const FuncGraphPtr &graph, const py::object &paramet
 }
 }  // namespace
 
+FuncGraphBuilder::FuncGraphBuilder(bool is_top) : graph_(std::make_shared<FuncGraph>()) {
+  if (is_top) {
+    parse::Parser::UpdateTopFuncGraph(graph_);
+    mng_ = Manage(graph_, true, true);
+    graph_->set_manager(mng_);
+  }
+  // Add a default output because the first output is not added to the manager.
+  graph_->set_output(NewValueNode(kNone));
+}
+
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
   if (!IsParameterSequence(input_obj)) {
     return nullptr;
@@ -353,6 +363,10 @@ AbstractWrapperPtr FuncGraphBuilder::AddLocalVariable(const py::object &obj) {
 
   (void)key_to_node_.emplace(abstract_wrapper, node);
   return abstract_wrapper;
+}
+
+void FuncGraphBuilder::UpdateNodesMap(const AbstractWrapperPtr &key, const AnfNodePtr &node) {
+  (void)key_to_node_.insert_or_assign(key, node);
 }
 
 AnfNodePtr FuncGraphBuilder::ReadLocalVariable(const AbstractWrapperPtr &abstract_wrapper) {

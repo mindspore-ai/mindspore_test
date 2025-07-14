@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -446,6 +446,17 @@ std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {
   (void)ret.emplace_back(ConvertToPyObject(abstract_slice->stop()));
   (void)ret.emplace_back(ConvertToPyObject(abstract_slice->step()));
   return ret;
+}
+
+GraphBuildHelperPtr AbstractWrapper::graph_builder_helper() const {
+  if (!abstract_->has_user_data(kPijitBuildHelper)) {
+    return nullptr;
+  }
+  return abstract_->user_data<GraphBuildHelper>(kPijitBuildHelper);
+}
+
+void AbstractWrapper::set_graph_builder_helper(const GraphBuildHelperPtr &graph_builder_helper) {
+  abstract_->set_user_data(kPijitBuildHelper, graph_builder_helper);
 }
 }  // namespace pijit
 }  // namespace mindspore

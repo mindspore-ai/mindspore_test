@@ -58,15 +58,8 @@ class AbstractWrapper {
   static py::object FetchPythonObject(const AbstractWrapperPtr &wrapper);
   static bool MarkObjectPiJItShouldCompile(const py::object &object);
 
-  GraphBuildHelperPtr graph_builder_helper() const {
-    if (!abstract_->has_user_data(kPijitBuildHelper)) {
-      return nullptr;
-    }
-    return abstract_->user_data<GraphBuildHelper>(kPijitBuildHelper);
-  }
-  void set_graph_builder_helper(const GraphBuildHelperPtr &graph_builder_helper) {
-    abstract_->set_user_data(kPijitBuildHelper, graph_builder_helper);
-  }
+  GraphBuildHelperPtr graph_builder_helper() const;
+  void set_graph_builder_helper(const GraphBuildHelperPtr &graph_builder_helper);
 
  private:
   AbstractBasePtr abstract_;

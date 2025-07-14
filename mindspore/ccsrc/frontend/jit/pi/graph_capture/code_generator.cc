@@ -1159,6 +1159,10 @@ void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
   code_gen->AddInstrs(std::move(param_info.dele_));
 }
 
+bool CodeBreakGenerator::IsCopyCapturedInstructions() const {
+  return !IS_PYTHON_3_11_PLUS && no_graph_ && !NeedHandleBreakAtCall();
+}
+
 void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
   if (!captured_.outputs.empty()) {
     MS_LOG(DEBUG) << "Do codegen for graph outputs";
@@ -2239,6 +2243,20 @@ void CodeBreakGenerator::Compile(const std::string &co_name, int co_argcount, in
     child->set_conf(parent->conf());
     child->set_tbs(parent->tbs());
   }
+}
+
+std::string LoopBodyReCaptureCodeGenerator::makeLoopBodyFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+  const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+  auto name =
+    co_name + ".wrapped_loop_body_func." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+  return name;
+}
+
+std::string LoopBodyReCaptureCodeGenerator::makeFuncName(int loopBodyStartBci, int loopBodyEndBci) const {
+  const std::string &co_name = PyUnicode_AsUTF8(co_->co_name);
+  auto name =
+    co_name + ".loop_body_recaptured." + std::to_string(loopBodyStartBci) + "." + std::to_string(loopBodyEndBci);
+  return name;
 }
 
 /**

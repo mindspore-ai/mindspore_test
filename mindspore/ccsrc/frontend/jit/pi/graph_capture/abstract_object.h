@@ -48,13 +48,8 @@ class AbstractObjectBase {
     ~Resource();
     void Release() {}
     MemPool<AbstractObjectBase> *pool() { return &pool_; }
-    const std::unordered_map<const PyObject *, AObject *> &GetObjMap() const { return obj_2_aobj_; }
-    void AddVobj(const py::object &obj, AObject *aobj) {
-      if (obj.ptr() == nullptr) {
-        return;
-      }
-      obj_2_aobj_[obj.ptr()] = aobj;
-    }
+    const std::unordered_map<const PyObject *, AObject *> &GetObjMap() const;
+    void AddVobj(const py::object &obj, AObject *aobj);
 
    private:
     MemPool<AbstractObjectBase> pool_;
@@ -111,10 +106,7 @@ class AbstractObjectBase {
 
   // record PyObject and check self reference for list,tuple,dict
   static std::unordered_map<AObject::Type, PyTypeObject *> aobj_type_map;
-  PyTypeObject *GetPyTypeObject(const Type &type) {
-    auto iter = aobj_type_map.find(type);
-    return iter == aobj_type_map.end() ? nullptr : iter->second;
-  }
+  PyTypeObject *GetPyTypeObject(const Type &type) const;
 
   explicit AbstractObjectBase(const Type &type) : type_(type), type_object_(GetPyTypeObject(type)), ms_flag_(0) {}
   explicit AbstractObjectBase(const Type &type, PyTypeObject *type_object)
@@ -271,9 +263,8 @@ class AbstractSequence : public AbstractObject {
   /// \brief Get the element size of AbstractSequence.
   ///
   /// \return The size of elements_.
-  std::size_t size() const {
-    return (elements_.empty() && value_.ptr() != nullptr) ? py::len(value_) : elements_.size();
-  }
+  std::size_t size() const;
+
   /// \brief The elements of AbstractSequence object.
   ///
   /// \return The vector of AObject objects.
@@ -311,7 +302,7 @@ class AbstractNamedTuple : public AbstractObject {
 
   static bool IsNamedTuple(PyTypeObject *tp);
 
-  bool HasKey(const std::string &name) const { return std::find(keys_.begin(), keys_.end(), name) != keys_.end(); }
+  bool HasKey(const std::string &name) const;
   int GetIndexOfKey(const std::string &name) const;
 
   const std::string &type_name() const { return type_name_; }
@@ -391,7 +382,8 @@ class AbstractDict : public AbstractObject {
   /// \brief Get the size of dictionary.
   ///
   /// \return The size of dictionary.
-  std::size_t size() const { return value_.ptr() == nullptr ? key_values_.size() : PyObject_Size(value_.ptr()); }
+  std::size_t size() const;
+
   /// \brief The elements of AbstractDict object.
   ///
   /// \return The elements of AbstractDict object.

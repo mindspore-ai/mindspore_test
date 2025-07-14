@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co.,Ltd
+ * Copyright 2024-2025 Huawei Technologies Co.,Ltd
  *
  * Licensed under the Apache License,Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -308,5 +308,21 @@ void CaptureContext::SetSkipFiles(PyObject *skip_files) {
   throw py::type_error("the arguments 'skip_files' must be tuple of str");
 }
 
+bool CaptureContext::IsEnable() const { return stat_ == kEnable; }
+
+void CaptureContext::Enable(PyObject *top_function) {
+  if (stat_ == kDefault) {
+    stat_ = kEnable;
+    wrapped_func_ = top_function;
+  }
+}
+
+void CaptureContext::Disable() {
+  if (stat_ == kEnable) {
+    stat_ = kDefault;
+    wrapped_func_ = nullptr;
+    config_ = nullptr;
+  }
+}
 }  // namespace pijit
 }  // namespace mindspore
