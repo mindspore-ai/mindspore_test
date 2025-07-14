@@ -42,7 +42,6 @@ class CPUKernelRuntime;
 class CPUDeviceContext;
 }  // namespace cpu
 namespace ascend {
-class AscendKernelRuntime;
 class AscendRuntimeCore;
 class AscendMemoryManager;
 class DataDumper;
@@ -632,7 +631,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::gpu::GPUKernelRuntime;
   friend class mindspore::device::gpu::GPUMemoryManager;
   friend class mindspore::device::gpu::GPUDeviceContext;
-  friend class mindspore::device::ascend::AscendKernelRuntime;
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
   friend class mindspore::device::ascend::DataDumper;

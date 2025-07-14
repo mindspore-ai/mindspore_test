@@ -32,7 +32,7 @@
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/device/ascend/hal/hardware/stress_detect.h"
-#include "runtime/device/kernel_runtime_manager.h"
+#include "kernel/ascend/acl_ir/op_api_exec.h"
 #include "runtime/device/move_to.h"
 #include "utils/ms_exception.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
@@ -47,11 +47,6 @@ void AscendDeviceResManager::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance_);
-  if (!runtime_instance_->Init()) {
-    MS_LOG(EXCEPTION) << "Kernel runtime init error.";
-  }
   ResKey res_key{DeviceType::kAscend, device_id};
   ascend_res_manager_ = dynamic_cast<AscendResManager *>(HalResManager::GetInstance().GetOrCreateResManager(res_key));
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
@@ -65,12 +60,8 @@ void AscendDeviceResManager::Destroy() {
   }
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   (void)ascend_res_manager_->DestroyAllEvents();
-  // release runtime
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->ReleaseDeviceRes();
-    runtime_instance_ = nullptr;
-  }
   ascend_res_manager_->Destroy();
+  device::ascend::AclnnFinalize();
   initialized_ = false;
 }
 
@@ -279,9 +270,8 @@ bool AscendDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
 }
 
 void AscendDeviceResManager::ResetStreamAndCtx() {
-  if (runtime_instance_ != nullptr) {
-    runtime_instance_->ResetStreamAndCtx();
-  }
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->ResetStreamAndCtx();
 }
 
 bool AscendDeviceResManager::CreateStream(size_t *stream_id) const {
@@ -325,23 +315,13 @@ void *AscendDeviceResManager::GetStream(size_t stream_id) const {
 }
 
 size_t AscendDeviceResManager::GetCommunicationStreamID() const {
-  if (runtime_instance_ == nullptr) {
-    MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not to get communication stream";
-    return kDefaultStreamIndex;
-  }
-  return runtime_instance_->communication_stream_id();
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetCommunicationStreamID();
 }
 
 size_t AscendDeviceResManager::GetCommunicationStreamIDByGroup(const std::string &group) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(EXCEPTION) << "Bind context to current thread failed";
-    return 0;
-  }
-  if (runtime_instance_ == nullptr) {
-    MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not to get communication stream by group";
-    return GetCommunicationStreamID();
-  }
-  return runtime_instance_->GetCommunicationStreamIDByGroup(group);
+  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
+  return ascend_res_manager_->GetCommunicationStreamIDByGroup(group);
 }
 
 void AscendDeviceResManager::SetCurrentStreamId(size_t stream_id) {

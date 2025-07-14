@@ -26,7 +26,6 @@
 #include <tuple>
 #include "runtime/hardware/device_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
 namespace mindspore {

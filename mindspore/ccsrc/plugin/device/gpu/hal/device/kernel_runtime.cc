@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/device/kernel_runtime.h"
+#include "plugin/device/gpu/hal/device/kernel_runtime.h"
 #include <algorithm>
 #include <functional>
 #include <utility>
@@ -29,7 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
-#include "runtime/device/kernel_runtime_manager.h"
+#include "plugin/device/gpu/hal/device/kernel_runtime_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/value.h"
@@ -68,35 +68,6 @@ std::vector<AnfNodePtr> GetGraphInputs(const session::KernelGraph &graph) {
   return result;
 }
 
-// Check whether mutex exists for a stream.
-std::pair<bool, std::mutex *> CheckStreamMutexExist(
-  const void *stream, const mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> &mtxs_for_streams,
-  std::shared_mutex *shd_mtx) {
-  MS_EXCEPTION_IF_NULL(stream);
-  MS_EXCEPTION_IF_NULL(shd_mtx);
-  std::shared_lock<std::shared_mutex> shd_lock(*shd_mtx);
-  auto iter = mtxs_for_streams.find(stream);
-  if (iter != mtxs_for_streams.end()) {
-    MS_EXCEPTION_IF_NULL(iter->second);
-    return std::make_pair(true, iter->second.get());
-  }
-  return std::make_pair(false, nullptr);
-}
-
-// Create a mutex for stream.
-std::mutex *CreateStreamMutex(const void *stream, std::shared_mutex *shd_mtx,
-                              mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> *mtxs_for_streams) {
-  MS_EXCEPTION_IF_NULL(stream);
-  MS_EXCEPTION_IF_NULL(shd_mtx);
-  MS_EXCEPTION_IF_NULL(mtxs_for_streams);
-
-  std::unique_lock<std::shared_mutex> unq_lock(*shd_mtx);
-  auto ret_pair = mtxs_for_streams->emplace(stream, std::make_shared<std::mutex>());
-
-  MS_EXCEPTION_IF_NULL(ret_pair.first->second);
-  return ret_pair.first->second.get();
-}
-
 bool IsNeedAllocMem(const AnfNodePtr &node, size_t index) {
   MS_EXCEPTION_IF_NULL(node);
   const auto &graph = node->func_graph();
@@ -121,27 +92,6 @@ KernelRuntime::TbeLaunchKernelModCallBack KernelRuntime::tbe_call_ = nullptr;
 KernelRuntime::~KernelRuntime() {
   stream_ = nullptr;
   communication_stream_ = nullptr;
-}
-
-std::lock_guard<std::mutex> KernelRuntime::LockRuntime(const void *stream) {
-  MS_EXCEPTION_IF_NULL(stream);
-  // Read-write lock for accessing mtxs_for_streams map.
-  // When the lock of each stream is created, mtxs_for_streams can be accessed concurrently to improve performance.
-  static std::shared_mutex shd_mtx;
-  static mindspore::HashMap<const void *, std::shared_ptr<std::mutex>> mtxs_for_streams;
-
-  std::mutex *stream_mtx = nullptr;
-  // Check whether mutex exists for a stream.
-  std::pair<bool, std::mutex *> ret_pair = CheckStreamMutexExist(stream, mtxs_for_streams, &shd_mtx);
-  if (ret_pair.first) {
-    stream_mtx = ret_pair.second;
-  } else {
-    // Create a mutex for stream.
-    stream_mtx = CreateStreamMutex(stream, &shd_mtx, &mtxs_for_streams);
-  }
-
-  MS_EXCEPTION_IF_NULL(stream_mtx);
-  return std::lock_guard<std::mutex>(*stream_mtx);
 }
 
 bool KernelRuntime::Load(const session::KernelGraph &, bool) {

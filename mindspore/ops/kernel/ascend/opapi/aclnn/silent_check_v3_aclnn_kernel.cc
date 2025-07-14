@@ -24,7 +24,6 @@
 #include "ir/tensor.h"
 #include "common/kernel.h"
 #include "mindapi/base/shape_vector.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"

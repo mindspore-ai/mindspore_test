@@ -25,7 +25,6 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "common/ms_factory.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #ifdef ENABLE_AKG

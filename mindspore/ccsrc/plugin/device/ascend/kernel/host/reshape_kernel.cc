@@ -20,8 +20,8 @@
 #include <functional>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "abstract/utils.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "utils/check_convert_utils.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
@@ -39,7 +39,7 @@ bool ReshapeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const s
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
   // cppcheck-suppress unreadVariable
-  auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+  auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
   auto status = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                                 inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
   if (status != ACL_SUCCESS) {

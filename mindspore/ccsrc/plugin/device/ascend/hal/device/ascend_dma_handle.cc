@@ -26,7 +26,7 @@
 #include "runtime/rt_error_codes.h"
 #endif
 #include "utils/log_adapter.h"
-#include "runtime/device/kernel_runtime_manager.h"
+#include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
@@ -59,8 +59,6 @@ void AscendDmaHandle::InitRuntimeInstance() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   device_id_ = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  runtime_instance_ = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance_);
 }
 
 void AscendDmaHandle::InitDmaMem() {

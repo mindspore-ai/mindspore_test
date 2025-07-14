@@ -17,7 +17,6 @@
 #include <string>
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "kernel/ascend/opapi/aclnn/matmul_all_reduce_aclnn_kernel.h"
 #include "kernel/ascend/acl_ir/op_api_util.h"
 

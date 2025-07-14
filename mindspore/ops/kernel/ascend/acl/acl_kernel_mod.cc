@@ -20,7 +20,7 @@
 #include <set>
 #include <functional>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
+#include "kernel/ascend/acl_ir/op_api_util.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
 #include "kernel/ascend/acl_ir/acl_adapter_info.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -249,7 +249,7 @@ bool AclKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::
   converter_->ConvertToAclOutput(primitive_, outputs, output_params_);
   converter_->SetRunnerSpecialInfo();
   // cppcheck-suppress unreadVariable
-  auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
+  auto lock = device::ascend::AclUtil::LockRuntime(stream_ptr);
   MS_LOG(DEBUG) << this->DebugString();
   MS_LOG(DEBUG) << converter_->DebugString();
   // release gil before run

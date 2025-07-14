@@ -24,7 +24,7 @@
 #include <utility>
 #include "ir/tensor.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/hal/device/ascend_kernel_runtime.h"
+#include "runtime/hardware/device_context.h"
 #include "plugin/res_manager/ascend/ascend_res_manager.h"
 #include "common/device_address.h"
 
@@ -146,7 +146,6 @@ class AscendDeviceResManager : public DeviceResManager {
   bool AllocateForHete(DeviceAddress *const &address, HeterogeneousInfoPtr hete_info) const;
   void FreeForHete(HeterogeneousInfoPtr hete_info) const;
 
-  KernelRuntime *runtime_instance_ = nullptr;
   AscendResManager *ascend_res_manager_ = nullptr;
   bool initialized_ = false;
 };

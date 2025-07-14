@@ -160,6 +160,14 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
 
   void InitializeForGe() const;
 
+  void DestroyHccl();
+
+  void ResetStreamAndCtx() const;
+
+  size_t GetCommunicationStreamID() const;
+
+  size_t GetCommunicationStreamIDByGroup(const std::string &group) const;
+
  private:
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;

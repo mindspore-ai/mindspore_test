@@ -15,7 +15,6 @@
  */
 #include "mindspore/ops/kernel/ascend/opapi/aclnn/inplace_exp_aclnn_kernel.h"
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

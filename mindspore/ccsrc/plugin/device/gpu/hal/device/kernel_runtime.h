@@ -32,7 +32,6 @@
 #include "common/kernel.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "runtime/device/memory_scheduler.h"
-#include "include/backend/visible.h"
 
 using mindspore::tensor::Tensor;
 using std::vector;
@@ -47,7 +46,7 @@ namespace mindspore {
 class Debugger;
 #endif
 namespace device {
-class BACKEND_EXPORT KernelRuntime {
+class KernelRuntime {
  public:
   KernelRuntime() = default;
   virtual ~KernelRuntime();
@@ -62,8 +61,8 @@ class BACKEND_EXPORT KernelRuntime {
     std::function<void(const AnfNodePtr &, const kernel::KernelMod *kernel_mod, std::vector<kernel::KernelTensor *> *)>;
   static void tbe_call_setter(const TbeLaunchKernelModCallBack &call) { tbe_call_ = call; }
 #ifdef ENABLE_DEBUGGER
-  BACKEND_EXPORT static bool DumpDataEnabled();
-  BACKEND_EXPORT static bool DumpDataEnabledIteration();
+  static bool DumpDataEnabled();
+  static bool DumpDataEnabledIteration();
 #endif
   virtual bool LoadData(const session::KernelGraph &graph);
   virtual bool Load(const session::KernelGraph &graph, bool is_task_sink);
@@ -129,9 +128,6 @@ class BACKEND_EXPORT KernelRuntime {
   // add for MindRT
   std::shared_ptr<MemoryManager> GetMemoryManager() { return mem_manager_; }
   void AssignStaticMemoryOutput(const session::KernelGraph &graph);
-
-  // lock runtime
-  static std::lock_guard<std::mutex> LockRuntime(const void *stream);
 
  protected:
   virtual DeviceAddressPtr CreateDeviceAddress(void *device_ptr, size_t device_size, const string &format,

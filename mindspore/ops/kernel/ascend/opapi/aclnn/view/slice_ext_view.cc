@@ -19,7 +19,6 @@
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
 #include "mindspore/ops/view/slice_ext_strides_calc.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

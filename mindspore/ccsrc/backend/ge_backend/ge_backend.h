@@ -62,7 +62,6 @@ class BACKEND_EXPORT GEBackend : public BackendBase {
   void Init();
   bool OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr);
   bool CloseTsd(bool force);
-  void DestroyHccl();
 
   // for Build
   BackendGraphId CompileWholeGraph(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config);

@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <string>
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace device {
@@ -45,7 +44,6 @@ class AscendDmaHandle {
   void *buf_{nullptr};
   size_t hbm_alloc_size_ = 1 << 30;
   uint32_t device_id_{0};
-  KernelRuntime *runtime_instance_{nullptr};
 };
 }  // namespace ascend
 }  // namespace device

@@ -74,6 +74,9 @@ class OPS_ASCEND_API AclUtil {
   static aclError SetPrecisionMode(const std::string &mode);
 
   static void SetOpPrecisionMode();
+
+  // lock runtime
+  static std::lock_guard<std::mutex> LockRuntime(const void *stream);
 };
 
 OPS_ASCEND_API int64_t GetCacheCapaticy();

@@ -17,7 +17,6 @@
 
 #include <vector>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {

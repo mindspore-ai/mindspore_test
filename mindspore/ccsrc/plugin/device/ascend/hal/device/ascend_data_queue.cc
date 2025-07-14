@@ -23,8 +23,6 @@
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
-#include "runtime/device/kernel_runtime.h"
-#include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/distributed/ps/ps_cache/ps_data_prefetch.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -32,6 +30,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_symbol.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
 namespace mindspore {
 namespace device {
@@ -160,11 +159,8 @@ bool IsClosed() {
 
 AscendDataQueueDynamic::AscendDataQueueDynamic(const std::string &channel_name, const size_t capacity)
     : DataQueue(channel_name, capacity), stream_(nullptr), node_info_(nullptr) {
-  auto context_key = device_context_->device_context_key();
-  auto runtime_instance =
-    device::KernelRuntimeManager::Instance().GetKernelRuntime(context_key.device_name_, context_key.device_id_);
   node_info_ = std::make_unique<NodeInfo[]>(capacity);
-  stream_ = runtime_instance->compute_stream();
+  stream_ = device::ascend::AscendStreamMng::GetInstance().default_stream();
 }
 
 DataQueueStatus AscendDataQueueDynamic::Push(std::vector<DataQueueItem> data) {
