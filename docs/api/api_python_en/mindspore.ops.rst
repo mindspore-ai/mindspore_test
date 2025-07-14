@@ -24,22 +24,22 @@ Tensor Creation
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.ops.arange
     mindspore.ops.eps
     mindspore.ops.eye
     mindspore.ops.fill
     mindspore.ops.full
     mindspore.ops.full_like
+    mindspore.ops.heaviside
     mindspore.ops.linspace
     mindspore.ops.logspace
     mindspore.ops.move_to
     mindspore.ops.one_hot
     mindspore.ops.ones
     mindspore.ops.ones_like
-    mindspore.ops.arange
     mindspore.ops.range
     mindspore.ops.zeros
     mindspore.ops.zeros_like
-    mindspore.ops.heaviside
 
 Randomly Generating Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -511,10 +511,10 @@ Neural Network
     mindspore.ops.batch_norm
     mindspore.ops.bias_add
     mindspore.ops.bidense
-    mindspore.ops.ctc_greedy_decoder
     mindspore.ops.conv1d
     mindspore.ops.conv2d
     mindspore.ops.conv3d
+    mindspore.ops.ctc_greedy_decoder
     mindspore.ops.deformable_conv2d
     mindspore.ops.dense
     mindspore.ops.dropout
@@ -522,12 +522,13 @@ Neural Network
     mindspore.ops.dropout2d
     mindspore.ops.dropout3d
     mindspore.ops.embedding
+    mindspore.ops.flash_attention_score
     mindspore.ops.flatten
     mindspore.ops.fold
     mindspore.ops.fractional_max_pool3d
     mindspore.ops.fused_infer_attention_score
-    mindspore.ops.speed_fusion_attention
     mindspore.ops.group_norm
+    mindspore.ops.incre_flash_attention
     mindspore.ops.layer_norm
     mindspore.ops.lp_pool1d
     mindspore.ops.lp_pool2d
@@ -539,11 +540,10 @@ Neural Network
     mindspore.ops.max_unpool3d
     mindspore.ops.moe_token_permute
     mindspore.ops.moe_token_unpermute
-    mindspore.ops.incre_flash_attention
     mindspore.ops.prompt_flash_attention
-    mindspore.ops.flash_attention_score
     mindspore.ops.ring_attention_update
     mindspore.ops.rms_norm
+    mindspore.ops.speed_fusion_attention
     mindspore.ops.unfold
 
 Loss Functions
