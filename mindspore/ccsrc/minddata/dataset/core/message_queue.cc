@@ -94,6 +94,9 @@ Status MessageQueue::GetOrCreateMessageQueueID() {
 MessageState MessageQueue::MessageQueueState() { return state_; }
 
 Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
+  if (msg_queue_id_ == -1) {
+    RETURN_STATUS_UNEXPECTED("Exec msgsnd failed. Msg queue id: " + std::to_string(msg_queue_id_) + " invalid.");
+  }
   mtype_ = mtype;
   if (shm_id != -1) {
     shm_id_ = shm_id;

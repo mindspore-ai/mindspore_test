@@ -112,6 +112,11 @@ Status PyFuncOp::ComputeWithWorker(const TensorRow &input, TensorRow *output) {
   // 1. convert TensorRow to shared memory
   RETURN_IF_NOT_OK(shm_queue_->FromTensorRow(input));
 
+  // message queue id maybe -1 when process is started in spawn mode and independent mode
+  if (msg_queue_->msg_queue_id_ == -1) {
+    RETURN_IF_NOT_OK(msg_queue_->GetOrCreateMessageQueueID());
+  }
+
   std::string current_pid = std::to_string(getpid());
   // register the shm_id & msg_id by MainProcessPID_WorkerPID
   RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pid_), shm_queue_->GetShmID(),
