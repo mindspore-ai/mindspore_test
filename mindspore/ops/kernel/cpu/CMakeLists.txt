@@ -41,13 +41,11 @@ foreach(IGNORE_FILE ${IGNORE_LIST})
     endif()
 endforeach()
 
-if(NOT BUILD_LITE)
-    file(GLOB_RECURSE PYBOOST_CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "pyboost/*.cc"
-        "pyboost/auto_generate/*.cc"
-        )
-    list(APPEND CPU_SRC_LIST "${PYBOOST_CPU_SRC_LIST}")
-endif()
+file(GLOB_RECURSE PYBOOST_CPU_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    "pyboost/*.cc"
+    "pyboost/auto_generate/*.cc"
+    )
+list(APPEND CPU_SRC_LIST "${PYBOOST_CPU_SRC_LIST}")
 
 # merge cpu kernel files, NOT recursively
 if(NOT BUILD_LITE)
@@ -59,14 +57,6 @@ endif()
 
 if(PLATFORM_ARM64)
     add_compile_definitions(ENABLE_ARM)
-endif()
-
-if(BUILD_LITE)
-    # mslite do not support python op
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx ")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -maxv ")
-    string(REPLACE "-Wall" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
-    string(REPLACE "-Wall" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
 set_property(SOURCE ${CPU_SRC_LIST}

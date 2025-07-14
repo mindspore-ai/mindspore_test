@@ -58,7 +58,7 @@ set(OP_PROTO_TARGET_OUT_DIR ${OUT_DIR}/${PROJECT_DIR}/op_proto/)
 set(AIC_OP_INFO_CFG_OUT_DIR ${OUT_DIR}/${PROJECT_DIR}/op_impl/ai_core/tbe/config)
 set(AIV_OP_INFO_CFG_OUT_DIR ${OUT_DIR}/${PROJECT_DIR}/op_impl/vector_core/tbe/config/)
 
-set(OPS_DIR ${CMAKE_SOURCE_DIR}/mindspore/lite/tools/kernel_builder/ascend/tbe_and_aicpu/)
+set(OPS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(INI_2_JSON_PY "${OPS_DIR}/cmake/util/parse_ini_to_json.py")
 
 set(CMAKE_SKIP_RPATH TRUE)

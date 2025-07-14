@@ -81,7 +81,7 @@ def gen_custom_op_files(config_dir, dsl_dir):
             f.write(json.dumps(ops_info, indent=4))
 
     # custom akg op dsl file
-    custom_py = os.path.join(cur_path, "../../../../../lite/tools/kernel_builder/ascend/akg/custom.py")
+    custom_py = os.path.join(cur_path, "custom.py")
     if not os.path.isfile(custom_py):
         raise RuntimeError("custom.py path is invalid: {}".format(custom_py))
     shutil.copy(custom_py, dsl_dir)

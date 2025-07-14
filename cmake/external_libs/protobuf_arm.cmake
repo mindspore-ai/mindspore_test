@@ -1,35 +1,18 @@
 set(protobuf_arm_USE_STATIC_LIBS ON)
-if(BUILD_LITE)
-    if(MSVC)
-        set(protobuf_arm_CXXFLAGS "${CMAKE_CXX_FLAGS}")
-        set(protobuf_arm_CFLAGS "${CMAKE_C_FLAGS}")
-        set(protobuf_arm_LDFLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-        set(_ms_tmp_CMAKE_STATIC_LIBRARY_PREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
-        set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
-    else()
-        set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-            -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
-        if(NOT ENABLE_GLIBCXX)
-            set(protobuf_arm_CXXFLAGS "${protobuf_arm_CXXFLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        endif()
-        set(protobuf_arm_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
-    endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-uninitialized -Wno-unused-parameter -fPIC \
+        -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
+        -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
 else()
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-        set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-uninitialized -Wno-unused-parameter -fPIC \
-            -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
-    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-        set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-            -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
-    else()
-        set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-            -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
-        if(NOT ENABLE_GLIBCXX)
-            set(protobuf_arm_CXXFLAGS "${protobuf_arm_CXXFLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-        endif()
+    set(protobuf_arm_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
+        -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
+    if(NOT ENABLE_GLIBCXX)
+        set(protobuf_arm_CXXFLAGS "${protobuf_arm_CXXFLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
     endif()
-    set(protobuf_arm_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 endif()
+set(protobuf_arm_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 
 set(_ms_tmp_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 set(CMAKE_CXX_FLAGS ${_ms_tmp_CMAKE_CXX_FLAGS})
@@ -44,11 +27,7 @@ else()
     set(SHA256 "9b4ee22c250fe31b16f1a24d61467e40780a3fbb9b91c3b65be2a376ed913a1a")
 endif()
 
-if(BUILD_LITE)
-    set(PROTOBUF_PATCH_ROOT ${TOP_DIR}/third_party/patch/protobuf)
-else()
-    set(PROTOBUF_PATCH_ROOT ${CMAKE_SOURCE_DIR}/third_party/patch/protobuf)
-endif()
+set(PROTOBUF_PATCH_ROOT ${CMAKE_SOURCE_DIR}/third_party/patch/protobuf)
 
 if(APPLE)
     mindspore_add_pkg(protobuf_arm

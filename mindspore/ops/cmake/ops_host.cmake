@@ -15,7 +15,7 @@ if(ENABLE_CPU)
     add_subdirectory(kernel/cpu/nnacl)
 endif()
 
-if((NOT ENABLE_CPU) OR (BUILD_LITE OR ENABLE_TESTCASES))
+if((NOT ENABLE_CPU) OR ENABLE_TESTCASES)
     add_library(mindspore_ops_host INTERFACE)
 else()
     add_library(mindspore_ops_host SHARED $<TARGET_OBJECTS:_mindspore_ops_cpu_kernel_obj>)
