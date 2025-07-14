@@ -4,6 +4,9 @@ approvers:
 - zichun_ye
 - ckey_dou
 - anyrenwei
+- ginfung
+- huangbingjian
+- Margaret_wangrui
 
 options:
     no_parent_owners: true

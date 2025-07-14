@@ -1,12 +1,10 @@
 approvers:
 - ginfung #
-- liangzhibo
 - huangbingjian
 - Margaret_wangrui
 - zh_qh
 
 reviewers:
-- lanzhineng
 - Liangcan-Li
 
 options:
@@ -18,7 +16,6 @@ files:
     - kingxian
     - changzherui
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh

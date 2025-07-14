@@ -1,12 +1,10 @@
 approvers:
 - ginfung #
-- liangzhibo
 - huangbingjian
 - Margaret_wangrui
 - zh_qh
 
 reviewers:
-- lanzhineng
 - Liangcan-Li
 
 options:
@@ -17,9 +15,7 @@ files:
     approvers:
     - chujinjin
     - hwcaifubi
-    - zjun3021
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh
@@ -28,9 +24,7 @@ files:
     approvers:
     - chujinjin
     - hwcaifubi
-    - zjun3021
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh
@@ -39,9 +33,7 @@ files:
     approvers:
     - chujinjin
     - hwcaifubi
-    - zjun3021
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh
@@ -50,9 +42,7 @@ files:
     approvers:
     - chujinjin
     - hwcaifubi
-    - zjun3021
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh
@@ -61,9 +51,7 @@ files:
     approvers:
     - chujinjin
     - hwcaifubi
-    - zjun3021
     - ginfung
-    - liangzhibo
     - huangbingjian
     - Margaret_wangrui
     - zh_qh
