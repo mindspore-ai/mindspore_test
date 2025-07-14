@@ -29,7 +29,7 @@ class DynamicAkgGpuKernelBuilder : public DynamicAkgKernelBuilder {
   DynamicAkgGpuKernelBuilder() = default;
   ~DynamicAkgGpuKernelBuilder() = default;
 
-  kernel::KernelBuildClient *GetClient() override { return &(kernel::AkgV2KernelBuildClient::Instance()); }
+  kernel::KernelBuildClient *GetClient() override { return &(kernel::AkgMlirKernelBuildClient::Instance()); }
   void SetKernelMod(const KernelPackPtr &kernel_pack, const GraphKernelJsonGenerator &json_generator,
                     const AnfNodePtr &anf_node) override;
   void SaveJsonInfo(const string &kernel_name, const string &kernel_json) override;

@@ -427,7 +427,7 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
   reg.AddFlag("disable_fusion_pattern", &disable_fusion_pattern);
 
   if (enable_dynamic_shape_fusion && !is_ascend) {
-    kernel_generator = "AKG_V2";
+    kernel_generator = "AKG_MLIR";
     return;
   }
 

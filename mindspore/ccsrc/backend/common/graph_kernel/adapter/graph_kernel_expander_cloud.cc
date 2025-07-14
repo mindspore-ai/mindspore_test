@@ -245,7 +245,7 @@ std::vector<PrimitivePtr> GraphKernelExpanderCloud::GetExpanderOps() {
   std::vector<OpWithLevel> expand_ops;
   std::vector<std::string> disable_expand_op_list_v2 = {
     "OnesLike", "OneHot", "StridedSlice", "CumSum", "Transpose", "BatchMatMul", "MatMul", "ExpandDims", "BroadcastTo"};
-  if (flags.kernel_generator == "AKG_V2") {
+  if (flags.kernel_generator == "AKG_MLIR") {
     expand_ops = expand_ops_with_level;
     expand_ops.insert(expand_ops.end(), expand_ops_with_level_v2.begin(), expand_ops_with_level_v2.end());
     if (cb->GetTargetFromContext() == kGPUDevice) {
@@ -271,7 +271,7 @@ std::vector<PrimitivePtr> GraphKernelExpanderBeforeBuild::InitOpList() { return 
 
 bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   bool is_dvm = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  bool is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
+  bool is_akg_mlir = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_MLIR");
   if (IsComplexOp(node) && !is_dvm) {
     return true;
   }
@@ -303,7 +303,7 @@ bool GraphKernelExpanderCloud::CanExpand(const CNodePtr &node) const {
   }
 
   auto enable_dynamic_shape = GraphKernelFlags::GetInstance().enable_dynamic_shape_fusion;
-  if (is_dvm || is_akg_v2) {
+  if (is_dvm || is_akg_mlir) {
     return enable_dynamic_shape;
   }
 

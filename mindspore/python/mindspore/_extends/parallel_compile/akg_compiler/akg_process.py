@@ -111,7 +111,7 @@ def _is_input_shape_dynamic(desc_d):
     return False
 
 
-def _compile_akg_v2_task_default(json_strs, attrs, driver):
+def _compile_akg_mlir_task_default(json_strs, attrs, driver):
     """
     compile func called in single process
 
@@ -138,14 +138,14 @@ def _compile_akg_v2_task_default(json_strs, attrs, driver):
             logger.info(f"Will try to split, json str: {json_str}! build attrs: {attrs}")
 
 
-def create_akg_v2_parallel_process(process_num, wait_time, platform):
+def create_akg_mlir_parallel_process(process_num, wait_time, platform):
     """
-    create Akg V2 Parallel Compiler object
+    create Akg Mlir Parallel Compiler object
 
     Returns:
-        AKG V2 ParallelCompiler
+        AKG MLIR ParallelCompiler
     """
-    return AkgV2Process(process_num, wait_time, platform)
+    return AkgMlirProcess(process_num, wait_time, platform)
 
 
 class AkgProcessBase:
@@ -238,8 +238,8 @@ class AkgProcess(AkgProcessBase):
         return True
 
 
-class AkgV2Process(AkgProcessBase):
-    """akg v2 kernel parallel process"""
+class AkgMlirProcess(AkgProcessBase):
+    """akg mlir kernel parallel process"""
 
     def __init__(self, process_num, wait_time, platform):
         """
@@ -247,7 +247,7 @@ class AkgV2Process(AkgProcessBase):
             process_num: int. processes number
             wait_time: int. max time the function blocked
         """
-        super(AkgV2Process, self).__init__("AKG V2", process_num, wait_time, platform)
+        super(AkgMlirProcess, self).__init__("AKG MLIR", process_num, wait_time, platform)
 
     def compile(self, attrs=None):
         """
@@ -256,17 +256,17 @@ class AkgV2Process(AkgProcessBase):
             True for all compile success, False for some failed.
         """
         if self.argc == 0:
-            raise ValueError("In AKG V2 kernel compiling, the number of kernel json that need to be compiled can "
+            raise ValueError("In AKG MLIR kernel compiling, the number of kernel json that need to be compiled can "
                              "not be zero.")
-        akg_v2_path = os.getenv("AKG_V2_PATH", default="")
-        if akg_v2_path == "":
+        akg_mlir_path = os.getenv("AKG_MLIR_PATH", default="")
+        if akg_mlir_path == "":
             raise ValueError(
-                "The path to akg v2 compiler is not specified. Set the path to the compiler in AKG_V2_PATH")
-        sys.path.append(akg_v2_path)
-        p = __import__("akg_v2", globals(), locals())
-        driver = getattr(p, "AkgV2Driver")
+                "The path to akg mlir compiler is not specified. Set the path to the compiler in AKG_MLIR_PATH")
+        sys.path.append(akg_mlir_path)
+        p = __import__("akg_mlir", globals(), locals())
+        driver = getattr(p, "AkgMlirDriver")
         args = list((arg, attrs, driver) for arg in self.args)
         with Pool(processes=self.process_num) as pool:
-            res = pool.starmap_async(_compile_akg_v2_task_default, args)
+            res = pool.starmap_async(_compile_akg_mlir_task_default, args)
             res.get(timeout=self.wait_time)
         return True

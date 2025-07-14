@@ -291,8 +291,8 @@ class FuseAllReduceBwd : public FusePattern {
 
 void SplitModelAscend::InitFusePatterns() {
   is_dvm_ = (GraphKernelFlags::GetInstance().kernel_generator == "DVM");
-  auto is_akg_v2 = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_V2");
-  if (is_dvm_ || is_akg_v2) {
+  auto is_akg_mlir = (GraphKernelFlags::GetInstance().kernel_generator == "AKG_MLIR");
+  if (is_dvm_ || is_akg_mlir) {
     // fuse pattern for dvm
     AddPattern(std::make_shared<FuseVirtualNode>(), true);
     AddPattern(std::make_shared<FuseReshape>(), true);
