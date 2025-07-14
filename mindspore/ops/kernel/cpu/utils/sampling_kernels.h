@@ -14,7 +14,7 @@ limitations under the License.
 
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/image/sampling_kernels.h
 
-// Additional modifications made by Huawei Technologies Co., Ltd in 2020-2022
+Additional modifications made by Huawei Technologies Co., Ltd in 2020-2022.
 ==============================================================================*/
 
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CPU_UTILS_SAMPLING_KERNELS_H_

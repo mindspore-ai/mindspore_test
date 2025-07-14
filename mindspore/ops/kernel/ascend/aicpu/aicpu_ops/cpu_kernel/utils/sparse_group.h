@@ -14,7 +14,7 @@ limitations under the License.
 
 https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/util/sparse/group_iterator.h
 
-// Additional modifications made by Huawei Technologies Co., Ltd in 2020-2022
+Additional modifications made by Huawei Technologies Co., Ltd in 2020-2022.
 ==============================================================================*/
 
 #ifndef CPU_KERNEL_UTIL_SPARSE_GROUP_ITERATOR_H_

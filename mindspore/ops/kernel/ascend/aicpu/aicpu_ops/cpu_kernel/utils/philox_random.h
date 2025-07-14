@@ -14,7 +14,7 @@
 
   https://github.com/tensorflow/tensorflow/blob/master/third_party/xla/xla/tsl/lib/random/philox_random.h
 
-  Additional modifications made by Huawei Technologies Co., Ltd in 2020-2025
+  Additional modifications made by Huawei Technologies Co., Ltd in 2020-2025.
 */
 
 #ifndef _AICPU_AICPU_DEVICE_CPU_KERNELS_UTILS_PHILOX_RANDOM_H
