@@ -34,6 +34,7 @@ class HcomSendKernel : public HcclKernel {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  std::vector<size_t> GetUseLessOutputIdx() const override { return {kIndex0}; };
 
  private:
   bool is_dynamic_shape_ = false;
