@@ -3795,3 +3795,9 @@ def _check_astype_and_convert(dtype):
 
 
 setattr(tensor_operator_registry, 'vm_compare', _vm_compare)
+
+
+# class Tensor may be monkey-patched by other frameworks (e.g., msadapter), so
+# we immediately record all Tensor attributes after the Tensor class is defined.
+# These attributes are subsequently used by the mindspore.jit module.
+_TENSOR_ATTRIBUTES = {name: getattr(Tensor, name) for name in dir(Tensor)}

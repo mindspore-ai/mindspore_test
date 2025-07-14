@@ -13,15 +13,17 @@
 # limitations under the License.
 # ============================================================================
 """Store and get tensor method"""
-from mindspore import Tensor
+from typing import Optional, Dict
+
+from mindspore.common.tensor import _TENSOR_ATTRIBUTES
 from mindspore._c_expression import function_id
 
-tensor_method_id_to_name = {}
-for method_name in dir(Tensor):
-    method_id = function_id(getattr(Tensor, method_name))
-    tensor_method_id_to_name[method_id] = method_name
+
+_tensor_method_id_to_name: Dict[int, str] = {
+    function_id(attr): name for name, attr in _TENSOR_ATTRIBUTES.items() if callable(attr)
+}
 
 
-def get_tensor_method_name(id):
+def get_tensor_method_name(id: int) -> Optional[str]:
     """Get method name by function id"""
-    return tensor_method_id_to_name.get(id, None)
+    return _tensor_method_id_to_name.get(id, None)
