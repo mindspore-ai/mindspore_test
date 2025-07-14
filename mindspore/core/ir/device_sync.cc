@@ -19,11 +19,19 @@
 namespace mindspore {
 SyncCopyFunc g_sync_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 AsyncCopyFunc g_async_copy_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
+SyncPtrFunc g_sync_ptr_func[static_cast<int>(device::DeviceType::kDeviceEnd)];
 
-MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func) {
+MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func,
+                             SyncPtrFunc &&sync_ptr_func) {
   MS_LOG(INFO) << "Resigter copy function for device type:" << device_type;
   g_sync_copy_func[static_cast<int>(device_type)] = sync_func;
   g_async_copy_func[static_cast<int>(device_type)] = async_func;
+  g_sync_ptr_func[static_cast<int>(device_type)] = sync_ptr_func;
+}
+
+bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(g_sync_ptr_func[static_cast<int>(device_type)]);
+  return g_sync_ptr_func[static_cast<int>(device_type)](dst, src, size, stream_id);
 }
 
 bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {

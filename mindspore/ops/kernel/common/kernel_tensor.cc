@@ -585,10 +585,9 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
   MS_EXCEPTION_IF_NULL(host_ptr);
 
   MS_EXCEPTION_IF_NULL(device_address_);
-  if (!device_address_->SyncDeviceToHost(host_ptr, device_ptr, address_common_->size_, address_common_->device_name_,
-                                         address_common_->device_id_, address_common_->format_,
-                                         address_common_->shape_vector_, address_common_->stream_id_, user_data())) {
-    MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  if (!CopyToHost(device_address_->GetDeviceType(), host_ptr, device_ptr, address_common_->size_,
+                  address_common_->stream_id_)) {
+    MS_LOG(EXCEPTION) << "Sync data from device to host side failed, device type:" << device_address_->GetDeviceType();
   }
   return true;
 }

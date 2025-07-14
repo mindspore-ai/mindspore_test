@@ -1953,8 +1953,16 @@ MS_REGISTER_HAL_COPY_FUNC(
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
     return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+  }),
+  ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kAscend, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
-
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);
 }  // namespace ascend
 }  // namespace device

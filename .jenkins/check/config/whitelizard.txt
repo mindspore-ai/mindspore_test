@@ -22,7 +22,10 @@ mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
 mindspore/mindspore/ccsrc/frontend/optimizer/irpass.cc:mindspore::opt::irpass::OptimizeIRPassLib::OptimizeIRPassLib
 mindspore/mindspore/ccsrc/frontend/optimizer/ad/dfunctor.cc:mindspore::ad::DFunctor::MapValueObject
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/gather_v2_p_info.cc:mindspore::parallel::GatherV2PInfo::CheckStrategy
+mindspore/mindspore/ccsrc/runtime/device/device_address_utils.cc:mindspore::runtime::DeviceAddressUtils::CreateParameterDeviceAddress
+mindspore/mindspore/ccsrc/runtime/device/device_address_utils.cc:mindspore::runtime::DeviceAddressUtils::CreateKernelOutputDeviceAddress
 mindspore/mindspore/ccsrc/runtime/device/res_manager/utils/convert_tensor_utils.cc:mindspore::device::ConvertSameType
+mindspore/mindspore/ccsrc/runtime/graph_scheduler/graph_scheduler.cc:mindspore::runtime::GraphScheduler::LinkControlArrowByAutoMonad
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_actor.cc:mindspore::runtime::KernelActor::ExecuteLaunchKernelTask
