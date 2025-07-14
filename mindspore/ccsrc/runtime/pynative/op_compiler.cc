@@ -20,7 +20,11 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
+#include <string>
+#include <sstream>
+#include <limits>
 #include "utils/core_op_utils.h"
+#include "mindapi/base/type_id.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/pynative/acl_adapter.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
@@ -38,6 +42,72 @@ using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 mindspore::HashSet<std::string> kExcludedAttr = {"input_names", "output_names", "IsFeatureMapOutput",
                                                  "IsFeatureMapInputList", "pri_format"};
 std::vector<std::string> kNumStrCache;
+
+template <typename T>
+inline std::string to_string(T v) {
+  std::ostringstream oss;
+  oss.precision(std::numeric_limits<double>::max_digits10);
+  oss << std::fixed << v;
+  return oss.str();
+}
+
+inline std::string GetScalarString(const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
+  auto type_ptr = value->type();
+  MS_EXCEPTION_IF_NULL(type_ptr);
+  auto type_id = type_ptr->type_id();
+  auto out_string = value->ToString();
+  switch (type_id) {
+    case kNumberTypeFloat16: {
+      const auto &fp16_value = value->cast<FP16ImmPtr>();
+      MS_EXCEPTION_IF_NULL(fp16_value);
+      out_string = to_string(fp16_value->value());
+      break;
+    }
+    case kNumberTypeFloat64: {
+      const auto &fp64_value = value->cast<FP64ImmPtr>();
+      MS_EXCEPTION_IF_NULL(fp64_value);
+      out_string = to_string(fp64_value->value());
+      break;
+    }
+    case kNumberTypeFloat:
+    case kNumberTypeFloat32: {
+      const auto &fp32_value = value->cast<FP32ImmPtr>();
+      MS_EXCEPTION_IF_NULL(fp32_value);
+      out_string = to_string(fp32_value->value());
+      break;
+    }
+    default:
+      break;
+  }
+  return out_string;
+}
+
+inline std::string GetValueString(const ValuePtr &value) {
+  std::string out_string = "";
+  MS_EXCEPTION_IF_NULL(value);
+  if (value->isa<Scalar>()) {
+    out_string = GetScalarString(value);
+  } else if (value->isa<ValueSequence>()) {
+    const auto &value_sequence = value->cast<ValueSequencePtr>();
+    std::ostringstream buffer;
+    bool begin = true;
+    MS_EXCEPTION_IF_NULL(value_sequence);
+    for (auto &attr : value_sequence->value()) {
+      if (!begin) {
+        buffer << ", ";
+      } else {
+        begin = false;
+      }
+      MS_EXCEPTION_IF_NULL(attr);
+      buffer << GetValueString(attr);
+    }
+    out_string = "(" + buffer.str() + ")";
+  } else {
+    out_string = value->ToString();
+  }
+  return out_string;
+}
 
 inline std::string GetNumString(int n) {
   if (n >= static_cast<int>(kNumStrCache.size())) {
@@ -325,7 +395,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
         return;
       }
       MS_EXCEPTION_IF_NULL(element.second);
-      graph_info.append(element.second->ToString());
+      graph_info.append(GetValueString(element.second));
     });
   }
 
@@ -355,7 +425,9 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
         graph_info += common::AnfAlgo::GetTensorValueString(input_tensor);
       }
     } else {
-      graph_info += value->ToString();
+      graph_info += GetValueString(value);
+      graph_info += "_";
+      graph_info += value->type_name();
     }
 
     graph_info += "_";
