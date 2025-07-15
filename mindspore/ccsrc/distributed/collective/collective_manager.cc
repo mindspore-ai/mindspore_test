@@ -835,6 +835,7 @@ bool CollectiveManager::AssignLocalRank() {
   MS_LOG(INFO) << "The env 'DEVICE_ID' assigned for this process is: " << common::GetEnv("DEVICE_ID");
   common::SetEnv("RANK_ID", std::to_string(global_rank_id_).c_str());
   common::SetEnv("RANK_SIZE", std::to_string(global_rank_size_).c_str());
+  DeviceManagerConf::GetInstance()->distributed_refresh_device_id(local_rank_id_);
   // When starting with msrun and adding argument '--rank_table_file', device_id of ms_context will be set from env
   // "DEVICE_ID"; here env "DEVICE_ID" is not equal to "local_rank_id_".
   if (!common::GetEnv("RANK_TABLE_FILE").empty()) {
