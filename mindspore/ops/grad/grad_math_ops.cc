@@ -3204,14 +3204,25 @@ inline static bool CloneInplaceInputFuncForInplaceRemainderTensorTensor(const Py
   return false;
 }
 
+static void FreeTensorsOfInplaceRemainderTensorTensor(const PynativeCallback &cb) {
+  cb.FreeOutputDeviceAddress();
+  auto &inputs = *cb.GetInputs();
+  if (cb.IsNotRequiresGrad(i1)) {
+    cb.FreeDeviceAddress(&inputs[i0]);
+    cb.FreeDeviceAddress(&inputs[i1]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[0] and inputs[1] of " << cb.opname();
+  }
+}
+
 REG_BPROP_BUILDER("InplaceRemainderTensorTensor")
   .SetUnusedInputs({i2})
   .CloneInplaceInput(CloneInplaceInputFuncForInplaceRemainderTensorTensor)
+  .FreeUselessValues(FreeTensorsOfInplaceRemainderTensorTensor)
   .SetBody(BODYFUNC(ib) {
     auto input = ib->GetInput(i0);
     auto other = ib->GetInput(i1);
     auto dout = ib->GetInput(i3);
-    NodePtr d_input = dout;
+    NodePtr d_input = input->need_compute_grad_out() ? dout : nullptr;
     NodePtr d_other = nullptr;
     if (other->need_compute_grad_out()) {
       d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
