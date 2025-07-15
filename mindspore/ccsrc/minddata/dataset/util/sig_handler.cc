@@ -122,8 +122,6 @@ void SIGTERMHandler(int signal, siginfo_t *info, void *context) {
     _exit(EXIT_FAILURE);
   }
 
-  MS_LOG(INFO) << "Got SIGTERM signal from process: " << info->si_pid;
-
   // release the shm & msg when the main process is killed
   ReleaseShmAndMsg();
 
@@ -157,8 +155,6 @@ void SIGBUSHandler(int signal, siginfo_t *info, void *context) {
     MS_LOG(ERROR) << "SIGBUSHandler expects SIGBUS signal, but got: " << strsignal(signal);
     _exit(EXIT_FAILURE);
   }
-
-  MS_LOG(INFO) << "Got SIGBUS signal from process: " << info->si_pid;
 
   if (info->si_code == BUS_ADRERR) {
     MS_LOG(ERROR) << "Unexpected bus error encountered in process: " << std::to_string(getpid())
