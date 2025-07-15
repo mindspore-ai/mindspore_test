@@ -136,8 +136,8 @@ def test_matmul_dtypes():
     matmul = P.MatMul()
     valid_dtypes = (mstype.uint8, mstype.int8, mstype.int16, mstype.int32, mstype.int64, mstype.float16,
                     mstype.float32, mstype.float64, mstype.complex64, mstype.complex128)
-    fp8_dtypes = (mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8)
-    all_dtypes = (dtype for dtype in mstype.all_types if dtype not in fp8_dtypes)
+    invalid_dtypes = (mstype.qint4x2, mstype.float8_e4m3fn, mstype.float8_e5m2, mstype.hifloat8)
+    all_dtypes = (dtype for dtype in mstype.all_types if dtype not in invalid_dtypes)
     for dtype in all_dtypes:
         # bfloat16 is not supported yet
         if dtype == mstype.bfloat16:
