@@ -282,11 +282,23 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
     GilReleaseWithCheck gil_release;
     RET = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1);
     if (RET != ACL_SUCCESS && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
-      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
+      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStreamWithTimeout error."
+                    << "Please do the following three things to confirm whether it is caused by the "
+                    << "execution failure of a certain operator.\n"
+                    << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                    << "    2.Run again your python script.\n"
+                    << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                    << "Now you will get the certain failed op detailed infos.";
       return false;
     }
   } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "Sync stream failed. " << e.what();
+    MS_LOG(ERROR) << "Sync stream failed. " << e.what()
+                  << "Please do the following three things to confirm whether it is caused by the "
+                  << "execution failure of a certain operator.\n"
+                  << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                  << "    2.Run again your python script.\n"
+                  << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                  << "Now you will get the certain failed op detailed infos.";
     return false;
   }
   if (RET == ACL_ERROR_RT_AICORE_OVER_FLOW) {
@@ -303,15 +315,33 @@ bool AscendStreamMng::SyncAllStreams() const {
     int timeout = 7200000;
     RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, timeout);
     if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
-      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error.";
+      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error."
+                    << "Please do the following three things to confirm whether it is caused by the "
+                    << "execution failure of a certain operator.\n"
+                    << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                    << "    2.Run again your python script.\n"
+                    << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                    << "Now you will get the certain failed op detailed infos.";
       return false;
     }
   } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "aclrtSynchronizeDeviceWithTimeout failed. " << e.what();
+    MS_LOG(ERROR) << "aclrtSynchronizeDeviceWithTimeout failed. " << e.what()
+                  << "Please do the following three things to confirm whether it is caused by the "
+                  << "execution failure of a certain operator.\n"
+                  << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                  << "    2.Run again your python script.\n"
+                  << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                  << "Now you will get the certain failed op detailed infos.";
     return false;
   }
   if (RET == ACL_ERROR_RT_AICORE_OVER_FLOW) {
-    MS_LOG(WARNING) << "Call runtime aclrtSynchronizeDeviceWithTimeout, the stream get overflow.";
+    MS_LOG(WARNING) << "Call runtime aclrtSynchronizeDeviceWithTimeout, the stream get overflow."
+                    << "Please do the following three things to confirm whether it is caused by the "
+                    << "execution failure of a certain operator.\n"
+                    << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                    << "    2.Run again your python script.\n"
+                    << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                    << "Now you will get the certain failed op detailed infos.";
   }
   return true;
 }
