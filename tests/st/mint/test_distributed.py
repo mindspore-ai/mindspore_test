@@ -1351,15 +1351,19 @@ def test_hccl_reduce_scatter_diff_shape():
     Expectation: success
     """
     # 同步场景多维tensor
-    ## rank0 : [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]]...
+    # rank0: ([0, 0], [[0, 0], [0, 0]], ...)
+    # rank1: ([1, 1], [[1, 1], [1, 1]], ...)
+    # rank2: ([2, 2], [[2, 2], [2, 2]], ...)
+    # output: ([sum, sum], [[sum, sum], [sum, sum]], ...)
     input_list = [ms.Tensor(np.ones([ii + 1, 2]) * rank, dtype=ms.int32) for ii in range(size)]
     output_tensor = ms.Tensor(np.zeros([rank + 1, 2]).astype(np.int32))
-    expect_output = np.ones([rank + 1, 2]) * rank * size
+    expect_output = np.ones([rank + 1, 2]) * (size * (size - 1) // 2)
     output_handle = reduce_scatter(output_tensor, input_list)
     assert output_handle is None
     assert np.allclose(output_tensor.asnumpy(), expect_output)
     # 同步场景一维tensor
-    ## rank 0: [0], rank 1: [1, 2] rank 2: [2, 3, 4] ...
+    # rank i: ([0], [1, 2], [2, 3, 4], ...)
+    # output: ([0*size], [1*size, 2*size], [2*size, 3*size, 4*size], ...)
     input_list = [ms.Tensor(list(range(ii, ii + ii + 1)), dtype=ms.int32) for ii in range(size)]
     output_tensor = ms.Tensor(np.zeros([rank + 1]).astype(np.int32))
     expect_output = (np.array(list(range(rank + 1)), dtype=np.int32) + rank) * size
