@@ -472,7 +472,8 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
   MS_EXCEPTION_IF_NULL(dst_device_tensor);
   MS_EXCEPTION_IF_NULL(src_device_tensor);
   static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  static bool sync_copy_input =
+    common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (src_device_tensor->GetSize() != dst_device_tensor->GetSize()) {
     MS_LOG(INFO) << "Copy size is not equal, input size:" << src_device_tensor->GetSize()
                  << ", output size:" << dst_device_tensor->GetSize();
@@ -973,7 +974,8 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
 
 bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *tensor, size_t stream_id) {
   static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  static bool sync_copy_input =
+    common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
   auto tensor_size = LongToSize(tensor->data().nbytes());
   auto ret = device_tensor->AsyncHostToDevice(tensor_size, tensor->data_type(), tensor->data_ptr(),
                                               tensor->device_info().host_format_, stream_id);
