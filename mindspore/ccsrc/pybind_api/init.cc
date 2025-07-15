@@ -214,6 +214,7 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pynative::RegisterCustomizeFunction(m);
   mindspore::pynative::RegisterCellBackwardHookFunction(m);
+  mindspore::pynative::RegisterDetachFunction(m);
   mindspore::pynative::RegisterFunctional(m);
   mindspore::pynative::RegDirectOps(m);
   mindspore::pynative::autograd::RegBackwardFunction(m);
