@@ -211,6 +211,9 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &i
     auto i = input_index[l];
     auto origin_parameter = parameters[l];
     MS_EXCEPTION_IF_NULL(origin_parameter);
+    if (i >= buffers_.size()) {
+      MS_LOG(EXCEPTION) << "Index " << i << " is out of range of buffers size: " << buffers_.size();
+    }
     auto buffer_inner_size = buffers_[i].size();
     // List tensor input do not compare shape.
     if (buffer_inner_size != 1) {
