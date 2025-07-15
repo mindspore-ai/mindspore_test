@@ -2216,7 +2216,7 @@ bool MindIRExporter::IfSaveTogether(bool *save_together) {
   if (data_total > TOTAL_SAVE) {
     *save_together = false;
   } else {
-    *save_together = false;
+    *save_together = true;
   }
   return true;
 }
