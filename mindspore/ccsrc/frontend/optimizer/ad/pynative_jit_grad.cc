@@ -346,7 +346,7 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
     }
     after_opt_fg = OptimizeBpropGraph(after_opt_fg, grad_param);
     pynative::CommonUtils::DumpGraphIR("opt_backward_after_opt.ir", after_opt_fg);
-    jit_adgrad_processer->EreaseUnusedReuseCNode(after_opt_fg);
+    jit_adgrad_processer->EraseUnusedReuseCNode(after_opt_fg);
     MS_LOG(INFO) << "Bprop graph generated successfully.";
 
     // Generating forward_graph
@@ -582,7 +582,10 @@ FuncGraphPtr BpropGenerator::GenerateBpropGraph() {
 }
 
 // Erase unused forward_reused params after bprop_sub_fg expanded
-void BpropGenerator::EreaseUnusedReuseCNode(const FuncGraphPtr &bprop_fg) {
+void BpropGenerator::EraseUnusedReuseCNode(const FuncGraphPtr &bprop_fg) {
+  if (!need_reuse_forward_node_) {
+    return;
+  }
   MS_EXCEPTION_IF_NULL(bprop_fg);
   auto manager = Manage({bprop_fg}, false);
   auto params = bprop_fg->parameters();
@@ -600,9 +603,10 @@ void BpropGenerator::EreaseUnusedReuseCNode(const FuncGraphPtr &bprop_fg) {
     if (use_node_size != 0) {
       (void)new_params.emplace_back(param);
     } else {
-      MS_LOG(DEBUG) << "Unused primal cnode in bprop graph: "
-                    << replace_nodes_[index - bprop_origin_param_size_]->DebugString();
       size_t origin_reuse_index = index - bprop_origin_param_size_;
+      MS_EXCEPTION_IF_CHECK_FAIL(origin_reuse_index < replace_nodes_.size(),
+                                 "Reused nodes vector size should less than param size");
+      MS_LOG(DEBUG) << "Unused primal cnode in bprop graph: " << replace_nodes_[origin_reuse_index]->DebugString();
       replace_nodes_[origin_reuse_index] = nullptr;
       replace_nodes_abs_[origin_reuse_index] = nullptr;
       fprop_sub_fgs_[origin_reuse_index] = nullptr;

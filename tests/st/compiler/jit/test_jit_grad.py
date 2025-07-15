@@ -584,3 +584,33 @@ def test_grad_jit_primal_graph():
     net = Net()
     net.set_inputs(dyn_x, dyn_y)
     ops.grad(net)(input_params, input_indices)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_grad_jit_highgrad():
+    """
+    Feature: Test grad jit scene for highgrad
+    Description: Test grad jit scene for highgrad
+    Expectation: Success
+    """
+    class MsMultiInputMultiOutputNet(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            z = ops.mul(x, y)
+            a = x + 3 * y
+            return z, a
+
+    input1_np = np.array([1, 2, 3, 4]).astype(np.float32)
+    input2_np = np.array([5, 6, 7, 8]).astype(np.float32)
+    ms_net = MsMultiInputMultiOutputNet()
+    input1_ms = Tensor(input1_np)
+    input2_ms = Tensor(input2_np)
+
+    firstgrad = ops.grad(ms_net, grad_position=(0, 1))
+    out_ms1 = firstgrad(input1_ms, input2_ms)
+    assert np.allclose(out_ms1[0], np.array([6, 7, 8, 9]).astype(np.float32))
+    assert np.allclose(out_ms1[1], np.array([4, 5, 6, 7]).astype(np.float32))
+    secondgrad = ops.grad(firstgrad, grad_position=(0, 1))
+    out_ms2 = secondgrad(input1_ms, input2_ms)
+    assert np.allclose(out_ms2[0], np.array([1, 1, 1, 1]).astype(np.float32))
+    assert np.allclose(out_ms2[1], np.array([1, 1, 1, 1]).astype(np.float32))
