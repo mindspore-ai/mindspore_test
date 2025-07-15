@@ -3932,10 +3932,20 @@ void OnnxExporter::ExportPrimSquare(const FuncGraphPtr &, const CNodePtr &node,
                                     std::map<AnfNodePtr, std::string> *node_map_ptr,
                                     onnx::GraphProto *const graph_proto) {
   auto name_x = GetNodeInputName(node->input(kOneNum), node_map_ptr, graph_proto);
+
+  auto need_cast = !IsFloatDataType(node->input(kOneNum));
+  auto x_type = node->input(kOneNum)->Type();
+  auto x_dtype = dyn_cast<TensorType>(x_type)->element()->type_id();
+
+  std::string x_cast = "";
+  if (need_cast) {
+    x_cast = GenerateUniqueName();
+    AddCastOp(name_x, x_cast, GetOnnxDataType(kNumberTypeFloat32), graph_proto);
+  }
+
   auto name_exponent = GenerateUniqueName();
   onnx::NodeProto *node_proto_exp = graph_proto->add_node();
   node_proto_exp->add_output(name_exponent);
-
   node_proto_exp->set_op_type("Constant");
   onnx::AttributeProto *attr_proto = node_proto_exp->add_attribute();
   attr_proto->set_name("value");
@@ -3947,12 +3957,28 @@ void OnnxExporter::ExportPrimSquare(const FuncGraphPtr &, const CNodePtr &node,
   tensor_proto->set_data_type(GetOnnxDataType(kNumberTypeFloat32));
   tensor_proto->add_float_data(exponent_value);
 
-  auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
   onnx::NodeProto *node_proto = graph_proto->add_node();
   node_proto->set_op_type("Pow");
-  node_proto->add_output(node_name);
-  node_proto->add_input(name_x);
-  node_proto->add_input(name_exponent);
+
+  if (need_cast) {
+    auto pow_name = GenerateUniqueName();
+    node_proto->add_input(x_cast);
+    node_proto->add_input(name_exponent);
+    node_proto->add_output(pow_name);
+    auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
+    AddCastOp(pow_name, node_name, GetOnnxDataType(x_dtype), graph_proto);
+  } else {
+    auto node_name = RegisterNodeWithUniqueName(node, node_map_ptr);
+    node_proto->add_input(name_x);
+    node_proto->add_output(node_name);
+    if (x_dtype != kNumberTypeFloat32) {
+      std::string exponent_cast = name_exponent + "_exponent_cast";
+      AddCastOp(name_exponent, exponent_cast, GetOnnxDataType(x_dtype), graph_proto);
+      node_proto->add_input(exponent_cast);
+    } else {
+      node_proto->add_input(name_exponent);
+    }
+  }
 }
 
 void OnnxExporter::ExportPrimGatherV2(const FuncGraphPtr &, const CNodePtr &node,
