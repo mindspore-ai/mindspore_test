@@ -112,6 +112,8 @@ bool CorrelateCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   T_out *casted_v_array = static_cast<T_out *>(malloc(sizeof(T_out) * v_size_));
   if (casted_v_array == nullptr) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_v_array] memory failed.";
+    free(casted_a_array);
+    casted_a_array = nullptr;
     return false;
   }
   auto cast_v_task = [&v_array, &casted_v_array, this](size_t start, size_t end) {
@@ -134,6 +136,10 @@ bool CorrelateCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor 
   T_out *long_array = static_cast<T_out *>(malloc(sizeof(T_out) * padded_long_size));
   if (long_array == nullptr) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [long_array] memory failed.";
+    free(casted_a_array);
+    casted_a_array = nullptr;
+    free(casted_v_array);
+    casted_v_array = nullptr;
     return false;
   }
   T_out *short_array;
@@ -211,6 +217,8 @@ bool CorrelateCpuKernelMod::LaunchComplexKernel(const std::vector<kernel::Kernel
   T *long_array = static_cast<T *>(malloc(sizeof(T) * padded_long_size));
   if (long_array == nullptr) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [long_array] memory failed.";
+    free(conj_v_array);
+    conj_v_array = nullptr;
     return false;
   }
   T *short_array;
