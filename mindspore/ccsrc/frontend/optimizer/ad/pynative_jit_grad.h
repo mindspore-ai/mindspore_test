@@ -48,7 +48,7 @@ class BpropGenerator {
   FuncGraphPtr GenerateBpropGraph();
   FuncGraphPtr GenerateForwardGraph(const FuncGraphPtr &jit_forward_graph, bool do_renormalize);
   void SetForwardOutputAbs(const abstract::AbstractBasePtr &forward_abs, const FuncGraphPtr &bprop_graph);
-  void EreaseUnusedReuseCNode(const FuncGraphPtr &bprop_fg);
+  void EraseUnusedReuseCNode(const FuncGraphPtr &bprop_fg);
 
  private:
   void ReusePrimalCNode(const FuncGraphPtr &k_fg, const FuncGraphPtr &top_fg, bool top_cell_do_recompute);
