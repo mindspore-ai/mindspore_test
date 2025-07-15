@@ -21,7 +21,6 @@
 #include <vector>
 #include "backend/common/session/session_basic.h"
 #include "include/backend/kernel_graph.h"
-#include "plugin/device/cpu/hal/device/cpu_kernel_runtime.h"
 #include "backend/common/session/session_factory.h"
 namespace mindspore {
 namespace session {
@@ -33,14 +32,11 @@ class CPUSession : public SessionBasic {
 
  protected:
   void UnifyMindIR(const KernelGraphPtr &graph) override { SessionBasic::UnifyMindIR(graph); }
-  void CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors, VectorRef *,
-                           std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node,
-                           KernelMapTensor *node_to_tensor) override;
   void PreExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                        VectorRef *const outputs) override;
   void PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph, const std::vector<tensor::TensorPtr> &inputs,
                         VectorRef *const outputs) override;
-  void ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) override;
+  void ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) override {}
   ParameterPtr CreateNewParameterFromParameter(const AnfNodePtr &anf, KernelGraph *graph) override;
   void GraphKernelOptimize(const std::shared_ptr<KernelGraph> &kernel_graph) const;
   void Optimize(const std::shared_ptr<KernelGraph> &kernel_graph);
@@ -53,7 +49,6 @@ class CPUSession : public SessionBasic {
   void BuildKernel(const KernelGraph *kernel_graph) const;
   void SetOutputFlags(const VectorRef &base_ref);
   void UpdateDynamicOutputShape(const std::map<tensor::TensorPtr, KernelWithIndex> &tensor_to_node) const;
-  device::cpu::CPUKernelRuntime runtime_;
 };
 MS_REG_SESSION(kCPUDevice, CPUSession);
 }  // namespace session

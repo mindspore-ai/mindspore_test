@@ -38,7 +38,6 @@ namespace device {
 namespace cpu {
 class CPUSimpleMemPlan;
 class CPUMemoryManager;
-class CPUKernelRuntime;
 class CPUDeviceContext;
 }  // namespace cpu
 namespace ascend {
@@ -50,7 +49,6 @@ class TaskGenerator;
 }  // namespace tasksink
 }  // namespace ascend
 namespace gpu {
-class GPUKernelRuntime;
 class GPUMemoryManager;
 class GPUDeviceContext;
 }  // namespace gpu
@@ -626,9 +624,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::ascend::tasksink::TaskGenerator;
   friend class mindspore::device::cpu::CPUSimpleMemPlan;
   friend class mindspore::device::cpu::CPUMemoryManager;
-  friend class mindspore::device::cpu::CPUKernelRuntime;
   friend class mindspore::device::cpu::CPUDeviceContext;
-  friend class mindspore::device::gpu::GPUKernelRuntime;
   friend class mindspore::device::gpu::GPUMemoryManager;
   friend class mindspore::device::gpu::GPUDeviceContext;
   friend class mindspore::device::ascend::AscendRuntimeCore;

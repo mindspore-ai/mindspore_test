@@ -68,10 +68,8 @@
 #endif
 #include "include/backend/debug/debugger/proto_exporter.h"
 #include "plugin/device/gpu/hal/device/gpu_kernel_build.h"
-#include "plugin/device/gpu/hal/device/gpu_kernel_runtime.h"
 #include "plugin/device/gpu/hal/device/gpu_stream_assign.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
-#include "plugin/device/gpu/hal/device/kernel_runtime_manager.h"
 #include "plugin/res_manager/gpu/device/cuda_driver.h"
 #include "include/backend/distributed/init.h"
 #include "plugin/res_manager/gpu/device/gpu_device_address.h"
@@ -128,14 +126,6 @@ void GPUSession::SelectKernel(const std::shared_ptr<KernelGraph> &kernel_graph) 
   for (const auto &kernel_node : kernel_graph->execution_order()) {
     MS_EXCEPTION_IF_NULL(kernel_node);
     kernel_info_setter->SetKernelInfo(kernel_node, KernelType::UNKNOWN_KERNEL_TYPE);
-  }
-}
-
-void GPUSession::StartKernelRT() const {
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  if (!runtime_instance->Init()) {
-    MS_LOG(EXCEPTION) << "GPU start kernel runtime failed";
   }
 }
 
@@ -232,28 +222,6 @@ void GPUSession::AssignStream(const std::shared_ptr<KernelGraph> &kernel_graph) 
 void GPUSession::BuildKernel(const std::shared_ptr<KernelGraph> &kernel_graph) const {
   auto kernels = kernel_graph->execution_order();
   device::gpu::CreateGPUKernel(kernels);
-}
-
-void GPUSession::RunOpAllocateMemory(const std::vector<tensor::TensorPtr> &input_tensors,
-                                     const KernelGraph *kernel_graph, bool is_gradient_out) const {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->RunOpAssignMemory(input_tensors, *kernel_graph, is_gradient_out);
-}
-
-void GPUSession::RunOpGenKernelEvent(const KernelGraph *graph) const {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->GenKernelEvents(*graph);
-}
-
-void GPUSession::RunOpClearMemory(const KernelGraph *kernel_graph) const {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->RunOpClearMemory(*kernel_graph);
 }
 
 namespace {
@@ -471,13 +439,6 @@ void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
             AnfAlgo::SetOutputAddr(new_address, output_index, node);
           }
           (*new_to_old_device_address)[new_address] = address;
-          if (graphkernel::GraphKernelFlags::GetInstance().IsEnableGraphKernel()) {
-            auto runtime_instance =
-              device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-            MS_EXCEPTION_IF_NULL(runtime_instance);
-            auto gpu_runtime_instance = dynamic_cast<device::gpu::GPUKernelRuntime *>(runtime_instance);
-            gpu_runtime_instance->SetAddrInvalid(address);
-          }
         }
 
         if (common::AnfAlgo::IsDynamicShape(node)) {
@@ -494,14 +455,6 @@ void GPUSession::UpdateOutputTensors(const VectorRef *outputs,
   }
 }
 
-void GPUSession::Execute(const std::shared_ptr<KernelGraph> &kernel_graph) const {
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  if (!runtime_instance->Run(*kernel_graph, false)) {
-    MS_LOG(EXCEPTION) << "GPU execute graph failed!";
-  }
-}
-
 #ifdef ENABLE_DEBUGGER
 
 void GPUSession::Dump(const std::shared_ptr<KernelGraph> &kernel_graph) const {
@@ -514,22 +467,7 @@ void GPUSession::Dump(const std::shared_ptr<KernelGraph> &kernel_graph) const {
     DumpJsonParser::GetInstance().UpdateDumpIter();
   }
 }
-
-bool GPUSession::DumpDataEnabledIteration() const {
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  return runtime_instance->DumpDataEnabledIteration();
-}
 #endif
-
-void GPUSession::SyncStream() const {
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  auto ret = runtime_instance->SyncStream();
-  if (!ret) {
-    MS_LOG(EXCEPTION) << "Sync stream error!";
-  }
-}
 }  // namespace gpu
 }  // namespace session
 }  // namespace mindspore

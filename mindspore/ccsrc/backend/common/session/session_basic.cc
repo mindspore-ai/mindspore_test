@@ -1210,17 +1210,6 @@ void SessionBasic::BuildGraph(GraphId graph_id) {
   executor_->BuildGraph(shared_from_this(), graph_id);
 }
 
-void SessionBasic::RunGraph(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  executor_->RunGraph(shared_from_this(), graph_id, inputs, outputs);
-}
-
-void SessionBasic::RunGraphAsync(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs,
-                                 VectorRef *outputs) {
-  MS_EXCEPTION_IF_NULL(executor_);
-  executor_->RunGraphAsync(shared_from_this(), graph_id, inputs, outputs);
-}
-
 void SessionBasic::RunGraphImpl(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs,
                                 VectorRef *outputs) {
   MS_LOG(INFO) << "Status record: start run graph. graph id: " << graph_id;

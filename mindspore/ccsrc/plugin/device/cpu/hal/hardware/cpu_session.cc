@@ -123,15 +123,6 @@ void CPUSession::GraphKernelOptimize(const std::shared_ptr<KernelGraph> &kernel_
   kernel_graph->SetExecOrderByDefault();
 }
 
-void CPUSession::CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors,
-                                     VectorRef *outputs,
-                                     std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node,
-                                     KernelMapTensor *) {
-  auto kernel_graph = GetGraph(graph_id);
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  runtime_.CreateOutputTensors(kernel_graph.get(), input_tensors, outputs, tensor_to_node);
-}
-
 void CPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
                                const std::vector<tensor::TensorPtr> &inputs_const) const {
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -167,19 +158,11 @@ void CPUSession::LoadInputData(const std::shared_ptr<KernelGraph> &kernel_graph,
 void CPUSession::PreExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph,
                                  const std::vector<tensor::TensorPtr> &inputs, VectorRef *const outputs) {
   MS_LOG(INFO) << "Bind input output address";
-  runtime_.BindInputOutput(kernel_graph.get(), inputs, outputs);
 }
 
 void CPUSession::PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph,
                                   const std::vector<tensor::TensorPtr> &, VectorRef *const) {
   Summary(kernel_graph.get());
-}
-
-void CPUSession::ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) {
-  bool ret = runtime_.Run(*kernel_graph, false);
-  if (!ret) {
-    MS_LOG(EXCEPTION) << "Run graph failed";
-  }
 }
 
 void CPUSession::SetOutputFlags(const VectorRef &base_ref) {

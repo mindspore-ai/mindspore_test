@@ -175,7 +175,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   friend class CompileNodesTask;
   friend class CompileGraphTask;
   friend class BuildGraphTask;
-  friend class RunGraphTask;
   friend class mindspore::runtime::GraphCompiler;
   virtual bool IsSupportSummary() { return true; }
   virtual void CreateOutputTensors(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &input_tensors,
