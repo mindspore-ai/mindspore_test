@@ -102,6 +102,7 @@ std::shared_ptr<AclnnKernelMod> GetCustomAclnnKernelMod(const std::string &op_ty
 std::shared_ptr<AclnnKernelMod> GetCustomAclnnKernelMod(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   auto primitive = GetCNodePrimitive(anf_node);
+  MS_EXCEPTION_IF_NULL(primitive);
   auto op_type = GetValue<std::string>(primitive->GetAttr(kRegOpName));
   op_type = AddPrefixForCustomNode(op_type, primitive->GetAttr(kCustomAclop) != nullptr);
 
