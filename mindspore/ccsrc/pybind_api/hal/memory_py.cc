@@ -168,7 +168,6 @@ struct MemoryBlock {
   static constexpr size_t kStreamIdIdx = 3;
   static constexpr size_t kSizeIdx = 5;
   static constexpr size_t kActualPeakMemIdx = 6;
-  static constexpr size_t kTypeIdx = 9;
   static constexpr size_t kInvalidValue = 0;
 
   explicit MemoryBlock(const std::string &block_string) {
@@ -207,6 +206,7 @@ struct MemoryReplayProcesser {
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
     res_manager_ = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
   }
 
   ~MemoryReplayProcesser() = default;
@@ -214,6 +214,7 @@ struct MemoryReplayProcesser {
   void operator()(const std::string &file_path) {
     MS_EXCEPTION_IF_NULL(res_manager_);
     res_manager_->Initialize();
+    device_context_->Initialize();
     MS_EXCEPTION_IF_NULL(res_manager_->mem_manager());
     auto mem_pool = res_manager_->mem_manager()->GetMemoryPool();
     MS_EXCEPTION_IF_NULL(mem_pool);
@@ -261,6 +262,7 @@ struct MemoryReplayProcesser {
 
  private:
   device::HalResBase *res_manager_;
+  device::DeviceContext *device_context_;
   std::map<size_t, void *> to_free_mems_;
 };
 
