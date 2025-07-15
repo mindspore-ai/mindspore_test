@@ -280,9 +280,9 @@ void EntranceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
   }
 }
 
-void EntranceActor::ResetState() {
+void EntranceActor::ResetState(OpContext<KernelTensor> *const context) {
   is_loop_body_execution_ = false;
-  ControlActor::ResetState();
+  ControlActor::ResetState(context);
 }
 }  // namespace runtime
 }  // namespace mindspore

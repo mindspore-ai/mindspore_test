@@ -132,6 +132,8 @@ class SuperKernelActor : public DebugAwareActor {
   // Collect conditions at compilation and execution phase to judge whether running with high performance mode.
   bool IsHighPerfModeAtComp();
   bool IsHighPerfModeAtExec();
+  // Reset state for UCE, ARF.
+  void ResetState(OpContext<KernelTensor> *const context) override;
 
  protected:
   void Init() override;

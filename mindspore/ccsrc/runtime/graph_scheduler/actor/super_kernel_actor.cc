@@ -1918,6 +1918,12 @@ bool SuperKernelActor::IsHighPerfModeAtExec() {
   return std::all_of(conditions.begin(), conditions.end(), [](bool c) { return !c; });
 }
 
+void SuperKernelActor::ResetState(OpContext<KernelTensor> *const context) {
+  if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
+    MemoryManagerActor::GetInstance()->FreeSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
+  }
+}
+
 void SuperKernelActor::GetRefCountForGraphOutput(const std::vector<AnfNodePtr> &output_data_nodes,
                                                  const std::vector<DataArrowPtr> &output_data_arrows,
                                                  const mindspore::HashMap<AnfNodePtr, KernelRunner *> &kernel_to_actor,

@@ -152,7 +152,9 @@ class AbstractActor : public OpRTActor<KernelTensor> {
   const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs() const { return parameter_indexs_; }
 
   // Reset state for UCE.
-  virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
+  virtual void ResetState(OpContext<KernelTensor> *const context) {
+    MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state.";
+  }
   virtual void IncreaseNewRefCounts(OpContext<KernelTensor> *const context);
   virtual void IncreaseNewRefCount(const OpData<KernelTensor> *op_data) const;
 
