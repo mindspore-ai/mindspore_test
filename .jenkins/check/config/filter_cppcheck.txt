@@ -81,6 +81,8 @@
 "mindspore/mindspore/ccsrc/frontend/np_dtypes/np_dtypes.cc"                                              "knownConditionTrueFalse"
 "mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc"                                 "unreachableCode"
 "mindspore/mindspore/ccsrc/pybind_api/tensor_py_reg.cc"                                 "unknownMacro"
+"mindspore/mindspore/ccsrc/runtime/core/actors/base/debug_actor.cc"                              "unreadVariable"
+"mindspore/mindspore/ccsrc/pybind_api/backward_node_py_reg.cc"                                 "unreachableCode"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/debug_actor.cc"                              "unreadVariable"
 "mindspore/mindspore/ccsrc/pybind_api/storage_py_reg.cc"                                 "unknownMacro"
 "mindspore/mindspore/ccsrc/pybind_api/ir/tensor_index_py.cc"                             "containerOutOfBounds"
