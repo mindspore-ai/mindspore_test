@@ -116,12 +116,12 @@ tensor::TensorPtr GetParamFromLoad(const CNodePtr &load, const bool unused) {
         MS_EXCEPTION_IF_NULL(value);
         auto tensor = value->cast<std::shared_ptr<tensor::Tensor>>();
         MS_EXCEPTION_IF_NULL(tensor);
-        tensor->data_sync();
+        auto cpu_tensor = tensor->cpu();
         if (unused) {
           auto param_info = para->param_info();
           param_info->set_ignore_device_addr(true);
         }
-        return tensor;
+        return cpu_tensor;
       }
     }
   }

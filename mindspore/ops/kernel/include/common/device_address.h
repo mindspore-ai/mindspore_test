@@ -423,7 +423,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   const ShapeVector &GetShapeVector() const;
   void SetShapeVector(const ShapeVector &shape_vector);
 
-  const TensorStorageInfoPtr GetTensorStorageInfo() const override;
+  TensorStorageInfoPtr GetTensorStorageInfo() const override;
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info);
 
   const std::string &device_name() const;

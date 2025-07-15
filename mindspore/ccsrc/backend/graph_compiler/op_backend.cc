@@ -28,6 +28,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ir/tensor_api.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore::compile {
 namespace {
@@ -603,10 +604,8 @@ void ViewBackend::AllocateMemForTensor(const tensor::TensorPtr &tensor, DeviceCo
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
-
-  if (!tensor->to_device()) {
-    MS_LOG(EXCEPTION) << "To device failed, " << tensor->ToString();
-  }
+  MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+  runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),

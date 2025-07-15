@@ -973,10 +973,7 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::TensorPtr &input
   auto new_device_address = kernel_tensor->device_address();
   input_tensor->set_device_address(new_device_address);
   input_tensor->set_need_pipeline_sync(true);
-  input_tensor->set_to_device(
-    [new_device_address, device_address, stream_id = op_run_info->base_op_run_info.stream_id]() {
-      return runtime::DeviceAddressUtils::LazyCopy(new_device_address, device_address, stream_id);
-    });
+  input_tensor->set_implicit_copy_address(device_address);
   op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""));
 }
 

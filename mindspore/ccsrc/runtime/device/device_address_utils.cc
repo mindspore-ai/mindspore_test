@@ -48,6 +48,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/core/include/ir/tensor_api.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -991,14 +992,27 @@ void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &
   }
 }
 
-bool DeviceAddressUtils::LazyCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
-                                  size_t stream_id) {
+void DeviceAddressUtils::LazyCopy(const tensor::TensorPtr &tensor, size_t stream_id) {
+  const auto &dst_device_sync = tensor->device_address();
+  const auto &src_device_sync = tensor->implicit_copy_address();
+  MS_EXCEPTION_IF_NULL(dst_device_sync);
+  MS_EXCEPTION_IF_NULL(src_device_sync);
+  MS_LOG(DEBUG) << "Lazy copy for dst_device_sync " << dst_device_sync->ToString() << " src_device_sync "
+                << src_device_sync->ToString() << " on stream " << stream_id;
   if (src_device_sync->GetDeviceType() != device::DeviceType::kCPU &&
       dst_device_sync->GetDeviceType() == device::DeviceType::kCPU) {
-    return SyncCopy(dst_device_sync, src_device_sync, stream_id);
+    if (!SyncCopy(dst_device_sync, src_device_sync, stream_id)) {
+      MS_LOG(EXCEPTION) << "Lazy Sync copy failed. dst " << dst_device_sync->ToString() << " src "
+                        << src_device_sync->ToString() << " on stream " << stream_id;
+    }
   } else {
-    return AsyncCopy(dst_device_sync, src_device_sync, stream_id);
+    if (!AsyncCopy(dst_device_sync, src_device_sync, stream_id)) {
+      MS_LOG(EXCEPTION) << "Lazy Async copy failed. dst " << dst_device_sync->ToString() << " src "
+                        << src_device_sync->ToString() << " on stream " << stream_id;
+    }
   }
+  tensor->set_implicit_copy_address(nullptr);
+  MS_LOG(DEBUG) << "Copy success, and delete implicit address of tensor " << tensor->ToString();
 }
 
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
@@ -1037,8 +1051,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   device_address->set_new_ref_count(SIZE_MAX);
 
   // keep origin device_address and execute in another thread.
-  tensor->set_to_device(
-    [addr, device_address]() { return LazyCopy(device_address, addr, device_address->stream_id()); });
+  tensor->set_implicit_copy_address(addr);
 
   tensor->set_device_address(device_address);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
@@ -1077,14 +1090,12 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
 
   if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
     OpExecutor::DispatchLaunchTask([tensor]() {
-      if (!tensor->to_device()) {
-        MS_LOG(EXCEPTION) << "Tensor to device failed";
-      }
+      MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+      LazyCopy(tensor, CurrentStream::id());
     });
   } else {
-    if (!tensor->to_device()) {
-      MS_LOG(EXCEPTION) << "Tensor to device failed";
-    }
+    MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+    LazyCopy(tensor, CurrentStream::id());
   }
 }
 

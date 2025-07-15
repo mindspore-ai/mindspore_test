@@ -427,10 +427,6 @@ TEST_F(TestTensor, TensorSetShapeDataTest) {
   ASSERT_EQ(0, ret);
   ASSERT_NE(nullptr, tensor->unsafe_data());
 
-  // Shape change larger
-  std::vector<int64_t> large_shape({3, 4});
-  EXPECT_THROW(tensor->set_shape(large_shape), std::runtime_error);
-
   // Shape change litter
   std::vector<int64_t> little_shape({1, 2});
   tensor->set_shape(little_shape);

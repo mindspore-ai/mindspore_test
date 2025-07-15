@@ -45,6 +45,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pynative/ir_converter.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "utils/stream_guard.h"
 using mindspore::profiler::ProfilerManager;
 using EdgePtr = mindspore::pynative::EdgePtr;
 
@@ -84,9 +85,7 @@ void UpdateInputTensorFromDevice(const std::vector<AnfNodePtr> &input_nodes,
         tensor->set_sync_status(kNeedSyncHostToDeviceImmediately);
         tensor->set_need_pipeline_sync(true);
         tensor->set_device_address(node_address);
-        tensor->set_to_device([node_address, tensor_address, stream_id]() {
-          return DeviceAddressUtils::LazyCopy(node_address, tensor_address, stream_id);
-        });
+        tensor->set_implicit_copy_address(tensor_address);
         MS_LOG(DEBUG) << "Set to_device callback for tensor " << tensor->ToString() << " id " << tensor->id();
       }
     }
@@ -184,9 +183,9 @@ void CopyTensorDataToDevice(const tensor::TensorPtr &tensor, const AnfNodePtr &n
 
   MS_LOG(DEBUG) << "Copy to device, node:" << common::AnfAlgo::GetNodeDebugString(node) << " tensor "
                 << tensor->ToString() << " id:" << tensor->id();
-  if (!tensor->to_device()) {
-    MS_LOG(EXCEPTION) << "Copy data to device failed for tensor " << tensor->ToString() << " id: " << tensor->id();
-  }
+
+  MS_LOG(DEBUG) << "Start lazy copy for tensor " << tensor->ToString();
+  runtime::DeviceAddressUtils::LazyCopy(tensor, CurrentStream::id());
 
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(), device_address->type_id(),
@@ -1025,13 +1024,11 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
       MS_LOG(DEBUG) << "Input tensor device address type:"
                     << device::GetDeviceNameByType(device_address->GetDeviceType()) << " but ir device address type:"
                     << device::GetDeviceNameByType(new_device_address->GetDeviceType());
-      input_tensor->set_to_device([device_address, new_device_address, stream_id]() {
-        return DeviceAddressUtils::LazyCopy(new_device_address, device_address, stream_id);
-      });
+      input_tensor->set_implicit_copy_address(device_address);
       input_tensor->set_device_address(new_device_address);
     } else {
       MS_LOG(DEBUG) << "Input device type is same, set tensor device address to ir input.";
-      input_tensor->set_to_device(nullptr);
+      input_tensor->set_implicit_copy_address(nullptr);
       input_edge->kernel_tensor_->set_device_address(device_address);
     }
 
@@ -1087,9 +1084,8 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
 
-    if (!input_tensor->to_device()) {
-      MS_LOG(EXCEPTION) << "To device failed, " << input_tensor->ToString();
-    }
+    MS_LOG(DEBUG) << "Start lazy copy for tensor " << input_tensor->ToString();
+    runtime::DeviceAddressUtils::LazyCopy(input_tensor, CurrentStream::id());
     MS_LOG(DEBUG) << "Copy host tensor to device for op " << op_compiler_info->graph_info_ << " input " << i;
   }
 }

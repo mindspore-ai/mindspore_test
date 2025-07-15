@@ -75,4 +75,25 @@ DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, tens
   ret->set_data(std::move(tensor_data));
   return ret;
 }
+
+template DeviceSyncPtr MakeDeviceAddress<int64_t>(TypeId, int64_t);
+template DeviceSyncPtr MakeDeviceAddress<int32_t>(TypeId, int32_t);
+template DeviceSyncPtr MakeDeviceAddress<int16_t>(TypeId, int16_t);
+template DeviceSyncPtr MakeDeviceAddress<int8_t>(TypeId, int8_t);
+template DeviceSyncPtr MakeDeviceAddress<double>(TypeId, double);
+template DeviceSyncPtr MakeDeviceAddress<float>(TypeId, float);
+template DeviceSyncPtr MakeDeviceAddress<float16>(TypeId, float16);
+template DeviceSyncPtr MakeDeviceAddress<float8_e5m2>(TypeId, float8_e5m2);
+template DeviceSyncPtr MakeDeviceAddress<float8_e4m3fn>(TypeId, float8_e4m3fn);
+template DeviceSyncPtr MakeDeviceAddress<hifloat8>(TypeId, hifloat8);
+template DeviceSyncPtr MakeDeviceAddress<bfloat16>(TypeId, bfloat16);
+template DeviceSyncPtr MakeDeviceAddress<uint64_t>(TypeId, uint64_t);
+template DeviceSyncPtr MakeDeviceAddress<uint32_t>(TypeId, uint32_t);
+template DeviceSyncPtr MakeDeviceAddress<uint16_t>(TypeId, uint16_t);
+template DeviceSyncPtr MakeDeviceAddress<uint8_t>(TypeId, uint8_t);
+template DeviceSyncPtr MakeDeviceAddress<bool>(TypeId, bool);
+template DeviceSyncPtr MakeDeviceAddress<int64_t>(TypeId, const ShapeVector &, const std::vector<int64_t> &);
+template DeviceSyncPtr MakeDeviceAddress<int32_t>(TypeId, const ShapeVector &, const std::vector<int32_t> &);
+template DeviceSyncPtr MakeDeviceAddress<double>(TypeId, const ShapeVector &, const std::vector<double> &);
+template DeviceSyncPtr MakeDeviceAddress<float>(TypeId, const ShapeVector &, const std::vector<float> &);
 }  // namespace mindspore
