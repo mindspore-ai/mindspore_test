@@ -15,10 +15,10 @@
  */
 #include "cpu_kernel/ms_kernel/list_diff.h"
 
-#include "include/securec.h"
 #include <vector>
 #include <unordered_set>
 
+#include "include/securec.h"
 #include "utils/kernel_util.h"
 #include "utils/eigen_tensor.h"
 #include "utils/allocator_utils.h"

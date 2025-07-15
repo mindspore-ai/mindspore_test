@@ -15,7 +15,7 @@
  */
 
 #include "cpu_kernel/ms_kernel/sparse_fill_empty_rows.h"
-#include "include/securec.h"
+
 #include <algorithm>
 #include <atomic>
 #include <mutex>
@@ -24,6 +24,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/eigen_tensor.h"
 #include "utils/kernel_util.h"

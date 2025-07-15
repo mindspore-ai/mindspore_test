@@ -16,10 +16,10 @@
 
 #include "cpu_kernel/ms_kernel/matrix_band_part.h"
 
-#include "include/securec.h"
 #include <algorithm>
 #include <vector>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "utils/eigen_tensor.h"

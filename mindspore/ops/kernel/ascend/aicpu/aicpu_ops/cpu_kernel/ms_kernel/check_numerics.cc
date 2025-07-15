@@ -17,12 +17,10 @@
 
 #include "cpu_kernel/ms_kernel/check_numerics.h"
 
-#include "include/securec.h"
-
-#include "include/securec.h"
 #include <algorithm>
-#include "unsupported/Eigen/CXX11/Tensor"
 
+#include "include/securec.h"
+#include "unsupported/Eigen/CXX11/Tensor"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"
 #include "context/inc/cpu_kernel_utils.h"

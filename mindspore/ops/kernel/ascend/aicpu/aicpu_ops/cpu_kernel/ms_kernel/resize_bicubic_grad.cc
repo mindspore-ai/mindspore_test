@@ -15,11 +15,11 @@
  */
 #include "ms_kernel/resize_bicubic_grad.h"
 
-#include "include/securec.h"
 #include <vector>
 #include <algorithm>
 #include <limits>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "utils/kernel_util.h"

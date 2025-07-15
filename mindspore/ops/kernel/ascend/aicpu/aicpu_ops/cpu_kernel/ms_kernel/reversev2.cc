@@ -15,14 +15,15 @@
  */
 
 #include "ms_kernel/reversev2.h"
-#include "include/securec.h"
+
 #include <unordered_set>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include "Eigen/Core"
 
+#include "include/securec.h"
+#include "Eigen/Core"
 #include "context/inc/cpu_kernel_utils.h"
 #include "utils/eigen_tensor.h"
 #include "utils/tensor_iterator.h"

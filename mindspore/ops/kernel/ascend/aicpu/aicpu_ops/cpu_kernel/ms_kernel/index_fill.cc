@@ -15,11 +15,11 @@
  */
 #include "cpu_kernel/ms_kernel/index_fill.h"
 
-#include "include/securec.h"
 #include <map>
 #include <utility>
 #include <algorithm>
 
+#include "include/securec.h"
 #include "Eigen/Core"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"

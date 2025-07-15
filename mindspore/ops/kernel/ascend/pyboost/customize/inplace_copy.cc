@@ -144,10 +144,8 @@ tensor::TensorPtr InplaceCopyH2D(const std::shared_ptr<OpRunner> &op, const Tens
                               << ", src_ptr: " << src_ptr << ", dst_ptr: " << dst_ptr << ", copySize: " << src->Size();
           }
           auto sync_mode = runtime::RuntimeConf::GetInstance()->launch_blocking();
-          if (sync_mode) {
-            if (!device_context->device_res_manager_->SyncStream(stream_id)) {
-              MS_LOG(EXCEPTION) << "SyncStream failed for InplaceCopyH2D AsyncCopy.";
-            }
+          if (sync_mode && !device_context->device_res_manager_->SyncStream(stream_id)) {
+            MS_LOG(EXCEPTION) << "SyncStream failed for InplaceCopyH2D AsyncCopy.";
           }
           MS_LOG(DEBUG) << "Launch InplaceCopyH2D AsyncCopy end";
         }
@@ -222,10 +220,8 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
                               << ", src_ptr: " << src_ptr << ", dst_ptr: " << dst_ptr << ", copySize: " << src->Size();
           }
           auto sync_mode = runtime::RuntimeConf::GetInstance()->launch_blocking();
-          if (sync_mode) {
-            if (!device_context->device_res_manager_->SyncStream(stream_id)) {
-              MS_LOG(EXCEPTION) << "SyncStream failed for InplaceCopyD2H AsyncCopy.";
-            }
+          if (sync_mode && !device_context->device_res_manager_->SyncStream(stream_id)) {
+            MS_LOG(EXCEPTION) << "SyncStream failed for InplaceCopyD2H AsyncCopy.";
           }
           MS_LOG(DEBUG) << "Launch InplaceCopyD2H AsyncCopy end";
         }
@@ -252,11 +248,12 @@ tensor::TensorPtr InplaceCopyH2H(const std::shared_ptr<OpRunner> &op, const Tens
         src->set_device_address(nullptr);
       }
       auto size = dst->Size();
+      auto ret = EOK;
       if (size > 0 && !common::IsCompileSimulation()) {
-        auto ret = memcpy_s(dst->data_c(), size, src->data_c(), size);
-        if (ret != EOK) {
-          MS_LOG(EXCEPTION) << "InplaceCopyH2H fast copy failed, memcpy_s failed with error: " << ret;
-        }
+        ret = memcpy_s(dst->data_c(), size, src->data_c(), size);
+      }
+      if (ret != EOK) {
+        MS_LOG(EXCEPTION) << "InplaceCopyH2H fast copy failed, memcpy_s failed with error: " << ret;
       }
       op->set_outputs({dst});
       return op->output(0);

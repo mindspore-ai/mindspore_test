@@ -15,11 +15,13 @@
  */
 
 #include "cpu_kernel/ms_kernel/sparse_softmax.h"
-#include "include/securec.h"
+
 #include <vector>
 #include <iostream>
 #include <stack>
 #include <memory>
+
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"

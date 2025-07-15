@@ -15,11 +15,11 @@
  */
 #include "dropout2d.h"
 
-#include "include/securec.h"
 #include <random>
 #include <chrono>
 #include <algorithm>
 
+#include "include/securec.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

@@ -16,12 +16,12 @@
 
 #include "cpu_kernel/ms_kernel/histogram.h"
 
-#include "include/securec.h"
 #include <algorithm>
 #include <functional>
 #include <mutex>
 #include <vector>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
