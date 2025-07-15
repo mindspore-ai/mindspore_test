@@ -528,8 +528,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     worker.put("QUIT")
         if hasattr(self, 'cleaning_process') and self.cleaning_process is not None:
             # let the quit event notify the cleaning process to exit
-            if psutil.Process(self.cleaning_process.pid).status() not in ['zombie', 'dead', 'wakekill']:
-                self.cleaning_process.join(timeout=5)
+            self.cleaning_process.join(timeout=5)
             if self.cleaning_process.is_alive():
                 # if the cleaning process did not exit, it may hang, try to terminate it
                 _PythonMultiprocessing._terminate_processes([self.cleaning_process])  # pylint: disable=W0212
