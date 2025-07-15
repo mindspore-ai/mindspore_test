@@ -98,6 +98,21 @@ class _ExperimentalConfig:
             <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/
             msprof_data_collection.sh>`_.
 
+            Final deliverables by `MindStudio Insight
+            <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_
+            tool visualizes the analysis results.
+            For detailed analysis, please refer to `host-side CPU data analysis
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/
+            atlasprofiling_16_0106.html>`_, `host-side MEM data analysis
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/
+            atlasprofiling_16_0107.html>`_, `host-side DISK data analysis
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/
+            atlasprofiling_16_0108.html>`_, `host-side NETWORK data analysis
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/
+            atlasprofiling_16_0109.html>`_, `host-side OSRT data analysis
+            <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/
+            atlasprofiling_16_0110.html>`_.
+
             - HostSystem.CPU: Collect the CPU utilization at the process level.
             - HostSystem.MEM: Collect the memory utilization at the process level.
             - HostSystem.DISK: Collect the disk I/O utilization at the process level.

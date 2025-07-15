@@ -39,6 +39,13 @@ mindspore.profiler._ExperimentalConfig
           安装三方工具成功后，需要配置用户权限，详细步骤请参考 `配置用户权限 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0137.html>`_ ，
           注意在配置用户权限的第3步中，需要将msprof_data_collection.sh脚本中的内容替换为 `msprof_data_collection.sh <https://gitee.com/mindspore/mindspore/blob/master/docs/api/api_python/mindspore/script/msprof_data_collection.sh>`_ 。
 
+          最终交付件可以通过 `MindStudio Insight <https://www.hiascend.com/developer/download/community/result?module=pt+sto+cann>`_ 工具可视化分析结果。
+          详细分析请参考 `host侧CPU数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0106.html>`_ 、
+          `host侧MEM数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0107.html>`_ 、
+          `host侧DISK数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0108.html>`_ 、
+          `host侧NETWORK数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0109.html>`_ 、
+          `host侧OSRT数据分析 <https://www.hiascend.com/document/detail/zh/mindstudio/80RC1/T&ITools/Profiling/atlasprofiling_16_0110.html>`_ 。
+
           - HostSystem.CPU：收集进程级别的CPU利用率。
           - HostSystem.MEM：收集进程级别的内存利用率。
           - HostSystem.DISK：收集进程级别的磁盘I/O利用率。
