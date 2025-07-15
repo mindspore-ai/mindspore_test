@@ -2198,6 +2198,11 @@ def _save_onnx(net, file_name, *inputs, **kwargs):
         file_name += ".onnx"
     if os.path.exists(file_name):
         os.chmod(file_name, stat.S_IWUSR)
+    else:
+        dir_path = os.path.dirname(file_name)
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path, mode=0o700, exist_ok=True)
+        os.chmod(dir_path, 0o700)
     with open(file_name, 'wb') as f:
         f.write(onnx_stream)
         os.chmod(file_name, stat.S_IRUSR)

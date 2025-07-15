@@ -1004,3 +1004,26 @@ def test_export_muls():
         os.remove(onnx_file)
     else:
         raise RuntimeError(f"Export operator Muls to ONNX failed!")
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_muls_with_saved_dirs():
+    """
+    Feature: Export Muls to onnx and set dirs
+    Description: Export Muls to onnx
+    Expectation: success
+    """
+    np_x = np.random.uniform(low=0, high=1, size=(1, 3, 640)).astype(np.float32)
+    x = Tensor(np_x)
+    net = MulsNet()
+    ms_output = net(x)
+    onnx_file = './muls_test/test1/test2/muls_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator Muls to ONNX failed!")
