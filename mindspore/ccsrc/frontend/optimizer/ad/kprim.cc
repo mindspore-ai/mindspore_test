@@ -204,8 +204,8 @@ FuncGraphPtr GenerateBpropForVirtualViewGrad(size_t inputs_num) {
   // Finally, inplace change mask_viewed to Zero
   auto mask_viewed_zero = func_graph->NewCNodeInOrder(
     {NewValueNode(prim::kPrimZerosLikeExt), mask_viewed, NewValueNode(int64_t(kBool->type_id()))});
-  auto mask_viewed_changed =
-    func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimInplaceCopy), mask_viewed, mask_viewed_zero});
+  auto mask_viewed_changed = func_graph->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimInplaceCopy), mask_viewed, mask_viewed_zero, NewValueNode(MakeValue<bool>(false))});
   ori_mask = func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), ori_mask, mask_viewed_changed});
   auto all_zeros_tensor =
     func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimZerosLikeExt), dout, NewValueNode(int64_t(kBool->type_id()))});
