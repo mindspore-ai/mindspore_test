@@ -266,11 +266,6 @@ if(ENABLE_D)
                     DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                     COMPONENT mindspore
             )
-            install(
-                    TARGETS ms_ascend_native_boost
-                    DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
-                    COMPONENT mindspore
-            )
         endif()
     endif()
 endif()

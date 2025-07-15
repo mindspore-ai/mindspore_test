@@ -22,4 +22,3 @@ set_property(SOURCE ${_PREACTIVATE_SRC_LIST} ${MS_LLM_BOOST_910B} PROPERTY COMPI
 
 add_library(_mindspore_plugin_device_ascend_llm_boost_910b_obj OBJECT ${MS_LLM_BOOST_910B})
 add_subdirectory(atb)
-add_subdirectory(ascend_native)
