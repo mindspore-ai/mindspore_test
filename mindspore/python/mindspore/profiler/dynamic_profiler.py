@@ -131,8 +131,9 @@ class DynamicProfilerMonitorBase(Callback):
                     f"rank{self._rank_id}_start{start_step}_stop{stop_step}"
                 )
                 PathManager.check_input_directory_path(prof_path)
-                profiler_config = self.get_prof_config(prof_args, prof_path, start_step, stop_step, start_profile=False,
-                                                       skip_first=0)
+                profiler_config = self._get_prof_config(prof_args, prof_path, start_step, stop_step,
+                                                        start_profile=False,
+                                                        skip_first=0)
                 self._profiler = Profile(**profiler_config)
                 print_msg(f"Rank {self._rank_id} create output path {prof_path}")
 
@@ -144,7 +145,7 @@ class DynamicProfilerMonitorBase(Callback):
                       f"will stop at step {stop_step}")
 
     @staticmethod
-    def get_prof_config(prof_args, prof_path, start_step, stop_step, start_profile, skip_first):
+    def _get_prof_config(prof_args, prof_path, start_step, stop_step, start_profile, skip_first):
         """
         Get profiler config.
 
@@ -369,8 +370,8 @@ class DynamicProfilerMonitorBase(Callback):
                 f"Rank {self._rank_id} Dynamic profiler start at step {start_step}, "
                 f"will stop at step {stop_step}"
             )
-            profiler_config = self.get_prof_config(args, prof_path, start_step, stop_step, start_profile=True,
-                                                   skip_first=1)
+            profiler_config = self._get_prof_config(args, prof_path, start_step, stop_step, start_profile=True,
+                                                    skip_first=1)
             self._profiler = Profile(**profiler_config)
 
     def _is_valid_start_stop_step(self, step_num, start_step, stop_step):
