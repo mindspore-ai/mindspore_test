@@ -145,6 +145,7 @@ class MyNet2(nn.Cell):
         self.relu4 = nn.ReLU()
         self.abs4 = ops.Abs()
         self.abs5 = ops.Abs()
+        self.abs6 = ops.Abs()
         self.device_target = "CPU"
 
     def construct(self, x):
@@ -176,6 +177,9 @@ class MyNet2(nn.Cell):
         if self.device_target == "Ascend":
             x = self.abs5(x)
 
+        if "NoEmptyString":  # pylint: disable=using-constant-test
+            x = self.abs6(x)
+
         return x
 
 def test_flatten_if_control_flow():
@@ -199,6 +203,7 @@ def test_flatten_if_control_flow():
     assert codes.count("x = self.abs4(x)") == 0
     assert codes.count("x = self.relu4(x)") == 1
     assert codes.count("x = self.abs5(x)") == 0
+    assert codes.count("x = self.abs6(x)") == 1
 
 
 class IfNet(nn.Cell):

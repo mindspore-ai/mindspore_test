@@ -1503,7 +1503,7 @@ class SymbolTree(Observer, Observable, NodeManager):
         """
         # ast.Constant can be check without eval
         if isinstance(ast_node, ast.Constant):
-            return True, bool(ast.value)
+            return True, bool(ast_node.value)
         # Get the module where the code of ast_node is located
         file_path = inspect.getfile(type(self.get_origin_network()))
         module = None
