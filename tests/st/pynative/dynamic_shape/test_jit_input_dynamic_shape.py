@@ -33,15 +33,11 @@ class ShapeFactory:
 
     @staticmethod
     def grad_graph(grad_net, ms_inputs, out):
-        context.set_context(mode=context.GRAPH_MODE)
         grads = grad_net(*ms_inputs, out)
-        context.set_context(mode=context.PYNATIVE_MODE)
         return grads
 
     def forward_graph(self, ms_inputs):
-        context.set_context(mode=context.GRAPH_MODE)
         out = self.ms_net(*ms_inputs)
-        context.set_context(mode=context.PYNATIVE_MODE)
         return out
 
     def forward_cmp(self, *x):
