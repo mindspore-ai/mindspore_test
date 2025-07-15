@@ -1014,10 +1014,17 @@ extern PyObject *TensorPython_Storage(PyObject *self, PyObject *args, PyObject *
   PyType<TensorPy> *tensor = (PyType<TensorPy> *)self;
   if (tensor->value.GetStorage().is_none()) {
     auto tensorTmp = tensor->value.GetTensor();
-    std::shared_ptr<StorageBase> result = TensorPybind::GetStorage(tensorTmp);
-    if (result == nullptr) {
+    runtime::Pipeline::Get().WaitForward();
+    MS_EXCEPTION_IF_NULL(tensorTmp);
+    tensorTmp->set_need_pipeline_sync(true);
+    auto device_sync = tensorTmp->device_address();
+    device::DeviceAddressPtr device_address = nullptr;
+    if (device_sync != nullptr) {
+      device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
+    } else {
       MS_LOG(EXCEPTION) << "Current Tensor has no device!";
     }
+    auto result = std::make_shared<StorageBase>(device_address);
     Storage storage = Storage(result);
     tensor->value.SetStorage(py::reinterpret_steal<py::object>(CreateStorageObj(storage)));
   }

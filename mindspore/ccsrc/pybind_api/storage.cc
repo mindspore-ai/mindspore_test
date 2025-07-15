@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "frontend/ir/storage.h"
+#include "pybind_api/storage.h"
 #include <utility>
 #include <string>
 #include "include/common/pybind_api/api_register.h"

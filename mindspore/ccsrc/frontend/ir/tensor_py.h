@@ -26,7 +26,6 @@
 #include "ir/tensor.h"
 #include "include/common/utils/tensor_py.h"
 #include "include/common/visible.h"
-#include "frontend/ir/storage_base.h"
 #include "frontend/np_dtypes/np_dtypes.h"
 
 namespace py = pybind11;
@@ -177,8 +176,6 @@ class FRONTEND_EXPORT TensorPybind {
   static uintptr_t DataPtr(const TensorPtr &tensor);
 
   static std::string GetDevice(const TensorPtr &tensor);
-
-  static std::shared_ptr<StorageBase> GetStorage(const TensorPtr &tensor);
 
   struct TensorPyUserData {
     py::object obj;
