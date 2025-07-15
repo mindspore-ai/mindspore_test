@@ -27,6 +27,24 @@ namespace mindspore {
 namespace kernel {
 SimpleSpinLock InternalKernelMod::lock_ = SimpleSpinLock();
 
+inline bool IsContiguous(KernelTensor *tensor) {
+  const auto &storage = tensor->tensor_storage_info();
+  if (storage == nullptr) {
+    return true;
+  }
+
+  return storage->is_contiguous;
+}
+
+inline int64_t GetStorageOffset(KernelTensor *tensor) {
+  const auto &storage = tensor->tensor_storage_info();
+  if (storage == nullptr) {
+    return 0;
+  }
+
+  return static_cast<int64_t>(storage->storage_offset);
+}
+
 bool InternalKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   internal_to_ms_input_indices_mapper_.clear();
   internal_to_ms_output_indices_mapper_.clear();
@@ -303,12 +321,23 @@ void InternalKernelMod::UpdateAddr(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &workspace) {
   for (size_t i = 0; i < internal_to_ms_input_indices_mapper_.size(); i++) {
     auto ms_index = internal_to_ms_input_indices_mapper_[i];
-    internal_inputs_addr_[i] = inputs[ms_index]->device_ptr();
+    if (!IsContiguous(inputs[ms_index])) {
+      MS_LOG(EXCEPTION) << "Internal op " << kernel_name_
+                        << " does not support noncontiguous input, index: " << ms_index;
+    }
+
+    internal_inputs_addr_[i] =
+      static_cast<void *>(static_cast<int8_t *>(inputs[ms_index]->device_ptr()) + GetStorageOffset(inputs[ms_index]));
   }
 
   for (size_t i = 0; i < internal_to_ms_output_indices_mapper_.size(); i++) {
     auto ms_index = internal_to_ms_output_indices_mapper_[i];
-    internal_outputs_addr_[i] = outputs[ms_index]->device_ptr();
+    if (!IsContiguous(outputs[ms_index])) {
+      MS_LOG(EXCEPTION) << "Internal op " << kernel_name_
+                        << " does not support noncontiguous output, index: " << ms_index;
+    }
+    internal_outputs_addr_[i] =
+      static_cast<void *>(static_cast<int8_t *>(outputs[ms_index]->device_ptr()) + GetStorageOffset(outputs[ms_index]));
   }
 
   for (size_t i = 0; i < workspace.size(); i++) {
