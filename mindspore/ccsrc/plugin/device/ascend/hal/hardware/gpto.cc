@@ -83,7 +83,7 @@ size_t ScheduleToEvents(const SchedulingOutput &schedule) {
       }
     }
     // Add events to immediate right neighborhood
-    for (; it1->start < min_end_value && it1 != tasks_start.end(); ++it1) {
+    for (; it1 != tasks_start.end() && it1->start < min_end_value; ++it1) {
       if (it->task->gpto_type() != it1->task->gpto_type()) {
         it1->task->recv_events().insert(it->task);
         MS_LOG(DEBUG) << "GPTO scheduling event from " << it->task->id() << " to " << it1->task->id();
