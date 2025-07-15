@@ -191,8 +191,6 @@ void SIGCHLDHandler(int signal, siginfo_t *info, void *context) {
     _exit(EXIT_FAILURE);
   }
 
-  MS_LOG(INFO) << "Got SIGCHLD signal from process: " << info->si_pid;
-
   for (auto &worker_group : worker_groups) {
     auto &pids = worker_group.second;
     int ppid = pids[0];
