@@ -18,21 +18,19 @@
 #include "common/device_address.h"
 #include "ir/device_address_maker.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
 namespace mindspore {
 namespace device {
 namespace cpu {
 DeviceSyncPtr MakeCPUDeviceAddress(TypeId data_type, const ShapeVector &shape, void *data_ptr,
                                    DeviceAddressDeleter &&deleter) {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
-  auto device_context = DeviceContextManager::GetInstance().GetOrCreateDeviceContext({"CPU", device_id});
-
-  auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
-    data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", device_id, 0);
-  device_address->SetPointerRefCountDeleter(std::move(deleter));
+  auto device_address =
+    std::make_shared<CPUDeviceAddress>(data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0, 0);
+  if (deleter != nullptr) {
+    device_address->SetPointerRefCountDeleter(std::move(deleter));
+  }
   return device_address;
 }
 

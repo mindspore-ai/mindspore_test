@@ -206,7 +206,7 @@ const ShapeVector &DeviceAddress::GetShapeVector() const { return address_common
 
 void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { address_common_->shape_vector_ = shape_vector; }
 
-const TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const {
+TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const {
   if (address_common_ == nullptr) {
     return nullptr;
   }

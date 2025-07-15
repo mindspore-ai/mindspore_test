@@ -399,7 +399,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the tensor's shape for C++
   ///
   /// \return [ShapeVector]
-  ShapeVector shape_c(void) const { return shape(); }
+  const ShapeVector &shape_c() const { return shape(); }
 
   /// \brief Get Tensor data pointer for c++ type
   ///
@@ -411,16 +411,10 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return byte size of Tensor data
   size_t Size() const { return DataNBytes(); }
 
-  TensorPtr cpu() const;
-
-  // deprecated api.
-  bool to_device();
-  // deprecated api.
-  void set_to_device(std::function<bool()> &&to_device_callback) { to_device_callback_ = to_device_callback; }
-
-  /// \brief To synchronize data with the device, you need to wait for the data to be valid.
+  /// \brief Copy Tensor data from device and return new Tensor.
   ///
-  void data_sync(bool need_wait = true, bool inpalce = true, bool sync_on_demand = false) const;
+  /// \return Tensor on CPU.
+  TensorPtr cpu() const;
 
   size_t DataSize() const { return SizeOf(shape_); }
 
@@ -495,7 +489,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the device address.
   ///
   /// \return The device address.
-  DeviceSyncPtr device_address() const;
+  const DeviceSyncPtr &device_address() const;
 
   /// \brief Set the device address.
   ///
@@ -503,6 +497,16 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] need_update_ref_count If need_update_ref_count is true, the device address cannot be released and
   /// reused, so the feature map should set false when set device address of tensor.
   void set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count = true);
+
+  /// \brief Set origin device address for implicit copy.
+  ///
+  /// \param[in] device_address Origin device address.
+  void set_implicit_copy_address(const DeviceSyncPtr &device_address) { implicit_copy_address_ = device_address; }
+
+  /// \brief Get the device address for implicit copy.
+  ///
+  /// \return The device address.
+  const DeviceSyncPtr &implicit_copy_address() const { return implicit_copy_address_; }
 
   /// \brief Get the id of this Tensor.
   ///
@@ -546,7 +550,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get tensor storage info.
   ///
   /// \return Tensor storage info, the value is nullptr default.
-  const TensorStorageInfoPtr storage_info() const;
+  TensorStorageInfoPtr storage_info() const;
 
   /// \brief Set tensor storage info.
   ///
@@ -652,7 +656,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the cast dtype of this Tensor.
   ///
   /// \return The cast dtype of this Tensor.
-  TypePtr cast_dtype() { return cast_dtype_; }
+  const TypePtr &cast_dtype() { return cast_dtype_; }
 
   /// \brief Set the cast dtype of this Tensor.
   ///
@@ -684,7 +688,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get the pointer of cache tensor.
   ///
   /// \return The pointer of cache tensor.
-  std::shared_ptr<Tensor> cache_tensor_ptr() const { return cache_tensor_ptr_; }
+  const std::shared_ptr<Tensor> &cache_tensor_ptr() const { return cache_tensor_ptr_; }
 
   /// \brief Set the pointer of cache tensor.
   ///
@@ -763,7 +767,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \brief Get tensor offload file path.
   ///
   /// \return offload file path, or empty string if tensor has not offload.
-  const std::string GetOffloadFilePath() const;
+  const std::string &GetOffloadFilePath() const;
 
   /// \brief pin tensor memory.
   ///
@@ -813,9 +817,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   std::function<DeviceSyncPtr(const DeviceSyncPtr &)> contiguous_callback_{nullptr};
   std::function<void(const Tensor *)> update_value_callback_{nullptr};
 
-  // keep cpu device address and release it when h2d done.
-  std::function<bool()> to_device_callback_{nullptr};
-
   // string size 32
   uint64_t id_;
   std::string tensor_name_;
@@ -824,6 +825,7 @@ class MS_CORE_API Tensor : public MetaTensor {
   // shared_ptr size 16
   Version version_{};
   mutable DeviceSyncPtr device_sync_{nullptr};
+  mutable DeviceSyncPtr implicit_copy_address_{nullptr};
   AutoGradMetaInterfacePtr auto_grad_meta_data_{nullptr};
   TensorStorageInfoPtr storage_info_;
   // Tensor base shape which contain dynamic shape info.

@@ -107,9 +107,7 @@ TensorPtr TensorPy::GetTensor() const {
   return tensor_;
 }
 
-void TensorPy::SetTensor(const TensorPtr &tensor) {
-  tensor_ = tensor;
-}
+void TensorPy::SetTensor(const TensorPtr &tensor) { tensor_ = tensor; }
 
 void TensorPy::UpdateStub(const TensorPtr &tensor) { stub_->SetValue(tensor); }
 
@@ -211,7 +209,7 @@ const std::string TensorPy::GetOffloadFilePath() const { return GetTensor()->Get
 
 void TensorPy::SetCastDtype(const TypePtr &dtype) { GetTensor()->set_cast_dtype(dtype); }
 
-void TensorPy::DataSync(bool need_wait) const { GetTensor()->data_sync(need_wait, false); }
+void TensorPy::DataSync(bool need_wait) const { MS_LOG(EXCEPTION) << "Tensor not support data_sync."; }
 
 void TensorPy::ExecuteLazyTask() const { GetTensor()->ExecuteLazyTask(); }
 

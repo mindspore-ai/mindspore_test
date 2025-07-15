@@ -197,7 +197,7 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
 }
 
 DeviceSyncPtr PyBoostUtils::ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync) {
-  auto &storage_info = device_sync->GetTensorStorageInfo();
+  const auto &storage_info = device_sync->GetTensorStorageInfo();
   if (storage_info == nullptr) {
     return device_sync;
   }

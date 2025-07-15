@@ -26,6 +26,7 @@
 #include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -227,6 +228,7 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
 
 tensor::TensorPtr InplaceCopyH2H(const std::shared_ptr<OpRunner> &op, const TensorPtr &dst, const TensorPtr &src) {
   if (dst->shape() == src->shape() && dst->Dtype()->type_id() == src->Dtype()->type_id()) {
+    runtime::Pipeline::Get().backend_stage()->Wait();
     constexpr size_t kGrainSize = 32768;
     auto copy_size = std::max(dst->DataSize(), src->DataSize());
     if (copy_size < kGrainSize) {
