@@ -565,7 +565,7 @@ bool MsContext::IsKByKExecutorMode() {
     CheckHcclBufferSize(jit_level);
   }
 
-  if (jit_status_ != JitStatus::kNotJit && PhaseManager::GetInstance().GetJitBackend() == kBackendGE) {
+  if (PhaseManager::GetInstance().GetJitBackend() == kBackendGE) {
     MS_LOG(INFO) << "Enable graph_sink executor for ge backend.";
     return false;
   }
