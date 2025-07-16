@@ -31,6 +31,10 @@ ShapeArray DistCommAllGatherFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto rank_size = CheckRankSize(primitive->name(), value);
 
   auto input_shape = input_infos[kIndex1]->GetShape();
+  if (input_shape.size() == 0) {
+    return {ShapeVector({static_cast<int64_t>(rank_size)})};
+  }
+
   auto x_list = input_infos[kIndex0]->GetSequenceElements();
   auto output_shape = x_list[0]->GetShape();
   for (size_t i = 1; i < x_list.size(); i++) {
@@ -38,9 +42,6 @@ ShapeArray DistCommAllGatherFuncImpl::InferShape(const PrimitivePtr &primitive,
     output_shape[0] += out_shape[0];
   }
 
-  if (input_shape.size() == 0) {
-    return {ShapeVector({static_cast<int64_t>(rank_size)})};
-  }
   return {output_shape};
 }
 
