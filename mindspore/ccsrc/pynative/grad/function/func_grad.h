@@ -386,7 +386,7 @@ class AutoDiff : public AutoDiffInterface {
   /// \param get_grad_from_tensor whether get grad from tensor.
   /// \param run_tensor_hook whether execute hook of leaf node which not in grad graph.
   /// \return grad
-  ValuePtr GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool run_tensor_hook);
+  ValuePtr GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool is_run_backward_api);
   /// Get grad from grad node.
   /// \param grad_node
   /// \return grad

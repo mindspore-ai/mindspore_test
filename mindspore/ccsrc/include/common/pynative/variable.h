@@ -29,7 +29,8 @@
 #include "include/common/pynative/hook.h"
 
 namespace mindspore::pynative::autograd {
-
+constexpr char kCallBackwradTwiceErr[] =
+  "Try to backward the graph twice, if you want call again, please use retain_graph=True";
 class FuncBuilder;
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
@@ -251,8 +252,8 @@ class COMMON_EXPORT BackwardNode : public std::enable_shared_from_this<BackwardN
   const std::string &name() const { return name_; }
 
   /// \brief Unique id of this Node.
-  /// \return unqiue id
-  std::string UniqueId() const { return name_ + std::to_string(seq_id_); }
+  /// \return unique id
+  std::string UniqueId() const { return name_ + "-" + std::to_string(seq_id_); }
 
   /// \brief Check func to check whether the version of input is changed.
   /// \return check_func

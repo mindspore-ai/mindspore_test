@@ -161,7 +161,7 @@ class EXTENSION_API PyboostRunner : public std::enable_shared_from_this<PyboostR
     auto op_name = inner::GetFunctionName(typeid(FuncType).name());
     mindspore::runtime::ProfilerRecorder profiler(mindspore::runtime::ProfilerModule::kPynative,
                                                   mindspore::runtime::ProfilerEvent::kRunOp, op_name);
-    auto py_output = mindspore::tensor::MakeTuple<mindspore::tensor::TensorWrapper, OUT_NUM>();
+    auto py_output = mindspore::tensor::MakeTuple<mindspore::tensor::TensorWrapper, OUT_NUM, false>();
     auto promises = mindspore::tensor::TransformPromise(py_output);
     mindspore::pynative::DispatchOp(std::make_shared<mindspore::pynative::PassthroughFrontendTask>(
       [=]() {

@@ -82,7 +82,7 @@ struct Common {
   static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
   static tensor::TensorPtr CaculateGradNorm(const tensor::TensorPtr &grad);
   template <typename T>
-  static std::string PrintDebugInfo(std::vector<T> items, const std::string &info_header = "",
+  static std::string PrintDebugInfo(const std::vector<T> &items, const std::string &info_header = "",
                                     bool is_print_tensor_data = false) {
     static constexpr size_t end_char_size = 2;
     std::ostringstream buf;

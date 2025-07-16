@@ -103,7 +103,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   auto filled_zeros_grad = func_builder.FillZeros(gradient, out_abstract_);
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
-  MS_EXCEPTION_IF_CHECK_FAIL(!bprop_fn_.ptr(), kCallBackwradTwiceErr);
+  MS_EXCEPTION_IF_CHECK_FAIL(bprop_fn_.ptr() != nullptr, kCallBackwradTwiceErr);
   py::object py_tensor_grad = CValueToPybindObj(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
   size_t fn_size = is_recompute_ ? list_inputs.size() + kSizeOne : list_inputs.size() + kSizeTwo;

@@ -1506,8 +1506,17 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
 }
 
 void PyBoost::MarkSideEffect(PyObject * arg) {
-  tensor::PyType<tensor::TensorPy> *tensor = reinterpret_cast<tensor::PyType<tensor::TensorPy> *>(arg);
-  tensor->value.set_has_side_effect(true);
+  if (tensor::IsTensorPy(arg)) {
+    tensor::PyType<tensor::TensorPy> *tensor = reinterpret_cast<tensor::PyType<tensor::TensorPy> *>(arg);
+    tensor->value.set_has_side_effect(true);
+    return;
+  }
+  if (PyTuple_Check(arg)) {
+    size_t tup_size = PyTuple_Size(arg);
+    for (size_t i = 0; i < tup_size; ++i) {
+      MarkSideEffect(PyTuple_GetItem(arg, i));
+    }
+  }
 }
 
 void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info) {
