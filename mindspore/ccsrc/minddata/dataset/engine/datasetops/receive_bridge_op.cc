@@ -28,6 +28,7 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
+#include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/task_manager.h"
 #include "minddata/dataset/util/monitor.h"
 
@@ -153,10 +154,16 @@ Status ReceiveBridgeOp::operator()() {
   // Synchronize with TaskManager
   TaskManager::FindMe()->Post();
 
+  std::string current_pid = std::to_string(getpid());
+  // register the shm_id & msg_id by MainProcessPID_"ReceiveBridgeOp"
+  RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+
   // Get msg from the independent dataset process by msg_queue_
   receive_info_.normal_row_.sample_ = 0;
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
   auto status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
+
+  RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
 
   // First: check the err_status_
   if (err_status_ != Status::OK()) {
@@ -174,10 +181,26 @@ Status ReceiveBridgeOp::operator()() {
   TensorRow new_row;
   RETURN_IF_NOT_OK(receive_queue_.ToTensorRow(&new_row, msg_queue_.shm_id_, msg_queue_.shm_size_));
 
-  while (!new_row.eof()) {
-    while (!new_row.eoe()) {
-      RETURN_IF_INTERRUPTED();
+  while (true) {
+    RETURN_IF_INTERRUPTED();
+
+    if (new_row.eof()) {
+      break;
+    }
+
+    auto eoe_row = new_row.eoe();
+    if (eoe_row) {
+      receive_info_.eoe_row_.sample_ += 1;
+
+      // Propagate the eoe row to worker
+      RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->Add(std::move(new_row)));
+      UpdateRepeatAndEpochCounter();
+
+      // Send msg to the independent dataset process by msg_queue_
+      receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
+    } else {  // normal row
       receive_info_.normal_row_.sample_ += 1;
+
       // The NextWorkerID() should always 0, because ReceiveBridgeOp is a single thread op
       RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->Add(std::move(new_row)));
 
@@ -190,55 +213,27 @@ Status ReceiveBridgeOp::operator()() {
 
       // Send msg to the independent dataset process by msg_queue_
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
-      RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
+    }
+
+    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
+    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+
+    if (eoe_row) {
+      receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
+
+      // Get msg from the independent dataset process by msg_queue_
+      receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
+    } else {
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
 
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
-      // Get msg from the independent dataset process by msg_queue_
-      status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
-
-      // First: check the err_status_
-      if (err_status_ != Status::OK()) {
-        MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
-        return err_status_;
-      }
-
-      // Second: check the return status by MsgRcv
-      if (status != Status::OK()) {
-        // if the pipeline had been interrupted, ignore the MsgRcv error
-        RETURN_IF_INTERRUPTED();
-        if (tree_->isFinished()) {
-          return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
-        }
-        return status;
-      }
-      receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
-
-      // If the data is relatively large and the network is executed under an independent process,
-      // coredump issues may occur. The reason is that ReceptBridgeOp did not finish immediately after DataQueueOp
-      // Finished, resulting in ToTensorRow executing the inverse sequence in the future. At this time,
-      // ReceptBridgeOp was finished, causing coredump when executing the inverse sequence in the underlying memcpy.
-      // So make another judgment before executing ToTensorRow.
-      if (tree_->isFinished()) {
-        return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
-      }
-      RETURN_IF_NOT_OK(receive_queue_.ToTensorRow(&new_row, msg_queue_.shm_id_, msg_queue_.shm_size_));
     }
 
-    receive_info_.eoe_row_.sample_ += 1;
-
-    // Propagate the eoe row to worker
-    RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->Add(std::move(new_row)));
-    UpdateRepeatAndEpochCounter();
-
-    // Send msg to the independent dataset process by msg_queue_
-    receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
-    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
-    receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
-
+    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
     // Get msg from the independent dataset process by msg_queue_
-    receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
     status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
+    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
 
     // First: check the err_status_
     if (err_status_ != Status::OK()) {
@@ -255,8 +250,22 @@ Status ReceiveBridgeOp::operator()() {
       }
       return status;
     }
-    receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
 
+    if (eoe_row) {
+      receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
+    } else {
+      receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterReceiveMsg;
+    }
+
+    // If the data is relatively large and the network is executed under an independent process,
+    // coredump issues may occur. The reason is that ReceptBridgeOp did not finish immediately after DataQueueOp
+    // Finished, resulting in ToTensorRow executing the inverse sequence in the future. At this time,
+    // ReceptBridgeOp was finished, causing coredump when executing the inverse sequence in the underlying memcpy.
+    // So make another judgment before executing ToTensorRow.
+    RETURN_IF_INTERRUPTED();
+    if (tree_->isFinished()) {
+      return Task::OverrideInterruptRc(this_thread::GetInterruptStatus());
+    }
     RETURN_IF_NOT_OK(receive_queue_.ToTensorRow(&new_row, msg_queue_.shm_id_, msg_queue_.shm_size_));
   }
   receive_info_.eof_row_.sample_ += 1;
