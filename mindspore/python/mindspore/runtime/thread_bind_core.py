@@ -38,7 +38,7 @@ def execute_command(cmd_list):
             out, _ = p.communicate(timeout=1000)
         res = out.decode()
         return res
-    except FileNotFoundError as e:
+    except OSError  as e:
         raise RuntimeError("Failed to execute command") from e
 
 
