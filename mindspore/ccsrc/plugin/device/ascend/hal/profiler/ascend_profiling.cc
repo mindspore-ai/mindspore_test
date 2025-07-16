@@ -83,7 +83,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   try {
     options = nlohmann::json::parse(profiling_options);
   } catch (nlohmann::json::exception &e) {
-    MS_LOG(EXCEPTION) << "Failed to parse profiling options json data, current options is " << options;
+    MS_LOG(ERROR) << "Failed to parse profiling options json data, current options is " << options;
     return;
   }
 
@@ -115,21 +115,21 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
 void AscendProfiler::InitAclConfig() {
   aclError ret = CALL_ASCEND_API(aclrtSetDevice, static_cast<int32_t>(config_.deviceId));
   if (ret != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Device " << config_.deviceId
-                      << " call aclrtSetDevice failed, error_code : " << static_cast<int>(ret);
+    MS_LOG(ERROR) << "Device " << config_.deviceId
+                  << " call aclrtSetDevice failed, error_code : " << static_cast<int>(ret);
   }
 
   aclError aclRet = CALL_ASCEND_API(aclprofInit, config_.outputPath.c_str(), config_.outputPath.length());
   if (aclRet != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failed call aclprofInit function. error_code : " << static_cast<int>(aclRet);
+    MS_LOG(ERROR) << "Failed call aclprofInit function. error_code : " << static_cast<int>(aclRet);
   }
 
   if (config_.profileMemory || config_.hbmDdr) {
     const char *hbmFreq = "100";
     aclError hbmRet = aclprofSetConfig(ACL_PROF_SYS_HARDWARE_MEM_FREQ, hbmFreq, strlen(hbmFreq));
     if (hbmRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_HARDWARE_MEM_FREQ. error_code : "
-                        << static_cast<int>(hbmRet);
+      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_SYS_HARDWARE_MEM_FREQ. error_code : "
+                    << static_cast<int>(hbmRet);
     }
   }
 
@@ -137,8 +137,8 @@ void AscendProfiler::InitAclConfig() {
     const char *sysIoFreq = "100";
     aclError sysIoRet = aclprofSetConfig(ACL_PROF_SYS_IO_FREQ, sysIoFreq, strlen(sysIoFreq));
     if (sysIoRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_IO_FREQ. error_code : "
-                        << static_cast<int>(sysIoRet);
+      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_SYS_IO_FREQ. error_code : "
+                    << static_cast<int>(sysIoRet);
     }
   }
 
@@ -147,8 +147,8 @@ void AscendProfiler::InitAclConfig() {
     aclError sysInterconnectionRet =
       aclprofSetConfig(ACL_PROF_SYS_INTERCONNECTION_FREQ, sysInterconnectionFreq, strlen(sysInterconnectionFreq));
     if (sysInterconnectionRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofSetConfig to ACL_PROF_SYS_INTERCONNECTION_FREQ. error_code : "
-                        << static_cast<int>(sysInterconnectionRet);
+      MS_LOG(ERROR) << "Failed call aclprofSetConfig to ACL_PROF_SYS_INTERCONNECTION_FREQ. error_code : "
+                    << static_cast<int>(sysInterconnectionRet);
     }
   }
 
@@ -158,7 +158,7 @@ void AscendProfiler::InitAclConfig() {
   uint32_t deviceNum = 1;
   aclConfig_ = CALL_ASCEND_API(aclprofCreateConfig, deviceList, deviceNum, aicMetrics, nullptr, mask);
   if (aclConfig_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Failed call aclprofCreateConfig function.";
+    MS_LOG(ERROR) << "Failed call aclprofCreateConfig function.";
   }
 }
 
@@ -270,7 +270,7 @@ void AscendProfiler::Start() {
   if (config_.npuTrace) {
     aclError aclRet = CALL_ASCEND_API(aclprofStart, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
+      MS_LOG(ERROR) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
     }
     if (config_.mstx) {
       MstxDispatcher::GetInstance().Enable();
@@ -301,7 +301,7 @@ void AscendProfiler::Stop() {
     }
     aclError aclRet = CALL_ASCEND_API(aclprofStop, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed call aclprofStop function. error_code : " << static_cast<int>(aclRet);
+      MS_LOG(ERROR) << "Failed call aclprofStop function. error_code : " << static_cast<int>(aclRet);
     }
     MS_LOG(INFO) << "Stop AscendProfiler npu trace";
   }
@@ -327,13 +327,12 @@ void AscendProfiler::Finalize() {
   if (aclConfig_ != nullptr) {
     aclError aclRetDestroy = CALL_ASCEND_API(aclprofDestroyConfig, aclConfig_);
     if (aclRetDestroy != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed to call aclprofDestoryConfig function. error_code : "
-                        << static_cast<int>(aclRetDestroy);
+      MS_LOG(ERROR) << "Failed to call aclprofDestoryConfig function. error_code : " << static_cast<int>(aclRetDestroy);
     }
 
     aclError aclRetFinalize = CALL_ASCEND_API(aclprofFinalize);
     if (aclRetFinalize != ACL_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failed to call aclprofFinalize function. error_code : " << static_cast<int>(aclRetFinalize);
+      MS_LOG(ERROR) << "Failed to call aclprofFinalize function. error_code : " << static_cast<int>(aclRetFinalize);
     }
     MS_LOG(INFO) << "Finalize AscendProfiler aclprofFinalize";
   }
