@@ -1059,7 +1059,7 @@ ValuePtrList LeafNode::CallBackward(const ValuePtrList &grads) {
   MS_EXCEPTION_IF_NULL(grad_meta);
   const auto &grad = grad_meta->grad();
   if (grad == nullptr) {
-    grad_meta->set_grad(AutoGradUtil::Clone(grads[0]->cast<tensor::TensorPtr>()));
+    grad_meta->set_grad(grads[0]->cast<tensor::TensorPtr>());
     return {};
   }
   grad_meta->set_grad(AutoGradUtil::Add(grad, grads[0]->cast<tensor::TensorPtr>()));
@@ -1326,7 +1326,7 @@ ValuePtr AutoDiff::GetInputGrads(const ValuePtrList &inputs, bool grad_all_input
   return std::make_shared<ValueTuple>(input_grads);
 }
 
-ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool run_tensor_hook) {
+ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor, bool is_run_grad_func) {
   const auto tensor = PyNativeAlgo::Common::GetTensorFromSparseTensor(val);
   MS_EXCEPTION_IF_NULL(tensor);
   if (const auto grad_node = impl::GetUnsafeGradNodeImpl(tensor)) {
@@ -1335,10 +1335,11 @@ ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor,
       MS_LOG(INFO) << "tensor requires grad is true, but not in grad graph";
       const auto leaf_node = std::dynamic_pointer_cast<LeafNode>(grad_node);
       MS_EXCEPTION_IF_NULL(leaf_node);
-      if (run_tensor_hook) {
+      if (is_run_grad_func) {
         return LeafNodeNotInGradButHasTensorHook(leaf_node);
+      } else {
+        return nullptr;
       }
-      return leaf_node->Zeros(func_impl_);
     }
     tensor::TensorPtr grad = nullptr;
     if (get_grad_from_tensor) {
@@ -1346,9 +1347,15 @@ ValuePtr AutoDiff::GetTensorGrad(const ValuePtr &val, bool get_grad_from_tensor,
     } else {
       grad = iter->second.captured_grad->grad;
     }
-    return AutoGradUtil::BuildSpecialValueGrad(tensor, grad, func_impl_.get(), SpecialType::kZerosLikeType);
+    if (is_run_grad_func) {
+      return AutoGradUtil::BuildSpecialValueGrad(tensor, grad, func_impl_.get(), SpecialType::kZerosLikeType);
+    }
+    return grad;
   }
-  return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
+  if (is_run_grad_func) {
+    return AutoGradUtil::BuildSpecialValueGrad(val, nullptr, func_impl_.get(), SpecialType::kZerosLikeType);
+  }
+  return nullptr;
 }
 
 ValuePtr AutoDiff::GetLeafNodeGrad(const BackwardNodePtr &grad_node) {
@@ -1835,7 +1842,8 @@ ValuePtr AutoDiff::RunBackward(const ValuePtrList &inputs, const ValuePtr &sens,
     std::vector<ValuePtr> grads;
     grads.reserve(inputs.size());
     for (const auto &input : inputs) {
-      (void)grads.emplace_back(GetTensorGrad(input, accumulate_grad, false));
+      auto grad = GetTensorGrad(input, accumulate_grad, false);
+      (void)grads.emplace_back(grad == nullptr ? kNone : grad);
     }
     return std::make_shared<ValueTuple>(grads);
   }

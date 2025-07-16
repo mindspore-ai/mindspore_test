@@ -71,6 +71,10 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
     MS_EXCEPTION_IF_NULL(tuple_grads);
     py::tuple py_grads(tuple_grads->size());
     for (size_t i = 0; i < tuple_grads->size(); ++i) {
+      if (tuple_grads->value()[i]->isa<None>()) {
+        py_grads[i] = py::none();
+        continue;
+      }
       auto tensor = tuple_grads->value()[i]->cast<tensor::TensorPtr>();
       if (tensor == nullptr) {
         MS_LOG(EXCEPTION) << "Grads of tensors should be a tensor, but got " << tuple_grads->value()[i]->ToString();
@@ -83,7 +87,7 @@ py::object RunBackward(const py::object &tensors, const py::object &grad_tensors
 
 void RegBackwardFunction(py::module *m) {
   (void)m->def("run_backward", &RunBackward, py::arg("tensors"), py::arg("grad_tensors"), py::arg("keep_graph"),
-               py::arg("create_graph"), py::arg("inputs"), py::kw_only(), py::arg("allow_unreachable") = True,
+               py::arg("create_graph"), py::arg("inputs"), py::arg("allow_unreachable") = True, py::kw_only(),
                py::arg("accumulate_grad") = True, "run backward function");
 }
 }  // namespace autograd

@@ -68,7 +68,7 @@ PyObject *PyBackwardNode_get_next_edges(PyObject *self, void *) {
 PyGetSetDef PyBackwardNode_getseters[] = {
   {"name", (getter)PyBackwardNode_get_name, nullptr, "backward node name"},
   {"seq_nr", (getter)PyBackwardNode_get_seq_nr, nullptr, "backward node sequence number"},
-  {"next_edges", (getter)PyBackwardNode_get_next_edges, nullptr, "backward node next edges", nullptr},
+  {"next_functions", (getter)PyBackwardNode_get_next_edges, nullptr, "backward node next edges", nullptr},
   {nullptr}};
 
 PyObject *RunRegisterHookFn(PyObject *hook_dict, PyObject *hook_fn) {
@@ -128,8 +128,8 @@ PyObject *PyBackwardNode_register_post_hook(PyObject *self, PyObject *arg) {
 }
 
 PyMethodDef PyBackwardNode_methods[] = {
-  {"register_pre_hook", (PyCFunction)PyBackwardNode_register_pre_hook, METH_O, "register post hook on BackwardNode"},
-  {"register_post_hook", (PyCFunction)PyBackwardNode_register_post_hook, METH_O, "register post hook on BackwardNode"},
+  {"register_prehook", (PyCFunction)PyBackwardNode_register_pre_hook, METH_O, "register post hook on BackwardNode"},
+  {"register_hook", (PyCFunction)PyBackwardNode_register_post_hook, METH_O, "register post hook on BackwardNode"},
   {nullptr, nullptr, 0, nullptr}};
 
 PyTypeObject BackwardNodePyType = {

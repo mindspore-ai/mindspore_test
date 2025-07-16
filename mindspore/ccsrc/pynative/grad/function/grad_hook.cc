@@ -86,6 +86,9 @@ bool GradHook::requires_grad(const TensorPtr &self) const {
 
 void GradHook::set_requires_grad(const TensorPtr &self, bool requires_grad) {
   runtime::Pipeline::Get().WaitBpropStage();
+  if (self->param_info() != nullptr) {
+    self->param_info()->set_requires_grad(requires_grad);
+  }
   if (!is_leaf(self) && !requires_grad) {
     MS_LOG(EXCEPTION) << "You can only set requires_grad false to a leaf tensor! You can use tensor.detach() to "
                          "set output tensor to calculate grad.";
