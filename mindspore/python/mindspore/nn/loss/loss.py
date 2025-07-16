@@ -2350,9 +2350,9 @@ class NLLLoss(LossBase):
         \end{array}\right.
 
     Args:
-        weight (Tensor): The rescaling weight to each class. If the value is not None, the shape is :math:`(C,)`.
-            The data type only supports float32 or float16. Default: ``None`` .
-        ignore_index (int): Specifies a target value that is ignored (typically for padding value)
+        weight (Tensor, optional): The rescaling weight to each class. If the value is not None,
+            the shape is :math:`(C,)`. The data type only supports float32 or float16. Default: ``None`` .
+        ignore_index (int, optional): Specifies a target value that is ignored (typically for padding value)
             and does not contribute to the gradient. Default: ``-100`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
