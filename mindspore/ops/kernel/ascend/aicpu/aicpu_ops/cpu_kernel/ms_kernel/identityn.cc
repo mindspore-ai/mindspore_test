@@ -15,10 +15,11 @@
  */
 
 #include "cpu_kernel/ms_kernel/identityn.h"
-#include "include/securec.h"
+
 #include <algorithm>
 #include <vector>
 
+#include "include/securec.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

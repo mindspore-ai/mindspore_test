@@ -15,13 +15,14 @@
  */
 
 #include "cpu_kernel/ms_kernel/index_put.h"
-#include "include/securec.h"
+
 #include <Eigen/Dense>
 #include <cstring>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "context/common/status.h"
 #include "utils/eigen_tensor.h"

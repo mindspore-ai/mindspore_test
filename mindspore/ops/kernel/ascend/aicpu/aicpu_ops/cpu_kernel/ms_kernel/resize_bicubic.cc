@@ -16,11 +16,11 @@
 
 #include "ms_kernel/resize_bicubic.h"
 
-#include "include/securec.h"
 #include <algorithm>
 #include <vector>
 #include <limits>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"

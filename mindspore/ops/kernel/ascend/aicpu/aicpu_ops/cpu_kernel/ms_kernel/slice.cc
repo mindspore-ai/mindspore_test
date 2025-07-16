@@ -15,8 +15,10 @@
  */
 
 #include "cpu_kernel/ms_kernel/slice.h"
-#include "include/securec.h"
+
 #include <iostream>
+
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 #include "utils/kernel_util.h"

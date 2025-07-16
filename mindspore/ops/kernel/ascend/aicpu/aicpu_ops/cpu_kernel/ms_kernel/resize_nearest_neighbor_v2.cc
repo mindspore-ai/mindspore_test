@@ -16,11 +16,11 @@
 
 #include "ms_kernel/resize_nearest_neighbor_v2.h"
 
-#include "include/securec.h"
 #include <stdint.h>
 #include <algorithm>
 #include <vector>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

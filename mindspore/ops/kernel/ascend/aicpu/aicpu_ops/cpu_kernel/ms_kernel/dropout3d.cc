@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 #include "ms_kernel/dropout3d.h"
+
 #include <random>
-#include "include/securec.h"
 #include <Eigen/Core>
+
+#include "include/securec.h"
 #include "utils/kernel_util.h"
 
 namespace {

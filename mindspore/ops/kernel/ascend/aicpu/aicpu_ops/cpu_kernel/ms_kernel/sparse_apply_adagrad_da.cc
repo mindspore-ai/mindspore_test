@@ -16,12 +16,12 @@
 
 #include "cpu_kernel/ms_kernel/sparse_apply_adagrad_da.h"
 
-#include "include/securec.h"
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "include/securec.h"
 #include "inc/kernel_log.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"

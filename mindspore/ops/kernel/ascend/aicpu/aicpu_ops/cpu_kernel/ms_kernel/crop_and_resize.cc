@@ -16,11 +16,11 @@
 
 #include "ms_kernel/crop_and_resize.h"
 
-#include "include/securec.h"
 #include <algorithm>
 #include <limits>
 #include <vector>
 
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "inc/kernel_log.h"
 #include "context/common/status.h"

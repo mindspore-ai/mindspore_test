@@ -15,12 +15,14 @@
  */
 
 #include "cpu_kernel/ms_kernel/sparse_tensor_dense_add.h"
+
 #include <float.h>
-#include "include/securec.h"
 #include <vector>
 #include <complex>
 #include <algorithm>
 #include <iostream>
+
+#include "include/securec.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
