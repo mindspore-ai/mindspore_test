@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import mindspore
-from mindspore import Tensor, ops, nn
+from mindspore import Tensor, ops, nn, context
 import mindspore.ops.operations as P
 import numpy as np
 from tests.mark_utils import arg_mark
@@ -83,3 +83,28 @@ def test_partition_graph_between_shape_and_reshape_2():
     y = Tensor(np.ones([3, 2]), mindspore.float32)
     out = net(x, y, z)
     print(out)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def test_control_flow_if_input_heter():
+    """
+    Feature: test control flow if input heter.
+    Description: test input heter in control flow.
+    Expectation: No exception.
+    """
+    class ConditionNet(nn.Cell):
+        def construct(self, x, y):
+            if x > 1:
+                x = x + 1
+            else:
+                x = x + 2
+            return x + y
+
+    context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    x = np.array([5], np.float32)
+    y = np.array([3], np.float32)
+    net = ConditionNet()
+    add = P.Add().add_prim_attr("primitive_target", "CPU")
+    x = add(Tensor(x), 1)
+    out = net(x, Tensor(y))
+    print('output: ', out)
