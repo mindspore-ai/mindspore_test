@@ -671,3 +671,31 @@ def test_inplace_ref_key_unchanged_2():
     net = Net()
     (ms.jit(net, backend="ms_backend", jit_level="O0"))(Tensor([2, 3], dtype=ms.float32), Tensor(1, dtype=ms.float32))
     check_inplace_ref_key_unchanged(save_graphs_path)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_independent_func_with_inplace_op():
+    """
+    Feature: Independent func with inplace op
+    Description: Independent func with inplace op
+    Expectation: Run success.
+    """
+
+    def inplace_func(*args, flag=True):
+        out, _ = args
+        if flag:
+            h = ms.Tensor(3)
+        else:
+            h = ms.Tensor(2)
+        out.add_(2)
+        return h
+
+    @ms.jit(backend="ms_backend", jit_level="O0")
+    def inner_func(out, flag):
+        h = inplace_func(out, out, flag=flag)  # pylint: disable=unused-variable
+        return out
+
+    out = ms.Tensor([1, 2])
+    flag = ms.Tensor(True)
+    result = inner_func(out, flag)
+    assert (result.asnumpy() == [3, 4]).all()
