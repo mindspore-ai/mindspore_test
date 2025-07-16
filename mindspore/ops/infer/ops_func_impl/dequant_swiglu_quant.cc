@@ -45,29 +45,35 @@ int32_t DequantSwigluQuantFuncImpl::CheckValidation(const PrimitivePtr &primitiv
   auto &activation_scale = input_infos[kDequantSwigluQuantActivationScaleIndex];
   auto &bias = input_infos[kDequantSwigluQuantBiasIndex];
   auto &quant_mode = input_infos[kDequantSwigluQuantQuantModeIndex];
-  int64_t last_dim_x = x->GetShape()[x->GetShape().size() - 1];
-
-  MS_CHECK_VALUE(x->GetShape().size() > 1 && last_dim_x % 2 == 0,
-                 CheckAndConvertUtils::FormatCommMsg(
-                   "For DequantSwigluQuant, the last dimension of x must be a multiple of 2,",
-                   "and the dimension of x must be greater than 1, but got shape ", ShapeVectorToStr(x->GetShape())));
-  if (!weight_scale->IsNone()) {
-    MS_CHECK_VALUE(
-      weight_scale->GetShape().size() <= 2 &&
-        weight_scale->GetShape()[weight_scale->GetShape().size() - 1] == last_dim_x,
-      CheckAndConvertUtils::FormatCommMsg(
-        "For DequantSwigluQuant, the weight_scale dim must less than 2,  and last dimension must be the same as the",
-        " last dimension of x, but got shape ", ShapeVectorToStr(weight_scale->GetShape())));
-  }
-  if (!activation_scale->IsNone()) {
-    MS_CHECK_VALUE(CompareExceptLast(activation_scale->GetShape(), x->GetShape()) &&
-                     activation_scale->GetShape()[activation_scale->GetShape().size() - 1] == 1,
+  int64_t last_dim_x = 0;
+  if (!x->IsNone() && !x->IsDynamicRank()) {
+    MS_CHECK_VALUE(!x->GetShape().empty(), "For DequantSwigluQuant, x shape cannot be null");
+    last_dim_x = x->GetShape().back();
+    MS_CHECK_VALUE(x->GetShape().size() > 1 && (last_dim_x % 2 == 0 || last_dim_x == -1),
                    CheckAndConvertUtils::FormatCommMsg(
-                     "For DequantSwigluQuant, the last dimension of activation_scale must be 1, and rest must be",
+                     "For DequantSwigluQuant, the last dimension of x must be a multiple of 2 or equal to -1,",
+                     "and the dimension of x must be greater than 1, but got shape ", ShapeVectorToStr(x->GetShape())));
+  }
+
+  if (!weight_scale->IsNone() && !weight_scale->IsDynamicRank()) {
+    int64_t weight_scale_last_dim = weight_scale->GetShape().back();
+    MS_CHECK_VALUE(
+      weight_scale->GetShape().size() <= 2 && (weight_scale_last_dim == last_dim_x || weight_scale_last_dim == -1),
+      CheckAndConvertUtils::FormatCommMsg(
+        "For DequantSwigluQuant, the weight_scale dim must less than 2, and last dimension must be the "
+        "same as the last dimension of x or -1, but got shape ",
+        ShapeVectorToStr(weight_scale->GetShape())));
+  }
+  if (!activation_scale->IsNone() && !activation_scale->IsDynamicRank()) {
+    int64_t activation_scale_last_dim = activation_scale->GetShape().back();
+    MS_CHECK_VALUE(CompareExceptLast(activation_scale->GetShape(), x->GetShape()) &&
+                     (activation_scale_last_dim == 1 || activation_scale_last_dim == -1),
+                   CheckAndConvertUtils::FormatCommMsg(
+                     "For DequantSwigluQuant, the last dimension of activation_scale must be 1 or -1, and rest must be",
                      "equal to x, but got shape ", ShapeVectorToStr(activation_scale->GetShape())));
   }
-  if (!bias->IsNone()) {
-    MS_CHECK_VALUE(bias->GetShape().size() == 1 && bias->GetShape()[0] == last_dim_x,
+  if (!bias->IsNone() && !bias->IsDynamicRank()) {
+    MS_CHECK_VALUE(bias->GetShape().size() == 1 && (bias->GetShape()[0] == last_dim_x || bias->GetShape()[0] == -1),
                    CheckAndConvertUtils::FormatCommMsg(
                      "For DequantSwigluQuant, the bias shape must be (1,) and value must be the same as the last",
                      " dimension of x, or the pointer is null, but got shape ", ShapeVectorToStr(bias->GetShape())));
@@ -85,7 +91,7 @@ ShapeArray DequantSwigluQuantFuncImpl::InferShape(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_NULL(primitive);
   if (input_infos[kDequantSwigluQuantXIndex]->IsDynamicRank()) {
     ShapeVector y_shape_rank_any = {abstract::TensorShape::kShapeRankAny};
-    ShapeVector scale_shape_rank_any = {abstract::TensorShape::kShapeRankAny};
+    ShapeVector scale_shape_rank_any = {abstract::TensorShape::kShapeDimAny};
     return {y_shape_rank_any, scale_shape_rank_any};
   }
   int64_t token_num = input_infos[kDequantSwigluQuantXIndex]->GetShape()[0];
