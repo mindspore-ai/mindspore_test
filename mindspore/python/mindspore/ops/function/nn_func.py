@@ -4421,7 +4421,7 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
     :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
     where :math:`C` is the number of classes.
 
-    If `reduction` is not ``'None'`` (default ``'mean'``), then
+    If `reduction` is not ``'none'`` (default ``'mean'``), then
 
     .. math::
 
@@ -4445,7 +4445,7 @@ def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`.
             The data type must be float16 or float32 or bfloat16(only supported by Atlas A2 training series products).
-            It should have the same data type as `input` . Default: ``'None'`` .
+            It should have the same data type as `input` . Default: ``None`` .
         ignore_index (int, optional): Specifies a target value that is ignored
             and does not contribute to the input gradient. Default: ``-100`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
