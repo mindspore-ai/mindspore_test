@@ -228,20 +228,18 @@ class ExtensionBuilder:
             source_file.write(content)
 
     def _run_ninja_build(self, module_name):
-        """Run ninja build."""
+        """Run ninja build and log output to .build_log.txt"""
         cmd = ['ninja', '-v']
         env = os.environ.copy()
+        log_file = os.path.join(self.build_dir, '.build_log.txt')
 
         try:
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.build_dir, check=True, env=env)
-            # If the build succeeds, do nothing with the output (silent)
+            with open(log_file, 'w', encoding='utf-8') as f:
+                # If the build succeeds, do nothing with the output (silent)
+                subprocess.run(cmd, stdout=f, stderr=f, cwd=self.build_dir, check=True, env=env)
         except subprocess.CalledProcessError as e:
-            # Capture the error details
-            stderr_output = e.stderr.decode() if e.stderr else ""
-            stdout_output = e.stdout.decode() if e.stdout else ""
-            full_output = stderr_output + stdout_output
-
-            # Format the error message
+            with open(log_file, 'r', encoding='utf-8') as rf:
+                full_output = rf.read()
             msg = f"Error building extension '{module_name}': {full_output}"
 
             # In multi-card situation, only one process build the library.
