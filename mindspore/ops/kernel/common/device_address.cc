@@ -96,7 +96,8 @@ DeviceAddress::~DeviceAddress() {
 
 std::string DeviceAddress::ToString() const {
   std::ostringstream ofs;
-  ofs << this << " device type:" << GetDeviceType() << " address common:" << address_common_;
+  ofs << this << " device type:" << GetDeviceType() << " host shape:" << host_shape_
+      << " device shape:" << device_shape_ << " address common:" << address_common_;
   if (address_common_ != nullptr) {
     ofs << " " << address_common_->ToString();
   }
@@ -108,7 +109,9 @@ std::string DeviceAddress::ToString() const {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
   ofs << " device address deleter:" << (deleter_ != nullptr) << " flag:" << flag_
-      << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_;
+      << " need sync user data:" << need_sync_user_data_ << " user data:" << user_data_ << " is view:" << is_view_
+      << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
+      << " padding type:" << padding_type_ << " status:" << status_;
   return ofs.str();
 }
 
