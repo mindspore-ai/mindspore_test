@@ -748,7 +748,7 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
     }
   }
 
-  MS_LOG(INFO) << "Enable internal kernel list: " << SetToString(ms_internal_enable_custom_kernel_list_);
+  MS_LOG(DEBUG) << "Enable internal kernel list: " << SetToString(ms_internal_enable_custom_kernel_list_);
 }
 
 bool MsContext::IsEnableInferBoost() {
@@ -768,7 +768,7 @@ bool MsContext::IsEnableInferBoost() {
   }
 
   if (enable_infer_boost_) {
-    MS_LOG(INFO) << "MSContext enable ms infer boost";
+    MS_LOG(DEBUG) << "MSContext enable ms infer boost";
     SetMsInternalEnableCustomKernelList();
     common::SetEnv("ASDOPS_LOG_LEVEL", "ERROR", 0);
     common::SetEnv("ASDOPS_LOG_TO_STDOUT", "1", 0);
