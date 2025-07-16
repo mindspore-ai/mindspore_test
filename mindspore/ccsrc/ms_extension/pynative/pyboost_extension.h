@@ -42,7 +42,6 @@ class PyBoostDeviceTask;
 
 namespace ms {
 namespace inner {
-
 /**
  * @brief Retrieves the demangled function name (if applicable) from a mangled symbol name.
  * @param name A mangled symbol name.

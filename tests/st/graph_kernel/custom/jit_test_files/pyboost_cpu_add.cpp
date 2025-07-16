@@ -23,33 +23,21 @@ class CustomAddUncontiguous : public ms::pynative::PyboostRunner {
     auto &x = inputs()[0];
     auto &y = inputs()[1];
     auto &z = outputs()[0];
-    // Get data pointers
-    const int32_t *x_base_ptr = static_cast<const int32_t *>(x.GetDataPtr());
-    const int32_t *y_base_ptr = static_cast<const int32_t *>(y.GetDataPtr());
-    int32_t *z_base_ptr = static_cast<int32_t *>(z.GetDataPtr());
 
-    // Get shape and strides
-    const std::vector<int64_t> &x_shape = x.shape();
-    std::vector<int64_t> x_stride = x.stride();
-    std::vector<int64_t> y_stride = y.stride();
-    std::vector<int64_t> z_stride = z.stride();
+    // Create TensorAccessors for efficient data access
+    auto x_accessor = x.accessor<int32_t, 3>();
+    auto y_accessor = y.accessor<int32_t, 3>();
+    auto z_accessor = z.accessor<int32_t, 3>();
 
-    // Ensure all tensors have the same shape
-    if (x_shape != y.shape() || y.shape() != z.shape()) {
-      throw std::invalid_argument("Shape mismatch in element-wise addition.");
-    }
+    // Get shape of the tensors (assume 3D tensors)
+    const auto &x_shape = x.shape();
 
-    // Iterate through the tensor elements, assume the tensors are 3-dimensional.
+    // Iterate through the tensor elements using TensorAccessor with bracket access
     for (int64_t i = 0; i < x_shape[0]; ++i) {
       for (int64_t j = 0; j < x_shape[1]; ++j) {
         for (int64_t k = 0; k < x_shape[2]; ++k) {
-          // Compute linear indices for x, y, and z
-          int64_t x_index = i * x_stride[0] + j * x_stride[1] + k * x_stride[2];
-          int64_t y_index = i * y_stride[0] + j * y_stride[1] + k * y_stride[2];
-          int64_t z_index = i * z_stride[0] + j * z_stride[1] + k * z_stride[2];
-
-          // Perform element-wise addition
-          z_base_ptr[z_index] = x_base_ptr[x_index] + y_base_ptr[y_index];
+          // the TensorAccessor support [] and () indices.
+          z_accessor(i, j, k) = x_accessor[i][j][k] + y_accessor[i][j][k];
         }
       }
     }
