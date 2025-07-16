@@ -254,7 +254,7 @@ class BACKEND_EXPORT GraphScheduler {
   void SpawnMultiPipelineActor(ActorSet *const actor_set, ActorThreadPool *const thread_pool);
 
   // Reset actor state and throw uce exception.
-  void ProcessUceError(ActorSet *const actor_set);
+  void ProcessUceError(ActorSet *const actor_set, OpContext<KernelTensor> *const context);
 
   // The global maps, only be cleared in the deconstruction.
   mindspore::HashMap<ActorInfo, ActorSetPtr> actors_;

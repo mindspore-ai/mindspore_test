@@ -1974,8 +1974,9 @@ void KernelActor::SetInputDeviceTensor(const KernelTensorPtr &input_kernel_tenso
   input_kernel_tensors_for_infer_[input_index] = input_kernel_tensor;
 }
 
-void KernelActor::ResetState() {
+void KernelActor::ResetState(OpContext<KernelTensor> *const context) {
   MS_EXCEPTION_IF_NULL(kernel_);
+  MS_EXCEPTION_IF_NULL(context);
   MS_LOG(INFO) << "Kernel actor " << kernel_->fullname_with_scope() << " start to reset state.";
   auto device_context = const_cast<DeviceContext *>(device_contexts_[0]);
   MS_LOG(INFO) << "Free output_device_tensor, list size: " << output_kernel_tensors_.size();

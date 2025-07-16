@@ -87,7 +87,7 @@ class ControlActor : public MemoryAwareActor {
   const AnfNodePtr &node() const { return node_; }
 
   // Reset state for UCE.
-  void ResetState() override;
+  void ResetState(OpContext<KernelTensor> *const context) override;
 
  protected:
   friend class ControlNodeScheduler;
