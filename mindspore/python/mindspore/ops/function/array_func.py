@@ -4728,7 +4728,11 @@ def _tensor_split_sub_tensors(x, indices_or_sections, axis):
         idx = indices_or_sections[i]
         begin[axis] = 0 if i == 0 else indices_or_sections[i - 1]
         end[axis] = idx
-        sliced_tensor = strided_slice(x, tuple(begin), tuple(end), strides)
+        if begin[axis] == end[axis]:
+            empty_shape = x.shape[0:axis] + (0,) + x.shape[axis + 1:]
+            sliced_tensor = ms.Tensor(shape=empty_shape, dtype=x.dtype)
+        else:
+            sliced_tensor = strided_slice(x, tuple(begin), tuple(end), strides)
         sub_tensors.append(sliced_tensor)
     return tuple(sub_tensors)
 
@@ -4744,7 +4748,7 @@ def _tensor_split_sub_int(x, indices_or_sections, axis):
         res = _get_cache_prim(P.Split)(axis)(x)
     elif indices_or_sections > length_along_dim:
         res = _get_cache_prim(P.Split)(axis, length_along_dim)(x)
-        indices_or_sections_n = [length_along_dim, length_along_dim + 1]
+        indices_or_sections_n = [length_along_dim]
         res2 = _tensor_split_sub_tensors(x, indices_or_sections_n, axis)
         for _ in np.arange(length_along_dim, indices_or_sections):
             res += tuple(res2)[1:]
