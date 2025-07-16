@@ -114,7 +114,7 @@ void ConditionGatherRunner::ExecuteLaunchKernelTaskHP(OpContext<KernelTensor> *c
 
 void ConditionGatherRunner::Init() {
   // Check device contexts number.
-  if (device_contexts_.size() != device::kDeviceContextsNumOne) {
+  if (device_contexts_.size() != runtime::kDeviceContextsNumOne) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
 

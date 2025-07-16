@@ -19,10 +19,6 @@
 
 namespace mindspore {
 namespace device {
-void *DeviceResManager::AllocateOffloadMemory(size_t size) const { return offloaded_mem_pool_->MallocHost(size); }
-
-void DeviceResManager::FreeOffloadMemory(void *ptr) const { offloaded_mem_pool_->FreeHost(ptr); }
-
 bool DeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   if (address->GetPtr() != nullptr) {
@@ -59,43 +55,5 @@ void DeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   FreeMemory(address->GetMutablePtr());
   address->set_ptr(nullptr);
 }
-
-bool DeviceResManager::DestroyEvent(const DeviceEventPtr &event) {
-  MS_EXCEPTION_IF_NULL(event);
-  if (!event->DestroyEvent()) {
-    MS_LOG(ERROR) << "DestroyEvent failed.";
-    return false;
-  }
-
-  std::lock_guard<std::mutex> lock(device_events_mutex_);
-  const auto &iter = std::find(device_events_.begin(), device_events_.end(), event);
-  if (iter == device_events_.end()) {
-    MS_LOG(ERROR) << "Can't find specified device event.";
-    return false;
-  }
-  (void)device_events_.erase(iter);
-  return true;
-}
-
-bool DeviceResManager::DestroyAllEvents() {
-  DeviceEventPtrList device_events_inner;
-  {
-    // Reduce the scopt to prevent deadlock.
-    std::lock_guard<std::mutex> lock(device_events_mutex_);
-    device_events_inner = device_events_;
-    device_events_.clear();
-  }
-  (void)std::for_each(device_events_inner.begin(), device_events_inner.end(), [this](const auto &event) {
-    MS_EXCEPTION_IF_NULL(event);
-    if (!event->DestroyEvent()) {
-      MS_LOG(ERROR) << "DestroyEvent failed.";
-    }
-  });
-  device_events_.clear();
-  return true;
-}
-
-std::shared_ptr<SwapManager> DeviceResManager::swap_manager() const { return swap_manager_; }
-
 }  // namespace device
 }  // namespace mindspore

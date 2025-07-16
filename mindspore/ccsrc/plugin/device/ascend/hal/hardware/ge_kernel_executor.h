@@ -64,13 +64,8 @@ class GeKernelExecutor : public KernelExecutor {
   bool LaunchKernelHP(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                       const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                       KernelMod *kernel_mod, void *stream) const override;
-  // Unify the MindIR, the default behavior uses the common unified MindIR.
-  void UnifyMindIR(const KernelGraphPtr &graph) const override;
   void AddMindIRPass(const KernelGraphPtr &graph) const override;
   void OptimizeExecutionOrder(const FuncGraphPtr &graph) const;
-
-  // Get rank id for distributed training.
-  uint32_t GetRankID() const override { return 0; }
 
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;

@@ -1045,11 +1045,6 @@ void GeKernelExecutor::Destroy() {
   initialized_ = false;
 }
 
-void GeKernelExecutor::UnifyMindIR(const KernelGraphPtr &graph) const {
-  MS_EXCEPTION_IF_NULL(graph);
-  GEGraphOptimization::GetInstance().UnifyMindIR(graph);
-}
-
 void GeKernelExecutor::AddMindIRPass(const KernelGraphPtr &graph) const {
   GEGraphOptimization::GetInstance().GEMindIRPass(graph);
 }

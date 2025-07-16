@@ -117,11 +117,6 @@ class RES_EXPORT HalResBase {
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
     return std::shared_ptr<void>(::malloc(size), ::free);
   }
-  // Allocate host memory for offload device memory.
-  virtual void *AllocateOffloadMemory(size_t size) const;
-  // Release host memory which was allocated by AllocateOffloadMemory to pool.
-  // It will not be free to os.
-  virtual void FreeOffloadMemory(void *ptr) const;
 
   virtual size_t GetAvailableMemSize() const { return 0; }
 

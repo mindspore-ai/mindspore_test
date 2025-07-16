@@ -59,6 +59,9 @@ constexpr size_t kOutputDataFlagBetweenFusion = 8;
 // Indicates that the output data destination is the fusion actor, and needs to use the fusion output index.
 constexpr size_t kOutputDataFlagToFusion = 16;
 
+constexpr size_t kDeviceContextsNumOne = 1;
+constexpr size_t kDeviceContextsNumTwo = 2;
+
 // Counter for callback.
 class CallbackCounter {
  public:

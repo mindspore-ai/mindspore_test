@@ -56,8 +56,6 @@ class GPUDeviceResManager : public DeviceResManager {
   std::vector<void *> AllocateContinuousMemory(const std::vector<size_t> &size_list,
                                                uint32_t stream_id = kDefaultStreamIndex) const override;
 
-  size_t GetAvailableMemSize() const override { return mem_manager_->GetAvailableMemSize(); }
-
   DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t device_id,
@@ -154,8 +152,6 @@ class GPUKernelExecutor : public KernelExecutor {
                       KernelMod *kernel_mod, void *stream) const override {
     return LaunchKernel(kernel, inputs, workspace, outputs, kernel_mod, stream);
   }
-
-  uint32_t GetRankID() const override;
 
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;

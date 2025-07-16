@@ -62,24 +62,23 @@ class TestDeviceAddress : public DeviceAddress {
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  virtual bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
-                                bool sync_on_demand) const {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, bool sync_on_demand) const {
     return true;
   }
-  virtual bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
-                                const std::string &format) const {
+  bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
+                        const std::string &format) const {
     return true;
   }
-  virtual void *GetMutablePtr() const { return nullptr; }
-  virtual void ClearDeviceMemory() {}
+  void *GetMutablePtr() const { return nullptr; }
+  void ClearDeviceMemory() {}
 };
 
 class TestKernelMod : public kernel::KernelMod {
  public:
   TestKernelMod() = default;
   ~TestKernelMod() override = default;
-  virtual bool Launch(const std::vector<AddressPtr> &inputs, const std::vector<AddressPtr> &workspace,
-                      const std::vector<AddressPtr> &outputs, void *stream_ptr) {
+  bool Launch(const std::vector<AddressPtr> &inputs, const std::vector<AddressPtr> &workspace,
+              const std::vector<AddressPtr> &outputs, void *stream_ptr) {
     return true;
   }
   std::vector<kernel::KernelAttr> GetOpSupport() override { return {}; }
@@ -90,7 +89,7 @@ class TestDeviceResManager : public device::DeviceResManager {
   TestDeviceResManager() = default;
   ~TestDeviceResManager() override = default;
 
-  virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
+  bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
     static size_t total_size_{1024};
     MS_EXCEPTION_IF_NULL(address);
     if (address->GetSize() > total_size_) {
@@ -99,21 +98,19 @@ class TestDeviceResManager : public device::DeviceResManager {
     total_size_ -= address->GetSize();
     return true;
   }
-  virtual void FreeMemory(DeviceAddress *const &address) const {}
-  virtual void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
-  virtual void FreeMemory(void *const ptr) const {}
-  virtual void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
-                               const std::vector<size_t> &keep_addr_sizes) const {}
-  virtual DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format,
-                                               TypeId type_id, const ShapeVector &shape,
-                                               const UserDataPtr &user_data = nullptr) const {
+  void FreeMemory(DeviceAddress *const &address) const {}
+  void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
+  void FreeMemory(void *const ptr) const {}
+  void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
+                       const std::vector<size_t> &keep_addr_sizes) const {}
+  DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
+                                       const ShapeVector &shape, const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU", 0);
   }
 
-  virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
-                                               const Format &format, TypeId type_id, const std::string &device_name,
-                                               uint32_t device_id, uint32_t stream_id,
-                                               const UserDataPtr &user_data = nullptr) const {
+  DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
+                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       uint32_t stream_id, const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
   }
 
@@ -123,6 +120,9 @@ class TestDeviceResManager : public device::DeviceResManager {
     device_address->set_device_id(device_context_->device_context_key().device_id_);
     return device_address;
   }
+
+  bool LoadCollectiveCommLib() { return false; }
+  device::CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
 };
 
 class TestKernelExecutor : public device::KernelExecutor {
@@ -130,7 +130,7 @@ class TestKernelExecutor : public device::KernelExecutor {
   TestKernelExecutor() = default;
   ~TestKernelExecutor() override = default;
 
-  virtual void OptimizeGraph(const FuncGraphPtr &graph) const {
+  void OptimizeGraph(const FuncGraphPtr &graph) const {
     MS_EXCEPTION_IF_NULL(graph);
     auto kernel_graph = graph->cast<KernelGraphPtr>();
     MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -147,7 +147,7 @@ class TestKernelExecutor : public device::KernelExecutor {
     kernel_graph->SetExecOrderByDefault();
   }
 
-  virtual void CreateKernel(const std::vector<CNodePtr> &nodes) const {
+  void CreateKernel(const std::vector<CNodePtr> &nodes) const {
     for (const auto &node : nodes) {
       MS_EXCEPTION_IF_NULL(node);
       SetKernelInfo(node);
@@ -252,9 +252,11 @@ class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, Tes
   }
   ~TestDeviceContext() override = default;
 
-  virtual void Initialize() {}
-  virtual DeviceType GetDeviceType() const { return DeviceType::kCPU; }
-private:
+  void Initialize() {}
+  void Destroy() {}
+  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
+
+ private:
   std::shared_ptr<TestGraphExecutor> graph_executor_;
 };
 

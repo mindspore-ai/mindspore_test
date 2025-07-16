@@ -29,7 +29,7 @@ const size_t kOutputDeviceContextIndex = 1;
 
 void CopyActor::Init() {
   // Check device contexts number.
-  if (device_contexts_.size() != device::kDeviceContextsNumTwo) {
+  if (device_contexts_.size() != runtime::kDeviceContextsNumTwo) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
 
