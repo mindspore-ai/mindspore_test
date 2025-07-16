@@ -40,7 +40,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
-#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "plugin/device/ascend/optimizer/ascend_pass_optimization.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"

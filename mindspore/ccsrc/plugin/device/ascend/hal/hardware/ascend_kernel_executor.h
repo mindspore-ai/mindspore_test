@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_KERNEL_EXECUTOR_H_
-#define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_KERNEL_EXECUTOR_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_KERNEL_EXECUTOR_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_KERNEL_EXECUTOR_H_
 
 #include <vector>
 #include <memory>
@@ -33,10 +33,10 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class GeKernelExecutor : public KernelExecutor {
+class AscendKernelExecutor : public KernelExecutor {
  public:
-  GeKernelExecutor() = default;
-  ~GeKernelExecutor() override = default;
+  AscendKernelExecutor() = default;
+  ~AscendKernelExecutor() override = default;
 
   void Initialize() override;
   void Destroy() override;
@@ -115,4 +115,4 @@ class GeKernelExecutor : public KernelExecutor {
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_KERNEL_EXECUTOR_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_KERNEL_EXECUTOR_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_GE_GRAPH_OPTIMIZATION_H
-#define MINDSPORE_GE_GRAPH_OPTIMIZATION_H
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_GRAPH_OPTIMIZATION_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_GRAPH_OPTIMIZATION_H_
 #include <vector>
 #include <set>
 #include <memory>
@@ -25,29 +25,28 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-// todo: delete BACKEND_EXPORT after mv GEMindIRPass
-class GEGraphOptimization {
+class AscendGraphOptimization {
  public:
-  static GEGraphOptimization &GetInstance() {
-    static GEGraphOptimization instance;
+  static AscendGraphOptimization &GetInstance() {
+    static AscendGraphOptimization instance;
     return instance;
   }
   void OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
   void OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo);
   void OptimizeACLGraphAfterInline(const KernelGraphPtr &graph);
   void UnifyMindIR(const KernelGraphPtr &graph);
-  void GEMindIRPass(const KernelGraphPtr &graph) const;
+  void AscendUnifyMindIR(const KernelGraphPtr &graph) const;
   void OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph);
 
  private:
-  GEGraphOptimization() {}
-  ~GEGraphOptimization() = default;
-  GEGraphOptimization(const GEGraphOptimization &) = delete;
-  GEGraphOptimization &operator=(const GEGraphOptimization &) = delete;
+  AscendGraphOptimization() {}
+  ~AscendGraphOptimization() = default;
+  AscendGraphOptimization(const AscendGraphOptimization &) = delete;
+  AscendGraphOptimization &operator=(const AscendGraphOptimization &) = delete;
 };
 
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
 
-#endif  // MINDSPORE_GE_GRAPH_OPTIMIZATION_H
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_HARDWARE_ASCEND_GRAPH_OPTIMIZATION_H_
