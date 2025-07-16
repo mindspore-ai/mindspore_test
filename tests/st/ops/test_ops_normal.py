@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, Generator
+from mindspore.common.api import _pynative_executor
 from mindspore.ops.auto_generate import NormalTensorTensor, NormalTensorFloat, \
     NormalFloatTensor, NormalFloatFloat
 from tests.st.utils import test_utils
@@ -230,3 +232,69 @@ def test_mint_normal_func3():
     ms.set_rng_state(state)
     output2 = mint.normal(1.0, 1.0, (2, 2))
     assert np.all(output1.asnumpy() == output2.asnumpy())
+
+
+def normal_test_func(mean, std, size=None, *, gradient_position=()):
+    @test_utils.run_with_cell
+    def normal_func(mean, std, size):
+        return mint.normal(mean, std, size, generator=None)
+
+    @test_utils.run_with_cell
+    def normal_grad_func(mean, std, size, gradient_position):
+        return ms.grad(normal_func, gradient_position)(mean, std, size)
+
+    out = normal_func(mean, std, size)
+    if gradient_position != ():
+        grads = normal_grad_func(mean, std, size, gradient_position)
+        return out, grads
+    return out
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_mint_normal_func4(mode):
+    """
+    Feature: Test mint.normal.
+    Description: call mint.normal with valid input.
+    Expectation: return the correct value.
+    """
+    if mode == 'kbk':
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+
+    # std < 0
+    invalid_std = [-3, -3.3]
+    for std in invalid_std:
+        mean = ms.Tensor(np.random.randn(2, 3))
+        with pytest.raises(ValueError):
+            _ = normal_test_func(mean, std, gradient_position=(0,))
+            if mode == 'pynative':
+                _pynative_executor.sync()
+
+        mean = 0.5
+        with pytest.raises(ValueError):
+            _ = normal_test_func(mean, std, (2, 3))
+            if mode == 'pynative':
+                _pynative_executor.sync()
+
+    # mean is python number or std is python number
+    python_numbers = [3, True, False, 0.3]
+    sizes = [(2, 3), [2, 3]]
+    for mean in python_numbers:
+        for std in python_numbers:
+            for size in sizes:
+                out = normal_test_func(mean, std, size)
+                assert out.shape == (2, 3)
+
+    for mean in python_numbers:
+        std = ms.Tensor(np.random.randn(2, 3))
+        out, grad = normal_test_func(mean, std, gradient_position=(1,))
+        assert out.shape == (2, 3)
+        assert grad.shape == (2, 3)
+
+    for std in python_numbers:
+        mean = ms.Tensor(np.random.randn(2, 3))
+        out, grad = normal_test_func(mean, std, gradient_position=(0,))
+        assert out.shape == (2, 3)
+        assert grad.shape == (2, 3)

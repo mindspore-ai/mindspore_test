@@ -21,6 +21,7 @@
 #include "ir/tensor.h"
 #include "kernel/ascend/acl_ir/op_api_convert.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "utils/value_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -28,7 +29,8 @@ namespace normal_float_tensor {
 
 void NormalFloatTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  mean_ = device::ascend::ConvertKernelTensor<float>(inputs[kIndex0]);
+  auto mean_scalar = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex0]);
+  mean_ = GetScalarCastValue<float>("NormalFloatTensor", mean_scalar);
   seed_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
   offset_ = device::ascend::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
 

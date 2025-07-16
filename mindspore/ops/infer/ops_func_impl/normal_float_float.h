@@ -31,6 +31,7 @@ class OPS_API NormalFloatFloatFuncImpl : public OpFuncImpl {
   // For aclnn GetWorkspace
   std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
 };
+void NormalStdCheck(const PrimitivePtr &primitive, const AbstractBasePtr *std_abs);
 }  // namespace ops
 }  // namespace mindspore
 
