@@ -48,10 +48,11 @@ void SSLHTTP::InitSSL() {
   if (!OpenSSL_add_all_algorithms()) {
     MS_LOG(EXCEPTION) << "OpenSSL_add_all_algorithms failed.";
   }
-  ssl_ctx_ = SSL_CTX_new(SSLv23_server_method());
+  ssl_ctx_ = SSL_CTX_new(TLS_server_method());
   if (!ssl_ctx_) {
     MS_LOG(EXCEPTION) << "SSL_CTX_new failed";
   }
+  SSL_CTX_set_min_proto_version(ssl_ctx_, TLS1_2_VERSION);
   X509_STORE *store = SSL_CTX_get_cert_store(ssl_ctx_);
   MS_EXCEPTION_IF_NULL(store);
   if (X509_STORE_set_default_paths(store) != 1) {
