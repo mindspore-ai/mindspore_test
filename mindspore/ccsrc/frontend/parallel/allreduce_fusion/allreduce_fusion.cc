@@ -41,8 +41,8 @@ void SetMirrorFusion(const CNodePtr &mirror_cnode, int64_t fusion, const std::st
   MS_EXCEPTION_IF_NULL(mirror_cnode);
   MS_LOG(DEBUG) << "Set Mirror " << mirror_cnode->DebugString() << " fusion " << fusion;
   auto node_prim = GetValueNode<PrimitivePtr>(mirror_cnode->input(0));
-  (void)node_prim->AddAttr(FUSION, MakeValue(std::make_shared<Int64Imm>(fusion)));
   MS_EXCEPTION_IF_NULL(node_prim);
+  (void)node_prim->AddAttr(FUSION, MakeValue(std::make_shared<Int64Imm>(fusion)));
   (void)node_prim->AddAttr(PARAMETER, MakeValue(std::make_shared<StringImm>(parameter_name)));
 }
 
