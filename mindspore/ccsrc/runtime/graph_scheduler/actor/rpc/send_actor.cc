@@ -40,15 +40,7 @@ void SendActor::SetRouteInfo(uint32_t, const std::string &, const std::string &s
 }
 
 bool SendActor::ConnectServer() {
-#ifdef ENABLE_RDMA
-  if (common::GetEnv(kEnableRDMA) == "1") {
-    client_ = std::make_unique<RDMAClient>();
-  } else {
-    client_ = std::make_unique<TCPClient>();
-  }
-#else
   client_ = std::make_unique<TCPClient>();
-#endif
   MS_EXCEPTION_IF_NULL(client_);
 
   if (!client_->Initialize()) {

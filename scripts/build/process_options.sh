@@ -88,10 +88,6 @@ process_options()
         export ENABLE_AKG="$OPTARG" ;;
       B)
         build_option_proc_upper_b ;;
-      E)
-        check_on_off $OPTARG E
-        export ENABLE_RDMA="$OPTARG"
-        echo "RDMA for RPC $ENABLE_RDMA" ;;
       A)
         build_option_proc_upper_a ;;
       W)

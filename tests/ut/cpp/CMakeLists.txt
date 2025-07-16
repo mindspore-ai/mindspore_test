@@ -108,10 +108,6 @@ if(NOT ENABLE_CPU OR WIN32 OR APPLE)
             ./distributed/cluster/topology/*.cc
             ./distributed/recovery/*.cc
             ./distributed/embedding_cache/*.cc)
-    if(${ENABLE_RDMA} STREQUAL "ON")
-        include_directories(/usr/include/umdk)
-        file(GLOB_RECURSE UT_DISTRIBUTED_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./distributed/rpc/rdma/*.cc)
-    endif()
     list(APPEND UT_PS_SRCS ${UT_DISTRIBUTED_SRCS})
 endif()
 
@@ -147,7 +143,6 @@ endif()
 
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_res_manager.cc"
         "../../../mindspore/ccsrc/plugin/res_manager/cpu/cpu_device_address/cpu_device_address.cc"
@@ -250,9 +245,6 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/res_manager/ascend/symbol_interface/*.cc"
         )
 
-list(REMOVE_ITEM MINDSPORE_SRC_LIST
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_client.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_server.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/core/communicator/task_executor.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/ps_context.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
