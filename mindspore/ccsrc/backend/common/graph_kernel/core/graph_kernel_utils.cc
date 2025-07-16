@@ -26,6 +26,7 @@
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
+#include "backend/common/backend_common_callback.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -136,12 +137,10 @@ std::vector<PrimitivePtr> GkUtils::FilterExcludedOps(const std::vector<Primitive
     return ops;
   }
   std::vector<PrimitivePtr> dst_ops;
-  const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {kGPUDevice, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  auto deprecated_ptr = device_context->GetDeprecatedInterface();
-  MS_EXCEPTION_IF_NULL(deprecated_ptr);
-  auto major_compute_capability = deprecated_ptr->GetGPUCapabilityMajor();
+  static const auto get_gpu_capability_major_func =
+    backend_common::BackendCommonCallback::GetInstance().GetCallback<int>("GetGPUCapabilityMajor");
+  MS_EXCEPTION_IF_NULL(get_gpu_capability_major_func);
+  auto major_compute_capability = get_gpu_capability_major_func();
   std::unordered_map<std::string, int> limited_capacity_ops = {
     {prim::kPrimConv2D->name(), 7}, {prim::kPrimMatMul->name(), 7}, {prim::kPrimBatchMatMul->name(), 7}};
   std::vector<std::string> final_filter_ops;

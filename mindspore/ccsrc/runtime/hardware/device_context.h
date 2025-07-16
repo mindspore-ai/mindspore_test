@@ -33,7 +33,6 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/hardware/deprecated_interface.h"
 #include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "include/backend/optimizer/graph_optimizer.h"
@@ -43,9 +42,6 @@
 #include "ir/tensor.h"
 #ifdef __APPLE__
 #include "async/spinlock.h"
-#endif
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>  // for GetCurrentProcessId()
 #endif
 
 namespace mindspore {
@@ -70,19 +66,11 @@ struct DeviceContextKey {
 class DeviceResManager;
 class KernelExecutor;
 
-inline pid_t GetCurrentPID() {
-#if defined(_WIN32) || defined(_WIN64)
-  return GetCurrentProcessId();
-#else
-  return getpid();
-#endif
-}
-
 // DeviceContext is unified interface of interaction with device.
 class BACKEND_COMMON_EXPORT DeviceContext {
  public:
   explicit DeviceContext(const DeviceContextKey &device_context_key)
-      : device_context_key_(device_context_key), initialized_(false), pid_(GetCurrentPID()) {}
+      : device_context_key_(device_context_key), initialized_(false) {}
   virtual ~DeviceContext() = default;
 
   // Initialize the device context.
@@ -101,9 +89,6 @@ class BACKEND_COMMON_EXPORT DeviceContext {
   std::shared_ptr<KernelExecutor> GetKernelExecutor() const { return kernel_executor_; }
 
   void SetKernelExecutor(const std::shared_ptr<KernelExecutor> &kernel_executor) { kernel_executor_ = kernel_executor; }
-
-  // todo: delete
-  virtual DeprecatedInterface *GetDeprecatedInterface() { return nullptr; }
 
   // Return whether this device context is initialized.
   bool initialized() const {
@@ -126,7 +111,6 @@ class BACKEND_COMMON_EXPORT DeviceContext {
   inline static std::mutex init_mutex_;
 #endif
   bool initialized_;
-  pid_t pid_;  // Indicates the process id which creates the context.
 
  private:
   std::shared_ptr<KernelExecutor> kernel_executor_;

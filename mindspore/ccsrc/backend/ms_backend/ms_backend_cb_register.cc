@@ -98,12 +98,6 @@ void StopRuntimeSchedulerOnException() {
 #endif
 }
 REGISTER_DISTRIBUTED_CALLBACK(StopRuntimeSchedulerOnException);
-
-KernelTensorPtr CreateWorkspaceKernelTensor(const device::DeviceContext *device_context, size_t stream_id,
-                                            const size_t &workspace_size) {
-  return runtime::DeviceAddressUtils::CreateWorkspaceKernelTensor(device_context, stream_id, workspace_size);
-}
-REGISTER_BACKEND_COMMON_CALLBACK(CreateWorkspaceKernelTensor);
 }  // namespace ms_backend
 }  // namespace backend
 }  // namespace mindspore

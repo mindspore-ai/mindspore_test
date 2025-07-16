@@ -15,6 +15,7 @@
  */
 #include "plugin/device/gpu/hal/hardware/gpu_session.h"
 
+#include <cuda.h>
 #include <string>
 #include <utility>
 #include "include/backend/optimizer/helper.h"
@@ -55,6 +56,7 @@
 #include "backend/common/pass/communication_op_fusion.h"
 #include "plugin/device/gpu/optimizer/concat_outputs_for_all_gather.h"
 #include "backend/common/pass/getitem_tuple.h"
+#include "backend/common/backend_common_callback.h"
 #include "backend/common/pass/optimize_updatestate.h"
 #include "backend/common/pass/adjust_depend_for_parallel_optimizer_recompute_all_gather.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
@@ -93,6 +95,48 @@
 namespace mindspore {
 namespace session {
 namespace gpu {
+int GetGPUCapabilityMajor() {
+  // Check device computing capacity major.
+  int major_version = -1;
+  auto ret = cuDeviceGetAttribute(&major_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR fail, error message: " << msg;
+    return -1;
+  }
+  return major_version;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUCapabilityMajor);
+
+int GetGPUCapabilityMinor() {
+  // Check device computing capacity minor.
+  int minor_version = -1;
+  auto ret = cuDeviceGetAttribute(&minor_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR fail, error message: " << msg;
+    return -1;
+  }
+  return minor_version;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUCapabilityMinor);
+
+int GetGPUMultiProcessorCount() {
+  // Check device sm_count.
+  int sm_count = -1;
+  auto ret = cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT fail, error message: " << msg;
+    return -1;
+  }
+  return sm_count;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUMultiProcessorCount);
+
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
 void GPUSession::Init(uint32_t device_id) {

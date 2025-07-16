@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2024 Huawei Technologies Co., Ltd
+ * Copyright 2022-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ascend_deprecated_interface.h"
+#include "plugin/res_manager/ascend/mbuf_manager/tdt_manager.h"
 #include <algorithm>
 #include <tuple>
 #include <utility>
@@ -38,11 +38,12 @@ std::mutex g_tsd_mutex;
 constexpr auto kPrintOpName = "Print";
 }  // namespace
 
-void AscendDeprecatedInterface::DumpProfileParallelStrategy(const FuncGraphPtr &func_graph) {
-  return profiler::ascend::ParallelStrategy::GetInstance()->DumpProfileParallelStrategy(func_graph);
+TdtManager &TdtManager::GetInstance() {
+  static TdtManager instance;
+  return instance;
 }
 
-bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
+bool TdtManager::OpenTsd(const std::shared_ptr<MsContext> &ms_context_ptr) {
   std::unique_lock<std::mutex> lock(g_tsd_mutex);
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
   if (ms_context_ptr->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
@@ -111,7 +112,7 @@ bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &ms_con
   return true;
 }
 
-bool AscendDeprecatedInterface::CloseTsd(const std::shared_ptr<MsContext> &ms_context_ptr, bool force) {
+bool TdtManager::CloseTsd(const std::shared_ptr<MsContext> &ms_context_ptr, bool force) {
   std::unique_lock<std::mutex> lock(g_tsd_mutex);
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
   MS_LOG(INFO) << "Start to close tsd, ref = " << ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF);
@@ -138,14 +139,6 @@ bool AscendDeprecatedInterface::CloseTsd(const std::shared_ptr<MsContext> &ms_co
                   << ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) << ".";
   }
   return true;
-}
-
-bool AscendDeprecatedInterface::IsTsdOpened(const std::shared_ptr<MsContext> &ms_context_ptr) {
-  std::unique_lock<std::mutex> lock(g_tsd_mutex);
-  if (ms_context_ptr == nullptr) {
-    MS_LOG(EXCEPTION) << "nullptr";
-  }
-  return ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) > 0;
 }
 }  // namespace ascend
 }  // namespace device

@@ -959,13 +959,6 @@ bool GPUDeviceResManager::BindDeviceToCurrentThread(bool force_bind) const {
   return gpu_res_manager_->BindDeviceToCurrentThread(force_bind);
 }
 
-DeprecatedInterface *GPUDeviceContext::GetDeprecatedInterface() {
-  if (deprecated_interface_ == nullptr) {
-    deprecated_interface_ = std::make_unique<GPUDeprecatedInterface>();
-  }
-  return deprecated_interface_.get();
-}
-
 uint32_t GPUDeviceContext::GetDeviceCount() { return IntToUint(CudaDriver::device_count()); }
 
 std::string GPUDeviceContext::GetDeviceName(uint32_t device_id) {
