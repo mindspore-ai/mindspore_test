@@ -44,6 +44,13 @@ def test_f_tensor_split_int(mode):
     x = ms.Tensor(a, dtype=ms.float32)
     indices_or_sections = 3
     out = net(x, indices_or_sections)
+    assert len(out) == indices_or_sections
+    expect = np.array_split(a, indices_or_sections)
+    for res, exp in zip(out, expect):
+        assert np.allclose(res.asnumpy(), exp)
+    indices_or_sections = 20
+    out = net(x, indices_or_sections)
+    assert len(out) == indices_or_sections
     expect = np.array_split(a, indices_or_sections)
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
