@@ -25,6 +25,7 @@ from mindspore.common.dtype import Type, int8, byte, int16, short, int, int32, i
     dtype_to_pytype, pytype_to_dtype, get_py_obj_dtype, QuantDtype, qint4x2, \
     float8_e4m3fn, float8_e5m2, hifloat8
 from mindspore.common.dump import set_dump
+from mindspore.common.file_system import set_mindio_server_info, mindio_preload
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.seed import set_seed, get_seed
 from mindspore.common.tensor import Tensor, tensor
@@ -113,6 +114,7 @@ __all__.extend([
     "no_inline",
     "Symbol",
     "recompute",
-    "is_tensor", "from_numpy", "_Function"
+    "is_tensor", "from_numpy", "_Function",
+    "set_mindio_server_info", "mindio_preload"
 ])
 __all__.extend(generator.__all__)

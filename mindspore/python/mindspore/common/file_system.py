@@ -14,10 +14,14 @@
 # ============================================================================
 """File system registration management"""
 from mindspore import log as logger
+from mindspore import _checkparam as Validator
+
+mindio_server_info = {"memfs.data_block_pool_capacity_in_gb": "100"}
 
 
 class FileSystem:
     """File operation interface manager"""
+
     def __init__(self):
         self.create = open
         self.create_args = ("ab",)
@@ -35,24 +39,70 @@ def _register_basic_file_system(fs: FileSystem):
     return True
 
 
-def _register_mindio_file_system(fs: FileSystem):
-    """register mindio file system"""
+def _init_mindio():
+    """Initialize MindIO and return the module if successful"""
+    try:
+        import mindio_acp as mindio
+        ret = mindio.initialize(server_info=mindio_server_info)
+        if ret == 0:
+            return mindio
+        logger.warning(f"Failed to initialize mindio_acp: ret = {ret}")
+    except ImportError:
+        pass
     try:
         import mindio
-    except ImportError:
-        return False
-    try:
         ret = mindio.initialize()
-    except AttributeError as e:
-        logger.warning(f"Failed to initialize MindIO: {e}")
+        if ret == 0:
+            return mindio
+        logger.warning(f"Failed to initialize mindio: ret = {ret}")
+    except ImportError:
+        pass
+    return None
+
+
+def _register_mindio_file_system(fs: FileSystem):
+    """register mindio file system"""
+    mindio = _init_mindio()
+    if mindio is None:
         return False
-    if ret != 0:
-        logger.warning(f"Failed to initialize MindIO: ret = {ret}")
-        return False
+
     fs.create = mindio.create_file
     fs.create_args = ()
     fs.open = mindio.open_file
     fs.open_args = ()
     fs.backend = "mindio"
     logger.info("The weights are stored using MindIO as the backend.")
+    return True
+
+
+def set_mindio_server_info(data_block_pool_capacity_in_gb=100):
+    """
+    Configure MindIO server settings.
+
+    Args:
+        data_block_pool_capacity_in_gb (int): Memory pool capacity for data blocks in gigabytes.
+    """
+    global mindio_server_info
+    Validator.check_positive_int(data_block_pool_capacity_in_gb, "data_block_pool_capacity_in_gb")
+    mindio_server_info["memfs.data_block_pool_capacity_in_gb"] = str(data_block_pool_capacity_in_gb)
+
+
+def mindio_preload(ckpt_file_name):
+    """
+    Preload data into memory using MindIO for faster access.
+
+    Args:
+        ckpt_file_name (str): Checkpoint file name.
+
+    Returns:
+        bool: True if preloading is successful, False otherwise.
+    """
+    Validator.check_value_type('ckpt_file_name', ckpt_file_name, str, "mindio_preload")
+    mindio = _init_mindio()
+    if mindio is None:
+        return False
+    if not hasattr(mindio, 'preload'):
+        logger.warning("MindIO module does not have preload method")
+        return False
+    mindio.preload(ckpt_file_name)
     return True
