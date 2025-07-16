@@ -24,23 +24,15 @@ Tensor
     :template: classtemplate.rst
 
     mindspore.mint.arange
-    mindspore.mint.bernoulli
-    mindspore.mint.bincount
-    mindspore.mint.clone
-    mindspore.mint.eye
-    mindspore.mint.einsum
     mindspore.mint.empty
     mindspore.mint.empty_like
+    mindspore.mint.eye
     mindspore.mint.full
     mindspore.mint.full_like
     mindspore.mint.linspace
     mindspore.mint.ones
     mindspore.mint.ones_like
-    mindspore.mint.randint
-    mindspore.mint.randint_like
-    mindspore.mint.randn
-    mindspore.mint.randn_like
-    mindspore.mint.randperm
+    mindspore.mint.polar
     mindspore.mint.zeros
     mindspore.mint.zeros_like
 
@@ -55,28 +47,24 @@ Tensor
     mindspore.mint.cat
     mindspore.mint.chunk
     mindspore.mint.concat
-    mindspore.mint.count_nonzero
     mindspore.mint.gather
     mindspore.mint.index_add
     mindspore.mint.index_select
     mindspore.mint.masked_select
+    mindspore.mint.narrow
+    mindspore.mint.nonzero
     mindspore.mint.permute
     mindspore.mint.reshape
     mindspore.mint.scatter
     mindspore.mint.scatter_add
-    mindspore.mint.split
-    mindspore.mint.narrow
-    mindspore.mint.nonzero
-    mindspore.mint.tile
-    mindspore.mint.tril
     mindspore.mint.select
+    mindspore.mint.split
     mindspore.mint.squeeze
     mindspore.mint.stack
     mindspore.mint.swapaxes
+    mindspore.mint.tile
     mindspore.mint.transpose
-    mindspore.mint.triu
     mindspore.mint.unbind
-    mindspore.mint.unique_consecutive
     mindspore.mint.unsqueeze
     mindspore.mint.where
 
@@ -88,10 +76,16 @@ Tensor
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.bernoulli
     mindspore.mint.multinomial
     mindspore.mint.normal
-    mindspore.mint.rand_like
     mindspore.mint.rand
+    mindspore.mint.rand_like
+    mindspore.mint.randint
+    mindspore.mint.randint_like
+    mindspore.mint.randn
+    mindspore.mint.randn_like
+    mindspore.mint.randperm
 
 数学运算
 ------------------
@@ -105,10 +99,9 @@ Tensor
     :template: classtemplate.rst
 
     mindspore.mint.abs
-    mindspore.mint.add
-    mindspore.mint.addmv
     mindspore.mint.acos
     mindspore.mint.acosh
+    mindspore.mint.add
     mindspore.mint.arccos
     mindspore.mint.arccosh
     mindspore.mint.arcsin
@@ -128,8 +121,6 @@ Tensor
     mindspore.mint.clamp
     mindspore.mint.cos
     mindspore.mint.cosh
-    mindspore.mint.cross
-    mindspore.mint.diff
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
@@ -146,9 +137,9 @@ Tensor
     mindspore.mint.frac
     mindspore.mint.lerp
     mindspore.mint.log
+    mindspore.mint.log10
     mindspore.mint.log1p
     mindspore.mint.log2
-    mindspore.mint.log10
     mindspore.mint.logaddexp
     mindspore.mint.logaddexp2
     mindspore.mint.logical_and
@@ -156,17 +147,12 @@ Tensor
     mindspore.mint.logical_or
     mindspore.mint.logical_xor
     mindspore.mint.mul
-    mindspore.mint.mv
-    mindspore.mint.nansum
     mindspore.mint.nan_to_num
     mindspore.mint.neg
     mindspore.mint.negative
     mindspore.mint.pow
-    mindspore.mint.polar
-    mindspore.mint.ravel
     mindspore.mint.reciprocal
     mindspore.mint.remainder
-    mindspore.mint.roll
     mindspore.mint.round
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
@@ -192,26 +178,26 @@ Reduction运算
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.all
     mindspore.mint.amax
     mindspore.mint.amin
+    mindspore.mint.any
     mindspore.mint.argmax
     mindspore.mint.argmin
-    mindspore.mint.argsort
-    mindspore.mint.all
-    mindspore.mint.any
-    mindspore.mint.cumprod
-    mindspore.mint.histc
+    mindspore.mint.count_nonzero
     mindspore.mint.logsumexp
     mindspore.mint.max
     mindspore.mint.mean
     mindspore.mint.median
     mindspore.mint.min
+    mindspore.mint.nansum
     mindspore.mint.norm
     mindspore.mint.prod
-    mindspore.mint.sum
     mindspore.mint.std
     mindspore.mint.std_mean
+    mindspore.mint.sum
     mindspore.mint.unique
+    mindspore.mint.unique_consecutive
     mindspore.mint.var
     mindspore.mint.var_mean
 
@@ -242,8 +228,8 @@ Reduction运算
     mindspore.mint.minimum
     mindspore.mint.ne
     mindspore.mint.not_equal
-    mindspore.mint.topk
     mindspore.mint.sort
+    mindspore.mint.topk
 
 BLAS和LAPACK运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -255,15 +241,16 @@ BLAS和LAPACK运算
 
     mindspore.mint.addbmm
     mindspore.mint.addmm
+    mindspore.mint.addmv
     mindspore.mint.baddbmm
     mindspore.mint.bmm
     mindspore.mint.dot
     mindspore.mint.inverse
     mindspore.mint.matmul
-    mindspore.mint.meshgrid
     mindspore.mint.mm
+    mindspore.mint.mv
     mindspore.mint.outer
-    mindspore.mint.trace
+    mindspore.mint.triangular_solve
 
 其他运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -273,18 +260,29 @@ BLAS和LAPACK运算
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.bincount
     mindspore.mint.broadcast_to
     mindspore.mint.cdist
+    mindspore.mint.clone
+    mindspore.mint.cross
     mindspore.mint.cummax
     mindspore.mint.cummin
+    mindspore.mint.cumprod
     mindspore.mint.cumsum
     mindspore.mint.diag
+    mindspore.mint.diff
+    mindspore.mint.einsum
     mindspore.mint.flatten
     mindspore.mint.flip
+    mindspore.mint.histc
+    mindspore.mint.meshgrid
+    mindspore.mint.ravel
     mindspore.mint.repeat_interleave
+    mindspore.mint.roll
     mindspore.mint.searchsorted
+    mindspore.mint.trace
     mindspore.mint.tril
-    mindspore.mint.triangular_solve
+    mindspore.mint.triu
 
 mindspore.mint.nn
 ------------------
@@ -301,79 +299,6 @@ mindspore.mint.nn
     mindspore.mint.nn.ConvTranspose2d
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
-
-归一化层
-^^^^^^^^^^^^^^^^^^
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.BatchNorm1d
-    mindspore.mint.nn.BatchNorm2d
-    mindspore.mint.nn.BatchNorm3d
-    mindspore.mint.nn.GroupNorm
-    mindspore.mint.nn.LayerNorm
-    mindspore.mint.nn.SyncBatchNorm
-
-非线性激活层 (加权和，非线性)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.ELU
-    mindspore.mint.nn.GELU
-    mindspore.mint.nn.GLU
-    mindspore.mint.nn.Hardshrink
-    mindspore.mint.nn.Hardsigmoid
-    mindspore.mint.nn.Hardswish
-    mindspore.mint.nn.LogSigmoid
-    mindspore.mint.nn.LogSoftmax
-    mindspore.mint.nn.Mish
-    mindspore.mint.nn.PReLU
-    mindspore.mint.nn.ReLU
-    mindspore.mint.nn.ReLU6
-    mindspore.mint.nn.SELU
-    mindspore.mint.nn.SiLU
-    mindspore.mint.nn.Sigmoid
-    mindspore.mint.nn.Softmax
-    mindspore.mint.nn.Softshrink
-    mindspore.mint.nn.Tanh
-    mindspore.mint.nn.Threshold
-
-嵌入层
-^^^^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.Embedding
-
-线性层
-^^^^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.Linear
-
-Dropout层
-^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.Dropout
-    mindspore.mint.nn.Dropout2d
 
 池化层
 ^^^^^^^^^^^^^^
@@ -412,6 +337,80 @@ Dropout层
     mindspore.mint.nn.ZeroPad2d
     mindspore.mint.nn.ZeroPad3d
 
+非线性激活层 (加权和，非线性)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.ELU
+    mindspore.mint.nn.GELU
+    mindspore.mint.nn.GLU
+    mindspore.mint.nn.Hardshrink
+    mindspore.mint.nn.Hardsigmoid
+    mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.LogSigmoid
+    mindspore.mint.nn.LogSoftmax
+    mindspore.mint.nn.Mish
+    mindspore.mint.nn.PReLU
+    mindspore.mint.nn.ReLU
+    mindspore.mint.nn.ReLU6
+    mindspore.mint.nn.SELU
+    mindspore.mint.nn.Sigmoid
+    mindspore.mint.nn.SiLU
+    mindspore.mint.nn.Softmax
+    mindspore.mint.nn.Softshrink
+    mindspore.mint.nn.Tanh
+    mindspore.mint.nn.Threshold
+
+归一化层
+^^^^^^^^^^^^^^^^^^
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.BatchNorm1d
+    mindspore.mint.nn.BatchNorm2d
+    mindspore.mint.nn.BatchNorm3d
+    mindspore.mint.nn.GroupNorm
+    mindspore.mint.nn.LayerNorm
+    mindspore.mint.nn.SyncBatchNorm
+
+线性层
+^^^^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.Identity
+    mindspore.mint.nn.Linear
+
+Dropout层
+^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.Dropout
+    mindspore.mint.nn.Dropout2d
+
+稀疏层
+^^^^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.Embedding
+
 损失函数
 ^^^^^^^^^^^^^^^
 
@@ -439,16 +438,6 @@ Vision层
 
     mindspore.mint.nn.PixelShuffle
     mindspore.mint.nn.Upsample
-
-工具
-^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.Identity
 
 mindspore.mint.nn.functional
 -----------------------------
@@ -507,10 +496,11 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.log_softmax
     mindspore.mint.nn.functional.logsigmoid
     mindspore.mint.nn.functional.mish
+    mindspore.mint.nn.functional.normalize
     mindspore.mint.nn.functional.prelu
     mindspore.mint.nn.functional.relu
-    mindspore.mint.nn.functional.relu6
     mindspore.mint.nn.functional.relu_
+    mindspore.mint.nn.functional.relu6
     mindspore.mint.nn.functional.selu
     mindspore.mint.nn.functional.sigmoid
     mindspore.mint.nn.functional.silu
@@ -520,16 +510,6 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.tanh
     mindspore.mint.nn.functional.threshold
     mindspore.mint.nn.functional.threshold_
-
-归一化函数
-^^^^^^^^^^^^^^^^^^^
-
-.. mscnplatformautosummary::
-    :toctree: mint
-    :nosignatures:
-    :template: classtemplate.rst
-
-    mindspore.mint.nn.functional.normalize
 
 线性函数
 ^^^^^^^^^^^^^^^^^^^
@@ -571,9 +551,9 @@ Dropout函数
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.cross_entropy
     mindspore.mint.nn.functional.kl_div
     mindspore.mint.nn.functional.l1_loss
     mindspore.mint.nn.functional.mse_loss
@@ -588,13 +568,16 @@ Vision函数
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.grid_sample
+    mindspore.mint.nn.functional.interpolate
     mindspore.mint.nn.functional.pad
     mindspore.mint.nn.functional.pixel_shuffle
 
 mindspore.mint.optim
 ---------------------
+
+算法
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mscnplatformautosummary::
     :toctree: mint
@@ -608,6 +591,28 @@ mindspore.mint.optim
 mindspore.mint.linalg
 ----------------------
 
+矩阵属性
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.linalg.matrix_norm
+    mindspore.mint.linalg.norm
+    mindspore.mint.linalg.vector_norm
+
+分解
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. mscnplatformautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.linalg.qr
+
 逆数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -617,10 +622,6 @@ mindspore.mint.linalg
     :template: classtemplate.rst
 
     mindspore.mint.linalg.inv
-    mindspore.mint.linalg.matrix_norm
-    mindspore.mint.linalg.norm
-    mindspore.mint.linalg.vector_norm
-    mindspore.mint.linalg.qr
 
 mindspore.mint.special
 ----------------------
