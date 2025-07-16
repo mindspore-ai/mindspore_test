@@ -35,7 +35,6 @@
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "plugin/device/cpu/kernel/cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_aot_cpu_kernel.h"
-#include "plugin/device/cpu/kernel/custom/custom_julia_cpu_kernel.h"
 #include "plugin/device/cpu/kernel/custom/custom_op_plugin_kernel.h"
 #include "plugin/device/cpu/kernel/pyfunc/py_func_cpu_kernel.h"
 #include "common/ms_factory.h"
@@ -677,15 +676,12 @@ void SetCustomOpKernelInfo(const std::string &custom_op_type, const std::string 
   } else if (custom_op_type == kCustomTypeAOT) {
     kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<kernel::CustomAOTCpuKernelMod>(); });
-  } else if (custom_op_type == kCustomTypeJULIA) {
-    kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
-      op_name, []() { return std::make_shared<kernel::CustomJULIACpuKernelMod>(); });
   } else if (custom_op_type == kCustomTypeOPPlugin) {
     kernel::Factory<kernel::NativeCpuKernelMod>::Instance().Register(
       op_name, []() { return std::make_shared<kernel::CustomOpPluginCpuKernelMod>(); });
   } else {
     MS_LOG(EXCEPTION) << "Unsupported func type for Custom operator on CPU, it should be "
-                      << "'hybrid', 'akg', 'pyfunc' or 'aot' or 'julia', "
+                      << "'hybrid', 'akg', 'pyfunc' or 'aot', "
                       << "but got [" << custom_op_type << "] for Custom operator [" << op_name << "]";
   }
 }
