@@ -1056,7 +1056,7 @@ bool CheckResizeCondition(const CNodePtr &node) {
 bool NeedCheckInputContiguous(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto kernel_type = AnfAlgo::GetKernelType(cnode);
-  if (kernel_type != KernelType::OPAPI_KERNEL) {
+  if (kernel_type != KernelType::OPAPI_KERNEL && kernel_type != KernelType::INTERNAL_KERNEL) {
     return true;
   }
   return false;
