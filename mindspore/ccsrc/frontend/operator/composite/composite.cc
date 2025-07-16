@@ -930,7 +930,7 @@ FuncGraphPtr Tail::GenerateGradFuncGraph(const AbstractTuplePtr &tuple_arg, cons
     AnfNodePtr tuple_parameter = fg->add_parameter();
     if (CanGradArgument(tuple_arg, 1) || EnableGradFirstForTuple(tuple_arg, enable_tuple_grad_first_)) {
       fg->set_output(
-        fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), tuple_parameter, NewValueNode(SizeToLong(1))}));
+        fg->NewCNodeInOrder({NewValueNode(prim::kPrimTupleGetItem), tuple_parameter, NewValueNode(SizeToLong(1))}));
     } else {
       fg->set_output(NewValueNode(std::make_shared<ValueTuple>(ValuePtrList())));
     }
@@ -1910,12 +1910,12 @@ FuncGraphPtr TupleGetItemTensor::GenerateFuncGraph(const AbstractBasePtrList &ar
   std::vector<AnfNodePtr> key_value_names_list{NewValueNode(prim::kPrimMakeTuple)};
   (void)key_value_names_list.emplace_back(NewValueNode(internal_tuple_input));
   (void)key_value_names_list.emplace_back(NewValueNode(internal_index_input));
-  const auto key_value_name_tuple = ret_graph->NewCNode(key_value_names_list);
+  const auto key_value_name_tuple = ret_graph->NewCNodeInOrder(key_value_names_list);
   // Value
   std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
   (void)key_value_list.emplace_back(tuple);
   (void)key_value_list.emplace_back(index);
-  const auto key_value_tuple = ret_graph->NewCNode(key_value_list);
+  const auto key_value_tuple = ret_graph->NewCNodeInOrder(key_value_list);
   auto res =
     fallback::CreatePyExecuteCNode(ret_graph, NewValueNode(script_str), key_value_name_tuple, key_value_tuple, nullptr);
   ret_graph->set_output(res);
@@ -2188,7 +2188,7 @@ FuncGraphPtr IterConverter::GenerateFuncGraph(const AbstractBasePtrList &args_ab
 
   auto input = fg->add_parameter();
   if (input_abs->isa<AbstractDictionary>()) {
-    auto ret_node = fg->NewCNode({NewValueNode(prim::kPrimDictGetKeys), input});
+    auto ret_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimDictGetKeys), input});
     fg->set_output(ret_node);
     return fg;
   }
@@ -2206,9 +2206,9 @@ AnfNodePtr ConvertPyInterpret(const FuncGraphPtr &fg, const AnfNodePtr &input, c
   (void)local_key_inputs.emplace_back(NewValueNode(data_str));
   (void)local_value_inputs.emplace_back(input);
   const auto &script = script_buffer.str();
-  auto local_key_node = fg->NewCNode(local_key_inputs);
-  auto local_value_node = fg->NewCNode(local_value_inputs);
-  auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
+  auto local_key_node = fg->NewCNodeInOrder(local_key_inputs);
+  auto local_value_node = fg->NewCNodeInOrder(local_value_inputs);
+  auto local_dict_node = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
   return fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
 }
 
@@ -2231,7 +2231,7 @@ FuncGraphPtr HasNext::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   const std::string func_name = "ms_hasnext";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
-  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  auto ret = fg->NewCNodeInOrder({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;
 }
@@ -2255,7 +2255,7 @@ FuncGraphPtr Next::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   const std::string func_name = input_abs->isa<abstract::AbstractDictionary>() ? "dict_next" : "ms_next";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
-  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  auto ret = fg->NewCNodeInOrder({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;
 }
@@ -2267,7 +2267,7 @@ FuncGraphPtr TupleFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
   auto fg = std::make_shared<FuncGraph>();
   fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   if (args_abs_list.size() == 0) {
-    auto ret = fg->NewCNode({NewValueNode(prim::kPrimMakeTuple)});
+    auto ret = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple)});
     fg->set_output(ret);
     return fg;
   }
@@ -2286,7 +2286,7 @@ FuncGraphPtr TupleFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
     // list to tuple
     if (fallback::SequenceAllElementsIsScalar(input_abs)) {
       auto prim = std::make_shared<Primitive>("ListToTuple");
-      auto list_to_tuple = fg->NewCNode({NewValueNode(prim), input});
+      auto list_to_tuple = fg->NewCNodeInOrder({NewValueNode(prim), input});
       fg->set_output(list_to_tuple);
       return fg;
     }
@@ -2295,7 +2295,7 @@ FuncGraphPtr TupleFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
   const std::string func_name = "tuple_func";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
-  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  auto ret = fg->NewCNodeInOrder({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;
 }
@@ -2307,7 +2307,7 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   auto fg = std::make_shared<FuncGraph>();
   fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   if (args_abs_list.size() == 0) {
-    auto ret = fg->NewCNode({NewValueNode(prim::kPrimMakeList)});
+    auto ret = fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeList)});
     fg->set_output(ret);
     return fg;
   }
@@ -2326,7 +2326,7 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
     // tuple to list
     if (fallback::SequenceAllElementsIsScalar(input_abs)) {
       auto prim = std::make_shared<Primitive>("TupleToList");
-      auto tuple_to_list = fg->NewCNode({NewValueNode(prim), input});
+      auto tuple_to_list = fg->NewCNodeInOrder({NewValueNode(prim), input});
       fg->set_output(tuple_to_list);
       return fg;
     }
@@ -2335,7 +2335,7 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   const std::string func_name = "list_func";
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
-  auto ret = fg->NewCNode({NewValueNode(prim_func), input});
+  auto ret = fg->NewCNodeInOrder({NewValueNode(prim_func), input});
   fg->set_output(ret);
   return fg;
 }
@@ -2352,7 +2352,8 @@ FuncGraphPtr DictFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   if (args_abs_list.empty()) {
     std::vector<AnfNodePtr> keys{NewValueNode(prim::kPrimMakeTuple)};
     std::vector<AnfNodePtr> values{NewValueNode(prim::kPrimMakeTuple)};
-    auto ret = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), fg->NewCNode(keys), fg->NewCNode(values)});
+    auto ret =
+      fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeDict), fg->NewCNodeInOrder(keys), fg->NewCNodeInOrder(values)});
     fg->set_output(ret);
     return fg;
   }
