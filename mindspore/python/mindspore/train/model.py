@@ -156,11 +156,7 @@ def _handle_exception_info(obj, uce_env, tft, e):
         tft.tft_report_error(tft.ReportState.RS_UCE.value)
     elif "HCCEError" in e_str:
         logger.warning("uce wrapper caught HCCEError")
-        if  obj.stop_been_called:
-            logger.warning("Received HCCEError after force stop been called, so report force stopped error to MindIO.")
-            tft.tft_report_error(tft.ReportState.RS_NORMAL.value)
-        else:
-            tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
+        tft.tft_report_error(tft.ReportState.RS_HCCL_FAILED.value)
     elif "ForceStopError" in e_str:
         logger.warning("uce wrapper caught RuntimeError ForceStopError")
         force_stop_err = tft.ReportState.RS_NORMAL.value
@@ -270,7 +266,6 @@ def _handle_tft(func):
                         ret = obj.tft.tft_wait_next_action()
                         if ret == obj.tft.Action.EXIT.value:
                             raise e
-                        obj.stop_been_called = False
                         repair_step = obj.tft.tft_get_repair_step()
                         logger.warning(
                             "uce wrapper caught repair finish REPAIR STEP: {} batch_num:{}".format(repair_step,
