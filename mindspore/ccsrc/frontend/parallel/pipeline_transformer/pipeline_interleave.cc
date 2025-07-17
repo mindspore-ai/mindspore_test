@@ -768,7 +768,7 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   send->AddPrimalAttr(ORDER, MakeValue(order));
 
   attr_rank = std::make_pair(SRC_RANK, MakeValue(src_stage));
-  auto shape_type_pair = GetShapeType(node, {1}, 0);
+  auto shape_type_pair = GetShapeType(param, {1}, 0);
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
   Attr attr_dtype = std::make_pair(DTYPE, shape_type_pair.second);
   auto send_prim = GetCNodePrimitive(send);
