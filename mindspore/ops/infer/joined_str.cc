@@ -42,7 +42,7 @@ bool ContainsVariableAbstractDict(const AbstractBasePtr &abstract) {
 class JoinedStrInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override {
-    return std::make_shared<abstract::Shape>(ShapeVector({1}));
+    return std::make_shared<abstract::NoShape>();
   }
 
   TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
@@ -52,7 +52,7 @@ class JoinedStrInfer : public abstract::OpInferBase {
                           << abstract->ToString();
       }
     }
-    return std::make_shared<TensorType>(kInt64);
+    return std::make_shared<String>();
   }
 
   ValuePtr InferValue(const PrimitivePtr &, const std::vector<AbstractBasePtr> &input_args) const override {
