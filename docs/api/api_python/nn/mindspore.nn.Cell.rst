@@ -748,13 +748,17 @@
 
     .. py:method:: shard(in_strategy, out_strategy=None, parameter_plan=None)
 
-        指定输入/输出Tensor的分布策略，通过其余算子的策略推导得到。在PyNative模式下，可以利用此方法指定某个Cell以图模式进行分布式执行。 在图模式下，
+        指定输入/输出Tensor的分布策略，通过其余算子的策略推导得到。在图模式下，
         可以利用此方法设置某个模块的分布式切分策略，未设置的会自动通过策略传播方式配置。 in_strategy/out_strategy需要为元组类型，
         其中的每一个元素指定对应的输入/输出的Tensor分布策略，可参考： :func:`mindspore.ops.Primitive.shard` 的描述。
         其余算子的并行策略由输入输出指定的策略推导得到。
 
-        .. note:: 仅在半自动并行或自动并行模式下有效。在其他并行模式中，将忽略此处设置的策略。
-            如果输入含有Parameter，其对应的策略应该在 `in_strategy` 里设置。
+        .. note:: 
+            - 仅在半自动并行或自动并行模式下有效。在其他并行模式中，将忽略此处设置的策略。
+            - 如果输入含有Parameter，其对应的策略应该在 `in_strategy` 里设置。
+
+        .. warning::
+            该方法当前不支持在PyNative模式下使用。
 
         参数：
             - **in_strategy** (tuple) - 指定各输入的切分策略，输入元组的每个元素元组，元组即具体指定输入每一维的切分策略。
