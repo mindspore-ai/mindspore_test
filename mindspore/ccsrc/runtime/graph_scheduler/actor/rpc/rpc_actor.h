@@ -27,19 +27,12 @@
 #include "distributed/cluster/actor_route_table_proxy.h"
 #include "include/backend/distributed/rpc/tcp/tcp_client.h"
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
-#ifdef ENABLE_RDMA
-#include "include/backend/distributed/rpc/rdma/rdma_client.h"
-#include "include/backend/distributed/rpc/rdma/rdma_server.h"
-#endif
 #include "proto/rpc.pb.h"
 #include "proto/topology.pb.h"
 
 namespace mindspore {
 namespace runtime {
-using distributed::kEnableRDMA;
 using distributed::kMaxRetryPortNum;
-using distributed::kRDMADevName;
-using distributed::kRDMAIP;
 using distributed::kRemoteFuncId;
 using distributed::cluster::ActorRouteTableProxy;
 using distributed::cluster::ActorRouteTableProxyPtr;
@@ -50,11 +43,6 @@ using distributed::rpc::RPCServerBase;
 using distributed::rpc::TCPClient;
 using distributed::rpc::TCPServer;
 using mindspore::device::KernelInfo;
-#ifdef ENABLE_RDMA
-using distributed::rpc::kURPCInited;
-using distributed::rpc::RDMAClient;
-using distributed::rpc::RDMAServer;
-#endif
 
 // The inter-process edge mark between two nodes.
 constexpr char kInterProcessEdgeMark[] = "->";
