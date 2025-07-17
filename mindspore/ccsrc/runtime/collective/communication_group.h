@@ -73,7 +73,7 @@ class BACKEND_COMMON_EXPORT CommunicationGroup {
 
  protected:
   // Whether this communication group is initialized.
-  bool initialized_;
+  bool initialized_{false};
 
   // This process's global rank.
   uint32_t global_rank_;

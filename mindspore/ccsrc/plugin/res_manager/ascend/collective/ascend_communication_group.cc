@@ -101,6 +101,9 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
     MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
   }
   distributed::collective::CollectiveManager::instance()->CacheInitedGroups(name_);
+  if (group_rank == 0) {
+    distributed::collective::CollectiveManager::instance()->ClearUniqueID(name_);
+  }
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   return true;
 }

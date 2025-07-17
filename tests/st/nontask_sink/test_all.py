@@ -87,10 +87,13 @@ def test_get_comm_name_create_group_with_options_func_8p():
     Expectation: success
     """
     os.environ['GLOG_v'] = str(2)
-    result = subprocess.getoutput(
+    return_code = os.system(
         "export HCCL_BUFFSIZE=300; msrun --worker_num=8 --local_worker_num=8 --master_port=10969 --join=True "\
         "--log_dir=get_comm_name_create_group_options pytest -s test_get_comm_name_create_group.py"
     )
+    assert return_code == 0
+    result = subprocess.getoutput("grep -rn 'HcclCommInitRootInfoConfig for group_buffersize' "
+                                  "./get_comm_name_create_group_options/worker_0.log")
     assert result.find("HcclCommInitRootInfoConfig for group_buffersize_default, hcclBufferSize is 300 MB") != -1
     assert result.find("HcclCommInitRootInfoConfig for group_buffersize_400, hcclBufferSize is 400 MB") != -1
     assert result.find("HcclCommInitRootInfoConfig for group_buffersize_100, hcclBufferSize is 100 MB") != -1

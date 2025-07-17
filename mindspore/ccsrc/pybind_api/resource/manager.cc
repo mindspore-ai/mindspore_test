@@ -43,6 +43,7 @@
 #include "include/common/debug/dump_proto.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/debug/trace.h"
+#include "pipeline/jit/ps/pipeline.h"
 #include "backend/common/session/session_factory.h"
 #include "backend/backend_manager/backend_manager.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -167,6 +168,11 @@ void ClearResPart2() {
   // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper in ClearDeviceContexts
   (void)distributed::collective::CollectiveManager::instance()->Finalize();
   MS_LOG(INFO) << "End clear CollectiveManager.";
+
+  MS_LOG(INFO) << "Start clear ClusterContext...";
+  // ClusterContext should be finalized only after all communication groups have been cleared.
+  pipeline::FinalizeCluster();
+  MS_LOG(INFO) << "End clear ClusterContext.";
 
   MS_LOG(INFO) << "Start clear AnalysisResultCacheMgr...";
   abstract::AnalysisResultCacheMgr::GetInstance().Clear();

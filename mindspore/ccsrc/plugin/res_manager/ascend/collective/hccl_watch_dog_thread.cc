@@ -38,8 +38,8 @@ bool HcclWatchDogManager::InitHandler(uint32_t idx) {
 }
 
 void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
-  for (const auto &handle : handles_) {
-    // cppcheck-suppress useStlAlgorithm
+  for (auto it = handles_.begin(); it != handles_.end(); ++it) {
+    const auto &handle = *it;
     if (handle != nullptr && handle->group_name() == name) {
       MS_LOG(INFO) << "Destroy watch dog thread by group name: " << name;
       while (!handle->can_stop(true)) {
@@ -49,6 +49,7 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
       while (!handle->exit()) {
         MS_LOG(DEBUG) << "Wait check finish, group name:" << name;
       }
+      handles_.erase(it);
       MS_LOG(INFO) << "Destroy watch dog thread by group name: " << name << " success";
       break;
     }

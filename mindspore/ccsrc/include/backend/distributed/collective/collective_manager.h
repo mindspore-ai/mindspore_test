@@ -283,6 +283,9 @@ class BACKEND_COMMON_EXPORT CollectiveManager {
   mutable std::mutex init_result_mutex_;
   std::condition_variable result_blocker_;
   GroupToResultMap group_name_to_result_;
+
+  // In the recovery scenario, the creation order of communication groups must be recorded to ensure they are recreated
+  // sequentially when rebuilding.
   std::vector<std::pair<std::string, std::vector<uint32_t>>> group_infos_;
   mutable std::mutex cache_mutes_;
   std::vector<std::string> inited_groups_;

@@ -52,6 +52,8 @@ class EXPORT_WRAPPER MultiAscendCollectiveCommLib : public CollectiveCommunicati
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 
+  bool Finalize() override;
+
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
                                 uint32_t local_group_rank, uint32_t local_group_size,
                                 const GroupOptions &config = {}) override;

@@ -82,6 +82,8 @@ def test_hccl_get_comm_name_func_8p():
     """
     output_world = get_comm_name()
     check_comm_name(output_world)
-    output_other = get_comm_name(group0)
-    check_comm_name(output_other)
+    output_other = "[group does not exist at this rank]"
+    if get_rank() in rank_ids:
+        output_other = get_comm_name(group0)
+        check_comm_name(output_other)
     print("Get world group comm_name: ", output_world, "created group comm_name: ", output_other)

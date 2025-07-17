@@ -548,6 +548,8 @@ def _destroy_group_helper(group):
         hccl.create_group(group)
     else:
         CollectiveManager.get_instance().destroy_group(group)
+        del _ExistingGroup.ITEMS[group]
+        del _ExistingGroup.GROUP_RANKS[group]
 
 
 @check_parameter_available

@@ -63,9 +63,9 @@ bool MultiAscendCollectiveCommLib::isGroupWithinLocalMachine(const std::vector<u
 }
 
 bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {
-  global_rank_id_ = global_rank;
-  global_rank_size_ = global_rank_size;
-  local_rank_id_ = local_rank_id;
+  if (initialized_) {
+    return true;
+  }
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
     std::string lowlatency_comm_lib_name = GetCurrentDir() + "/ascend/liblowlatency_collective.so";
@@ -98,6 +98,44 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id),
                            "Failed to initialize HCCL.");
   MS_LOG(INFO) << "Successfully initialize HCCL.";
+  global_rank_id_ = global_rank;
+  global_rank_size_ = global_rank_size;
+  local_rank_id_ = local_rank_id;
+  initialized_ = true;
+  finalized_ = false;
+  return true;
+}
+
+bool MultiAscendCollectiveCommLib::Finalize() {
+  if (!initialized_ || finalized_.load()) {
+    return true;
+  }
+
+#ifdef ENABLE_INTERNAL_KERNELS
+  if (device::ascend::AscendHalManager::GetInstance().EnableLccl()) {
+    MS_EXCEPTION_IF_NULL(lowlatency_collective_comm_lib_);
+    RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->Finalize(), "Failed to finalize LCCL.");
+  }
+#endif
+
+  if (graphkernel::EnableDvmComm()) {
+    MS_EXCEPTION_IF_NULL(dvm_collective_comm_lib_);
+    dvm_collective_comm_lib_->Finalize();
+  }
+
+  MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
+  RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->Finalize(), "Failed to finalize HCCL.");
+
+  for (const auto &group : groups_) {
+    CHECK_IF_NULL(group.second);
+    if (!group.second->Finalize()) {
+      return false;
+    }
+  }
+
+  groups_.clear();
+  initialized_ = false;
+  finalized_ = true;
   return true;
 }
 
