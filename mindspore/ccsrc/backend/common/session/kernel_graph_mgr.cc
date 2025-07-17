@@ -2169,7 +2169,7 @@ void KernelGraphMgr::SetReturnNode(const AnfNodePtr &node, KernelGraph *graph) {
         auto partial_node = input->cast<CNodePtr>();
         (void)partial_nodes.emplace_back(partial_node);
       } else {
-        normal_input_num = i + 1;
+        normal_input_num = static_cast<size_t>(i) + 1;
         break;
       }
     }

@@ -309,6 +309,7 @@ std::shared_ptr<TensorLayout> FindPrevLayoutByCallNode(const CNodePtr &cnode, in
                                                        bool *is_input_param) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(fg);
   auto pre_node = GetRealKernelNode(fg->output(), tuple_index, nullptr).first;
   if (!pre_node) {
     return nullptr;
