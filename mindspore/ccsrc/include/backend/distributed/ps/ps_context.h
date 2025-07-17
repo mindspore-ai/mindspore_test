@@ -97,9 +97,6 @@ class BACKEND_COMMON_EXPORT PSContext {
 
   core::ClusterConfig &cluster_config();
 
-  void set_scheduler_manage_port(uint16_t sched_port);
-  uint16_t scheduler_manage_port() const;
-
   void set_config_file_path(const std::string &path);
   std::string config_file_path() const;
 
@@ -153,9 +150,6 @@ class BACKEND_COMMON_EXPORT PSContext {
 
   // The cluster config read through environment variables, the value does not change.
   std::unique_ptr<core::ClusterConfig> cluster_config_;
-
-  // The port used by scheduler to receive http requests for scale out or scale in.
-  uint16_t scheduler_manage_port_;
 
   // The path of the configuration file, used to configure the certification path and persistent storage type, etc.
   std::string config_file_path_;

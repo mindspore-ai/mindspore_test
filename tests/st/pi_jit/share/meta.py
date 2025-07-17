@@ -17,15 +17,7 @@ def find_file(filename, search_path):
 class MetaFactory:
     def __init__(self):
         self._default_context()
-        if 'ENABLE_SSL' in os.environ:
-            if os.environ['ENABLE_SSL'].lower() == "true":
-                self._default_ps_context(True)
-            elif os.environ['ENABLE_SSL'].lower() == "false":
-                self._default_ps_context(False)
-            else:
-                logger.info("unset ENABLE_SSL env.")
-        else:
-            self._default_ps_context(False)
+        self._default_ps_context(False)
         self._set_context_from_env()
         self.device_target = context.get_context('device_target')
         self.rank_size = None
@@ -57,9 +49,7 @@ class MetaFactory:
     def _default_ps_context(enable_ssl):
         security_ctx = {
             "config_file_path": os.path.join(os.path.dirname(__file__), "config.json"),
-            "enable_ssl": enable_ssl,
-            "client_password": "123456",
-            "server_password": "123456"
+            "enable_ssl": False
         }
         context.set_ps_context(**security_ctx)
 
