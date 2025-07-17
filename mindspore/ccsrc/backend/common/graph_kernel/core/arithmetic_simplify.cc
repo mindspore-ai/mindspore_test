@@ -1257,28 +1257,29 @@ bool ArithmeticSimplify::DoArithmeticTrans(const inner::LiteGraphPtr &litegraph)
             inherited_attrs[kAttrDuplicated] = MakeValue(true);
           }
         }
-        if (!matched_nodes.empty()) {
-          auto right_root_type = PatternNodeType(p->rhs_root()->op());
-          if (right_root_type == inner::NType::Primitive && OutsideRely(matched_nodes, *iter)) {
-            continue;
-          }
-          // if no outside rely,then this is a successful match
-          can_simplify = true;
-          para_to_ref = cur_pattern->UpdateParameters(*iter, para_to_ref);
-          // get the new node to replace
-          inner::NodePtrList alter_graph = cur_pattern->AlterGraph(para_to_ref, const_to_ref, *iter);
-          for (const auto &node : alter_graph) {
-            if (node->NodeType() == inner::NType::Primitive) {
-              node->SetCNodeAttrs(inherited_attrs);
-            }
-          }
-          inner::NodePtr alter_graph_node = alter_graph.back();
-
-          (*iter)->ReplaceWith(alter_graph_node);
-          MS_LOG(DEBUG) << "Arithmetic simplify success with pattern: " << cur_pattern->GetPatternStr();
-          changed = true;
-          break;
+        if (matched_nodes.empty()) {
+          continue;
         }
+        auto right_root_type = PatternNodeType(p->rhs_root()->op());
+        if (right_root_type == inner::NType::Primitive && OutsideRely(matched_nodes, *iter)) {
+          continue;
+        }
+        // if no outside rely,then this is a successful match
+        can_simplify = true;
+        para_to_ref = cur_pattern->UpdateParameters(*iter, para_to_ref);
+        // get the new node to replace
+        inner::NodePtrList alter_graph = cur_pattern->AlterGraph(para_to_ref, const_to_ref, *iter);
+        for (const auto &node : alter_graph) {
+          if (node->NodeType() == inner::NType::Primitive) {
+            node->SetCNodeAttrs(inherited_attrs);
+          }
+        }
+        inner::NodePtr alter_graph_node = alter_graph.back();
+
+        (*iter)->ReplaceWith(alter_graph_node);
+        MS_LOG(DEBUG) << "Arithmetic simplify success with pattern: " << cur_pattern->GetPatternStr();
+        changed = true;
+        break;
       }
     }
     if (!can_simplify) {
