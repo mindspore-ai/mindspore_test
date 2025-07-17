@@ -44,7 +44,7 @@ PSContext::PSContext()
       rank_id_(0),
       worker_num_(0),
       server_num_(0),
-      scheduler_host_("0.0.0.0"),
+      scheduler_host_("127.0.0.1"),
       scheduler_port_(kDefaultSchedPort),
       role_(kEnvRoleOfNotPS),
       server_mode_(""),
