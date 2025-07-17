@@ -35,8 +35,10 @@
 #include "acl/acl_base.h"
 #include "utils/phase.h"
 #include "utils/ms_context.h"
+#include "mindspore/ops/infer/ops_func_impl/paged_attention.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_q.h"
 
 namespace mindspore::kernel {
@@ -249,6 +251,15 @@ void UpdateNzFormatOpsList(const AnfNodePtr &node) {
         input_idx.emplace_back(i);
       }
       kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {{input_idx, {}}, {input_idx, {}}};
+    }
+  }
+  if (AnfUtils::GetCNodeName(node) == prim::kPrimPagedAttention->name()) {
+    auto &inputs = cnode->inputs();
+    auto mla_v_dim_node = inputs[ops::kPagedAttentionInputMlaVDimIndex + 1]->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(mla_v_dim_node);
+    auto mla_v_dim_value = GetValue<int64_t>(mla_v_dim_node->value());
+    if (mla_v_dim_value > 0) {
+      kNzFormatOpsList[prim::kPrimPagedAttention->name()] = {{{1, 2}, {}}, {{1, 2}, {}}};
     }
   }
 }
