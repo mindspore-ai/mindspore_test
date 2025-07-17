@@ -283,7 +283,6 @@ PassManagerPtr GraphKernelOptimizer::Build() const {
   pm->Add(std::make_shared<SymbolEngineBuilder>(true), enable_dyn_level, !is_dvm);
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(true), enable_dyn_level, is_gpu);
 #ifdef ENABLE_AKG
-  pm->Add(std::make_shared<GraphKernelExpanderBeforeBuild>(), OptLevel_1, !is_dvm);
   pm->Add(std::make_shared<GraphKernelBuild>(), OptLevel_1, !is_dvm);
 #endif
   pm->Add(std::make_shared<GeneratedDependElimination>(), OptLevel_2, is_gpu || (is_ascend && !is_dvm));
