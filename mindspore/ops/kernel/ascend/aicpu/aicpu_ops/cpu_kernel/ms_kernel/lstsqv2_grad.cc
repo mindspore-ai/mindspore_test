@@ -160,11 +160,27 @@ uint32_t LstsqV2GradCpuKernel::LstsqV2GradCompute(CpuKernelContext &ctx) {
   int ret = memset_s(ga_addr, sizeof(T) * size_a, 0, sizeof(T) * size_a);
   if (ret != EOK) {
     CUST_KERNEL_LOG_ERROR(ctx, "'LstsqV2Grad' memset[ga_addr] failed, ret is [%d]", ret);
+    free(pinv_a_addr);
+    pinv_a_addr = nullptr;
+    free(g_pinv_a_addr);
+    g_pinv_a_addr = nullptr;
+    free(ga_temp_addr);
+    ga_temp_addr = nullptr;
+    free(gb_temp_addr);
+    gb_temp_addr = nullptr;
     return KERNEL_STATUS_INNER_ERROR;
   }
   ret = memset_s(gb_addr, sizeof(T) * size_b, 0, sizeof(T) * size_b);
   if (ret != EOK) {
     CUST_KERNEL_LOG_ERROR(ctx, "'LstsqV2Grad' memset[gb_addr] failed, ret is [%d]", ret);
+    free(pinv_a_addr);
+    pinv_a_addr = nullptr;
+    free(g_pinv_a_addr);
+    g_pinv_a_addr = nullptr;
+    free(ga_temp_addr);
+    ga_temp_addr = nullptr;
+    free(gb_temp_addr);
+    gb_temp_addr = nullptr;
     return KERNEL_STATUS_INNER_ERROR;
   }
 

@@ -98,11 +98,17 @@ bool TraceV2GradGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
   int64_t *axis2_h = static_cast<int64_t *>(malloc(sizeof(int64_t)));
   if (axis2_h == nullptr) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [axis2_h] memory failed.";
+    free(axis1_h);
+    axis1_h = nullptr;
     return false;
   }
   int64_t *offset_h = static_cast<int64_t *>(malloc(sizeof(int64_t)));
   if (offset_h == nullptr) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [offset_h] memory failed.";
+    free(axis1_h);
+    axis1_h = nullptr;
+    free(axis2_h);
+    axis2_h = nullptr;
     return false;
   }
   CHECK_CUDA_RET_WITH_ERROR_NOTRACE(
