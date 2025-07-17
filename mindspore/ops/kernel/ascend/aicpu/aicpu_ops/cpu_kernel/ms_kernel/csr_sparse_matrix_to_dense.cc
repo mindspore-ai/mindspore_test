@@ -16,11 +16,11 @@
 
 #include "cpu_kernel/ms_kernel/csr_sparse_matrix_to_dense.h"
 
-#include "include/securec.h"
 #include <algorithm>
 #include <complex>
 #include <numeric>
 #include <string>
+#include "include/securec.h"
 
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
