@@ -45,8 +45,8 @@ class OPS_ASCEND_API CustomKernelFactory {
   std::unordered_map<std::string, KernelCreator> creators_;
 };
 
-#define MS_CUSTOM_KERNEL_FACTORY_REG(NAME, CLASS) \
-  static const bool g_##CLASS##_registered =      \
+#define MS_CUSTOM_KERNEL_FACTORY_REG(NAME, CLASS)       \
+  static const bool g_custom_kernel_reg_##__COUNTER__ = \
     mindspore::kernel::CustomKernelFactory::Instance().Register(NAME, []() { return std::make_shared<CLASS>(); });
 
 }  // namespace kernel
