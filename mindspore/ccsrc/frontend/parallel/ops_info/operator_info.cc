@@ -3342,23 +3342,7 @@ Operator CreateDivOpWithType(float divisor, const TypePtr &dtype) {
   return div_op;
 }
 
-ForwardOp CreateReduceMeanForwardOp(const std::vector<Group> &forward_group, const TypePtr &dtype) {
-  // Create AllReduceSum op
-  Operator op0 = CreateAllReduceOp(REDUCE_OP_SUM, forward_group[0].name());
-  std::string group_name = forward_group[0].name();
-  MS_LOG(INFO) << "The group of forward all reduce is " << group_name;
-
-  // Create RealDiv op
-  std::vector<Device> device_list = forward_group[0].GetDevicesList();
-  auto divisor = SizeToFloat(device_list.size());
-  Operator op1 = CreateDivOpWithType(divisor, dtype);
-  std::string dtype_name = dtype->ToString();
-  MS_LOG(INFO) << "The divisor of Div op is " << device_list.size() << ", the dtype is " << dtype_name;
-
-  return {op0, op1};
-}
-
-ForwardOp CreateMeanExtForwardOp(const Group &forward_group, const TypePtr &dtype) {
+ForwardOp CreateAllReduceMeanForwardOp(const Group &forward_group, const TypePtr &dtype) {
   // Create AllReduceSum op
   Operator op0 = CreateAllReduceOp(REDUCE_OP_SUM, forward_group.name());
   std::string group_name = forward_group.name();

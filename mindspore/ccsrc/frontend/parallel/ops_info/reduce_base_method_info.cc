@@ -148,58 +148,44 @@ Status ReduceMeanInfo::InferForwardCommunication() {
     return SUCCESS;
   }
   forward_op_.clear();
-  std::vector<int64_t> dim_list = reduce_dim();
-  size_t size = stra.size();
-  // judge if the reduce dim is partitioned.
-  Shape group_creat_map;
-
-  // if repeated calculation and the repeated_calc_num_ insert to the first dimension of dev matrix,
-  // it need to handle the first dimension of map.
-  if ((dev_matrix_shape_.size() > size) && !repeated_num_in_dev_matrix_right_) {
-    group_creat_map.push_back(SizeToInt(dev_matrix_shape_.size() - size_t(1)));
-  }
-
-  for (size_t index = 0; index < size; ++index) {
-    auto pos =
-      std::find_if(dim_list.begin(), dim_list.end(), [index](const int64_t &dim) { return SizeToLong(index) == dim; });
-    if (pos != dim_list.end() && stra[index] != 1) {
-      continue;
+  std::vector<int64_t> reduce_dims = reduce_dim();
+  auto input_tensor_map = inputs_tensor_map_.at(kIndex0);
+  std::vector<int64_t> shard_dims;
+  for (size_t i = 0; i < input_tensor_map.size(); ++i) {
+    if (std::find_if(reduce_dims.begin(), reduce_dims.end(), [i](const int64_t dim) { return SizeToLong(i) == dim; }) !=
+        reduce_dims.end()) {
+      shard_dims.push_back(SizeToLong(dev_matrix_shape_.size() - kIndex1 - input_tensor_map[i]));
     }
-    group_creat_map.push_back(SizeToLong(size) - SizeToLong(index) - 1);
   }
 
-  // if repeated calculation and the repeated_calc_num_ insert to the last dimension of dev matrix,
-  // it need to handle the group_creat_map and insert the 0 to the last dimension of the group_creat_map.
-  if (repeated_num_in_dev_matrix_right_ && (repeated_calc_num_ > 1)) {
-    for (auto &ele : group_creat_map) {
-      if (ele == MAP_NONE) {
-        continue;
-      }
-      ele += 1;
-    }
-    group_creat_map.push_back(0);
-  }
-
-  std::vector<Group> forward_group;
-  if (CreateGroupByTensorMap(group_creat_map, &forward_group) != SUCCESS) {
-    ReportError(name_ + ": Create group failed.");
+  RankList comm_rank_list;
+  auto device_matrix =
+    DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(), dev_matrix_shape_);
+  if (device_matrix.GetDevicesAlongMultiDim(shard_dims, &comm_rank_list) != SUCCESS) {
+    MS_LOG(ERROR) << "For distributed operator " << name_ << ", infer Forward communication by multi dim failed.";
     return FAILED;
   }
-  if (!forward_group.empty()) {
-    if ((outputs_dtype_ == nullptr) || !outputs_dtype_->isa<mindspore::TensorType>()) {
-      MS_LOG(ERROR) << name_ << ": The dtype of output is not Array";
-      return FAILED;
-    }
-
-    if (forward_group.size() == kSizeOne) {
-      MS_LOG(DEBUG) << name_ << ": The group size is 1, no need to insert forward op.";
-      return SUCCESS;
-    }
-
-    auto element_type = outputs_dtype_->cast<mindspore::TensorTypePtr>()->element();
-    forward_op_ = CreateReduceMeanForwardOp(forward_group, element_type);
+  if (comm_rank_list.size() <= 1) {
+    MS_LOG(INFO) << "For distributed operator " << name_ << ", forward communication is not required.";
+    return SUCCESS;
+  }
+  Group comm_group;
+  if (g_device_manager->CreateGroup(comm_rank_list, &comm_group) != SUCCESS) {
+    MS_LOG(ERROR) << "For distributed operator " << name_
+                  << ", create communication group by comm_rank_list failed, the communication rank_list is: "
+                  << comm_rank_list << ", the full_name of node is: " << cnode_->fullname_with_scope();
+    return FAILED;
   }
 
+  auto tensor_type_ptr = outputs_dtype_->cast<mindspore::TensorTypePtr>();
+  if (tensor_type_ptr == nullptr) {
+    MS_LOG(ERROR) << name_ << ": Failed to cast outputs_dtype_ to TensorTypePtr. The pointer is null.";
+    return FAILED;
+  }
+  auto element_type = tensor_type_ptr->element();
+  forward_op_ = CreateAllReduceMeanForwardOp(comm_group, element_type);
+  MS_LOG(INFO) << "For distributed operator " << name_ << ", the group name of forward communication is "
+               << comm_group.name() << ".";
   return SUCCESS;
 }
 
@@ -398,7 +384,7 @@ Status MeanExtInfo::InferForwardCommunicationByLayout() {
     return FAILED;
   }
   auto element_type = tensor_type_ptr->element();
-  forward_op_ = CreateMeanExtForwardOp(comm_group, element_type);
+  forward_op_ = CreateAllReduceMeanForwardOp(comm_group, element_type);
   MS_LOG(INFO) << "For distributed operator " << name_ << ", the group name of forward communication is "
                << comm_group.name() << ".";
   return SUCCESS;
