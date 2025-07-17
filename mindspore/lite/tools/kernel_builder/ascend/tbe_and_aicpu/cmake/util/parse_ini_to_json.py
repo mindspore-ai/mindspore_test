@@ -76,7 +76,7 @@ def parse_ini_to_obj(ini_file_path, tbe_ops_info):
     tbe_ops_info:ops_info
     ----------------
     """
-    with open(ini_file_path) as ini_file:
+    with open(os.path.relpath(ini_file_path)) as ini_file:
         lines = ini_file.readlines()
         op_dict = {}
         op_name = ""

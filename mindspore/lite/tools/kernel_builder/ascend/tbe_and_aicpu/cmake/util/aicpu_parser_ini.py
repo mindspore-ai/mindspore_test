@@ -58,7 +58,7 @@ def parse_ini_to_obj(ini_file, aicpu_ops_info):
     '''
     parse all ini files to object
     '''
-    with open(ini_file) as ini_read_file:
+    with open(os.path.realpath(ini_file)) as ini_read_file:
         lines = ini_read_file.readlines()
         ops = {}
         find_op_type = False

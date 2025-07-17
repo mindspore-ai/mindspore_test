@@ -42,7 +42,7 @@ def run_all(output_path):
     conf.logger.info("total success: %d", total_success_num)
     conf.logger.info("failed model name: %s", total_failed_test_name)
     tmp_file = os.path.join(current_directory, "../failed_tmp.txt")
-    with open(tmp_file, 'w') as file:
+    with open(os.path.realpath(tmp_file), 'w') as file:
         file.write("failed_op_name: ")
         for item in total_failed_test_name:
             file.write(f"{item}")
