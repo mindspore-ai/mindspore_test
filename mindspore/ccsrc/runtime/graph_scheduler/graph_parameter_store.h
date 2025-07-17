@@ -27,6 +27,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/visible.h"
 #include "common/kernel.h"
+#include "runtime/graph_scheduler/graph_compiler.h"
 namespace mindspore {
 namespace runtime {
 using mindspore::tensor::Tensor;
@@ -182,7 +183,8 @@ class BACKEND_EXPORT GraphParameterStore {
   Tensor *FetchTensor(size_t args_index, const KernelWithIndex &node);
 
   // Record graph inputs and return whether is dynamic.
-  bool RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index, const std::vector<AnfNodePtr> &parameters);
+  bool RecordGraphInputsAndIsDyn(const GraphCompilerInfo *graph_compiler_info, const std::vector<size_t> &input_index,
+                                 const std::vector<AnfNodePtr> &parameters);
 
   // Release input data at the end of run graph.
   void ReleaseData();

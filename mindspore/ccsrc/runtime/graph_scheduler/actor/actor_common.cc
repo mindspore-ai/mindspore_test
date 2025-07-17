@@ -972,7 +972,12 @@ void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, const KernelTensorP
   }
 }
 
-bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *tensor, size_t stream_id) {
+bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *tensor, size_t stream_id,
+                        bool *has_h2d_copy) {
+  // judge copy operation only for capture graph.
+  if (has_h2d_copy != nullptr) {
+    *has_h2d_copy = true;
+  }
   static const std::string kSyncCopyInput = "sync_copy_input";
   static bool sync_copy_input =
     common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
@@ -989,7 +994,8 @@ bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *te
 }
 
 void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::Tensor *tensor, const AID &from_aid,
-                                const AnfNodePtr &node, bool is_first_user, size_t stream_id) {
+                                const AnfNodePtr &node, bool is_first_user, size_t stream_id,
+                                bool *has_h2d_copy = nullptr) {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kKernelPrepareData, from_aid.Name());
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto kernel_tensor = graph_parameter_store->Fetch(outer_index, inner_index);
@@ -1047,13 +1053,13 @@ void SyncHostToDeviceFromTensor(size_t outer_index, size_t inner_index, tensor::
 
   auto tensor_size = LongToSize(tensor->data().nbytes());
   if (is_first_user) {
-    if (tensor_size > 0 && !CopyDataFromTensor(device_tensor, tensor, stream_id)) {
+    if (tensor_size > 0 && !CopyDataFromTensor(device_tensor, tensor, stream_id, has_h2d_copy)) {
       MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
     }
   } else if (graph_parameter_store->GetAsyncMemcpyFun(outer_index, inner_index) == nullptr) {
     graph_parameter_store->SetAsyncMemcpyFun(
-      outer_index, inner_index, [tensor_size, device_tensor, tensor](size_t stream_id) {
-        if (tensor_size > 0 && !CopyDataFromTensor(device_tensor, tensor, stream_id)) {
+      outer_index, inner_index, [tensor_size, device_tensor, tensor, has_h2d_copy](size_t stream_id) {
+        if (tensor_size > 0 && !CopyDataFromTensor(device_tensor, tensor, stream_id, has_h2d_copy)) {
           MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
         }
       });
@@ -1105,7 +1111,8 @@ void SyncDataForTensorAddress(tensor::Tensor *tensor, const AID &from_aid, const
 }
 
 void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parameter_index, Tensor *tensor,
-                                const AID &from_aid, bool is_first_user, size_t stream_id) {
+                                const AID &from_aid, bool is_first_user, size_t stream_id,
+                                bool *has_h2d_copy = nullptr) {
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
   auto inner_index = parameter_index.first.second;
@@ -1146,7 +1153,8 @@ void PrepareForNonTensorAddress(const std::pair<KernelWithIndex, size_t> &parame
 
   auto front_node = parameter_index.first;
   MS_EXCEPTION_IF_NULL(front_node.first);
-  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id);
+  SyncHostToDeviceFromTensor(outer_index, inner_index, tensor, from_aid, front_node.first, is_first_user, stream_id,
+                             has_h2d_copy);
   if ((graph_parameter_store->GetPositionWeight(outer_index) || common::AnfAlgo::HasAbstractRef(front_node.first))) {
     tensor->set_device_address(device_tensor);
     device_tensor->set_new_ref_count(SIZE_MAX);
@@ -1172,7 +1180,8 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
 }
 
 void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
-                      bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
+                      bool is_first_user, size_t stream_id, bool enable_parallel_dispatch,
+                      bool *has_h2d_copy = nullptr) {
   // Check parameter prepared for concurrent
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
@@ -1227,11 +1236,12 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   }
 
   // Prepare data for kernel tensor not from tensor.
-  PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
+  PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id, has_h2d_copy);
 }
 
 KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
-                               bool is_first_user, size_t stream_id, bool enable_parallel_dispatch) {
+                               bool is_first_user, size_t stream_id, bool enable_parallel_dispatch,
+                               bool *has_h2d_copy) {
   auto front_node = parameter_index.first.first;
   auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   auto outer_index = parameter_index.second;
@@ -1257,7 +1267,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
       return kernel_tensor;
     }
 
-    PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
+    PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch, has_h2d_copy);
     auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
     if (!is_weight && kernel_tensor->device_address() != nullptr &&
         kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {
@@ -1285,7 +1295,7 @@ KernelTensorPtr FetchParameter(const std::pair<KernelWithIndex, size_t> &paramet
 
   read_lock.unlock();
   std::unique_lock<std::shared_mutex> write_lock(mtx);
-  PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch);
+  PrepareParameter(parameter_index, from_aid, is_first_user, stream_id, enable_parallel_dispatch, has_h2d_copy);
   auto is_weight = graph_parameter_store->GetPositionWeight(outer_index);
   if (!is_weight && kernel_tensor->device_address() != nullptr &&
       kernel_tensor->device_address()->new_ref_count() == SIZE_MAX) {

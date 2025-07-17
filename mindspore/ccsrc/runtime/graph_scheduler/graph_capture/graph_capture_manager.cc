@@ -275,7 +275,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
       MS_EXCEPTION_IF_NULL(device_tensor);
       auto cur_device_context = kernel_actor->device_contexts()[0];
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+        << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
         << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
         << " new ref count:" << device_tensor->new_ref_count()
         << " super kernel actor context:" << cur_device_context->device_context_key().ToString()
@@ -289,15 +289,27 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
       }
       // deal weight/KV Cache
       if (IsWeightOrKVCache(cur_graph_parameter_store, node, outer_index)) {
-        // Save the weight or kv value for the subsequent CheckWeightAndKVCacheNotChange function.
+        // Save the weight or kv value for the subsequent CheckParameterNotChange function.
         if (weight_kv_addrs_.find(parameter_index.second.first) == weight_kv_addrs_.end()) {
           weight_kv_addrs_[parameter_index.second.first] = {kernel_tensor, parameter_index.second.second, kernel_actor};
         }
-        kernel_actor->SetInputDeviceTensor(kernel_tensor, parameter_index.first);
+        kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
         continue;
       }
-      // deal with mormal inputs
+      // deal with normal inputs
       if (fixed_addrs_for_set_inputs_.find(parameter_index.second.first) == fixed_addrs_for_set_inputs_.end()) {
+        const auto storage_info = device_tensor->GetTensorStorageInfo();
+        if (storage_info) {
+          MS_LOG(EXCEPTION)
+            << "The input[" << kernel_input_index << "] of kernel(" << kernel_actor->GetAID().Name()
+            << ") got a non-contiguous memory layout tensor, and framework will automatically convert it "
+               "to contiguous memory layout."
+               " The capture graph feature can not work in this case, please find the source of "
+               "non-contiguous input and convert it to contiguous memory layout, or disable capture graph "
+               "feature by set_kernel_launch_capture(False). Note: Disabling the capture "
+               "graph feature will degrade cpu execute performance, which may reduce network "
+               "execution performance.";
+        }
         auto strategy = kernel_actor->get_strategy();
         auto fix_kernel_tensor = AnfAlgo::CreateKernelTensor(
           kernel_tensor->GetShape(), kernel_tensor->GetType(), kernel_tensor->GetValueTrack(), nullptr,
@@ -326,8 +338,7 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
         // The fixed_addrs_for_update_ is to update the fix_addr again before the replay phase.
         fixed_addrs_for_update_.emplace_back(parameter_index, fix_kernel_tensor, kernel_actor);
       }
-      kernel_actor->SetInputDeviceTensor(fixed_addrs_for_set_inputs_[parameter_index.second.first],
-                                         parameter_index.first);
+      kernel_actor->SetInputDeviceTensor(fixed_addrs_for_set_inputs_[parameter_index.second.first], kernel_input_index);
 
       if (is_first_user) {
         HandleFirstUserMemoryFree(kernel_tensor, kernel_actor, memory_free_lists);
@@ -349,13 +360,24 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
     auto cur_device_context = kernel_actor->device_contexts()[0];
     auto real_input_data_infos = kernel_actor->real_input_data_infos();
     auto &real_input_info = real_input_data_infos[kernel_input_index];
-    bool is_first_user = kernel_actor->is_first_used_params()[parameter_index.first];
+    bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
     auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), true, stream_id, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
+    const auto storage_info = device_tensor->GetTensorStorageInfo();
+    if (storage_info) {
+      MS_LOG(EXCEPTION) << "The input[" << kernel_input_index << "] of kernel(" << kernel_actor->GetAID().Name()
+                        << ") got a non-contiguous memory layout tensor, and framework will automatically convert it "
+                           "to contiguous memory layout."
+                           " The capture graph feature can not work in this case, please find the source of "
+                           "non-contiguous input and convert it to contiguous memory layout, or disable capture graph "
+                           "feature by set_kernel_launch_capture(False). Note: Disabling the capture "
+                           "graph feature will degrade cpu execute performance, which may reduce network "
+                           "execution performance.";
+    }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << parameter_index.first
+      << "Actor: " << kernel_actor->GetAID().Name() << ", input index: " << kernel_input_index
       << ", device tensor: " << device_tensor << ", ptr: " << device_tensor->GetPtr()
       << " new ref count:" << device_tensor->new_ref_count()
       << " super kernel actor context:" << cur_device_context->device_context_key().ToString();
@@ -374,17 +396,25 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
   }
 }
 
-bool GraphCaptureManager::CheckWeightAndKVCacheNotChange(size_t stream_id) {
+bool GraphCaptureManager::CheckParameterNotChange(size_t stream_id) {
   for (const auto &weight_kv_addr : weight_kv_addrs_) {
     auto old_kernel_tensor = std::get<kIndex0>(weight_kv_addr.second);
+    MS_EXCEPTION_IF_NULL(old_kernel_tensor);
     auto outer_idx = std::get<kIndex1>(weight_kv_addr.second);
     auto kernel_actor = std::get<kIndex2>(weight_kv_addr.second);
-    auto kernel_tensor =
-      FetchParameter({weight_kv_addr.first, outer_idx}, kernel_actor->GetAID(), true, stream_id, false);
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    auto front_node = weight_kv_addr.first.first;
+    MS_EXCEPTION_IF_NULL(front_node);
+    bool has_copy_weight = false;
+    auto kernel_tensor = FetchParameter({weight_kv_addr.first, outer_idx}, kernel_actor->GetAID(), true, stream_id,
+                                        false, &has_copy_weight);
     if (kernel_tensor->GetSize() != old_kernel_tensor->GetSize() ||
         kernel_tensor->device_ptr() != old_kernel_tensor->device_ptr() ||
-        kernel_tensor->GetShape() != old_kernel_tensor->GetShape()) {
-      MS_LOG(ERROR) << "KV or Weight device address has changed!!!";
+        kernel_tensor->GetShape() != old_kernel_tensor->GetShape() || has_copy_weight) {
+      MS_LOG(ERROR) << "current parameter device address has changed!!!"
+                    << " kernel_actor: " << kernel_actor->GetAID().Name()
+                    << ", front node: " << front_node->DebugString() << ", with index: " << weight_kv_addr.first.second
+                    << ", addr index: " << outer_idx;
       return false;
     }
   }

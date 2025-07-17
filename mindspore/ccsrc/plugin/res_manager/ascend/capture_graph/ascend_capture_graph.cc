@@ -32,6 +32,9 @@ namespace mindspore::device::ascend {
 AscendCaptureGraph::~AscendCaptureGraph() {
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (finish_capture_graph_ && model_ri_) {
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+      MS_LOG(ERROR) << "Sync All streams failed";
+    }
     auto ret = CALL_ASCEND_API(aclmdlRIDestroy, model_ri_);
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(WARNING) << "aclmdlRIDestroy failed, ret:" << ret;

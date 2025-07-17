@@ -204,11 +204,14 @@ Tensor *GraphParameterStore::FetchTensor(size_t args_index, const KernelWithInde
   return tensor;
 }
 
-bool GraphParameterStore::RecordGraphInputsAndIsDyn(const std::vector<size_t> &input_index,
+bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *graph_compiler_info,
+                                                    const std::vector<size_t> &input_index,
                                                     const std::vector<AnfNodePtr> &parameters) {
   bool isDyn = false;
   auto &llm_manager = LLMManager::GetInstance();
-  auto enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture();
+  auto &cur_graph_phase = graph_compiler_info->graph_phase_;
+  auto enable_capture_graph = GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
+                              (cur_graph_phase.find("increment") != std::string::npos);
   for (size_t l = 0; l < input_index.size(); ++l) {
     auto i = input_index[l];
     auto origin_parameter = parameters[l];

@@ -1268,21 +1268,16 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
     } else if (need_replay_graph) {
       ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kGraphLaunch, GetAID().Name(), false);
       auto result = std::async(std::launch::async, [this]() {
-        return GraphCaptureManager::GetInstance().CheckWeightAndKVCacheNotChange(static_cast<size_t>(0));
+        return GraphCaptureManager::GetInstance().CheckParameterNotChange(static_cast<size_t>(0));
       });
       GraphCaptureManager::GetInstance().UpdateFixAddressBeforeReplayGraph(0, &memory_free_lists_);
       if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithReplayGraph(context, kernel_actors_, this)) {
         MS_INTERNAL_EXCEPTION(RuntimeError) << "Replay graph failed for graph: " << graph_->ToString();
       }
-      try {
-        result.get();
-      } catch (const std::exception &e) {
-        if (context->error_info_.empty()) {
-          MsException::Instance().SetException();
-          std::string error_info = "Check failed graph[" + std::to_string(graph_->graph_id()) +
-                                   "] kernel by kernel failed, exception: " + e.what();
-          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-        }
+
+      if (!result.get()) {
+        MS_LOG(EXCEPTION) << "check parameter error when replay capture graph, it's seems like the parameter device "
+                             "address has changed.";
       }
     }
   }
