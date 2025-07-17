@@ -710,6 +710,7 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
 
   string filename = tensor_info_comm.dump_path + "/" + "statistic.csv";
   CsvWriter csv;
+  std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
   if (!csv.OpenFile(filename, csv_header)) {
     MS_LOG(WARNING) << "filename is " << filename;
     MS_LOG(WARNING) << "Open statistic dump file failed, skipping current statistics";
