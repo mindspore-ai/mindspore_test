@@ -277,12 +277,12 @@ Project stable branches will be in one of the following states:
 
 ## Maintenance status
 
-| **Version** | **Status**   | **Initial Release Date** | **Next Phase**                         | **EOL Date**|
+| **Version**| **Status**  | **Initial Release Date**| **Next Phase**                        | **EOL Date**|
 |------------|--------------|--------------------------|----------------------------------------|-------------|
 | **r2.6**   | Maintained   | 2025-05-19               | Unmaintained <br> 2026-05-19 estimated | 2026-05-19  |
 | **r2.5**   | Maintained   | 2025-02-08               | Unmaintained <br> 2026-02-08 estimated | 2026-02-08  |
 | **r2.4**   | Maintained   | 2024-10-30               | Unmaintained <br> 2025-10-30 estimated | 2025-10-30  |
-| **r2.3**   | Maintained   | 2024-07-15               | Unmaintained <br> 2025-07-15 estimated | 2025-07-15  |
+| **r2.3**   | End Of Life  | 2024-07-15               |                                        | 2025-07-15  |
 | **r2.2**   | End Of Life  | 2023-10-18               |                                        | 2024-10-18  |
 | **r2.1**   | End Of Life  | 2023-07-29               |                                        | 2024-07-29  |
 | **r2.0**   | End Of Life  | 2023-06-15               |                                        | 2024-06-15  |
