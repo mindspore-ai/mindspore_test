@@ -10,7 +10,7 @@ from onnx import helper
 import numpy as np
 
 class OpTest:
-    def __init__(self, config_file, output_path):
+    def __init__(self, config_file, output_path, package_path):
         self.config_file = config_file
         self.model_configs = conf.OnnxModelConfig(self.config_file)
         self.golden_confis = conf.GenGoldConfig(self.config_file)
@@ -21,7 +21,7 @@ class OpTest:
         self.failed_test_name = []
         self.failed_gold_in = []
         self.ms_onnx_convert_reverse_dict = {}
-        mslite_package_path = os.getenv("MSLITE_PACKAGE_PATH")
+        mslite_package_path = os.path.realpath(package_path)
 
         if mslite_package_path is None:
             raise Exception(
