@@ -52,7 +52,6 @@ from mindspore.log import vlog_print
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
-from mindspore.common import np_dtype
 from mindspore.common.api import _cell_graph_executor as _executor
 from mindspore.common.api import _JitExecutor
 from mindspore.common.api import _get_parameter_layout
@@ -86,12 +85,9 @@ tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype
                      "Float16": mstype.float16, "Float32": mstype.float32, "Float64": mstype.float64,
                      "Bool": mstype.bool_, "str": mstype.string, "BFloat16": mstype.bfloat16, "Int4": mstype.qint4x2}
 
-tensor_to_np_type = {"Int8": np.int8, "UInt8": np.uint8, "Int16": np.int16, "UInt16": np.uint16,
-                     "Int32": np.int32, "UInt32": np.uint32, "Int64": np.int64, "UInt64": np.uint64,
-                     "Float16": np.float16, "Float32": np.float32, "Float64": np.float64, "Bool": np.bool_, "str": "U"}
-
-if hasattr(np_dtype, "bfloat16"):
-    tensor_to_np_type["BFloat16"] = np_dtype.bfloat16
+_tensor_to_np_type = {"Int8": np.int8, "UInt8": np.uint8, "Int16": np.int16, "UInt16": np.uint16,
+                      "Int32": np.int32, "UInt32": np.uint32, "Int64": np.int64, "UInt64": np.uint64,
+                      "Float16": np.float16, "Float32": np.float32, "Float64": np.float64, "Bool": np.bool_, "str": "U"}
 
 np_type_convert = {"int32": np.int32, "float32": np.float32, "float16": np.float16, "float64": np.float64}
 
@@ -115,6 +111,20 @@ cpu_cast = Cast().set_device("CPU")
 
 _ckpt_fs = FileSystem()
 _ckpt_fs_initialized = False
+
+
+def tensor_to_np_type(tensor_type_str):
+    """tensor to numpy type"""
+    if tensor_type_str == "bfloat16":
+        from mindspore.common import np_dtype
+        if not np_dtype.np_dtype_valid(True):
+            raise TypeError(
+                "The Numpy bfloat16 data type is not supported now, please ensure that the current "
+                "Numpy version is not less than the version when the mindspore is compiled, "
+                "and the major versions are same."
+            )
+        return np_dtype.bfloat16
+    return _tensor_to_np_type[tensor_type_str]
 
 
 def init_ckpt_file_system(fs: FileSystem):
@@ -1274,7 +1284,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                 continue
             data = element.tensor.tensor_content
             data_type = element.tensor.tensor_type
-            np_type = tensor_to_np_type.get(data_type)
+            np_type = tensor_to_np_type(data_type)
             ms_type = tensor_to_ms_type[data_type]
             if data_type == 'str':
                 str_length = int(len(data) / 4)
@@ -2606,7 +2616,7 @@ def parse_print(print_file_name):
                 dims = print_.tensor.dims
                 data_type = print_.tensor.tensor_type
                 data = print_.tensor.tensor_content
-                np_type = tensor_to_np_type.get(data_type)
+                np_type = tensor_to_np_type(data_type)
                 param_data = np.fromstring(data, np_type)
                 ms_type = tensor_to_ms_type.get(data_type)
                 if dims and dims != [0]:

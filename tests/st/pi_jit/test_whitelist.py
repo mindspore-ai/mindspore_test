@@ -22,7 +22,7 @@ from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.mark_utils import arg_mark
 from mindspore.runtime.memory import memory_stats
 from mindspore._c_expression import get_code_extra
-from mindspore._c_expression.np_dtypes import np_version_valid
+from mindspore._c_expression.np_dtypes import np_dtype_valid
 import math
 from tests.device_utils import set_device
 
@@ -34,7 +34,7 @@ def whitelist_const_func(x, y):
     Expectation: 0 break count
     """
     x = y + x
-    if np_version_valid(True):
+    if np_dtype_valid(True):
         return x + y
     else:
         return x - y

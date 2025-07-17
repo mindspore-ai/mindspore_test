@@ -24,9 +24,9 @@ import numpy as np
 from mindspore import log as logger
 from mindspore._c_expression import typing
 from mindspore._c_expression.typing import Type
-from mindspore._c_expression.np_dtypes import np_version_valid
+from mindspore._c_expression.np_dtypes import np_dtype_valid
 
-if np_version_valid(False):
+if np_dtype_valid(False):
     from mindspore._c_expression.np_dtypes import bfloat16 as np_bfloat16
 
 # bool, int, float are not defined in __all__ to avoid conflict with built-in types.
@@ -318,7 +318,7 @@ def _dtype_to_nptype(type_):
         complex128: np.complex128,
     }
     if type_ == bfloat16:
-        if not np_version_valid(True):
+        if not np_dtype_valid(True):
             raise TypeError(
                 "The Numpy bfloat16 data type is not supported now, please ensure that the current "
                 "Numpy version is not less than the version when the mindspore is compiled, "
