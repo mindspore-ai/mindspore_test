@@ -186,15 +186,8 @@ Status ApplyRotaryPosEmbInfo::InferTensorMap() {
     Shape key_tensor_map{0, -1, 1, -1};
     Shape cos_tensor_map{0, -1, -1, -1};
     Shape sin_tensor_map{0, -1, -1, -1};
-    auto input_position_ids_shape = inputs_shape_.at(kApplyRotaryPosEmbPositionIdsIndex);
-    auto input_position_ids_shape_value = input_position_ids_shape.at(0);
     Shape position_ids_tensor_map;
-    if (input_position_ids_shape_value == kIncInferSeqLen) {
-      // INC infer
-      position_ids_tensor_map.push_back(-1);
-    } else {
-      position_ids_tensor_map.push_back(-1);
-    }
+    position_ids_tensor_map.push_back(-1);
 
     (void)inputs_tensor_map_.emplace_back(query_tensor_map);
     (void)inputs_tensor_map_.emplace_back(key_tensor_map);
