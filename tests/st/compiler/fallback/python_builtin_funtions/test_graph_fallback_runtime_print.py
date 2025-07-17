@@ -36,6 +36,7 @@ class Capture():
 
     def start(self):
         os.dup2(self._file.fileno(), self._stdout_fd)
+        sys.stdout = os.fdopen(1, 'w', buffering=1, closefd=False)
 
     def stop(self):
         os.dup2(self._saved_stdout_fd, self._stdout_fd)
