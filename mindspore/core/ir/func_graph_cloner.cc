@@ -1129,7 +1129,7 @@ FuncGraphPtr TransformableClone(const FuncGraphPtr &func_graph, const TraceInfoP
     if (param_debug_info != nullptr) {
       new_param = new_func_graph->add_parameter(std::move(param_debug_info));
     } else {
-      new_param = new_func_graph->add_parameter(std::move(param_debug_info));
+      new_param = new_func_graph->add_parameter();
     }
     new_param->set_abstract(param->abstract());
   }
