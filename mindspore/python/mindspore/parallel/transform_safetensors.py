@@ -51,8 +51,6 @@ from mindspore.common import dtype as mstype
 
 safetensors_to_mstype = {'Int4': mstype.qint4x2}
 
-np.bfloat16 = np_dtype.bfloat16
-
 MAX_HEADER_SIZE = 100 * 1000 * 1000
 
 dtype_size = {
@@ -96,7 +94,6 @@ numpy_dtype = {
     "I64": np.int64,
     "U64": np.uint64,
     "F16": np.float16,
-    "BF16": np.bfloat16,  # no bf16
     "F32": np.float32,
     "F64": np.float64,
 }
@@ -215,6 +212,15 @@ class PySafeSlice:
 
     @property
     def dtype(self):
+        """Get dtype by numpy_dtype"""
+        if self.info["dtype"] == "BF16":
+            if not np_dtype.np_version_valid(True):
+                raise TypeError(
+                    "The Numpy bfloat16 data type is not supported now, please ensure that the current "
+                    "Numpy version is not less than the version when the mindspore is compiled, "
+                    "and the major versions are same."
+                )
+            return np_dtype.bfloat16
         return numpy_dtype[self.info["dtype"]]
 
     @property
