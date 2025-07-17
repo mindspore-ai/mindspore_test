@@ -164,6 +164,9 @@ class BaseRewriter : protected SimpleRewriter {
     auto new_node = ConvertNode(node);
     if (IsPrimitiveCNode(new_node, prim::kPrimPyExecute)) {
       need_renormalized_ = true;
+      if (new_node->abstract() == nullptr) {
+        new_node->set_abstract(std::make_shared<abstract::AbstractAny>());
+      }
       return new_node;
     }
     if (new_node != nullptr) {
