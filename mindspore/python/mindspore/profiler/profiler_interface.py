@@ -76,14 +76,14 @@ class ProfilerInterface:
         logger.info("ProfilerInterface stop")
 
     @classmethod
-    def analyse(cls):
+    def analyse(cls, **kwargs):
         """ProfilerInterface analyse"""
         if not cls.is_initialized:
             logger.warning("ProfilerInterface analyse failed, profiler has not been initialized.")
             return
 
         for profiler in cls.platform_profilers_set:
-            profiler.analyse()
+            profiler.analyse(**kwargs)
 
         logger.info("ProfilerInterface analyse")
 

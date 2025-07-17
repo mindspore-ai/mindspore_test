@@ -56,7 +56,7 @@ class ProfilerActionController:
         This method is called when the trace is ready to notify the callback function.
         """
         if self.on_trace_ready:
-            self.on_trace_ready()
+            self.on_trace_ready(self.prof_interface)
 
     def transit_action(self, prev_action: ProfilerAction, current_action: ProfilerAction) -> None:
         """
