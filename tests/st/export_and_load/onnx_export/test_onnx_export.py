@@ -973,6 +973,72 @@ def test_export_silu():
         raise RuntimeError(f"Export operator SiLU to ONNX failed!")
 
 
+class ModNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.mod = ops.Mod()
+
+    def construct(self, x, y):
+        return self.mod(x, y)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_mod():
+    """
+    Feature: Export ops.Mod to onnx
+    Description: Export ops.Mod to onnx
+    Expectation: success
+    """
+    np_x = np.array([-4.0, 5.0, 6.0]).astype(np.float16)
+    np_y = np.array([3.0, 2.0, 3.0]).astype(np.float16)
+    x = Tensor(np_x)
+    y = Tensor(np_y)
+    net = ModNet()
+    ms_output = net(x, y)
+    onnx_file = './mod_onnx.onnx'
+    export(net, x, y, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x, "y": np_y}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+
+
+class AvgPoolNet(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.avgpool = ops.AvgPool(pad_mode='VALID', kernel_size=2, strides=1)
+
+    def construct(self, x):
+        return self.avgpool(x)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_export_avgpool():
+    """
+    Feature: Export ops.AvgPool to onnx
+    Description: Export ops.AvgPool to onnx
+    Expectation: success
+    """
+    np_x = np.arange(1 * 3 * 3 * 4).reshape(1, 3, 3, 4).astype(np.float32)
+    x = Tensor(np_x)
+    net = AvgPoolNet()
+    ms_output = net(x)
+    onnx_file = './avgpool_onnx.onnx'
+    export(net, x, file_name=onnx_file, file_format='ONNX')
+    if os.path.isfile(onnx_file):
+        session = ort.InferenceSession(onnx_file)
+        inputs = {"x": np_x}
+        output = session.run(None, inputs)[0]
+        assert np.array_equal(ms_output.asnumpy(), output), f" ms:{ms_output}, onnx:{output}"
+        os.remove(onnx_file)
+    else:
+        raise RuntimeError(f"Export operator SiLU to ONNX failed!")
+
+
 class SoftmaxNet(nn.Cell):
     def __init__(self):
         super().__init__()

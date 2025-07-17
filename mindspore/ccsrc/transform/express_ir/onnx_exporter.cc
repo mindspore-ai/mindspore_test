@@ -961,7 +961,14 @@ class OpNameInfo {
 #define OPERATOR_ONNX_CONVERT_DEFINE(name, onnx_name, impl) \
   OpNameInfo GetOpOnnxConvertInfo_##name() { return impl.set_op_type(#name).set_onnx_type(#onnx_name); }
 
-OPERATOR_ONNX_CONVERT_DEFINE(Mod, Mod, OpNameInfo())
+OPERATOR_ONNX_CONVERT_DEFINE(Mod, Mod,
+                             OpNameInfo().Attr("", "fmod", onnx::AttributeProto_AttributeType_INT,
+                                               [](ValuePtr, onnx::AttributeProto_AttributeType,
+                                                  onnx::AttributeProto *const attr_proto, const PrimitivePtr &) {
+                                                 attr_proto->set_type(onnx::AttributeProto_AttributeType_INT);
+                                                 attr_proto->set_i(1);
+                                               }))
+
 OPERATOR_ONNX_CONVERT_DEFINE(Add, Add, OpNameInfo())
 OPERATOR_ONNX_CONVERT_DEFINE(Mul, Mul, OpNameInfo())
 OPERATOR_ONNX_CONVERT_DEFINE(Pow, Pow, OpNameInfo())
@@ -1059,9 +1066,9 @@ OPERATOR_ONNX_CONVERT_DEFINE(
 OPERATOR_ONNX_CONVERT_DEFINE(
   AvgPool, AveragePool,
   OpNameInfo()
-    .Attr("kernel_size", "kernel_shape", onnx::AttributeProto_AttributeType_INTS, SetAttrTupleValueToProto<2>)
+    .Attr("kernel_size", "kernel_shape", onnx::AttributeProto_AttributeType_INTS, SetAttrTupleValueToProto<0>)
     .Attr("pad_mode", "auto_pad", onnx::AttributeProto_AttributeType_STRING, SetPoolingPadMode)
-    .Attr("strides", "strides", onnx::AttributeProto_AttributeType_INTS, SetAttrTupleValueToProto<2>))
+    .Attr("strides", "strides", onnx::AttributeProto_AttributeType_INTS, SetAttrTupleValueToProto<0>))
 
 OPERATOR_ONNX_CONVERT_DEFINE(Gather, Gather, OpNameInfo())
 OPERATOR_ONNX_CONVERT_DEFINE(MakeTuple, SequenceConstruct, OpNameInfo())
