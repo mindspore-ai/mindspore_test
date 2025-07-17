@@ -41,7 +41,7 @@ from mindspore.ops.operations.nn_ops import TripletMarginLoss
 from mindspore.ops.operations._sequence_ops import TupleToTensor, TensorToTuple, ListToTensor
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
-    softmax_impl, swiglu, logsigmoid_op, kl_div_op, divs_op
+    softmax_impl, swiglu, logsigmoid_op, kl_div_op, divs_op, l1_loss_ext
 from mindspore.ops.auto_generate import relu_op, inplace_relu_op
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, layer_norm_ext_op, batch_norm_ext_op,\
     mse_loss_ext
@@ -4846,8 +4846,9 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
         >>> print(output)
         [0.  0.  0.5]
     """
-    _smooth_l1_loss = _get_cache_prim(P.SmoothL1Loss)(beta, reduction)
-    return _smooth_l1_loss(input, target)
+    if beta == 0.0:
+        return l1_loss_ext(input, target, reduction)
+    return ops.auto_generate.smooth_l1_loss(input, target, beta=beta, reduction=reduction)
 
 
 def threshold(input, thr, value):
