@@ -813,7 +813,7 @@ int TensorRTSubGraph::PreExecute(const std::vector<tensor::Tensor> &inputs, cons
       runtime_->GetAllocator()->MarkMemValid(trt_tensor_name, true);
     }
     int index = GetProfileBindingIndex(trt_tensor_name, profile_index_);
-    MS_LOG(INFO) << "device index " << index << " for tensor : " << trt_tensor_name << " attr: " << device_ptr;
+    MS_LOG(INFO) << "device index " << index << " for tensor : " << trt_tensor_name;
     tensor_bindings_[index] = device_ptr;
   }
   for (size_t i = 0; i < trt_out_tensor_name_.size(); i++) {
