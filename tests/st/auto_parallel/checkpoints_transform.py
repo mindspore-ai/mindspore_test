@@ -21,7 +21,6 @@ from mindspore import context, Tensor, Parameter
 from mindspore.nn import Cell, Momentum
 from mindspore.ops import operations as P
 from mindspore.communication.management import init, get_rank
-from mindspore.communication import comm_func
 from mindspore.parallel.shard import Layout
 from mindspore.train import Model
 
@@ -103,7 +102,7 @@ def compile_net_and_save_ckpt(network, input_data, enable_parallel_optimizer=Fal
             os.path.join(save_ckpt_path, 'rank_{}/checkpoint_{}.{}'.format(get_rank(), get_rank(), ckpt_format)),
             integrated_save=False, format=ckpt_format
         )
-    comm_func.barrier()
+    ms.mint.distributed.barrier()
 
 
 def run_transform(src_strategy_file, dst_strategy_file, src_ckpt_path, dst_ckpt_path, use_safetensor=False):
@@ -124,7 +123,7 @@ def run_transform(src_strategy_file, dst_strategy_file, src_ckpt_path, dst_ckpt_
             os.makedirs(os.path.join(dst_ckpt_path, 'rank_{}'.format(get_rank())), exist_ok=True)
         ms.transform_checkpoint_by_rank(target_rank, checkpoint_files_map, save_checkpoint_file_name,
                                         src_strategy_file, dst_strategy_file)
-    comm_func.barrier()
+    ms.mint.distributed.barrier()
 
 
 def compare_ckpt_and_network_params(ckpt_path, network, use_safetensor=False):
@@ -145,7 +144,7 @@ def clean_ckpts(path_list):
     for path in path_list:
         if os.path.exists(path):
             shutil.rmtree(path, ignore_errors=True)
-    comm_func.barrier()
+    ms.mint.distributed.barrier()
 
 
 def run_transform_checkpoint_by_layout(src_in_strategy, dst_in_strategy, enable_parallel_optimizer,
