@@ -41,9 +41,11 @@ class FuncGraphBuilder {
   explicit FuncGraphBuilder(bool is_top = false) : graph_(std::make_shared<FuncGraph>()) {
     if (is_top) {
       parse::Parser::UpdateTopFuncGraph(graph_);
-      mng_ = Manage(graph_, true);
+      mng_ = Manage(graph_, true, true);
       graph_->set_manager(mng_);
     }
+    // Add a default output because the first output is not added to the manager.
+    graph_->set_output(NewValueNode(kNone));
   }
   virtual ~FuncGraphBuilder() { key_to_node_.clear(); }
 

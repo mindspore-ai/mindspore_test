@@ -22,6 +22,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
+#include "ir/func_graph_cloner.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
 #include "pipeline/jit/ps/executor/jit_executor_py.h"
@@ -238,7 +239,14 @@ CallableGraph GraphCompiler::Compile(const FuncGraphPtr &func_graph, const py::t
     func_graph->set_parameters(new_params);
   }
 
-  (void)jit_executor->CompileInner(func_graph, new_arg, kwargs, phase, true);
+  // Clone a func_graph as root graph in order to clear and drop the temporary func_graphs in the manager.
+  // If not, the old context of graph will be reused in abstract_analyze phase.
+  auto fg_to_compile = BasicClone(func_graph);
+  auto mng = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+  mng->KeepRoots({fg_to_compile});
+
+  (void)jit_executor->CompileInner(fg_to_compile, new_arg, kwargs, phase, true);
 
   return callable;
 }
