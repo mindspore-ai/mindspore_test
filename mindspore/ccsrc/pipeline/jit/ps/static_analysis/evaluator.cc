@@ -816,15 +816,8 @@ EvalResultPtr JEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &arg
                          return SensitivityTransform(arg_abs);
                        });
   AbstractBasePtr bparams_final = std::make_shared<AbstractTuple>(bparams);
-  AbstractFunctionPtr bprop;
-  MS_EXCEPTION_IF_NULL(out_conf);
-  auto current_node = out_conf->node();
-  MS_EXCEPTION_IF_NULL(current_node);
-  if (current_node->isa<CNode>()) {
-    bprop = std::make_shared<VirtualAbstractClosure>(SensitivityTransform(result->abstract()), bparams_final);
-  } else {
-    bprop = std::make_shared<VirtualAbstractClosure>(SensitivityTransform(result->abstract()), bparams_final);
-  }
+  AbstractFunctionPtr bprop =
+    std::make_shared<VirtualAbstractClosure>(SensitivityTransform(result->abstract()), bparams_final);
 
   // J(f)(J(x)) return a tuple (y, bprop_f)
   AbstractBasePtrList jargs = {result->abstract(), bprop};
