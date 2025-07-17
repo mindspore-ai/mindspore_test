@@ -42,11 +42,12 @@ def reshard(tensor, layout):
     can check :class:`mindspore.parallel.Layout` for reference.
 
     Note:
-        - In the Graph mode, this function can set the sharding propagation strategy of a tensor.
-          For those tensor do not manually be set, their strategies are decided by the sharding
-          strategy propagation algorithm automatically.
-        - In PyNative mode, you can use this method to arrange tensors in a cell (that is, cells
-          that use Cell.shard/F.shard in PyNative mode) that is executed in parallel in graph mode.
+        In the Graph mode, this function can set the sharding propagation strategy of a tensor.
+        For those tensor do not manually be set, their strategies are decided by the sharding
+        strategy propagation algorithm automatically.
+
+    .. warning::
+        The method is currently not supported in PyNative mode.
 
     Args:
         tensor (Tensor): The tensor to be set the sharding strategy.

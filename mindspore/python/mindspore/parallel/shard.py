@@ -390,8 +390,7 @@ class Shard(Shard_):
 def shard(fn, in_strategy, out_strategy=None, parameter_plan=None):
     """
     Specify the input and output slicing strategy for a Cell or function.
-    In PyNative mode, use this method to specify a Cell for distributed
-    execution in graph mode. In Graph mode, use this method to specify distribution strategy for a Cell,
+    In Graph mode, use this method to specify distribution strategy for a Cell,
     strategy for others will be set by sharding propagation.
     in_strategy and out_strategy define the input and output layout respectively.
     in_strategy/out_strategy should be a tuple, each element of which corresponds to the desired layout of
@@ -403,6 +402,9 @@ def shard(fn, in_strategy, out_strategy=None, parameter_plan=None):
         - It is valid only in semi auto parallel or auto parallel mode.
           In other parallel modes, strategies set here will be ignored.
         - If the input contain Parameter, its strategy should be set in `in_strategy`.
+
+    .. warning::
+        The method is currently not supported in PyNative mode.
 
     Args:
         fn (Union[Cell, Function]): Function to be executed in parallel.
