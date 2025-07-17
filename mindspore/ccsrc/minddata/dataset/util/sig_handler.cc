@@ -256,7 +256,6 @@ void RegisterHandlers() {
 
 void RegisterMainHandlers() {
 #if !defined(_WIN32) && !defined(_WIN64)
-  SetSignalHandler(SIGINT, &SIGINTHandler, nullptr);
   SetSignalHandler(SIGBUS, &SIGBUSHandler, nullptr);
   SetSignalHandler(SIGCHLD, &SIGCHLDHandler, nullptr);
 #endif

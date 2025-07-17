@@ -18,6 +18,7 @@
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/log_adapter.h"
 #include "minddata/dataset/util/random.h"
+#include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/task_manager.h"
 
 namespace mindspore {
@@ -128,6 +129,10 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
   uint64_t *current_sample = nullptr;
   SendBridgeOp::RowStep *current_step = nullptr;
 
+  std::string current_pid = std::to_string(getpid());
+  // register the shm_id & msg_id by IndependentProcessPID_"SendBridgeOp"
+  RegisterShmIDAndMsgID(current_pid + "_SendBridgeOp", send_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+
   // Now that init work is done, drop into the main fetching loop.
   // send op does not use child iterator, and it needs to manually handle eoe and eof's itself
   // rather than use the base-class defaults.
@@ -153,10 +158,14 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
     // Copy the in_row to shared memory
     RETURN_IF_NOT_OK(send_queue_.FromTensorRow(in_row));
 
+    RegisterShmIDAndMsgID(current_pid + "_SendBridgeOp", send_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+
     // Send msg to the main process by msg_queue_
     *current_step = SendBridgeOp::RowStep::kBeginSendMsg;
     RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kWorkerSendDataMsg, send_queue_.GetShmID(), send_queue_.GetShmSize()));
     *current_step = SendBridgeOp::RowStep::kAfterSendMsg;
+
+    RegisterShmIDAndMsgID(current_pid + "_SendBridgeOp", send_queue_.GetShmID(), msg_queue_.msg_queue_id_);
 
     *current_sample += 1;
 
@@ -171,9 +180,13 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
     if (in_row.eof()) {
       break;
     }
+
+    RegisterShmIDAndMsgID(current_pid + "_SendBridgeOp", send_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+
     // Get msg from the main process by msg_queue_
     *current_step = SendBridgeOp::RowStep::kBeginReceiveMsg;
     auto ret = msg_queue_.MsgRcv(kMasterSendDataMsg);
+    RegisterShmIDAndMsgID(current_pid + "_SendBridgeOp", send_queue_.GetShmID(), msg_queue_.msg_queue_id_);
     if (ret != Status::OK()) {
       *current_step = SendBridgeOp::RowStep::kAfterReceiveMsg;
       tree_->SetFinished();  // the independent dataset process will exit
