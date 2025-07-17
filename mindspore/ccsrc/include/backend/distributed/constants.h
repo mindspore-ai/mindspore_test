@@ -37,8 +37,7 @@ namespace distributed {
 constexpr char kDetailedFailureReason[] =
   "Maybe you are trying to call 'mindspore.communication.init()' without using 'mpirun', which will make MindSpore "
   "load several environment variables and check their validation. Please use 'mpirun' to launch this process to fix "
-  "this issue, or refer to this link if you want to run distributed training without using 'mpirun': "
-  "https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/dynamic_cluster.html";
+  "this issue, or refer to this link if you want to run distributed training using 'msrun'";
 
 constexpr char kWorkerProcessNotEnoughError[] = "Spawned worker process number is not as expected.";
 constexpr char kSchedPortOccupiedError[] = "Configured scheduler port MS_SCHED_PORT is occupied by other processes.";
@@ -124,14 +123,6 @@ constexpr char kControlDstOpName[] = "ControlDst";
 
 static const char URL_PROTOCOL_IP_SEPARATOR[] = "://";
 static const char URL_IP_PORT_SEPARATOR[] = ":";
-
-constexpr char kEnableRDMA[] = "enable_rdma";
-constexpr char kRDMADevName[] = "rdma_dev";
-constexpr char kRDMAIP[] = "rdma_ip";
-
-constexpr char kDefaultIP[] = "1.1.8.203";
-constexpr char kDefaultIfName[] = "hrn0_2";
-constexpr uint16_t kDefaultPort = 10969;
 
 // The interval of retrying connecting for rpc clients.
 constexpr uint32_t kRetryConnectInterval = 2;
