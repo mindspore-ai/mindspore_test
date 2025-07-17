@@ -63,8 +63,8 @@ class AscendEnvChecker(metaclass=ABCMeta):
         if not os.path.isfile(version_file):
             logging.debug("version file is one valid file path.")
             return None
-
-        with open(version_file, 'r', encoding="utf-8") as f:
+        version_file_realpath = os.path.realpath(version_file)
+        with open(version_file_realpath, 'r', encoding="utf-8") as f:
             lines = f.readlines()
             for line in lines:
                 if line.startswith("Version="):

@@ -212,7 +212,7 @@ class OpTest:
                 gold_root, output_onnx_name
             )  # benchmark output data path
 
-            with open(output_file, "w") as text_file:
+            with open(os.path.realpath(output_file), "w") as text_file:
                 for i in range(len(ort_outputs)):
                     gold_output = ort_outputs[i]
                     if gold_output.dtype == np.int64:
