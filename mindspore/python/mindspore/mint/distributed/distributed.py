@@ -1216,7 +1216,7 @@ def all_gather_into_tensor_uneven(output, input, output_split_sizes=None, group=
         >>> import numpy as np
         >>> import mindspore as ms
         >>> from mindspore import ops
-        >>> from mindspore.mint.distributed import init_process_group
+        >>> from mindspore.mint.distributed import init_process_group, get_rank
         >>> from mindspore.mint.distributed import all_gather_into_tensor_uneven
         >>> from mindspore import Tensor
         >>>
@@ -1393,7 +1393,7 @@ def reduce_scatter_tensor_uneven(output, input, input_split_sizes=None, op=Reduc
 
         >>> import mindspore as ms
         >>> from mindspore import Tensor
-        >>> from mindspore.mint.distributed import init_process_group
+        >>> from mindspore.mint.distributed import init_process_group, get_rank
         >>> from mindspore.mint.distributed import reduce_scatter_tensor_uneven
         >>> import numpy as np
         >>>
