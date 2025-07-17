@@ -45,7 +45,7 @@ abstract::BaseShapePtr RmsNormQuantFuncImpl::InferShape(const PrimitivePtr &prim
   auto scale_shape = scale_shape_ptr->GetShapeVector();
   auto offset_shape = offset_shape_ptr->GetShapeVector();
 
-  if (!IsDynamic(gamma_shape) && !IsDynamic(x_shape) && !IsDynamic(beta_shape) && !IsDynamic(beta_shape) &&
+  if (!IsDynamic(gamma_shape) && !IsDynamic(x_shape) && !IsDynamic(beta_shape) && !IsDynamic(scale_shape) &&
       !IsDynamic(offset_shape)) {
     MS_CHECK_VALUE(gamma_shape[gamma_shape.size() - 1] == x_shape[x_shape.size() - 1],
                    CheckAndConvertUtils::FormatCommMsg(
