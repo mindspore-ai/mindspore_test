@@ -3145,12 +3145,14 @@ def _worker_loop(quit_signal, operations, worker_id, op_type, key, video_backend
 
         # execute the pyfunc
         try:
-            # execute the first operation, the input parameter need to be unpacked
-            py_func_output = operations[0](*py_func_input)
+            py_func_output = py_func_input
 
             # execute the remaining operations
-            for idx in range(len(operations) - 1):
-                py_func_output = operations[idx + 1](py_func_output)
+            for idx in range(len(operations)):
+                if isinstance(py_func_output, tuple):
+                    py_func_output = operations[idx](*py_func_output)
+                else:
+                    py_func_output = operations[idx](py_func_output)
 
             # << send procedure <<
             # the result is None
