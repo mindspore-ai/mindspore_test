@@ -32,22 +32,6 @@ bool HttpRequestHandler::Initialize(int fd, const std::unordered_map<std::string
   struct evhttp *http = evhttp_new(evbase_);
   MS_EXCEPTION_IF_NULL(http);
 
-  if (PSContext::instance()->enable_ssl()) {
-    MS_LOG(INFO) << "Enable ssl support.";
-    if (!SSL_CTX_set_options(SSLHTTP::GetInstance().GetSSLCtx(), SSL_OP_SINGLE_DH_USE | SSL_OP_SINGLE_ECDH_USE |
-                                                                   SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 |
-                                                                   SSL_OP_NO_TLSv1_1)) {
-      if (evbase_) {
-        event_base_free(evbase_);
-        evbase_ = nullptr;
-      }
-      evhttp_free(http);
-      http = nullptr;
-      MS_LOG(EXCEPTION) << "SSL_CTX_set_options failed.";
-    }
-    evhttp_set_bevcb(http, BuffereventCallback, SSLHTTP::GetInstance().GetSSLCtx());
-  }
-
   int result = evhttp_accept_socket(http, fd);
   if (result < 0) {
     MS_LOG(ERROR) << "Evhttp accept socket failed!";

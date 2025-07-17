@@ -34,7 +34,6 @@ namespace mindspore {
 namespace ps {
 namespace {
 constexpr uint16_t kDefaultSchedPort = 6667;
-constexpr uint16_t kDefaultSchedManagerPort = 11202;
 }  // namespace
 PSContext::PSContext()
     : ps_enabled_(false),
@@ -49,7 +48,6 @@ PSContext::PSContext()
       role_(kEnvRoleOfNotPS),
       server_mode_(""),
       cluster_config_(nullptr),
-      scheduler_manage_port_(kDefaultSchedManagerPort),
       config_file_path_(""),
       node_id_(""),
       enable_ssl_(false),
@@ -99,11 +97,6 @@ void PSContext::SetPSEnable(bool enabled) {
     scheduler_port_ = std::strtol(common::GetEnv(kEnvSchedulerPort).c_str(), nullptr, kBase);
     if (scheduler_port_ > kMaxPort) {
       MS_LOG(EXCEPTION) << "The port: " << scheduler_port_ << " is illegal.";
-    }
-    scheduler_manage_port_ =
-      static_cast<uint16_t>((std::strtol(common::GetEnv(kEnvSchedulerManagePort).c_str(), nullptr, kBase)));
-    if (scheduler_manage_port_ > kMaxPort) {
-      MS_LOG(EXCEPTION) << "The port << " << scheduler_manage_port_ << " is illegal.";
     }
     cluster_config_ = std::make_unique<core::ClusterConfig>(worker_num_, server_num_, scheduler_host_, scheduler_port_);
     node_id_ = common::GetEnv(kEnvNodeId);
@@ -278,9 +271,6 @@ core::ClusterConfig &PSContext::cluster_config() {
   }
   return *cluster_config_;
 }
-
-void PSContext::set_scheduler_manage_port(uint16_t sched_port) { scheduler_manage_port_ = sched_port; }
-uint16_t PSContext::scheduler_manage_port() const { return scheduler_manage_port_; }
 
 void PSContext::set_config_file_path(const std::string &path) { config_file_path_ = path; }
 

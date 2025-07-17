@@ -69,9 +69,6 @@ static std::map<std::string, std::string> GenHcclOptions(uint32_t device_id, std
   if (!rank_file.empty()) {
     default_options_map.emplace(ge::OPTION_EXEC_RANK_TABLE_FILE, rank_file.data());
   }
-  if (mindspore::hccl::HcclAdapter::GetInstance().UseHcclCM()) {
-    mindspore::hccl::HcclAdapter::AddCMEnvToHcclOption(&default_options_map);
-  }
 
   return default_options_map;
 }

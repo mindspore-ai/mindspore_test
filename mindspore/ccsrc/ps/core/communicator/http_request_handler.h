@@ -27,7 +27,6 @@
 #include <unordered_map>
 #include "utils/log_adapter.h"
 #include "ps/core/communicator/http_message_handler.h"
-#include "ps/core/communicator/ssl_http.h"
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/distributed/ps/ps_context.h"
 
