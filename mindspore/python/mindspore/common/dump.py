@@ -68,7 +68,7 @@ def set_dump(target, enabled=True):
         >>> import numpy as np
         >>> import mindspore as ms
         >>> import mindspore.nn as nn
-        >>> from mindspore import Tensor, set_dump
+        >>> from mindspore import Tensor, set_dump, jit
         >>>
         >>> ms.set_device(device_target="Ascend")
         >>>
