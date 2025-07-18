@@ -261,6 +261,10 @@ class _AutoIdentifyDynamicShape:
                 return False
         return True
 
+    def _is_invalid_shape(self, shape):
+        """Check if input shape is valid"""
+        return is_shape_unknown(shape) or not shape
+
     def _is_enable_auto_dynamic_shape(self, args_list, is_sink_mode, enable_jit_dynamic=False):
         """is enable auto identify shape"""
         if not is_sink_mode and not args_list:
@@ -271,7 +275,7 @@ class _AutoIdentifyDynamicShape:
             if not isinstance(elem, (list, tuple, Tensor, int, float)):
                 return False
             if isinstance(elem, Tensor) and \
-                (is_shape_unknown(elem.shape) or (not elem.shape)) and \
+                self._is_invalid_shape(elem.shape) and \
                 not enable_jit_dynamic:
                 return False
             if not is_sink_mode and isinstance(elem, (list, tuple)):
