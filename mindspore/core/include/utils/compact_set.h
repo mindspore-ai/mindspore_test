@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 // CompactSet uses a std::vector to hold data, it keeps insertion order
@@ -76,6 +77,9 @@ class CompactSet {
   const T &back() const { return data_.back(); }
 
   T pop() {
+    if (data_.empty()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "CompactSet::pop() attempt to pop from empty set";
+    }
     T e = std::move(data_.front());
     (void)data_.erase(data_.begin());
     return e;

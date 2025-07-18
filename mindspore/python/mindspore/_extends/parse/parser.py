@@ -834,7 +834,7 @@ def get_script_id_attrs(script):
 
 def generate_lambda_object(script):
     """Generate lambda expression object using script"""
-    return eval(script, {}, {})
+    return eval_script(script, ({}, {}))
 
 
 def get_global_params():
