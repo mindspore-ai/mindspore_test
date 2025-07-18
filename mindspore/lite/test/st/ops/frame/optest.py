@@ -25,7 +25,7 @@ class OpTest:
 
         if mslite_package_path is None:
             raise Exception(
-                "Please set envion \"MSLITE_PACKAGE_PATH\" to specify the MSLite"+
+                "Please specify the MSLite"+
                 "package root path, which is necessary for MSLITE-OP-ST!"
             )
 
