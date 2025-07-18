@@ -412,12 +412,6 @@ class Primitive(Primitive_):
             return output
         return _run_op(self, self.name, args)
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, d):
-        self.__dict__.update(d)
-
     def __deepcopy__(self, memo):
         return type(self)(**self.init_attrs)
 
