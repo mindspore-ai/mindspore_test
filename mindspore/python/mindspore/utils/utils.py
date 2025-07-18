@@ -152,7 +152,7 @@ class TftHandle:
             from mindio_ttp import framework_ttp as tft
             self.tft = tft
         except BaseException as e:
-            raise ModuleNotFoundError(f"Module nopt found. Detail info {str(e)}")
+            raise ModuleNotFoundError(f"Module not found. Detail info {str(e)}")
         world_size = int(os.getenv("MS_WORKER_NUM"))  # from msrun
         cur_rank = int(os.getenv("MS_NODE_ID"))  # from msrun
         enable_local_copy = False
