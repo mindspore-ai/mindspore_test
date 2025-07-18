@@ -186,6 +186,7 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   auto allreduce_cnode = allreduce_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(allreduce_cnode);
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_EXCEPTION_IF_NULL(allreduce_prim);
   auto group_ptr = allreduce_prim->GetAttr(kAttrNameGroup);
   auto group_name = GetValue<std::string>(group_ptr);
   auto collective_mgr = distributed::collective::CollectiveManager::instance();

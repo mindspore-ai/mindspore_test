@@ -827,6 +827,7 @@ bool DfGraphConvertor::NodeInputKeepUpdate(const FuncGraphManagerPtr &manager, c
       // check if node is ReshapeAndKVCache which is fused by akg.
       if (IsPrimitiveCNode(node_use, prim::kPrimCustom)) {
         auto prim_custom = GetCNodePrimitive(node_use);
+        MS_EXCEPTION_IF_NULL(prim_custom);
         const std::string kAttrNameInfoPath = "info_path";
 
         if (!prim_custom->HasAttr(kAttrNameInfoPath)) {

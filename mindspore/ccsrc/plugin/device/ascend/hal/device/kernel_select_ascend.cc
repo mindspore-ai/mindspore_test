@@ -734,6 +734,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
 
   if (IsPrimitiveCNode(node, prim::kPrimCustom)) {
     auto primitive = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(primitive);
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
     op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);
     auto op_api_func = device::ascend::GetOpApiFunc(op_type.c_str());

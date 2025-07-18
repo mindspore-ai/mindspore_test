@@ -34,7 +34,9 @@ void ClonePrimitive(const AnfNodePtr &node) {
   if (cnode == nullptr) {
     return;
   }
-  auto prim_node = NewValueNode(common::AnfAlgo::GetCNodePrimitive(cnode)->Clone());
+  auto prim = common::AnfAlgo::GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto prim_node = NewValueNode(prim->Clone());
   cnode->set_input(kAnfPrimitiveIndex, prim_node);
 }
 }  // namespace
