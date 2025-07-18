@@ -77,7 +77,9 @@ std::string GkUtils::ExtractGraphKernelName(const AnfNodePtrList &nodes, const s
       auto fg_flag_val = GetCNodeFuncGraph(node)->get_attr(FUNC_GRAPH_ATTR_GRAPH_KERNEL);
       name << GetValue<std::string>(fg_flag_val) << "_";
     } else if (node->isa<CNode>() && AnfUtils::IsRealKernel(node)) {
-      name << GetCNodePrimitive(node)->name() << "_";
+      auto prim = GetCNodePrimitive(node);
+      MS_EXCEPTION_IF_NULL(prim);
+      name << prim->name() << "_";
     }
   }
   if (!postfix.empty()) {

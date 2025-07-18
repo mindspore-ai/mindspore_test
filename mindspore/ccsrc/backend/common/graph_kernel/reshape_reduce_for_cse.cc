@@ -113,6 +113,7 @@ AnfNodePtr CanCSE(const FuncGraphPtr &graph, const CNodePtr &cnode) {
     auto func = [&primitive, &axis](const std::pair<AnfNodePtr, int> &output) {
       if (IsPrimitiveCNode(output.first, primitive)) {
         auto target_primitive = common::AnfAlgo::GetCNodePrimitive(output.first->cast<CNodePtr>());
+        MS_EXCEPTION_IF_NULL(target_primitive);
         if (target_primitive->HasAttr(kAttrKeepDims) && GetValue<bool>(target_primitive->GetAttr(kAttrKeepDims))) {
           return IsSameAxis(axis, target_primitive->GetAttr(kAttrAxis));
         }

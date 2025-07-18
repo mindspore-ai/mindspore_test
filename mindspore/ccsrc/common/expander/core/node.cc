@@ -143,11 +143,13 @@ std::string IrNode::ToString() const {
 
 void IrNode::set_debug_info(const std::string &debug_info) {
   auto primitive = GetCNodePrimitive(anf_node_);
+  MS_EXCEPTION_IF_NULL(primitive);
   primitive->set_instance_name(debug_info);
 }
 
 std::string IrNode::debug_info() const {
   auto primitive = GetCNodePrimitive(anf_node_);
+  MS_EXCEPTION_IF_NULL(primitive);
   return primitive->instance_name();
 }
 
