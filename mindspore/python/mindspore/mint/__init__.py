@@ -677,7 +677,7 @@ def cummax(input, dim):
         \end{array}
 
     .. note::
-        O2 mode is not supported in Ascend.
+        GE backend is not supported in Ascend.
 
     Args:
         input (Tensor): The input Tensor. Rank of `input` must be greater than 0.

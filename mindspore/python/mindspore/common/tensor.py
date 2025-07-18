@@ -2677,7 +2677,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Note:
            The rank of `self`.
 
-           - Ascend: its rank can be equal to 0 except O2 mode.
+           - Ascend: its rank can be equal to 0 except GE backend.
            - CPU/GPU: its rank should be greater than or eaqual to 1.
 
         Keyword Args:
@@ -2696,7 +2696,7 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
         Raises:
             TypeError: If `self` is not Tensor.
             TypeError: If `as_tuple` is not bool.
-            RuntimeError: On GPU or CPU or Ascend O2 mode, if dim of `input` equals to 0.
+            RuntimeError: On GPU or CPU or Ascend GE backend, if dim of `input` equals to 0.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
