@@ -43,19 +43,19 @@ std::shared_ptr<KernelPlugin> GetCustomKernelPlugin() {
 }
 
 KernelModPtr CustomKernelBuild(const AnfNodePtr &anf_node) {
-  auto k_custom_kernel_plugin_ptr = GetCustomKernelPlugin();
-  if (k_custom_kernel_plugin_ptr == nullptr) {
+  auto custom_kernel_plugin_ptr = GetCustomKernelPlugin();
+  if (custom_kernel_plugin_ptr == nullptr) {
     return nullptr;
   }
-  return k_custom_kernel_plugin_ptr->BuildKernel(anf_node);
+  return custom_kernel_plugin_ptr->BuildKernel(anf_node);
 }
 
 bool IsRegisteredCustomKernel(const AnfNodePtr &anf_node) {
-  auto k_custom_kernel_plugin_ptr = GetCustomKernelPlugin();
-  if (k_custom_kernel_plugin_ptr == nullptr) {
+  auto custom_kernel_plugin_ptr = GetCustomKernelPlugin();
+  if (custom_kernel_plugin_ptr == nullptr) {
     return false;
   }
-  return k_custom_kernel_plugin_ptr->IsRegisteredKernel(anf_node);
+  return custom_kernel_plugin_ptr->IsRegisteredKernel(anf_node);
 }
 
 bool IsEnableCustomNode(const AnfNodePtr &node) {

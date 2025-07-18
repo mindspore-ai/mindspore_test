@@ -19,6 +19,7 @@
 #include <set>
 #include <memory>
 #include <vector>
+#include <string>
 #include "pybind11/pybind11.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
@@ -165,6 +166,13 @@ class EXTENSION_API Tensor {
    *        After conversion, the stub node is released.
    */
   void ConvertStubNodeToTensor() const;
+
+  /**
+   * @brief [API] Retrieves the format of the Tensor.
+   * @return The format of the Tensor.
+   * @throws If the Tensor is not defined, use "DefaultFormat".
+   */
+  std::string format() const;
 
  private:
   /**

@@ -104,6 +104,18 @@ void Tensor::ConvertStubNodeToTensor() const {
     _tensor_holder_->value_ = nullptr;
   }
 }
+
+std::string Tensor::format() const {
+  auto t = tensor();
+  MS_EXCEPTION_IF_NULL(t);
+  if (t->device_address() == nullptr) {
+    return "DefaultFormat";
+  }
+  auto device_sync = t->device_address();
+  auto device_address = std::dynamic_pointer_cast<mindspore::device::DeviceAddress>(device_sync);
+  MS_EXCEPTION_IF_NULL(device_address);
+  return device_address->format();
+}
 }  // namespace ms
 
 namespace pybind11 {
