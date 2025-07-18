@@ -231,7 +231,7 @@ void SuperKernelActor::ClearParallelDispatchResource() {
 void SuperKernelActor::Init() {
   MS_EXCEPTION_IF_NULL(graph_);
   // Check device contexts number.
-  if (device_contexts_.size() != device::kDeviceContextsNumOne) {
+  if (device_contexts_.size() != runtime::kDeviceContextsNumOne) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
 

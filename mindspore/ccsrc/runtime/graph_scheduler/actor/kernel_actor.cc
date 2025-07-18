@@ -235,7 +235,7 @@ KernelActor::KernelActor(const std::string &name, const CNodePtr &kernel, const 
 
 void KernelActor::Init() {
   // Check device contexts number.
-  if (device_contexts_.size() != device::kDeviceContextsNumOne) {
+  if (device_contexts_.size() != runtime::kDeviceContextsNumOne) {
     MS_LOG(EXCEPTION) << "The device contexts number is wrong.";
   }
   MS_EXCEPTION_IF_NULL(device_contexts_[0]);

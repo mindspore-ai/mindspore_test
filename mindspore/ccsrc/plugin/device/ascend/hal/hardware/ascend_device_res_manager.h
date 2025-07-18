@@ -55,7 +55,6 @@ class AscendDeviceResManager : public DeviceResManager {
 
   bool LoadCollectiveCommLib() override;
   CollectiveCommunicationLib *collective_comm_lib() const override;
-  std::shared_ptr<MemoryManager> mem_manager() const override;
   std::shared_ptr<SwapManager> swap_manager() const override;
   bool DestroyEvent(const DeviceEventPtr &event) override;
   bool DestroyAllEvents() override;

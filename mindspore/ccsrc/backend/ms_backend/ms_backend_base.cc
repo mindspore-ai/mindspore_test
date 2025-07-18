@@ -61,6 +61,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "include/backend/optimizer/graph_optimizer.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 
 #include "include/common/utils/compile_cache_context.h"

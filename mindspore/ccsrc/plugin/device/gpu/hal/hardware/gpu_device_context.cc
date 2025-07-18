@@ -799,17 +799,6 @@ bool GPUDeviceResManager::SyncNotDefaultStreams() const { return gpu_res_manager
 
 size_t GPUDeviceResManager::DefaultStream() const { return gpu_res_manager_->DefaultStream(); }
 
-uint32_t GPUKernelExecutor::GetRankID() const {
-  bool collective_inited = distributed::collective::CollectiveManager::instance()->initialized();
-  uint32_t rank_id = 0;
-  if (collective_inited) {
-    if (!CommManager::GetInstance().GetRankID(kNcclWorldGroup, &rank_id)) {
-      MS_LOG(EXCEPTION) << "Failed to get rank id.";
-    }
-  }
-  return rank_id;
-}
-
 // cudaEventRecordDefault 0x0 | cudaEventRecordExternal 0x1 | cudaEventWaitExternal 0x1, no need to set again.
 DeviceEventPtr GPUDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait) {
   return gpu_res_manager_->CreateRuntimeEvent(enable_blocking, enable_record_wait);

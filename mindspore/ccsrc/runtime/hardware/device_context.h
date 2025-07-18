@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <utility>
 #include <unordered_set>
+#include <utility>
 #include "common/device_type.h"
 #include "common/device_address.h"
 #include "runtime/device/res_manager/swap_manager.h"
@@ -33,9 +33,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/device/res_manager/memory_manager.h"
-#include "include/backend/optimizer/graph_optimizer.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
@@ -46,12 +44,8 @@
 
 namespace mindspore {
 namespace device {
-using mindspore::kernel::AddressPtr;
 using mindspore::kernel::KernelMod;
 using mindspore::kernel::KernelTensor;
-
-const size_t kDeviceContextsNumOne = 1;
-const size_t kDeviceContextsNumTwo = 2;
 
 struct DeviceContextKey {
   // device type name, such as 'GPU' 'Ascend' 'CPU'.
@@ -77,7 +71,7 @@ class BACKEND_COMMON_EXPORT DeviceContext {
   virtual void Initialize() = 0;
 
   // Destroy device context and release device resource.
-  virtual void Destroy() {}
+  virtual void Destroy() = 0;
 
   // Get device_context_key_ to obtain device name and device id.
   const DeviceContextKey &device_context_key() const { return device_context_key_; }
@@ -119,9 +113,8 @@ using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 
 class BACKEND_COMMON_EXPORT DeviceResManager {
  public:
-  DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {
-    offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
-  }
+  DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {}
+
   virtual ~DeviceResManager() = default;
 
   // Initialize the device resource manager.
@@ -189,11 +182,6 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
     return std::shared_ptr<void>(::malloc(size), ::free);
   }
-  // Allocate host memory for offload device memory.
-  virtual void *AllocateOffloadMemory(size_t size) const;
-  // Release host memory which was allocated by AllocateOffloadMemory to pool.
-  // It will not be free to os.
-  virtual void FreeOffloadMemory(void *ptr) const;
 
   virtual size_t GetAvailableMemSize() const { return 0; }
 
@@ -210,9 +198,7 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                const Format &format, TypeId type_id, const std::string &device_name,
                                                uint32_t device_id, uint32_t stream_id,
-                                               const UserDataPtr &user_data = nullptr) const {
-    MS_LOG(EXCEPTION) << "Unimplemented interface.";
-  }
+                                               const UserDataPtr &user_data = nullptr) const = 0;
 
   // Create a stream with assigning a stream id, the assigned stream id will be written to the parameter '*stream_id'.
   virtual bool CreateStream(size_t *stream_id) const {
@@ -285,10 +271,10 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   };
 
   // Destroy specified device event.
-  virtual bool DestroyEvent(const DeviceEventPtr &event);
+  virtual bool DestroyEvent(const DeviceEventPtr &event) { return true; }
 
   // Destroy all device events.
-  virtual bool DestroyAllEvents();
+  virtual bool DestroyAllEvents() { return true; }
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
@@ -308,14 +294,12 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
 
   // Dynamically load collective communication library.
   // Currently, four types are supported: OpenMPI and self developed framework for CPU. NCCL for GPU. HCCL for Ascend.
-  virtual bool LoadCollectiveCommLib() { return true; }
+  virtual bool LoadCollectiveCommLib() = 0;
 
   // Return collective communication object for caller to access
-  virtual CollectiveCommunicationLib *collective_comm_lib() const { return collective_comm_lib_; }
+  virtual CollectiveCommunicationLib *collective_comm_lib() const = 0;
 
-  virtual std::shared_ptr<SwapManager> swap_manager() const;
-
-  virtual std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
+  virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
 
   virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
@@ -341,27 +325,15 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; };
 
  protected:
-  // Ensure the thread safety for allocating device memory.
-  mutable std::mutex alloc_mem_mutex_;
-
   // The collective communication library.
   CollectiveCommunicationLib *collective_comm_lib_;
 
   DeviceContext *device_context_{nullptr};
 
-  std::shared_ptr<SwapManager> swap_manager_{nullptr};
-
-  std::mutex device_events_mutex_;
-
-  DeviceEventPtrList device_events_{};
-
-  std::shared_ptr<MemoryManager> mem_manager_{nullptr};
-
  private:
   template <class... Args>
   friend class DeviceInterface;
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
-  std::shared_ptr<device::OffloadedMemPool> offloaded_mem_pool_;
 };
 
 using CallbackFunc = std::function<void(void)>;
@@ -400,12 +372,7 @@ class BACKEND_COMMON_EXPORT KernelExecutor {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
 
-  // Unify the MindIR, the default behavior uses the common unified MindIR.
-  virtual void UnifyMindIR(const KernelGraphPtr &graph) const {};
   virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
-
-  // Get rank id for distributed training.
-  virtual uint32_t GetRankID() const { return 0; }
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
 

@@ -234,12 +234,6 @@ CollectiveCommunicationLib *AscendDeviceResManager::collective_comm_lib() const 
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   return ascend_res_manager_->collective_comm_lib();
 }
-
-std::shared_ptr<MemoryManager> AscendDeviceResManager::mem_manager() const {
-  MS_EXCEPTION_IF_NULL(ascend_res_manager_);
-  return ascend_res_manager_->mem_manager();
-}
-
 std::shared_ptr<SwapManager> AscendDeviceResManager::swap_manager() const {
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   if (ascend_res_manager_->swap_manager() != nullptr) {
