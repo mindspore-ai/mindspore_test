@@ -612,10 +612,11 @@ void FindFuncGraphNextNode(const CNodePtr &use_cnode, const std::pair<AnfNodePtr
   auto fg_parameters = fg->parameters();
   auto param = fg_parameters[IntToSize(node_pair.second - 1)];
   MS_EXCEPTION_IF_NULL(param);
-  size_t index = make_tuple_index == -1 ? 0 : make_tuple_index;
+  size_t index = make_tuple_index == -1 ? 0 : static_cast<size_t>(make_tuple_index);
   bool has_operator_info = false;
   if (param->has_user_data(INDEX_OPERATOR_INFO)) {
     const auto &index_operator_map = param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
+    MS_EXCEPTION_IF_NULL(index_operator_map);
     if (index_operator_map->find(index) != index_operator_map->end()) {
       has_operator_info = true;
     }

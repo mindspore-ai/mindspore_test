@@ -917,6 +917,7 @@ void PipelinePostProcess::RemoveMonadNodeBetweenStage(const CNodePtr &cnode) {
   auto node_users = manager_->node_users()[cnode];
   for (const auto &user_node_pair : node_users) {
     auto user_cnode = user_node_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_cnode);
     for (const auto &input : user_cnode->inputs()) {
       if (IsPrimitiveCNode(input, prim::kPrimReceive)) {
         auto monad_node = NewValueNode(kUMonad);
@@ -1750,6 +1751,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
       continue;
     }
     auto recv_c = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(recv_c);
     if (recv_c->HasPrimalAttr(PIPELINE_PARAM)) {
       continue;
     }
@@ -1760,6 +1762,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
     auto recv_tag = GetValue<int64_t>(recv_c->GetPrimalAttr(ORDER));
     for (const auto &send : sends) {
       auto send_c = send->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(send_c);
       if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
         continue;
       }
@@ -1778,6 +1781,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionVShapeChunkGraph(const std
   std::vector<AnfNodePtr> out_input = {NewValueNode(prim::kPrimMakeTuple)};
   for (const auto &send : sends) {
     auto send_c = send->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(send_c);
     if (send_c->HasPrimalAttr(PIPELINE_PARAM)) {
       out_input.emplace_back(send);
       continue;
@@ -2068,16 +2072,19 @@ AnfNodePtr GetUserNode(const AnfNodePtr &node, const NodeUsersMap &node_users_ma
     return nullptr;
   }
   auto graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
+  MS_EXCEPTION_IF_NULL(graph);
   auto sub_graph_output = graph->output();
   if (!IsPrimitiveCNode(sub_graph_output, prim::kPrimMakeTuple)) {
     return nullptr;
   }
   auto csub_graph_output = sub_graph_output->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(csub_graph_output);
+  MS_EXCEPTION_IF_NULL(csub_graph_output->input(1));
   if (!IsPrimitiveCNode(csub_graph_output->input(1), prim::kPrimReceive)) {
     return nullptr;
   }
   auto recv = csub_graph_output->input(1)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(recv);
   if (recv->HasPrimalAttr(FREEZE)) {
     auto freeze_v = recv->GetPrimalAttr(FREEZE);
     if (GetValue<bool>(freeze_v)) {

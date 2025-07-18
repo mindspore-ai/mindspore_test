@@ -1369,8 +1369,10 @@ OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cn
   OperatorInfoPtr next_distribute_operator = nullptr;
   if (IsValueNode<FuncGraph>(next_cnode->input(0))) {
     auto fg = GetValueNode<FuncGraphPtr>(next_cnode->input(0));
+    MS_EXCEPTION_IF_NULL(fg);
     auto fg_parameters = fg->parameters();
     auto param = fg_parameters[IntToSize(input_pos - 1)];
+    MS_EXCEPTION_IF_NULL(param);
     if (param->has_user_data(INDEX_OPERATOR_INFO)) {
       auto index_operator_info = param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
       MS_EXCEPTION_IF_NULL(index_operator_info);
@@ -1378,7 +1380,9 @@ OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cn
     }
     if (using_func_param_op_info) {
       MS_LOG(INFO) << "Func call node:" << next_cnode->DebugString() << " has operator info.";
-      next_distribute_operator = param->template user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO)->at(pos_in_param);
+      auto info_ptr = param->template user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
+      MS_EXCEPTION_IF_NULL(info_ptr);
+      next_distribute_operator = info_ptr->at(pos_in_param);
       const auto &abstract = param->abstract();
       MS_EXCEPTION_IF_NULL(abstract);
       bool is_tuple_param = false;
@@ -1390,28 +1394,28 @@ OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cn
         param_input_size = ele.size();
         is_tuple_param = param_input_size > 1 ? true : false;
       }
-      if (is_tuple_param) {
-        auto input = next_cnode->input(input_pos);
+      auto input = next_cnode->input(input_pos);
+      if (is_tuple_param && !IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
         const auto &func_graph = next_cnode->func_graph();
-        if (!IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
-          std::vector<AnfNodePtr> make_tuple_inputs;
-          make_tuple_inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
-          for (size_t i = 0; i < param_input_size; i++) {
-            std::vector<AnfNodePtr> tuple_get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), input,
-                                                          CreatInt64Imm(UlongToLong(i))};
-            auto tuple_get_item = func_graph->NewCNode(tuple_get_item_inputs);
-            MS_EXCEPTION_IF_NULL(tuple_get_item);
-            make_tuple_inputs.push_back(tuple_get_item);
-          }
-          auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
-          MS_EXCEPTION_IF_NULL(make_tuple);
-          FuncGraphManagerPtr manager = func_graph->manager();
-          MS_EXCEPTION_IF_NULL(manager);
-          (void)manager->SetEdge(next_cnode, input_pos, make_tuple);
-          input = make_tuple;
+        std::vector<AnfNodePtr> make_tuple_inputs;
+        make_tuple_inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
+        for (size_t i = 0; i < param_input_size; i++) {
+          std::vector<AnfNodePtr> tuple_get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), input,
+                                                        CreatInt64Imm(UlongToLong(i))};
+          auto tuple_get_item = func_graph->NewCNode(tuple_get_item_inputs);
+          MS_EXCEPTION_IF_NULL(tuple_get_item);
+          make_tuple_inputs.push_back(tuple_get_item);
         }
+        auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
+        MS_EXCEPTION_IF_NULL(make_tuple);
+        FuncGraphManagerPtr manager = func_graph->manager();
+        MS_EXCEPTION_IF_NULL(manager);
+        (void)manager->SetEdge(next_cnode, input_pos, make_tuple);
+        input = make_tuple;
+      }
+      if (is_tuple_param) {
         next_cnode = input->cast<CNodePtr>();
-        input_pos = pos_in_param + 1;
+        input_pos = static_cast<int>(pos_in_param) + 1;
       }
       using_func_param_op_info = true;
     } else {
@@ -1557,12 +1561,15 @@ void ParallelProcessor::StepRedistribution(const CNodePtr &cnode, const NodeUser
         continue;
       }
       auto param_out = next_node.first.first->user_data<ParamOutIndex>(PARAM_OUT_INDEX);
+      MS_EXCEPTION_IF_NULL(param_out);
       const auto &param = param_out->first;
       MS_EXCEPTION_IF_NULL(param);
       auto distribute_operator = GetDistributeOperator(pre_node->cast<CNodePtr>());
       auto index_operator_info = std::make_shared<IndexOperatorMap>();
       if (param->has_user_data(INDEX_OPERATOR_INFO)) {
-        *index_operator_info = *(param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO));
+        auto info_ptr = param->user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO);
+        MS_EXCEPTION_IF_NULL(info_ptr);
+        *index_operator_info = *info_ptr;
       }
       index_operator_info->emplace(param_out->second, distribute_operator);
       param->set_user_data<IndexOperatorMap>(INDEX_OPERATOR_INFO, index_operator_info);

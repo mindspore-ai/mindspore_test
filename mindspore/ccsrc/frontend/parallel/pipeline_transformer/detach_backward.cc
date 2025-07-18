@@ -86,6 +86,7 @@ void DetachBackward::GetChunkNumMicroSize() {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
       continue;
     }
@@ -99,6 +100,8 @@ void DetachBackward::GetChunkNumMicroSize() {
 std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, bool is_dw_fg,
                                                        const CNodePtr &partial_cnode,
                                                        std::vector<AnfNodePtr> *new_partial_inputs) {
+  MS_EXCEPTION_IF_NULL(fg);
+  MS_EXCEPTION_IF_NULL(fg->output());
   auto fg_output = fg->output()->cast<CNodePtr>();
   if (!IsPrimitiveCNode(fg_output, prim::kPrimMakeTuple)) {
     MS_LOG(EXCEPTION)
@@ -117,22 +120,27 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
       continue;
     }
     auto depend_c = cur_input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_c);
     if (!IsPrimitiveCNode(depend_c->input(kIndex2), prim::kPrimAssignAdd)) {
       dx_out_inputs.emplace_back(cur_input);
       continue;
     }
     auto assign_add_c = depend_c->input(kIndex2)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(assign_add_c);
     // case1: MatMul(Dw)->assign_add->depend
     auto assign_add_input = assign_add_c->input(kIndex2);
+    MS_EXCEPTION_IF_NULL(assign_add_input);
     if (!IsPrimitiveCNode(assign_add_input, prim::kPrimMatMul) &&
         !IsPrimitiveCNode(assign_add_input, prim::kPrimTupleGetItem)) {
       dx_out_inputs.emplace_back(cur_input);
       continue;
     }
     auto dw_c = assign_add_input->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(dw_c);
     // case2: GMM(Dw)->TupleGetItem->assign_add->depend
     if (IsPrimitiveCNode(assign_add_input, prim::kPrimTupleGetItem)) {
       auto get_item_c_input = dw_c->input(1);
+      MS_EXCEPTION_IF_NULL(get_item_c_input);
       if (!IsPrimitiveCNode(get_item_c_input, prim::kPrimGroupedMatmul)) {
         dx_out_inputs.emplace_back(cur_input);
         continue;
@@ -146,6 +154,7 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
     dw_index.emplace_back(i - 1);
     dw_out_inputs.emplace_back(cur_input);
     size_t input_index = kIndex1;
+    MS_EXCEPTION_IF_NULL(dw_c);
     if (dw_c->HasPrimalAttr(FORWARD_TRANSPOSE_B) && !GetValue<bool>(dw_c->GetPrimalAttr(FORWARD_TRANSPOSE_B))) {
       input_index = kIndex2;
     }
@@ -233,7 +242,10 @@ size_t DetachBackward::HandleMonadNode(const FuncGraphPtr &dx_fg, const FuncGrap
   }
   auto num_diff = params_num - input_size;
   if (num_diff != 0) {
+    MS_EXCEPTION_IF_NULL(dx_fg);
+    MS_EXCEPTION_IF_NULL(dx_fg->output());
     auto dx_fg_output = dx_fg->output()->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(dx_fg_output);
     auto dx_new_out_inputs = dx_fg_output->inputs();
     auto dx_fg_params = dx_fg->parameters();
     for (size_t i = 0; i < num_diff; ++i) {
@@ -330,6 +342,8 @@ void DetachBackward::HandleDataDependency(const std::vector<size_t> &dw_index, c
 }
 
 void DetachBackward::HandleClosureGraph(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  MS_EXCEPTION_IF_NULL(fg->output());
   auto closure_output = fg->output()->cast<CNodePtr>();
   if (!IsPrimitiveCNode(closure_output, prim::kPrimMakeTuple)) {
     MS_LOG(EXCEPTION)
@@ -345,6 +359,7 @@ void DetachBackward::HandleClosureGraph(const FuncGraphPtr &fg) {
                       << fg->ToString();
   }
   auto partial_node = closure_output->input(kIndex2)->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(partial_node);
   auto bwd_fg = GetValueNode<FuncGraphPtr>(partial_node->input(kIndex1));
   MS_EXCEPTION_IF_NULL(bwd_fg);
   AdapteDwOverlap(bwd_fg);
