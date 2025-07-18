@@ -28,3 +28,7 @@
             - **MRMSetHeaderError** - 设置MindRecord文件头失败。
             - **MRMWriteDatasetError** - 创建MindRecord索引失败。
             - **ValueError** - 参数 `fields` 不合法。
+    
+    .. warning::
+        `Cifar10ToMR.transform()` 方法会隐式调用 `pickle` 模块，而该模块存在已知安全隐患。
+        攻击者可构造恶意 `pickle` 数据，在反序列化过程中执行任意代码。切勿加载可能来自不可信来源或已被篡改的数据。

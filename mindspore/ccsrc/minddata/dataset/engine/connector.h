@@ -74,6 +74,13 @@ class Connector {
   Connector(int32_t n_producers, int32_t n_consumers, int32_t queue_capacity)
       : num_producers_(n_producers), num_consumers_(n_consumers) {
     MS_LOG(DEBUG) << "A connector is created with " << n_producers << " producers and " << n_consumers << " consumers.";
+
+    if (n_producers <= 0 || n_consumers <= 0) {
+      MS_LOG(EXCEPTION) << "Create Connector failed, expected n_producers > 0 and n_consumers > 0,"
+                        << " but got n_producers: " << std::to_string(n_producers)
+                        << ", n_consumers: " << std::to_string(n_consumers);
+    }
+
     my_name_ = Services::GetUniqueID();
     // We require the consumers to have ids sequentially from 0 to the num_consumers_-1,
     // Otherwise a ordered list of consumer ids have to be passed here. (not implemented yet)

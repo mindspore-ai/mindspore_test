@@ -15,24 +15,72 @@
 """
 Cifar10 reader class.
 """
-import builtins
+import hashlib
 import io
+import os
 import pickle
 import re
-import os
 import numpy as np
 
+from mindspore import log as logger
 from ..shardutils import check_filename
 
 __all__ = ['Cifar10']
 
-safe_builtins = {
-    'range',
-    'complex',
-    'set',
-    'frozenset',
-    'slice',
-}
+
+class CifarMD5Validator:
+    '''
+    MD5 check for cifar10-batch-py files
+    '''
+    def __init__(self):
+        self.md5_map = {'data_batch_1': 'c99cafc152244af753f735de768cd75f',
+                        'data_batch_2': 'd4bba439e000b95fd0a9bffe97cbabec',
+                        'data_batch_3': '54ebc095f3ab1f0389bbae665268c751',
+                        'data_batch_4': '634d18415352ddfa80567beed471001a',
+                        'data_batch_5': '482c414d41f54cd18b22e5b47cb7c3cb',
+                        'test_batch': '40351d587109b95175f43aff81a1287e'}
+
+    def calculate_md5(self, file_path):
+        """
+        Calculate MD5 hash of a file.
+
+        Args:
+            file_path (str): Path to the file to calculate MD5 for.
+
+        Returns:
+            MD5 hash string if successful, None otherwise.
+        """
+        try:
+            with open(file_path, 'rb') as f:
+                file_hash = hashlib.md5()
+                chunk = f.read(8192)
+                while chunk:
+                    file_hash.update(chunk)
+                    chunk = f.read(8192)
+            return file_hash.hexdigest()
+        except (IOError, OSError):
+            return None
+
+    def check(self, file_path, file_name):
+        """
+        Check if the file's MD5 matches the expected value.
+
+        Args:
+            file_path (str): Path to the file to check.
+            file_name (str): Key in md5_map to identify the expected MD5.
+
+        Returns:
+            True if MD5 matches, False otherwise (including if file doesn't exist).
+
+        Raises:
+            KeyError: If file_name is not found in md5_map.
+        """
+        expected_md5 = self.md5_map.get(file_name)
+        actual_md5 = self.calculate_md5(os.path.join(file_path, file_name))
+
+        if actual_md5 is None or expected_md5 is None or actual_md5 != expected_md5:
+            logger.warning(f"The MD5 value of {file_name} does not match the official CIFAR10 file."
+                           "This file may pose a security risk.")
 
 
 class RestrictedUnpickler(pickle.Unpickler):
@@ -44,8 +92,6 @@ class RestrictedUnpickler(pickle.Unpickler):
     """
     def find_class(self, module, name):
         # Only allow safe classes from builtins and numpy
-        if module == "builtins" and name in safe_builtins:
-            return getattr(builtins, name)
         if module == "numpy.core.multiarray" and name == "_reconstruct":
             return getattr(np.core.multiarray, name)
         if module == "numpy":
@@ -89,6 +135,7 @@ class Cifar10:
         self.one_hot = one_hot
         self.images = None
         self.labels = None
+        self.validator = CifarMD5Validator()
 
     def load_data(self):
         """
@@ -104,12 +151,14 @@ class Cifar10:
         for file in files:
             if re.match("data_batch_*", file):
                 real_file_path = os.path.realpath(self.path)
+                self.validator.check(real_file_path, file)
                 with open(os.path.join(real_file_path, file), 'rb') as f: # load train data
                     dic = restricted_loads(f.read())
                     images = np.r_[images, dic[b"data"].reshape([-1, 3, 32, 32])]
                     labels.append(dic[b"labels"])
             elif re.match("test_batch", file):                       # load test data
                 real_file_path = os.path.realpath(self.path)
+                self.validator.check(real_file_path, file)
                 with open(os.path.join(real_file_path, file), 'rb') as f:
                     dic = restricted_loads(f.read())
                     test_images = np.array(dic[b"data"].reshape([-1, 3, 32, 32]))

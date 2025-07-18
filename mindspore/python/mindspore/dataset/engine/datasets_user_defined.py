@@ -818,6 +818,12 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         - `Load & Process Data With Dataset Pipeline
           <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
 
+    .. warning::
+        `GeneratorDataset` uses `dill` module implicitly in multiprocessing `spawn` mode to serialize/deserialize
+        `source`, which is known to be insecure. It is possible to construct malicious pickle data which will
+        execute arbitrary code during unpickling. Never load data that could have come from untrusted sources,
+        or has been tampered with.
+
     Note:
         - If you configure `python_multiprocessing=True` (Default: ``True`` ) and `num_parallel_workers>1`
           (default: ``1`` ) indicates that the multiprocessing mode is started for data load acceleration.
