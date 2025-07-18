@@ -472,7 +472,7 @@ class Primitive(Primitive_):
         Examples:
             >>> import numpy as np
             >>> import mindspore as ms
-            >>> from mindspore import Tensor, ops, nn
+            >>> from mindspore import Tensor, ops, nn, jit
             >>> class NetRecompute(nn.Cell):
             ...     def __init__(self):
             ...         super(NetRecompute,self).__init__()
