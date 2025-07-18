@@ -86,18 +86,6 @@ class BuildGraphTask : public Task {
   GraphId graph_id_{0};
 };
 
-class RunGraphTask : public Task {
- public:
-  RunGraphTask() { type_ = kRunGraph; }
-  ~RunGraphTask() override = default;
-  void Run() override;
-  std::vector<tensor::TensorPtr> input_tensors_;
-  VectorRef outputs_;
-  GraphId graph_id_{0};
-  std::map<tensor::TensorPtr, session::KernelWithIndex> tensor_to_node_;
-  KernelMapTensor node_to_tensor_;
-};
-
 class CreateCommGroupTask : public Task {
  public:
   CreateCommGroupTask() { type_ = kCreateCommGroup; }
@@ -147,7 +135,6 @@ class BACKEND_COMMON_EXPORT Executor {
 
  private:
   void RunTask(const std::shared_ptr<Task> &task, bool sync, bool long_run = false);
-  std::vector<std::shared_ptr<RunGraphTask>> GetReadyTasksFromPendingList();
   void OnWorkerExit();
   void OnClear();
   void OnRunGraphFinished();
@@ -163,7 +150,6 @@ class BACKEND_COMMON_EXPORT Executor {
   std::condition_variable sync_cond_var_;
   std::condition_variable reenter_cond_var_;
   std::queue<std::shared_ptr<Task>> ready_tasks_;
-  std::list<std::shared_ptr<RunGraphTask>> pending_tasks_;
   std::vector<std::shared_ptr<Task>> done_tasks_;
   std::shared_ptr<std::thread> worker_;
   bool sync_run_task_finished_{false};

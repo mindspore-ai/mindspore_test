@@ -20,7 +20,6 @@ mindspore/mindspore/core/ir/dtype_extends.cc:mindspore::UnitSizeInBytes
 mindspore/mindspore/ccsrc/frontend/optimizer/irpass.cc:mindspore::opt::irpass::OptimizeIRPassLib::OptimizeIRPassLib
 mindspore/mindspore/ccsrc/frontend/optimizer/ad/dfunctor.cc:mindspore::ad::DFunctor::MapValueObject
 mindspore/mindspore/ccsrc/frontend/parallel/ops_info/gather_v2_p_info.cc:mindspore::parallel::GatherV2PInfo::CheckStrategy
-mindspore/mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_kernel_runtime.cc:mindspore::device::gpu::GPUKernelRuntime::LaunchKernelDynamic
 mindspore/mindspore/ccsrc/runtime/device/res_manager/utils/convert_tensor_utils.cc:mindspore::device::ConvertSameType
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel

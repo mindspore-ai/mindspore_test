@@ -35,7 +35,7 @@ class GPUSession : public SessionBasic {
   GPUSession() = default;
   ~GPUSession() override = default;
   void Init(uint32_t device_id) override;
-  void SyncStream() const override;
+  void SyncStream() const override {}
 
  protected:
   void UnifyMindIR(const KernelGraphPtr &graph) override { SessionBasic::UnifyMindIR(graph); }
@@ -54,7 +54,7 @@ class GPUSession : public SessionBasic {
  private:
   void SelectKernel(const std::shared_ptr<KernelGraph> &kernel_graph) const;
 
-  void StartKernelRT() const;
+  void StartKernelRT() const {}
 
   void Optimize(const std::shared_ptr<KernelGraph> &kernel_graph);
 
@@ -71,21 +71,20 @@ class GPUSession : public SessionBasic {
   void BuildKernel(const std::shared_ptr<KernelGraph> &kernel_graph) const;
 
   void RunOpAllocateMemory(const std::vector<tensor::TensorPtr> &input_tensors, const KernelGraph *kernel_graph,
-                           bool is_gradient_out) const;
+                           bool is_gradient_out) const {}
 
-  void RunOpClearMemory(const KernelGraph *kernel_graph) const;
+  void RunOpClearMemory(const KernelGraph *kernel_graph) const {}
 
-  void RunOpGenKernelEvent(const KernelGraph *graph) const;
+  void RunOpGenKernelEvent(const KernelGraph *graph) const {}
 
-  void Execute(const std::shared_ptr<KernelGraph> &kernel_graph) const;
+  void Execute(const std::shared_ptr<KernelGraph> &kernel_graph) const {}
 
 #ifdef ENABLE_DEBUGGER
   void Dump(const std::shared_ptr<KernelGraph> &kernel_graph) const;
 
-  bool DumpDataEnabledIteration() const;
+  bool DumpDataEnabledIteration() const { return true; }
 #endif
 };
-using GPUSessionPtr = std::shared_ptr<GPUSession>;
 MS_REG_SESSION(kGPUDevice, GPUSession);
 }  // namespace gpu
 }  // namespace session
