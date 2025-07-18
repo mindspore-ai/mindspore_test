@@ -48,7 +48,9 @@ CNodePtr ExpanderDecorator::QuickCloneCNode(const AnfNodePtr &node, bool clone_p
   new_node->CloneCNodeInfo(cnode);
   new_node->set_fullname_with_scope(node->fullname_with_scope());
   if (clone_prim) {
-    new_node->set_input(0, NewValueNode(GetCNodePrimitive(node)->Clone()));
+    auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
+    new_node->set_input(0, NewValueNode(prim->Clone()));
   }
   return new_node;
 }
@@ -114,7 +116,9 @@ FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   auto scope = std::make_shared<Scope>(node->scope()->name() + "/expand_" + name);
   auto e = std::make_shared<expander::MindirEmitter>(fg, cb_->IsUseDeviceInfo(), scope);
   auto inputs = e->Inputs(node);
-  ib->Init(e, &inputs, &GetCNodePrimitive(node)->attrs(), cb_->GetProcessor(node));
+  auto prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  ib->Init(e, &inputs, &prim->attrs(), cb_->GetProcessor(node));
   auto outputs = ib->Expand();
   if (outputs.empty()) {
     return nullptr;
@@ -180,7 +184,9 @@ FuncGraphPtr LitegraphExpander::ExpandToGraph(const CNodePtr &node) {
     outputs[i].type = cb_->GetOutputType(node, i);
     outputs[i].format = cb_->GetOutputFormat(node, i);
   }
-  auto &attrs = GetCNodePrimitive(node)->attrs();
+  auto prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto &attrs = prim->attrs();
   auto litegraph = op_desc->Run(inputs, outputs, attrs, cb_->GetProcessor(node));
   if (litegraph == nullptr) {
     MS_LOG(INFO) << "undo expanding " << node->fullname_with_scope();

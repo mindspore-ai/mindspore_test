@@ -165,6 +165,7 @@ bool ConvertTensorToParameter(const FuncGraphPtr &fg, AnfNodePtrList *inputs_ptr
         continue;
       }
       auto primitive = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(primitive);
       // For some primitives, the value in valuenode is required for further optimization.
       if (ValueDependOpUtils::KeepValueNode(primitive->name(), i - 1)) {
         continue;
