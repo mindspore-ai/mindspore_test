@@ -111,7 +111,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
     fn_args[i] = list_inputs[i];
   }
   if (!is_recompute_) {
-    auto out = saved_output_->Unwrap(shared_from_this());
+    auto out = saved_output_->Unwrap(shared_from_this(), true);
     py::object py_out = CValueToPybindObj(out);
     fn_args[list_inputs.size()] = py_out;
     fn_args[list_inputs.size() + kSizeOne] = py_tensor_grad;
