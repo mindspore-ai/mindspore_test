@@ -16,7 +16,8 @@
 
 export MS_ENABLE_LCCL=off
 export GLOG_v=3
-export HCCL_IF_BASE_PORT=60009
+export HCCL_IF_BASE_PORT=60060
+sysctl -w net.ipv4.ip_local_reserved_ports=60060-60075
 
 WORKDIR="$(realpath "$(dirname "$0")")"
 echo "WORKDIR is $WORKDIR"
