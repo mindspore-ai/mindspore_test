@@ -15,14 +15,13 @@ mindspore.ops.Custom
 
         - "aot": ["GPU", "CPU", "Ascend"].
         - "pyfunc": ["CPU"].
-        - "julia": ["CPU"].
 
     参数：
         - **func** (Union[function, str]) - 自定义算子的函数表达。
 
           - function：如果 `func` 是函数类型，那么 `func` 应该是一个Python函数，它描述了用户定义的操作符的计算逻辑。
 
-          - 字符串：如果 `func` 是字符串类型，那么 `str` 应该是包含函数名的文件路径。当 `func_type` 是"aot"或"julia"时，可以使用这种方式。
+          - 字符串：如果 `func` 是字符串类型，那么 `str` 应该是包含函数名的文件路径。当 `func_type` 是"aot"时，可以使用这种方式。
 
             1. 对于"aot"：
 
@@ -77,22 +76,9 @@ mindspore.ops.Custom
                - **Python infer**：若算子的infer函数是Python实现，即通过 `out_shape` 和 `out_dtype` 参数传入infer shape和infer type函数，则指定 `func="CustomName"` 。
                - **C++ infer**：若算子的infer函数通过C++实现，则在func中传入infer shape或infer type实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom"` 。
 
-            2. 对于"julia"：
-
-               目前，"julia"仅支持CPU（仅限Linux平台）。对于julia，它使用JIT编译器（即时编译器），并且julia支持C API来调用julia代码。自定义功能可以直接将用户定义的"xxx.jl"文件作为一个操作符来启动。用户需要编写一个包含模块和函数的"xxx.jl"文件，并提供该文件的路径以及模块名称和函数名称。
-
-               示例：详情见 `tests/st/ops/graph_kernel/custom/julia_test_files/`
-
-               - 在Custom中使用：
-
-                 .. code-block::
-
-                     Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
-
-                 例如：Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia")
         - **out_shape** (Union[function, list, tuple], 可选) - 自定义算子的输出的形状或者输出形状的推导函数。默认值： ``None`` 。
         - **out_dtype** (Union[function, :class:`mindspore.dtype`, tuple[:class:`mindspore.dtype`]], 可选) - 自定义算子的输出的数据类型或者输出数据类型的推导函数。默认值： ``None`` 。
-        - **func_type** (str, 可选) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"`` , ``"julia"``]中之一。默认值： ``"pyfunc"``。
+        - **func_type** (str, 可选) - 自定义算子的函数类型，必须是[ ``"aot"`` , ``"pyfunc"``]中之一。默认值： ``"pyfunc"``。
         - **bprop** (function, 可选) - 自定义算子的反向函数。默认值： ``None``。
         - **reg_info** (Union[str, dict, list, tuple], 可选) - 自定义算子的算子注册信息。默认值： ``None`` 。
 

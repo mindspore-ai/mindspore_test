@@ -241,7 +241,6 @@ class Custom(ops.PrimitiveWithInfer):
 
         - "aot": supports ["GPU", "CPU", "Ascend"].
         - "pyfunc": supports ["CPU"].
-        - "julia": supports ["CPU"].
 
     Args:
         func (Union[function, str]):
@@ -250,7 +249,7 @@ class Custom(ops.PrimitiveWithInfer):
               computation logic of a user defined operator.
 
             - str: If func is of str type, then str should be a path of file along with a function name.
-              This could be used when func_type is "aot" or "julia".
+              This could be used when func_type is "aot".
 
               1. for "aot":
 
@@ -326,23 +325,6 @@ class Custom(ops.PrimitiveWithInfer):
                    infer function implementation file in `func` and separate the operator name with `:`,
                    for example: `func="add_custom_infer.cc:AddCustom"` .
 
-              2. for "julia":
-
-                 Currently "julia" supports CPU(linux only) platform.
-                 For julia use JIT compiler, and julia support c api to call julia code.
-                 The Custom can directly launches user defined "xxx.jl" file as an operator.
-                 Users need to write a "xxx.jl" file which include modules and functions,
-                 and offer the path of the file along with a module name and function name.
-
-                 Examples: see details in tests/st/ops/graph_kernel/custom/julia_test_files/
-
-                 - Use it in Custom:
-
-                   .. code-block::
-
-                       Custom(func="{dir_path}/{file_name}:{module_name}:{func_name}",...)
-                       (ex. Custom(func="./add.jl:Add:add", out_shape=[1], out_dtype=mstype.float32, "julia"))
-
         out_shape (Union[function, list, tuple], optional): The output shape infer function or the value of output
             shape of `func`. Default: ``None`` .
 
@@ -366,7 +348,7 @@ class Custom(ops.PrimitiveWithInfer):
             value mechanic will be enabled.
 
         func_type (str, optional): The implementation type of `func`, should be one of
-            [ ``"aot"`` , ``"pyfunc"`` , ``"julia"`` ]. Default: ``"pyfunc"``.
+            [ ``"aot"`` , ``"pyfunc"``]. Default: ``"pyfunc"``.
 
         bprop (function, optional): The back propagation function of `func`. Default: ``None`` .
         reg_info (Union[str, dict, list, tuple], optional): Represents the registration information(reg info) of `func`
@@ -432,7 +414,7 @@ class Custom(ops.PrimitiveWithInfer):
         super().__init__("Custom")
 
         self.supported_targets = [ASCEND, GPU, CPU]
-        self.supported_func_type = ["hybrid", "akg", "tbe", "aicpu", "aot", "pyfunc", "julia"]
+        self.supported_func_type = ["hybrid", "akg", "tbe", "aicpu", "aot", "pyfunc"]
         self.log_prefix = "For '{}', 'func_type': {}, 'func': {}".format(self.name, func_type, func)
         self.func = func
         self.func_type = func_type
@@ -584,22 +566,6 @@ class Custom(ops.PrimitiveWithInfer):
             self.func_type = HYBRID_TYPE
             self._hybrid_func_analyser()
 
-    def _check_julia_func(self):
-        """Check the validity of julia func"""
-        if not isinstance(self.func, str):
-            raise TypeError("{}, 'func' must be of type str, but got {}".format(self.log_prefix, type(self.func)))
-        if self.func.count(':') != 2:
-            raise ValueError("{}, the format of 'func' must be file:module:func".format(self.log_prefix))
-        source_file, module, func = self.func.split(':')
-        with open(source_file, 'r') as f:
-            jl = f.read()
-            if 'module ' + module not in jl:
-                raise Exception("{}, module {} is not found in source file {}!"
-                                .format(self.log_prefix, module, source_file))
-            if 'function ' + func not in jl:
-                raise Exception("{}, function {} is not found in source file {}!"
-                                .format(self.log_prefix, func, source_file))
-
     def _check_aot_func(self):
         """Check the source code and bin lib for aot type custom op"""
         if not isinstance(self.func, str):
@@ -642,8 +608,6 @@ class Custom(ops.PrimitiveWithInfer):
         if self.func_type == "aot":
             self._check_aot_func()
 
-        elif self.func_type == "julia":
-            self._check_julia_func()
         elif self.func_type == HYBRID_TYPE:
             if not hasattr(self.func, MS_KERNEL_FLAG):
                 raise TypeError("{}, 'func' must be a function decorated by kernel".format(self.log_prefix))
@@ -960,7 +924,7 @@ class Custom(ops.PrimitiveWithInfer):
             return reg_info[IMPLY_TYPE]
         # Infer imply_type from func_type
         func_type_to_imply_type = {"hybrid": AKG, "akg": AKG, "tbe": TBE, "aicpu": "AiCPU", "pyfunc": target,
-                                   "julia": target, "aot": "BiSheng" if target == ASCEND else target}
+                                   "aot": "BiSheng" if target == ASCEND else target}
         return func_type_to_imply_type.get(self.func_type, AKG)
 
     def _save_attr(self, reg_info):
@@ -1032,17 +996,6 @@ class Custom(ops.PrimitiveWithInfer):
                 self.set_device(GPU)
             elif registered_targets == [CPU]:
                 self.set_device(CPU)
-        elif self.func_type == "julia":
-            self.set_device(CPU)
-            device_target = context.get_context('device_target')
-            if device_target == CPU:
-                pass
-            elif device_target == GPU and registered_targets and registered_targets == [CPU]:
-                logger.warning("{}, only supports CPU platform, but got registered target {}. "
-                               "We will run it on CPU".format(self.log_prefix, registered_targets))
-            else:
-                raise ValueError("{}, only supports CPU platform, but got target {}."
-                                 .format(self.log_prefix, device_target))
 
     def _update_attr(self):
         """Add input_names, attr_names, primitive_target to primitive's attr."""
