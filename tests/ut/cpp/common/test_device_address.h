@@ -59,8 +59,11 @@ class TestDeviceAddress : public DeviceAddress {
   TestDeviceAddress() : DeviceAddress() {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
       : DeviceAddress(ptr, size, device_name) {}
-  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
-      : DeviceAddress(ptr, size, format, type_id, device_name) {}
+  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
+                    uint32_t stream_id = 0)
+      : DeviceAddress(ptr, size, format, type_id, device_name, stream_id) {
+    stream_id_ = stream_id;
+  }
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
@@ -68,7 +71,7 @@ class TestDeviceAddress : public DeviceAddress {
     return GetDevicePtr() != nullptr ||
            (extra_data_->hete_info_ != nullptr && extra_data_->hete_info_->host_ptr_ != nullptr);
   }
-  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
+  DeviceType GetDeviceType() const { return device_type_; }
 
   void set_data(tensor::TensorDataPtr &&data) { data_ = std::move(data); }
 
@@ -133,7 +136,7 @@ class TestResManager : public device::DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
                                        TypeId type_id, const std::string &device_name, uint32_t stream_id) const {
-    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name);
+    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, stream_id);
   }
 
   DeviceAddressPtr CreateDeviceAddress() const {
@@ -143,6 +146,19 @@ class TestResManager : public device::DeviceResManager {
   }
   bool LoadCollectiveCommLib() { return false; }
   device::CollectiveCommunicationLib *collective_comm_lib() const { return nullptr; }
+
+  bool SyncStream(size_t stream_id) const override {
+    sync_stream_counts_[stream_id] += 1;
+    return true;
+  }
+
+  bool SyncAllStreams(bool sync_device = true) const override {
+    sync_all_stream_count_ += 1;
+    return true;
+  }
+
+  mutable std::map<size_t, size_t> sync_stream_counts_;
+  mutable size_t sync_all_stream_count_{0};
 };
 
 class TestKernelExecutor : public device::KernelExecutor {

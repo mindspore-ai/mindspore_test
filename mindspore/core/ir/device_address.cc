@@ -114,10 +114,11 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_n
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
-                             const std::string &device_name) {
+                             const std::string &device_name, uint32_t stream_id) {
   device_pointer_ = std::make_shared<DevicePointer>();
   extra_data_ = std::make_shared<ExtraData>();
   device_pointer_->set_ptr(ptr);
+  stream_id_ = stream_id;
   size_ = size;
   extra_data_->dtype_id_ = type_id;
   device_type_ = device::GetDeviceTypeByName(device_name);

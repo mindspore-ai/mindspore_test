@@ -107,7 +107,7 @@ void SyncOutputFromTensor(const DeviceTensorPtr &tensor_device_address, const De
       << "Sync device data from device tensor: " << device_tensor << ", to device tensor: " << tensor_device_address
       << ", size: " << device_tensor->GetSize();
     if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) ||
-        !SyncAllStreamForDeviceAddress(tensor_device_address)) {
+        !SyncAllStreamForDeviceAddress(tensor_device_address, device_tensor)) {
       MS_LOG_WITH_NODE(EXCEPTION, output_node)
         << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
         << ", output node: " << output_node->fullname_with_scope();
