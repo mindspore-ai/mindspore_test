@@ -121,6 +121,11 @@ if(ENABLE_D)
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
             COMPONENT mindspore
     )
+    install(
+            TARGETS mindspore_extension_ascend_aclnn ARCHIVE
+            DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+            COMPONENT mindspore
+    )
 endif()
 
 if(ENABLE_ACL)
