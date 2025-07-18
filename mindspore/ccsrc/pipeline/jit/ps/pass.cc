@@ -1513,7 +1513,7 @@ bool RemoveValueNodeDuplicationsPass(const ResourcePtr &resource) {
       if (users.size() == 1) {
         auto cnode = users.front().first->cast<CNodePtr>();
         if (IsPrimitiveCNode(cnode, prim::kPrimAllReduce) && cnode->size() > 1 && cnode->input(1)->isa<ValueNode>()) {
-          auto allreduce_prim = GetCNodePrimitive(users.front().first);
+          const auto &allreduce_prim = GetCNodePrimitive(cnode);
           auto attrs = allreduce_prim->attrs();
           auto fusion_id = attrs.find(mindspore::parallel::FUSION);
           if (fusion_id != attrs.end() && GetValue<int64_t>(fusion_id->second) > 0) {

@@ -865,7 +865,6 @@ void TraceRecorder::SetTupleNode(const py::tuple &tuple_obj, const AnfNodePtr &n
     }
     // Not return, create tensor -> node relation by tuple items in advance.
   }
-  const auto &prim = GetCNodePrimitive(node);
   // It's mutable tuple.
   for (size_t i = 0; i < tuple_obj.size(); ++i) {
     if (!IsMutable(tuple_obj) && !tensor::IsTensorPy(tuple_obj[i])) {
