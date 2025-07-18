@@ -218,7 +218,7 @@ class BatchNorm1d(_BatchNorm):
         dim = len(shape)
         if dim != 2 and dim != 3:
             raise ValueError(
-                "expected 2D or 3D input (got {}D input)".format(dim)
+                "expected 2D or 3D input, but got " + str(dim) + "D input"
             )
 
 
@@ -288,7 +288,7 @@ class BatchNorm2d(_BatchNorm):
         dim = len(shape)
         if dim != 4:
             raise ValueError(
-                "expected 4D input (got {}D input)".format(dim)
+                "expected 4D input, but got " + str(dim) + "D input"
             )
 
 
@@ -356,7 +356,7 @@ class BatchNorm3d(_BatchNorm):
         dim = len(shape)
         if dim != 5:
             raise ValueError(
-                "expected 5D input (got {}D input)".format(dim)
+                "expected 5D input, but got " + str(dim) + "D input"
             )
 
 
