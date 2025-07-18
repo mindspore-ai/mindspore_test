@@ -15,12 +15,10 @@
  */
 
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
+#include <signal.h>
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
-#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
-#include "utils/ms_context.h"
-#include "utils/ms_exception.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore {
@@ -43,7 +41,7 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
   for (const auto &handle : handles_) {
     // cppcheck-suppress useStlAlgorithm
     if (handle != nullptr && handle->group_name() == name) {
-      MS_LOG(INFO) << "Destroy watch dog thread by group name: " << name;
+      MS_LOG(WARNING) << "Destroy watch dog thread by group name: " << name;
       while (!handle->can_stop(true)) {
         MS_LOG(DEBUG) << "Wait watch dog thread exit before destroy hcom.";
       }
@@ -54,6 +52,7 @@ void HcclWatchDogManager::DestroyHandlerByName(const std::string &name) {
       break;
     }
   }
+  MS_LOG(WARNING) << "Destroy watch dog thread by group name: " << name << " success";
 }
 
 HcclWatchDogManager::~HcclWatchDogManager() { handles_.clear(); }
@@ -154,17 +153,8 @@ void HcclWatchDogHandler::WatchDogProcess() {
     DoProcess();
   } catch (const std::exception &e) {
     auto msg = e.what();
-    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg
-                  << ".\n Try to destroy all streams by watch dog thread.";
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-      {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-    MS_EXCEPTION_IF_NULL(device_context);
-    (void)device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-    AscendStreamMng::GetInstance().ForceDestroyAllStreams();
-    auto exp = std::make_exception_ptr(std::runtime_error(msg));
-    MsException::Instance().SetException(exp);
+    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg << ".Try to kill this process by SIGTERM.";
+    (void)killpg(getpid(), SIGTERM);
   }
   exit_.store(true, std::memory_order_acq_rel);
   MS_LOG(INFO) << "Watchdog thread for group:" << group_name_ << " execute end.";
