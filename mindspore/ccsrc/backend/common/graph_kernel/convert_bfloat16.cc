@@ -222,7 +222,9 @@ void ConvertBFloat16::GetKeepBF16Nodes(const FuncGraphPtr &func_graph) {
     }
     if (NeedKeepBF16(cnode)) {
       // As NeedKeepBF16(cnode), value of GetCNodePrimitive(cnode) is not a nullptr
-      auto prim_name = GetCNodePrimitive(cnode)->name();
+      auto cnode_prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(cnode_prim);
+      auto prim_name = cnode_prim->name();
       for (const auto &input_index : kNeedKeepBF16Ops.at(prim_name)) {
         (void)keep_bf16_nodes_[cnode->input(input_index)].emplace_back(std::make_pair(cnode, input_index));
       }

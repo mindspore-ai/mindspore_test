@@ -40,6 +40,7 @@ constexpr auto kPerm = "perm";
 constexpr auto kShape = "shape";
 const int kMinUpdateSize = 2;
 std::vector<int64_t> GetTransposePerm(const PrimitivePtr &primitive) {
+  MS_EXCEPTION_IF_NULL(primitive);
   ValuePtr perm = primitive->GetAttr(kPerm);
   MS_EXCEPTION_IF_NULL(perm);
   auto perm_val = perm->cast<ValueTuplePtr>();
@@ -105,8 +106,8 @@ std::vector<Group> BranchGroupFinder::Find(const AnfNodePtr &start_node, const F
   std::vector<Group> groups;
   for (const auto &root : op_roots_) {
     size_t ngroups = groups.size();
-    auto childrens = children_map_.at(root);
-    for (auto child : childrens) {
+    auto children = children_map_.at(root);
+    for (auto child : children) {
       auto prim = GetCNodePrimitive(child);
       if (!prim) {
         continue;
@@ -137,12 +138,16 @@ std::vector<Group> BranchGroupFinder::Find(const AnfNodePtr &start_node, const F
 
 Branch BranchGroupFinder::CreateBranch(AnfNodePtr lead_op) {
   AnfNodePtrList ops{lead_op};
-  int root_idx = GetCNodePrimitive(lead_op)->name() == op_name_ ? 0 : -1;
+  auto lead_op_prim = GetCNodePrimitive(lead_op);
+  MS_EXCEPTION_IF_NULL(lead_op_prim);
+  int root_idx = lead_op_prim->name() == op_name_ ? 0 : -1;
   auto it = children_map_.find(lead_op);
   while (it != children_map_.end() && it->second.size() == 1) {
     auto node = *(it->second).begin();
     ops.push_back(node);
-    auto prim_name = GetCNodePrimitive(node)->name();
+    auto node_prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(node_prim);
+    auto prim_name = node_prim->name();
     if (prim_name == op_name_) {
       root_idx = static_cast<int>(ops.size());
     }
@@ -201,12 +206,16 @@ void ParallelOpCombiner::CombineBranches(const Group &branches) {
 
 bool ParallelOpCombiner::CheckLevel(const Group &branches, size_t depth) {
   auto repr = branches[0].ops[depth];
-  auto repr_prim_name = GetCNodePrimitive(repr)->name();
+  auto repr_prim = GetCNodePrimitive(repr);
+  MS_EXCEPTION_IF_NULL(repr_prim);
+  auto repr_prim_name = repr_prim->name();
   // check if all branches in current depth can be combined
   for (auto it = branches.begin() + 1; it != branches.end(); it++) {
     const Branch &branch = *it;
     auto node = branch.ops[depth];
-    auto prim_name = GetCNodePrimitive(node)->name();
+    auto node_prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(node_prim);
+    auto prim_name = node_prim->name();
     if (prim_name != repr_prim_name) {
       MS_LOG(INFO) << "Prim not compatible!" << prim_name << " vs " << repr_prim_name;
       return false;
@@ -381,7 +390,9 @@ CNodePtr GraphBuilder::NewReshapeNode(const FuncGraphPtr &func_graph, const AnfN
   auto orig_shape_in = common::AnfAlgo::GetPrevNodeOutputInferShape(orig_node, 0);
   auto orig_shape_out = common::AnfAlgo::GetOutputInferShape(orig_node, 0);
   auto new_out_shape = InferReshapeOut(orig_shape_in, orig_shape_out, new_shape_in);
-  GetCNodePrimitive(node)->set_attr(kShape, MakeValue(new_out_shape));
+  auto prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  prim->set_attr(kShape, MakeValue(new_out_shape));
   std::vector<ShapeVector> shapes = {new_out_shape};
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, node.get());
   return node;

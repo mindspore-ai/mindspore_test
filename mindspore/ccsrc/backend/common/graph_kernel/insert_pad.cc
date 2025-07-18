@@ -79,7 +79,9 @@ bool IsAkgMatMul(size_t K, size_t M, size_t N) {
 // Return ture if (K, M, N) need pad
 std::tuple<bool, bool, bool> NeedPad(const CNodePtr &matmul, vec *pad_shape_a, vec *pad_shape_b, vec *unpad_shape,
                                      vec *tail_shape_a, vec *tail_shape_b, vec *tail_shape_unpad) {
-  auto mm_attrs = common::AnfAlgo::GetCNodePrimitive(matmul)->attrs();
+  auto prim = common::AnfAlgo::GetCNodePrimitive(matmul);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto mm_attrs = prim->attrs();
   if (mm_attrs.count("transpose_a") == 0 || mm_attrs.count("transpose_b") == 0) {
     MS_LOG(ERROR) << "Can not find attr 'transpose_a' or 'transpose_b' in node " << matmul->fullname_with_scope();
     return std::tuple(false, false, false);
@@ -105,7 +107,7 @@ std::tuple<bool, bool, bool> NeedPad(const CNodePtr &matmul, vec *pad_shape_a, v
   size_t pad_M;
   size_t pad_N;
   std::tie(K, M, N, pad_K, pad_M, pad_N) = GetTransShape(tran_a, tran_b, shape_a, shape_b, pad_shape_a, pad_shape_b);
-  // Donot Pad for cublas operator
+  // Do not Pad for cublas operator
   if (!IsAkgMatMul(K, M, N)) {
     SetNodeAttrSafely("Akg", MakeValue(false), matmul);
     return std::tuple(false, false, false);

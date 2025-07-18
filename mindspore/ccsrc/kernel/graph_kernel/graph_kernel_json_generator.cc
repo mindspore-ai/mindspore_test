@@ -609,6 +609,9 @@ void GraphKernelJsonGenerator::GetAttrJson(const AnfNodePtr &anf_node, const std
 
 bool GraphKernelJsonGenerator::CreateAttrDescJson(const AnfNodePtr &anf_node, const OpInfoPtr &op_info,
                                                   nlohmann::json *attrs_json) {
+  MS_EXCEPTION_IF_NULL(anf_node);
+  MS_EXCEPTION_IF_NULL(op_info);
+  MS_EXCEPTION_IF_NULL(attrs_json);
   auto attrs = op_info->attrs_ptr();
   if (attrs.empty()) {
     MS_LOG(DEBUG) << "Apply kernel [" << anf_node->fullname_with_scope() << "] op info attrs is empty";
@@ -616,7 +619,7 @@ bool GraphKernelJsonGenerator::CreateAttrDescJson(const AnfNodePtr &anf_node, co
   }
   auto dyn_input_sizes = GetDynInputSizes(anf_node);
   auto primitive = GetCNodePrimitive(anf_node);
-
+  MS_EXCEPTION_IF_NULL(primitive);
   // create input name list for "x_shape" in attr with "x" in primitive.
   auto inputs = op_info->inputs_ptr();
   std::map<std::string, size_t> op_info_shape_name;

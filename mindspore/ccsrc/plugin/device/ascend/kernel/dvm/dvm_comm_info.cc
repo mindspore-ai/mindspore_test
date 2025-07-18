@@ -63,7 +63,7 @@ bool DvmCommInfo::EnableComm() {
 
 bool DvmCommInfo::IsTargetCommOp(const AnfNodePtr node) {
   auto prim = GetCNodePrimitive(node);
-  if (!prim->HasAttr(kAttrGroup)) {
+  if (prim == nullptr || !prim->HasAttr(kAttrGroup)) {
     return false;
   }
   const std::string &group = GetValue<std::string>(prim->GetAttr(kAttrGroup));

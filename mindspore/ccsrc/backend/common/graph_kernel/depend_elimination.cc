@@ -70,11 +70,19 @@ const AnfNodePtr GeneratedDependElimination::Process(const FuncGraphPtr &func_gr
   if (common::AnfAlgo::IsGraphKernel(input1)) {
     auto sub_graph = common::AnfAlgo::GetCNodeFuncGraphPtr(input1);
     auto sub_graph_nodes = sub_graph->GetOrderedCnodes();
-    if (sub_graph_nodes.size() == kGraphNodeNum &&
-        GetCNodePrimitive(sub_graph_nodes.front())->name() == prim::kPrimBroadcastTo->name()) {
-      auto assign_node = node->cast<CNodePtr>()->input(kIndex2);
-      auto reducesum_node = assign_node->cast<CNodePtr>()->input(kIndex2);
-      return reducesum_node;
+    if (sub_graph_nodes.size() == kGraphNodeNum) {
+      auto node_prim = GetCNodePrimitive(sub_graph_nodes.front());
+      MS_EXCEPTION_IF_NULL(node_prim);
+      if (node_prim->name() == prim::kPrimBroadcastTo->name()) {
+        auto cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        auto assign_node = cnode->input(kIndex2);
+        MS_EXCEPTION_IF_NULL(assign_node);
+        auto assign_cnode = assign_node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(assign_cnode);
+        auto reducesum_node = assign_cnode->input(kIndex2);
+        return reducesum_node;
+      }
     }
   }
   return nullptr;
