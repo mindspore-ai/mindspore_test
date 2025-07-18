@@ -117,6 +117,7 @@
 #include "frontend/optimizer/irpass/virtualviewgrad_op.h"
 #include "frontend/optimizer/irpass/virtualview_op.h"
 #include "frontend/optimizer/irpass/inplace_input_replace.h"
+#include "frontend/optimizer/irpass/isolate_inplace_func_replace.h"
 #include "frontend/jit/ps/pass_config.h"
 #include "frontend/jit/ps/graph_circle_handler.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
@@ -1047,12 +1048,15 @@ OptPassGroupMap GetViewInplaceProcessMap(opt::irpass::ViewInplacePassType type) 
   } else if (type == opt::irpass::ViewInplacePassType::DoInplaceAndVirtualOpsRemove) {
     OptPassGroupMap view_inplace_map(
       {{"virtual_view_insert", opt::OptPassConfig(opt::irpass::VirtualViewInsert)},
+       {"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
        {"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)},
        {"remove_redundant_virtual_ops", opt::OptPassConfig(opt::irpass::RemoveRedundantVirtualOps)},
        {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())}});
     return view_inplace_map;
   } else if (type == opt::irpass::ViewInplacePassType::OnlyDoInplace) {
-    OptPassGroupMap inplace_map({{"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)}});
+    OptPassGroupMap inplace_map(
+      {{"isolate_inplace_func_replace", opt::OptPassConfig(opt::irpass::IsolateInplaceFuncReplace)},
+       {"do_inplace_input_replace", opt::OptPassConfig(opt::irpass::DoInplaceInputReplace)}});
     return inplace_map;
   } else if (type == opt::irpass::ViewInplacePassType::EliminateVirtualView) {
     OptPassGroupMap eliminate_virtual_view_map(

@@ -96,9 +96,13 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       }
     }
 
-    for (size_t i = 1; i < cnode->size(); i++) {
+    for (size_t i = 1; i < cnode->size(); ++i) {
       auto original_input = cnode->input(i);
-      if (inplace_input.count(original_input) == 0 || original_input->func_graph() != func_graph) {
+      if (original_input->func_graph() != func_graph) {
+        continue;
+      }
+      auto it = inplace_input.find(original_input);
+      if (it == inplace_input.end()) {
         continue;
       }
       // Find the final inplaced cnode to replace
@@ -106,13 +110,15 @@ void ChangeInplaceInputInner(const FuncGraphPtr &func_graph) {
       // %1 = Inplace(%0)
       // %2 = Inplace(%1)
       // %3 = Depend(%0, U) ==> %3 = Depend(%2, U)
-      AnfNodePtr repalced_node = inplace_input[original_input];
-      while (inplace_input.count(repalced_node) != 0) {
-        repalced_node = inplace_input[repalced_node];
+      AnfNodePtr replaced_node = it->second;
+      it = inplace_input.find(replaced_node);
+      while (it != inplace_input.end()) {
+        replaced_node = it->second;
+        it = inplace_input.find(replaced_node);
       }
       MS_LOG(INFO) << "Replace cnode : " << cnode->DebugString() << " input from: " << original_input->DebugString()
-                   << " to: " << repalced_node->DebugString() << " for inplace ops replacement.";
-      manager->SetEdge(cnode, i, repalced_node);
+                   << " to: " << replaced_node->DebugString() << " for inplace ops replacement.";
+      manager->SetEdge(cnode, i, replaced_node);
     }
     const auto &prim = GetCNodePrimitive(cnode);
     if (prim == nullptr) {
