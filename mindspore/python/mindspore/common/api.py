@@ -1216,7 +1216,7 @@ def jit(
             - `bytecode <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#bytecode>`_ :
               Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
               change and/or deletion.
-            - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
+            - `trace <https://www.mindspore.cn/docs/en/master/features/compile/graph_construction.html#trace>`_ : Trace the execution of Python code to build graph. This is an experimental prototype that is
               subject to change and/or deletion.
 
         jit_level (str, optional): Used to control the compilation optimization level. Currently is only effective
@@ -1238,12 +1238,14 @@ def jit(
             not supported), then it will raise an exception. This currently only applies when capture_mode is ``ast``
             or ``bytecode``. Default: ``False``.
         backend (str, optional): The compilation backend to be used. If this parameter is not set, the framework will
-            use ``GE`` backend for Atlas training series products and ``ms_backend`` backend for others including Atlas
-            A2 training series products by default.
+            use ``"GE"`` backend for Atlas training series products and ``"ms_backend"`` backend for others including
+            Atlas A2 training series products by default.
 
-            - `ms_backend`: Adopt KernelByKernel execution mode.
-            - `GE`: Adopt Sink execution mode. The whole model will be sinked to device to execute, only applicable to
-              the top cell of model. And only can be used in Ascend platform.
+            - ms_backend: Utilizes the built-in backend engine of MindSpore for hardware-related compilation
+              optimization and execution, supporting multiple hardware forms such as Ascend, GPU, and CPU.
+            - GE: Utilizes the GraphEngine, a graph compilation and execution engine within CANN,
+              for Ascend model compilation and execution. Note: This backend takes effect only in static graph mode
+              and can be executed only on Ascend hardware.
 
         **options (dict): A dictionary of options to pass to the compilation backend.
 
