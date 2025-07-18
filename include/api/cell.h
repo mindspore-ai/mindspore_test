@@ -33,8 +33,22 @@ class MS_API CellBase {
  public:
   CellBase() = default;
   virtual ~CellBase() = default;
+  /// \brief Construct using inputs.
+  ///
+  /// \param[in] inputs Vector of inputs.
+  ///
+  /// \return Vector of outputs.
   virtual std::vector<Output> Construct(const std::vector<Input> &inputs) { return {}; }
+  /// \brief Clone a cellbase.
+  ///
+  /// \return Shared pointer of Cellbase.
   virtual std::shared_ptr<CellBase> Clone() const = 0;
+  /// \brief Run a cellbase.
+  ///
+  /// \param[in] inputs Vector of MSTensor as inputs.
+  /// \param[in] outputs Vector of MSTensor as outputs.
+  ///
+  /// \return Status of the operation.
   virtual Status Run(const std::vector<MSTensor> &inputs, std::vector<MSTensor> *outputs) { return kSuccess; }
   std::vector<Output> operator()(const std::vector<Input> &inputs) const;
 };
@@ -56,12 +70,34 @@ class MS_API GraphCell final : public Cell<GraphCell> {
   explicit GraphCell(const Graph &graph);
   explicit GraphCell(Graph &&graph);
   explicit GraphCell(const std::shared_ptr<Graph> &graph);
-
+  /// \brief Set a context.
+  ///
+  /// \param[in] context Context to be set.
   void SetContext(const std::shared_ptr<Context> &context);
+  /// \brief Get back the graph.
+  ///
+  /// \return Graph of the graphcell.
   const std::shared_ptr<Graph> &GetGraph() const { return graph_; }
+  /// \brief Run the graphcell.
+  ///
+  /// \param[in] inputs Vector of MSTensor as inputs.
+  /// \param[in] outputs Vector of MSTensor as outputs.
+  ///
+  /// \return Status of the operation.
   Status Run(const std::vector<MSTensor> &inputs, std::vector<MSTensor> *outputs) override;
+  /// \brief Get the inputs.
+  ///
+  /// \return Inputs.
   std::vector<MSTensor> GetInputs();
+  /// \brief Get the outputs.
+  ///
+  /// \return Outputs.
   std::vector<MSTensor> GetOutputs();
+  /// \brief Load the device.
+  ///
+  /// \param[in] device_id Device id to be loaded.
+  ///
+  /// \return Status of the operation.
   Status Load(uint32_t device_id);
 
  private:
