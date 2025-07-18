@@ -50,4 +50,17 @@ Tensor
     mindspore_lite.Format
     mindspore_lite.Tensor
 
+LLMEngine
+---------
 
+.. autosummary::
+    :toctree: mindspore_lite
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore_lite.LLMReq
+    mindspore_lite.LLMEngineStatus
+    mindspore_lite.LLMRole
+    mindspore_lite.LLMEngine
+    mindspore_lite.LLMStatusCode
+    mindspore_lite.LLMException
