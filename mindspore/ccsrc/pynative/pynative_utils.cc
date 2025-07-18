@@ -50,6 +50,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pynative {
 namespace PyNativeAlgo {
@@ -549,7 +550,9 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
       return CreateNonTensorByAbstract(abs);
     }
     for (size_t i = 0; i < abs_seq->size(); ++i) {
-      (void)out.emplace_back(std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs_seq->elements()[i])));
+      // todo: check.
+      (void)out.emplace_back(
+        tensor::empty(type_id, GetShapeFromAbstract(abs_seq->elements()[i]), device::DeviceType::kCPU));
     }
     return std::make_shared<ValueTuple>(out);
   }
@@ -557,7 +560,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
     MS_LOG(DEBUG) << "Get non tensor output";
     return CreateNonTensorByAbstract(abs);
   }
-  return std::make_shared<tensor::Tensor>(type_id, GetShapeFromAbstract(abs));
+  return tensor::empty(type_id, GetShapeFromAbstract(abs), device::DeviceType::kCPU);
 }
 
 void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {
@@ -1227,7 +1230,7 @@ bool DataConvert::RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_ru
   const auto &input_name = input_names_vec[input_index];
   if (v->isa<tensor::Tensor>()) {
     auto tensor = v->cast<tensor::TensorPtr>();
-    if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
+    if (tensor->unsafe_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
       return false;
     }
   }
@@ -1308,23 +1311,6 @@ void PyBoost::UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::Stu
     MS_LOG(DEBUG) << "Update StubNode abstract " << abstract->ToString();
   }
   stub_output->SetValue(real_out);
-}
-
-void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
-      !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    // If execution mode is Graph Mode in MsContext, the tensor will be the input of graph which will execute in Graph
-    // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
-    for (const auto &output : op->outputs()) {
-      auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
-      if (device_address == nullptr) {
-        continue;
-      }
-      output->data_sync(true);
-    }
-  }
 }
 
 PrimitivePtr PyBoost::ConvertPrimitive(const py::object &obj) {

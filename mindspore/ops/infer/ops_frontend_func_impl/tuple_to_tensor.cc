@@ -44,12 +44,13 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 constexpr auto kTupleToTensor = "TupleToTensor";
 tensor::TensorPtr CreateEmptyTupleTensorByType(const TypePtr &data_type) {
   std::vector<int64_t> tensor_shape = {0};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(data_type->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(data_type->type_id(), tensor_shape, device::DeviceType::kCPU);
   return tensor;
 }
 template <typename T, typename S>
@@ -59,11 +60,11 @@ tensor::TensorPtr CreateTensorByTupleCast(const std::vector<T> &values, const Ty
   (void)std::transform(values.begin(), values.end(), std::back_inserter(new_values),
                        [&](T value) -> S { return static_cast<S>(value); });
   std::vector<int64_t> tensor_shape = {SizeToLong(new_values.size())};
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_ptr->type_id(), tensor_shape);
+  tensor::TensorPtr tensor = tensor::empty(type_ptr->type_id(), tensor_shape, device::DeviceType::kCPU);
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = new_values.size() * data_len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), new_values.data(), elem_num);
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->DataNBytes()), new_values.data(), elem_num);
   if (ret_code != EOK) {
     MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;
   }

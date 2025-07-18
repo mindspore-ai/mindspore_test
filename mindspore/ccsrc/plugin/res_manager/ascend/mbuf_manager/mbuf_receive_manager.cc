@@ -32,6 +32,7 @@
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::device::ascend {
 
@@ -44,7 +45,7 @@ bool CopyDataToTensor(const uint8_t *src_addr, mindspore::tensor::TensorPtr tens
   MS_EXCEPTION_IF_NULL(tensor_ptr);
   auto *dst_addr = reinterpret_cast<uint8_t *>(tensor_ptr->data_c());
   MS_EXCEPTION_IF_NULL(dst_addr);
-  size_t dst_size = static_cast<size_t>(tensor_ptr->data().nbytes());
+  size_t dst_size = static_cast<size_t>(tensor_ptr->DataNBytes());
   MS_EXCEPTION_IF_CHECK_FAIL(dst_size >= size, "The destination size is smaller than the source size.");
   size_t remain_size = size;
   while (remain_size > SECUREC_MEM_MAX_LEN) {
@@ -93,7 +94,7 @@ mindspore::tensor::TensorPtr ConvertDataItemToTensorPtr(acltdtDataItem *item) {
     return nullptr;
   }
   auto type_id = type_iter->second;
-  auto tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(type_id, tensor_shape);
+  auto tensor_ptr = tensor::empty(type_id, tensor_shape, device::DeviceType::kCPU);
   if (acl_data_size == 0) {
     return tensor_ptr;
   }
@@ -191,7 +192,7 @@ bool ScopeAclTdtDataset::FinishSliceTensor() {
       return false;
     }
     auto type_id = type_iter->second;
-    auto tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(type_id, sliced_tensor_->tensor_shape_);
+    auto tensor_ptr = tensor::empty(type_id, sliced_tensor_->tensor_shape_, device::DeviceType::kCPU);
     if (!CopyDataToTensor(reinterpret_cast<const uint8_t *>(tensor_data.c_str()), tensor_ptr, tensor_data.size())) {
       return false;
     }

@@ -29,8 +29,14 @@ bool DeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   if (stream_id == UINT32_MAX) {
     stream_id = address->stream_id();
   }
-  auto device_ptr = AllocateMemory(address->GetSize(), stream_id);
-  if (!device_ptr) {
+  const auto &allocator = address->allocator();
+  void *device_ptr = nullptr;
+  if (allocator != nullptr) {
+    device_ptr = allocator->Alloc(address->GetSize(), stream_id);
+  } else {
+    device_ptr = AllocateMemory(address->GetSize(), stream_id);
+  }
+  if (device_ptr == nullptr) {
     MS_LOG(WARNING) << "Allocate memory failed for size: " << address->GetSize();
     return false;
   }
@@ -52,7 +58,12 @@ void DeviceResManager::FreeMemory(DeviceAddress *const &address) const {
     return;
   }
   MS_LOG(DEBUG) << "Free memory from device address:" << address << " ptr:" << address->GetMutablePtr();
-  FreeMemory(address->GetMutablePtr());
+  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+  if (allocator != nullptr) {
+    allocator->Free(address->GetMutablePtr());
+  } else {
+    FreeMemory(address->GetMutablePtr());
+  }
   address->set_ptr(nullptr);
 }
 }  // namespace device

@@ -34,6 +34,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/device/res_manager/utils/utils.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
@@ -150,7 +151,9 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
     return;
   }
-
+  virtual bool Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
   // Relevant function to allocate and free device memory of DeviceAddress.
   virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const;
   virtual void FreeMemory(DeviceAddress *const &address) const;
@@ -300,6 +303,8 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual CollectiveCommunicationLib *collective_comm_lib() const = 0;
 
   virtual std::shared_ptr<SwapManager> swap_manager() const { return nullptr; }
+
+  virtual std::shared_ptr<AddressAllocator> pin_mem_allocator() const { return nullptr; }
 
   virtual std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(
     const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {

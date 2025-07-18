@@ -26,6 +26,7 @@
 #include "infer/ops_func_impl/real_div.h"
 #include "ops_utils/op_constants.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>
@@ -101,7 +102,7 @@ class RealDivFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto data_size = x_tensor->DataSize();
     auto type_id = x_tensor->data_type();
-    auto result_tensor = std::make_shared<tensor::Tensor>(type_id, x_shape);
+    auto result_tensor = tensor::empty(type_id, x_shape, device::DeviceType::kCPU);
     auto result_datac = result_tensor->data_c();
     auto iter = func_map.find(type_id);
     if (iter != func_map.end()) {

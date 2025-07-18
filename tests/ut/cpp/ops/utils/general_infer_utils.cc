@@ -37,6 +37,7 @@
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
+#include "ir/tensor_api.h"
 namespace UT {
 void InitPythonPath();
 }
@@ -97,7 +98,7 @@ static ValuePtr MakeValue(const ShapeVector &shape, TypeId type, ValuePtr value,
   if (shape.empty()) {
     throw std::runtime_error("Value should be provided for scalar input '" + arg_name + "'");
   }
-  return std::make_shared<tensor::Tensor>(type, shape);
+  return tensor::empty(type, shape, device::DeviceType::kCPU);
 }
 
 InferInfoPtr param_to_value_info(InferInfoParam param, const std::string &op_type, const std::string &arg_name) {

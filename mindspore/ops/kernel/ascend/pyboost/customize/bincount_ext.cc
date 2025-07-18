@@ -35,15 +35,15 @@ int64_t ConvertTensorToInt64(const TensorPtr &tensor) {
   auto data_type = tensor->data_type_c();
   switch (data_type) {
     case kNumberTypeInt8:
-      return static_cast<int64_t>(*(static_cast<int8_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int8_t *>(tensor->data_c())));
     case kNumberTypeInt16:
-      return static_cast<int64_t>(*(static_cast<int16_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int16_t *>(tensor->data_c())));
     case kNumberTypeInt32:
-      return static_cast<int64_t>(*(static_cast<int32_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int32_t *>(tensor->data_c())));
     case kNumberTypeInt64:
-      return static_cast<int64_t>(*(static_cast<int64_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const int64_t *>(tensor->data_c())));
     case kNumberTypeUInt8:
-      return static_cast<int64_t>(*(static_cast<uint8_t *>(tensor->data_c())));
+      return static_cast<int64_t>(*(static_cast<const uint8_t *>(tensor->data_c())));
     default:
       MS_LOG(EXCEPTION) << "Unsupported input data type: " << data_type;
   }
@@ -64,14 +64,14 @@ tensor::TensorPtr BincountExtAscendCustomize(const std::shared_ptr<OpRunner> &op
     auto max_tensor = max_op->Call(input_tensor);
 
     // Get min value in input tensors
-    min_tensor->data_sync();
-    auto min_value = ConvertTensorToInt64(min_tensor);
+    auto min_tensor_cpu = min_tensor->cpu();
+    auto min_value = ConvertTensorToInt64(min_tensor_cpu);
     if (min_value < 0) {
       MS_LOG(EXCEPTION) << "Bincount only supports non-negative input values.";
     }
     // Get max value in input tensors and compare it  with min_length
-    max_tensor->data_sync();
-    auto max_value = ConvertTensorToInt64(max_tensor);
+    auto max_tensor_cpu = max_tensor->cpu();
+    auto max_value = ConvertTensorToInt64(max_tensor_cpu);
     output_shape = (max_value < output_shape) ? output_shape : (max_value + 1);
   }
 

@@ -24,6 +24,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "utils/trace_base.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 constexpr size_t kInputNum = 3;
@@ -54,7 +55,7 @@ tensor::TensorPtr CreateTensor(const AnfNodePtr &node) {
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   MS_EXCEPTION_IF_NULL(tensor_type);
   tensor::DeviceInfo device_info{kOpFormat_NDC1HWC0, tensor_type, kOpFormat_NDC1HWC0};
-  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kFloat16->type_id(), assist_shape);
+  tensor::TensorPtr assist_tensor = tensor::empty(kFloat16->type_id(), assist_shape, device::DeviceType::kCPU);
   assist_tensor->set_device_info(device_info);
 
   // 2 set value of tensor
@@ -73,7 +74,7 @@ tensor::TensorPtr CreateTensor(const AnfNodePtr &node) {
   }
 
   auto elem_num = LongToSize(dims) * kFloat16Len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(assist_tensor->data().nbytes()),
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(assist_tensor->DataNBytes()),
                            static_cast<void *>(half_data.data()), elem_num);
   if (ret_code != 0) {
     MS_LOG(ERROR)

@@ -167,7 +167,7 @@ void DebuggerProtoExporter::SetValueToProto(const ValuePtr &val, debugger::Value
     for (auto &elem : tensor_ptr->shape()) {
       tensor_proto->add_dims(elem);
     }
-    tensor_proto->set_tensor_content(tensor_ptr->data_c(), tensor_ptr->data().nbytes());
+    tensor_proto->set_tensor_content(tensor_ptr->data_c(), tensor_ptr->DataNBytes());
   } else if (val->isa<TensorType>()) {
     value_proto->set_dtype(debugger::DT_TYPE);
 

@@ -23,6 +23,7 @@
 #include "frontend/optimizer/opt.h"
 #include "include/backend/optimizer/helper.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -45,7 +46,7 @@ tensor::TensorPtr CreateTensor(const AnfNodePtr &node) {
                 << ", " << block_size << ", " << block_size << ")";
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   tensor::DeviceInfo device_info{kOpFormat_NC1HWC0, tensor_type};
-  tensor::TensorPtr assist_tensor = std::make_shared<tensor::Tensor>(kFloat16->type_id(), assist_input_shape);
+  tensor::TensorPtr assist_tensor = tensor::empty(kFloat16->type_id(), assist_input_shape, device::DeviceType::kCPU);
   assist_tensor->set_device_info(device_info);
 
   // 2 set value of tensor
@@ -63,7 +64,7 @@ tensor::TensorPtr CreateTensor(const AnfNodePtr &node) {
     }
   }
   auto elem_num = LongToSize(dest_size) * kFloat16Len;
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(assist_tensor->data().nbytes()),
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(assist_tensor->DataNBytes()),
                            static_cast<void *>(half_data.data()), elem_num);
   if (ret_code != EOK) {
     MS_LOG(ERROR)

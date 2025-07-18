@@ -97,7 +97,6 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         inputs_num_(inputs_num),
         name_(name),
         need_erase_(need_erase),
-        exist_flatten_concat_(false),
         strategy_(strategy),
         graph_phase_(graph_phase),
         root_graph_(root_graph),
@@ -116,7 +115,6 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   size_t inputs_num_;
   std::string name_;
   bool need_erase_;
-  mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
   std::string graph_phase_;
   FuncGraphPtr root_graph_;

@@ -16,6 +16,7 @@
 
 #include "common/device_address.h"
 #include "common/format_utils.h"
+#include "runtime/device/res_manager/hal_res_base.h"
 
 namespace mindspore {
 namespace device {
@@ -126,7 +127,6 @@ void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   device_address->set_user_data(user_data_);
   device_address->set_need_sync_user_data(need_sync_user_data_);
   device_address->set_host_shape(host_shape_);
-  device_address->set_heterogeneous_info(hete_info_);
   auto node_with_index = GetNodeIndex();
   device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
   for (const auto &held_by_node : held_by_nodes_) {
@@ -134,19 +134,12 @@ void DeviceAddress::CloneDeviceAddress(const DeviceAddressPtr &device_address) {
   }
 }
 
-const void *DeviceAddress::GetPtr() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr();
-}
+const void *DeviceAddress::GetPtr() const { return GetDevicePtr(); }
 
 void DeviceAddress::set_ptr(void *ptr) {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
   address_common_->pointer_ref_count_->set_ptr(ptr);
   if (ptr != nullptr) {
-    const auto &storage_info = GetStorageInfo();
-    if (storage_info.host_ptr_ == nullptr && storage_info.file_name_.empty()) {
-      status_ = DeviceAddressStatus::kInDevice;
-    }
+    status_ = DeviceAddressStatus::kInDevice;
   }
 }
 
@@ -204,14 +197,11 @@ void DeviceAddress::set_status(DeviceAddressStatus status) { status_ = status; }
 
 DeviceAddressStatus DeviceAddress::status() const { return status_; }
 
-DeviceType DeviceAddress::GetDeviceType() const { return DeviceType::kUnknown; }
-
-void *DeviceAddress::GetMutablePtr() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr();
-}
+void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
 
 const ShapeVector &DeviceAddress::GetShapeVector() const { return address_common_->shape_vector_; }
+
+void DeviceAddress::SetShapeVector(const ShapeVector &shape_vector) { address_common_->shape_vector_ = shape_vector; }
 
 const TensorStorageInfoPtr DeviceAddress::GetTensorStorageInfo() const {
   if (address_common_ == nullptr) {
@@ -297,6 +287,7 @@ void DeviceAddress::set_ref_count_without_hold(const PointerRefCountPtr &ptr_ref
   address_common_->pointer_ref_count_->set_ref_count(ptr_ref_cnt->ref_count());
   address_common_->pointer_ref_count_->set_dynamic_ref_count(ptr_ref_cnt->dynamic_ref_count());
   address_common_->pointer_ref_count_->set_deleter(ptr_ref_cnt->deleter());
+  address_common_->pointer_ref_count_->set_allocator(ptr_ref_cnt->allocator());
   address_common_->pointer_ref_count_->set_is_ptr_persisted(ptr_ref_cnt->is_ptr_persisted());
   address_common_->pointer_ref_count_->set_new_ref_count(ptr_ref_cnt->new_ref_count());
 }
@@ -340,8 +331,13 @@ int32_t DeviceAddress::DecreaseDynamicRefCount(const std::string &op_object) {
 }
 
 bool DeviceAddress::IsPtrValid() const {
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr() != nullptr;
+  if (GetDevicePtr() != nullptr) {
+    return true;
+  }
+  if (hete_info_ == nullptr) {
+    return false;
+  }
+  return hete_info_->host_ptr_ != nullptr || !hete_info_->file_name_.empty();
 }
 
 bool DeviceAddress::IsNotNeedAlloc() const {
@@ -357,7 +353,7 @@ void *DeviceAddress::GetValidPtr(size_t) {
   if (user_data() == nullptr || (!need_sync_user_data_)) {
     return GetDevicePtr();
   }
-  std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
+  std::lock_guard<std::mutex> lock(ptr_mutex_);
   if (!need_sync_user_data_) {
     return GetDevicePtr();
   }
@@ -385,12 +381,6 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   this->set_from_mem_pool(false);
   deleter_ = nullptr;
   set_managed_by_somas(other->managed_by_somas());
-  if (this->heterogeneous_info() != nullptr) {
-    other->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    *(other->heterogeneous_info()) = *(this->heterogeneous_info());
-    this->heterogeneous_info()->host_ptr_ = nullptr;
-    this->heterogeneous_info()->file_name_ = "";
-  }
 }
 
 const UserDataPtr &DeviceAddress::user_data() const { return user_data_; }
@@ -416,6 +406,10 @@ void DeviceAddress::ClearFlag(size_t flag) { CLEAR_FLAG(flag_, flag); }
 std::pair<AnfNodeWeakPtr, size_t> DeviceAddress::node_index() const { return node_index_; }
 
 void DeviceAddress::set_deleter(const std::function<void(uint8_t *)> &deleter) { deleter_ = deleter; }
+
+void DeviceAddress::SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) {
+  pointer_ref_count()->set_deleter(deleter);
+}
 
 std::function<void(uint8_t *)> DeviceAddress::deleter() const { return deleter_; }
 

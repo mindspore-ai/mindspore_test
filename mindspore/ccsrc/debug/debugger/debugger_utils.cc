@@ -52,6 +52,7 @@ using AddressPtrList = std::vector<mindspore::kernel::AddressPtr>;
 using KernelGraph = mindspore::session::KernelGraph;
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
@@ -426,7 +427,7 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
   std::shared_ptr<TensorData> tensor_data = std::make_shared<TensorData>();
   tensor_data->SetTensor(out_tensor);
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
-  auto byte_size = LongToSize(out_tensor->data().nbytes());
+  auto byte_size = LongToSize(out_tensor->DataNBytes());
   if (tensor_info.host_type == kNumberTypeInt4) {
     uint32_t int4_nums_per_byte = 2;
     byte_size = byte_size / int4_nums_per_byte;
@@ -441,7 +442,7 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
 void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_tensor, TypeId host_type,
                       size_t host_size, ShapeVector host_shape) {
   if (host_type == kNumberTypeInt4) {
-    auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, host_shape);
+    auto int8_tensor = tensor::empty(TypeId::kNumberTypeInt8, host_shape, device::DeviceType::kCPU);
     bool split_succeed =
       SplitInt8ToInt4x2(out_tensor->data_c(), host_size, int8_tensor->data_c(), int8_tensor->DataSize());
     if (!split_succeed) {
@@ -532,9 +533,9 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
         host_shape.back() *= 2;
       }
-      mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+      mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(out_tensor);
-      size_t host_size = LongToSize(out_tensor->data().nbytes());
+      size_t host_size = LongToSize(out_tensor->DataNBytes());
       if (host_size == 0) {
         std::string file_name = tensor_info_comm.file_path_prefix;
         if (file_name.rfind("/") != std::string::npos) {
@@ -551,9 +552,12 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
       auto device_tensor = tensor_info.kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
-      auto ret_rt_memcpy = device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size,
-                                                                            tensor_info.device_ptr, device_size);
-      MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
+      device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+      MS_EXCEPTION_IF_NULL(res_manager);
+      auto ret = res_manager->CopyDirectly(out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size,
+                                           device::CopyType::kD2H);
+      MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret << file_path;
 
       // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
       // type is int4, if tensor saved after statistic, the tensor value would be wrong.
@@ -672,14 +676,17 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
-  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {
     MS_LOG(WARNING) << "kernel tensor size is 0, skip it.";
     return out_tensor;
   }
-  device_tensor->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
+  device::ResKey res_key{device_tensor->GetDeviceType(), device_tensor->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->CopyDirectly(out_tensor->data_c(), host_size, src, host_size, device::CopyType::kD2H);
   return out_tensor;
 }
 
@@ -687,7 +694,7 @@ inline string TensorToString(mindspore::tensor::TensorPtr tensor) {
   if (!tensor) {
     return "null";
   }
-  return tensor->data().ToString(tensor->data_type(), tensor->shape(), false);
+  return tensor->DataToString(false);
 }
 
 inline string ShapeToString(const ShapeVector &shape) {

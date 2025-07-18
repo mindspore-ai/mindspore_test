@@ -120,7 +120,6 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_MINDRT,
   MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE,
   MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE,
-  MS_CTX_ENABLE_MEM_OFFLOAD,
   MS_CTX_ENABLE_RECOVERY,
   MS_CTX_ENABLE_GE_HETEROGENOUS,
   MS_CTX_DISABLE_FORMAT_TRANSFORM,
@@ -143,8 +142,6 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_FUSED_CAST_ADD_OPT,
   MS_CTX_NEED_CKPT,
   MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS,
-  // Used for flatten weight, remove after the feature is abort.
-  MS_ENV_FLATTEN_WEIGHT,
   MS_CTX_TYPE_BOOL_END,
 
   // parameter of type int
@@ -326,7 +323,6 @@ class MS_CORE_API MsContext {
 
  private:
   void RefreshExecutionMode();
-  void RefreshMemoryOffload();
 
   void MarkReadStatus(MsCtxParam param) const;   // record status to mutable member params_read_status_
   void MarkWriteStatus(MsCtxParam param) const;  // record status to mutable member params_write_status_

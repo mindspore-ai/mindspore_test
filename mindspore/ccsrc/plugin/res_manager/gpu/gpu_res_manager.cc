@@ -31,6 +31,7 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/tensor_array.h"
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -69,12 +70,8 @@ void GPUResManager::Initialize() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->Initialize();
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
-                                                  &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
-  }
+  swap_manager_ = std::make_shared<SwapManager>(GPUDeviceManager::GetInstance().default_stream_id(),
+                                                &GPUMemoryAllocator::GetInstance(), &GPUPinMemPool::GetInstance());
 
   // Initialize NCCL.
   if (distributed::collective::CollectiveManager::instance()->initialized()) {
@@ -166,32 +163,39 @@ void GPUResManager::FreePartMemorys(const std::vector<void *> &free_addrs, const
 
 bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
-  auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
-  if (device_name_in_address != GetDeviceNameByType(res_key_.device_name_)) {
-    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
-                      << ", type name in context:" << GetDeviceNameByType(res_key_.device_name_);
-  }
+  std::shared_ptr<AddressAllocator> allocator = address->allocator();
+  void *device_ptr = nullptr;
 
-  if (address->GetPtr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
-    return false;
-  }
-
-  if (!BindDeviceToCurrentThread(false)) {
-    return false;
-  }
-
-  if (stream_id == UINT32_MAX) {
-    stream_id = address->stream_id();
-  }
-
-  void *device_ptr;
-  if (swap_manager_ != nullptr) {
-    device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
+  if (MS_UNLIKELY(allocator != nullptr)) {
+    device_ptr = allocator->Alloc(address->GetSize(), stream_id);
   } else {
-    device_ptr =
-      mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(), false, stream_id);
+    auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
+    if (device_name_in_address != GetDeviceNameByType(res_key_.device_name_)) {
+      MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
+                        << ", type name in context:" << GetDeviceNameByType(res_key_.device_name_);
+    }
+
+    if (address->GetPtr() != nullptr) {
+      MS_LOG(ERROR) << "Memory leak detected!";
+      return false;
+    }
+
+    if (!BindDeviceToCurrentThread(false)) {
+      return false;
+    }
+
+    if (stream_id == UINT32_MAX) {
+      stream_id = address->stream_id();
+    }
+
+    if (swap_manager_ != nullptr) {
+      device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
+    } else {
+      device_ptr =
+        mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(), false, stream_id);
+    }
   }
+
   if (!device_ptr) {
     return false;
   }
@@ -256,11 +260,12 @@ std::pair<std::vector<size_t>, std::vector<size_t>> GPUResManager::AllocDeviceMe
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
-    if (tensor->device_address() == nullptr) {
-      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
-    } else {
-      device_address->SyncDeviceToDevice(tensor->device_address().get());
-    }
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    device::ResKey res_key{device_address->GetDeviceType(), device_address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    res_manager->SyncAllStreams();
+    SyncCopy(device_address, tensor->device_address(), device_address->stream_id());
     tensor->set_device_address(device_address);
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
@@ -276,7 +281,7 @@ tensor::TensorPtr GPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
   ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
+  auto tensor = tensor::empty(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
 
@@ -298,7 +303,7 @@ tensor::TensorPtr GPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   auto type_size = UnitSizeInBytes(type_id);
   size_t tensor_size = (end - start) * type_size;
   ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(first_tensor->device_address());
   auto ptr = first_tensor->device_address()->GetMutablePtr();
   auto offset_size = start * type_size;
@@ -409,6 +414,184 @@ DeviceAddressPtr GPUResManager::CreateDeviceAddress(void *ptr, size_t size, cons
   }
 
   return device_address;
+}
+
+bool GPUResManager::SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                             size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(dst_device_sync);
+  MS_EXCEPTION_IF_NULL(src_device_sync);
+  if (dst_device_sync->GetDeviceType() == DeviceType::kGPU && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
+    return SyncHostToDevice(dst_device_sync, src_device_sync, stream_id);
+  }
+  if (dst_device_sync->GetDeviceType() == DeviceType::kCPU && src_device_sync->GetDeviceType() == DeviceType::kGPU) {
+    return SyncDeviceToHost(dst_device_sync, src_device_sync, stream_id);
+  }
+  return SyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
+}
+
+bool GPUResManager::AsyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                              size_t stream_id, bool) const {
+  MS_EXCEPTION_IF_NULL(dst_device_sync);
+  MS_EXCEPTION_IF_NULL(src_device_sync);
+  if (dst_device_sync->GetDeviceType() == DeviceType::kGPU && src_device_sync->GetDeviceType() == DeviceType::kCPU) {
+    return AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id);
+  }
+  if (dst_device_sync->GetDeviceType() == DeviceType::kCPU && src_device_sync->GetDeviceType() == DeviceType::kGPU) {
+    return AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id);
+  }
+  return AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id);
+}
+
+bool GPUResManager::Copy(void *dst, const void *src, uint64_t size, CopyType kind, size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get stream id:" << stream_id;
+  }
+  switch (kind) {
+    case CopyType::kD2H: {
+      if (!CudaDriver::CopyDeviceMemToHostAsync(dst, src, size, stream)) {
+        MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from:" << dst << " to:" << src << " size:" << size;
+      }
+      break;
+    }
+    case CopyType::kH2D: {
+      if (!CudaDriver::CopyHostMemToDeviceAsync(dst, src, size, stream)) {
+        MS_LOG(ERROR) << "CopyHostMemToDeviceAsync failed from:" << dst << " to:" << src << " size:" << size;
+        return false;
+      }
+      break;
+    }
+    case CopyType::kD2D: {
+      if (!CudaDriver::CopyDeviceMemToDeviceAsync(dst, src, size, stream)) {
+        MS_LOG(ERROR) << "CopyDeviceMemToDeviceAsync failed from:" << dst << " to:" << src << " size:" << size;
+      }
+      break;
+    }
+    default:
+      MS_LOG(EXCEPTION) << "Invalid copy type:" << kind;
+  }
+  return true;
+}
+
+bool GPUResManager::CopyDirectly(void *dst, size_t dst_size, const void *src, size_t src_size, CopyType kind) const {
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_EXCEPTION_IF_NULL(src);
+  return GPUDeviceManager::GetInstance().CopyDeviceMemToHost(dst, const_cast<void *>(src),
+                                                             src_size > dst_size ? dst_size : src_size);
+}
+
+bool GPUResManager::SyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                     size_t stream_id) const {
+  if (!AsyncDeviceToHost(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
+}
+
+bool GPUResManager::SyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                     size_t stream_id) const {
+  if (!AsyncHostToDevice(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
+}
+
+bool GPUResManager::SyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                       size_t stream_id) const {
+  if (!AsyncDeviceToDevice(dst_device_sync, src_device_sync, stream_id)) {
+    return false;
+  }
+  return SyncStream(stream_id);
+}
+
+bool GPUResManager::AsyncDeviceToHost(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                      size_t stream_id) const {
+  return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyDeviceToHost);
+}
+
+bool GPUResManager::AsyncHostToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                      size_t stream_id) const {
+  return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyHostToDevice);
+}
+
+bool GPUResManager::AsyncDeviceToDevice(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                        size_t stream_id) const {
+  return Copy(dst_device_sync, src_device_sync, stream_id, cudaMemcpyKind::cudaMemcpyDeviceToDevice);
+}
+
+bool GPUResManager::Copy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id,
+                         cudaMemcpyKind copy_type) const {
+  const auto &dst_device_address = dynamic_cast<const DeviceAddress *>(dst_device_sync.get());
+  const auto &src_device_address = dynamic_cast<const DeviceAddress *>(src_device_sync.get());
+  MS_EXCEPTION_IF_NULL(dst_device_address);
+  MS_EXCEPTION_IF_NULL(src_device_address);
+  MS_LOG(DEBUG) << "Async copy from device address:" << src_device_address->ToString()
+                << " to:" << dst_device_address->ToString();
+  if (dst_device_address->GetDevicePtr() == src_device_address->GetDevicePtr()) {
+    MS_LOG(DEBUG) << "Dst addr is same with src addr, no need memcpy data.";
+    return true;
+  }
+  // The input or output may be empty.
+  if (dst_device_address->GetSize() == 0 || src_device_address->GetSize() == 0) {
+    MS_LOG(DEBUG) << "No need copy for size 0, from device address:" << src_device_address->ToString()
+                  << " to:" << dst_device_address->ToString();
+    return true;
+  }
+  size_t copy_size = src_device_address->GetSize();
+  if (dst_device_address->GetSize() < src_device_address->GetSize()) {
+    MS_LOG(WARNING) << "Src size is greater than dst size, src device address:" << src_device_address->ToString()
+                    << " dst:" << dst_device_address->ToString();
+    copy_size = dst_device_address->GetSize();
+  }
+
+  if (copy_type == cudaMemcpyKind::cudaMemcpyDeviceToDevice &&
+      (dst_device_address->format() != src_device_address->format() ||
+       dst_device_address->type_id() != src_device_address->type_id())) {
+    MS_LOG(ERROR) << "Format or type is different,  src device address:" << src_device_address->ToString()
+                  << " dst:" << dst_device_address->ToString();
+    return false;
+  }
+
+  auto stream = GPUDeviceManager::GetInstance().GetStream(stream_id);
+  if (stream == nullptr) {
+    MS_LOG(EXCEPTION) << "Failed to get stream id:" << stream_id
+                      << " for src device address:" << src_device_address->ToString();
+  }
+  MS_EXCEPTION_IF_NULL(src_device_address->GetDevicePtr());
+  MS_EXCEPTION_IF_NULL(dst_device_address->GetDevicePtr());
+  switch (copy_type) {
+    case cudaMemcpyKind::cudaMemcpyDeviceToHost: {
+      if (!CudaDriver::CopyDeviceMemToHostAsync(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(),
+                                                copy_size, stream)) {
+        MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from device address:" << src_device_address->ToString()
+                      << " to:" << dst_device_address->ToString();
+      }
+      break;
+    }
+    case cudaMemcpyKind::cudaMemcpyHostToDevice: {
+      if (!CudaDriver::CopyHostMemToDeviceAsync(dst_device_address->GetDevicePtr(), src_device_address->GetDevicePtr(),
+                                                copy_size, stream)) {
+        MS_LOG(ERROR) << "CopyHostMemToDeviceAsync failed from device address:" << src_device_address->ToString()
+                      << " to:" << dst_device_address->ToString();
+        return false;
+      }
+      break;
+    }
+    case cudaMemcpyKind::cudaMemcpyDeviceToDevice: {
+      if (!CudaDriver::CopyDeviceMemToDeviceAsync(dst_device_address->GetDevicePtr(),
+                                                  src_device_address->GetDevicePtr(), copy_size, stream)) {
+        MS_LOG(ERROR) << "CopyDeviceMemToHostAsync failed from device address:" << src_device_address->ToString()
+                      << " to:" << dst_device_address->ToString();
+      }
+      break;
+    }
+    default:
+      MS_LOG(EXCEPTION) << "Invalid copy type for src device address:" << src_device_address
+                        << " dst:" << dst_device_address;
+  }
+  return true;
 }
 
 bool GPUResManager::CreateStream(size_t *stream_id) const {
@@ -573,6 +756,34 @@ std::shared_ptr<void> GPUResManager::AllocateHostMemory(size_t size) const {
   });
 }
 
+MS_REGISTER_HAL_COPY_FUNC(
+  DeviceType::kGPU, ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kGPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }),
+  ([](const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id, bool keep_src) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kGPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->AsyncCopy(dst_device_sync, src_device_sync, stream_id, keep_src);
+  }),
+  ([](void *dst, const void *src, uint64_t size, size_t stream_id) {
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    auto device_id = context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    device::ResKey res_key{DeviceType::kGPU, device_id};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
+  }));
 MS_REGISTER_HAL_RES_MANAGER(kGPUDevice, DeviceType::kGPU, GPUResManager);
 }  // namespace gpu
 }  // namespace device

@@ -843,26 +843,6 @@ void KernelRunner::TraceDynamicMemory() {
 }
 
 void KernelRunner::SendMemoryAllocReq(OpContext<KernelTensor> *const context) {
-  if (device_contexts_[0]->device_res_manager_->swap_manager() != nullptr) {
-    MS_EXCEPTION_IF_NULL(kernel_info_);
-    for (const auto &out_in : kernel_info_->out_in_ref_map()) {
-      const auto &input_kernel_tensor = input_kernel_tensors_[out_in.second];
-      MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-      const auto &input_device_tensor = input_kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(input_device_tensor);
-      const auto &ptr = input_device_tensor->GetValidPtr(kDefaultStreamIndex);
-      MS_EXCEPTION_IF_NULL(output_kernel_tensors_[out_in.first]);
-      const auto &output_device_tensor = output_kernel_tensors_[out_in.first]->device_address();
-      if (ptr == nullptr || output_device_tensor == nullptr || output_device_tensor->GetPtr() != nullptr) {
-        continue;
-      }
-      // Pointer in DeviceAddress which is reference output may not be updated to the same as the reference input
-      // which is swapped out.
-      MS_LOG(DEBUG) << "Set device ptr of " << out_in.first << "th ref output the same as input " << out_in.second
-                    << ": " << ptr;
-      output_device_tensor->set_ptr(ptr);
-    }
-  }
   MemoryManagerActor::GetInstance()->AllocateMemory(&memory_alloc_list_, device_contexts_[0], context, GetAID());
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {
@@ -958,7 +938,7 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
                                          OpContext<KernelTensor> *const context, bool inference_param) {
   // The ignored input address that is not used in the kernel launch and no need copy.
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_tensor = kernel_tensor->device_address().get();
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (!launch_ignored_inputs_.empty() && (std::find(launch_ignored_inputs_.begin(), launch_ignored_inputs_.end(),
                                                     input_index) != launch_ignored_inputs_.end())) {
@@ -1060,7 +1040,9 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
                << " copy from device address:" << kernel_tensor->ToString()
                << " to device address:" << new_kernel_tensor->ToString();
   // Copy from the real parameter to formal parameter and insert the device tensor copy store.
-  if (!Copy(new_device_tensor.get(), device_tensor)) {
+  if (!SyncAllStreamForDeviceAddress(device_tensor->GetDeviceType() == device::DeviceType::kCPU ? new_device_tensor
+                                                                                                : device_tensor) ||
+      !SyncCopy(new_device_tensor, device_tensor, kDefaultStreamIndex)) {
     std::string error_info = "Copy device tensor failed: " + GetAID().Name();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
   }
@@ -1846,7 +1828,11 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
         continue;
       }
 
-      if (!Copy(new_kernel_tensor->device_address().get(), input_kernel_tensor->device_address().get())) {
+      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address()->GetDeviceType() ==
+                                             device::DeviceType::kCPU
+                                           ? input_kernel_tensor->device_address()
+                                           : new_kernel_tensor->device_address()) ||
+          !SyncCopy(new_kernel_tensor->device_address(), input_kernel_tensor->device_address(), kDefaultStreamIndex)) {
         std::string error_info = "Copy input device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }
@@ -1875,7 +1861,11 @@ void KernelRunner::RefreshDeviceTensorCopyStore(OpContext<KernelTensor> *const c
         continue;
       }
 
-      if (!Copy(new_kernel_tensor->device_address().get(), output_kernel_tensor->device_address().get())) {
+      if (!SyncAllStreamForDeviceAddress(new_kernel_tensor->device_address()->GetDeviceType() ==
+                                             device::DeviceType::kCPU
+                                           ? output_kernel_tensor->device_address()
+                                           : new_kernel_tensor->device_address()) ||
+          !SyncCopy(new_kernel_tensor->device_address(), output_kernel_tensor->device_address(), kDefaultStreamIndex)) {
         std::string error_info = "Copy output device tensor failed: " + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(strategy_, *context, error_info);
       }

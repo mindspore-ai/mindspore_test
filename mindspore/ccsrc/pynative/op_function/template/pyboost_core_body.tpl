@@ -23,11 +23,8 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
         kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
         auto outputs = kernel::pyboost::${operator_name}(${cast_args});
-        auto op = kernel::pyboost::OpRunStatus::Get().GetLastOp();
-        // Data sync in mix mode(Graph and PyNative)
-        PyNativeAlgo::PyBoost::DataSyncForGraph(op);
         kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
-
+        (void)kernel::pyboost::OpRunStatus::Get().GetLastOp();
         tensor::SetPromise(promises, outputs);
       }, [promises]() {
         tensor::SetException(promises);

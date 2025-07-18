@@ -47,6 +47,7 @@
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
+#include "mindspore/core/include/ir/tensor_api.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -102,35 +103,48 @@ Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVe
   return Format::DEFAULT_FORMAT;
 }
 
-void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const KernelTensorPtr &kernel_tensor) {
-  const auto value = parameter->default_param();
-  if (value == nullptr) {
-    return;
+const DeviceContext *GetDeviceContextForOffloadedParameter(const DeviceContext *origin_device_context,
+                                                           const AnfNodePtr &node) {
+  if (origin_device_context == nullptr) {
+    return origin_device_context;
   }
-  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
-  if (meta_tensor == nullptr) {
-    return;
-  }
-  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
-  if (user_data == nullptr) {
-    return;
-  }
-  if (!py::isinstance<py::str>(user_data->obj)) {
-    return;
-  }
-  std::string device_str = py::cast<std::string>(user_data->obj);
+  auto device_str = DeviceAddressUtils::GetParameterDeviceStr(node);
   if (device_str.empty()) {
-    return;
+    return origin_device_context;
   }
   if (device_str == kToCpu) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
-  } else if (device_str == kToDisk) {
-    kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
+    auto hete_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_str, origin_device_context->device_context_key().device_id_});
+    MS_EXCEPTION_IF_NULL(hete_device_context);
+    MS_LOG(INFO) << "Use " << device_str << " DeviceContext for offloaded parameter: " << node->DebugString();
+    return hete_device_context;
+  } else {
+    MS_LOG(EXCEPTION) << "Device of parameter only support \"CPU\" but got " << device_str;
   }
 }
 }  // namespace
+
+std::string DeviceAddressUtils::GetParameterDeviceStr(const mindspore::AnfNodePtr &node) {
+  constexpr auto kParameterDeviceUserDataName = "parameter_device";
+  if (!node->isa<Parameter>()) {
+    return "";
+  }
+  const auto &parameter = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(parameter);
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return "";
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return "";
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPybind::TensorPyUserData>(kParameterDeviceUserDataName);
+  if (user_data == nullptr || !py::isinstance<py::str>(user_data->obj)) {
+    return "";
+  }
+  return py::cast<std::string>(user_data->obj);
+}
 
 bool DeviceAddressUtils::NodeDeviceAddressExist(const DeviceContext *device_context, const AnfNodePtr &node,
                                                 size_t index) {
@@ -172,9 +186,29 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
   }
   const void *node_value = kernel_tensor->GetValuePtr();
   MS_EXCEPTION_IF_NULL(node_value);
-  auto data_type_id = kernel_tensor->dtype_id();
-  auto format = kernel_tensor->GetStringFormat();
-  if (!device_address->SyncHostToDevice(shape, data_size, data_type_id, node_value, format)) {
+  if (device_address->type_id() == TypeId::kObjectTypeString && kernel_tensor->IsConstValue()) {
+    auto value = GetValue<std::string>(kernel_tensor->GetValueTrack());
+    size_t tensor_size = value.size();
+    ShapeVector tensor_shape{SizeToLong(tensor_size)};
+    auto string_tensor = std::make_shared<tensor::Tensor>(TypeId::kObjectTypeString, tensor_shape,
+                                                          const_cast<void *>(node_value), tensor_size);
+    const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
+    MS_EXCEPTION_IF_NULL(host_device_address);
+    host_device_address->SetSize(tensor_size + 1);
+    MS_LOG(DEBUG) << "Sync string to device size:" << tensor_size
+                  << " device address:" << host_device_address->ToString()
+                  << " dst device address:" << device_address->ToString();
+    if (!device_context->device_res_manager_->SyncAllStreams() ||
+        !SyncCopy(device_address, string_tensor->device_address(), kDefaultStreamIndex)) {
+      MS_LOG(ERROR) << "Failed sync string to device size:" << tensor_size
+                    << " device address:" << host_device_address->ToString()
+                    << " dst device address:" << device_address->ToString();
+    }
+    return;
+  }
+  if (!device_context->device_res_manager_->SyncAllStreams() ||
+      !device_context->device_res_manager_->Copy(device_address->GetMutablePtr(), node_value, data_size,
+                                                 device::CopyType::kH2D, device_address->stream_id())) {
     MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
   }
 }
@@ -255,12 +289,11 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   }
 
   // Create device address for anf node in nodes_list
-  const auto &ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const auto enable_offload = ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD);
   for (const auto &item : nodes_list) {
     MS_EXCEPTION_IF_NULL(item);
-    const auto &real_device_context = device::FetchRealDeviceContext(item, device_context);
+    auto real_device_context = device::FetchRealDeviceContext(item, device_context);
+    auto origin_device_context = real_device_context;
+    real_device_context = GetDeviceContextForOffloadedParameter(real_device_context, item);
     MS_EXCEPTION_IF_NULL(real_device_context);
     auto output_size = AnfAlgo::GetOutputTensorNum(item);
     for (size_t index = 0; index < output_size; index++) {
@@ -298,8 +331,12 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
                        << " is not used in the graph " << graph->graph_id();
           device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
         }
-        if (enable_offload) {
-          SetHeteInfoForParamDeviceAddress(input_param, kernel_tensor);
+      }
+      if (origin_device_context != real_device_context) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU &&
+            origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+          device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
+          MS_LOG(DEBUG) << "Use PinMemoryAllocator for offloaded parameter. Parameter: " << item->fullname_with_scope();
         }
       }
       device_address->SetNodeIndex(item, index);
@@ -341,7 +378,8 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
         (void)address_list.emplace_back(output_address);
         return address_list;
       }
-      tensor->data_sync();
+      auto cpu_tensor = tensor->cpu();
+      value_node->set_value(cpu_tensor);
     }
   }
 
@@ -534,7 +572,17 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         continue;
       }
 
-      const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      auto real_device_context = device::FetchRealDeviceContext(kernel, device_context);
+      auto origin_device_context = real_device_context;
+      if (real_device_context != nullptr && is_move_to) {
+        if (move_to == kToCpu) {
+          real_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+            {move_to, real_device_context->device_context_key().device_id_});
+          MS_LOG(INFO) << "Use " << move_to << " DeviceContext for MoveTo node: " << kernel->DebugString();
+        } else if (move_to != kToNpu) {
+          MS_LOG(EXCEPTION) << R"(Destination for MoveTo is supposed to be "CPU" or "Ascend", but got )" << move_to;
+        }
+      }
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &abstract = AnfAlgo::GetNodeAbstractByIndex(kernel, i);
       if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
@@ -555,8 +603,6 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data->set(kGetValueByUserDataHandler,
                        std::make_shared<ValuePtr (*)(const UserDataPtr &)>(pyexecute::GetValueFromUserData));
         graph->set_has_kernel_need_user_data(true);
-        // Note: Kbk sub graph mode doesn't support PyExecutor kernel currently.
-        graph->set_enable_kbk_sub_graph_execute(false);
       }
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {kernel, i}, nullptr, address_size, output_format, output_type, AnfAlgo::GetRuntimePaddingShape(kernel, i),
@@ -564,16 +610,15 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
-      if (is_move_to) {
-        if (move_to == kToCpu) {
-          kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedHostMem;
-        } else if (move_to == kToDisk) {
-          kernel_tensor->set_heterogeneous_info(std::make_shared<HeterogeneousInfo>());
-          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = NeedAllocateHeteRes::NeedDiskFile;
+      auto device_address = kernel_tensor->device_address();
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (origin_device_context != real_device_context) {
+        if (device_address->GetDeviceType() == device::DeviceType::kCPU &&
+            origin_device_context->device_res_manager_->pin_mem_allocator() != nullptr) {
+          device_address->set_allocator(origin_device_context->device_res_manager_->pin_mem_allocator());
+          MS_LOG(DEBUG) << "Use PinMemoryAllocator for MoveTo cpu output. Kernel: " << kernel->fullname_with_scope();
         }
       }
-      auto device_address = kernel_tensor->device_address();
       device_address->SetNodeIndex(kernel, i);
       if (is_from_persistent_mem) {
         device_address->set_from_persistent_mem(true);
@@ -946,6 +991,16 @@ void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &
   }
 }
 
+bool DeviceAddressUtils::LazyCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
+                                  size_t stream_id) {
+  if (src_device_sync->GetDeviceType() != device::DeviceType::kCPU &&
+      dst_device_sync->GetDeviceType() == device::DeviceType::kCPU) {
+    return SyncCopy(dst_device_sync, src_device_sync, stream_id);
+  } else {
+    return AsyncCopy(dst_device_sync, src_device_sync, stream_id);
+  }
+}
+
 void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_context, size_t stream_id, size_t index,
                                                   const tensor::TensorPtr &tensor) {
   MS_EXCEPTION_IF_NULL(device_context);
@@ -959,18 +1014,18 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   }
 
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
-    if (device_address->GetDeviceType() == device_context->GetDeviceType()) {
-      MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
-      return;
-    }
-    MS_LOG(DEBUG) << "Input tensor device type is " << device_address->GetDeviceType()
-                  << " but current device context is " << device_context->GetDeviceType();
-    tensor->data_sync();
-    tensor->set_device_address(nullptr);
+  MS_EXCEPTION_IF_NULL(addr);
+  auto tensor_address = std::static_pointer_cast<device::DeviceAddress>(addr);
+  if (tensor_address->GetDeviceType() == device_context->GetDeviceType()) {
+    MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
+    return;
   }
-  auto tensor_size = LongToSize(tensor->data().nbytes());
+  MS_LOG(DEBUG) << "Input tensor device type is " << tensor_address->GetDeviceType()
+                << " but current device context is " << device_context->GetDeviceType();
+  // Avoid multithread
+  runtime::Pipeline::Get().WaitForward();
+
+  auto tensor_size = LongToSize(tensor->DataNBytes());
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
@@ -979,8 +1034,13 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->set_host_shape(tensor->shape());
   device_address->set_from_persistent_mem(tensor->is_parameter());
-  tensor->set_device_address(device_address);
   device_address->set_new_ref_count(SIZE_MAX);
+
+  // keep origin device_address and execute in another thread.
+  tensor->set_to_device(
+    [addr, device_address]() { return LazyCopy(device_address, addr, device_address->stream_id()); });
+
+  tensor->set_device_address(device_address);
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << tensor->shape() << ", Type: " << TypeIdToType(tensor->data_type())->ToString()
                 << ", Size:" << tensor_size;
@@ -1001,44 +1061,29 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", mem_type, device_address->GetSize(),
                                                  device_address.get());
   if (device_address->GetMutablePtr() != nullptr) {
-    if (!is_view || device_address->GetDeviceType() != device::DeviceType::kCPU || device_address->from_mem_pool()) {
-      return;
-    }
-    // If not from the pool, the lifetime of the device ptr is guaranteed elsewhere.
-    // Before applying for a new address, clear the address. Otherwise a warnging is generated.
-    device_address->set_ptr(nullptr);
-    const auto new_device_context = device_context->GetDeviceType() == device_address->GetDeviceType()
-                                      ? device_context
-                                      : runtime::OpRunner::GetDeviceContext(kCPUDevice);
+    return;
+  }
 
-    MS_EXCEPTION_IF_NULL(new_device_context);
-    if (!new_device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-      MS_LOG(EXCEPTION) << "Allocate memory failed";
-    }
-  } else {
-    if (device_address->size() == 0) {
-      auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
-      if (shape_size != 0) {
-        return;
-      }
-    }
-    if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
-      MS_LOG(EXCEPTION) << "Allocate memory failed";
+  if (device_address->size() == 0) {
+    auto shape_size = std::accumulate(tensor->shape().begin(), tensor->shape().end(), 1, std::multiplies<int64_t>());
+    if (shape_size != 0) {
+      return;
     }
   }
 
-  auto tensor_size = LongToSize(tensor->data().nbytes());
-  if (device_address->GetDeviceType() == device::DeviceType::kAscend) {
-    OpExecutor::DispatchLaunchTask([=]() {
-      if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
-                                            tensor->data_ptr())) {
-        MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+  if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
+    MS_LOG(EXCEPTION) << "Allocate memory failed";
+  }
+
+  if (device_context->GetDeviceType() == device::DeviceType::kAscend) {
+    OpExecutor::DispatchLaunchTask([tensor]() {
+      if (!tensor->to_device()) {
+        MS_LOG(EXCEPTION) << "Tensor to device failed";
       }
     });
   } else {
-    if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(), device_address->format(),
-                                          tensor->data_ptr())) {
-      MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+    if (!tensor->to_device()) {
+      MS_LOG(EXCEPTION) << "Tensor to device failed";
     }
   }
 }
@@ -1082,7 +1127,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   }
 
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
+  if (addr->GetDeviceType() == device_context->GetDeviceType()) {
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
     MS_EXCEPTION_IF_NULL(device_address);
     if (device_address->GetPtr() != nullptr) {
@@ -1095,7 +1140,7 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
     }
   }
 
-  const auto &tensor_size = LongToSize(tensor->data().nbytes());
+  const auto &tensor_size = tensor->DataNBytes();
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto kernel_tensor =
     AnfAlgo::CreateKernelTensor(shape, type, nullptr, nullptr, tensor_size, kernel::GetFormatFromEnumToStr(format),
@@ -1114,9 +1159,8 @@ KernelTensorPtr DeviceAddressUtils::CreateInputKernelTensor(const DeviceContext 
   if (!device_context->device_res_manager_->AllocateMemory(device_address.get())) {
     MS_LOG(EXCEPTION) << "Allocate memory failed";
   }
-  if (!device_address->SyncHostToDevice(tensor->shape(), tensor_size, tensor->data_type(),
-                                        kernel::GetFormatFromEnumToStr(format), tensor->data_ptr())) {
-    MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
+  if (!AsyncCopy(device_address, addr, device_address->stream_id())) {
+    MS_LOG(EXCEPTION) << "Copy host data to device failed";
   }
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << shape->ToString()
@@ -1216,7 +1260,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto &tensor = outputs[i];
     MS_EXCEPTION_IF_NULL(tensor);
-    auto tensor_size = LongToSize(tensor->data().nbytes());
+    auto tensor_size = LongToSize(tensor->DataNBytes());
     const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
       nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),

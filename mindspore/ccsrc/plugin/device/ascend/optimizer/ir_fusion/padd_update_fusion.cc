@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -120,7 +121,7 @@ const AnfNodePtr PaddUpdateFusion::Process(const FuncGraphPtr &func_graph, const
   }
   MS_LOG(INFO) << "Begin to convert PadD to Pad.";
   ShapeVector const_shape = {SizeToLong(paddings.size()), SizeToLong(paddings[0].size())};
-  tensor::TensorPtr const_tensor = std::make_shared<tensor::Tensor>(kInt64->type_id(), const_shape);
+  tensor::TensorPtr const_tensor = tensor::empty(kInt64->type_id(), const_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(const_tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, kInt64};
   const_tensor->set_device_info(device_info);
@@ -130,7 +131,7 @@ const AnfNodePtr PaddUpdateFusion::Process(const FuncGraphPtr &func_graph, const
   }
   auto data_ptr = const_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(const_tensor->data().nbytes()),
+  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(const_tensor->DataNBytes()),
                            static_cast<void *>(const_value.data()), const_value.size() * sizeof(int64_t));
   if (ret_code != EOK) {
     MS_LOG(EXCEPTION) << "Failed to copy data into tensor, memcpy_s errorno: " << ret_code;

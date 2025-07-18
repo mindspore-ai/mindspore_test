@@ -35,9 +35,9 @@ tensor::TensorPtr OneHotExtAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   if (num_class_imm == AUTO_DEPTH) {
     auto max_op = CREATE_PYBOOST_OP(Max, op->device_context()->device_context_key_.device_name_);
     auto max_tensor = max_op->Call(tensor_tensor);
-    max_tensor->data_sync();
-    auto max_data = static_cast<int64_t *>(max_tensor->data_c());
-    num_class_imm = *max_data + 1;
+    auto max_tensor_cpu = max_tensor->cpu();
+    auto max_data = *static_cast<const int64_t *>(max_tensor_cpu->data_c());
+    num_class_imm = max_data + 1;
     if (num_class_imm < MIN_DEPTH) {
       num_class_imm = MIN_DEPTH;
     }

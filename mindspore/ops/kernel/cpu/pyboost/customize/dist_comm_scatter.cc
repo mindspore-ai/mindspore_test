@@ -23,6 +23,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 #if defined(__linux__) && defined(WITH_BACKEND)
@@ -46,13 +47,13 @@ void DistCommScatterCPUCustomize(const std::shared_ptr<OpRunner> &op, const Tens
   auto input_shape = other_tensor->shape();
   input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
   TensorPtr input_tensor =
-    std::make_shared<tensor::Tensor>(static_cast<TypeId>(other_tensor->data_type_c()), input_shape);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors, input_tensor);
+    tensor::empty(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kCPU);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors);
 
   auto run_func = [op, other_tensor, local_rank, src_rank, group, rank_size_imm, scatter_tensors, input_tensor]() {
     auto device_context = op->device_context();
     PyBoostUtils::MallocOpInputs(device_context, scatter_tensors);
-    PyBoostUtils::MallocOpOutputs(device_context, {other_tensor, input_tensor});
+    PyBoostUtils::MallocOpOutputs(device_context, {other_tensor});
 
     const auto &input_address_info =
       PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), input_tensor);

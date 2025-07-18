@@ -29,6 +29,7 @@
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 using device::DeviceAddressPtr;
@@ -49,7 +50,7 @@ TEST_F(MoveToTest, TestMoveToCaseToCPUNoBlocking) {
   std::vector<int64_t> input = {2, 2, 2, 2};
   TypePtr type = kInt64;
   auto src_tensor = std::make_shared<tensor::Tensor>(input, type);
-  auto dst_tensor = std::make_shared<tensor::Tensor>(src_tensor->data_type(), src_tensor->shape());
+  auto dst_tensor = tensor::empty(src_tensor->data_type(), src_tensor->shape(), device::DeviceType::kCPU);
   dst_tensor->set_device_address(nullptr);
   const std::string to = "CPU";
   bool return_self = false;
@@ -69,7 +70,7 @@ TEST_F(MoveToTest, TestMoveToCaseToCPUBlocking) {
   std::vector<int64_t> input = {2, 2, 2, 2};
   TypePtr type = kInt64;
   auto src_tensor = std::make_shared<tensor::Tensor>(input, type);
-  auto dst_tensor = std::make_shared<tensor::Tensor>(src_tensor->data_type(), src_tensor->shape());
+  auto dst_tensor = tensor::empty(src_tensor->data_type(), src_tensor->shape(), device::DeviceType::kCPU);
   dst_tensor->set_device_address(nullptr);
   const std::string to = "CPU";
   bool return_self = false;
@@ -91,7 +92,7 @@ TEST_F(MoveToTest, TestNoNeedMove) {
   auto src_tensor = std::make_shared<tensor::Tensor>(input, type);
   auto ptr = std::make_shared<CPUDeviceAddress>(input.data(), input.size() * sizeof(int64_t));
   src_tensor->set_device_address(ptr);
-  auto dst_tensor = std::make_shared<tensor::Tensor>(src_tensor->data_type(), src_tensor->shape());
+  auto dst_tensor = tensor::empty(src_tensor->data_type(), src_tensor->shape(), device::DeviceType::kCPU);
   dst_tensor->set_device_address(nullptr);
   const std::string to = "CPU";
   bool return_self = false;

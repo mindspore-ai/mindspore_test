@@ -329,16 +329,10 @@ bool CheckInputOptimizeCondition(const GraphCompilerInfo &graph_compiler_info) {
     return false;
   }
 
-  if (ms_context->get_param<bool>(MS_ENV_FLATTEN_WEIGHT)) {
-    MS_LOG(DEBUG) << "Flatten weight is not supported, enable input optimize failed.";
-    return false;
-  }
-
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
-    // Do not support any type currently.
-    if (graph->is_any_type_input() || !graph->enable_input_optimize()) {
-      MS_LOG(DEBUG) << "Any type is not supported, enable input optimize failed.";
+    if (!graph->enable_input_optimize()) {
+      MS_LOG(DEBUG) << "Disable input optimize.";
       return false;
     }
   }
@@ -415,31 +409,19 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Note: Kbk sub graph mode doesn't support Fallback feature currently.
-    if (!graph->enable_kbk_sub_graph_execute() ||
-        (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty())) {
+    if (graph->RunMode() != device::RunMode::kKernelMode && graph->inline_sub_graph_kernels().empty() &&
+        !graph->is_any_type_input()) {
       MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
-                   << ", has PyExecute(fallback) kernel: " << !graph->enable_kbk_sub_graph_execute()
                    << ", graph mode: " << device::run_mode_to_name_map.at(graph->RunMode())
                    << ", has inline sub graph: " << !(graph->inline_sub_graph_kernels().empty());
       return false;
     }
   }
 
-  auto IsFallBackKernel = [](const CNodePtr &kernel) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
-  };
-
-  // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, PyExecute' currently.
-  auto IsKernelNotSupportKbkSubGraphMode = [&IsFallBackKernel](const CNodePtr &kernel) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    return (IsRpcActor(kernel) || IsFallBackKernel(kernel));
-  };
-
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(),
-                    [&](const CNodePtr &kernel) { return IsKernelNotSupportKbkSubGraphMode(kernel); })) {
+                    [&](const CNodePtr &kernel) { return IsRpcActor(kernel); })) {
       MS_LOG(INFO) << "Disable kbk sub graph mode for graph: " << graph->ToString()
                    << ", kbk sub graph mode doesn't support 'RpcSend', 'RpcRecv', 'PyExecute' currently.";
       return false;
@@ -1622,7 +1604,6 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   actor_set->loop_count_actor_ = BuildLoopCountActor(graph_compiler_info);
   actor_set->output_actor_ = BuildOutputActor(graph_compiler_info);
   actor_set->control_actors_ = control_node_scheduler_.Build(graph_compiler_info, memory_manager_aid_);
-  actor_set->swap_actors_ = swap_node_scheduler_.Build(graph_compiler_info, recorder_aid_);
 
 #ifdef ENABLE_RPC_ACTOR
   MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
@@ -1753,13 +1734,6 @@ void GraphScheduler::LinkControlArrowForNoInputArrowActor(const ActorSet *actor_
     MS_EXCEPTION_IF_NULL(fusion_actor);
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(fusion_actor));
   }
-  for (auto &swap_actors : actor_set->swap_actors_) {
-    (void)std::for_each(swap_actors.cbegin(), swap_actors.cend(), [&](const MemSwapActorPtr &swap_actor) {
-      if (swap_actor != nullptr) {
-        (void)actors.emplace_back(static_cast<AbstractActorPtr>(swap_actor));
-      }
-    });
-  }
   if (actor_set->loop_count_actor_ != nullptr) {
     (void)actors.emplace_back(static_cast<AbstractActorPtr>(actor_set->loop_count_actor_));
   }
@@ -1845,7 +1819,6 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
       graph_compiler_info.control_node_parser_ != nullptr && graph_compiler_info.control_node_parser_->IsInited()) {
     control_node_scheduler_.Link(actor_set, graph_compiler_info);
   }
-  swap_node_scheduler_.Link(graph_compiler_info, actor_set);
 
 #ifdef ENABLE_RPC_ACTOR
   // Link inter-process arrows for rpc actors.
@@ -1867,21 +1840,15 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
       MS_EXCEPTION_IF_NULL(graph);
       auto ms_context = MsContext::GetInstance();
       MS_EXCEPTION_IF_NULL(ms_context);
-      // Memory swap strategy will take over the continuous memory.
-      const bool enable_mem_offload =
-        ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD) && !graph->is_dynamic_shape();
       // Somas will take over the continuous memory.
       const bool using_somas =
         (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) || (graph->somas_whole_block_size() != 0);
-      if (enable_mem_offload || using_somas) {
+      if (using_somas) {
         continue;
       }
 
       auto &execution_order = graph->execution_order();
       for (auto &kernel : execution_order) {
-        if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
-          graph_compiler_info.exist_flatten_concat_ = true;
-        }
         if (!AnfAlgo::IsNeedContinuesMemoryOp(kernel)) {
           continue;
         }
@@ -1937,9 +1904,7 @@ void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerI
     optimizer->AddPass(std::make_shared<MemoryActorInsert>());
   }
   optimizer->AddPass(std::make_shared<InvalidDataArrowElimination>());
-  if (!ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    optimizer->AddPass(std::make_shared<MultiActorFusion>());
-  }
+  optimizer->AddPass(std::make_shared<MultiActorFusion>());
   optimizer->AddPass(std::make_shared<BatchDataArrowFusion>());
   optimizer->Optimize(actor_set);
   control_node_scheduler_.Optimize(actor_set, graph_compiler_info);
@@ -2482,6 +2447,50 @@ bool IsNeedLinkForFirstInput(const CNodePtr &cnode,
 }
 }  // namespace
 
+void GraphScheduler::LinkControlArrowForAnyTypeKernelActor(AbstractActor *to_actor, const AnfNodePtr &input_node,
+                                                           const KernelGraphPtr &graph,
+                                                           const ControlNodeParserPtr &parser) const {
+  MS_EXCEPTION_IF_NULL(to_actor);
+  MS_EXCEPTION_IF_NULL(input_node);
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(parser);
+  if ((to_actor->type() != KernelTransformType::kAnyTypeKernelActor &&
+       to_actor->type() != KernelTransformType::kSuperKernelActor) ||
+      !IsInternalParameter(input_node, graph)) {
+    return;
+  }
+  auto front_output_with_index = graph->GetOriginFrontNodeByInternalParameter(input_node);
+  MS_EXCEPTION_IF_NULL(front_output_with_index.first);
+  if (IsTakenOverByControlFlow(front_output_with_index.first, graph, parser)) {
+    MS_LOG(DEBUG) << "Skip in control flow from node:" << front_output_with_index.first->DebugString()
+                  << " is not in the graph:" << graph->ToString();
+    return;
+  }
+  const auto &iter = graph_output_to_actor_.find(front_output_with_index);
+  if (iter == graph_output_to_actor_.end()) {
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, front_output_with_index.first)
+      << "#dmsg#Runtime error info:#dmsg#Can't find graph output by front node:"
+      << front_output_with_index.first->DebugString();
+  }
+  const auto &backend_from_kernel = iter->second.second.first;
+  if (backend_from_kernel == nullptr) {
+    MS_LOG(DEBUG) << "Cannot get backend node by:" << front_output_with_index.first->DebugString()
+                  << " to actor:" << to_actor->GetAID();
+    return;
+  }
+  const auto &from_graph = backend_from_kernel->func_graph();
+  if (from_graph == nullptr) {
+    MS_LOG(DEBUG) << "Cannot get funcgraph by:" << backend_from_kernel->DebugString()
+                  << " to actor:" << to_actor->GetAID();
+    return;
+  }
+  const auto &from_actor = FetchActor(from_graph->ToString() + kSuperKernelActorNameSuffix);
+  if (from_actor != nullptr) {
+    MS_LOG(DEBUG) << "Add control arrow from:" << from_actor->GetAID() << " to actor:" << to_actor->GetAID();
+    SchedulerHelper::AddControlArrow(from_actor, to_actor);
+  }
+}
+
 void GraphScheduler::LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const GraphCompilerInfo &graph_compiler_info,
                                              std::vector<AbstractActor *> *const auto_monad_actors) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -2505,6 +2514,7 @@ void GraphScheduler::LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const 
       MS_LOG(INFO) << "The graph:" << graph->graph_id()
                    << " has abstract monad input node:" << input_node->DebugString() << ", input index:" << node_index;
       LinkControlArrowByAutoMonad(to_actor, input_node, graph);
+      LinkControlArrowForAnyTypeKernelActor(to_actor, input_node, graph, parser);
     }
     // No data arrow for monad input.
     if (HasAbstractMonad(input_node)) {
@@ -3104,6 +3114,9 @@ void GraphScheduler::LinkControlArrowByAutoMonad(
   // Get the real depend input by monad node which needs to link the control arrow.
   std::vector<AnfNodePtr> real_depend_inputs = FetchRealDependInput(input_anfnode, cnode_to_monad_inputs);
   for (const auto &real_depend_input : real_depend_inputs) {
+    MS_EXCEPTION_IF_NULL(real_depend_input);
+    MS_LOG(DEBUG) << "Add real depend node:" << real_depend_input->DebugString()
+                  << " by input node:" << input_anfnode->DebugString();
     auto real_depend_input_with_idx =
       common::AnfAlgo::VisitKernelWithReturnType(real_depend_input, 0, false, return_types);
     MS_EXCEPTION_IF_NULL(real_depend_input_with_idx.first);

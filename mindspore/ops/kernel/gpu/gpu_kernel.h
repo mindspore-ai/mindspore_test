@@ -219,13 +219,18 @@ T GetDimValue(const std::vector<KernelTensor *> &inputs, const int index, const 
   auto dim_gpu_addr =
     std::make_shared<device::gpu::GPUDeviceAddress>(inputs[index]->device_ptr(), size, kOpFormat_DEFAULT, dim_type);
   int res = 0;
+  device::ResKey res_key{device::DeviceType::kGPU, dim_gpu_addr->device_id()};
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+  MS_EXCEPTION_IF_NULL(res_manager);
   if (dim_type == kNumberTypeInt32) {
     int32_t host_dim = 0;
-    dim_gpu_addr->SyncDeviceToHost(size, &host_dim);
+    res_manager->Copy(&host_dim, dim_gpu_addr->GetMutablePtr(), size, device::CopyType::kD2H,
+                      dim_gpu_addr->stream_id());
     res = static_cast<T>(host_dim);
   } else if (dim_type == kNumberTypeInt64) {
     int64_t host_dim = 0;
-    dim_gpu_addr->SyncDeviceToHost(size, &host_dim);
+    res_manager->Copy(&host_dim, dim_gpu_addr->GetMutablePtr(), size, device::CopyType::kD2H,
+                      dim_gpu_addr->stream_id());
     res = static_cast<T>(host_dim);
   } else {
     MS_LOG(EXCEPTION) << "For '" << kernel_name << "', got unsupported data type of dim: " << dim_type;

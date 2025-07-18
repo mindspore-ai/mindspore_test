@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_api.h"
 
 using namespace pybind11::literals;
 
@@ -79,9 +80,9 @@ CNodePtr Make_Node(Shape x, Shape y, Shape out, int64_t condition = 0) {
   BaseShapePtr shape1 = std::make_shared<abstract::Shape>(x);
   BaseShapePtr shape2 = std::make_shared<abstract::Shape>(y);
   BaseShapePtr shape3 = std::make_shared<abstract::Shape>(out);
-  std::shared_ptr<tensor::Tensor> inputs_x = std::make_shared<tensor::Tensor>(kNumberTypeInt32, x);
-  std::shared_ptr<tensor::Tensor> inputs_y = std::make_shared<tensor::Tensor>(kNumberTypeInt32, y);
-  std::shared_ptr<tensor::Tensor> inputs_out = std::make_shared<tensor::Tensor>(kNumberTypeInt32, out);
+  std::shared_ptr<tensor::Tensor> inputs_x = tensor::empty(kNumberTypeInt32, x, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_y = tensor::empty(kNumberTypeInt32, y, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_out = tensor::empty(kNumberTypeInt32, out, device::DeviceType::kCPU);
   AbstractBasePtr abstract1 = abstract::FromValue(inputs_x, true);
   AbstractBasePtr abstract2 = abstract::FromValue(inputs_y, true);
   AbstractBasePtr abstract3 = abstract::FromValue(inputs_out, true);
@@ -139,11 +140,11 @@ FuncGraphManagerPtr Make_Manager(int64_t condition = 0) {
   ParameterPtr param1 = func_graph->add_parameter();
   ParameterPtr param2 = func_graph->add_parameter();
   ParameterPtr param3 = func_graph->add_parameter();
-  std::shared_ptr<tensor::Tensor> inputs_x_dim = std::make_shared<tensor::Tensor>(kNumberTypeInt32, inputs_x);
-  std::shared_ptr<tensor::Tensor> inputs_y_dim = std::make_shared<tensor::Tensor>(kNumberTypeInt32, inputs_y);
-  std::shared_ptr<tensor::Tensor> inputs_z_dim = std::make_shared<tensor::Tensor>(kNumberTypeInt32, inputs_z);
-  std::shared_ptr<tensor::Tensor> inputs_out1_dim = std::make_shared<tensor::Tensor>(kNumberTypeInt32, outputs_1);
-  std::shared_ptr<tensor::Tensor> inputs_out2_dim = std::make_shared<tensor::Tensor>(kNumberTypeInt32, outputs_2);
+  std::shared_ptr<tensor::Tensor> inputs_x_dim = tensor::empty(kNumberTypeInt32, inputs_x, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_y_dim = tensor::empty(kNumberTypeInt32, inputs_y, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_z_dim = tensor::empty(kNumberTypeInt32, inputs_z, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_out1_dim = tensor::empty(kNumberTypeInt32, outputs_1, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> inputs_out2_dim = tensor::empty(kNumberTypeInt32, outputs_2, device::DeviceType::kCPU);
   AbstractBasePtr abstract_x = abstract::FromValue(inputs_x_dim, true);
   AbstractBasePtr abstract_y = abstract::FromValue(inputs_y_dim, true);
   AbstractBasePtr abstract_z = abstract::FromValue(inputs_z_dim, true);

@@ -21,6 +21,8 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/python_adapter.h"
+#include "mindspore/core/include/ir/tensor_api.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -71,7 +73,7 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(input_kernel_tensors_[0]);
 
-  DeviceTensor *device_tensor = input_kernel_tensors_[0]->device_address().get();
+  auto device_tensor = input_kernel_tensors_[0]->device_address();
   TypeId type_id = device_tensor->type_id();
   size_t size = abstract::TypeIdSize(type_id);
   if (size > sizeof(int64_t)) {
@@ -94,7 +96,13 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
       return index = static_cast<int64_t>(py::cast<bool>(obj) ? 1 : 0);
     }
   }
-  if (!device_tensor->SyncDeviceToHost(host_shape, size, type_id, static_cast<void *>(buf))) {
+
+  auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+    device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+  MS_EXCEPTION_IF_NULL(res_manager);
+  res_manager->SyncAllStreams();
+  if (!res_manager->Copy(buf, device_tensor->GetMutablePtr(), size, device::CopyType::kD2H,
+                         device_tensor->stream_id())) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;
   }

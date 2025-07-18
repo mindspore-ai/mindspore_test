@@ -31,10 +31,12 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "include/common/utils/utils.h"
-#include "common/device_type.h"
+#include "ir/device_type.h"
+#include "common/kernel_visible.h"
 
 namespace mindspore {
 namespace device {
+class HalResBase;
 namespace cpu {
 class CPUSimpleMemPlan;
 class CPUMemoryManager;
@@ -43,6 +45,7 @@ class CPUDeviceContext;
 namespace ascend {
 class AscendRuntimeCore;
 class AscendMemoryManager;
+class AscendResManager;
 class DataDumper;
 namespace tasksink {
 class TaskGenerator;
@@ -51,6 +54,7 @@ class TaskGenerator;
 namespace gpu {
 class GPUMemoryManager;
 class GPUDeviceContext;
+class GPUResManager;
 }  // namespace gpu
 }  // namespace device
 class SingleOpInferSession;
@@ -58,8 +62,27 @@ class RuntimeUtils;
 }  // namespace mindspore
 
 namespace mindspore {
-// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom deleter to free
-// resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount object.
+class AddressAllocator {
+ public:
+  /**
+   * @brief Allocate memory for device address
+   * @param size - The size of memory that needs to be allocated
+   * @param stream_id - Stream ID for memory allocation
+   * @return Raw pointer to the allocated memory
+   */
+  virtual void *Alloc(size_t size, uint32_t stream_id) = 0;
+
+  /**
+   * @brief Free memory for device address
+   * @param address_ptr - Raw pointer in PointerRefCount that needs to be freed
+   * @return true if free succeeds, false otherwise
+   */
+  virtual bool Free(void *address_ptr) = 0;
+};
+
+// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom allocator and
+// delteter resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount
+// object.
 class PointerRefCount {
  public:
   // The arguments are pointer and a bool variable that identifies whether pointer is from the memory pool.
@@ -67,14 +90,17 @@ class PointerRefCount {
 
   PointerRefCount() = default;
   explicit PointerRefCount(void *ptr) : ptr_(ptr) {}
-  PointerRefCount(void *ptr, const Deleter &deleter) : ptr_(ptr), deleter_(deleter) {}
+  PointerRefCount(void *ptr, const Deleter &deleter, std::shared_ptr<AddressAllocator> allocator = nullptr)
+      : ptr_(ptr), deleter_(deleter), allocator_(std::move(allocator)) {}
 
   PointerRefCount(const PointerRefCount &) = delete;
   PointerRefCount &operator=(const PointerRefCount &) = delete;
 
   ~PointerRefCount() {
     try {
-      if (ptr_ != nullptr && deleter_) {
+      if (ptr_ != nullptr && allocator_ && from_mem_pool_) {
+        allocator_->Free(ptr_);
+      } else if (ptr_ != nullptr && deleter_) {
         deleter_(ptr_, from_mem_pool_);
       }
       ptr_ = nullptr;
@@ -163,6 +189,10 @@ class PointerRefCount {
   // Set pointer resource destructor.
   void set_deleter(const Deleter &deleter) { deleter_ = deleter; }
 
+  std::shared_ptr<AddressAllocator> allocator() const { return allocator_; }
+
+  void set_allocator(std::shared_ptr<AddressAllocator> allocator) { allocator_ = allocator; }
+
   bool is_ptr_persisted() const { return is_ptr_persisted_; }
   void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
 
@@ -204,6 +234,9 @@ class PointerRefCount {
   // The pointer resource destructor.
   Deleter deleter_;
 
+  // The device address allocator that contains allocate memory and delete memory functions.
+  std::shared_ptr<AddressAllocator> allocator_;
+
   // The device address of the node that owns the device address cannot be updated and replaced.
   // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
   // execution.
@@ -228,7 +261,8 @@ struct AddressCommon {
   AddressCommon(const AddressCommon &other) {
     pointer_ref_count_ =
       other.pointer_ref_count_ != nullptr
-        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter())
+        ? std::make_shared<PointerRefCount>(other.pointer_ref_count_->ptr(), other.pointer_ref_count_->deleter(),
+                                            other.pointer_ref_count_->allocator())
         : std::make_shared<PointerRefCount>();
     tensor_storage_info_ = other.tensor_storage_info_;
     stream_id_ = other.stream_id_;
@@ -306,12 +340,6 @@ using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
 namespace device {
 using KernelWithIndex = std::pair<AnfNodePtr, size_t>;
 using TensorPtr = std::shared_ptr<tensor::Tensor>;
-struct StorageInfo {
-  void *host_ptr_{nullptr};
-  std::string file_name_{""};
-  bool host_ptr_mutable_{true};
-  bool file_name_mutable_{true};
-};
 
 enum class StorageType { kDevice, kHost, kFile };
 
@@ -364,45 +392,16 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   virtual DeviceAddressPtr CloneDeviceAddress() { MS_LOG(EXCEPTION) << "Not implemented."; }
 
-  virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    return true;
-  }
-  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
-                                 size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
-                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
-    return true;
-  }
-
-  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
-
-  // Asynchronously copy host memory to device side.
-  virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
-  // Asynchronously copy device memory to host side.
-  virtual bool AsyncDeviceToHost(const ShapeVector &, size_t, TypeId, void *, size_t) const { return true; }
-  // Synchronously copy device memory to device side.
-  virtual bool SyncDeviceToDevice(const DeviceSync *) const { return true; }
-  virtual bool SyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
-    return true;
-  }
-  // Asynchronously copy device memory to device side.
-  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
-  virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
-  virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
-
   const void *GetPtr() const;
   void set_ptr(void *ptr);
-  size_t GetSize() const;
+  size_t GetSize() const override;
   void SetSize(size_t size);
 
   std::string format() const;
   void set_format(const std::string &format);
   const std::string &padding_type() const;
   void set_padding_type(const std::string &padding_type);
-  TypeId type_id() const;
+  TypeId type_id() const override;
   void set_type_id(TypeId type_id);
   bool from_mem_pool() const;
   void set_from_mem_pool(bool from_mem_pool) const;
@@ -419,10 +418,10 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_need_recycle(bool need_recycle);
   void set_status(DeviceAddressStatus status);
   DeviceAddressStatus status() const;
-  virtual DeviceType GetDeviceType() const;
   void *GetMutablePtr() const override;
   // Get the shape vector for Tensor/Sequence/Scalar.
   const ShapeVector &GetShapeVector() const;
+  void SetShapeVector(const ShapeVector &shape_vector);
 
   const TensorStorageInfoPtr GetTensorStorageInfo() const override;
   void set_tensor_storage_info(const TensorStorageInfoPtr &tensor_storage_info);
@@ -434,7 +433,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_device_id(uint32_t device_id);
 
   void set_stream_id(uint32_t stream_id);
-  const uint32_t stream_id() const;
+  const uint32_t stream_id() const override;
 
   bool managed_by_somas() const;
   void set_managed_by_somas(bool managed_by_somas);
@@ -474,11 +473,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void IncreaseDynamicRefCount(const std::string &op_object);
   int32_t DecreaseDynamicRefCount(const std::string &op_object);
 
-  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
-                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
-    return nullptr;
-  }
-
   // Return whether DeviceAddress has a valid ptr.
   virtual bool IsPtrValid() const;
   bool IsNotNeedAlloc() const;
@@ -492,7 +486,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     if (!need_sync_user_data_ || user_data() == nullptr) {
       return;
     }
-    std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
+    std::lock_guard<std::mutex> lock(ptr_mutex_);
     auto sync_handler = user_data()->get<SyncUserDataHandler>(kSyncUserDataHandler);
     if (sync_handler == nullptr) {
       MS_LOG(WARNING) << "For device address:" << this << ", the sync user data handler is null.";
@@ -502,30 +496,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
     need_sync_user_data_ = false;
   }
 
-  // Offload data from device to host and free device memory
-  virtual bool Offload(size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Load data from host to device and free host memory
-  virtual bool Load(size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Move data to destination hardware and free resource on source hardware
-  virtual bool MoveTo(StorageType, bool, size_t) { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  virtual bool Wait() const { MS_LOG(EXCEPTION) << "Not implemented."; }
-
-  // Set host ptr data offloaded to
-  virtual void SetOffloadPtr(void *) {}
-
-  // Get offloaded host ptr
-  virtual void *GetOffloadPtr() const { return nullptr; }
-
-  virtual void SetStorageInfo(const StorageInfo &) {}
-  virtual StorageInfo GetStorageInfo() const { return StorageInfo(); }
-
   virtual void Swap(DeviceAddress *other);
-
-  virtual void set_swappable(bool) {}
-  virtual bool swappable() { return false; }
 
   // Get user data maintained by the DeviceAddress.
   const UserDataPtr &user_data() const override;
@@ -545,7 +516,8 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void UpdateFlag(size_t flag);
   void ClearFlag(size_t flag);
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
-  void set_deleter(const std::function<void(uint8_t *)> &deleter);
+  void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
+  void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
   std::function<void(uint8_t *)> deleter() const;
 
   // For output of pyexecute kernel, the input data is stored in user data and the handler is used to sync data from
@@ -566,7 +538,47 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses);
   size_t size() const { return address_common_->size_; }
 
+  void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
+    address_common_->pointer_ref_count_->set_allocator(allocator);
+  }
+
+  std::shared_ptr<AddressAllocator> allocator() const { return address_common_->pointer_ref_count_->allocator(); }
+
  protected:
+  virtual mindspore::tensor::TensorPtr LoadMemToHost(const std::string &tensor_name, const ShapeVector &host_shape,
+                                                     TypeId host_type, bool trans_flag, bool async_copy = true) const {
+    return nullptr;
+  }
+
+  virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
+    return true;
+  }
+  virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
+  virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
+  virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr,
+                                 size_t stream_id = SIZE_MAX) const {
+    return true;
+  }
+  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                 const std::string &format, size_t stream_id = SIZE_MAX) const {
+    return true;
+  }
+
+  virtual bool AsyncHostToDevice(size_t size, const void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
+  virtual bool AsyncDeviceToHost(size_t size, void *host_ptr, size_t stream_id = SIZE_MAX) const { return true; }
+
+  // Asynchronously copy host memory to device side.
+  virtual bool AsyncHostToDevice(const ShapeVector &, size_t, TypeId, const void *, size_t) const { return true; }
+  // Asynchronously copy device memory to host side.
+  virtual bool AsyncDeviceToHost(const ShapeVector &, size_t, TypeId, void *, size_t) const { return true; }
+  // Synchronously copy device memory to device side.
+  virtual bool SyncDeviceToDevice(const DeviceSync *) const { return true; }
+  virtual bool SyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
+    return true;
+  }
+  // Asynchronously copy device memory to device side.
+  virtual bool AsyncDeviceToDevice(const DeviceAddress *, size_t stream_id = SIZE_MAX) const { return true; }
+
   // address basic info
   AddressCommonPtr address_common_{nullptr};
 
@@ -586,7 +598,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   // We need to release the device memory when the reference count of the device address in bprop graph is 0.
   std::vector<std::weak_ptr<ValueNode>> held_by_nodes_;
   // Thread lock for ptr_.
-  mutable std::recursive_mutex ptr_mutex_;
+  mutable std::mutex ptr_mutex_;
 
   bool from_persistent_mem_{false};
   bool need_recycle_{false};
@@ -627,8 +639,10 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::cpu::CPUDeviceContext;
   friend class mindspore::device::gpu::GPUMemoryManager;
   friend class mindspore::device::gpu::GPUDeviceContext;
+  friend class mindspore::device::gpu::GPUResManager;
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
+  friend class mindspore::device::ascend::AscendResManager;
   friend class mindspore::device::ascend::DataDumper;
   friend class mindspore::SingleOpInferSession;
   friend class mindspore::RuntimeUtils;

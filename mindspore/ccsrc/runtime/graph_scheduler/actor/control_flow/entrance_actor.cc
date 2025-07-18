@@ -268,6 +268,10 @@ void EntranceActor::SendMemoryFreeReq(OpContext<KernelTensor> *const context) {
     GetAllKernelTensors(real_parameters_with_branch_id, &memory_free_list);
   }
 
+  memory_free_list.insert(memory_free_list.end(), input_parameter_store_kernel_tensors_.begin(),
+                          input_parameter_store_kernel_tensors_.end());
+  input_parameter_store_kernel_tensors_.clear();
+
   if (memory_free_list.size() > 0) {
     memory_free_lists_.push(memory_free_list);
     if (ActorDispatcher::is_memory_free_sync()) {

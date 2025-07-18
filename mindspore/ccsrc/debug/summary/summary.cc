@@ -21,9 +21,11 @@
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
+#include "runtime/device/res_manager/hal_res_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::debug {
 constexpr int kSummaryGetItem = 2;
@@ -100,17 +102,20 @@ void Summary::SummaryTensor(KernelGraph *graph) {
   for (const auto &output_item : summary_outputs) {
     auto node = output_item.second.first;
     size_t index = IntToSize(output_item.second.second);
-    auto address = AnfAlgo::GetOutputAddr(node, index, false);
+    auto address = AnfAlgo::GetMutableOutputAddr(node, index, false);
     auto kt = AnfAlgo::GetOutputKernelTensor(node, index, false);
     auto shape = kt->GetShapeVector();
     TypeId type_id = kt->dtype_id();
-    tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+    tensor::TensorPtr tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(address);
     if (!address->GetPtr()) {
       continue;
     }
-    if (!address->SyncDeviceToHost(AnfAlgo::GetRuntimePaddingShape(node, index), LongToSize(tensor->data().nbytes()),
-                                   tensor->data_type(), tensor->data_c())) {
+    device::ResKey res_key{address->GetDeviceType(), address->device_id()};
+    auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
+    MS_EXCEPTION_IF_NULL(res_manager);
+    MS_EXCEPTION_IF_NULL(tensor->device_address());
+    if (!res_manager->SyncAllStreams() || !SyncCopy(tensor->device_address(), address, address->stream_id())) {
       MS_LOG(ERROR) << "Failed to sync output from device to host.";
     }
     tensor->set_sync_status(kNoNeedSync);

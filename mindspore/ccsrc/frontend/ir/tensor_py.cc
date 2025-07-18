@@ -35,7 +35,9 @@
 #include "include/backend/mbuf_device_address.h"
 #include "utils/ordered_set.h"
 #include "runtime/device/move_to.h"
+#include "ir/device_address_maker.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace tensor {
 namespace {
@@ -194,11 +196,7 @@ class TensorDataNumpy : public TensorData {
   /// Data pointer.
   void *data() override { return buffer_data(); }
 
-  const void *const_data() const override { return buffer()->ptr; }
-
-  bool is_sub_data() const override { return false; }
-
-  bool has_sub_data() const override { return false; }
+  void *const_data() const override { return buffer()->ptr; }
 
   bool is_from_numpy() const override { return true; }
 
@@ -236,44 +234,6 @@ class TensorDataNumpy : public TensorData {
 
   // The internal buffer.
   std::unique_ptr<py::buffer_info> buffer_;
-};
-
-// This class is uesd to get huge tensor data from persistent storage. Tensor data can be got by slice.
-// It used at extend embedding to persistent storage.
-class PersistentTensorDataNumpy : public TensorDataNumpy {
- public:
-  explicit PersistentTensorDataNumpy(py::buffer_info &&buffer, int slice_num)
-      : TensorDataNumpy(std::move(buffer)), slice_num_(slice_num) {}
-
-  ~PersistentTensorDataNumpy() override = default;
-
-  // Fill data with a special slice tensor data. It will read data from persistent storage.
-  void FillSliceData(const int32_t param_key, const int slice_index) {
-    if (slice_index >= slice_num_) {
-      MS_LOG(ERROR) << "Slice index is out of range, index: " << slice_index;
-      return;
-    }
-    auto emb_store = embedding_storage_manager.Get(param_key);
-    MS_EXCEPTION_IF_NULL(emb_store);
-
-    size_t first_dim = (size_t)SliceDataShape()[0];
-    size_t start_key = slice_index * first_dim;
-    std::vector<int> keys(first_dim);
-    std::iota(keys.begin(), keys.end(), start_key);
-    if (!emb_store->Get({keys.data(), first_dim * sizeof(int)}, {this->data(), LongToSize(this->nbytes())})) {
-      MS_LOG(EXCEPTION) << "Failed to get data from embedding store!";
-    }
-  }
-
-  const std::vector<ssize_t> &SliceDataShape() const { return this->shape(); }
-
-  // Get total silce num of tensor data.
-  int slice_num() const { return slice_num_; }
-
-  bool is_persistent_data() const override { return true; }
-
- private:
-  int slice_num_{1};
 };
 
 py::buffer_info TensorPybind::GetPyBufferFromPyArray(const py::array &input) {
@@ -355,30 +315,17 @@ TensorPtr TensorPybind::MakeTensorOfNumpy(const py::array &input) {
   }
   // Get tensor shape.
   ShapeVector shape(buf.shape.begin(), buf.shape.end());
+
   // Make a tensor with shared data with numpy array.
   auto tensor_data = std::make_shared<TensorDataNumpy>(std::move(buf));
-  return std::make_shared<Tensor>(dtype, shape, tensor_data);
-}
 
-/// Creates a Tensor from a numpy array without copy, use persistent tensor data
-TensorPtr TensorPybind::MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num) {
-  py::gil_scoped_acquire acquire;
-  // Check format.
-  if (!IsCContiguous(input)) {
-    MS_LOG(EXCEPTION) << "Array should be C contiguous.";
-  }
-  // Get input buffer info.
-  py::buffer_info buf = TensorPybind::GetPyBufferFromPyArray(input);
-  // Get tensor dtype and check it.
-  auto dtype = GetDataType(buf);
-  if (dtype == TypeId::kTypeUnknown) {
-    MS_LOG(EXCEPTION) << "Unsupported data type!";
-  }
-  // Get tensor shape.
-  ShapeVector shape(buf.shape.begin(), buf.shape.end());
-  // Make a tensor with shared data with numpy array.
-  auto tensor_data = std::make_shared<PersistentTensorDataNumpy>(std::move(buf), static_cast<int>(slice_num));
-  return std::make_shared<Tensor>(dtype, shape, tensor_data);
+  auto device_address = DeviceAddressMaker(tensor_data->data(), dtype, shape)
+                          .set_deleter([tensor_data](void *, bool) {})
+                          .set_maker(GetDeviceAddressMaker(device::DeviceType::kCPU))
+                          .make_device_address();
+  device_address->set_data(std::move(tensor_data));
+
+  return std::make_shared<Tensor>(dtype, shape, device_address);
 }
 
 void TensorPybind::SetUserData(const TensorPtr &tensor, const py::str &key, const py::object &value) {
@@ -413,9 +360,9 @@ static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_
 
 static py::buffer_info GetPyBufferInfo(const Tensor &tensor) {
   std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.data().itemsize());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
   return py::buffer_info{
-    tensor.data_c(), tensor.data().itemsize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
+    tensor.data_c(), tensor.DataItemSize(), GetPyTypeFormat(tensor.data_type()), tensor.DataDim(), shape, strides};
 }
 
 py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
@@ -429,7 +376,7 @@ py::tuple TensorPybind::GetPyTupleShape(const Tensor &tensor) {
 
 py::tuple TensorPybind::GetPyTupleStrides(const Tensor &tensor) {
   std::vector<ssize_t> shape(tensor.shape().begin(), tensor.shape().end());
-  std::vector<ssize_t> strides = GetStrides(shape, tensor.data().itemsize());
+  std::vector<ssize_t> strides = GetStrides(shape, tensor.DataItemSize());
   py::tuple py_strides(strides.size());
   for (size_t i = 0; i < strides.size(); ++i) {
     py_strides[i] = py::int_(strides[i]);
@@ -437,9 +384,9 @@ py::tuple TensorPybind::GetPyTupleStrides(const Tensor &tensor) {
   return py_strides;
 }
 
-py::int_ TensorPybind::GetPyItemSize(const Tensor &tensor) { return tensor.data().itemsize(); }
+py::int_ TensorPybind::GetPyItemSize(const Tensor &tensor) { return tensor.DataItemSize(); }
 
-py::int_ TensorPybind::GetPyNBytes(const Tensor &tensor) { return tensor.data().nbytes(); }
+py::int_ TensorPybind::GetPyNBytes(const Tensor &tensor) { return tensor.DataNBytes(); }
 
 template <typename T>
 void MemCopyFromCacheToHost(void *hashmap_addr, void *host_addr, void *cache_addr, size_t host_max, size_t cache_max,
@@ -468,30 +415,30 @@ void MemCopyFromCacheToHost(void *hashmap_addr, void *host_addr, void *cache_add
 
 void TensorPybind::FlushFromCache(const Tensor &tensor) {
   py::gil_scoped_release gil_release;
-  tensor.data_sync();
+  tensor::TensorPtr cpu_tensor = tensor.cpu();
 
-  if (tensor.cache_enable()) {
-    MS_LOG(INFO) << tensor.ToString() << " is cache enable.";
-    auto hashmap_tensor_ptr = tensor.hashmap_tensor_ptr();
-    auto cache_tensor_ptr = tensor.cache_tensor_ptr();
+  if (cpu_tensor->cache_enable()) {
+    MS_LOG(INFO) << cpu_tensor->ToString() << " is cache enable.";
+    auto hashmap_tensor_ptr = cpu_tensor->hashmap_tensor_ptr();
+    auto cache_tensor_ptr = cpu_tensor->cache_tensor_ptr();
     if (hashmap_tensor_ptr != nullptr && cache_tensor_ptr != nullptr) {
-      hashmap_tensor_ptr->data_sync();
-      cache_tensor_ptr->data_sync();
+      hashmap_tensor_ptr = hashmap_tensor_ptr->cpu();
+      cache_tensor_ptr = cache_tensor_ptr->cpu();
       auto hashmap_size = hashmap_tensor_ptr->shape_c()[0];
-      auto host_shape = tensor.shape_c();
+      auto host_shape = cpu_tensor->shape_c();
       auto cache_shape = cache_tensor_ptr->shape_c();
       if (host_shape.size() != 2 && cache_shape.size() != 2 && host_shape[1] != cache_shape[1]) {
         MS_LOG(EXCEPTION) << "Got host shape and cache shape invalid."
                           << "host shape:" << host_shape << ", cache shape:" << cache_shape;
       }
-      auto host_data_max_size = static_cast<size_t>(tensor.Size());
+      auto host_data_max_size = static_cast<size_t>(cpu_tensor->Size());
       auto cache_data_max_size = static_cast<size_t>(cache_tensor_ptr->Size());
       auto hashmap_data_type = hashmap_tensor_ptr->data_type();
       if (hashmap_data_type == TypeId::kNumberTypeInt32) {
-        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), tensor.data_c(), cache_tensor_ptr->data_c(),
+        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), cpu_tensor->data_c(), cache_tensor_ptr->data_c(),
                                         host_data_max_size, cache_data_max_size, hashmap_size, host_shape[1]);
       } else if (hashmap_data_type == TypeId::kNumberTypeInt64) {
-        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), tensor.data_c(), cache_tensor_ptr->data_c(),
+        MemCopyFromCacheToHost<int32_t>(hashmap_tensor_ptr->data_c(), cpu_tensor->data_c(), cache_tensor_ptr->data_c(),
                                         host_data_max_size, cache_data_max_size, hashmap_size, host_shape[1]);
       } else {
         MS_LOG(ERROR) << "Hashmap dtype only suppotr int32, in64.";
@@ -506,8 +453,8 @@ py::bytes TensorPybind::GetBytes(const Tensor &tensor) {
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
     return py::bytes(static_cast<const char *>(tensor.data_c()), tensor.Size());
   }
-  tensor.data_sync();
-  return py::bytes(static_cast<const char *>(tensor.data_c()), tensor.Size());
+  auto cpu_tensor = tensor.cpu();
+  return py::bytes(static_cast<const char *>(cpu_tensor->data_c()), cpu_tensor->Size());
 }
 
 void CopyFromBuffer(char *dst, size_t dst_size, const char *src, size_t src_size, TypeId data_type) {
@@ -551,7 +498,7 @@ TensorPtr TensorPybind::ConvertBytesToTensor(const py::bytes &bytes_obj, const p
     shape.push_back(dims[i].cast<int>());
   }
   TypeId data_type = type_ptr ? type_ptr->type_id() : TypeId::kTypeUnknown;
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(data_type, shape);
+  tensor::TensorPtr tensor = tensor::empty(data_type, shape, device::DeviceType::kCPU);
   const char *tensor_buf = PYBIND11_BYTES_AS_STRING(bytes_obj.ptr());
   char *tensor_data_buf = reinterpret_cast<char *>(tensor->data_c());
   CopyFromBuffer(tensor_data_buf, tensor->Size(), tensor_buf, PYBIND11_BYTES_SIZE(bytes_obj.ptr()), data_type);
@@ -620,59 +567,61 @@ py::object RecursiveToList(void *data, const std::vector<int64_t> &shape, const 
 }
 
 py::object TensorPybind::ToList(const TensorPtr &tensor) {
-  tensor->data_sync();
-  auto tensor_shape = tensor->shape();
-  auto data = tensor->data_c();
-  auto data_type = tensor->data_type();
+  tensor::TensorPtr cpu_tensor = tensor->cpu();
+  auto tensor_shape = cpu_tensor->shape();
+  auto data = cpu_tensor->data_c();
+  auto data_type = cpu_tensor->data_type();
   int index = 0;
 
   return RecursiveToList(data, tensor_shape, data_type, &index, 0);
 }
 
 py::object TensorPybind::Item(const TensorPtr &tensor) {
-  auto tensor_element_count = tensor->data().size();
+  auto tensor_element_count = tensor->DataSize();
   if (tensor_element_count != 1) {
     MS_EXCEPTION(ValueError) << "The tensor should have only one element, but got " << tensor_element_count << ","
                              << " more than one element is ambiguous.";
   }
-  tensor->data_sync(true, true, true);
-  auto data_type = tensor->data_type();
-  auto data = tensor->data_c();
+  auto cpu_tensor = tensor->cpu();
+  auto data_type = cpu_tensor->data_type();
+  auto data = cpu_tensor->data_c();
   switch (data_type) {
     case TypeId::kNumberTypeInt8:
-      return py::int_(py::cast(*static_cast<int8_t *>(data)));
+      return py::int_(py::cast(*static_cast<const int8_t *>(data)));
     case TypeId::kNumberTypeUInt8:
-      return py::int_(py::cast(*static_cast<uint8_t *>(data)));
+      return py::int_(py::cast(*static_cast<const uint8_t *>(data)));
     case TypeId::kNumberTypeInt16:
-      return py::int_(py::cast(*static_cast<int16_t *>(data)));
+      return py::int_(py::cast(*static_cast<const int16_t *>(data)));
     case TypeId::kNumberTypeUInt16:
-      return py::int_(py::cast(*static_cast<uint16_t *>(data)));
+      return py::int_(py::cast(*static_cast<const uint16_t *>(data)));
     case TypeId::kNumberTypeInt:
     case TypeId::kNumberTypeInt32:
-      return py::int_(py::cast(*static_cast<int *>(data)));
+      return py::int_(py::cast(*static_cast<const int *>(data)));
     case TypeId::kNumberTypeUInt32:
-      return py::int_(py::cast(*static_cast<uint32_t *>(data)));
+      return py::int_(py::cast(*static_cast<const uint32_t *>(data)));
     case TypeId::kNumberTypeInt64:
-      return py::int_(py::cast(*static_cast<int64_t *>(data)));
+      return py::int_(py::cast(*static_cast<const int64_t *>(data)));
     case TypeId::kNumberTypeUInt64:
-      return py::int_(py::cast(*static_cast<uint64_t *>(data)));
+      return py::int_(py::cast(*static_cast<const uint64_t *>(data)));
     case TypeId::kNumberTypeFloat16:
-      return py::float_(py::cast(*static_cast<float16 *>(data)));
+      return py::float_(py::cast(*static_cast<const float16 *>(data)));
     case TypeId::kNumberTypeFloat:
     case TypeId::kNumberTypeFloat32:
-      return py::float_(py::cast(*static_cast<float *>(data)));
+      return py::float_(py::cast(*static_cast<const float *>(data)));
     case TypeId::kNumberTypeDouble:
     case TypeId::kNumberTypeFloat64:
-      return py::float_(py::cast(*static_cast<double *>(data)));
+      return py::float_(py::cast(*static_cast<const double *>(data)));
     case TypeId::kNumberTypeBFloat16:
-      return py::float_(py::cast(*static_cast<bfloat16 *>(data)));
+      return py::float_(py::cast(*static_cast<const bfloat16 *>(data)));
     case TypeId::kNumberTypeBool:
-      return py::bool_(py::cast(*static_cast<bool *>(data)));
+      return py::bool_(py::cast(*static_cast<const bool *>(data)));
     case TypeId::kNumberTypeComplex64:
     case TypeId::kNumberTypeComplex:
-      return py::cast(std::complex<double>{(*static_cast<float *>(data)), (*(static_cast<float *>(data) + 1))});
+      return py::cast(
+        std::complex<double>{(*static_cast<const float *>(data)), (*(static_cast<const float *>(data) + 1))});
     case TypeId::kNumberTypeComplex128:
-      return py::cast(std::complex<long double>{(*static_cast<double *>(data)), (*(static_cast<double *>(data) + 1))});
+      return py::cast(
+        std::complex<long double>{(*static_cast<const double *>(data)), (*(static_cast<const double *>(data) + 1))});
     default:
       MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
       break;
@@ -686,7 +635,7 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
   if (tensor.need_pipeline_sync()) {
     runtime::Pipeline::Get().WaitAll();
   }
-  Tensor tensor_for_copy(tensor);
+  TensorPtr tensor_for_copy = std::make_shared<Tensor>(tensor);
   {
     py::gil_scoped_release gil_release;
 
@@ -703,11 +652,11 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
 
     // To be deleted
     if (!tensor.get_copy_done_flag()) {
-      tensor_for_copy.data_sync();
+      tensor_for_copy = tensor_for_copy->cpu();
     }
     const_cast<Tensor &>(tensor).set_copy_done_flag(false);
   }
-  return AsNumpy(tensor_for_copy);
+  return AsNumpy(*tensor_for_copy);
 }
 
 py::array TensorPybind::AsNumpy(const Tensor &tensor) {
@@ -715,13 +664,15 @@ py::array TensorPybind::AsNumpy(const Tensor &tensor) {
   // We can NOT use Tensor as the owner since its TensorData may change
   // by other operations such as AssignValue().
   py::gil_scoped_acquire acquire;
-  py::object owner = py::cast(tensor.data_ptr());
-  auto data_numpy = dynamic_cast<const TensorDataNumpy *>(&tensor.data());
-  if (data_numpy != nullptr) {
-    // Return internal numpy array if tensor data is implemented base on it.
-    return data_numpy->py_array(owner);
+  py::object owner = py::cast(tensor.device_address());
+  if (tensor.device_address() != nullptr && tensor.device_address()->has_data()) {
+    const auto &data = tensor.device_address()->data();
+    auto raw_data = dynamic_cast<TensorDataNumpy *>(data.get());
+    if (raw_data != nullptr) {
+      return raw_data->py_array(owner);
+    }
   }
-  // Otherwise, create numpy array by buffer protocol.
+  // Create numpy array by buffer protocol.
   auto info = GetPyBufferInfo(tensor);
   py::dtype np_dtype = (tensor.data_type() == kNumberTypeBFloat16)
                          ? py::detail::npy_format_descriptor<bfloat16>::dtype()
@@ -753,12 +704,18 @@ void TensorPybind::Offload(const TensorPtr &tensor, bool release) {
     }
     MS_LOG(INFO) << "Tensor Offload start, the tensor's device_address is : " << device_address.get()
                  << ", the tensor's size is : " << device_address->GetSize();
-    device_address->SyncDeviceToHost(device_address->GetSize(), tensor->data_c());
+
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_address->device_name(), device_address->device_id()});
+    MS_EXCEPTION_IF_NULL(device_context);
+    device_context->device_res_manager_->SyncAllStreams();
+    auto cpu_tensor = tensor->cpu();
+    tensor->set_device_address(cpu_tensor->device_address());
     device_address->ClearDeviceMemory();
   } else {
-    tensor->data_sync();
+    auto cpu_tensor = tensor->cpu();
     // Release device address of graph output tensor.
-    const_cast<TensorPtr &>(tensor)->set_device_address(nullptr);
+    tensor->set_device_address(cpu_tensor->device_address());
   }
 }
 
@@ -774,27 +731,29 @@ void TensorPybind::Load(const Tensor &tensor) {
     MS_LOG(WARNING) << "Tensor without DeviceAddress can not be loaded.";
     return;
   }
-  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
-    MS_LOG(WARNING) << "Tensor with CPUDeviceAddress can not be offloaded.";
+
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    MS_LOG(DEBUG) << "No need to load, because the data is already on device:"
+                  << device::GetDeviceNameByType(device_address->GetDeviceType());
     return;
   }
-  if (tensor.data().const_data() == nullptr) {
-    MS_LOG(WARNING) << "Tensor without cpu data can not be loaded.";
-    return;
-  }
-  if (device_address->GetPtr() != nullptr) {
-    MS_LOG(WARNING) << "Tensor with device ptr can not be loaded.";
-    return;
-  }
-  const auto device = device_address->device_name();
+
+  auto ms_context = MsContext::GetInstance();
+  const auto &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
-  device_ctx->device_res_manager_->AllocateMemory(device_address.get());
-  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << device_address.get()
-               << ", the tensor's size is : " << device_address->GetSize();
-  device_address->SyncHostToDevice(device_address->GetSize(), tensor.data_c());
+  auto new_device_address = std::static_pointer_cast<device::DeviceAddress>(
+    MakeDeviceAddress(tensor.data_type(), tensor.shape(), false, device::GetDeviceTypeByName(device_target)));
+
+  device_ctx->Initialize();
+  device_ctx->device_res_manager_->AllocateMemory(new_device_address.get());
+  MS_LOG(INFO) << "Tensor Load start, the tensor's device_address is : " << new_device_address.get()
+               << ", the tensor's size is : " << new_device_address->GetSize();
+  device_ctx->device_res_manager_->SyncAllStreams();
+  SyncCopy(new_device_address, device_address, new_device_address->stream_id());
+  const_cast<tensor::Tensor &>(tensor).set_device_address(new_device_address);
 }
 
 void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, const ShapeVector &shape,
@@ -825,12 +784,14 @@ void TensorPybind::SetDeviceAddress(const TensorPtr &tensor, uintptr_t addr, con
   }
   auto data_size = elem_num * GetDataTypeSize(data_type);
   auto device_sync_ = tensor->device_address();
-  if (device_sync_ == nullptr) {
+  MS_EXCEPTION_IF_NULL(device_sync_);
+  if (device_sync_->GetDeviceType() != device::DeviceType::kAscend) {
     auto device_address =
       std::make_shared<device::MbufDeviceAddress>(data, data_size, shape, data_type, kAscendDevice, device_id);
     const_cast<TensorPtr &>(tensor)->set_device_address(device_address);
   } else {
     auto device_address = std::dynamic_pointer_cast<device::MbufDeviceAddress>(device_sync_);
+    MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetData(data);
   }
 }
@@ -878,8 +839,7 @@ std::string TensorPybind::GetDevice(const TensorPtr &tensor) {
 TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool blocking) {
   py::gil_scoped_release gil_release;
   MS_LOG(INFO) << "Try move tensor to " << to;
-  auto target_tensor = std::make_shared<tensor::Tensor>(self.data_type(), self.shape());
-  target_tensor->set_device_address(nullptr);
+  auto target_tensor = tensor::empty(self.data_type(), self.shape(), device::DeviceType::kCPU);
   bool return_self = false;
   // make sure op execute end before data copy
   runtime::Pipeline::Get().WaitForward();
@@ -888,19 +848,6 @@ TensorPtr TensorPybind::MoveTo(const Tensor &self, const std::string &to, bool b
     return std::make_shared<tensor::Tensor>(self);
   }
   return target_tensor;
-}
-
-py::array TensorPybind::AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key, const int slice_index) {
-  py::gil_scoped_acquire acquire;
-  py::object owner = py::cast(tensor.data_ptr());
-  auto data_numpy = std::dynamic_pointer_cast<PersistentTensorDataNumpy>(tensor.data_ptr());
-  MS_EXCEPTION_IF_NULL(data_numpy);
-
-  data_numpy->FillSliceData(param_key, slice_index);
-
-  // Return internal numpy array if tensor data is implemented base on it.
-  // And persistent tensor data is only implemented base on numpy array.
-  return data_numpy->py_array(owner);
 }
 
 py::object TensorPyImpl::GetInitializerFromPython(const py::dict &input) {
@@ -1012,11 +959,15 @@ TensorPtr TensorPyImpl::InitTensorByShape(const py::dict &input, const TypePtr &
   if (input.contains("shape") &&
       (py::isinstance<py::list>(input["shape"]) || py::isinstance<py::tuple>(input["shape"]))) {
     TypeId data_type = dtype != nullptr ? dtype->type_id() : TypeId::kNumberTypeFloat64;
-    return std::make_shared<Tensor>(data_type, GetShapeFromTuple(input["shape"]));
+    if (input.contains("init") && !py::isinstance<py::none>(input["init"])) {
+      return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kNone);
+    } else {
+      return tensor::empty(data_type, GetShapeFromTuple(input["shape"]), device::DeviceType::kCPU);
+    }
   }
   ShapeVector shape = GetShapeFromPython(input);
   TypeId data_type = dtype != nullptr ? dtype->type_id() : kTypeUnknown;
-  return std::make_shared<Tensor>(data_type, shape);
+  return tensor::empty(data_type, shape, device::DeviceType::kCPU);
 }
 
 TensorPtr TensorPyImpl::InitTensor(const py::dict &input) {
@@ -1044,12 +995,6 @@ const TensorPyPtr TensorPyImpl::InitTensorPy(const py::dict &input) {
 
 TensorPyPtr TensorPyImpl::MakeTensorOfNumpy(const py::array &input) {
   auto tensor = TensorPybind::MakeTensorOfNumpy(input);
-  MS_EXCEPTION_IF_NULL(tensor);
-  return std::make_shared<TensorPy>(tensor);
-}
-
-TensorPyPtr TensorPyImpl::MakePersistentDataTensorOfNumpy(const py::array &input, const py::int_ slice_num) {
-  auto tensor = TensorPybind::MakePersistentDataTensorOfNumpy(input, slice_num);
   MS_EXCEPTION_IF_NULL(tensor);
   return std::make_shared<TensorPy>(tensor);
 }
@@ -1084,11 +1029,6 @@ py::array TensorPyImpl::SyncAsNumpy(const TensorPyPtr &tensorpy) {
 void TensorPyImpl::FlushFromCache(const TensorPyPtr &tensorpy) {
   auto tensor = tensorpy->GetTensor();
   return TensorPybind::FlushFromCache(*tensor);
-}
-
-py::array TensorPyImpl::AsNumpyOfSlice(const TensorPyPtr &tensorpy, const int32_t param_key, int slice_index) {
-  auto tensor = tensorpy->GetTensor();
-  return TensorPybind::AsNumpyOfSlice(*tensor, param_key, slice_index);
 }
 
 TensorPyPtr TensorPyImpl::MoveTo(const TensorPyPtr &tensorpy, const std::string &to, bool blocking) {

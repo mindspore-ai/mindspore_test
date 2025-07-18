@@ -12,6 +12,11 @@ file(GLOB_RECURSE _PYNATIVE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set_property(SOURCE ${_PYNATIVE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PYNATIVE)
 
+if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
+    string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_library(mindspore_pynative SHARED ${_PYNATIVE_SRC_LIST})
     target_compile_definitions(mindspore_pynative PRIVATE PYNATIVE_DLL)

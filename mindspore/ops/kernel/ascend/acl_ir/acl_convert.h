@@ -363,7 +363,7 @@ class AttrToInputConverter : public AttrHelper<AttrToInputConverter> {
   void ConvertValue(const ValuePtr &value, const AttrDeclType<T> &, TensorParams *) {
     auto tensor = std::make_shared<tensor::Tensor>(GetValue<T>(value));
     auto tensor_data_ptr = tensor->data_c();
-    auto size = static_cast<size_t>(tensor->data().nbytes());
+    auto size = static_cast<size_t>(tensor->DataNBytes());
     data_.resize(size);
     if (memcpy_s(data_.data(), size, tensor_data_ptr, size) != EOK) {
       MS_LOG(EXCEPTION) << "memcpy of listlistint failed in attr convert to acl input.";

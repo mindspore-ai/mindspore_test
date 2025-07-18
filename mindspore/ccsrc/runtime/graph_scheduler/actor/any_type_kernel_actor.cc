@@ -87,6 +87,15 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const c
       << " by key:" << device_tensor_store_key.second->DebugString() << " index:" << device_tensor_store_key.first
       << " for actor:" << GetAID();
   }
+  for (const auto &parameter_index : extern_parameter_indexs_) {
+    // Collect the input kernel tensor.
+    auto kernel_tensor = FetchParameter(parameter_index.second, GetAID());
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    input_kernel_tensors_[parameter_index.first] = kernel_tensor;
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "Fetch parameter store:" << kernel_tensor->ToString() << " by outer index:" << parameter_index.second.second
+      << " inner index:" << parameter_index.second.first.second << " for actor:" << GetAID();
+  }
 }
 namespace {
 GraphSegmentPtr BuildSegmentByGraph(const KernelGraphPtr &graph) {
@@ -247,7 +256,7 @@ void ClearAttrForGraph(const KernelGraphPtr &graph, const std::string &attr_name
 void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
-  auto device_tensor = kernel_tensor->device_address().get();
+  auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (!node->isa<ValueNode>()) {
     return;
@@ -263,7 +272,7 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
     {device_tensor->device_name(), device_tensor->device_id()});
   MS_EXCEPTION_IF_NULL(device_context);
   if (device_tensor->GetPtr() == nullptr) {
-    if (!device_context->device_res_manager_->AllocateMemory(device_tensor)) {
+    if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get())) {
       MS_LOG(EXCEPTION) << "Failed to allocate memory for device tensor store:" << device_tensor;
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
@@ -274,9 +283,9 @@ void PrepareValueNode(const AnfNodePtr &node, KernelTensor *kernel_tensor) {
       << "Device address:" << device_tensor << " already has ptr:" << device_tensor->GetPtr()
       << " for value node:" << node->DebugString();
   }
-
-  if (!device_tensor->SyncHostToDevice(kernel_tensor->GetShapeVector(), kernel_tensor->size(),
-                                       kernel_tensor->dtype_id(), kernel_tensor->GetValuePtr())) {
+  device_context->device_res_manager_->SyncAllStreams();
+  if (!device_context->device_res_manager_->Copy(device_tensor->GetMutablePtr(), kernel_tensor->GetValuePtr(),
+                                                 kernel_tensor->size(), device::CopyType::kH2D, kDefaultStreamIndex)) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to sync data for value node:" << node->DebugString();
   }
 
@@ -633,6 +642,7 @@ void AnyTypeKernelActor::Init() {
       std::make_shared<DataArrow>(data_arrow->from_output_index_, data_arrow->to_op_id_, data_arrow->to_input_index_));
   }
   extern_device_tensor_store_keys_.swap(device_tensor_store_keys_);
+  extern_parameter_indexs_.swap(parameter_indexs_);
 }
 
 void AnyTypeKernelActor::UpdateOutputData(OpData<KernelTensor> *const output_data, const DataArrowPtr &data_arrow,

@@ -43,6 +43,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace py = pybind11;
+#include "ir/tensor_api.h"
 namespace mindspore {
 constexpr size_t kPrimResultIndex = 0;
 constexpr size_t kFileNameIndex = 1;
@@ -86,22 +87,31 @@ CNodePtr GenerateCNode(const FuncGraphPtr &func_graph, const PrimitivePtr &prim,
   return func_graph->NewCNodeInOrder(node_inputs);
 }
 
-void SyncTensor(const py::object &obj) {
+py::object SyncTensor(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
     const auto &tensor = tensor::ConvertToTensor(obj);
     MS_EXCEPTION_IF_NULL(tensor);
-    tensor->data_sync();
+    auto cpu_tensor = tensor->cpu();
+    py::object new_tensor_obj = PackTensorToPyObject(cpu_tensor);
+    return new_tensor_obj;
   } else if (py::isinstance<py::tuple>(obj)) {
     const py::tuple &obj_tuple = py::cast<py::tuple>(obj);
+    py::tuple new_tuple_obj(obj_tuple.size());
     for (size_t i = 0; i < obj_tuple.size(); ++i) {
-      SyncTensor(obj_tuple[i]);
+      auto new_obj = SyncTensor(obj_tuple[i]);
+      new_tuple_obj[i] = new_obj;
     }
+    return new_tuple_obj;
   } else if (py::isinstance<py::list>(obj)) {
     const py::list &obj_list = py::cast<py::list>(obj);
+    py::list new_list_obj(obj_list.size());
     for (size_t i = 0; i < obj_list.size(); ++i) {
-      SyncTensor(obj_list[i]);
+      auto new_obj = SyncTensor(obj_list[i]);
+      new_list_obj[i] = new_obj;
     }
+    return new_list_obj;
   }
+  return obj;
 }
 
 DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &linenos, const std::string &name = "") {
@@ -491,8 +501,7 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
     res = graph_executor->Run(args, phase);
   }
   if (IS_OUTPUT_ON(mindspore::kDebug)) {
-    SyncTensor(res);
-    MS_LOG(DEBUG) << "return res: " << py::str(res);
+    MS_LOG(DEBUG) << "return res: " << py::str(SyncTensor(res));
   }
   return res;
 }
@@ -966,7 +975,7 @@ py::object TraceRecorder::InitTraceGraphInputs(const AbstractBasePtr &abs, const
     auto shape_ptr = abs->GetShape();
     MS_EXCEPTION_IF_NULL(shape_ptr);
     auto shape_vec = shape_ptr->GetShapeVector();
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(type_id, shape_vec);
+    auto tensor_ptr = tensor::empty(type_id, shape_vec, device::DeviceType::kCPU);
     py::object tensorpyObject = PackTensorToPyObject(tensor_ptr);
     SetNode(tensorpyObject, param, param->debug_info());
     return tensorpyObject;

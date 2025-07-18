@@ -39,6 +39,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"
+#include "ir/tensor_api.h"
 
 namespace mindspore::graphkernel {
 namespace {
@@ -380,14 +381,14 @@ ValueNodePtr CreateTensorValueNode(const DataInfo &info, void *value_ptr, size_t
     MS_LOG(EXCEPTION) << "Data type can not be nullptr when creating scalar tensor!";
   }
 
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(info.type->type_id(), info.shape);
+  tensor::TensorPtr tensor = tensor::empty(info.type->type_id(), info.shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   tensor::DeviceInfo device_info{info.format, info.type};
   tensor->set_device_info(device_info);
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   if (data_length) {
-    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), value_ptr, data_length);
+    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->DataNBytes()), value_ptr, data_length);
     if (ret_code != EOK) {
       MS_LOG(EXCEPTION) << "Failed to copy data into scalar tensor, memcpy_s errorno: " << ret_code;
     }

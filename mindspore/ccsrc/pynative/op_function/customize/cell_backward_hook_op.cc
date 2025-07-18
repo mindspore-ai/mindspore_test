@@ -69,8 +69,7 @@ py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim,
     AutoGradUtil::SetInferMultiOutputToGrad(op_grad_info, op);
     PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
   }
-  // Data sync in mix mode(Graph and PyNative)
-  PyNativeAlgo::PyBoost::DataSyncForGraph(op);
+
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   MS_LOG(DEBUG) << "Run Pyboost_CellBackwardHook end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));

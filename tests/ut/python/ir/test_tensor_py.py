@@ -95,9 +95,9 @@ def test_dtype():
 
 
 def test_asnumpy():
-    npd = np.ones((2, 3))
+    npd = np.ones((2, 3), np.float32)
     a = ms.Tensor(npd)
-    a.set_dtype(ms.int32)
+    a.set_dtype(ms.float16)
     assert a.asnumpy().all() == npd.all()
 
 
@@ -108,8 +108,8 @@ def test_initializer_asnumpy():
 
 
 def test_print():
-    a = ms.Tensor(np.ones((2, 3)))
-    a.set_dtype(ms.int32)
+    a = ms.Tensor(np.ones((2, 3), np.float32))
+    a.set_dtype(ms.float16)
     print(a)
 
 

@@ -25,6 +25,7 @@
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 using float_complex = std::complex<float>;
@@ -114,7 +115,7 @@ class SelectFrontendFuncImpl : public OpFrontendFuncImpl {
     auto conds = cond_tensor->data_c();
     MS_EXCEPTION_IF_NULL(conds);
     auto type_id = x_tensor->data_type();
-    auto result_tensor = std::make_shared<tensor::Tensor>(type_id, x_shape);
+    auto result_tensor = tensor::empty(type_id, x_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     SelectInnerInferValue(primitive, cond_tensor, x_tensor, y_tensor, result_tensor);
     return result_tensor;

@@ -184,6 +184,10 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
       auto &device_tensor = kernel_tensors[i]->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       MS_EXCEPTION_IF_NULL(host_tensor);
+      auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
+        device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
+      MS_EXCEPTION_IF_NULL(res_manager);
+      res_manager->BindDeviceToCurrentThread(false);
       // No used device address need skip.
       if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagNotUsed)) {
         MS_LOG(DEBUG) << GetAID().Name() << " input index " << i << " is not used.";
@@ -195,12 +199,12 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
         if (tensor_device_address == device_tensor) {
           continue;
         }
-        if (!Copy(device_tensor.get(), tensor_device_address.get())) {
+        if (!res_manager->SyncAllStreams() || !SyncCopy(device_tensor, tensor_device_address, kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Copy data failed.");
         }
         continue;
       }
-      if (host_tensor->data_ptr() == nullptr && device_tensor->GetSize() == 0) {
+      if (host_tensor->device_address() == nullptr && device_tensor->GetSize() == 0) {
         MS_LOG(INFO) << "Empty tuple sync";
         continue;
       }
@@ -208,15 +212,12 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<KernelTensor> *cons
       if (enable_async_copy) {
         MS_LOG(INFO) << "Index :" << i
                      << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
-        if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-                                              host_tensor->data_ptr()->data())) {
+        if (!AsyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       } else {
-        if (!device_tensor->SyncHostToDevice(
-              AnfAlgo::GetRuntimePaddingShape(data_node_with_indexs_[i].first, data_node_with_indexs_[i].second),
-              LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
-              host_tensor->device_info().host_format_, host_tensor->data_ptr())) {
+        if (!res_manager->SyncAllStreams() ||
+            !SyncCopy(device_tensor, host_tensor->device_address(), kDefaultStreamIndex)) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");
         }
       }

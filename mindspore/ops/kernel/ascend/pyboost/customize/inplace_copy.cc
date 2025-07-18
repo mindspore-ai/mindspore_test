@@ -33,14 +33,11 @@ namespace pyboost {
 namespace {
 device::DeviceType GetTensorDeviceType(const std::shared_ptr<OpRunner> &op, const TensorPtr &tensor,
                                        const std::string &name) {
-  auto device_type = device::DeviceType::kCPU;
   auto addr = tensor->device_address();
-  if (addr != nullptr) {
-    auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
-    device_type = device_address->GetDeviceType();
-  } else {
-    MS_LOG(DEBUG) << "For InplaceCopy, " << name << " don't have device_address, set it to host tensor.";
+  if (addr == nullptr) {
+    MS_LOG(EXCEPTION) << "For InplaceCopy, " << name << " don't have device_address.";
   }
+  auto device_type = addr->GetDeviceType();
   if (MS_UNLIKELY(device_type != device::DeviceType::kAscend && device_type != device::DeviceType::kCPU)) {
     MS_LOG(EXCEPTION) << "For InplaceCopy, device_type must be Ascend or CPU, but got "
                       << GetDeviceNameByType(device_type);
@@ -171,12 +168,6 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
     return InplaceCopyD2D(op, dst, src);
   }
 
-  auto dst_addr = dst->device_address();
-  if (dst_addr != nullptr) {
-    dst->data_sync();
-    dst->set_device_address(nullptr);
-  }
-
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), src);
   dst->set_sync_status(kNeedSyncHostToDevice);
   op->set_outputs({dst});
@@ -237,16 +228,6 @@ tensor::TensorPtr InplaceCopyH2H(const std::shared_ptr<OpRunner> &op, const Tens
     constexpr size_t kGrainSize = 32768;
     auto copy_size = std::max(dst->DataSize(), src->DataSize());
     if (copy_size < kGrainSize) {
-      auto dst_addr = dst->device_address();
-      if (dst_addr != nullptr) {
-        dst->data_sync();
-        dst->set_device_address(nullptr);
-      }
-      auto src_addr = src->device_address();
-      if (src_addr != nullptr) {
-        src->data_sync();
-        src->set_device_address(nullptr);
-      }
       auto size = dst->Size();
       auto ret = EOK;
       if (size > 0 && !common::IsCompileSimulation()) {

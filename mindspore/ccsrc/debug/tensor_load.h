@@ -29,6 +29,7 @@
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 
+#include "ir/tensor_api.h"
 namespace mindspore {
 class TensorLoader {
  public:
@@ -98,7 +99,7 @@ class TensorLoader {
                                           float32_tensor->shape_c(),
                                           static_cast<TypeId>(float32_tensor->data_type_c()));
       } else if (type_string == "int4") {
-        auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, node->GetShape());
+        auto int8_tensor = tensor::empty(TypeId::kNumberTypeInt8, node->GetShape(), device::DeviceType::kCPU);
         bool split_succeed =
           SplitInt8ToInt4x2(node->GetDataPtr(), node->GetByteSize(), int8_tensor->data_c(), int8_tensor->DataSize());
         if (!split_succeed) {

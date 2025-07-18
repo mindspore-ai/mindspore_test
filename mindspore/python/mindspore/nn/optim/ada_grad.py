@@ -204,7 +204,6 @@ class Adagrad(Optimizer):
     def construct(self, grads):
         params = self._parameters
         accum = self.accum
-        grads = self.flatten_gradients(grads)
         grads = self.decay_weight(grads)
         grads = self.gradients_centralization(grads)
         grads = self.scale_grad(grads)

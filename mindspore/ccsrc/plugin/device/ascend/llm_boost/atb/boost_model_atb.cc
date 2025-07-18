@@ -22,6 +22,7 @@
 #include "plugin/device/ascend/llm_boost/atb/workspace.h"
 #include "runtime/pynative/op_executor.h"
 #include "utils/singleton.h"
+#include "ir/device_address_maker.h"
 
 // atb
 #include "acl/acl_rt.h"
@@ -223,7 +224,7 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
 
   if (device_address == nullptr) {
     device_address = device_context_->device_res_manager_->CreateDeviceAddress(
-      nullptr, static_cast<size_t>(msTensor->data().nbytes()), msTensor->shape(), mindspore::Format::ND,
+      nullptr, static_cast<size_t>(msTensor->DataNBytes()), msTensor->shape(), mindspore::Format::ND,
       msTensor->data_type(), device_name_, device_id_, stream_id_);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->set_from_persistent_mem(msTensor->is_parameter());
@@ -235,8 +236,8 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
       MS_LOG(EXCEPTION) << "Device(id:" << device_context_->device_context_key().device_id_
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
-    if (!device_address->SyncHostToDevice(msTensor->shape(), device_address->GetSize(), device_address->type_id(),
-                                          msTensor->data_ptr()->data(), kOpFormat_ND)) {
+    // todo: check format nd!
+    if (!SyncCopy(device_address, device_sync, stream_id_)) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
     }
   }
@@ -266,7 +267,7 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
   } else {
     MS_LOG(ERROR) << "not support dtype:" << msTensor->data_type();
   }
-  tensor.dataSize = msTensor->data().nbytes();
+  tensor.dataSize = msTensor->DataNBytes();
   return tensor;
 }
 
@@ -290,13 +291,14 @@ const tensor::TensorPtr BoostModelATB::CreateMsTensorFromTensorDesc(const atb::T
     msTensorShape.push_back(tensorDesc.shape.dims[i]);
   }
   tensor::TensorDataPtr data = tensor::MakeTensorData(msTensorType, msTensorShape);
-  tensor::TensorPtr msTensor = std::make_shared<tensor::Tensor>(msTensorType, msTensorShape, data);
+  tensor::TensorPtr msTensor = std::make_shared<tensor::Tensor>(
+    msTensorType, msTensorShape, MakeDeviceAddress(msTensorType, msTensorShape, std::move(data)));
 
   auto device_sync = msTensor->device_address();
   auto device_address = std::dynamic_pointer_cast<device::DeviceAddress>(device_sync);
   if (device_address == nullptr) {
     device_address = device_context_->device_res_manager_->CreateDeviceAddress(
-      nullptr, static_cast<size_t>(msTensor->data().nbytes()), msTensor->shape(), mindspore::Format::ND,
+      nullptr, static_cast<size_t>(msTensor->DataNBytes()), msTensor->shape(), mindspore::Format::ND,
       msTensor->data_type(), device_name_, device_id_, stream_id_);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->set_from_persistent_mem(msTensor->is_parameter());

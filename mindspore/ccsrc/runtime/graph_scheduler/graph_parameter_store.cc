@@ -72,6 +72,14 @@ void GraphParameterStore::SetParameterUsedTimes(size_t outer_index, size_t inner
   parameter_used_times_[outer_index][inner_index] = times;
 }
 
+bool GraphParameterStore::GetOffloaded(size_t outer_index, size_t inner_index) {
+  return is_offload_parameter_[outer_index][inner_index];
+}
+
+void GraphParameterStore::SetOffloaded(size_t outer_index, size_t inner_index, bool is_offload) {
+  is_offload_parameter_[outer_index][inner_index] = is_offload;
+}
+
 bool GraphParameterStore::IsConcurrentlyUse(size_t outer_index, size_t inner_index) {
   return parameter_used_times_[outer_index][inner_index] > 1;
 }
@@ -87,9 +95,9 @@ void GraphParameterStore::SetFrontNodeToIndex(AnfNode *node, size_t index) {
   index_to_front_node_.emplace(index, node);
 }
 
-void GraphParameterStore::InsertTensorDataIntoCallback(const TensorDataPtr &tensor_data) {
+void GraphParameterStore::InsertDeviceTensorIntoCallback(const DeviceSyncPtr &device_tensor) {
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  tensor_data_in_callback_.push_back(tensor_data);
+  device_tensor_in_callback_.push_back(device_tensor);
 }
 
 void GraphParameterStore::InsertNonWeightRefMaxInputs(size_t outer_index, size_t inner_index) {
@@ -104,7 +112,7 @@ void GraphParameterStore::ResetPrepareState() {
       kernel_tensors[j].second.second = false;
     }
   }
-  tensor_data_in_callback_.reserve(buffer_size_);
+  device_tensor_in_callback_.reserve(buffer_size_);
 }
 
 void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_index) {
@@ -239,14 +247,14 @@ bool GraphParameterStore::RecordGraphInputsAndIsDyn(const GraphCompilerInfo *gra
     host_tensors_shape_[i] = input_tensor->shape();
     input_tensor->set_name(origin_parameter->fullname_with_scope());
     MS_LOG(DEBUG) << "Add graph input: " << origin_parameter->fullname_with_scope();
-    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor->data_ptr());
+    llm_manager.add_graph_input(origin_parameter->fullname_with_scope(), input_tensor);
     MS_LOG(DEBUG) << "Add input tensor data for input parameter: " << origin_parameter->fullname_with_scope();
   }
   return isDyn;
 }
 
-void AddCopyDataCallBack(const std::vector<TensorDataPtr> &tensor_data_in_callback) {
-  device::CallbackFunc callback_func = [tensor_data_in_callback]() {
+void AddCopyDataCallBack(const std::vector<DeviceSyncPtr> &device_tensor_in_callback) {
+  device::CallbackFunc callback_func = [device_tensor_in_callback]() {
     // Clear buffer automatically.
   };
 
@@ -268,8 +276,8 @@ void GraphParameterStore::ReleaseData() {
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kReleaseResource, "GraphParameterStore");
   // Add copy data callback to avoid release data before async copy finished.
   std::unique_lock<std::shared_mutex> lock(param_mutex_);
-  AddCopyDataCallBack(tensor_data_in_callback_);
-  tensor_data_in_callback_.clear();
+  AddCopyDataCallBack(device_tensor_in_callback_);
+  device_tensor_in_callback_.clear();
 
   for (auto index : non_weight_ref_max_inputs_) {
     std::pair<size_t, size_t> position{index.first, index.second};
@@ -350,7 +358,7 @@ void GraphParameterStore::Clear() {
   front_node_to_index_.clear();
   node_to_real_front_node_.clear();
   index_to_front_node_.clear();
-  tensor_data_in_callback_.clear();
+  device_tensor_in_callback_.clear();
   for (auto &buffer : buffers_) {
     buffer.clear();
   }

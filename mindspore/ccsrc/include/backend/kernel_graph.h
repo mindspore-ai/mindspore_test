@@ -575,11 +575,6 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
     has_kernel_need_user_data_ = has_kernel_need_user_data;
   }
 
-  bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
-  void set_enable_kbk_sub_graph_execute(bool enable_kbk_sub_graph_execute) {
-    enable_kbk_sub_graph_execute_ = enable_kbk_sub_graph_execute;
-  }
-
   bool enable_input_optimize() const { return enable_input_optimize_; }
   void set_enable_input_optimize(bool enable_input_optimize) { enable_input_optimize_ = enable_input_optimize; }
   void set_is_from_cache(bool is_from_cache) { is_from_cache_ = is_from_cache; }
@@ -717,9 +712,6 @@ class BACKEND_COMMON_EXPORT KernelGraph : public FuncGraph {
   // Whether this graph contains kernel which need user data.
   bool has_kernel_need_user_data_{false};
 
-  // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
-  // Note: Will be deleted in the future, after runtime refactor for kbk finish.
-  bool enable_kbk_sub_graph_execute_{true};
   // Whether this graph could executed input optimize.
   bool enable_input_optimize_{true};
   bool is_from_cache_{false};

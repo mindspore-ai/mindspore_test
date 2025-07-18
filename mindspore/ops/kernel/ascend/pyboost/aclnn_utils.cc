@@ -31,7 +31,6 @@ std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::TensorPtr &seed, 
                                                  int64_t step) {
   runtime::Pipeline::Get().WaitAll();
   auto seed_value = *static_cast<int64_t *>(seed->data_c());
-  offset->set_device_address(nullptr);
   auto offset_ptr = static_cast<int64_t *>(offset->data_c());
   auto offset_value = *offset_ptr;
   *offset_ptr += step;
