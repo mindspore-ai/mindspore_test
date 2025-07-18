@@ -155,6 +155,11 @@ bool CheckAbstractScalar(const AnfNodePtr &node) {
       MS_EXCEPTION_IF_NULL(value);
       node->set_abstract(value->ToAbstract());
     }
+    // Backend not support string, need convert to tensor.
+    // JoinedStr: AbstractScalar(Type: String) --> AbstractTensor.
+    if (IsPrimitiveCNode(node, prim::kPrimJoinedStr)) {
+      node->set_abstract(std::make_shared<AbstractTensor>(kInt64, ShapeVector({1})));
+    }
     return true;
   }
   return false;

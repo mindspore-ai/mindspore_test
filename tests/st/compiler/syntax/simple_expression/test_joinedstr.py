@@ -24,7 +24,7 @@ from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_1():
     """
     Feature: Test raise syntax in strict mode.
@@ -44,7 +44,7 @@ def test_raise_joinedstr_variable_1():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_2():
     """
     Feature: Test raise syntax in strict mode.
@@ -64,7 +64,7 @@ def test_raise_joinedstr_variable_2():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_constant_tuple():
     """
     Feature: Test raise syntax in strict mode.
@@ -87,7 +87,7 @@ def test_raise_joinedstr_constant_tuple():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_constant_list():
     """
     Feature: Test raise syntax in strict mode.
@@ -110,7 +110,7 @@ def test_raise_joinedstr_constant_list():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_constant_dict():
     """
     Feature: Test raise syntax in strict mode.
@@ -133,7 +133,7 @@ def test_raise_joinedstr_constant_dict():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_tuple():
     """
     Feature: Test raise syntax in strict mode.
@@ -156,7 +156,7 @@ def test_raise_joinedstr_variable_tuple():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_nested_tuple():
     """
     Feature: Test raise syntax in strict mode.
@@ -179,7 +179,7 @@ def test_raise_joinedstr_variable_nested_tuple():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_list():
     """
     Feature: Test raise syntax in strict mode.
@@ -202,7 +202,7 @@ def test_raise_joinedstr_variable_list():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_nested_list():
     """
     Feature: Test raise syntax in strict mode.
@@ -225,7 +225,7 @@ def test_raise_joinedstr_variable_nested_list():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_nested_sequence():
     """
     Feature: Test raise syntax in strict mode.
@@ -248,7 +248,7 @@ def test_raise_joinedstr_variable_nested_sequence():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_dict():
     """
     Feature: Test raise syntax in strict mode.
@@ -271,7 +271,7 @@ def test_raise_joinedstr_variable_dict():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_variable_nested_dict():
     """
     Feature: Test raise syntax in strict mode.
@@ -294,7 +294,7 @@ def test_raise_joinedstr_variable_nested_dict():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_control_flow():
     """
     Feature: Test raise syntax in strict mode.
@@ -317,7 +317,7 @@ def test_raise_joinedstr_control_flow():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_not_raise_joinedstr_control_flow():
     """
     Feature: Test raise syntax in strict mode.
@@ -338,7 +338,7 @@ def test_not_raise_joinedstr_control_flow():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_control_flow_grad_in_graph():
     """
     Feature: Test raise syntax in strict mode.
@@ -366,7 +366,7 @@ def test_raise_joinedstr_control_flow_grad_in_graph():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_control_flow_grad_in_pynative():
     """
     Feature: Test raise syntax in strict mode.
@@ -393,7 +393,7 @@ def test_raise_joinedstr_control_flow_grad_in_pynative():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_not_raise_joinedstr_control_flow_grad_in_graph():
     """
     Feature: Test raise syntax in strict mode.
@@ -419,7 +419,7 @@ def test_not_raise_joinedstr_control_flow_grad_in_graph():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_not_raise_joinedstr_control_flow_grad_in_pynative():
     """
     Feature: Test raise syntax in strict mode.
@@ -444,7 +444,7 @@ def test_not_raise_joinedstr_control_flow_grad_in_pynative():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_scalar_join_grad_in_graph():
     """
     Feature: Test raise syntax in strict mode.
@@ -473,7 +473,7 @@ def test_raise_joinedstr_scalar_join_grad_in_graph():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_not_raise_joinedstr_scalar_join_grad_in_graph():
     """
     Feature: Test raise syntax in strict mode.
@@ -499,7 +499,7 @@ def test_not_raise_joinedstr_scalar_join_grad_in_graph():
     assert np.all(res.asnumpy() == np.array([0]))
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
     """
     Feature: Test raise syntax in strict mode.
@@ -526,7 +526,7 @@ def test_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_not_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
     """
     Feature: Test raise syntax in strict mode.
@@ -549,3 +549,22 @@ def test_not_raise_joinedstr_multi_input_control_flow_grad_in_pynative():
     res = grad_func(func, input_x, input_y)
     assert np.all(res.asnumpy() == np.array([1]))
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '2'
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_joinedstr_infer_type():
+    """
+    Feature: Test joinedstr infer type.
+    Description: Test joinedstr infer type.
+    Expectation: Success.
+    """
+    @jit
+    def func(x):
+        x = ops.add(x, x)
+        format_f = f'format_f ={x}'
+        assert isinstance(format_f, str)
+        return x
+
+    input_x = Tensor([1])
+    res = func(input_x)
+    assert res == Tensor([2])
