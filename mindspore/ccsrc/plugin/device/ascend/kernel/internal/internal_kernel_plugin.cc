@@ -216,7 +216,12 @@ KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   kernel_ptr->set_fullname(op_fullname);
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
   std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(anf_node);
-  if (!kernel_ptr->Init(common::AnfAlgo::GetCNodePrimitive(anf_node), input_kernel_tensors, output_kernel_tensors)) {
+  auto prim_ptr = common::AnfAlgo::GetCNodePrimitive(anf_node);
+  if (prim_ptr == nullptr) {
+    MS_LOG(ERROR) << "internal can't find primitive Kernel[" << opname << "]";
+    return nullptr;
+  }
+  if (!kernel_ptr->Init(prim_ptr, input_kernel_tensors, output_kernel_tensors)) {
     MS_LOG_WITH_NODE(EXCEPTION, anf_node) << "#dmsg#Kernel build failed:#dmsg#Initialize internal kernel op["
                                           << anf_node->fullname_with_scope() << "] failed.";
   }
