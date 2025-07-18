@@ -45,7 +45,9 @@ bool WeightCheck(const AnfNodePtr &node) {
     {kConv2DOpName, {1}}, {kBatchNormOpName, {1, 2, 3, 4}}, {kConv2DBackpropInputOpName, {1}}};
 
   MS_EXCEPTION_IF_NULL(node);
-  const std::string &op_name = common::AnfAlgo::GetCNodePrimitive(node)->name();
+  auto prim = common::AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
+  const std::string &op_name = prim->name();
   auto iter = weight_list.find(op_name);
   if (iter != weight_list.end()) {
     std::vector<session::KernelWithIndex> real_inputs;
@@ -83,7 +85,9 @@ mindspore::HashMap<AnfNodePtr, NodeInfo> CollectNodeInfo(const FuncGraphPtr &fun
       continue;
     }
 
-    const std::string &op_name = common::AnfAlgo::GetCNodePrimitive(node)->name();
+    auto prim = common::AnfAlgo::GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
+    const std::string &op_name = prim->name();
     const auto &converter_factory = TrtOpFactory::GetInstance();
     ConvertFunc convert_func = converter_factory.GetConvertFunc(op_name);
     if (!convert_func) {
@@ -246,8 +250,8 @@ std::map<std::string, AnfNodePtrList> GraphPartitioner::CollectSegments() {
   std::map<std::string, AnfNodePtrList> segments;
   for (const auto &item : node_info_) {
     const std::string &graph_id = item.second.graph_id();
-    if (graph_id.find("T_") != graph_id.npos &&
-        common::AnfAlgo::GetCNodePrimitive(item.first)->name() != kReturnOpName) {
+    auto prim = common::AnfAlgo::GetCNodePrimitive(item.first);
+    if (graph_id.find("T_") != graph_id.npos && (prim != nullptr) && prim->name() != kReturnOpName) {
       segments[graph_id].push_back(item.first);
     }
   }

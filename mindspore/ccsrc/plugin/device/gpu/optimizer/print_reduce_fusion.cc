@@ -163,6 +163,7 @@ bool PrintReduceFusion::Run(const FuncGraphPtr &graph) {
     common::AnfAlgo::SetNodeAttr("value_type", MakeValue<std::vector<int64_t>>(value_type), print_fused);
     common::AnfAlgo::SetNodeAttr("value_type_pos", MakeValue<std::vector<int64_t>>(value_type_pos), print_fused);
     auto old_prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(old_prim);
     if (old_prim->HasAttr(kFakeTensorListPos)) {
       auto value_ptr = old_prim->GetAttr(kFakeTensorListPos);
       auto fake_tensor_list_pos = GetValue<std::vector<int64_t>>(value_ptr);

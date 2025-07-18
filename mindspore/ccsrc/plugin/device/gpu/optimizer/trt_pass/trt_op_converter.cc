@@ -211,6 +211,7 @@ ConvertResult AddReduceLayer(AnfNodePtr node, std::shared_ptr<TrtConverterContex
   const auto &input_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 0);
   const ValuePtr &value = common::AnfAlgo::GetCNodePrimitive(node)->GetAttr("axis");
   uint32_t reduce_axes = 0;
+  MS_EXCEPTION_IF_NULL(value);
   if (value->isa<ValueTuple>() || value->isa<ValueList>()) {
     const auto &axis = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(node, "axis");
     for (size_t i = 0; i < axis.size(); i++) {
@@ -814,6 +815,7 @@ MS_TRT_CONVERTER_FUNC_REG(Softmax) {
   const auto &input_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(node, 0);
   const ValuePtr &value = common::AnfAlgo::GetCNodePrimitive(node)->GetAttr("axis");
   uint32_t reduce_axes = 0;
+  MS_EXCEPTION_IF_NULL(value);
   if (value->isa<ValueTuple>() || value->isa<ValueList>()) {
     const auto &axis = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(node, "axis");
     if (axis.size() != 1) {

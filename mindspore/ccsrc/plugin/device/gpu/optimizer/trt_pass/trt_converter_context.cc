@@ -54,7 +54,9 @@ bool TrtConverterContext::Parser() {
 
     // Transform AnfNode To Trt layer.
     // Bypass control node including Depend, Load, UpdateState, TupleGetItem, MakeTuple.
-    std::string op_name = common::AnfAlgo::GetCNodePrimitive(node)->name();
+    auto prim = common::AnfAlgo::GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
+    std::string op_name = prim->name();
     if (!AnfUtils::IsRealKernel(node) && op_name != "Return") {
       continue;
     }
