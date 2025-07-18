@@ -40,7 +40,7 @@ COMMON_EXPORT py::object GetPyObjAttr(const py::object &obj, const std::string &
 template <class... T>
 py::object CallPyObjMethod(const py::object &obj, const std::string &method, T... args) {
   if (!method.empty() && !py::isinstance<py::none>(obj)) {
-    return obj.attr(method.c_str())(args...);
+    return obj.attr(py::str(method))(args...);
   }
   return py::none();
 }
@@ -49,7 +49,7 @@ py::object CallPyObjMethod(const py::object &obj, const std::string &method, T..
 template <class... T>
 py::object CallPyModFn(const py::module &mod, const std::string &function, T... args) {
   if (!function.empty() && !py::isinstance<py::none>(mod)) {
-    return mod.attr(function.c_str())(args...);
+    return mod.attr(py::str(function))(args...);
   }
   return py::none();
 }
@@ -71,7 +71,7 @@ py::object CallPyFn(const std::string &module, const std::string &name, T... arg
   (void)set_python_scoped();
   if (!module.empty() && !name.empty()) {
     py::module mod = py::module::import(module.c_str());
-    py::object fn = mod.attr(name.c_str())(args...);
+    py::object fn = mod.attr(py::str(name))(args...);
     return fn;
   }
   return py::none();
