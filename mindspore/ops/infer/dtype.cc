@@ -40,6 +40,7 @@
 namespace mindspore {
 namespace ops {
 MIND_API_OPERATOR_IMPL(DType, BaseOperator);
+MIND_API_OPERATOR_IMPL(DTypeId, BaseOperator);
 class OPS_API DTypeInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
@@ -85,6 +86,15 @@ class OPS_API DTypeInfer : public abstract::OpInferBase {
   }
 };
 
+class OPS_API DTypeIdInfer : public DTypeInfer {
+ public:
+  ValuePtr InferValue(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
+    auto type = DTypeInfer::InferValue(primitive, input_args)->cast<TypePtr>();
+    return std::make_shared<Int64Imm>(static_cast<int64_t>(type->type_id()));
+  }
+};
+
 REGISTER_PRIMITIVE_OP_INFER_IMPL(DType, prim::kPrimDType, DTypeInfer, true);
+REGISTER_PRIMITIVE_OP_INFER_IMPL(DTypeId, prim::kPrimDTypeId, DTypeIdInfer, true);
 }  // namespace ops
 }  // namespace mindspore

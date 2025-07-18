@@ -1,0 +1,25 @@
+#operator func_dropout_ext
+func_dropout_ext:
+    args:
+        input:
+            dtype: tensor
+        p:
+            dtype: float
+            type_cast: int, bool
+        training:
+            dtype: bool
+        inplace:
+            dtype: bool
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    bprop_expander: False
+    dispatch:
+        enable: True
+        Ascend: FuncDropoutExtAscend
+    function:
+        disable: True

@@ -49,7 +49,7 @@ from mindspore.ops.auto_generate import group_norm_op, rms_norm, add_rms_norm, l
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
-                                         constant_pad_nd_op, dropout_ext_op, reverse_v2_impl, avg_pool2d_op,
+                                         constant_pad_nd_op, func_dropout_ext_op, reverse_v2_impl, avg_pool2d_op,
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
@@ -1637,16 +1637,8 @@ def dropout_ext(input, p=0.5, training=True, inplace=False):
         >>> print(output.shape)
         (2, 2)
     """
-    check_bool_const(training, "training", "dropout_ext")
-    check_bool_const(inplace, "inplace", "dropout_ext")
-    if not training:
-        return input
     seed, offset = default_generator._step(generator_step_)  # pylint: disable=protected-access
-    out, _ = dropout_ext_op(input, p, seed, offset)
-    if inplace:
-        input.copy_(out)
-        return input
-    return out
+    return func_dropout_ext_op(input, p, training, inplace, seed, offset)
 
 
 def dropout1d(input, p=0.5, training=True):

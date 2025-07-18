@@ -511,6 +511,15 @@ class MetaImpl : public MetaFuncGraph {
   /// \return Output node.
   NodePtr Rank(const NodePtr &x);
 
+  /// \brief x's dtype_id
+  ///
+  /// \note Example: DTypeId(x)
+  ///
+  /// \param[in] x Input node.
+  ///
+  /// \return Output node.
+  NodePtr DTypeId(const NodePtr &x);
+
   /// \brief reshape x
   ///
   /// \note Example: Reshape(x, shape)
