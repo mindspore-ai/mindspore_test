@@ -111,7 +111,9 @@ CNodePtr FindBackAlltoall(const FuncGraphManagerPtr &manager, const CNodePtr &ma
       break;
     }
 
-    if (GetCNodePrimitive(cnode)->HasAttr("gpea_label")) {
+    const auto &prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    if (prim->HasAttr("gpea_label")) {
       visited_marked_nodes->push_back(cnode);
     }
 
@@ -157,11 +159,8 @@ void FindAlltoallNodePairs(const FuncGraphManagerPtr &manager, const std::vector
   std::vector<CNodePtr> visited_marked_nodes;
   for (size_t i = 0; i < origin_nodes_topological.size(); i++) {
     auto cnode = origin_nodes_topological[i];
-    if (!IsPrimitiveCNode(cnode)) {
-      continue;
-    }
-    auto prim = GetCNodePrimitive(cnode);
-    if (!prim->HasAttr("gpea_label")) {
+    const auto &prim = GetCNodePrimitive(cnode);
+    if (prim == nullptr || !prim->HasAttr("gpea_label")) {
       continue;
     }
 
@@ -619,7 +618,9 @@ void CheckReshapeScaleAxis(const std::vector<CNodePtr> &origin_nodes_topological
     MS_LOG(DEBUG) << "Show graph nodes start";
     for (size_t i = front_alltoall_idx; i < back_alltoall_idx + 1; i++) {
       auto cnode = origin_nodes_topological[i];
-      auto prim_name = GetCNodePrimitive(cnode)->name();
+      const auto &prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(prim);
+      auto prim_name = prim->name();
       auto scope_name = cnode->scope()->name();
       std::string input_shape_string = "";
       std::string output_shape_string = "";
