@@ -409,6 +409,7 @@ void PipelineInterleave::LabelGenMaskFusion() {
 }
 
 FuncGraphPtr GetShardedFuncGraph(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   const size_t kShardInputSize = 6;
   if (cnode->size() < kShardInputSize) {
     return nullptr;
