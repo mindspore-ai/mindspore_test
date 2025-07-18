@@ -18,6 +18,7 @@
 #include <string>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -37,8 +38,8 @@
 namespace mindspore {
 namespace backend {
 namespace ms_infer_backend {
-
-static std::map<std::string, da::ops::Op> primitive_op_name_map = {
+namespace {
+const std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameAdd, da::ops::Op_add},
   {ops::kNameSub, da::ops::Op_sub},
   {ops::kNameMul, da::ops::Op_mul},
@@ -53,6 +54,7 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameBatchMatMul, da::ops::Op_batch_matmul},
   {ops::kNameCast, da::ops::Op_cast},
   {ops::kNameConcat, da::ops::Op_concat},
+  {ops::kNameCumsumExt, da::ops::Op_cumsum_ext},
   {ops::kNameExpandDims, da::ops::Op_expand_dims},
   {ops::kNameGather, da::ops::Op_gather},
   {ops::kNameNeg, da::ops::Op_neg},
@@ -64,12 +66,15 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameSigmoid, da::ops::Op_sigmoid},
   {ops::kNameSquare, da::ops::Op_square},
   {ops::kNameStridedSlice, da::ops::Op_strided_slice},
+  {ops::kNameSplitWithSize, da::ops::Op_split_with_size},
   {ops::kNameTile, da::ops::Op_tile},
   {ops::kNameTranspose, da::ops::Op_transpose},
+  {ops::kNameAddRmsNorm, da::ops::Op_add_rmsnorm},
   {ops::kNameApplyRotaryPosEmb, da::ops::Op_apply_rotary_pos_emb},
   {ops::kNameReshapeAndCache, da::ops::Op_reshape_and_cache},
   {ops::kNameFlashAttentionScore, da::ops::Op_flash_attention_score},
   {ops::kNamePagedAttention, da::ops::Op_paged_attention},
+  {kReshapeExtOpName, da::ops::Op_reshape_ext},
   {kTupleGetItemOpName, da::ops::Op_tuple_getitem},
   {kMakeTupleOpName, da::ops::Op_make_tuple},
   {kUpdateStateOpName, da::ops::Op_update_state},
@@ -77,7 +82,8 @@ static std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {kDependOpName, da::ops::Op_depend},
   {kReturnOpName, da::ops::Op_return},
 };
-static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
+
+const std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_add, prim::kPrimAdd},
   {da::ops::Op_sub, prim::kPrimSub},
   {da::ops::Op_mul, prim::kPrimMul},
@@ -92,6 +98,7 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_batch_matmul, prim::kPrimBatchMatMul},
   {da::ops::Op_cast, prim::kPrimCast},
   {da::ops::Op_concat, prim::kPrimConcat},
+  {da::ops::Op_cumsum_ext, prim::kPrimCumsumExt},
   {da::ops::Op_expand_dims, prim::kPrimExpandDims},
   {da::ops::Op_gather, prim::kPrimGather},
   {da::ops::Op_neg, prim::kPrimNeg},
@@ -103,12 +110,15 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_sigmoid, prim::kPrimSigmoid},
   {da::ops::Op_square, prim::kPrimSquare},
   {da::ops::Op_strided_slice, prim::kPrimStridedSlice},
+  {da::ops::Op_split_with_size, prim::kPrimSplitWithSize},
   {da::ops::Op_tile, prim::kPrimTile},
+  {da::ops::Op_add_rmsnorm, prim::kPrimAddRmsNorm},
   {da::ops::Op_apply_rotary_pos_emb, prim::kPrimApplyRotaryPosEmb},
   {da::ops::Op_reshape_and_cache, prim::kPrimReshapeAndCache},
   {da::ops::Op_flash_attention_score, prim::kPrimFlashAttentionScore},
   {da::ops::Op_paged_attention, prim::kPrimPagedAttention},
   {da::ops::Op_transpose, prim::kPrimTranspose},
+  {da::ops::Op_reshape_ext, prim::kPrimReshapeExt},
   {da::ops::Op_tuple_getitem, prim::kPrimTupleGetItem},
   {da::ops::Op_make_tuple, prim::kPrimMakeTuple},
   {da::ops::Op_update_state, prim::kPrimUpdateState},
@@ -116,6 +126,25 @@ static std::map<da::ops::Op, const PrimitivePtr> op_primitive_map = {
   {da::ops::Op_depend, prim::kPrimDepend},
   {da::ops::Op_return, prim::kPrimReturn},
 };
+
+const std::map<TypeId, da::tensor::Type> type_id_dtype_map = {
+  {kNumberTypeBool, da::tensor::Type_Bool},    {kNumberTypeInt16, da::tensor::Type_I16},
+  {kNumberTypeInt32, da::tensor::Type_I32},    {kNumberTypeInt64, da::tensor::Type_I64},
+  {kNumberTypeFloat16, da::tensor::Type_F16},  {kNumberTypeFloat32, da::tensor::Type_F32},
+  {kNumberTypeFloat64, da::tensor::Type_F64},  {kNumberTypeBFloat16, da::tensor::Type_BF16},
+  {kObjectTypeUMonad, da::tensor::Type_Monad}, {kObjectTypeTuple, da::tensor::Type_Tuple},
+  {kMetaTypeNone, da::tensor::Type_None},
+};
+
+const std::map<da::tensor::Type, TypeId> dtype_type_id_map = {
+  {da::tensor::Type_Bool, kNumberTypeBool},    {da::tensor::Type_I16, kNumberTypeInt16},
+  {da::tensor::Type_I32, kNumberTypeInt32},    {da::tensor::Type_I64, kNumberTypeInt64},
+  {da::tensor::Type_F16, kNumberTypeFloat16},  {da::tensor::Type_F32, kNumberTypeFloat32},
+  {da::tensor::Type_F64, kNumberTypeFloat64},  {da::tensor::Type_BF16, kNumberTypeBFloat16},
+  {da::tensor::Type_Monad, kObjectTypeUMonad}, {da::tensor::Type_Tuple, kObjectTypeTuple},
+  {da::tensor::Type_None, kMetaTypeNone},
+};
+}  // namespace
 
 da::ops::Op ConvertPrimitiveOp(const PrimitivePtr &prim) {
   MS_EXCEPTION_IF_NULL(prim);
@@ -136,24 +165,6 @@ const PrimitivePtr ConvertPrimitiveOp(da::ops::Op op) {
     MS_LOG(INTERNAL_EXCEPTION) << "Unexpected DA Op " << op;
   }
 }
-
-static std::map<TypeId, da::tensor::Type> type_id_dtype_map = {
-  {kNumberTypeBool, da::tensor::Type_Bool},    {kNumberTypeInt16, da::tensor::Type_I16},
-  {kNumberTypeInt32, da::tensor::Type_I32},    {kNumberTypeInt64, da::tensor::Type_I64},
-  {kNumberTypeFloat16, da::tensor::Type_F16},  {kNumberTypeFloat32, da::tensor::Type_F32},
-  {kNumberTypeFloat64, da::tensor::Type_F64},  {kNumberTypeBFloat16, da::tensor::Type_BF16},
-  {kObjectTypeUMonad, da::tensor::Type_Monad}, {kObjectTypeTuple, da::tensor::Type_Tuple},
-  {kMetaTypeNone, da::tensor::Type_None},
-};
-
-static std::map<da::tensor::Type, TypeId> dtype_type_id_map = {
-  {da::tensor::Type_Bool, kNumberTypeBool},    {da::tensor::Type_I16, kNumberTypeInt16},
-  {da::tensor::Type_I32, kNumberTypeInt32},    {da::tensor::Type_I64, kNumberTypeInt64},
-  {da::tensor::Type_F16, kNumberTypeFloat16},  {da::tensor::Type_F32, kNumberTypeFloat32},
-  {da::tensor::Type_F64, kNumberTypeFloat64},  {da::tensor::Type_BF16, kNumberTypeBFloat16},
-  {da::tensor::Type_Monad, kObjectTypeUMonad}, {da::tensor::Type_Tuple, kObjectTypeTuple},
-  {da::tensor::Type_None, kMetaTypeNone},
-};
 
 da::tensor::Type ConvertDataType(const TypePtr &type) {
   MS_EXCEPTION_IF_NULL(type);
