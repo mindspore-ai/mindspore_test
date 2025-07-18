@@ -719,9 +719,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       // Maybe allocate memory failed, early stop to run graph.
       return false;
     }
-    if (!SyncAllStreamForDeviceAddress(dest_device_address->GetDeviceType() == device::DeviceType::kCPU
-                                         ? src_device_address
-                                         : dest_device_address) ||
+    if (!SyncAllStreamForDeviceAddress(dest_device_address, src_device_address) ||
         !SyncCopy(dest_device_address, src_device_address, kDefaultStreamIndex)) {
       MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
                     << ", output index: " << output_index << ", dest device address: " << dest_device_address

@@ -51,6 +51,7 @@ const char kRuntimeActorThreadFixBind[] = "actor_thread_fix_bind";
 const char kRuntimeInputOptimize[] = "input_optimize";
 const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
 const char kRuntimeGraphOrder[] = "graph_order";
+const char kRuntimeSyncStreamOnDemand[] = "sync_stream_on_demand";
 // Runtime debug config.
 const char kRuntimeMemoryTrack[] = "memory_track";
 const char kRuntimeMemoryStat[] = "memory_statistics";

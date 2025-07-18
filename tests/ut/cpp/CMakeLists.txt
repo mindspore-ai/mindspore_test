@@ -77,7 +77,7 @@ file(GLOB_RECURSE UT_PYNATIVE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./pynati
 file(GLOB_RECURSE UT_OLD_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./device/*.cc ./kernel/*.cc
         ./pre_activate/common/*.cc  ./session/*.cc ./runtime/device/move_to_test.cc
         ./transform/*.cc ./vm/*.cc ./runtime/core/*.cc ./runtime/device/gsm/*.cc)
-file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/core/*.cc
+file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/graph_scheduler/*.cc
         ./runtime/pipeline/*.cc ./plugin/device/ascend/hal/hardware/*.cc)
 file(GLOB_RECURSE UT_GRAPH_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./graph_kernel/*.cc)
 

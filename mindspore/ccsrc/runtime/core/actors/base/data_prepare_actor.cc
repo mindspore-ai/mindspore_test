@@ -1067,7 +1067,7 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
     MS_LOG(DEBUG) << "Sync string to device for string:" << node_value->ToString() << " size:" << tensor_size;
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, string_tensor->device_address()) ||
         !SyncCopy(device_tensor, string_tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1140,7 +1140,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
     MS_EXCEPTION_IF_NULL(device_tensor);
     auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
-    if (!SyncAllStreamForDeviceAddress(device_tensor) ||
+    if (!SyncAllStreamForDeviceAddress(device_tensor, tensor->device_address()) ||
         !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1263,9 +1263,7 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
                  << ", device name:" << another_device_name << " from device address:" << host_tensor_address
                  << " to:" << another_device_tensor;
     auto skip_h2d = UCEException::GetInstance().is_reboot_node();
-    if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor->GetDeviceType() == device::DeviceType::kCPU
-                                                       ? host_tensor_address
-                                                       : another_device_tensor) ||
+    if (!skip_h2d && (!SyncAllStreamForDeviceAddress(another_device_tensor, host_tensor_address) ||
                       !SyncCopy(another_device_tensor, host_tensor_address, kDefaultStreamIndex))) {
       std::string error_info = "Sync data error.";
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
@@ -1351,10 +1349,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
         }
         static std::string name = "Alloc memory";
         host_kernel_tensor->IncreaseNewRefCount(name);
-        if (!skip_h2d &&
-            (!SyncAllStreamForDeviceAddress(
-               device_tensor->GetDeviceType() == device::DeviceType::kCPU ? host_tensor_address : device_tensor) ||
-             !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex))) {
+        if (!skip_h2d && (!SyncAllStreamForDeviceAddress(device_tensor, host_tensor_address) ||
+                          !SyncCopy(device_tensor, host_tensor_address, kDefaultStreamIndex))) {
           std::string error_info = "Sync data error.";
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
         }

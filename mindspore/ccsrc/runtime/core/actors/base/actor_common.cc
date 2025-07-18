@@ -418,15 +418,80 @@ bool WaitRuntimePipelineFinish(const OpContext<KernelTensor> *context, const std
   return true;
 }
 
-bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &device_tensor) {
-  MS_EXCEPTION_IF_NULL(device_tensor);
-  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_tensor->GetDeviceType()),
-                                       device_tensor->device_id()};
+bool SyncAllStreamForDeviceAddress(const DeviceTensorPtr &dst_device_tensor, const DeviceTensorPtr &src_device_tensor,
+                                   uint32_t stream_id, bool sync_stream_on_demand) {
+  if (dst_device_tensor == nullptr || src_device_tensor == nullptr) {
+    MS_LOG(EXCEPTION) << "Invalidate device tensor, dst_device_tensor : " << dst_device_tensor
+                      << ", src_device_tensor : " << src_device_tensor;
+  }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+    << "Sync all stream for device address, stream id : " << stream_id
+    << ", dst : " << dst_device_tensor->GetDeviceType() << ", stream id : " << dst_device_tensor->stream_id()
+    << ", src : " << src_device_tensor->GetDeviceType() << ", stream id : " << src_device_tensor->stream_id();
+
+  static bool enable_sync_stream_on_demand = []() -> bool {
+    auto ret = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncStreamOnDemand);
+    MS_LOG(INFO) << "Runtime config, sync stream on demand : "
+                 << runtime::GetRuntimeConfigValue(runtime::kRuntimeSyncStreamOnDemand);
+    return ret;
+  }();
+  if (!sync_stream_on_demand || !enable_sync_stream_on_demand) {
+    device::DeviceContextKey host_key = {device::GetDeviceNameByType(dst_device_tensor->GetDeviceType()),
+                                         dst_device_tensor->device_id()};
+    device::DeviceContext *host_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
+    MS_EXCEPTION_IF_NULL(host_context);
+    MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
+    return host_context->device_res_manager_->SyncAllStreams();
+  }
+
+  return SyncStreamOnDemandForDeviceAddress(dst_device_tensor, src_device_tensor, stream_id);
+}
+
+/**
+ * @brief Sync streams on demand, help method for copying.
+ *  In case:
+ *    1 dst is cpu and src is cpu, return true directly
+ *    2 src is not cpu, sync src stream
+ *    3 src is cpu and dst is not cpu, sync dst when stream_id is different from dst
+ *  When the sync switch: sync_stream_on_demand is disabled, follow the legacy process
+ *
+ * @param stream_id stream id scheduled for copying
+ * @return return false means sync stream failed
+ */
+bool SyncStreamOnDemandForDeviceAddress(const DeviceTensorPtr &dst_device_tensor,
+                                        const DeviceTensorPtr &src_device_tensor, uint32_t stream_id) {
+  if (src_device_tensor->GetDeviceType() == device::DeviceType::kCPU &&
+      dst_device_tensor->GetDeviceType() == device::DeviceType::kCPU) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+      << "No need sync stream since both src and dst device tensors are cpu tensor.";
+    return true;
+  }
+
+  device::DeviceType device_type = src_device_tensor->GetDeviceType() != device::DeviceType::kCPU
+                                     ? src_device_tensor->GetDeviceType()
+                                     : dst_device_tensor->GetDeviceType();
+  auto ms_context = MsContext::GetInstance();
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  device::DeviceContextKey host_key = {device::GetDeviceNameByType(device_type), device_id};
   device::DeviceContext *host_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
-
-  return host_context->device_res_manager_->SyncAllStreams();
+  auto &res_manager = host_context->device_res_manager_;
+  if (src_device_tensor->GetDeviceType() != device::DeviceType::kCPU && stream_id != src_device_tensor->stream_id()) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "sync stream : " << src_device_tensor->stream_id();
+    if (!res_manager->SyncStream(src_device_tensor->stream_id())) {
+      return false;
+    }
+  }
+  // protect dst device tensor
+  if (dst_device_tensor->GetDeviceType() != device::DeviceType::kCPU && stream_id != dst_device_tensor->stream_id()) {
+    MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "sync stream : " << dst_device_tensor->stream_id();
+    if (!res_manager->SyncStream(dst_device_tensor->stream_id())) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const DeviceAddressPtr &src_device_tensor,
@@ -442,7 +507,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
     }
     MS_LOG(DEBUG) << "Sync copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                   << " by stream id:" << stream_id;
-    if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, stream_id)) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
     }
@@ -457,7 +522,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   auto ret = AsyncCopy(dst_device_tensor, src_device_tensor, stream_id, false);
   static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
   if (sync_copy_input) {
-    if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
+    if (!SyncAllStreamForDeviceAddress(dst_device_tensor, src_device_tensor, stream_id, false)) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
       return false;
     }
