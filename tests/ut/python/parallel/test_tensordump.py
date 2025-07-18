@@ -19,16 +19,38 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.log as logger
-from mindspore import Parameter, Tensor, ops
-from mindspore import context
+from mindspore import Parameter, Tensor, ops, lazy_inline
+from mindspore import context, dataset
+from mindspore.parallel.auto_parallel import AutoParallel
+from mindspore.parallel.nn import Pipeline
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
+from mindspore.train import Model, LossMonitor, TimeMonitor
 from tests.ut.python.ops.test_math_ops import VirtualLoss
 from mindspore.ops.auto_generate import GroupedMatmul  # pylint: disable=ungrouped-imports
 from parallel.utils.utils import ParallelValidator, compile_net
+from hccl_test.manage.api import Hccl
+
+class FakeData():
+    def __init__(self, data_num=64):
+        self.data_num = data_num
+        self.input = np.array([[j for i in range(64)] for j in range(data_num)]).astype(np.float32)
+        self.label = np.array([[j for i in range(16)] for j in range(data_num)]).astype(np.float32)
+
+    def __getitem__(self, index):
+        return self.input[index], self.label[index]
+
+    def __len__(self):
+        return self.data_num
+
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
+
+def init_hccl(global_rank, device_num):
+    hccl = Hccl()
+    hccl.rank_id = global_rank
+    hccl.rank_size = device_num
 
 def gen_save_graph_path_by_testcase(testcase_name):
     abs_path = os.path.abspath(__file__)
@@ -1025,3 +1047,55 @@ def test_splittensor_fwddump_and_bwddump():
     assert check_dump_path_and_attr(tensordump_node_infos, "concatnet_out_in.npy", {})
     assert check_dump_path_and_attr(dump_gradient_node_infos, "grad_x_in.npy", {})
     assert check_dump_path_and_attr(dump_gradient_node_infos, "zero_pad_grad.npy", {})
+
+
+def test_dump_tensor_when_send_tensor_between_stage():
+    """
+    Feature: test dump Tensor when send tensor between stage
+    Description: using a simple 2 stage net, test whether 'extra_loss' can be dumped
+    Expectation: compile success
+    """
+    init_hccl(global_rank=0, device_num=2)
+    graph_path = gen_save_graph_path_by_testcase(sys._getframe(0).f_code.co_name)
+    context.set_context(save_graphs=2, save_graphs_path=graph_path)
+    class DenseLayerMM(nn.Cell):
+        def __init__(self, shape):
+            super(DenseLayerMM, self).__init__()
+            self.height, self.width = shape
+            self.weight = Parameter(Tensor(np.random.randn(self.height, self.width), dtype=ms.float32))
+            self.mm = ops.MatMul()
+            self.td = ops.TensorDump('out')
+            self.td.add_prim_attr("side_effect_io", False)
+
+        def construct(self, x, extra_loss):
+            extra_loss = ops.depend(extra_loss, self.td("extra_loss.npy", extra_loss))
+            mm_out = self.mm(x, self.weight)
+            return mm_out, extra_loss
+
+    class SimpleStageNet(nn.Cell):
+        @lazy_inline
+        def __init__(self):
+            super(SimpleStageNet, self).__init__()
+            self.m1 = DenseLayerMM(shape=(64, 512))
+            self.m2 = DenseLayerMM(shape=(512, 16))
+            self.init_extra_loss = Tensor([0.0], dtype=ms.float32)
+            self.loss_fn = nn.SoftmaxCrossEntropyWithLogits()
+
+        def construct(self, x, label):
+            extra_loss = self.init_extra_loss
+            m1_res, extra_loss = self.m1(x, extra_loss)
+            logits, extra_loss = self.m2(m1_res, extra_loss)
+            loss = self.loss_fn(logits, label)
+            return loss + extra_loss
+
+    ds = dataset.GeneratorDataset(FakeData(data_num=128), column_names=["data", "label"]).batch(8, True)
+    net = SimpleStageNet()
+    pipeline_net = Pipeline(net, 4, stage_config={"m1": 0, "m2": 1})
+    parallel_net = AutoParallel(pipeline_net)
+    parallel_net.pipeline(stages=2)
+    parallel_net.dataset_strategy("full_batch")
+    optimizer = nn.SGD(params=pipeline_net.trainable_params())
+    model = Model(network=parallel_net, optimizer=optimizer)
+    model.train(1, ds, callbacks=[LossMonitor(), TimeMonitor()])
+    tensordump_num = check_tensordump_num_from_ir(graph_path)
+    assert tensordump_num == 1

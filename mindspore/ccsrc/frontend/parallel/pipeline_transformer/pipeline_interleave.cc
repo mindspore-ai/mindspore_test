@@ -1315,6 +1315,15 @@ void PipelinePostProcess::ModifySendRecvAttr(const std::vector<AnfNodePtr> &all_
       cnode->AddPrimalAttr(PIPELINE_PARAM, MakeValue(0));
       cnode->AddPrimalAttr(MICRO, MakeValue(int64_t(0)));
       cnode->set_user_data<AnfNode>(INPUT_PARAM, pre_node);
+    } else if (IsValueNode<tensor::Tensor>(pre_node)) {
+      auto base_shape = pre_node->Shape();
+      MS_EXCEPTION_IF_NULL(base_shape);
+      auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
+      MS_EXCEPTION_IF_NULL(shape_ptr);
+      slice_shape = shape_ptr->shape();
+      if (IsPrimitiveCNode(cnode, prim::kPrimReceive)) {
+        cnode->AddPrimalAttr(FREEZE, MakeValue(true));
+      }
     } else {
       MS_EXCEPTION_IF_NULL(pre_node->cast<CNodePtr>());
       auto op_info = pre_node->cast<CNodePtr>()->user_data<OperatorInfo>();
