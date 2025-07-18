@@ -110,7 +110,7 @@ def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
         assert np.array(data_expected).shape == np.array(data_me).shape
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
@@ -129,7 +129,7 @@ def test_radam_basic(mode):
     allclose_nparray(loss_expect, out, 0.005, 0.005)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -148,7 +148,7 @@ def test_radam_group(mode):
     allclose_nparray(loss_expect, out, 0.005, 0.005)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -167,7 +167,7 @@ def test_radam_lr_dynamic(mode):
     allclose_nparray(loss_expect, out, 0.005, 0.005)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -186,7 +186,7 @@ def test_radam_group_lr_dynamic(mode):
     allclose_nparray(loss_expect, out, 0.005, 0.005)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')

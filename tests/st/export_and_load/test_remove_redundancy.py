@@ -14,7 +14,6 @@
 # ============================================================================
 import os
 import pytest
-import socket
 import shutil
 
 import mindspore.nn as nn
@@ -26,31 +25,9 @@ from mindspore.train._utils import get_parameter_redundancy, remove_param_redund
 from tests.mark_utils import arg_mark
 
 
-def is_port_free(port):
-    """Check if the specified port is not occupied."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(('0.0.0.0', port))
-        return True
-    except socket.error as e:
-        if e.errno == socket.errno.EADDRINUSE:
-            return False
-        return False
-    finally:
-        s.close()
-
-
-def set_port():
+def set_port(port):
     """Set hccl port."""
-    for i in range(61000, 65400, 16):
-        flag = True
-        for j in range(i, i + 16):
-            if not is_port_free(j):
-                flag = False
-                break
-        if flag:
-            os.environ["HCCL_IF_BASE_PORT"] = str(i)
-            break
+    os.environ["HCCL_IF_BASE_PORT"] = str(port)
 
 
 class MyCell(nn.Cell):
@@ -86,7 +63,7 @@ def test_remove_redundancy_1_1(mode):
     '''
     for i in range(8):
         os.mkdir(f"device{i}_redundancy11")
-    set_port()
+    set_port(64333)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                     "pytest -s remove_redundancy.py::test_remove_redundancy_save_True_load_True")
     assert ret == 0
@@ -104,7 +81,7 @@ def test_remove_redundancy_1_0(mode):
     '''
     for i in range(8):
         os.mkdir(f"device{i}_redundancy10")
-    set_port()
+    set_port(64433)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                     "pytest -s remove_redundancy.py::test_remove_redundancy_save_True_load_False")
     assert ret == 0
@@ -122,7 +99,7 @@ def test_remove_redundancy_0_0(mode):
     '''
     for i in range(8):
         os.mkdir(f"device{i}_redundancy00")
-    set_port()
+    set_port(64533)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                     "pytest -s remove_redundancy.py::test_remove_redundancy_save_False_load_False")
     assert ret == 0
@@ -170,13 +147,12 @@ def test_remove_redundancy_1_1_dp(mode):
     '''
     for i in range(8):
         os.mkdir(f"device{i}_redundancy11dp")
-    set_port()
+    set_port(64633)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                     "pytest -s remove_redundancy_dp.py::test_remove_redundancy_save_True_load_True_dp")
     assert ret == 0
     for i in range(8):
         shutil.rmtree(f"device{i}_redundancy11dp")
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -243,7 +219,7 @@ def test_no_init_parameters_without_load_param(mode):
     '''
     for i in range(8):
         os.mkdir(f"device{i}_no_init_parameters")
-    set_port()
+    set_port(64733)
     ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                     "pytest -s remove_redundancy.py::test_no_init_parameters")
     assert ret == 0

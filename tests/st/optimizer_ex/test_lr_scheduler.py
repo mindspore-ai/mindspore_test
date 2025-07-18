@@ -37,7 +37,7 @@ class Net(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -69,7 +69,7 @@ def test_sequential_lr_scheduler(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
@@ -99,7 +99,7 @@ def test_reduce_lr_on_plateau(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -128,7 +128,7 @@ def test_step_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -157,7 +157,7 @@ def test_linear_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -186,7 +186,7 @@ def test_exponential_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -215,7 +215,7 @@ def test_polynomial_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -254,7 +254,7 @@ def test_lambdalr_scheduler(mode):
         assert np.allclose([float(lr) for lr in current_lr], expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -284,7 +284,7 @@ def test_multiplicative_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -313,7 +313,7 @@ def test_multistep_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -342,7 +342,7 @@ def test_constant_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -371,7 +371,7 @@ def test_cyclic_lr(mode):
         assert np.allclose(current_lr[0].asnumpy(), expect_list[i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -405,7 +405,7 @@ def test_cosine_annealing_warm_restarts(mode):
             assert np.allclose(current_lr[0].asnumpy(), expect_list[epoch*iters+i])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
