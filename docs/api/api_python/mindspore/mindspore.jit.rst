@@ -19,7 +19,7 @@ mindspore.jit
 
           - `ast <https://www.mindspore.cn/docs/zh-CN/master/features/compile/graph_construction.html#ast>`_ ：解析Python的ast以构建静态图。
           - `bytecode <https://www.mindspore.cn/docs/zh-CN/master/features/compile/graph_construction.html#bytecode>`_ ：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。
-          - `trace` ：追踪Python代码的执行以构建静态图。这是一个实验特性，可能会被更改或者删除。
+          - `trace <https://www.mindspore.cn/docs/zh-CN/master/features/compile/graph_construction.html#trace>`_ ：追踪Python代码的执行以构建静态图。这是一个实验特性，可能会被更改或者删除。
 
         - **jit_level** (str, 可选) - 控制编译优化的级别。目前仅在使用ms_backend后端时生效。可选值有 ``"O0"`` 和 ``"O1"`` 。默认值： ``"O0"``。
 
@@ -35,7 +35,7 @@ mindspore.jit
         - **backend** (str, 可选) - 使用的编译后端。如果该参数未被设置，框架默认Atlas训练系列产品为 ``GE`` 后端 ，默认其他产品包括Atlas A2训练系列产品为 ``ms_backend`` 后端。
 
           - ms_backend: 使用逐算子执行的执行方式。
-          - GE: 使用下沉的执行方式，整个模型都会下沉到device侧执行，仅可作用于模型的最外层Cell。仅支撑昇腾硬件。
+          - GE: 使用下沉的执行方式，整个模型都会下沉到device侧执行，仅可作用于模型的最外层Cell。只支持在Ascend平台使用。
 
         - **\*\*options** (dict) - 传给编译后端的选项字典。
 
