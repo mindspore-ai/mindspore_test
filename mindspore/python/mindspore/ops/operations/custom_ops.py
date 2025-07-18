@@ -18,6 +18,7 @@ from __future__ import absolute_import
 import json
 import os
 import re
+import sys
 import ast
 import hashlib
 import stat
@@ -26,6 +27,7 @@ import inspect
 import importlib
 import platform
 import subprocess
+import shutil
 import numpy as np
 import mindspore as ms
 from mindspore._c_expression import Oplib, typing
@@ -40,7 +42,7 @@ from mindspore.communication.management import get_rank, GlobalComm
 from ._ms_kernel import determine_variable_usage
 from ._custom_grad import autodiff_bprop
 from ._pyfunc_registry import add_pyfunc
-from ._custom_ops_utils import ExtensionBuilder, CustomCodeGenerator, CustomInfoGenerator
+from ._custom_ops_utils import ExtensionBuilder, create_custom_prim, CustomCodeGenerator, CustomInfoGenerator
 
 if platform.system() != "Windows":
     import fcntl
@@ -1231,6 +1233,49 @@ class Custom(ops.PrimitiveWithInfer):
         return ops.primitive._run_op(self, self.name, args)
 
 
+class ModuleWrapper:
+    """
+    A thin wrapper around an imported module that intercepts attribute access
+    and automatically wraps each retrieved callable with a custom primitive.
+    """
+
+    def __init__(self, mod_name: str, module):
+        """
+        Args:
+            mod_name (str): Human-readable name of the wrapped module (used only
+                            for error messages).
+            module: The actual module object to be wrapped (e.g. the `custom_ops`
+                    module after `import custom_ops`).
+        """
+        self.mod_name = mod_name
+        self.module = module
+
+    def __getattr__(self, op_name: str):
+        """
+        Intercepts every attribute lookup on this wrapper.
+
+        Args:
+            op_name (str): Name of the attribute being accessed.
+
+        Returns:
+            A callable produced by `create_custom_prim(...)` that behaves like the
+            original operation but carries the custom primitive metadata.
+
+        Raises:
+            AttributeError: If the wrapped module does not expose `op_name`.
+        """
+        try:
+            op_func = getattr(self.module, op_name)
+            return create_custom_prim("Custom_" + op_name, op_func)
+        except AttributeError:
+            raise AttributeError(
+                f"Module '{self.mod_name}' has no attribute '{op_name}'"
+            )
+
+
+setattr(ModuleWrapper, '__ms_class__', True)
+
+
 class CustomOpBuilder:
     r"""
     CustomOpBuilder is used to initialize and configure custom operators for MindSpore.
@@ -1284,6 +1329,10 @@ class CustomOpBuilder:
         self.ldflags = ldflags
         self.build_dir = kwargs.get("build_dir")
         self.enable_atb = kwargs.get("enable_atb", False)
+        self.debug_mode = kwargs.get("debug_mode", False)
+        self.yaml = kwargs.get("op_def")
+        self.doc = kwargs.get("op_doc")
+
         self._ms_path = os.path.dirname(os.path.abspath(ms.__file__))
         if self.enable_atb:
             if backend is not None and backend != "Ascend":
@@ -1301,6 +1350,71 @@ class CustomOpBuilder:
                 if not self.atb_home_path:
                     raise ValueError("Environment variable 'ATB_HOME_PATH' must be set when 'enable_atb' is True.")
 
+    def generate_custom_op_def(self, module: str, input_path: str, doc_path: str, output_path: str) -> None:
+        """Call gen_custom_ops.py to generate custom operator definition"""
+        file_path = os.path.join(self._ms_path, "ops_generate/gen_custom_ops.py")
+        cmd = [
+            sys.executable,
+            file_path,
+            "-i", input_path,
+            "-o", output_path,
+            "-m", module,
+            "-d", doc_path
+        ]
+
+        try:
+            subprocess.run(
+                cmd,
+                check=True,
+                text=True,
+                capture_output=True
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                f"gen_custom_op.py failed with exit code {exc.returncode}.\n"
+                f"stdout: {exc.stdout}\n"
+                f"stderr: {exc.stderr}"
+            ) from None
+
+    def get_op_def(self):
+        """
+        Generate C++ operator-definition source files from one or more YAML specification files.
+        """
+        if self.yaml is None:
+            return []
+
+        if self.doc is None:
+            raise ValueError("Missing required 'doc': no YAML document was provided.")
+
+        build_path = self._get_build_directory()
+        yaml_path = os.path.join(build_path, "yaml")
+        doc_path = os.path.join(build_path, "doc")
+        op_def_path = os.path.join(build_path, "auto_generate")
+        os.makedirs(yaml_path, exist_ok=True)
+        os.makedirs(op_def_path, exist_ok=True)
+        os.makedirs(doc_path, exist_ok=True)
+
+        def copy_files(yaml_files, dest_path):
+            for file_path in yaml_files:
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(f"File not found: {file_path}")
+
+                filename = os.path.basename(file_path)
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in ('.yaml', '.yml'):
+                    raise ValueError(f"Invalid file extension: {file_ext} for {filename}")
+
+                dest_path = os.path.join(dest_path, filename)
+                shutil.copy2(file_path, dest_path)
+
+        yaml_files = [self.yaml] if isinstance(self.yaml, str) else self.yaml
+        doc_files = [self.doc] if isinstance(self.doc, str) else self.doc
+        copy_files(yaml_files, yaml_path)
+        copy_files(doc_files, doc_path)
+
+        self.generate_custom_op_def(self.name, yaml_path, doc_path, op_def_path)
+        return [os.path.join(op_def_path, "gen_custom_ops_def.cc")]
+
     def get_sources(self):
         """
         Get the source files for the custom operator.
@@ -1308,7 +1422,8 @@ class CustomOpBuilder:
         Returns:
             str or list[str], The source file(s) for the operator.
         """
-        return self.source
+        self.source = [self.source] if isinstance(self.source, str) else self.source
+        return self.source + self.get_op_def()
 
     def get_include_paths(self):
         """
@@ -1417,8 +1532,10 @@ class CustomOpBuilder:
         """
         if self.name in CustomOpBuilder._loaded_ops:
             return CustomOpBuilder._loaded_ops[self.name]
+
         module_path = self.build()
         mod = self._import_module(module_path)
+        mod = ModuleWrapper(self.name, mod)
         CustomOpBuilder._loaded_ops[self.name] = mod
         return mod
 

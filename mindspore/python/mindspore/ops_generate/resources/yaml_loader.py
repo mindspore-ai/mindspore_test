@@ -29,6 +29,7 @@ class YamlLoader(ResourceLoader):
     """
     YamlLoader is a utility class for loading yaml files.
     """
+
     def __init__(self, resouce_type: ResourceType, yaml_path: Union[Sequence[str], str]):
         """
         Initialize YamlLoader.
@@ -65,15 +66,26 @@ class OpDocYamlLoader(YamlLoader):
     """
     OpDocYamlLoader is a class for loading op primitive doc yaml files.
     """
+
     def __init__(self):
         op_doc_yaml_path = os.path.join(K.WORK_DIR, K.MS_OP_DEF_YAML_PATH, "doc")
         super().__init__(ResourceType.OP_DOC_YAML, op_doc_yaml_path)
+
+
+class CustomOpDocYamlLoader(YamlLoader):
+    """
+    CustomOpDocYamlLoader is a class for loading op primitive doc yaml files.
+    """
+
+    def __init__(self, doc_yaml_path):
+        super().__init__(ResourceType.OP_DOC_YAML, doc_yaml_path)
 
 
 class TensorMethodDocYamlLoader(YamlLoader):
     """
     TensorMethodDocYamlLoader is a class for loading tensor method doc yaml files.
     """
+
     def __init__(self):
         tensor_method_doc_yaml_path = os.path.join(K.WORK_DIR, K.MS_TENSOR_METHOD_DOC_YAML_PATH)
         super().__init__(ResourceType.TENSOR_METHOD_DOC_YAML, tensor_method_doc_yaml_path)
@@ -83,6 +95,7 @@ class MintFuncDocYamlLoader(YamlLoader):
     """
     MintFuncDocYamlLoader is a class for loading mint func doc yaml files.
     """
+
     def __init__(self):
         mint_func_doc_yaml_path = os.path.join(K.WORK_DIR, K.MS_MINT_FUNC_DOC_YAML_PATH)
         super().__init__(ResourceType.MINT_FUNC_DOC_YAML, mint_func_doc_yaml_path)

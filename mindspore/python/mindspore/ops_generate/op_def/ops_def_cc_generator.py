@@ -24,10 +24,9 @@ import common.gen_utils as gen_utils
 
 # refactored
 from common.op_proto import OpProto
-import common.template as template
+import common.template_utils as template
 
 from common.base_generator import BaseGenerator
-
 
 CC_OPS_DEF = """
 
@@ -85,7 +84,6 @@ class OpsDefCcGenerator(BaseGenerator):
             # Process outputs.
             return_args_str = get_cc_op_def_return(args_dict, op_proto)
 
-
             inputs_args = self.process_args(op_proto.op_args)
             signature_code = generate_cc_op_signature(op_proto.op_args_signature, inputs_args)
             enable_dispatch = "true" if op_proto.op_dispatch and op_proto.op_dispatch.enable else "false"
@@ -112,9 +110,9 @@ class OpsDefCcGenerator(BaseGenerator):
         save_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
         for numbering in range(math.ceil(op_size / max_op_size_in_one_file)):
             gen_include = ''.join(
-                gen_include_list[numbering*max_op_size_in_one_file: (numbering+1)*max_op_size_in_one_file])
+                gen_include_list[numbering * max_op_size_in_one_file: (numbering + 1) * max_op_size_in_one_file])
             gen_cc = ''.join(
-                gen_cc_list[numbering*max_op_size_in_one_file: (numbering+1)*max_op_size_in_one_file])
+                gen_cc_list[numbering * max_op_size_in_one_file: (numbering + 1) * max_op_size_in_one_file])
             cc_ops_def = self.CC_OPS_DEF_TEMPLATE.replace(auto_generate_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
                                                           gen_include=gen_include,
                                                           gen_cc_code=gen_cc)
@@ -146,6 +144,75 @@ class OpsDefCcGenerator(BaseGenerator):
             if not arg.is_prim_init:
                 inputs_name.append(arg.arg_name)
         return inputs_name
+
+
+class CustomOpsDefCcGenerator(OpsDefCcGenerator):
+    """
+    Generates C++ definition files for operators.
+    """
+
+    def __init__(self):
+        """
+        Initializes templates for generating C++ operator definitions.
+        """
+        super(CustomOpsDefCcGenerator, self).__init__()
+
+        self.include_template = template.Template("""#include "${path}/${operator_name}.h\"\n""")
+        self.func_impl_declaration_template = template.Template("extern OpFuncImpl &g${class_name}FuncImpl;")
+        self.empty_func_impl_declaration_template = template.Template("static OpFuncImpl g${class_name}FuncImpl;")
+        self.func_impl_define_template = template.Template("g${class_name}FuncImpl")
+        self.OP_PROTO_TEMPLATE = template.OP_PROTO_TEMPLATE
+        self.CC_OPS_DEF_TEMPLATE = template.Template(CC_OPS_DEF)
+
+    def generate(self, save_path, op_protos):
+        """
+        Generates C++ code for operator definitions and saves it to a file.
+
+        Args:
+            save_path (str): The directory to save the generated files.
+            op_protos (list): A list of operator prototypes.
+        """
+        gen_cc_list = list()
+        gen_include_list = list()
+
+        for op_proto in op_protos:
+            class_name = "Custom_" + op_proto.op_name
+            func_impl_declaration_str = self.func_impl_declaration_template.replace(class_name=class_name)
+            func_impl_define = self.func_impl_define_template.replace(class_name=class_name)
+
+            # process input
+            args_dict, cc_index_str, input_args_str = process_input_args(op_proto)
+
+            # Process outputs.
+            return_args_str = get_cc_op_def_return(args_dict, op_proto)
+
+            inputs_args = self.process_args(op_proto.op_args)
+            signature_code = generate_cc_op_signature(op_proto.op_args_signature, inputs_args)
+            enable_dispatch = "true" if op_proto.op_dispatch and op_proto.op_dispatch.enable else "false"
+            is_view = "true" if op_proto.op_view else "false"
+            is_graph_view = "true" if op_proto.op_graph_view else "false"
+            op_def_cc = self.OP_PROTO_TEMPLATE.replace(class_name=class_name,
+                                                       input_args=input_args_str,
+                                                       return_args=return_args_str,
+                                                       signatures=signature_code,
+                                                       indexes=cc_index_str,
+                                                       enable_dispatch=enable_dispatch,
+                                                       is_view=is_view,
+                                                       is_graph_view=is_graph_view,
+                                                       func_impl_declaration=func_impl_declaration_str,
+                                                       func_impl_define=func_impl_define)
+
+            gen_cc_list.append(op_def_cc)
+
+        gen_include = ''.join(gen_include_list)
+        gen_cc = ''.join(gen_cc_list)
+        cc_ops_def = self.CC_OPS_DEF_TEMPLATE.replace(auto_generate_path=K.MS_OP_DEF_AUTO_GENERATE_PATH,
+                                                      gen_include=gen_include,
+                                                      gen_cc_code=gen_cc)
+
+        file_name = f"gen_custom_ops_def.cc"
+        ops_def_cc_file_str = template.CC_LICENSE_STR + cc_ops_def
+        gen_utils.save_file(save_path, file_name, ops_def_cc_file_str)
 
 
 def process_input_args(op_proto: OpProto):
