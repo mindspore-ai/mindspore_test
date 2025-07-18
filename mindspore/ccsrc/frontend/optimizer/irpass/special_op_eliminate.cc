@@ -653,7 +653,7 @@ AnfNodePtr PynativeGradjitPrimitivePyEliminater::operator()(const OptimizerPtr &
   const auto &cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   const auto &prim = GetCNodePrimitive(cnode);
-  if (!prim || !prim->isa<PrimitivePy>()) {
+  if (prim == nullptr || !prim->isa<PrimitivePy>()) {
     MS_LOG(EXCEPTION) << "Node is not a primitivepy, mismatch: " << node->DebugString();
   }
   std::vector<AnfNodePtr> args = {NewValueNode(std::make_shared<Primitive>(*prim))};
