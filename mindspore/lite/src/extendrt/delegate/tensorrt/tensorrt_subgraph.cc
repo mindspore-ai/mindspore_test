@@ -234,7 +234,7 @@ int TensorRTSubGraph::SetDeviceConfig(cudaStream_t stream, cublasHandle_t cublas
   config_->setProfileStream(stream);
   stream_ = stream;
 
-  MS_LOG(INFO) << GetRankID() << " tensorrt subgraph stream: " << stream_;
+  MS_LOG(INFO) << GetRankID() << " tensorrt subgraph.";
 
   // config setMaxWorkspaceSize to 2100 MB for max limit
   constexpr size_t kWorkspaceSize = static_cast<size_t>(2100) * (1 << 20);

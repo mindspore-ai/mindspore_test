@@ -1940,7 +1940,7 @@ bool GeGraphExecutor::OfflineBuildGraph(const FuncGraphPtr &graph) {
     return false;
   }
   if (!AddGraph(df_graph, ge_options, &graph_id)) {
-    MS_LOG(ERROR) << "Failed to add compute graph, graph name " << graph->ToString();
+    MS_LOG(ERROR) << "Failed to add compute graph.";
     return false;
   }
   compute_graph_id_list_.push_back(graph_id);
