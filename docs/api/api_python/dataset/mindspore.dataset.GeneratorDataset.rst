@@ -46,6 +46,10 @@
         - `使用数据Pipeline加载 & 处理数据集
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
+    .. warning::
+        在多进程 `spawn` 模式下， `GeneratorDataset` 会隐式使用 `dill` 模块对 `source` 进行序列化/反序列化，而该模块存在已知安全隐患。
+        攻击者可构造恶意 pickle 数据，在反序列化过程中执行任意代码。切勿加载可能来自不可信来源或已被篡改的数据。
+
     .. note::
         - 如果配置 `python_multiprocessing=True` （默认值： ``True`` ） 和 `num_parallel_workers>1` （默认值：1） 表示启动了多进程方式进行数据load加速，
           此时随着数据集迭代，子进程的内存占用会逐渐增加，主要是因为自定义数据集的子进程以 Copy-On-Write 的方式获取主进程中的成员变量。

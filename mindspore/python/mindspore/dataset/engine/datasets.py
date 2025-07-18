@@ -574,6 +574,12 @@ class Dataset:
                     create shared memory, and represents ``output_columns`` use the second element as the
                     unit to create shared memory.
 
+        .. warning::
+            `batch` uses `dill` module implicitly in multiprocessing `spawn` mode to serialize/deserialize
+            `per_batch_map`, which is known to be insecure. It is possible to construct malicious pickle data
+            which will execute arbitrary code during unpickling. Never load data that could have come from
+            untrusted sources, or has been tampered with.
+
         Returns:
             Dataset, a new dataset with the above operation applied.
 
@@ -884,6 +890,12 @@ class Dataset:
                   Default: ``None``.
 
                 - offload (bool, optional): Flag to indicate whether offload is used. Default: ``None``.
+
+        .. warning::
+            `map` uses `dill` module implicitly in multiprocessing `spawn` mode to serialize/deserialize `operations`,
+            which is known to be insecure. It is possible to construct malicious pickle data which will
+            execute arbitrary code during unpickling. Never load data that could have come from untrusted sources,
+            or has been tampered with.
 
         Note:
             - Input `operations` accepts TensorOperations defined in mindspore.dataset part, plus user-defined

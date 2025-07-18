@@ -42,5 +42,9 @@ mindspore.dataset.Dataset.batch
             - 如果是int值，代表 ``input_columns`` 和 ``output_columns`` 均使用该值为单位创建共享内存；
             - 如果是列表，代表 ``input_columns`` 使用第一个元素为单位创建共享内存， ``output_columns`` 使用第二个元素为单位创建共享内存。
 
+    .. warning::
+        在多进程 `spawn` 模式下， `batch` 会隐式使用 `dill` 模块对 `per_batch_map` 进行序列化/反序列化，而该模块存在已知安全隐患。
+        攻击者可构造恶意 pickle 数据，在反序列化过程中执行任意代码。切勿加载可能来自不可信来源或已被篡改的数据。
+
     返回：
         Dataset，应用了上述操作的新数据集对象。

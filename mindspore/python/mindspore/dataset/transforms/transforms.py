@@ -165,10 +165,14 @@ class PyTensorOperation:
         if "transforms" in json_obj.keys():
             # operations which have transforms as input, need to call _from_json() for each transform to deseriallize
             transforms = []
+            valid_module = ['mindspore.dataset.vision', 'mindspore.dataset.text',
+                            'mindspore.dataset.audio', 'mindspore.dataset.transforms']
             for json_op in json_obj["transforms"]:
-                transforms.append(getattr(
-                    sys.modules.get(json_op.get("python_module")),
-                    json_op["tensor_op_name"]).from_json(json.dumps(json_op["tensor_op_params"])))
+                py_module = sys.modules.get(json_op.get("python_module"))
+                if py_module.__package__ not in valid_module:
+                    raise RuntimeError('Invalid json content, try to serialzie dataset again.')
+                transforms.append(getattr(py_module, json_op["tensor_op_name"]).from_json(
+                    json.dumps(json_op["tensor_op_params"])))
             new_op.transforms = transforms
         if "output_type" in json_obj.keys():
             output_type = np.dtype(json_obj["output_type"])
