@@ -1254,15 +1254,6 @@ void AddHookNodeForArgs(const ResourcePtr &resource, const FuncGraphPtr &new_fg)
   }
 }
 
-bool IsInplaceOpNode(const AnfNodePtr &node) {
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  auto cnode = node->cast_ptr<CNode>();
-  auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
-  return prim != nullptr && prim->inplace_prim();
-}
-
 bool IsCreatedByViewOp(const AnfNodePtr &node) {
   if (node->isa<CNode>()) {
     auto cnode = node->cast_ptr<CNode>();
@@ -1281,10 +1272,10 @@ bool IsCreatedByViewOp(const AnfNodePtr &node) {
 
 bool IsViewInplaceNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  if (node->isa<CNode>() && IsInplaceOpNode(node)) {
+  const auto &prim = GetCNodePrimitive(node);
+  if (prim != nullptr && prim->inplace_prim()) {
     auto inplace_node = node->cast_ptr<CNode>();
     const AnfNodePtrList &input_nodes = inplace_node->inputs();
-    const auto &prim = GetCNodePrimitive(node);
     const auto &rw_write_index = prim->rw_write_input_indexes();
     auto iter = std::find_if(rw_write_index.begin(), rw_write_index.end(), [&input_nodes](const size_t &index) {
       if (index + 1 >= input_nodes.size()) {
