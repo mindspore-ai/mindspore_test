@@ -159,6 +159,7 @@ def semi_auto_ckpt_redundancy_dp2_mp2_pp2(cur_root_dir, remove_redundancy):
     # predict
     parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_stages": 2,
                        "load_strategy_file": stra_ckpt_file}
+    ms.mint.distributed.barrier()
     my_predict = load_newest_cpkt_predict(parallel_model, parallel_config, ckpt_path, remove_redundancy, inputs, label)
     print(f"with_redundancy_predict {my_predict}")
     return my_predict
