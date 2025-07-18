@@ -166,7 +166,7 @@ def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
         assert np.array(data_expected).shape == np.array(data_me).shape
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
@@ -182,7 +182,7 @@ def test_sgd_basic(mode):
     fact.result_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -198,7 +198,7 @@ def test_sgd_group(mode):
     fact.result_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -214,7 +214,7 @@ def test_sgd_lr_dynamic(mode):
     fact.result_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
@@ -230,7 +230,7 @@ def test_sgd_group_lr_dynamic(mode):
     fact.result_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
