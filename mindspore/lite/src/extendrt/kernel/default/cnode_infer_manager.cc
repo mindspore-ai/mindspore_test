@@ -56,7 +56,7 @@ int CNodeInferShape(const CNodePtr &cnode, const std::vector<lite::Tensor *> &ou
     }
     for (size_t i = 0; i < elements.size(); i++) {
       if (!SetDTAndShapeFromAbTensorToLiteTensor(elements[i], outputs[i])) {
-        MS_LOG(ERROR) << "Set tensor info from abstract failed, abstract : " << elements[i];
+        MS_LOG(ERROR) << "Set tensor info from abstract failed.";
         return lite::RET_ERROR;
       }
     }
