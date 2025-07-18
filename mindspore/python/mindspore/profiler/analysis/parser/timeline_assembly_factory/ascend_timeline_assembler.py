@@ -129,11 +129,11 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         """Create flow events between framework and hardware events."""
         acl_to_npu_flow_dict = self._msprof_creator.get_acl_to_npu_flow_dict()
         fwk_launch_op_list = self.trace_view_container.kernel_launch_op_event
-        # The graph mode O2 does not have the flow from CANN to hardware at each step
+        # The GE backend does not have the flow from CANN to hardware at each step
         if not acl_to_npu_flow_dict and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.error("Cannot find connection between CANN layer and Ascend Hardware layer.")
             return []
-        # The graph model O2 does not have "KernelLaunch" or "LaunchTask" keywords
+        # The GE backend does not have "KernelLaunch" or "LaunchTask" keywords
         if not fwk_launch_op_list and self._jit_level != JitLevel.GRAPH_LEVEL:
             logger.warning("Cannot find launch op in MindSpore framework.")
             return []
