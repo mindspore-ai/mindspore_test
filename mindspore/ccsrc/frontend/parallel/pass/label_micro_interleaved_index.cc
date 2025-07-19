@@ -131,6 +131,7 @@ void LabelMicroInterleavedIndex(const std::vector<CNodePtr> &all_nodes) {
     if (!IsPrimitiveCNode(cnode)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode));
     if (GetCNodePrimitive(cnode)->HasAttr("micro_interleaved_add_flag")) {
       micro_interleaved_add = cnode;
       break;
@@ -206,6 +207,8 @@ void LabelMicroInterleavedIndexPipelineStage(const std::vector<CNodePtr> &all_no
     if (GetCNodePrimitive(pipeline_end_list[0])->HasAttr(parallel::SR_TAG) &&
         GetCNodePrimitive(pipeline_end_list[1])->HasAttr(parallel::SR_TAG)) {
       std::sort(pipeline_end_list.begin(), pipeline_end_list.end(), [](auto cnode1, auto cnode2) {
+        MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode1));
+        MS_EXCEPTION_IF_NULL(GetCNodePrimitive(cnode2));
         return GetValue<int64_t>(GetCNodePrimitive(cnode1)->GetAttr(parallel::SR_TAG)) <
                GetValue<int64_t>(GetCNodePrimitive(cnode2)->GetAttr(parallel::SR_TAG));
       });
