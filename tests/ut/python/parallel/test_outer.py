@@ -150,3 +150,33 @@ def test_outer_repeat_tensor_map():
     vec2 = Tensor(np.ones([128]), dtype=ms.int32)
     with pytest.raises(RuntimeError):
         compile_graph(net, 8, "semi_auto_parallel", input_data, vec2)
+
+def test_outer_interleaved_parallel_1():
+    """
+    Feature: test parallel error input_data strategy.
+    Description: interleaved parallel.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    layout = Layout((2, 2, 2, 2), ("dp", "mp", "tp", "interleaved_parallel"))
+    strategy = (layout("interleaved_parallel"), layout("dp"))
+    net = OuterNet0(strategy)
+    input_data = Tensor(np.ones([128]), dtype=ms.int32)
+    vec2 = Tensor(np.ones([128]), dtype=ms.int32)
+    with pytest.raises(RuntimeError):
+        compile_graph(net, 8, "semi_auto_parallel", input_data, vec2)
+
+def test_outer_interleaved_parallel_2():
+    """
+    Feature: test parallel error vec2 strategy.
+    Description: interleaved parallel.
+    Expectation: raise RuntimeError.
+    """
+    context.set_context(save_graphs=True)
+    layout = Layout((2, 2, 2, 2), ("dp", "mp", "tp", "interleaved_parallel"))
+    strategy = (layout("dp"), layout("interleaved_parallel"))
+    net = OuterNet0(strategy)
+    input_data = Tensor(np.ones([128]), dtype=ms.int32)
+    vec2 = Tensor(np.ones([128]), dtype=ms.int32)
+    with pytest.raises(RuntimeError):
+        compile_graph(net, 8, "semi_auto_parallel", input_data, vec2)
