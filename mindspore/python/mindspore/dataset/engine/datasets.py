@@ -3632,9 +3632,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         "process(es): {}".format(self.cleaning_process.pid, self.get_pids()))
 
             if get_enable_watchdog():
-                worker_ids = [worker.pid for worker in self.workers]
+                worker_ids = [os.getpid()]
+                worker_ids.extend([worker.pid for worker in self.workers])
                 worker_ids.append(self.cleaning_process.pid)
-                cde.register_worker_pids(id(self), set(worker_ids))
+                cde.register_worker_pids(id(self), worker_ids)
 
     def _abort_monitor(self):
         """Deregister workers monitored by the watch dog and join clean process."""
