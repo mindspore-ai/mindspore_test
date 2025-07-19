@@ -993,22 +993,23 @@ void CheckAutoH2D(const DeviceContext *device_context, const tensor::TensorPtr &
 }
 
 void DeviceAddressUtils::LazyCopy(const tensor::TensorPtr &tensor, size_t stream_id) {
-  const auto &dst_device_sync = tensor->device_address();
-  const auto &src_device_sync = tensor->implicit_copy_address();
-  MS_EXCEPTION_IF_NULL(dst_device_sync);
-  MS_EXCEPTION_IF_NULL(src_device_sync);
-  MS_LOG(DEBUG) << "Lazy copy for dst_device_sync " << dst_device_sync->ToString() << " src_device_sync "
-                << src_device_sync->ToString() << " on stream " << stream_id;
-  if (src_device_sync->GetDeviceType() != device::DeviceType::kCPU &&
-      dst_device_sync->GetDeviceType() == device::DeviceType::kCPU) {
-    if (!SyncCopy(dst_device_sync, src_device_sync, stream_id)) {
-      MS_LOG(EXCEPTION) << "Lazy Sync copy failed. dst " << dst_device_sync->ToString() << " src "
-                        << src_device_sync->ToString() << " on stream " << stream_id;
+  const auto &dst = tensor->device_address();
+  const auto &src = tensor->implicit_copy_address();
+  if (src == nullptr) {
+    MS_LOG(DEBUG) << "No need to do implicit copy for " << tensor->ToString();
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(dst);
+  MS_LOG(DEBUG) << "Lazy copy for dst " << dst->ToString() << " src " << src->ToString() << " on stream " << stream_id;
+  if (src->GetDeviceType() != device::DeviceType::kCPU && dst->GetDeviceType() == device::DeviceType::kCPU) {
+    if (!SyncCopy(dst, src, stream_id)) {
+      MS_LOG(EXCEPTION) << "Lazy Sync copy failed. dst " << dst->ToString() << " src " << src->ToString()
+                        << " on stream " << stream_id;
     }
   } else {
-    if (!AsyncCopy(dst_device_sync, src_device_sync, stream_id)) {
-      MS_LOG(EXCEPTION) << "Lazy Async copy failed. dst " << dst_device_sync->ToString() << " src "
-                        << src_device_sync->ToString() << " on stream " << stream_id;
+    if (!AsyncCopy(dst, src, stream_id)) {
+      MS_LOG(EXCEPTION) << "Lazy Async copy failed. dst " << dst->ToString() << " src " << src->ToString()
+                        << " on stream " << stream_id;
     }
   }
   tensor->set_implicit_copy_address(nullptr);
