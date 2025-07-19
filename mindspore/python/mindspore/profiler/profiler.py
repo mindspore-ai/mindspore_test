@@ -111,9 +111,9 @@ def tensorboard_trace_handler(dir_name: str = None, worker_name: str = None,
         logger.warning("async_mode is not bool, set by default.")
         async_mode = False
 
-    def handler_fn() -> None:
+    def handler_fn(prof_inst) -> None:
         if analyse_flag:
-            NPUProfilerAnalysis.online_analyse(async_mode=async_mode)
+            prof_inst.analyse(async_mode=async_mode)
 
     return handler_fn
 

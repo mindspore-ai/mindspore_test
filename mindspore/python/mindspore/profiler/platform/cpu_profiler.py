@@ -16,10 +16,11 @@
 import mindspore._c_expression as c_expression
 
 from mindspore.profiler.common.registry import PROFILERS
-from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
+from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity, AnalysisMode
 from mindspore.profiler.common.util import print_msg_with_pid
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
+from mindspore.profiler.common.process_pool import MultiProcessPool
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.analysis.time_converter import TimeConverter
 from mindspore.profiler.analysis.task_manager import TaskManager
@@ -68,7 +69,7 @@ class CpuProfiler(BaseProfiler):
         if ProfilerContext().device_target_set != {DeviceTarget.CPU.value}:
             return
         self._logger.info("CpuProfiler analyse.")
-        CPUProfilerAnalysis.online_analyse()
+        CPUProfilerAnalysis.online_analyse(**kwargs)
 
     def finalize(self) -> None:
         """Finalize profiling data."""
@@ -81,12 +82,17 @@ class CPUProfilerAnalysis:
     """
 
     @classmethod
-    def online_analyse(cls):
+    def online_analyse(cls, async_mode: bool = False):
         """
         Online analysis for CPU
         """
         cls._pre_analyse_online()
-        cls._run_tasks(**ProfilerContext().to_dict())
+        if async_mode:
+            ProfilerContext().mode = AnalysisMode.ASYNC_MODE.value
+            MultiProcessPool().add_async_job(cls._run_tasks, **ProfilerContext().to_dict())
+        else:
+            ProfilerContext().mode = AnalysisMode.SYNC_MODE.value
+            cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
     def _pre_analyse_online(cls):

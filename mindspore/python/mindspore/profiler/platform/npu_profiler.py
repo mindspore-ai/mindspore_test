@@ -151,7 +151,7 @@ class NpuProfiler(BaseProfiler):
         """Analyse the profiling data."""
         self._logger.info("NpuProfiler analyse.")
 
-        NPUProfilerAnalysis.online_analyse()
+        NPUProfilerAnalysis.online_analyse(async_mode=kwargs.get('async_mode'))
 
     def finalize(self) -> None:
         """Finalize profiling data."""
