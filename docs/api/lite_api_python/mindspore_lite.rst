@@ -41,6 +41,7 @@ Python接口仅支持云侧推理。
     mindspore_lite.DataType
     mindspore_lite.Format
     mindspore_lite.Tensor
+    mindspore_lite.TensorMeta
 
 大语言模型引擎
 --------------
