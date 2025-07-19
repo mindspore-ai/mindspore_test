@@ -396,6 +396,7 @@ class OpBuilder {
 
   void HandlerCollectiveCommOp(const CNodePtr &node) {
     auto prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
     auto group_name = GetValue<std::string>(prim->GetAttr(kAttrGroup));
     auto comm_ptr = device::ascend::DvmCollectiveCommLib::GetInstance().GetCommunicator(group_name);
     auto op = kernel_->AllReduce(GetInput(node->input(kIndex1)), comm_ptr.get());
@@ -834,7 +835,9 @@ class ParallelDvmKernelBuilder : public DvmKernelBuilder {
                                                              const std::vector<AnfNodePtr> &outputs) {
     std::vector<std::vector<AnfNodePtr>> output_groups(sub_graph_count, std::vector<AnfNodePtr>());
     for (auto output : outputs) {
-      auto attrs = GetCNodePrimitive(output)->attrs();
+      auto output_prim = GetCNodePrimitive(output);
+      MS_EXCEPTION_IF_NULL(output_prim);
+      auto attrs = output_prim->attrs();
       if (attrs.find("parallel_dim_info") == attrs.end()) {
         MS_LOG(EXCEPTION) << "Can't find parallel_dim_info for parallel fusion, please check";
       }

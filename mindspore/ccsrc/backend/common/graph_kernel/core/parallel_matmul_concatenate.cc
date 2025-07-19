@@ -21,7 +21,9 @@
 namespace mindspore::graphkernel {
 namespace {
 MMAttr GetMatMulTransposeAttr(const CNodePtr &matmul) {
-  auto mm_attrs = common::AnfAlgo::GetCNodePrimitive(matmul)->attrs();
+  auto prim = common::AnfAlgo::GetCNodePrimitive(matmul);
+  MS_EXCEPTION_IF_NULL(prim);
+  auto mm_attrs = prim->attrs();
   if (mm_attrs.count(kTransposeA) == 0 || mm_attrs.count(kTransposeB) == 0) {
     MS_LOG(WARNING) << "Can not find attr 'transpose_a' or 'transpose_b' in node " << matmul->fullname_with_scope();
     return std::make_pair(false, false);

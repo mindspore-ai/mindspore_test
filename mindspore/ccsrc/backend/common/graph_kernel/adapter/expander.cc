@@ -89,7 +89,9 @@ ExpanderPtr GetExpander(const AnfNodePtr &node, const ExpanderPtr &init) {
     {prim::kPrimAddN->name(), {UnfoldMakeTupleDeco::Creator}}};
 
   ExpanderPtr expander = init;
-  const auto iter = creators.find(GetCNodePrimitive(node)->name());
+  auto node_prim = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(node_prim);
+  const auto iter = creators.find(node_prim->name());
   if (iter != creators.end()) {
     expander = WrapExpander(expander, iter->second);
   }

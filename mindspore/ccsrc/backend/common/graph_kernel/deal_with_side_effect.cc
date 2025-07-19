@@ -80,7 +80,8 @@ bool DealWithSideEffect::Run(const FuncGraphPtr &func_graph) {
       auto &out = output_list[i];
       auto out_cnode = out->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(out_cnode);
-      if (GetCNodePrimitive(out_cnode)->name() == prim::kPrimAssign->name()) {
+      auto out_cnode_prim = GetCNodePrimitive(out_cnode);
+      if (out_cnode_prim != nullptr && out_cnode_prim->name() == prim::kPrimAssign->name()) {
         auto iter = std::find(graph_inputs.begin(), graph_inputs.end(), out_cnode->input(kIndex1));
         if (iter == graph_inputs.end()) {
           MS_LOG_WITH_NODE(EXCEPTION, out_cnode) << out_cnode->fullname_with_scope() << " first input isn't parameter.";

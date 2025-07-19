@@ -86,7 +86,9 @@ bool ReduceFakeOutMem::Run(const FuncGraphPtr &func_graph) {
       auto &out = output_list[i];
       auto out_cnode = out->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(out_cnode);
-      if (GetCNodePrimitive(out_cnode)->name() == prim::kPrimAssign->name()) {
+      auto out_cnode_prim = GetCNodePrimitive(out_cnode);
+      MS_EXCEPTION_IF_NULL(out_cnode_prim);
+      if (out_cnode_prim->name() == prim::kPrimAssign->name()) {
         (void)fake_real_indices.insert(i);
       }
     }
