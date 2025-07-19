@@ -85,7 +85,7 @@ class Converter:
 
         The encryption and decryption function is only valid when it is set to `MSLITE_ENABLE_MODEL_ENCRYPTION=on` at
         compile time, and only supports Linux x86 platforms. `decrypt_key` and `encrypt_key` are string expressed in
-        hexadecimal. Linux platform users can use the' xxd 'tool to convert the
+        hexadecimal. Linux platform users can use the `xxd` tool to convert the
         key expressed in bytes into hexadecimal expressions. It should be noted that the encryption and decryption
         algorithm has been updated in version 1.7, resulting in the new Python interface does not support the conversion
         of MindSpore Lite's encryption exported models in version 1.6 and earlier.
