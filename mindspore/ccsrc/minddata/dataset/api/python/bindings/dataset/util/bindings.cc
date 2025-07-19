@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "pybind11/numpy.h"
 #include "pybind11/pybind11.h"
 
@@ -65,7 +70,7 @@ PYBIND_REGISTER(RegisterWorkerHandlers, 0, ([](py::module *m) {
 
 PYBIND_REGISTER(RegisterWorkerPIDs, 0, ([](py::module *m) {
                   (void)m->def("register_worker_pids",
-                               ([](int64_t id, const std::set<int> &pids) { RegisterWorkerPIDs(id, pids); }));
+                               ([](int64_t id, const std::vector<int> &pids) { RegisterWorkerPIDs(id, pids); }));
                 }));
 
 PYBIND_REGISTER(DeregisterWorkerPIDs, 0, ([](py::module *m) {
