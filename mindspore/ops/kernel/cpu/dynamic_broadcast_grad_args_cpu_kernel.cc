@@ -44,13 +44,10 @@ void AddGradReduceIdx(std::vector<std::vector<T>> *grad_reduce_idx, std::vector<
 template <typename T>
 std::vector<std::vector<T>> GetGradIndex(const std::vector<std::vector<T>> &revers_shapes, const size_t max_rank) {
   std::vector<std::vector<T>> grad_reduce_index(kDynamicBroadcastGradientArgsInputsNum);
-  std::vector<bool> pre_one(kDynamicBroadcastGradientArgsInputsNum);
   std::vector<bool> cur_one(kDynamicBroadcastGradientArgsInputsNum);
   for (size_t i = 0; i < kDynamicBroadcastGradientArgsInputsNum; i++) {
-    pre_one[i] = false;
     cur_one[i] = false;
   }
-  bool set_one = false;
   for (size_t j = 0; j < max_rank; j++) {
     int out_dim = -1;
     bool out_dim_set = false;
@@ -73,15 +70,8 @@ std::vector<std::vector<T>> GetGradIndex(const std::vector<std::vector<T>> &reve
       for (size_t i = 0; i < kDynamicBroadcastGradientArgsInputsNum; i++) {
         (void)grad_reduce_index[i].emplace_back(max_rank - 1 - j);
       }
-      continue;
-    } else if (std::equal(cur_one.begin(), cur_one.end(), pre_one.begin()) && set_one) {
-      AddGradReduceIdx(&grad_reduce_index, cur_one, none_one, max_rank, j);
     } else {
       AddGradReduceIdx(&grad_reduce_index, cur_one, none_one, max_rank, j);
-    }
-    set_one = true;
-    for (size_t i = 0; i < kDynamicBroadcastGradientArgsInputsNum; i++) {
-      pre_one[i] = cur_one[i];
     }
   }
   return grad_reduce_index;
