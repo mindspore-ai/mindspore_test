@@ -1018,112 +1018,135 @@ REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC
   return {dx, dw, ib->OutZeros(trans_a), ib->OutZeros(trans_b)};
 });
 
-DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
-  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto &input_shape = inputs.at(i0);
-    auto &weight_shape = inputs.at(i1);
-    auto &dout_shape = inputs.at(i2);
-    auto x_rank = input_shape.size();
-    auto w_rank = weight_shape.size();
-    auto dout_rank = dout_shape.size();
-    ShapeVector expanded_input_shape = input_shape;
-    ShapeVector expanded_weight_shape = weight_shape;
-    ShapeVector expanded_dout_shape = dout_shape;
-    // transpose perm for dout before its reshaping
-    ShapeVector dout_perm(dout_rank);
-    std::iota(dout_perm.begin(), dout_perm.end(), 0);
-    // squeeze input and weight first
-    if (x_rank > 2 && input_shape[0] == 1) {
-      auto it = std::find_if(expanded_input_shape.begin(), expanded_input_shape.end(), [](int x) { return x != 1; });
-      expanded_input_shape.erase(expanded_input_shape.begin(), it);
-      x_rank = expanded_input_shape.size();
-    }
-    if (w_rank > 2 && weight_shape[0] == 1) {
-      auto it = std::find_if(expanded_weight_shape.begin(), expanded_weight_shape.end(), [](int x) { return x != 1; });
-      expanded_weight_shape.erase(expanded_weight_shape.begin(), it);
-      w_rank = expanded_weight_shape.size();
-    }
-    // expand input and weight shape
-    if (w_rank == 1) {
-      expanded_weight_shape.push_back(1);
-      w_rank++;
-      expanded_dout_shape.push_back(1);
-      dout_rank++;
-    }
-    if (x_rank == 1) {
-      expanded_input_shape.insert(expanded_input_shape.begin(), 1);
-      x_rank++;
-      expanded_dout_shape.insert(expanded_dout_shape.end() - 1, 1);
-      dout_rank++;
-    }
-    ShapeVector x_optim_shape = expanded_input_shape;
-    ShapeVector w_optim_shape = expanded_weight_shape;
-    ShapeVector dout_optim_shape_for_dx = expanded_dout_shape;
-    ShapeVector dout_optim_shape_for_dw = expanded_dout_shape;
-    // perform transpose to w
-    std::swap(w_optim_shape[w_rank - 2], w_optim_shape[w_rank - 1]);
-    if (x_rank == 2 && w_rank > 2) {
-      auto w_outer_dim = std::accumulate(w_optim_shape.begin(), w_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
-      w_optim_shape = {w_outer_dim, w_optim_shape[w_rank - 1]};
-      auto dout_outer_dim =
-        expanded_dout_shape[dout_rank - 1] *
-        std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 2, 1, std::multiplies<int64_t>());
-      dout_optim_shape_for_dx = {expanded_dout_shape[dout_rank - 2], dout_outer_dim};
-      auto key_dim = dout_perm[dout_shape.size() - 2];
-      dout_perm.erase(dout_perm.end() - 2);
-      dout_perm.insert(dout_perm.begin(), key_dim);
-    }
-    if (w_rank == 2 && x_rank > 2) {
-      auto x_outer_dim = std::accumulate(x_optim_shape.begin(), x_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
-      x_optim_shape = {x_outer_dim, x_optim_shape[x_rank - 1]};
-      auto dout_outer_dim =
-        std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 1, 1, std::multiplies<int64_t>());
-      dout_optim_shape_for_dw = {dout_outer_dim, expanded_dout_shape[dout_rank - 1]};
-    }
-    return {expanded_weight_shape,   x_optim_shape,           w_optim_shape,
-            dout_optim_shape_for_dx, dout_optim_shape_for_dw, dout_perm};
-  })
-  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    int64_t expanded_input_rank = abstract::TensorShape::kShapeDimAny;
-    int64_t expanded_weight_rank = abstract::TensorShape::kShapeDimAny;
-    int64_t expanded_dout_rank = abstract::TensorShape::kShapeDimAny;
-    int64_t x_optim_rank = abstract::TensorShape::kShapeDimAny;
-    int64_t w_optim_rank = abstract::TensorShape::kShapeDimAny;
-    int64_t dout_optim_rank_for_dx = abstract::TensorShape::kShapeDimAny;
-    int64_t dout_optim_rank_for_dw = abstract::TensorShape::kShapeDimAny;
-    int64_t dout_perm_rank = abstract::TensorShape::kShapeDimAny;
+ShapeArray MatMulExtBPropShapeCalcFunc(const ShapeArray &inputs) {
+  auto &input_shape = inputs.at(i0);
+  auto &weight_shape = inputs.at(i1);
+  auto &dout_shape = inputs.at(i2);
+  auto x_rank = input_shape.size();
+  auto w_rank = weight_shape.size();
+  auto dout_rank = dout_shape.size();
+  ShapeVector expanded_input_shape = input_shape;
+  ShapeVector expanded_weight_shape = weight_shape;
+  ShapeVector expanded_dout_shape = dout_shape;
+  // Transpose perm for dout before its reshaping
+  ShapeVector dout_perm(dout_rank);
+  std::iota(dout_perm.begin(), dout_perm.end(), 0);
+  // Do prefix squeeze input and weight first
+  if (x_rank > 2) {
+    auto it = std::find_if(expanded_input_shape.begin(), expanded_input_shape.end(), [](int x) { return x != 1; });
+    expanded_input_shape.erase(expanded_input_shape.begin(), it);
+    x_rank = expanded_input_shape.size();
+  }
+  if (w_rank > 2) {
+    auto it = std::find_if(expanded_weight_shape.begin(), expanded_weight_shape.end(), [](int x) { return x != 1; });
+    expanded_weight_shape.erase(expanded_weight_shape.begin(), it);
+    w_rank = expanded_weight_shape.size();
+  }
+  // expand input and weight shape
+  if (w_rank == 1) {
+    expanded_weight_shape.push_back(1);
+    w_rank++;
+    expanded_dout_shape.push_back(1);
+    dout_rank++;
+  }
+  if (x_rank == 1) {
+    expanded_input_shape.insert(expanded_input_shape.begin(), 1);
+    x_rank++;
+    expanded_dout_shape.insert(expanded_dout_shape.end() - 1, 1);
+    dout_rank++;
+  }
+  ShapeVector x_optim_shape = expanded_input_shape;
+  ShapeVector w_optim_shape = expanded_weight_shape;
+  ShapeVector dout_optim_shape_for_dx = expanded_dout_shape;
+  ShapeVector dout_optim_shape_for_dw = expanded_dout_shape;
+  // perform transpose to w
+  std::swap(w_optim_shape[w_rank - 2], w_optim_shape[w_rank - 1]);
+  if (x_rank == 2 && w_rank > 2) {
+    auto w_outer_dim = std::accumulate(w_optim_shape.begin(), w_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+    w_optim_shape = {w_outer_dim, w_optim_shape[w_rank - 1]};
+    auto dout_outer_dim =
+      expanded_dout_shape[dout_rank - 1] *
+      std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 2, 1, std::multiplies<int64_t>());
+    dout_optim_shape_for_dx = {expanded_dout_shape[dout_rank - 2], dout_outer_dim};
+    auto key_dim = dout_perm[dout_shape.size() - 2];
+    dout_perm.erase(dout_perm.end() - 2);
+    dout_perm.insert(dout_perm.begin(), key_dim);
+  }
+  if (w_rank == 2 && x_rank > 2) {
+    auto x_outer_dim = std::accumulate(x_optim_shape.begin(), x_optim_shape.end() - 1, 1, std::multiplies<int64_t>());
+    x_optim_shape = {x_outer_dim, x_optim_shape[x_rank - 1]};
+    auto dout_outer_dim =
+      std::accumulate(expanded_dout_shape.begin(), expanded_dout_shape.end() - 1, 1, std::multiplies<int64_t>());
+    dout_optim_shape_for_dw = {dout_outer_dim, expanded_dout_shape[dout_rank - 1]};
+  }
+  return {expanded_weight_shape,   x_optim_shape,           w_optim_shape,
+          dout_optim_shape_for_dx, dout_optim_shape_for_dw, dout_perm};
+}
 
-    if (!IsDynamicRank(inputs[0]) && !IsDynamicRank(inputs[1])) {
-      auto &input_shape = inputs.at(i0);
-      auto &weight_shape = inputs.at(i1);
-      auto &dout_shape = inputs.at(i2);
-      expanded_input_rank = SizeToLong(input_shape.size());
-      expanded_weight_rank = SizeToLong(weight_shape.size());
-      expanded_dout_rank = SizeToLong(dout_shape.size());
-      if (weight_shape.size() == 1) {
-        expanded_weight_rank++;
-        expanded_dout_rank++;
-      }
-      if (input_shape.size() == 1) {
-        expanded_input_rank++;
-        expanded_dout_rank++;
-      }
-      x_optim_rank = expanded_input_rank;
-      w_optim_rank = expanded_weight_rank;
-      dout_optim_rank_for_dx = expanded_dout_rank;
-      dout_optim_rank_for_dw = expanded_dout_rank;
-      if (expanded_input_rank == 2 && expanded_weight_rank > 2) {
-        w_optim_rank = 2;
-        dout_optim_rank_for_dx = 2;
-      }
-      if (expanded_weight_rank == 2 && expanded_input_rank > 2) {
-        x_optim_rank = 2;
-        dout_optim_rank_for_dw = 2;
-      }
+std::vector<int64_t> MatMulExtBPropShapeCalcInferFunc(const ShapeArray &inputs, const HashSet<size_t> &) {
+  int64_t expanded_input_rank = abstract::TensorShape::kShapeDimAny;
+  int64_t expanded_weight_rank = abstract::TensorShape::kShapeDimAny;
+  int64_t expanded_dout_rank = abstract::TensorShape::kShapeDimAny;
+  int64_t x_optim_rank = abstract::TensorShape::kShapeDimAny;
+  int64_t w_optim_rank = abstract::TensorShape::kShapeDimAny;
+  int64_t dout_optim_rank_for_dx = abstract::TensorShape::kShapeDimAny;
+  int64_t dout_optim_rank_for_dw = abstract::TensorShape::kShapeDimAny;
+  int64_t dout_perm_rank = abstract::TensorShape::kShapeDimAny;
+
+  // To ensure whether prefix squeeze can be performed.
+  auto can_squeeze = [](const ShapeVector &shape) -> bool {
+    for (const auto &dim : shape) {
+      if (dim == abstract::TensorShape::kShapeDimAny) return false;
+      if (dim != 1) return true;
     }
-    return {expanded_weight_rank,   x_optim_rank,           w_optim_rank,
-            dout_optim_rank_for_dx, dout_optim_rank_for_dw, dout_perm_rank};
-  });
+    return true;
+  };
+
+  if (!IsDynamicRank(inputs[0]) && !IsDynamicRank(inputs[1]) && can_squeeze(inputs[0]) && can_squeeze(inputs[1])) {
+    auto input_shape = inputs.at(i0);
+    auto weight_shape = inputs.at(i1);
+    auto dout_shape = inputs.at(i2);
+    expanded_input_rank = SizeToLong(input_shape.size());
+    expanded_weight_rank = SizeToLong(weight_shape.size());
+    expanded_dout_rank = SizeToLong(dout_shape.size());
+    if (expanded_input_rank > 2) {
+      auto it = std::find_if(input_shape.begin(), input_shape.end(), [](int x) { return x != 1; });
+      input_shape.erase(input_shape.begin(), it);
+      expanded_input_rank = input_shape.size();
+    }
+    if (expanded_weight_rank > 2) {
+      auto it = std::find_if(weight_shape.begin(), weight_shape.end(), [](int x) { return x != 1; });
+      weight_shape.erase(weight_shape.begin(), it);
+      expanded_weight_rank = weight_shape.size();
+    }
+    if (expanded_weight_rank == 1) {
+      expanded_weight_rank++;
+      expanded_dout_rank++;
+    }
+    if (expanded_input_rank == 1) {
+      expanded_input_rank++;
+      expanded_dout_rank++;
+    }
+    x_optim_rank = expanded_input_rank;
+    w_optim_rank = expanded_weight_rank;
+    dout_optim_rank_for_dx = expanded_dout_rank;
+    dout_optim_rank_for_dw = expanded_dout_rank;
+    if (expanded_input_rank == 2 && expanded_weight_rank > 2) {
+      w_optim_rank = 2;
+      dout_optim_rank_for_dx = 2;
+    }
+    if (expanded_weight_rank == 2 && expanded_input_rank > 2) {
+      x_optim_rank = 2;
+      dout_optim_rank_for_dw = 2;
+    }
+  }
+  return {expanded_weight_rank,   x_optim_rank,           w_optim_rank,
+          dout_optim_rank_for_dx, dout_optim_rank_for_dw, dout_perm_rank};
+}
+
+DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_shapecalc)
+  .SetCalc(MatMulExtBPropShapeCalcFunc)
+  .SetInfer(MatMulExtBPropShapeCalcInferFunc);
 
 DEF_PURE_SHAPE_CALC(g_matmul_ext_bprop_bc_shapecalc)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
@@ -1168,8 +1191,8 @@ DEF_PURE_SHAPE_CALC(g_matmul_ext_transpose_perm_shapecalc)
     return {abstract::TensorShape::kShapeDimAny};
   });
 
-inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr x, NodePtr w, NodePtr dout, const bool &is_complex) {
-  auto shapes = e->ShapeCalc(g_matmul_ext_bprop_shapecalc, {x, w, dout});
+inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr w, NodePtr dout, const NodePtrList &shapes,
+                                      const bool &is_complex) {
   auto w_expanded_shape = shapes[i0];
   auto w_optim_shape = shapes[i2];
   auto dout_optim_shape_for_dx = shapes[i3];
@@ -1190,8 +1213,8 @@ inline NodePtr MatMulInputBackwardDyn(Emitter *e, NodePtr x, NodePtr w, NodePtr 
   return is_complex ? e->Emit("Conj", {dx}) : dx;
 }
 
-inline NodePtr MatMulWeightBackwardDyn(Emitter *e, NodePtr x, NodePtr w, NodePtr dout, const bool &is_complex) {
-  auto shapes = e->ShapeCalc(g_matmul_ext_bprop_shapecalc, {x, w, dout});
+inline NodePtr MatMulWeightBackwardDyn(Emitter *e, NodePtr x, NodePtr dout, const NodePtrList &shapes,
+                                       const bool &is_complex) {
   auto x_optim_shape = shapes[i1];
   auto dout_optim_shape_for_dw = shapes[i4];
   if (is_complex) {
@@ -1216,7 +1239,7 @@ inline NodePtrList MatMulBackwardDynamic(BpropBuilder *ib, const bool &is_comple
   auto x_empty = ib->Equal(x_size, ib->Value<int64_t>(0));
   auto w_empty = ib->Equal(w_size, ib->Value<int64_t>(0));
   auto true_case = [&x, &w, &x_empty, &w_empty](Emitter *e) -> NodePtrList {
-    // handle empty tensor
+    // the case to handle empty tensor
     auto nested_true_case_x = [&x](Emitter *e) -> NodePtrList { return {x}; };
     auto nested_false_case_x = [&x](Emitter *e) -> NodePtrList { return {e->ZerosLike(x)}; };
     auto nested_true_case_w = [&w](Emitter *e) -> NodePtrList { return {w}; };
@@ -1228,9 +1251,14 @@ inline NodePtrList MatMulBackwardDynamic(BpropBuilder *ib, const bool &is_comple
     return {dx, dw};
   };
   auto false_case = [&x, &w, &dout, &is_complex](Emitter *e) -> NodePtrList {
-    auto dx = x->need_compute_grad_out() ? MatMulInputBackwardDyn(e, x, w, dout, is_complex) : e->ZerosLike(x);
-    auto dw = w->need_compute_grad_out() ? MatMulWeightBackwardDyn(e, x, w, dout, is_complex) : e->ZerosLike(w);
-    // if the dimension of x or w larger than 2, inverse broadcasting must be took into consideration.
+    NodePtrList shapes{};
+    // Calculate optimized shapes used in back propagation of input or weight
+    if (x->need_compute_grad_out() || w->need_compute_grad_out()) {
+      shapes = e->ShapeCalc(g_matmul_ext_bprop_shapecalc, {x, w, dout});
+    }
+    auto dx = x->need_compute_grad_out() ? MatMulInputBackwardDyn(e, w, dout, shapes, is_complex) : e->ZerosLike(x);
+    auto dw = w->need_compute_grad_out() ? MatMulWeightBackwardDyn(e, x, dout, shapes, is_complex) : e->ZerosLike(w);
+    // If the dimension of x or w larger than 2, inverse broadcasting must be took into consideration.
     const auto &dx_shape = dx->shape();
     const auto &dw_shape = dw->shape();
     if ((!IsDynamicRank(dx_shape) && dx_shape.size() <= 2) || (!IsDynamicRank(dw_shape) && dw_shape.size() <= 2)) {
@@ -1238,8 +1266,9 @@ inline NodePtrList MatMulBackwardDynamic(BpropBuilder *ib, const bool &is_comple
       dw = e->Reshape(dw, e->Shape(w));
       return {dx, dw};
     }
-    // for dynamic rank case, the 'skip mode' in ReduceSum is required.
+    // Calculate the reduce axis of inverse broadcast
     auto bc_axis = e->ShapeCalc(g_matmul_ext_bprop_bc_shapecalc, {x, w, dx, dw});
+    // SumExt is not adopted, since the 'skip mode' in ReduceSum is necessary for dynamic rank case.
     dx = e->ReduceSum(dx, bc_axis[0], false, true);
     dx = e->Reshape(dx, e->Shape(x));
     dw = e->ReduceSum(dw, bc_axis[1], false, true);
