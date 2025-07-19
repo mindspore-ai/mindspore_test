@@ -32,7 +32,7 @@ LeaperTrans &LeaperTrans::GetInstance() {
 
 LeaperTrans::LeaperTrans() {}
 
-LeaperConnInfo LeaperTrans::Connect(std::string dst_ip, uint16_t src_port, uint16_t dst_port) {
+LeaperConnInfo LeaperTrans::Connect(std::string src_ip, std::string dst_ip, uint16_t src_port, uint16_t dst_port) {
   MS_LOG(WARNING) << "LeaperTrans try to connect to " << dst_ip << ":" << dst_port << ", src_port = " << src_port;
   LeaperConnInfo conn_info;
   struct sockaddr_in serverAddr;
@@ -47,7 +47,7 @@ LeaperConnInfo LeaperTrans::Connect(std::string dst_ip, uint16_t src_port, uint1
 
   serverAddr.sin_family = AF_INET;
   serverAddr.sin_port = htons(src_port);
-  serverAddr.sin_addr.s_addr = INADDR_ANY;
+  serverAddr.sin_addr.s_addr = inet_addr(src_ip.c_str());
 
   if (bind(listen_fd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
     perror("bind");
