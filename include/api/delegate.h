@@ -130,11 +130,21 @@ class Delegate : public IDelegate<LiteDelegateGraph, kernel::Kernel, kernel::Ker
   /// \return Status. If Status is kLiteNotSupport, the program will return to the MindSpore Lite inner inference.
   virtual Status Init() = 0;
 
+  /// \brief Create kernel.
+  ///
+  /// \param[in] node The kernel to be created.
+  ///
+  /// \return Created kernel.
   std::shared_ptr<kernel::Kernel> CreateKernel(const std::shared_ptr<kernel::Kernel> &node) override {
     // return node as kernel since they are same one.
     return node;
   }
 
+  /// \brief Check if the node is delegate node.
+  ///
+  /// \param[in] node The kernel to verify.
+  ///
+  /// \return True if the node is delegate.
   bool IsDelegateNode(const std::shared_ptr<kernel::Kernel> &node) override { return false; }
 
   /// \brief Replace the nodes in model with delegate nodes, delegate will create kernels by its delegate nodes.
