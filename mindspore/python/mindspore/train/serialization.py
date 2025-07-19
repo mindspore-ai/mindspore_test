@@ -77,7 +77,7 @@ from mindspore.parallel.checkpoint_transform import build_searched_strategy as n
 from mindspore.parallel.transform_safetensors import _fast_safe_open
 from mindspore.train._utils import read_proto, get_parameter_redundancy, _progress_bar, _load_and_transform
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, \
-    split_mindir, split_dynamic_mindir
+    split_mindir, split_dynamic_mindir, _get_snapshot_params
 from mindspore.common.generator import Generator
 
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
@@ -945,6 +945,8 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
     if not is_parallel_mode:
         save_obj.init_parameters_data()
     param_dict = _convert_cell_param_and_names_to_dict(save_obj, choice_func, is_parallel_mode)
+    enable_ckpt_d2h_sync = os.getenv('MS_ENABLE_D2H_ASYNC') == '1'
+    param_snapshot = _get_snapshot_params() if enable_ckpt_d2h_sync else {}
     for (key, value) in param_dict.items():
         each_param = {"name": key}
         if isinstance(value, MapParameter):
@@ -967,7 +969,8 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             if append_dict and "__exception_save__" in append_dict:
                 param_data = Tensor(Tensor_.move_to(value, "CPU", False))
             else:
-                param_data = Tensor(value.data)
+                # when enable MS_ENABLE_D2H_ASYNC=1, fetch param from sanpshot in priority
+                param_data = param_snapshot.get(key, Tensor(value.data))
 
             # in automatic model parallel scenario, some parameters were split to all the devices,
             # which should be combined before saving
