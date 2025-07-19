@@ -22,6 +22,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "pybind_api/hal/utils_py.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace hal {
@@ -107,6 +108,7 @@ void SetCurStream(const StreamPyPtr &cur_stream) {
   runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << "current_stream_id:" << cur_stream->stream_id();
   cur_stream->device_ctx()->device_res_manager_->SetCurrentStreamId(cur_stream->stream_id());
+  CurrentStream::set_id(cur_stream->stream_id());
 }
 
 void Synchronize() {

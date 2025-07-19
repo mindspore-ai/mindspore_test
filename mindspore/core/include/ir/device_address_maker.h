@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include <vector>
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/shape_vector.h"
 #include "ir/device_type.h"
@@ -36,7 +37,7 @@ MS_CORE_API void SetDeviceAddressMaker(device::DeviceType device_type, DeviceAdd
 MS_CORE_API DeviceAddressMakerFunc GetDeviceAddressMaker(device::DeviceType device_target);
 
 template <device::DeviceType t>
-struct MS_CORE_API DeviceAddressMakerRegister {
+struct DeviceAddressMakerRegister {
   explicit DeviceAddressMakerRegister(DeviceAddressMakerFunc &&maker) { SetDeviceAddressMaker(t, std::move(maker)); }
 };
 
@@ -69,7 +70,16 @@ MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector 
 MS_CORE_API DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape,
                                             tensor::TensorDataPtr &&tensor_data,
                                             device::DeviceType device_type = device::DeviceType::kCPU);
+template <typename T>
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, T scalar) {
+  static ShapeVector scalar_shape{};
+  return MakeDeviceAddress(data_type, scalar_shape, tensor::MakeTensorData(data_type, scalar_shape, scalar));
+}
 
+template <typename T>
+DeviceSyncPtr MakeDeviceAddress(TypeId data_type, const ShapeVector &shape, const std::vector<T> &data) {
+  return MakeDeviceAddress(data_type, shape, tensor::MakeTensorData(data_type, shape, data.data(), data.size()));
+}
 }  // namespace mindspore
 
 #endif  // MINDSPORE_MINDSPORE_CORE_INCLUDE_IR_DEVICE_ADDRESS_MAKER_H_

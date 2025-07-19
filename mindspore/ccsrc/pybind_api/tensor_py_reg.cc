@@ -534,25 +534,8 @@ extern PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
 
 extern PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
-  MS_LOG(DEBUG) << "Tensor data_sync";
-  PyType<TensorPy> *py_tensor;
-  bool need_wait;
-  if (self != NULL) {
-    py_tensor = (PyType<TensorPy> *)self;
-    TensorPy &tensor = py_tensor->value;
-    if (!PyArg_ParseTuple(args, "p", &need_wait)) {
-      return nullptr;
-    }
-    tensor.DataSync(need_wait);
-  } else {
-    PyObject *oriTensor;
-    if (!PyArg_ParseTuple(args, "Op", &oriTensor, &need_wait)) {
-      return nullptr;
-    }
-    py_tensor = (PyType<TensorPy> *)oriTensor;
-    TensorPy &tensor = py_tensor->value;
-    tensor.DataSync(need_wait);
-  }
+  runtime::Pipeline::Get().WaitAll();
+  MS_LOG(WARNING) << "Calling deprecate API: Tensor::data_sync.";
   Py_RETURN_NONE;
   HANDLE_MS_EXCEPTION_END
 }

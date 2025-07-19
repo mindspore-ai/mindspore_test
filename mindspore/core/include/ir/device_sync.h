@@ -41,7 +41,7 @@ class DeviceSync {
   virtual std::string ToString() const = 0;
   virtual const uint32_t stream_id() const = 0;
   virtual void ClearDeviceMemory() = 0;
-  virtual const TensorStorageInfoPtr GetTensorStorageInfo() const = 0;
+  virtual TensorStorageInfoPtr GetTensorStorageInfo() const = 0;
 
   // The related interface of reference count operation.
   virtual void set_original_ref_count(size_t original_ref_count) const = 0;
@@ -107,7 +107,7 @@ MS_CORE_API void SetCopyFunc(device::DeviceType device_type, SyncCopyFunc &&sync
                              SyncPtrFunc &&sync_ptr_func);
 
 template <device::DeviceType t>
-struct MS_CORE_API CopyFuncRegister {
+struct CopyFuncRegister {
   explicit CopyFuncRegister(SyncCopyFunc &&sync_func, AsyncCopyFunc &&async_func, SyncPtrFunc &&sync_ptr_func) {
     SetCopyFunc(t, std::move(sync_func), std::move(async_func), std::move(sync_ptr_func));
   }

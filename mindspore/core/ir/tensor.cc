@@ -34,6 +34,7 @@
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_address_maker.h"
+#include "utils/stream_guard.h"
 
 namespace mindspore {
 namespace tensor {
@@ -150,107 +151,103 @@ Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId sr
 Tensor::Tensor(const std::vector<int64_t> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      device_sync_(
-        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
+      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
 
 Tensor::Tensor(const std::vector<int32_t> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      device_sync_(
-        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
+      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
 
 Tensor::Tensor(const std::vector<double> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      device_sync_(
-        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
+      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
 
 Tensor::Tensor(const std::vector<float> &input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
       id_(MakeId()),
-      device_sync_(
-        MakeDeviceAddress(data_type_, shape_, MakeTensorData(data_type_, shape_, input.data(), input.size()))) {}
+      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
 
 Tensor::Tensor(int64_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(int32_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(int16_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt16), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(int8_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeInt8), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(double input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(float input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(float16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat16), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(float8_e5m2 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E5M2), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(float8_e4m3fn input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E4M3FN), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(hifloat8 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeHiFloat8), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 #ifndef KERNEL_EXECUTOR_ANDROID
 Tensor::Tensor(bfloat16 input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeBFloat16), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 #endif
 Tensor::Tensor(uint64_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt64), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(uint32_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt32), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(uint16_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt16), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(uint8_t input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt8), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(bool input, const TypePtr &data_type)
     : MetaTensor(TypeIdOf(data_type, kNumberTypeBool), {}),
       id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, ShapeVector{}, MakeTensorData(data_type_, ShapeVector{}, input))) {}
+      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
@@ -439,7 +436,7 @@ std::string Tensor::ToStringRepr() const {
   return buf.str();
 }
 
-DeviceSyncPtr Tensor::device_address() const { return device_sync_; }
+const DeviceSyncPtr &Tensor::device_address() const { return device_sync_; }
 
 void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
@@ -451,7 +448,7 @@ void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_upda
   }
 }
 
-const TensorStorageInfoPtr Tensor::storage_info() const {
+TensorStorageInfoPtr Tensor::storage_info() const {
   if (device_sync_ != nullptr) {
     return device_sync_->GetTensorStorageInfo();
   }
@@ -566,36 +563,10 @@ TensorPtr Tensor::cpu() const {
   }
   auto dst = MakeDeviceAddress(data_type_, shape_, true);
   MS_EXCEPTION_IF_NULL(dst);
-  if (!SyncCopy(dst, device_address, device_address->stream_id())) {
+  if (!SyncCopy(dst, device_address, CurrentStream::id())) {
     MS_LOG(EXCEPTION) << "SyncCopy failed for " << ToString();
   }
   return std::make_shared<Tensor>(data_type_, shape_, dst);
-}
-
-bool Tensor::to_device() {
-  if (to_device_callback_ == nullptr) {
-    MS_LOG(DEBUG) << "No callback found.";
-    return true;
-  }
-  MS_LOG(DEBUG) << "Run callback.";
-  bool ret = to_device_callback_();
-  to_device_callback_ = nullptr;
-  return ret;
-}
-
-void Tensor::data_sync(bool need_wait, bool inpalce, bool sync_on_demand) const {
-  if (need_wait) {
-    ExecuteLazyTask();
-  }
-
-  if (device_sync_ == nullptr || device_sync_->GetMutablePtr() == nullptr) {
-    return;
-  }
-
-  if (device_sync_->GetDeviceType() == device::DeviceType::kCPU) {
-    MS_LOG(DEBUG) << "Already cpu device address. Skip data_sync.";
-    return;
-  }
 }
 
 std::string Tensor::DataToString(bool use_comma) const {
@@ -661,7 +632,7 @@ bool Tensor::Offload(const std::string &file_path) {
   return true;
 }
 
-const std::string Tensor::GetOffloadFilePath() const { return offload_file_; }
+const std::string &Tensor::GetOffloadFilePath() const { return offload_file_; }
 
 bool Tensor::CheckStub() {
 #if defined(WITH_BACKEND)
