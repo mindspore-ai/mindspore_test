@@ -768,9 +768,6 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("scheduler_ip", &PSContext::scheduler_ip, "Get scheduler ip.")
     .def("set_scheduler_port", &PSContext::set_scheduler_port, "Set scheduler port.")
     .def("scheduler_port", &PSContext::scheduler_port, "Get scheduler port.")
-    .def("set_scheduler_manage_port", &PSContext::set_scheduler_manage_port,
-         "Set scheduler manage port used to scale out/in.")
-    .def("scheduler_manage_port", &PSContext::scheduler_manage_port, "Get scheduler manage port used to scale out/in.")
     .def("set_enable_ssl", &PSContext::set_enable_ssl, "Set PS SSL mode enabled or disabled.")
     .def("enable_ssl", &PSContext::enable_ssl, "Get PS SSL mode enabled or disabled.")
     .def("set_client_password", &PSContext::set_client_password, "Set the client password to decode the p12 file.")

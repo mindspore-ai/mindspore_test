@@ -1786,8 +1786,9 @@ def set_ps_context(**kwargs):
                           Default: ``False`` .
         config_file_path (str): Configuration file path used by recovery, parameter server training mode only
                                    supports Server disaster recovery currently. Default: ``''`` .
-        scheduler_manage_port (int): Scheduler manage port used to scale out/in. Default: ``11202`` .
-        enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False`` .
+        enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False``.
+                           There might be risk when this is set to False.
+                           It is user's responsibility to ensure the network environment is safe.
         client_password (str): Password to decrypt the secret key stored in the client certificate. Default: ``''`` .
         server_password (str): Password to decrypt the secret key stored in the server certificate. Default: ``''`` .
 
@@ -1796,7 +1797,7 @@ def set_ps_context(**kwargs):
 
     Examples:
         >>> import mindspore as ms
-        >>> ms.set_ps_context(enable_ps=True, enable_ssl=True, client_password='123456', server_password='123456')
+        >>> ms.set_ps_context(enable_ps=True, enable_ssl=True, client_password='', server_password='')
     """
     _set_ps_context(**kwargs)
 
@@ -1813,12 +1814,9 @@ def get_ps_context(attr_key):
             - config_file_path (str, optional): Configuration file path used by recovery,
               parameter server training mode only
               supports Server disaster recovery currently. Default: ``''`` .
-            - scheduler_manage_port (int, optional): Scheduler manage port used to scale out/in. Default: ``11202`` .
             - enable_ssl (bool, optional): Set PS SSL mode enabled or disabled. Default: ``False`` .
-            - client_password (str, optional): Password to decrypt the secret key stored in the client certificate.
-              Default: ``''`` .
-            - server_password (str, optional): Password to decrypt the secret key stored in the server certificate.
-              Default: ``''`` .
+              There might be risk when this is set to False.
+              It is user's responsibility to ensure the network environment is safe.
 
     Returns:
         Returns attribute value according to the key.
