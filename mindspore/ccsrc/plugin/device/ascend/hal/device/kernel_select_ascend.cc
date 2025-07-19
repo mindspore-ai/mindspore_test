@@ -732,11 +732,12 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   return {false, msg, etype, false};
 }
 
-bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
+bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_EXCEPTION_IF_NULL(node);
 
   auto primitive = GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(primitive);
   if (IsPrimitiveCNode(node, prim::kPrimCustom)) {
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
     op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);

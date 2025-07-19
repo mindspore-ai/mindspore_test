@@ -217,6 +217,7 @@ CNodePtr FindDxMatMulByDw(const AnfNodePtrList &dw_nodes) {
   }
 
   auto dw_prim = GetCNodePrimitive(dw_cnode);
+  MS_EXCEPTION_IF_NULL(dw_prim);
   auto dw_forward_unique_id = GetValue<std::string>(dw_cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId));
 
   auto common_inputs = UpperSearchWithFilter(

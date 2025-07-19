@@ -162,6 +162,7 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   auto allreduce_cnode = node->cast<CNodePtr>();
   MS_ASSERT(allreduce_cnode != nullptr);
   auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  MS_EXCEPTION_IF_NULL(allreduce_prim);
   auto matmul_cnode = allreduce_cnode->input(kIndex1)->cast<CNodePtr>();
   MS_ASSERT(matmul_cnode != nullptr);
   auto input_x_node = matmul_cnode->input(kIndex1);

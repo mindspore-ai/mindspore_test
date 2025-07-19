@@ -501,6 +501,8 @@ AnfNodePtr CommunicationOpFusion::CreateFusedCommunicationOp(const FuncGraphPtr 
     fused_cnode->AddAttr("duplicated", MakeValue(true));
     auto fused_prim = GetCNodePrimitive(fused_cnode);
     auto final_node_prim = GetCNodePrimitive(final_node);
+    MS_EXCEPTION_IF_NULL(fused_prim);
+    MS_EXCEPTION_IF_NULL(final_node_prim);
     fused_prim->set_instance_name(final_node_prim->instance_name());
   }
   if (common::AnfAlgo::HasNodeAttr(kAttrNotDelayFusion, final_node)) {

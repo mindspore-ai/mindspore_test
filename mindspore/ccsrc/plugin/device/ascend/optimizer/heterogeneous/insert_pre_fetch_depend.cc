@@ -207,6 +207,7 @@ bool InsertPreFetchDepend::Run(const FuncGraphPtr &graph) {
       continue;
     }
     const auto &prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
     const auto &attr_iter = prim->attrs().find(kAttrBackwardPrefetch);
     if (attr_iter == prim->attrs().end()) {
       continue;

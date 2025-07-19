@@ -406,6 +406,7 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
   MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
   auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);
+  MS_EXCEPTION_IF_NULL(all_gather_prim);
   all_gather_matmul_prim->AddAttr(kAttrGroup, all_gather_prim->GetAttr(kAttrGroup));
   auto kernel_graph = func_graph->cast<std::shared_ptr<mindspore::session::KernelGraph>>();
   MS_EXCEPTION_IF_NULL(kernel_graph);

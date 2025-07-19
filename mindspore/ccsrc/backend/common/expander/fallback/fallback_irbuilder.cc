@@ -88,7 +88,9 @@ AnfNodePtr FallbackIRBuilder::Run(const CNodePtr &cnode, const IRBuilderHandle &
   inputs_.resize(cnode->size() - 1);
   (void)std::transform(cnode->weak_inputs().cbegin() + 1, cnode->weak_inputs().cend(), inputs_.begin(),
                        [this](const AnfNodeWeakPtr &no) { return this->NewIrNode(no.lock()); });
-  attrs_ptr_ = &(GetCNodePrimitive(cnode)->attrs());
+  auto prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
+  attrs_ptr_ = &(prim->attrs());
   auto outputs = handle.func(this);
   if (!success_ || outputs.empty()) {
     MS_LOG(DEBUG) << "Exec func result: success=" << success_ << ", outputs.empty()=" << outputs.empty();
