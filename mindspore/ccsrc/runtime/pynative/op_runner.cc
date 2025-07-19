@@ -1084,7 +1084,7 @@ void DynamicOpRunner::CopyHostToDevice(const OpCompilerInfoPtr &op_compiler_info
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
 
-    MS_LOG(DEBUG) << "Start lazy copy for tensor " << input_tensor->ToString();
+    MS_LOG(DEBUG) << "Start lazy copy for input " << i << " tensor " << input_tensor->ToString();
     runtime::DeviceAddressUtils::LazyCopy(input_tensor, CurrentStream::id());
     MS_LOG(DEBUG) << "Copy host tensor to device for op " << op_compiler_info->graph_info_ << " input " << i;
   }
