@@ -410,6 +410,7 @@ int LiteModel::GenerateModelByVersion() {
                                                             this, this->buf_size_);
       this->graph_.model_obfuscated_ = true;
       if (model_deobf == nullptr) {
+        MS_LOG(ERROR) << "model_deobf is null";
         return RET_ERROR;
       }
     }
@@ -424,6 +425,7 @@ int LiteModel::GenerateModelByVersion() {
       std::cerr << "deobfuscate model wrong!" << std::endl;
     }
     delete (model_deobf);
+    return status;
   }
 #endif
   if (IsVersionGreaterThan(GetShortVersionStr(this->graph_.version_), GetShortVersionStr(Version()))) {
