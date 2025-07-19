@@ -76,7 +76,9 @@ const AnfNodePtr AscendMindIROpAdapter::Process(const FuncGraphPtr &graph, const
   }
   // There are other UnifyMindIR pass before AscendMindIROpAdapter which may create new nodes.
   if (graph->has_flag(kAttrMutableKernel) && AnfUtils::IsRealCNodeKernel(node)) {
-    AnfAlgo::SetDynamicAttrToPrim(common::AnfAlgo::GetCNodePrimitive(node));
+    auto prim = common::AnfAlgo::GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(prim);
+    AnfAlgo::SetDynamicAttrToPrim(prim);
   }
   auto ret_node = CreateNodeWithCheck(node, graph->cast<KernelGraphPtr>(), true);
   if (ret_node != node) {

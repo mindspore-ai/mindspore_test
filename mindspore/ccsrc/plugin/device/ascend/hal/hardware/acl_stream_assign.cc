@@ -313,6 +313,7 @@ void AclStreamAssign::AddDelayedSendRecvKernel(const NotNull<mindspore::KernelGr
     // Get pre_fetch size.
     int64_t pre_fetch = kDefaultDelayNum;
     const auto &prim = GetCNodePrimitive(kernel);
+    MS_EXCEPTION_IF_NULL(prim);
     const auto &attrs = prim->attrs();
     const auto &attr_iter = attrs.find(kAttrBackwardPrefetch);
     if (attr_iter != attrs.end()) {

@@ -294,7 +294,7 @@ CNodePtr BatchMatMulReduceScatterAllToAllFusion::PreProcessAndCreateBatchMatMulR
   MS_EXCEPTION_IF_NULL(alltoall_prim);
   auto reducescatter_prim = GetCNodePrimitive(reducescatter_cnode_);
   MS_EXCEPTION_IF_NULL(reducescatter_prim);
-  tp_world_size_ = GetValue<int64_t>(GetCNodePrimitive(reducescatter_cnode_)->GetAttr(kAttrRankSize));
+  tp_world_size_ = GetValue<int64_t>(reducescatter_prim->GetAttr(kAttrRankSize));
   if (tp_world_size_ != kSplitTwo && tp_world_size_ != kSplitFour && tp_world_size_ != kSplitEight &&
       tp_world_size_ != kSplitSixteen) {
     return nullptr;

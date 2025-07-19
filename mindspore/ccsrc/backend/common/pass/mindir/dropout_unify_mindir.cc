@@ -358,6 +358,7 @@ CNodePtr CreateDropoutGenMaskCNode(const FuncGraphPtr &func_graph, const CNodePt
   UpdateDropoutUserAbstract(func_graph, dropout, gen_mask_abstract);
   common::AnfAlgo::CopyNodeAttrs(dropout, dropout_gen_mask);
   auto dropout_gen_mask_primitive = common::AnfAlgo::GetCNodePrimitive(dropout_gen_mask);
+  MS_EXCEPTION_IF_NULL(dropout_gen_mask_primitive);
   if (enable_keep_prob) {
     dropout_gen_mask_primitive->set_attr("enable_keep_prob", MakeValue(true));
   } else {
