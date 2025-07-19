@@ -110,7 +110,8 @@ LeaperConnInfo &CcoolCommunicationGroup::GetConnInfo(uint32_t dst_rank) {
   uint16_t dst_port = base_port + kConnPortStride * dst_rank + global_rank_;
   MS_LOG(INFO) << "src_port = " << src_port << ", dst_port = " << dst_port;
   if (rank_conn_info_map_.count(dst_rank) == 0) {
-    rank_conn_info_map_[dst_rank] = LeaperTrans::GetInstance().Connect(rank_ip_map_[dst_rank], src_port, dst_port);
+    rank_conn_info_map_[dst_rank] =
+      LeaperTrans::GetInstance().Connect(rank_ip_map_[global_rank_], rank_ip_map_[dst_rank], src_port, dst_port);
   }
   return rank_conn_info_map_[dst_rank];
 }
