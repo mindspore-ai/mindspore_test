@@ -39,6 +39,7 @@ void InsertDependForAllReduce::InsertDepend(const AnfNodePtr &prior_node, const 
 void InsertDependForAllReduce::InsertAllReduceOpAfterSendOp(const FuncGraphPtr &graph) {
   for (size_t i = 0; i < all_reduce_node_.size(); ++i) {
     auto prim = GetCNodePrimitive(all_reduce_node_[i]);
+    MS_EXCEPTION_IF_NULL(prim);
     auto segment_info = GetValue<int64_t>(prim->GetAttr(kAttrSegment));
     if (backward_each_seg_last_send_.find(segment_info) != backward_each_seg_last_send_.end() && segment_info != 0) {
       MS_LOG(INFO) << "Backward micro max send is: "

@@ -93,6 +93,7 @@ bool OptimizerEventInfo::IsOptimizerStartKernelMod(kernel::KernelMod *kernel_mod
     return false;
   }
   auto prim = common::AnfAlgo::GetCNodePrimitive(kernel);
+  MS_EXCEPTION_IF_NULL(prim);
   if (!prim->HasAttr(kOptimizerEndFlag)) {
     optimizer_start_kernel_mod_ = kernel_mod;
     return true;
@@ -108,6 +109,7 @@ bool OptimizerEventInfo::IsOptimizerEndKernelMod(kernel::KernelMod *kernel_mod, 
     return false;
   }
   auto prim = common::AnfAlgo::GetCNodePrimitive(kernel);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->HasAttr(kOptimizerEndFlag)) {
     optimizer_end_kernel_mod_ = kernel_mod;
     return true;

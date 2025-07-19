@@ -38,6 +38,7 @@ bool FindTargetNodes(const std::vector<CNodePtr> &origin_nodes_topological,
     auto cnode = origin_nodes_topological[i];
     if (IsPrimitiveCNode(cnode, prim::kPrimAlltoAllVGE)) {
       auto AlltoAllVGE_prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(AlltoAllVGE_prim);
       if (AlltoAllVGE_prim->HasAttr("FLASH_INDEX")) {
         auto flash_index = GetValue<std::string>(AlltoAllVGE_prim->GetAttr("FLASH_INDEX"));
         alltoallv_map->insert({flash_index, cnode});
@@ -46,6 +47,7 @@ bool FindTargetNodes(const std::vector<CNodePtr> &origin_nodes_topological,
 
     if (IsPrimitiveCNode(cnode, prim::kPrimFlashAttentionScore)) {
       auto FlashAttentionScore_prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(FlashAttentionScore_prim);
       if (FlashAttentionScore_prim->HasAttr("FLASH_INDEX")) {
         auto flash_index = GetValue<std::string>(FlashAttentionScore_prim->GetAttr("FLASH_INDEX"));
         fa_map->insert({flash_index, cnode});
@@ -54,6 +56,7 @@ bool FindTargetNodes(const std::vector<CNodePtr> &origin_nodes_topological,
 
     if (common::AnfAlgo::HasNodeAttr("AccumulatedAttention", cnode)) {
       auto node_prim = GetCNodePrimitive(cnode);
+      MS_EXCEPTION_IF_NULL(node_prim);
       if (node_prim->HasAttr("FLASH_INDEX")) {
         auto update_node_index = GetValue<std::string>(node_prim->GetAttr("FLASH_INDEX"));
         update_node_map->insert({update_node_index, cnode});

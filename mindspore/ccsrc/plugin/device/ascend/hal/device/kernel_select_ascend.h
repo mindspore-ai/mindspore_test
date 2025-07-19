@@ -44,7 +44,7 @@ void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node
 std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(
   const KernelGraphPtr &graph, const CNodePtr &node, std::vector<size_t> *op_selected_num = nullptr);
 
-bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node);
+bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const CNodePtr &node);
 
 void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes);
 
