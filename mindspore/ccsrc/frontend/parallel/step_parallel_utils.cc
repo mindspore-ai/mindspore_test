@@ -1944,11 +1944,13 @@ void UpdateUserGraphAndReplaceCall(const std::pair<AnfNodePtr, int> &fg_users, c
       new_maketuple_cnode->set_abstract(std::make_shared<abstract::AbstractTuple>(ctx->new_maketuple_abstracts));
 
       auto old_concat_prim = GetCNodePrimitive(concat_cnode);
+      MS_EXCEPTION_IF_NULL(old_concat_prim);
       std::vector<AnfNodePtr> new_concat_inputs{NewValueNode(old_concat_prim->Clone()), new_maketuple_cnode,
                                                 NewValueNode(MakeValue<int64_t>(concat_axis))};
       auto new_concat = ctx->user_func_graph->NewCNode(new_concat_inputs);
       new_concat->set_abstract(concat_cnode->abstract()->Clone());
       auto new_concat_prim = GetCNodePrimitive(new_concat);
+      MS_EXCEPTION_IF_NULL(new_concat_prim);
       if (new_concat_prim->HasAttr("fine_grained_interleaved_index")) {
         new_concat_prim->EraseAttr("fine_grained_interleaved_index");
       }
@@ -2061,6 +2063,7 @@ void AddNodeFusionInfo(const CNodePtr &node, const CNodePtr &comm_node, const st
   auto comm_id = MakeValue<std::string>(param_name);
   comm_node->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
   auto prim = GetCNodePrimitive(comm_node);
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim) {
     prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
   }
