@@ -157,8 +157,8 @@ class Profiler:
             For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
-            Collecting operator memory data when the graph compilation level is O2 requires collecting from the
-            first step. Default: ``False`` . The operator name currently collected by this parameter is incomplete.
+            Collecting operator memory data when GE backend requires collecting from the first step.
+            Default: ``False`` . The operator name currently collected by this parameter is incomplete.
             This issue will be resolved in later versions. It is recommended to use the environment variable
             ``MS_ALLOC_CONF`` instead.
         aic_metrics (AicoreMetrics, optional): (Ascend only) Types of AICORE performance data collected,
@@ -193,7 +193,7 @@ class Profiler:
             If set to True, only the profiler deliverables and raw performance data under the PROF_XXX directory are
             kept to save space. Default value: ``True`` .
         l2_cache (bool, optional): (Ascend only) Whether to collect l2 cache data, collect when True.
-            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.In O2 mode,
+            Default: ``False`` . The l2_cache.csv file is generated in the ASCEND_PROFILER_OUTPUT folder.In GE backend,
             only wait and skip_first parameters in schedule configuration can be set to 0.
         hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,
             collect when True. Default: ``False`` .
@@ -712,8 +712,8 @@ class Profile:
             For details, see :func:`mindspore.profiler.tensorboard_trace_handler` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `activities` must set to ``[ProfilerActivity.CPU, ProfilerActivity.NPU]``.
-            Collecting operator memory data when the graph compilation level is O2 requires collecting from the
-            first step. Default: ``False`` . The operator name currently collected by this parameter is incomplete.
+            Collecting operator memory data when GE backend requires collecting from the first step.
+            Default: ``False`` . The operator name currently collected by this parameter is incomplete.
             This issue will be resolved in later versions. It is recommended to use the environment variable
             ``MS_ALLOC_CONF`` instead.
         with_stack (bool, optional): (Ascend only) Whether to collect frame host call stack data
