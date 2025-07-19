@@ -89,6 +89,7 @@ std::vector<int64_t> GenConvShape(const AnfNodePtr &conv_node) {
   auto cb = Callback::Instance();
   auto input_shape = cb->GetInputShape(conv_node, 0);
   auto prim = GetCNodePrimitive(conv_node);
+  MS_EXCEPTION_IF_NULL(prim);
   auto pads = GetValue<std::vector<int64_t>>(prim->GetAttr("pad_list"));
   constexpr size_t n_pos = 0;
   constexpr size_t h_pos = 1;
@@ -103,11 +104,11 @@ nlohmann::json GenTuneInfo(const AnfNodePtr &conv_node, const std::map<AnfNodePt
                            const AnfNodePtrList &conv_list) {
   nlohmann::json node_info;
   auto prim = GetCNodePrimitive(conv_node);
+  MS_EXCEPTION_IF_NULL(prim);
   node_info["op_id"] = std::find(conv_list.begin(), conv_list.end(), conv_node) - conv_list.begin();
   node_info["op_type"] = "Conv2D";
   node_info["impl"] = "direct";
   node_info["origin_input_shape"] = GenConvShape(conv_node);
-  MS_EXCEPTION_IF_NULL(prim);
   node_info["dilation"] = GetValue<std::vector<int64_t>>(prim->GetAttr("dilation"));
   node_info["origin_format"] = "NHWC";
   node_info["group"] = GetValue<int64_t>(prim->GetAttr("group"));
@@ -168,6 +169,7 @@ void SetTuneAttrs(const AnfNodePtrList &conv_list, const std::string &res_file) 
   f.close();
   for (auto op_info : tune_res["graph"]) {
     auto prim = GetCNodePrimitive(conv_list[op_info["op_id"]]);
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_attr("tuned_src_format", MakeValue(std::string(op_info["src_format"])));
     prim->set_attr("tuned_dst_format", MakeValue(std::string(op_info["dst_format"])));
     prim->set_attr("tuned_dim", MakeValue(std::string(op_info["tuned_attrs"]["dim"])));
