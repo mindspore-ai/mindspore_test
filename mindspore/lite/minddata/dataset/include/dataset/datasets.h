@@ -6495,7 +6495,7 @@ inline std::shared_ptr<YesNoDataset> DATASET_API YesNo(const std::string &datase
 /// \param[in] mem_sz Size of the memory set aside for the row caching (default=0 which means unlimited,
 ///     note that it might bring in the risk of running out of memory on the machine).
 /// \param[in] spill Spill to disk if out of memory.
-/// \param[in] hostname optional host name (default=std::nullopt
+/// \param[in] hostname optional host name (default=std::nullopt).
 /// \param[in] port optional port (default=std::nullopt, means to use 50052).
 /// \param[in] num_connections optional number of connections (default=std::nullopt, means to use 12).
 /// \param[in] prefetch_sz optional prefetch size (default=std::nullopt, means to use 20).
@@ -6510,7 +6510,7 @@ std::shared_ptr<DatasetCache> DATASET_API CreateDatasetCacheCharIF(
 /// \param[in] mem_sz Size of the memory set aside for the row caching (default=0 which means unlimited,
 ///     note that it might bring in the risk of running out of memory on the machine).
 /// \param[in] spill Spill to disk if out of memory.
-/// \param[in] hostname optional host name (default=std::nullopt
+/// \param[in] hostname optional host name (default=std::nullopt).
 /// \param[in] port optional port (default=std::nullopt, means to use 50052).
 /// \param[in] num_connections optional number of connections (default=std::nullopt, means to use 12).
 /// \param[in] prefetch_sz optional prefetch size (default=std::nullopt, means to use 20).

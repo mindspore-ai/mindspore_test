@@ -22,6 +22,7 @@
 #include <vector>
 #include <iostream>
 #include "src/common/log_adapter.h"
+#include "src/common/file_utils.h"
 
 #ifdef _WIN32
 // Override dlopen with LoadLibrary on Windows.
@@ -89,8 +90,12 @@ bool LoadLibraryFromPath(const std::string &library_path, void **handle_ptr) {
   if (handle_ptr == nullptr) {
     return false;
   }
-
-  *handle_ptr = dlopen(library_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+  std::string real_path = lite::RealPath(library_path.c_str());
+  if (real_path.empty()) {
+    MS_LOG(ERROR) << "real_path is invalid.";
+    return false;
+  }
+  *handle_ptr = dlopen(real_path.c_str(), RTLD_NOW | RTLD_LOCAL);
   if (*handle_ptr == nullptr) {
     return false;
   }

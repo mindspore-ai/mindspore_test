@@ -16,6 +16,7 @@
 
 #include "src/om_generator.h"
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <algorithm>
 #include <numeric>
