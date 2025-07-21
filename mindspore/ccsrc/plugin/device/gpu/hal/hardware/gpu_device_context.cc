@@ -77,6 +77,7 @@
 #include "debug/profiler/profiling.h"
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "backend/common/backend_common_callback.h"
 #include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
 
 namespace mindspore {
@@ -1012,6 +1013,49 @@ void PybindGPUStatelessFunc(py::module *m) {
   RegGPUOpTuningConf(m);
 }
 REGISTER_DEV_STATELESS_FUNC_CB(kGPUDevice, PybindGPUStatelessFunc);
+
+// Register callback functions for GPU backend.
+int GetGPUCapabilityMajor() {
+  // Check device computing capacity major.
+  int major_version = -1;
+  auto ret = cuDeviceGetAttribute(&major_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR fail, error message: " << msg;
+    return -1;
+  }
+  return major_version;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUCapabilityMajor);
+
+int GetGPUCapabilityMinor() {
+  // Check device computing capacity minor.
+  int minor_version = -1;
+  auto ret = cuDeviceGetAttribute(&minor_version, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR fail, error message: " << msg;
+    return -1;
+  }
+  return minor_version;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUCapabilityMinor);
+
+int GetGPUMultiProcessorCount() {
+  // Check device sm_count.
+  int sm_count = -1;
+  auto ret = cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+  if (ret != CUDA_SUCCESS) {
+    const char *msg = nullptr;
+    cuGetErrorName(ret, &msg);
+    MS_LOG(ERROR) << "Get CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT fail, error message: " << msg;
+    return -1;
+  }
+  return sm_count;
+}
+REGISTER_BACKEND_COMMON_CALLBACK(GetGPUMultiProcessorCount);
 }  // namespace gpu
 }  // namespace device
 }  // namespace mindspore
