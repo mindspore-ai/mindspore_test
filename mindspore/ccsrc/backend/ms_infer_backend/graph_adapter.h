@@ -36,7 +36,7 @@ namespace ms_infer_backend {
 
 class GraphAdapter {
  public:
-  explicit GraphAdapter(const FuncGraphPtr &func_graph) : func_graph_(func_graph) {
+  explicit GraphAdapter(const KernelGraphPtr &func_graph) : func_graph_(func_graph) {
     MS_EXCEPTION_IF_NULL(func_graph_);
     device_context_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET),
@@ -51,6 +51,7 @@ class GraphAdapter {
  private:
   void ConvertParameters();
   void InsertParameters();
+  void SetupFrontendParameterMapping();
   void ConvertCNodes();
   void ConvertCNode(const CNodePtr &node);
   void ConvertInputs(const VectorRef &inputs);
@@ -58,15 +59,17 @@ class GraphAdapter {
 
   void ConvertValueNode(const ValueNodePtr &value_node);
   da::tensor::DATensor *GetNodeDATensor(const AnfNodePtr &node);
+  void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node);
 
   void *PrepareData(da::tensor::DATensor *da_value, const ValuePtr &value);
   void *PrepareTensorDataToDevice(const tensor::TensorPtr &tensor);
 
-  FuncGraphPtr func_graph_;
+  KernelGraphPtr func_graph_;
   da::runtime::GraphExecutor graph_executor_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> apply_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> const_map_;
   std::unordered_map<AnfNodePtr, da::tensor::DATensor *> parameter_map_;
+  std::unordered_map<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> frontend_params_to_backend_params_;
   std::unordered_set<ValuePtr> converted_values_;
   device::DeviceContext *device_context_{nullptr};
 };

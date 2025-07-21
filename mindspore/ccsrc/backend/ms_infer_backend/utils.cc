@@ -75,6 +75,7 @@ const std::map<std::string, da::ops::Op> primitive_op_name_map = {
   {ops::kNameFlashAttentionScore, da::ops::Op_flash_attention_score},
   {ops::kNamePagedAttention, da::ops::Op_paged_attention},
   {kReshapeExtOpName, da::ops::Op_reshape_ext},
+  {kListGetItemOpName, da::ops::Op_tuple_getitem},
   {kTupleGetItemOpName, da::ops::Op_tuple_getitem},
   {kMakeTupleOpName, da::ops::Op_make_tuple},
   {kUpdateStateOpName, da::ops::Op_update_state},

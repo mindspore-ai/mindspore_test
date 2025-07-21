@@ -53,9 +53,6 @@ class BACKEND_EXPORT MSInferBackend : public BackendBase {
   void Clear() override;
 
  private:
-  // Run ms_backend optimization pass
-  FuncGraphPtr OptimizeMindIR(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) const;
-
   static BackendGraphId backend_graph_id_;
   BackendJitConfig backend_jit_config_;
   std::unordered_map<BackendGraphId, GraphAdapterPtr> graph_adapter_map_;

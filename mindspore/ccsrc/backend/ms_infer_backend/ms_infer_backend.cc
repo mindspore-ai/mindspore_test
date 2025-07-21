@@ -23,8 +23,9 @@
 #include "backend/backend_manager/backend_manager.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#include "backend/common/session/session_basic.h"
 #include "backend/common/session/session_factory.h"
+#include "runtime/hardware/device_context_manager.h"
+#include "include/backend/kernel_graph.h"
 
 #include "backend/ms_infer_backend/ms_infer_backend.h"
 #include "backend/ms_infer_backend/host_value_store.h"
@@ -35,6 +36,33 @@ namespace backend {
 namespace ms_infer_backend {
 
 BackendGraphId MSInferBackend::backend_graph_id_ = 0;
+
+namespace {
+KernelGraphPtr OptimizeMindIR(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+
+  auto session = session::SessionFactory::Get().Create(kSessionBasic);
+  std::vector<KernelGraphPtr> kernel_graphs;
+  auto kernel_graph =
+    session->ConstructKernelGraph(func_graph, &kernel_graphs, device_context->GetDeviceType(), backend_jit_config);
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(INFO) << "Constructed kernel graph: " << kernel_graph->ToString()
+               << " from func graph: " << func_graph->ToString();
+
+  opt::OptimizationWithoutBackend(kernel_graph);
+  auto kernel_executor = device_context->GetKernelExecutor();
+  MS_EXCEPTION_IF_NULL(kernel_executor);
+  kernel_executor->AddMindIRPass(kernel_graph);
+  return kernel_graph;
+}
+}  // namespace
 
 BackendGraphId MSInferBackend::Build(const FuncGraphPtr &func_graph, const BackendJitConfig &backend_jit_config) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -53,35 +81,6 @@ BackendGraphId MSInferBackend::Build(const FuncGraphPtr &func_graph, const Backe
   MS_LOG(INFO) << "MSInferBackend build graph success";
 
   return backend_graph_id_++;
-}
-
-FuncGraphPtr MSInferBackend::OptimizeMindIR(const FuncGraphPtr &func_graph,
-                                            const BackendJitConfig &backend_jit_config) const {
-  MS_EXCEPTION_IF_NULL(func_graph);
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET), ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->Initialize();
-
-  auto session = session::SessionFactory::Get().Create(kSessionBasic);
-  std::vector<KernelGraphPtr> kernel_graphs;
-  auto kernel_graph =
-    session->ConstructKernelGraph(func_graph, &kernel_graphs, device_context->GetDeviceType(), backend_jit_config);
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_LOG(INFO) << "Constructed kernel graph: " << kernel_graph->ToString()
-               << " from func graph: " << func_graph->ToString();
-
-  kernel_graph->SetExecOrderByDefault();
-  kernel_graph->set_flag(kFlagPyNativeRunInGraph, ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
-
-  opt::OptimizationWithoutBackend(kernel_graph);
-  auto kernel_executor = device_context->GetKernelExecutor();
-  MS_EXCEPTION_IF_NULL(kernel_executor);
-  kernel_executor->AddMindIRPass(kernel_graph);
-  return kernel_graph;
 }
 
 RunningStatus MSInferBackend::Run(BackendGraphId graph_id, const VectorRef &inputs, VectorRef *outputs) {

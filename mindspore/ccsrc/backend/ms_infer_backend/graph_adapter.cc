@@ -19,13 +19,13 @@
 #include <vector>
 
 #include "ir/dtype.h"
+#include "ir/tensor.h"
 #include "ir/core_ops_name.h"
 #include "utils/shape_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/llm_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
 
 #include "backend/ms_infer_backend/graph_adapter.h"
 #include "backend/ms_infer_backend/host_value_store.h"
@@ -81,8 +81,9 @@ void SetDATensorTypeAndShape(da::tensor::DATensor *tensor, const ValuePtr &value
   tensor->type = ConvertDataType(dtype);
   SetTensorShape(tensor, shape);
 }
+}  // namespace
 
-void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node) {
+void GraphAdapter::SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(tensor);
 
@@ -95,6 +96,7 @@ void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node) {
     tensor->type = ConvertDataType(dyn_cast<TensorType>(type)->element());
     SetTensorShape(tensor, shape->GetShapeVector());
   } else if (type->isa<Tuple>()) {
+    graph_executor_.AddTensorList(tensor, AnfUtils::GetOutputTensorNum(node));
     MS_EXCEPTION_IF_CHECK_FAIL(tensor->type == da::tensor::Type_Tensor, "The type of DATensor is not Type_Tensor");
     auto tuple_type = type->cast<TuplePtr>();
     MS_EXCEPTION_IF_NULL(tuple_type);
@@ -108,7 +110,6 @@ void SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNodePtr &node) {
     tensor->type = ConvertDataType(type->type_id());
   }
 }
-}  // namespace
 
 void GraphAdapter::ConvertValueNode(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value_node);
@@ -234,6 +235,8 @@ da::tensor::DATensor *GraphAdapter::GetNodeDATensor(const AnfNodePtr &node) {
 void GraphAdapter::ConvertGraph() {
   MS_LOG(INFO) << "Convert graph: " << func_graph_->ToString();
 
+  SetupFrontendParameterMapping();
+
   // parameters DATensor should be created before BeginGraph, added as parameters after BeginGraph
   ConvertParameters();
 
@@ -265,47 +268,91 @@ void GraphAdapter::RunGraph(const VectorRef &inputs, VectorRef *outputs) {
   llm_manger.reset_graph_inputs();
 }
 
+void GraphAdapter::SetupFrontendParameterMapping() {
+  const auto &backend_params = func_graph_->input_nodes();
+  for (size_t j = 0; j < backend_params.size(); j++) {
+    const auto &backend_param = backend_params[j];
+    MS_EXCEPTION_IF_NULL(backend_param);
+
+    auto frontend_param_with_index = func_graph_->GetElementInTupleBackendFrontIndexMap(backend_param);
+    if (frontend_param_with_index.first == nullptr) {
+      frontend_param_with_index = {AnfAlgo::FetchFrontNodeByBackendNode(backend_param, *func_graph_), 0};
+    }
+    MS_EXCEPTION_IF_NULL(frontend_param_with_index.first);
+
+    (void)frontend_params_to_backend_params_[frontend_param_with_index.first].emplace_back(
+      std::make_pair(frontend_param_with_index.second, backend_param));
+  }
+}
+
 void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
-  const auto &params = func_graph_->parameters();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == params.size(), "The inputs size is not equal to graph params size.");
+  const auto &frontend_params = func_graph_->GetFuncGraph()->parameters();
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == frontend_params.size(),
+                             "The inputs size is not equal to graph frontend params size.");
+
   auto &llm_manger = LLMManager::GetInstance();
   llm_manger.Clear();
 
   for (size_t i = 0; i < inputs.size(); ++i) {
-    auto iter = parameter_map_.find(params[i]);
-    if (iter == parameter_map_.end()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << params[i]->ToString() << "' in parameter_map_";
-    }
+    // flatten input tensors
+    std::vector<tensor::TensorPtr> flatten_input_tensors;
+    AnfAlgo::FlattenInputArg(inputs[i], frontend_params[i], &flatten_input_tensors);
 
-    if (!utils::isa<ValuePtr>(inputs[i])) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Input is not a value: " << inputs[i].ToString() << ", index: " << i;
-    }
-    ValuePtr value = utils::cast<ValuePtr>(inputs[i]);
-    MS_EXCEPTION_IF_NULL(value);
-
-    auto is_weight = common::AnfAlgo::IsParameterWeight(params[i]->cast<ParameterPtr>());
-    if (!is_weight) {
-      auto input_tensor = value->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(input_tensor);
-      llm_manger.add_graph_input(params[i]->fullname_with_scope(), input_tensor->data_ptr());
-      MS_LOG(INFO) << "Record input tensor: " << input_tensor->ToString()
-                   << "for parameter: " << params[i]->fullname_with_scope();
-    }
-
-    auto da_param = iter->second;
-    if (da_param->tensorType == da::tensor::TensorType::DEVICE_TENSOR && !is_weight) {
-      // free input device memory before new inputs come in
-      MS_EXCEPTION_IF_NULL(da_param->data);
-      device_context_->device_res_manager_->FreeMemory(da_param->data);
-      da_param->data = nullptr;
-    }
-
-    if (is_weight && DeviceTensorStore::GetInstance().HasValue(value)) {
-      da_param->data = DeviceTensorStore::GetInstance().Get(value)->data;
+    // find backend params
+    auto frontend_param = frontend_params[i];
+    auto iter = frontend_params_to_backend_params_.find(frontend_param);
+    if (iter == frontend_params_to_backend_params_.end()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Can not find the frontend parameters: " << frontend_param->fullname_with_scope();
       continue;
     }
+    auto backend_params = iter->second;
 
-    da_param->data = PrepareData(da_param, value);
+    for (auto &frontend_index_to_backend_param : backend_params) {
+      // get input_tensor
+      auto frontend_param_index = frontend_index_to_backend_param.first;
+      size_t input_tensor_index = 0;
+      const auto &frontend_param_abs = frontend_param->abstract();
+      MS_EXCEPTION_IF_NULL(frontend_param_abs);
+      if (frontend_param_abs->isa<abstract::AbstractSequence>() &&
+          !common::AnfAlgo::IsDynamicSequence(frontend_param)) {
+        input_tensor_index = frontend_param_index;
+      }
+      if (input_tensor_index >= flatten_input_tensors.size()) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Input tensor index out of args range, index: " << input_tensor_index
+                                   << ", tensors size: " << flatten_input_tensors.size()
+                                   << ", parameter: " << frontend_param->fullname_with_scope();
+      }
+      auto input_tensor = flatten_input_tensors[input_tensor_index];
+
+      // get da_param from parameter_map_
+      auto backend_param = frontend_index_to_backend_param.second;
+      auto iter = parameter_map_.find(backend_param);
+      if (iter == parameter_map_.end()) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
+      }
+      auto da_param = iter->second;
+
+      auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
+      if (!is_weight) {
+        llm_manger.add_graph_input(backend_param->fullname_with_scope(), input_tensor->data_ptr());
+        MS_LOG(INFO) << "Record input tensor: " << input_tensor->ToString()
+                     << "for parameter: " << backend_param->fullname_with_scope();
+      }
+
+      if (da_param->tensorType == da::tensor::TensorType::DEVICE_TENSOR && !is_weight) {
+        // free input device memory before new inputs come in
+        MS_EXCEPTION_IF_NULL(da_param->data);
+        device_context_->device_res_manager_->FreeMemory(da_param->data);
+        da_param->data = nullptr;
+      }
+
+      if (is_weight && DeviceTensorStore::GetInstance().HasValue(input_tensor)) {
+        da_param->data = DeviceTensorStore::GetInstance().Get(input_tensor)->data;
+        continue;
+      }
+
+      da_param->data = PrepareData(da_param, input_tensor);
+    }
   }
 }
 
@@ -406,7 +453,7 @@ void GraphAdapter::ConvertCNode(const CNodePtr &node) {
   for (size_t i = 1; i < inputs.size(); ++i) {  // skip the first input which is the primitive
     (void)da_inputs.emplace_back(GetNodeDATensor(inputs[i]));
   }
-  auto da_cnode = graph_executor_.AddTensor(da_op, da_inputs, AnfUtils::GetOutputTensorNum(node));
+  auto da_cnode = graph_executor_.AddTensor(da_op, da_inputs);
   SetNodeOutputType(da_cnode, node);
   apply_map_[node] = da_cnode;
 }
