@@ -74,6 +74,7 @@ class Allocator;
 /// \brief The MSTensor class defines a tensor in MindSpore.
 class MS_API MSTensor {
  public:
+  /// \brief Impl class of MSTensor.
   class Impl;
   /// \brief Creates a MSTensor object, whose data need to be copied before accessed by Model, must be used in pairs
   /// with DestroyTensorPtr.
@@ -161,13 +162,17 @@ class MS_API MSTensor {
   ///
   /// \param[in] tensor A MSTensor object.
   static void DestroyTensorPtr(MSTensor *tensor) noexcept;
-
+  /// \brief Constructor of MSTensor.
   MSTensor();
+  /// \brief Constructor of MSTensor.
   explicit MSTensor(const std::shared_ptr<Impl> &impl);
   // if malloc data, user need to free after constructing MSTensor, else memory leak.
+  /// \brief Constructor of MSTensor.
   inline MSTensor(const std::string &name, DataType type, const std::vector<int64_t> &shape, const void *data,
                   size_t data_len);
+  /// \brief Constructor of MSTensor.
   explicit MSTensor(std::nullptr_t);
+  /// \brief Destructor of MSTensor.
   ~MSTensor();
 
   /// \brief Obtains the name of the MSTensor.

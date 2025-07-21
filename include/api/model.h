@@ -40,7 +40,9 @@ class Dataset;
 /// \brief The Model class is used to define a MindSpore model, facilitating computational graph management.
 class MS_API Model {
  public:
+  /// \brief Constructor of Model.
   Model();
+  /// \brief Destructor of Model.
   ~Model();
 
   /// \brief Build a model from model buffer so that it can run on a device.

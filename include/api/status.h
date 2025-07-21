@@ -128,37 +128,75 @@ enum StatusCode : uint32_t {
 
 class MS_API Status {
  public:
+  /// \brief Constructor of Status.
   Status();
+  /// \brief Constructor of Status.
+  ///
+  /// \param[in] status_code Status code.
+  ///
+  /// \param[in] status_msg Status message.
   inline Status(enum StatusCode status_code, const std::string &status_msg = "");  // NOLINT(runtime/explicit)
+  /// \brief Constructor of Status.
   inline Status(const StatusCode code, int line_of_code, const char *file_name, const std::string &extra = "");
-
+  /// \brief Destructor of Status.
   ~Status() = default;
-
+  /// \brief Status code of status.
+  ///
+  /// \return Enum of status code.
   enum StatusCode StatusCode() const;
+  /// \brief Exchange status to string.
+  ///
+  /// \return Status code exchanged to string.
   inline std::string ToString() const;
-
+  /// \brief Get line of status code.
+  ///
+  /// \return Line of code to get.
   int GetLineOfCode() const;
+  /// \brief Get file name of status.
+  ///
+  /// \return File name to get.
   inline std::string GetFileName() const;
+  /// \brief Get error description of status.
+  ///
+  /// \return Error description to get.
   inline std::string GetErrDescription() const;
+  /// \brief Get error description of status.
+  ///
+  /// \param[in] err_description Error description to be set.
   inline std::string SetErrDescription(const std::string &err_description);
+  /// \brief Status message to be set.
+  ///
+  /// \param[in] status_msg Status message to be set.
   inline void SetStatusMsg(const std::string &status_msg);
-
+  /// \brief Operator <<.
   MS_API friend std::ostream &operator<<(std::ostream &os, const Status &s);
-
+  /// \brief Operator ==.
   bool operator==(const Status &other) const;
+  /// \brief Operator ==.
   bool operator==(enum StatusCode other_code) const;
+  /// \brief Operator !=.
   bool operator!=(const Status &other) const;
+  /// \brief Operator !=.
   bool operator!=(enum StatusCode other_code) const;
-
+  /// \brief Operator bool().
   explicit operator bool() const;
+  /// \brief Operator int().
   explicit operator int() const;
-
+  /// \brief Getting back the status of OK.
+  ///
+  /// \return Status Code of ok.
   static Status OK();
-
+  /// \brief Getting back if it is ok.
+  ///
+  /// \return True if it is ok.
   bool IsOk() const;
-
+  /// \brief Getting back if it is error.
+  ///
+  /// \return True if it is error.
   bool IsError() const;
-
+  /// \brief Getting back the code as string.
+  ///
+  /// \return The code name as string type.
   static inline std::string CodeAsString(enum StatusCode c);
 
  private:

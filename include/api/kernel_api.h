@@ -28,6 +28,7 @@ namespace kernel {
 /// \brief The Kernel class is used to define a MindSpore Kernel.
 class MS_API MSKernel {
  public:
+  /// \brief Constructor of MSKernel.
   MSKernel() = default;
   /// \brief Constructor.
   ///
@@ -143,6 +144,7 @@ class MS_API MSKernel {
 template <typename Primitive>
 class MS_API IKernel : public MSKernel {
  public:
+  /// \brief Constructor of IKernel.
   IKernel() = default;
   /// \brief Constructor.
   ///

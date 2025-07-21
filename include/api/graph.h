@@ -27,14 +27,27 @@ namespace mindspore {
 class MS_API Graph {
  public:
   class GraphData;
+  /// \brief Constructor of graph.
   Graph();
+  /// \brief Constructor of graph.
+  ///
+  /// \param[in] graph_data define the graph_data of graph.
   explicit Graph(const std::shared_ptr<GraphData> &graph_data);
+  /// \brief Constructor of graph.
+  ///
+  /// \param[in] graph_data define the graph_data of graph.
   explicit Graph(std::shared_ptr<GraphData> &&graph_data);
+  /// \brief Constructor of Kernel.
   explicit Graph(std::nullptr_t);
+  /// \brief Destructor of graph.
   ~Graph();
-
+  /// \brief Get graph's modeltype.
+  ///
+  /// \return Model type.
   enum ModelType ModelType() const;
+  /// \brief Operator equal.
   bool operator==(std::nullptr_t) const;
+  /// \brief Operator not equal.
   bool operator!=(std::nullptr_t) const;
 
  private:
