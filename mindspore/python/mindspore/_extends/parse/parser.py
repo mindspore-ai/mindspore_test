@@ -114,10 +114,6 @@ _unsupported_python_builtin_type = (
     set, dict, slice, complex, reversed, type,
 )
 
-# Unsupported python builtin type in JIT Fallback.
-_fallback_unsupported_python_builtin_type = (
-    compile, eval, exec
-)
 
 _global_params = {}
 
@@ -791,6 +787,12 @@ def eval_script(exp_str, params):
     local_params = params[1]
     try:
         local_params = _convert_python_data(local_params)
+        # There are two sources of scripts:
+        # 1. The user's original Python script code, which is directly passed back to Python for execution,
+        #    and its behavior is guaranteed by the user.
+        # 2. Internally provided Python expression code, similar to
+        #    `__iternal_sequence_input__[__internal_sequence_index__]`.
+        # In addition, MindIR load and export do not involve the use of the `eval_script` function.
         res = eval(exp_str, global_params, local_params)
     except Exception as e:
         error_info = f"When eval '{exp_str}' by using JIT Fallback feature, an error occurred: " + str(e)
@@ -950,8 +952,6 @@ class Parser:
         """To check if not supported for namespace"""
         unsupported = isinstance(value, _builtin_function_or_method_type) and value not in convert_object_map
         logger.debug(f"'{value}' unsupported: {unsupported}.")
-        if unsupported and value in _fallback_unsupported_python_builtin_type:
-            raise TypeError(f"'{value}' is not supported both in JIT Fallback and graph mode.")
         return unsupported
 
     @staticmethod
