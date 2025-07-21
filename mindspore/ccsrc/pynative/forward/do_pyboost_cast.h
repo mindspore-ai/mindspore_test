@@ -146,6 +146,7 @@ class PyBoostCastOperation : public CastBaseOperation {
     MS_LOG(DEBUG) << "Get signature " << same_type_table;
     const auto &it = implicit_cast_map_.find(op_run_info->op_prim->name());
     const auto &op_def = ops::GetOpDef(op_run_info->op_prim->name());
+    MS_EXCEPTION_IF_NULL(op_def);
     if (it == implicit_cast_map_.end()) {
       std::vector<SignatureEnumDType> dtypes;
       // Get current inputs signatures
