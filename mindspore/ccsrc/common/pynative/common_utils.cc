@@ -431,6 +431,7 @@ py::list HookUtils::GetRegisterHookList(const py::object &obj) {
   }
   py::list hook_fn_list;
   auto tensor = tensor::ConvertToTensor(obj);
+  MS_EXCEPTION_IF_NULL(tensor);
   const auto &grad_meta_data = tensor->auto_grad_meta_data();
   MS_EXCEPTION_IF_NULL(grad_meta_data);
   const auto &grad_node = grad_meta_data->UnsafeGetGradNodeImpl();
