@@ -37,7 +37,7 @@ from mindspore.common.initializer import Zero
 from mindspore.ops.function import array_func
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
-from mindspore._c_expression.np_dtypes import np_version_valid
+from mindspore._c_expression.np_dtypes import np_dtype_valid
 from mindspore.common.dtype import type_size_in_bytes
 from mindspore.communication._comm_helper import _is_initialized, _get_rank_helper, _get_local_rank_helper, \
     _get_size_helper, _get_local_size_helper, _get_world_rank_from_group_rank_helper, _get_group_ranks, \
@@ -491,7 +491,7 @@ _func_map = {
     function_id(validator.check_is_int): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_is_number): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_positive_int_sequence): FUNC_KEY_PIJIT_CONSTEXPR,
-    function_id(np_version_valid): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(np_dtype_valid): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_is_initialized): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_set_elegant_exit_handle): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_cost_model_context.get_cost_model_context): FUNC_KEY_PIJIT_CONSTEXPR,

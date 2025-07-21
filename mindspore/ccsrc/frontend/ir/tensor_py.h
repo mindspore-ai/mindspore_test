@@ -25,9 +25,9 @@
 
 #include "ir/tensor.h"
 #include "include/common/utils/tensor_py.h"
-#include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/visible.h"
 #include "frontend/ir/storage_base.h"
+#include "frontend/np_dtypes/np_dtypes.h"
 
 namespace py = pybind11;
 namespace pybind11 {

@@ -690,15 +690,11 @@ py::array TensorPybind::SyncAsNumpy(const Tensor &tensor) {
   {
     py::gil_scoped_release gil_release;
 
-    // BFloat16 may not be supported in numpy.
-    std::string numpy_version = np_dtypes::GetNumpyVersion();
-    std::string minimum_numpy_version = np_dtypes::GetMinimumSupportedNumpyVersion();
-    if (tensor.data_type() == kNumberTypeBFloat16 && !np_dtypes::NumpyVersionValid(numpy_version)) {
-      MS_EXCEPTION(TypeError) << "For asnumpy, the Numpy bfloat16 data type is supported only when the "
-                              << "current Numpy version is not less than the version when the mindspore "
-                              << "is compiled, and the major versions must be same,"
-                              << "but got current Numpy version :" << numpy_version
-                              << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
+    // BFloat16 may not be supported in numpy, detail numpy version info is notified in IsCustomNumpyTypeValid.
+    if (tensor.data_type() == kNumberTypeBFloat16 && !IsCustomNumpyTypeValid(true)) {
+      MS_EXCEPTION(TypeError) << "The Numpy bfloat16 data type is not supported now, please ensure that the current "
+                              << "Numpy version is not less than the version when the mindspore is compiled, "
+                              << "and the major versions are same.";
     }
 
     // To be deleted

@@ -59,7 +59,7 @@
 #include "debug/profiler/profiler.h"
 
 #include "pipeline/jit/pi/external.h"
-#include "include/common/np_dtype/np_dtypes.h"
+#include "frontend/np_dtypes/np_dtypes.h"
 #include "include/common/amp/amp.h"
 #include "pipeline/jit/trace/trace_recorder.h"
 #include "runtime/graph_scheduler/execution_order_check/comm_execution_order_check.h"

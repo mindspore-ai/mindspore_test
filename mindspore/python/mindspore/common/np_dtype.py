@@ -16,10 +16,10 @@
 # ============================================================================
 """Numpy data type for MindSpore."""
 
-from mindspore._c_expression.np_dtypes import np_version_valid
-if np_version_valid(True):
+from mindspore._c_expression.np_dtypes import np_dtype_valid
+if np_dtype_valid(True):
     from mindspore._c_expression.np_dtypes import bfloat16 # pylint: disable=unused-import
 
 __all__ = []
-if np_version_valid(False):
+if np_dtype_valid(False):
     __all__.extend(["bfloat16"])

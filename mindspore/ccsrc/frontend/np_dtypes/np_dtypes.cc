@@ -21,9 +21,13 @@ limitations under the License.
  * Additional modifications are made by Huawei Technologies Co., Ltd in 2024.
  */
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include "include/common/np_dtype/np_dtypes.h"
+#include "frontend/np_dtypes/np_dtypes.h"
 #include <algorithm>
 #include <string>
+#include <memory>
+#include <limits>
+#include <utility>
+#include <vector>
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
 #include "base/float16.h"
@@ -61,8 +65,9 @@ struct NpTypeBaseDescr {
   static PyTypeObject *TypePtr() { return np_type_ptr; }
   static int np_type_num;
   static PyTypeObject *np_type_ptr;
-  static PyArray_Descr np_descr;
+  static PyArray_Descr *np_descr;
   static PyArray_ArrFuncs arr_funcs;
+  static PyArray_DescrProto descr_proto;
   static PyNumberMethods number_methods;
 };
 
@@ -71,9 +76,11 @@ int NpTypeBaseDescr<T>::np_type_num = NPY_NOTYPE;
 template <typename T>
 PyTypeObject *NpTypeBaseDescr<T>::np_type_ptr = nullptr;
 template <typename T>
-PyArray_Descr NpTypeBaseDescr<T>::np_descr;
+PyArray_Descr *NpTypeBaseDescr<T>::np_descr = nullptr;
 template <typename T>
 PyArray_ArrFuncs NpTypeBaseDescr<T>::arr_funcs;
+template <typename T>
+PyArray_DescrProto NpTypeBaseDescr<T>::descr_proto;
 
 template <typename T>
 struct NpTypeDescr {
@@ -1166,10 +1173,10 @@ bool RegisterNpTypeCast(int np_type, bool scalar_castable) {
   if (PyArray_RegisterCastFunc(descr, NpTypeDescr<T>::Dtype(), NpyCast<Y, T>) < 0) {
     return false;
   }
-  if (PyArray_RegisterCastFunc(&NpTypeDescr<T>::np_descr, np_type, NpyCast<T, Y>) < 0) {
+  if (PyArray_RegisterCastFunc(NpTypeDescr<T>::np_descr, np_type, NpyCast<T, Y>) < 0) {
     return false;
   }
-  if (scalar_castable && PyArray_RegisterCanCast(&NpTypeDescr<T>::np_descr, np_type, NPY_NOSCALAR) < 0) {
+  if (scalar_castable && PyArray_RegisterCanCast(NpTypeDescr<T>::np_descr, np_type, NPY_NOSCALAR) < 0) {
     return false;
   }
   return true;
@@ -1392,30 +1399,16 @@ bool RegisterNumpyType() {
 
   // Before NumPy 2.0, we allocate and manage the lifetime of descriptor, and Numpy only stores the pointer.
   // After NumPy 2.0, NumPy allocates and manages the lifetime of the descriptor.
-#if NPY_ABI_VERSION < 0x02000000
-  PyArray_DescrProto *descr_proto = &NpTypeDescr<T>::np_descr;
-#else
-  PyArray_DescrProto descr_proto_storage;
-  PyArray_DescrProto *descr_proto = &descr_proto_storage;
-#endif
-  *descr_proto = GetNpDescrProto<T>();
-#if PY_VERSION_HEX < 0x030900A4 && !defined(Py_SET_TYPE)
-  Py_TYPE(descr_proto) = &PyArrayDescr_Type;
-#else
-  Py_SET_TYPE(descr_proto, &PyArrayDescr_Type);
-#endif
-  descr_proto->typeobj = py_type;
+  PyArray_DescrProto &descr_proto = NpTypeDescr<T>::descr_proto;
+  descr_proto = GetNpDescrProto<T>();
+  Py_SET_TYPE(&descr_proto, &PyArrayDescr_Type);
+  descr_proto.typeobj = py_type;
 
-  NpTypeDescr<T>::np_type_num = PyArray_RegisterDataType(descr_proto);
+  NpTypeDescr<T>::np_type_num = PyArray_RegisterDataType(&descr_proto);
   if (NpTypeDescr<T>::Dtype() < 0) {
     return false;
   }
-#if NPY_ABI_VERSION >= 0x02000000
-  NpTypeDescr<T>::np_descr = *PyArray_DescrFromType(NpTypeDescr<T>::Dtype());
-#endif
-  if (NpTypeDescr<T>::Dtype() < 0) {
-    return false;
-  }
+  NpTypeDescr<T>::np_descr = PyArray_DescrFromType(NpTypeDescr<T>::Dtype());
 
   // Support numpy.dtype(type_name)
   PyObjectPtr np_type_dict = SafePtr(PyObject_GetAttrString(numpy_obj.get(), "sctypeDict"));
@@ -1429,7 +1422,7 @@ bool RegisterNumpyType() {
 
   // Support dtype(type_name)
   if (PyObject_SetAttrString(reinterpret_cast<PyObject *>(NpTypeDescr<T>::TypePtr()), "dtype",
-                             reinterpret_cast<PyObject *>(&NpTypeDescr<T>::np_descr)) < 0) {
+                             reinterpret_cast<PyObject *>(NpTypeDescr<T>::np_descr)) < 0) {
     return false;
   }
 
@@ -1446,7 +1439,7 @@ bool RegisterNumpyType() {
   return true;
 }
 
-std::string GetNumpyVersion() {
+std::string GetNumpyRunningVersion() {
   static std::string version_str = "";
   if (!version_str.empty()) {
     return version_str;
@@ -1476,56 +1469,75 @@ std::string GetNumpyVersion() {
   return version_str;
 }
 
-std::string GetMinimumSupportedNumpyVersion() {
+std::string GetNumpyCompiledVersion() {
   switch (NPY_API_VERSION) {
     case 0x0000000d:  // 1.19.3+
-      return "1.19.3";
-    case 0x0000000e:  // 1.20 & 1.21
-      return "1.20.0";
+      return "1.19";
+    case 0x0000000e:  // 1.20/1.21
+      return "1.20/1.21";
     case 0x0000000f:  // 1.22
-      return "1.22.0";
-    case 0x00000010:  // 1.23 & 1.24
-      return "1.23.0";
-    case 0x00000011:  // 1.25 & 1.26
-      return "1.20.0";
+      return "1.22";
+    case 0x00000010:  // 1.23/1.24
+      return "1.23/1.24";
+    case 0x00000011:  // 1.25/1.26
+      return "1.25/1.26";
     case 0x00000012:  // 2.0
-      return "2.0.0";
+      return "2.0";
     default:  // Values that exceed the macro definition limit.
-      return (NPY_API_VERSION < 0x0000000d) ? "1.19.3" : "2.0.0";
+      return (NPY_API_VERSION < 0x0000000d) ? "<1.19" : ">2.0";
   }
 }
 
-bool NumpyVersionValid(std::string version) {
+bool NumpyVersionValid() {
   // Get current numpy versions
-  if (version.empty()) {
+  std::string curr_version = np_dtypes::GetNumpyRunningVersion();
+  if (curr_version.empty()) {
     return false;
   }
-  std::replace(version.begin(), version.end(), '.', ' ');
-  std::istringstream iss(version);
+  MS_LOG(DEBUG) << "current Numpy version :" << curr_version
+                << ", Numpy version when the mindspore is compiled:" << GetNumpyCompiledVersion();
+  std::replace(curr_version.begin(), curr_version.end(), '.', ' ');
+  std::istringstream iss(curr_version);
   std::vector<int> version_parts(3);
   // version_parts[i] will be 0 if string is invalid.
   iss >> version_parts[0] >> version_parts[1] >> version_parts[2];
-  // Get minimum supported numpy version
-  std::string minimum_version = GetMinimumSupportedNumpyVersion();
-  if (minimum_version.empty()) {
-    return false;
+  // NPY_API_VERSION indices compiled numpy versions
+  switch (NPY_API_VERSION) {
+    case 0x0000000d:  // compiled: 1.19, running support: 1.19-1.26
+      return (version_parts[0] == 1) && (version_parts[1] >= 19);
+    case 0x0000000e:  // compiled: 1.20/1.21, running support: 1.20-1.26
+      return (version_parts[0] == 1) && (version_parts[1] >= 20);
+    case 0x0000000f:  // compiled: 1.22, running support: 1.22-1.26
+      return (version_parts[0] == 1) && (version_parts[1] >= 22);
+    case 0x00000010:  // compiled: 1.23/1.24, running support: 1.23-1.26
+      return (version_parts[0] == 1) && (version_parts[1] >= 23);
+    case 0x00000011:  // compiled: 1.25/1.26, running support: 1.20-1.26
+      return (version_parts[0] == 1) && (version_parts[1] >= 20);
+    case 0x00000012:  // compiled: 2.0, running support: 1.20-1.26, 2.0+
+      return ((version_parts[0] == 1) && (version_parts[1] >= 20)) ||
+             ((version_parts[0] == 2) && (version_parts[1] >= 0));
+    default:
+      if (NPY_API_VERSION < 0x0000000d) {
+        // compiled: <1.19, running support: 1.19-1.26
+        return (version_parts[0] == 1) && (version_parts[1] >= 19);
+      }
+      // compiled: >2.0, running support: 1.20-1.26, 2.0+
+      return ((version_parts[0] == 1) && (version_parts[1] >= 20)) ||
+             ((version_parts[0] == 2) && (version_parts[1] >= 0));
   }
-  std::replace(minimum_version.begin(), minimum_version.end(), '.', ' ');
-  std::istringstream minimum_iss(minimum_version);
-  std::vector<int> minimum_version_parts(3);
-  minimum_iss >> minimum_version_parts[0] >> minimum_version_parts[1] >> minimum_version_parts[2];
-  return (version_parts[0] == minimum_version_parts[0]) && (version_parts[1] >= minimum_version_parts[1]);
+}
+
+bool IsNumpyVersionValid() {
+  // use static bool to cache the result of NumpyVersionValid
+  static bool is_valid = NumpyVersionValid();
+  return is_valid;
 }
 
 void RegisterNumpyTypes() {
-  std::string numpy_version = GetNumpyVersion();
-  std::string minimum_numpy_version = GetMinimumSupportedNumpyVersion();
-  if (!NumpyVersionValid(numpy_version)) {
-    MS_LOG(INFO) << "The Numpy bfloat16 data type is supported only when the "
-                 << "current Numpy version is not less than the version when the mindspore "
-                 << "is compiled, and the major versions must be same,"
-                 << "but got current Numpy version :" << numpy_version
-                 << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
+  if (!IsNumpyVersionValid()) {
+    MS_LOG(INFO) << "The Numpy bfloat16 data type is not supported now, current Numpy version :"
+                 << GetNumpyRunningVersion()
+                 << ", Numpy version when the mindspore is compiled:" << GetNumpyCompiledVersion();
     return;
   }
   if (!RegisterNumpyType<bfloat16>()) {
@@ -1539,16 +1551,14 @@ void RegisterNumpyTypes() {
 
 int GetBFloat16NpDType() { return np_dtypes::NpTypeDescr<bfloat16>::Dtype(); }
 
-bool IsNumpyVersionValid(bool show_warning = false) {
-  std::string numpy_version = np_dtypes::GetNumpyVersion();
-  std::string minimum_numpy_version = np_dtypes::GetMinimumSupportedNumpyVersion();
-  if (!np_dtypes::NumpyVersionValid(numpy_version)) {
+bool IsCustomNumpyTypeValid(bool show_warning) {
+  if (!np_dtypes::IsNumpyVersionValid()) {
     if (show_warning) {
       MS_LOG(WARNING) << "The Numpy bfloat16 data type is supported only when the "
                       << "current Numpy version is not less than the version when the mindspore "
-                      << "is compiled, and the major versions must be same,"
-                      << "but got current Numpy version :" << numpy_version
-                      << ", Numpy version when the mindspore is compiled:" << minimum_numpy_version;
+                      << "is compiled, and the major versions must be same, "
+                      << "but got current Numpy version :" << np_dtypes::GetNumpyRunningVersion()
+                      << ", Numpy version when the mindspore is compiled:" << np_dtypes::GetNumpyCompiledVersion();
     }
     return false;
   }
@@ -1559,7 +1569,7 @@ void RegNumpyTypes(py::module *m) {
   np_dtypes::RegisterNumpyTypes();
   auto m_sub = m->def_submodule("np_dtypes", "types of numpy");
   m_sub.add_object("bfloat16", reinterpret_cast<PyObject *>(np_dtypes::NpTypeDescr<bfloat16>::TypePtr()));
-  (void)m_sub.def("np_version_valid", &IsNumpyVersionValid, "Check whether numpy version is valid");
+  (void)m_sub.def("np_dtype_valid", &IsCustomNumpyTypeValid, "Check whether custom numpy types are valid");
 }
 }  // namespace mindspore
 

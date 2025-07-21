@@ -37,7 +37,6 @@ from mindspore import log as logger
 from mindspore.log import vlog_print
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-from mindspore.common import np_dtype
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
     _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src, _insert_expand_layout_reshape
@@ -214,7 +213,8 @@ class PySafeSlice:
     def dtype(self):
         """Get dtype by numpy_dtype"""
         if self.info["dtype"] == "BF16":
-            if not np_dtype.np_version_valid(True):
+            from mindspore.common import np_dtype
+            if not np_dtype.np_dtype_valid(True):
                 raise TypeError(
                     "The Numpy bfloat16 data type is not supported now, please ensure that the current "
                     "Numpy version is not less than the version when the mindspore is compiled, "
