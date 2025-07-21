@@ -28,7 +28,9 @@ namespace mindspore {
 class MS_API RunnerConfig {
  public:
   struct Data;
+  /// \brief Constructor of RunnerConfig.
   RunnerConfig();
+  /// \brief Destructor of RunnerConfig.
   ~RunnerConfig();
 
   /// \brief Set the number of workers at runtime. Only valid for ModelParallelRunner.

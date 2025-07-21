@@ -32,7 +32,9 @@
 namespace mindspore::registry::opencl {
 class MS_API OpenCLRuntimeWrapper {
  public:
+  /// \brief Constructor of OpenCLRuntimeWrapper.
   OpenCLRuntimeWrapper() = default;
+  /// \brief Destructor of OpenCLRuntimeWrapper.
   ~OpenCLRuntimeWrapper() = default;
 
   /// \brief Load the OpenCl source code and bind the program name.
