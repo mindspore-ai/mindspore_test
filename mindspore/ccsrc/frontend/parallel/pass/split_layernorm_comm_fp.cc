@@ -264,6 +264,7 @@ static void ExpandSliceRangeToLeft(const FuncGraphPtr &func_graph, const FuncGra
     auto slice_pre_cnode_shape = {pre_cnode_shape[kIndex0] / kLongTwo, pre_cnode_shape[kIndex1]};
     slice_pre_cnode_shape_abstract = std::make_shared<abstract::Shape>(slice_pre_cnode_shape);
     auto pre_node_prim = GetCNodePrimitive(pre_cnode);
+    MS_EXCEPTION_IF_NULL(pre_node_prim);
     auto node_users = manager->node_users()[split_cnode];
     for (const auto &node_user : node_users) {
       auto tuple_get_item_node = node_user.first;
@@ -304,6 +305,7 @@ static void ExpandSliceRangeToRight(const FuncGraphPtr &func_graph, const FuncGr
     auto next_cnode = node_users.front().first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(next_cnode);
     auto next_cnode_prim = GetCNodePrimitive(next_cnode);
+    MS_EXCEPTION_IF_NULL(next_cnode_prim);
     if (!IsOneOfPrimitiveCNode(next_cnode, {prim::kPrimCast, prim::kPrimGeLU, prim::kPrimFastGeLU})) {
       return;
     }

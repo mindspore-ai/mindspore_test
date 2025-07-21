@@ -57,6 +57,7 @@ bool IsBpropNode(const AnfNodePtr &node) {
 
 bool CheckCommNodeEqual(const CNodePtr comm_node1, const CNodePtr comm_node2) {
   auto prim1 = GetCNodePrimitive(comm_node1);
+  MS_EXCEPTION_IF_NULL(prim1);
   auto prim2 = GetCNodePrimitive(comm_node2);
   MS_EXCEPTION_IF_NULL(prim2);
   if (!IsCommunicationOp(prim1) && !IsCommunicationOp(prim2)) {
