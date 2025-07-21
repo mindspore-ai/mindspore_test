@@ -16,9 +16,6 @@
 Generate pyboost function from pyboost_op.yaml
 """
 
-import os
-import shutil
-import logging
 from resources.resource_list import ResourceType
 from common import gen_constants as K
 from api.functions_cc_generator import FunctionsGenerator, FunctionsHeaderGenerator
@@ -48,18 +45,6 @@ from .auto_grad_impl_cc_generator import AutoGradImplGenerator
 from .auto_grad_reg_cc_generator import AutoGradRegHeaderGenerator
 
 
-def clear_old_generated_code(work_path):
-    """ delete old generated files to prevent compilation failure """
-    files_to_clear = ['mindspore/ops/kernel/common/pyboost',
-                      'mindspore/ops/kernel/functions/auto_generate',
-                      'mindspore/ccsrc/runtime/pynative/op_function']
-    for f in files_to_clear:
-        real_path = os.path.join(work_path, f)
-        if os.path.exists(real_path):
-            shutil.rmtree(real_path)
-            logging.warning("rm file %s", real_path)
-
-
 def gen_pyboost_code(resource_mgr):
     """ gen_pyboost_code """
     work_path = K.WORK_DIR
@@ -67,7 +52,6 @@ def gen_pyboost_code(resource_mgr):
     doc_yaml_data = resource_mgr.get_resource(ResourceType.OP_DOC_YAML)
     mint_func_protos = resource_mgr.get_resource(ResourceType.MINT_FUNC_PROTOS)
     alias_func_mapping = resource_mgr.get_resource(ResourceType.ALIAS_API_MAPPING)
-    clear_old_generated_code(work_path)
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
     call_pyboost_functions_h_generator(work_path, op_protos)
