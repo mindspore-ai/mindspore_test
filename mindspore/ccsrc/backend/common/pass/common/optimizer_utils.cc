@@ -38,6 +38,10 @@ void OptimizerUtils::MoveContrlDepend(const FuncGraphPtr &func_graph, const AnfN
     auto cnode_user = node_user.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode_user);
     if (cnode_user->input(kDependControlIdx) == from_node) {
+      if (node_users.size() < 2) {
+        MS_LOG(WARNING) << "The from_node only referenced by control edge.";
+        return;
+      }
       manager->SetEdge(cnode_user, kDependControlIdx, to_node);
     }
   }
