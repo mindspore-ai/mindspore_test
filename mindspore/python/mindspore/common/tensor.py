@@ -741,6 +741,27 @@ class Tensor(TensorPy_, metaclass=_TensorMeta):
 
         return TensorPy_.from_numpy(array)
 
+    @staticmethod
+    def from_dlpack(dlpack):
+        r"""
+        Convert dlpack to Tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+        """
+        return TensorPy_.from_dlpack(dlpack)
+
+    def to_dlpack(self):
+        r"""
+        Convert tensor to dlpack.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+        """
+        if self.has_init:
+            self.init_data()
+        return TensorPy_.to_dlpack(self)
+
     def ndimension(self):
         r"""
         Alias for :attr:`mindspore.Tensor.ndim`.
