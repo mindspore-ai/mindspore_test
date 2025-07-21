@@ -31,7 +31,9 @@ using Output = InputAndOutput;
 
 class MS_API CellBase {
  public:
+  /// \brief Constructor of Cellbase.
   CellBase() = default;
+  /// \brief Destructor of Cellbase.
   virtual ~CellBase() = default;
   /// \brief Construct using inputs.
   ///
@@ -63,12 +65,21 @@ class MS_API Cell : public CellBase {
 class MS_API GraphCell final : public Cell<GraphCell> {
  public:
   class GraphImpl;
-
+  /// \brief Constructor of GraphCell.
   GraphCell() = default;
+  /// \brief Destructor of GraphCell.
   ~GraphCell() override = default;
-
+  /// \brief Constructor of GraphCell.
+  ///
+  /// \param[in] graph Graph to construct.
   explicit GraphCell(const Graph &graph);
+  /// \brief Constructor of GraphCell.
+  ///
+  /// \param[in] graph Graph to construct.
   explicit GraphCell(Graph &&graph);
+  /// \brief Constructor of GraphCell.
+  ///
+  /// \param[in] graph Graph to construct.
   explicit GraphCell(const std::shared_ptr<Graph> &graph);
   /// \brief Set a context.
   ///
@@ -109,12 +120,25 @@ class MS_API GraphCell final : public Cell<GraphCell> {
 
 class MS_API InputAndOutput {
  public:
+  /// \brief Constructor of InputAndOutput.
   InputAndOutput();
+  /// \brief Destructor of InputAndOutput.
   ~InputAndOutput() = default;
-
+  /// \brief Constructor of InputAndOutput.
+  ///
+  /// \param[in] cell The cellbase.
+  ///
+  /// \param[in] prev The previous inputs/outputs.
+  ///
+  /// \param[in] index Index of inputs/outputs.
   InputAndOutput(const std::shared_ptr<CellBase> &cell, const std::vector<InputAndOutput> &prev, int32_t index);
-
+  /// \brief Get index.
+  ///
+  /// \return index Index of inputs/outputs.
   int32_t GetIndex() const { return index_; }
+  /// \brief Set index.
+  ///
+  /// \param[in] index Index to be set.
   void SetIndex(int32_t index) { index_ = index; }
 
  private:
