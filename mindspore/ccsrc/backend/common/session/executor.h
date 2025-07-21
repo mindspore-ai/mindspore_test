@@ -59,25 +59,6 @@ class Task {
   virtual void Run() {}
 };
 
-class CompileNodesTask : public Task {
- public:
-  CompileNodesTask() { type_ = kCompileNodes; }
-  ~CompileNodesTask() override = default;
-  void Run() override;
-  GraphSegmentPtr segment_;
-  AnfNodePtrList output_nodes_;
-  GraphId graph_id_{0};
-};
-
-class CompileGraphTask : public Task {
- public:
-  CompileGraphTask() { type_ = kCompileGraph; }
-  ~CompileGraphTask() override = default;
-  void Run() override;
-  FuncGraphPtr func_graph_{nullptr};
-  GraphId graph_id_{0};
-};
-
 class BuildGraphTask : public Task {
  public:
   BuildGraphTask() { type_ = kBuildGraph; }
@@ -121,13 +102,7 @@ class BACKEND_COMMON_EXPORT Executor {
   ~Executor();
   void WorkerLoop();
   void WorkerJoin();
-  GraphId CompileGraph(const SessionPtr &session, const GraphSegmentPtr &segment, const AnfNodePtrList &outputs);
-  GraphId CompileGraph(const SessionPtr &session, NotNull<FuncGraphPtr> func_graph);
   void BuildGraph(const SessionPtr &session, GraphId graphId);
-  void RunGraph(const SessionPtr &session, const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs,
-                VectorRef *outputs);
-  void RunGraphAsync(const SessionPtr &session, const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs,
-                     VectorRef *outputs);
   bool CreateCommGroup(const std::string &group_name, const std::vector<uint32_t> &ranks);
   bool DestroyCommGroup(const std::string &group_name);
   void OnEvent(const ExecutorEvent &event);
@@ -144,8 +119,6 @@ class BACKEND_COMMON_EXPORT Executor {
   uint32_t device_id_;
   std::mutex task_mutex_;
   std::mutex done_task_mutex_;
-  std::mutex pending_task_mutex_;
-  std::mutex reenter_mutex_;
   std::condition_variable task_cond_var_;
   std::condition_variable sync_cond_var_;
   std::condition_variable reenter_cond_var_;
