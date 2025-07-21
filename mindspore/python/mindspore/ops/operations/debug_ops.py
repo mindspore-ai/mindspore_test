@@ -309,6 +309,8 @@ class TensorDump(Primitive):
         """Initialize TensorDump."""
         if security.enable_security():
             raise ValueError('The TensorDump is not supported, please without `-s on` and recompile source.')
+        if input_output not in ['in', 'out']:
+            raise ValueError(f"The 'input_output' argument should be one of ['in', 'out'], but got: {input_output}")
         self.add_prim_attr("side_effect_io", True)
         self.add_prim_attr("channel_name", "ms_tensor_dump")
 

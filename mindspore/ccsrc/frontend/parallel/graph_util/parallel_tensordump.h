@@ -81,10 +81,11 @@ class FwdCommunicationParallelTensorDumpHandler {
   explicit FwdCommunicationParallelTensorDumpHandler(const AnfNodePtr &node) : prior_(node) {}
   void MakeOutModeDumpBeforeFwdComm();
   void MakeInModeBwdHookBeforeFwdComm();
-  void CollectDumpNodes(const AnfNodePtr &start, bool first_recursive);
+  void CollectDumpNodes(const AnfNodePtr &anchor, const bool is_multi_output);
 
  private:
-  std::set<AnfNodePtr> collect_visited_;
+  void CollectDumpNodesRecursively(const AnfNodePtr &start, const bool first_recursive,
+                                   std::set<AnfNodePtr> *collect_visited);
   AnfNodePtrList dump_nodes_;
   AnfNodePtrList bwd_dump_hooks_;
   AnfNodePtr prior_;
