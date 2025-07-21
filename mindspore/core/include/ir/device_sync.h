@@ -50,8 +50,6 @@ class DeviceSync {
   virtual size_t ref_count() const = 0;
   virtual void ResetRefCount() = 0;
 
-  virtual void set_deleter(const std::function<void(uint8_t *)> &deleter) = 0;
-
   virtual void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) = 0;
 
   virtual ~DeviceSync() {}

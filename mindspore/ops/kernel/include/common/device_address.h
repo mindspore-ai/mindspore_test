@@ -403,9 +403,7 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
   void ClearUserData() {}
 
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
-  void set_deleter(const std::function<void(uint8_t *)> &deleter) override;
   void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
-  std::function<void(uint8_t *)> deleter() const;
 
   const PointerRefCountPtr &pointer_ref_count() const;
   void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt);
@@ -452,8 +450,6 @@ class OPS_KERNEL_COMMON_API DeviceAddress : public mindspore::DeviceSync {
 
   // The flag identify where data is stored
   mutable DeviceAddressStatus status_{DeviceAddressStatus::kInDevice};
-  // The specified deleter to release memory
-  std::function<void(uint8_t *)> deleter_;
   // Move to kernel tensor later.
   // host_shape_/hete_info_/user_data_ will be removed from device address later.
   // The flatten shape(maybe after padding) vector.

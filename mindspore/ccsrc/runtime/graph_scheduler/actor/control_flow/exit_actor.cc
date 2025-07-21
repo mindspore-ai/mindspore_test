@@ -432,9 +432,7 @@ void ExitActor::CopyDeviceAddress(OpContext<KernelTensor> *const context) {
         << "Kernel tensor copy store replace kernel tensor:" << input_kernel_tensors_[i]->ToString()
         << " to:" << new_kernel_tensor->ToString() << " for actor:" << GetAID();
       KernelTensorCopyStore::GetInstance().Replace(input_kernel_tensors_[i].get(), new_kernel_tensor.get());
-      if (new_device_tensor->deleter() == nullptr) {
-        new_device_tensor->set_from_mem_pool(true);
-      }
+      new_device_tensor->set_from_mem_pool(true);
     }
     MS_LOG(DEBUG) << GetAID().Name() << " creates the dynamic ref device address:" << new_device_tensor.get()
                   << ", ptr:" << new_device_tensor->GetPtr()
