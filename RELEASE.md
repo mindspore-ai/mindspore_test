@@ -1923,7 +1923,6 @@ Contributions of any kind are welcome!
 
 ### API Change
 
-- `mindspore.dataset.GraphData`, `mindspore.dataset.Graph`, `mindspore.dataset.InMemoryGraphDataset`, `mindspore.dataset. ArgoverseDataset` are no longer evolved and are deprecated. Use [MindSpore Graph Learning](https://gitee.com/mindspore/graphlearning) for related functional replacements. When replacing networks in Model repositories that use this API, please refer to [GCN](https://gitee.com/mindspore/graphlearning/tree/master/model_zoo/gcn) for GCN and [GAT](https://gitee.com/mindspore/graphlearning/tree/master/model_zoo/gat).
 - `mindspore.set_context` adds `jit_syntax_level` option, which is used to set JIT syntax support level. For more details, please refer to [set_context](https://www.mindspore.cn/docs/en/r2.1/api_python/mindspore/mindspore.set_context.html).
 - Change the `model.infer_predict_layout` interface, which has a new parameter skip_backend_compile with a default value of False. Set to True when the user wants to skip the backend compilation process to get the parameter slicing strategy.
 

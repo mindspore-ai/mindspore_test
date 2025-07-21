@@ -1918,7 +1918,6 @@ changzherui, chenfei_mindspore, chenjianping, chenkang, chenweifeng, chujinjin, 
 
 ### API变更
 
-- `mindspore.dataset.GraphData`、`mindspore.dataset.Graph`、`mindspore.dataset.InMemoryGraphDataset`、`mindspore.dataset.ArgoverseDataset`不再进行功能演进并废弃。使用[MindSpore Graph Learning](https://gitee.com/mindspore/graphlearning)进行相关功能替换。对于Model仓库使用到此API的相关网络进行替换时，GCN请参考[Graph Learning GCN](https://gitee.com/mindspore/graphlearning/tree/master/model_zoo/gcn)，GAT请参考[Graph Learning GAT](https://gitee.com/mindspore/graphlearning/tree/master/model_zoo/gat)。
 - `mindspore.set_context`新增`jit_syntax_level`选项，用于设置JIT语法支持级别，请参考[set_context](https://www.mindspore.cn/docs/zh-CN/r2.1/api_python/mindspore/mindspore.set_context.html)。
 - 变更了`model.infer_predict_layout`接口，接口新增参数skip_backend_compile，默认值为False。当用户希望跳过后端编译流程获取参数切分策略时可选择设置为True。
 
