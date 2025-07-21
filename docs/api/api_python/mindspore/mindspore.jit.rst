@@ -32,10 +32,10 @@ mindspore.jit
           - 1: 使能动态shape编译，自动检测shape的变化。
 
         - **fullgraph** (bool, 可选) - 是否捕获整个函数来编译成图。如果为False，jit会尽可能地尝试兼容函数中的所有Python语法。如果为True，则需要整个函数都可以被捕获成图，否则（即有不支持的Python语法），会抛出一个异常。当前只对capture_mode为 ``"ast"`` 或 ``"bytecode"`` 时生效。默认值： ``False``。
-        - **backend** (str, 可选) - 使用的编译后端。如果该参数未被设置，框架默认Atlas训练系列产品为 ``GE`` 后端 ，默认其他产品包括Atlas A2训练系列产品为 ``ms_backend`` 后端。
+        - **backend** (str, 可选) - 使用的编译后端。如果该参数未被设置，框架默认Atlas训练系列产品为 ``"GE"`` 后端 ，默认其他产品包括Atlas A2训练系列产品为 ``"ms_backend"`` 后端。
 
-          - ms_backend: 使用逐算子执行的执行方式。
-          - GE: 使用下沉的执行方式，整个模型都会下沉到device侧执行，仅可作用于模型的最外层Cell。只支持在Ascend平台使用。
+          - ms_backend: 使用MindSpore内置的后端引擎进行硬件相关编译优化与执行，可支持Ascend、GPU、CPU等多硬件形态。
+          - GE: 使用CANN中名为GraphEngine的图编译执行引擎，进行面向Ascend的模型编译与执行。注意：该后端只能在静态图模式下生效，且只支持Ascend硬件环境下执行。
 
         - **\*\*options** (dict) - 传给编译后端的选项字典。
 
