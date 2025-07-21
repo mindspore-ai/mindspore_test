@@ -30,8 +30,6 @@ mindspore.mint.nn.functional.conv2d
 
     想更深入了解卷积层，请参考论文 `Gradient Based Learning Applied to Document Recognition <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ 以及 `ConvNets <http://cs231n.github.io/convolutional-networks/>`_ 。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **input** (Tensor) - shape为 :math:`(N, C_{in}, H_{in}, W_{in})` 或 :math:`(C_{in}, H_{in}, W_{in})` 的Tensor。

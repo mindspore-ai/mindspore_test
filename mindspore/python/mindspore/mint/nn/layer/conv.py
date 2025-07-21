@@ -200,8 +200,6 @@ class Conv1d(_Conv):
               possible length. Extra sequence that could not complete a full stride will
               be discarded.
 
-        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation
             rate to use for dilated convolution.
             It can be a single int or a tuple/list of 1 integer. 
@@ -219,6 +217,8 @@ class Conv1d(_Conv):
             - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv1d layer has a bias parameter. Default: ``True`` .
+        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Variables:
@@ -393,8 +393,6 @@ class Conv2d(_Conv):
               possible height and width. Extra pixels that could not complete a full stride will
               be discarded.
 
-        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Specifies the dilation rate to use
             for dilated convolution.
             It can be a single int or a tuple/list of 2 integers. A single int means the dilation size is the same
@@ -415,6 +413,8 @@ class Conv2d(_Conv):
             - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv2d layer has a bias parameter. Default: ``True`` .
+        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Variables:
@@ -600,8 +600,6 @@ class Conv3d(_Conv):
               possible height and width. Extra pixels that could not complete a full stride will
               be discarded.
 
-        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
-            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dilation (Union[int, tuple[int], list[int]], optional): Controlling the space between the kernel points.
             Default: ``1`` .
         groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
@@ -615,6 +613,8 @@ class Conv3d(_Conv):
             - :math:`(\text{weight[1]} = C_{in} / \text{groups})`
 
         bias (bool, optional): Whether the Conv3d layer has a bias parameter. Default: ``True`` .
+        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
+            ``"zeros"`` , ``"reflect"`` or ``"replicate"`` . Default: ``"zeros"`` .
         dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None``, using ``mstype.float32``.
 
     Variables:
