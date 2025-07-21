@@ -1787,8 +1787,8 @@ def set_ps_context(**kwargs):
         config_file_path (str): Configuration file path used by recovery, parameter server training mode only
                                    supports Server disaster recovery currently. Default: ``''`` .
         enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False``.
-                           There might be risk when this is set to False.
-                           It is user's responsibility to ensure the network environment is safe.
+                           Turning it off by default may be a security risk,
+                           and users need to ensure the security of the network environment.
         client_password (str): Password to decrypt the secret key stored in the client certificate. Default: ``''`` .
         server_password (str): Password to decrypt the secret key stored in the server certificate. Default: ``''`` .
 
@@ -1815,8 +1815,8 @@ def get_ps_context(attr_key):
               parameter server training mode only
               supports Server disaster recovery currently. Default: ``''`` .
             - enable_ssl (bool, optional): Set PS SSL mode enabled or disabled. Default: ``False`` .
-              There might be risk when this is set to False.
-              It is user's responsibility to ensure the network environment is safe.
+              Turning it off by default may be a security risk,
+              and users need to ensure the security of the network environment.
 
     Returns:
         Returns attribute value according to the key.
