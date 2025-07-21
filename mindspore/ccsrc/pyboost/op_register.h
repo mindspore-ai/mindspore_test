@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include "utils/stream_guard.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
@@ -68,9 +69,8 @@ class OpRegister {
     return std::make_shared<clazz##DEVICE>(prim::kPrim##clazz, runtime::OpRunner::GetDeviceContext(#DEVICE)); \
   });
 
-#define CREATE_PYBOOST_OP(NAME, DEVICE)                                                  \
-  mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create( \
-    DEVICE, kernel::pyboost::PyBoostUtils::cur_stream_id());
+#define CREATE_PYBOOST_OP(NAME, DEVICE) \
+  mindspore::kernel::pyboost::OpFactory<mindspore::kernel::pyboost::NAME>::Get().Create(DEVICE, CurrentStream::id());
 
 // for internal op
 template <typename T>
@@ -116,9 +116,9 @@ class InternalOpRegister {
                                                      runtime::OpRunner::GetDeviceContext(#DEVICE)); \
   });
 
-#define CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE)                                                 \
-  mindspore::kernel::pyboost::InternalOpFactory<mindspore::kernel::pyboost::NAME>::Get().Create( \
-    DEVICE, kernel::pyboost::PyBoostUtils::cur_stream_id())
+#define CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE)                                                        \
+  mindspore::kernel::pyboost::InternalOpFactory<mindspore::kernel::pyboost::NAME>::Get().Create(DEVICE, \
+                                                                                                CurrentStream::id())
 
 #define CREATE_PYBOOST_SELECTED_OP(NAME, DEVICE)                                                          \
   kernel::pyboost::PyBoostUtils::IsEnableInternalKernel(#NAME) ? CREATE_PYBOOST_INTERNAL_OP(NAME, DEVICE) \

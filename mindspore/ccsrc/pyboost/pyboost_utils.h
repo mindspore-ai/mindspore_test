@@ -278,11 +278,6 @@ class PYBOOST_API PyBoostUtils {
   static TensorPtr ScalarToTensor(const ScalarPtr &scalar);
   static TensorPtr ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype);
 
-  static uint32_t cur_stream_id() { return cur_stream_id_; }
-
-  // Set current stream for CREATE_PYBOOST_OP in front queue.
-  static void set_cur_stream_id(uint32_t cur_stream_id) { cur_stream_id_ = cur_stream_id; }
-
   static bool IsBool(const TensorPtr &input_tensor) { return input_tensor->data_type() == TypeId::kNumberTypeBool; }
 
   static bool IsBool(const ScalarPtr &alpha) { return alpha->isa<BoolImm>(); }
@@ -308,9 +303,6 @@ class PYBOOST_API PyBoostUtils {
   static void GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
                                   const std::string &device_target, bool is_dynamic_shape,
                                   mindspore::HashSet<size_t> *input_to_attr_index);
-
- private:
-  inline static uint32_t cur_stream_id_ = kDefaultStreamIndex;
 };
 
 template <typename T>

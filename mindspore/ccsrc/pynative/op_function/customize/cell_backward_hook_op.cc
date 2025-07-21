@@ -45,8 +45,6 @@ py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim,
   }
 
   MS_LOG(DEBUG) << "Run frontend task Pyboost_CellBackwardHook start";
-  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
 
   // stub tensor to tensor.
   auto tensors_tensor_list =
@@ -70,7 +68,6 @@ py::object PYNATIVE_EXPORT PyboostCellBackwardHookBase(const PrimitivePtr &prim,
     PyNativeAlgo::PyBoost::DoGrad(op, op_grad_info, op_run_info->async_status);
   }
 
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   MS_LOG(DEBUG) << "Run Pyboost_CellBackwardHook end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));
 #else

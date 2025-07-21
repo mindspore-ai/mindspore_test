@@ -615,12 +615,9 @@ ValuePtr Common::StubNodeToValue(const ValuePtr &v) {
 
 void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info->op_grad_info);
-  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
     op_run_info->op_grad_info->input_value[i] = StubNodeToValue(op_run_info->op_grad_info->input_value[i]);
     // Contiguous tensor in Backend RunOp.
-    kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   }
 }
 
