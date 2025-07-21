@@ -724,9 +724,8 @@ import mindspore.ops as ops
 import mindspore.nn as nn
 import mindspore as ms
 from mindspore.communication import init
-from mindspore import Tensor
+from mindspore import Tensor, jit
 
-ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
 
 class SendNet(nn.Cell):
@@ -735,6 +734,7 @@ class SendNet(nn.Cell):
         self.depend = ops.Depend()
         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
 
+    @jit(backend="GE")
     def construct(self, x):
         out = self.depend(x, self.send(x))
         return out
@@ -744,6 +744,7 @@ class ReceiveNet(nn.Cell):
         super(ReceiveNet, self).__init__()
         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
 
+    @jit(backend="GE")
     def construct(self):
         out = self.recv()
         return out
@@ -772,9 +773,8 @@ import mindspore.ops as ops
 import mindspore.nn as nn
 import mindspore as ms
 from mindspore.communication import init
-from mindspore import Tensor
+from mindspore import Tensor, jit
 
-ms.set_context(mode=ms.GRAPH_MODE, jit_level="O2")
 init()
 
 class SendNet(nn.Cell):
@@ -783,6 +783,7 @@ class SendNet(nn.Cell):
         self.depend = ops.Depend()
         self.send = ops.Send(sr_tag=0, dest_rank=1, group="hccl_world_group")
 
+    @jit(backend="GE")
     def construct(self, x):
         out = self.depend(x, self.send(x))
         return out
@@ -792,6 +793,7 @@ class ReceiveNet(nn.Cell):
         super(ReceiveNet, self).__init__()
         self.recv = ops.Receive(sr_tag=0, src_rank=0, shape=[2, 8], dtype=ms.float32, group="hccl_world_group")
 
+    @jit(backend="GE")
     def construct(self):
         out = self.recv()
         return out
