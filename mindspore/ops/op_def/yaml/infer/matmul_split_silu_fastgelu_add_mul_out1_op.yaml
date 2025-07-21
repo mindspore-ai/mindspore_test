@@ -5,8 +5,6 @@ matmul_split_silu_fastgelu_add_mul_out1:
       dtype: tensor
     weight:
       dtype: tensor
-    reshape:
-      dtype: tuple[int]
   class:
     disable: True
   function:
