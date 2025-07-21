@@ -2,7 +2,7 @@
 normal_float_tensor:
     args:
         mean:
-            dtype: float
+            dtype: number
         std:
             dtype: tensor
         seed:

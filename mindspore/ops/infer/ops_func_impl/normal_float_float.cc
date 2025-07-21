@@ -37,21 +37,29 @@ void GetStdValue(const ValuePtr &std, std::optional<float> *std_opt) {
   }
 }
 }  // namespace
+
+void NormalStdCheck(const PrimitivePtr &primitive, const AbstractBasePtr &std_abs) {
+  if (CheckAndConvertUtils::IsTensor(std_abs)) {
+    return;
+  }
+
+  std::optional<float> std_opt;
+  TYPE_DISPATCH_PYTHON_NUMBER(std_abs->GetType()->type_id(), "GetStdValue",
+                              [&]() { GetStdValue<scalar_t>(std_abs->GetValue(), &std_opt); });
+  if (std_opt.has_value()) {
+    auto std = std_opt.value();
+    MS_CHECK_VALUE(std >= 0.0, CheckAndConvertUtils::FormatCheckIntegerMsg("std", std, kGreaterEqual, 0.0, primitive));
+  }
+}
+
 BaseShapePtr NormalFloatFloatFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   if (!CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]) &&
       !CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
+    NormalStdCheck(primitive, input_args[kInputIndex1]);
+
     auto shape_shape = input_args[kInputIndex2]->GetShape();
-    std::optional<float> std_opt;
-    TYPE_DISPATCH_INT_AND2(kNumberTypeFloat32, kNumberTypeFloat64, input_args[kInputIndex1]->GetType()->type_id(),
-                           "GetStdValue",
-                           [&]() { GetStdValue<scalar_t>(input_args[kInputIndex1]->GetValue(), &std_opt); });
-    if (std_opt.has_value()) {
-      auto std = std_opt.value();
-      MS_CHECK_VALUE(std >= 0.0,
-                     CheckAndConvertUtils::FormatCheckIntegerMsg("std", std, kGreaterEqual, 0.0, primitive));
-    }
     if (shape_shape->isa<abstract::DynamicSequenceShape>()) {
       return std::make_shared<abstract::TensorShape>(ShapeVector({abstract::Shape::kShapeRankAny}));
     }

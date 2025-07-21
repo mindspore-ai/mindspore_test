@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 #include "infer/ops_func_impl/normal_tensor_float.h"
+#include "infer/ops_func_impl/normal_float_float.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
@@ -31,6 +32,8 @@ BaseShapePtr NormalTensorFloatFuncImpl::InferShape(const PrimitivePtr &primitive
   // Get input tensor shape.
   if (CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]) &&
       !CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
+    NormalStdCheck(primitive, input_args[kInputIndex1]);
+
     auto mean_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
     if (IsDynamicRank(mean_shape)) {
       return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});

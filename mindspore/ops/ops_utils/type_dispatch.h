@@ -112,6 +112,12 @@ using MS_TYPE_TO_CPP_TYPE = typename MsTypeToCppType<T>::type;
   TYPE_SWITCH_CASE(kNumberTypeUInt32, __VA_ARGS__); \
   TYPE_SWITCH_CASE(kNumberTypeUInt64, __VA_ARGS__)
 
+#define TYPE_SWITCH_PYTHON_NUMBER_CASES(...)         \
+  TYPE_SWITCH_CASE(kNumberTypeBool, __VA_ARGS__);    \
+  TYPE_SWITCH_CASE(kNumberTypeInt64, __VA_ARGS__);   \
+  TYPE_SWITCH_CASE(kNumberTypeFloat32, __VA_ARGS__); \
+  TYPE_SWITCH_CASE(kNumberTypeFloat64, __VA_ARGS__)
+
 #define TYPE_SWITCH_INT_CASES(...)           \
   TYPE_SWITCH_SIGNED_INT_CASES(__VA_ARGS__); \
   TYPE_SWITCH_UNSIGNED_INT_CASES(__VA_ARGS__)
@@ -193,5 +199,8 @@ using MS_TYPE_TO_CPP_TYPE = typename MsTypeToCppType<T>::type;
 
 #define TYPE_DISPATCH_FLOATING_AND_COMPLEX(DTYPE, NAME, ...) \
   TYPE_DISPATCH(DTYPE, NAME, TYPE_SWITCH_FLOATING_CASES_AND_COMPLEX(__VA_ARGS__))
+
+#define TYPE_DISPATCH_PYTHON_NUMBER(DTYPE, NAME, ...) \
+  TYPE_DISPATCH(DTYPE, NAME, TYPE_SWITCH_PYTHON_NUMBER_CASES(__VA_ARGS__))
 }  // namespace mindspore
 #endif
