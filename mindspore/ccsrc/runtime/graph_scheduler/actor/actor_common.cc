@@ -988,7 +988,12 @@ bool CopyDataFromTensor(const DeviceTensorPtr &device_tensor, tensor::Tensor *te
   if (sync_copy_input) {
     auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});
-    MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncAllStreams(), "Synchronize stream failed.");
+    if (!device_context->device_res_manager_->SyncAllStreams()) {
+      MS_LOG(EXCEPTION) << "Synchronize stream failed, device tensor: " << device_tensor->ToString()
+                        << ", tensor size: " << tensor_size << ", tensor type: " << TypeIdToString(tensor->data_type())
+                        << ", tensor format: " << tensor->device_info().host_format_
+                        << ", tensor data ptr: " << tensor->data_ptr() << ", stream id: " << stream_id;
+    }
   }
   return ret;
 }
@@ -1179,6 +1184,27 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   }
 }
 
+void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t outer_index, size_t inner_index) {
+  static const std::string kSyncCopyInput = "sync_copy_input";
+  static bool sync_copy_input =
+    common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
+  if (sync_copy_input) {
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(tensor);
+    auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+    if (!graph_parameter_store->IsPositionDynamic(outer_index, inner_index) &&
+        (kernel_tensor->format() == DEFAULT_FORMAT || kernel_tensor->format() == ND)) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Outer index: " << outer_index << ", inner index: " << inner_index << ", dynamic is "
+        << graph_parameter_store->IsPositionDynamic(outer_index, inner_index) << kernel_tensor->ToString();
+      if (kernel_tensor->tensor_storage_info() == nullptr && kernel_tensor->size() != tensor->Size()) {
+        MS_LOG(ERROR) << "The tensor size " << tensor->Size() << " is different from kernel tensor size "
+                      << kernel_tensor->size();
+      }
+    }
+  }
+}
+
 void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index, const AID &from_aid,
                       bool is_first_user, size_t stream_id, bool enable_parallel_dispatch,
                       bool *has_h2d_copy = nullptr) {
@@ -1202,6 +1228,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
                 << ", inner index:" << inner_index << ", front node: " << front_node.first->DebugString();
   auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
   MS_EXCEPTION_IF_NULL(tensor);
+  CheckInputSize(kernel_tensor, tensor, outer_index, inner_index);
   // Prepare data if got tensor address.
   auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
   if (tensor_address != nullptr) {
