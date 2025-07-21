@@ -292,7 +292,7 @@ class TupleScalarBpropNet(nn.Cell):
         return 3, x * x
 
     def bprop(self, *args):
-        return (2 * args[0] * args[-1][1],)
+        return (2 * args[0] * args[-1][0],)
 
 
 class TestTupleScalarBpropNet(nn.Cell):

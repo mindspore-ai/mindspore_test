@@ -643,7 +643,7 @@ void CallCustomBprop(const CustomContext &context) {
   BackwardNodePtr custom_fn;
   AutoGradUtil::CheckRecomputeInputs(context.inputs, context.is_recompute);
   auto flatten_inputs = CommonUtils::FlattenTensorSeqInValueSeq(context.inputs);
-  auto flatten_outputs = CommonUtils::FlattenTensorSeqInValue(context.output);
+  auto flatten_outputs = CommonUtils::FlattenOnlyTensor(context.output);
   UpdateCreationType(flatten_outputs);
   auto input_meta = GenerateInputsMeta(flatten_inputs);
   {
