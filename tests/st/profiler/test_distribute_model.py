@@ -25,5 +25,6 @@ def test_hccl_allreduce():
     Expectation: success
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s hccl_profiler.py")
+    return_code = os.system("msrun --worker_num=2 --local_worker_num=2 --join=True --log_dir=./output_allreduce"
+                            " pytest -s hccl_profiler.py")
     assert return_code == 0
