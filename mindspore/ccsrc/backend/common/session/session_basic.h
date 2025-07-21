@@ -172,8 +172,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
 
  protected:
   friend class Executor;
-  friend class CompileNodesTask;
-  friend class CompileGraphTask;
   friend class BuildGraphTask;
   friend class mindspore::runtime::GraphCompiler;
   virtual bool IsSupportSummary() { return true; }
