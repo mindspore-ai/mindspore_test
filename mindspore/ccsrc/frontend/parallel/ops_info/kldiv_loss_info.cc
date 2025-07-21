@@ -127,7 +127,7 @@ Status KLDivLossInfo::InferForwardCommunication() {
   MS_EXCEPTION_IF_NULL(outputs_tensor_dtype);
   auto element_type = outputs_tensor_dtype->element();
   if (reduction_ == MEAN) {
-    forward_op_ = CreateReduceMeanForwardOp(group_list_, element_type);
+    forward_op_ = CreateAllReduceMeanForwardOp(group_list_[0], element_type);
   } else {
     (void)forward_op_.emplace_back(CreateAllReduceOp(REDUCE_OP_SUM, group_list_[0].name()));
     if (reduction_ == BATCH_MEAN) {

@@ -373,7 +373,7 @@ Status CrossEntropyLossInfo::InferForwardCommunication() {
       // insert {mean, div} operator for output-0
       ForwardOp mean_div_op_list;
       if (i == 0) {
-        mean_div_op_list = CreateReduceMeanForwardOp(group_list_, element_type);
+        mean_div_op_list = CreateAllReduceMeanForwardOp(group_list_[0], element_type);
         forward_op_list_.push_back(mean_div_op_list);
         continue;
       }

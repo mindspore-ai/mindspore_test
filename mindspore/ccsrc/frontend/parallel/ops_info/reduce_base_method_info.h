@@ -53,7 +53,9 @@ class ReduceMeanInfo : public ReduceBaseMethod {
  public:
   ReduceMeanInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
                  const PrimitiveAttrs &attrs)
-      : ReduceBaseMethod(name, inputs_shape, outputs_shape, attrs, std::make_shared<ReduceMeanCost>()) {}
+      : ReduceBaseMethod(name, inputs_shape, outputs_shape, attrs, std::make_shared<ReduceMeanCost>()) {
+    reduce_method_ = REDUCE_OP_MEAN;
+  }
 
   ~ReduceMeanInfo() override = default;
 
