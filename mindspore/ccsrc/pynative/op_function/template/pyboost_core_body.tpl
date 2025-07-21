@@ -9,9 +9,6 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
     std::make_shared<PyboostPromiseTask>(
       [${op_args}, prim, promises](const PyboostOpRunInfoPtr &op_run_info) {
 
-        auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-        kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
-
         // stub tensor to tensor.
         ${convert_stub}
         ${implicit_cast}
@@ -23,7 +20,6 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
         kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
         auto outputs = kernel::pyboost::${operator_name}(${cast_args});
-        kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
         (void)kernel::pyboost::OpRunStatus::Get().GetLastOp();
         tensor::SetPromise(promises, outputs);
       }, [promises]() {

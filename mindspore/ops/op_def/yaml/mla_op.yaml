@@ -50,3 +50,4 @@ mla:
   dispatch:
     enable: True
     InternalOpAscend: AutoGen
+    InternalOpAscend: InternalMlaAscendCustomize

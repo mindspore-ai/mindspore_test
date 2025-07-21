@@ -45,7 +45,7 @@ using mindspore::profiler::ProfilerManager;
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
-
+#include "utils/stream_guard.h"
 #include "ir/tensor_api.h"
 namespace mindspore {
 namespace pynative {
@@ -382,8 +382,10 @@ void ForwardExecutor::InitOpRunInfo(const PyboostOpRunInfoPtr &op_run_info) {
   // Used for async run
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
   op_run_info->device_target = GetCurrentDeviceTarget(op_run_info->op_prim);
-  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->device_target);
-  op_run_info->stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  // device_res_manager_->GetCurrentStreamId is not correct.
+  // The stream_id is always 0 on CPU.
+  // Heterogeneous scenarios may have accuracy issues.
+  op_run_info->stream_id = CurrentStream::id();
 }
 
 void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
@@ -392,8 +394,7 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
   op_run_info->requires_grad = GradState::Get().RequiresGrad();
   op_run_info->base_op_run_info.use_dynamic_shape_process = grad()->forward_use_dynamic_shape_process();
   op_run_info->base_op_run_info.device_target = GetCurrentDeviceTarget(op_run_info->op_grad_info->op_prim);
-  auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
-  op_run_info->base_op_run_info.stream_id = device_context->device_res_manager_->GetCurrentStreamId();
+  op_run_info->base_op_run_info.stream_id = CurrentStream::id();
 }
 
 void ForwardExecutor::ReInit() {

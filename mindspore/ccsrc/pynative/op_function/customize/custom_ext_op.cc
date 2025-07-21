@@ -45,8 +45,6 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   }
 
   MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt start";
-  auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->stream_id);
 
   // stub tensor to tensor.
   auto tensors_tensor_list =
@@ -74,7 +72,6 @@ py::object PYNATIVE_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const 
   } else if (op_type == OperatorType::kInplaceOp) {
     PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
   }
-  kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt end";
   return py::reinterpret_steal<py::object>(tensor::Wrap(real_out));
 #else

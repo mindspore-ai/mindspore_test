@@ -130,11 +130,6 @@ Tensor &Tensor::operator=(const Tensor &tensor) {
   return *this;
 }
 
-template <template <class> class ImplClass = TensorDataImpl, typename... Args>
-TensorDataPtr MakeData(TypeId data_type, Args &&... args) {
-  return MakeTensorData(data_type, args...);
-}
-
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_address)
     : MetaTensor(data_type, shape), id_(MakeId()), device_sync_(std::move(device_address)) {}
 
