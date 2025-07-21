@@ -51,7 +51,23 @@ modifyTrainingLogs() {
     echo "Log precision has been updated to 16 decimal places in $fname"
 }
 
+# 清理端口
+kill_port() {
+    local PORT=$1
+    local PID=$(lsof -t -i:$PORT 2>/dev/null)
 
+    if [ -n "$PID" ]; then
+        echo "Port $PORT is occupied by PID: $PID"
+        kill -9 $PID && echo "Killed PID $PID"
+    else
+        echo "Port $PORT is free."
+    fi
+}
+
+
+# 开始任务
+kill_port 8187
+pkill -9 msrun
 cp -r /home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_sft/finetune_dataset/ .
 backup ${MindSpeed_LLM_PATH}/posttrain_gpt.py
 backup ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py

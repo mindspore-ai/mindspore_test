@@ -12,26 +12,26 @@ cp -r "$src_tools" "$dst_tools"
 
 #MindSpeed-LLM
 rm -rf MindSpeed-LLM/
-git clone https://gitee.com/ascend/MindSpeed-LLM.git -b master
+git clone https://gitee.com/ascend/MindSpeed-LLM.git -b 2.1.0
 if [ $? -ne 0 ]; then
     echo "Error: git clone MindSpeed-LLM"
     exit 1
 fi
 cd MindSpeed-LLM
-git checkout 95117b0d91514ed05d4565a2c67ee92063ae8620 #0612
+git checkout a840be21ef9582e4afa18538f0ed75db999326f7 #0719
 rm -rf tests
 cd ..
 echo "------------------------------------done MindSpeed-LLM"
 
 #MindSpeed
 rm -rf MindSpeed/
-git clone https://gitee.com/ascend/MindSpeed.git -b core_r0.8.0
+git clone https://gitee.com/ascend/MindSpeed.git -b 2.1.0_core_r0.8.0
 if [ $? -ne 0 ]; then
     echo "Error: git clone MindSpeed"
     exit 1
 fi
 cd MindSpeed
-git checkout 5b710acbb87004ffa8d341dc6b427037d9f76d2d #0612
+git checkout 21c1e1ddfb99173ec502039622fe2c70869b23ec #0716
 rm -rf tests_extend
 cd ..
 echo "...............................................done MindSpeed"
@@ -46,21 +46,9 @@ fi
 rm -rf Megatron-LM/tests
 echo "..............................................done Megatron-LM"
 
-#msadapter
-rm -rf msadapter
-git clone https://gitee.com/mindspore/msadapter.git -b master
-if [ $? -ne 0 ]; then
-    echo "Error: git clone msadapter"
-    exit 1
-fi
-cd msadapter
-rm -rf tests
-cd ..
-echo "..............................................done msadapter"
-
 #transformers
 rm -rf transformers/
-git clone https://gitee.com/mirrors/huggingface_transformers.git -b v4.47.0
+git clone https://gitee.com/mirrors/huggingface_transformers.git -b v4.47.0 --depth 1
 if [ $? -ne 0 ]; then
     echo "Error: git clone msadaptor"
     exit 1
@@ -74,7 +62,7 @@ echo "..............................................done apply transformers"
 
 #accelerate
 rm -rf accelerate/
-git clone https://gitee.com/modelee/accelerate.git -b v1.6.0
+git clone https://gitee.com/modelee/accelerate.git -b v1.6.0 --depth 1
 if [ $? -ne 0 ]; then
     echo "Error: git clone accelerate"
     exit 1
@@ -94,6 +82,6 @@ python3 tools/transfer.py \
 --mindspeed_path ${MindSpeed_Core_MS_PATH}/MindSpeed/mindspeed/ \
 --mindspeed_llm_path ${MindSpeed_Core_MS_PATH}/MindSpeed-LLM/ \
 
-export PYTHONPATH=${MindSpeed_Core_MS_PATH}/msadapter/mindtorch:${MindSpeed_Core_MS_PATH}/Megatron-LM:${MindSpeed_Core_MS_PATH}/MindSpeed:${MindSpeed_Core_MS_PATH}/MindSpeed-LLM:${MindSpeed_Core_MS_PATH}/transformers/src/:${MindSpeed_Core_MS_PATH}/accelerate/src/:$PYTHONPATH
+export PYTHONPATH=${MindSpeed_Core_MS_PATH}/Megatron-LM:${MindSpeed_Core_MS_PATH}/MindSpeed:${MindSpeed_Core_MS_PATH}/MindSpeed-LLM:${MindSpeed_Core_MS_PATH}/transformers/src/:${MindSpeed_Core_MS_PATH}/accelerate/src/:$PYTHONPATH
 echo $PYTHONPATH
 echo "..............................................done code_convert"
