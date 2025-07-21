@@ -145,7 +145,10 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
         dx_out_inputs.emplace_back(cur_input);
         continue;
       }
+      MS_EXCEPTION_IF_NULL(get_item_c_input->cast<CNodePtr>());
+      MS_EXCEPTION_IF_NULL(get_item_c_input->cast<CNodePtr>()->input(kIndex2));
       dw_c = get_item_c_input->cast<CNodePtr>()->input(kIndex2)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(dw_c);
       // Dw overlap depend
       while (IsPrimitiveCNode(dw_c, prim::kPrimDepend)) {
         dw_c = dw_c->input(kIndex1)->cast<CNodePtr>();
