@@ -770,6 +770,11 @@ def new_group(ranks=None,
                     hccl_config(dict)
                 }
 
+            `hccl_config` currently only supports "hccl_buffer_size" or "hccl_comm".
+            hccl_buffer_size (uint32): specifies the size of the HCCL communication buffer.
+            hccl_comm (int64): specifies an existing HcclComm pointer. If "hccl_comm" is set,
+            "hccl_buffer_size" will be ignored.
+
         use_local_synchronization (bool, invalid): Currently it is a reserved parameter.
         group_desc (str, invalid): Currently it is a reserved parameter.
 
