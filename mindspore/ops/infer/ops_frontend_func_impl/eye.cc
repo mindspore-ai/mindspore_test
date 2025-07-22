@@ -21,7 +21,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 class EyeFrontendFuncImpl : public OpFrontendFuncImpl {

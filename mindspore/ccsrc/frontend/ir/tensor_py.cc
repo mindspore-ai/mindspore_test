@@ -37,7 +37,7 @@
 #include "runtime/device/move_to.h"
 #include "ir/device_address_maker.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace tensor {
 namespace {

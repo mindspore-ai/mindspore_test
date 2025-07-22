@@ -37,7 +37,7 @@
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace UT {
 void InitPythonPath();
 }

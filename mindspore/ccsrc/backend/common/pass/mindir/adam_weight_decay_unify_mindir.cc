@@ -32,7 +32,7 @@ constexpr size_t kAdamWeightDecayInputNumWithMonad = 12;
 const std::vector<size_t> kdamWeightDecayIndexMapping = {9, 3, 2, 1, 4, 5, 12, 6, 13, 8, 7};
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, double value) {
-  auto tensor = std::make_shared<tensor::Tensor>(value);
+  auto tensor = tensor::from_scalar(value);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);

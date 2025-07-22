@@ -40,7 +40,7 @@
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace abstract {
 using PyObjectWrapperPtr = std::shared_ptr<parse::PyObjectWrapper>;
@@ -218,11 +218,11 @@ class PyExecuteInitializer {
       const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
       return tensor->ToAbstract();
     } else if (py::isinstance<py::bool_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<bool>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<bool>(output))->ToAbstract();
     } else if (py::isinstance<py::int_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<int64_t>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<int64_t>(output))->ToAbstract();
     } else if (py::isinstance<py::float_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<float>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<float>(output))->ToAbstract();
     } else if (py::isinstance<py::list>(output) || py::isinstance<py::tuple>(output)) {
       ValuePtr converted_res = nullptr;
       if (parse::ConvertData(output, &converted_res)) {

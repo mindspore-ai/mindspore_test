@@ -46,7 +46,7 @@ using mindspore::profiler::ProfilerManager;
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace pynative {
 enum class RunOpArgsEnum : size_t { PY_PRIM = 0, PY_NAME, PY_INPUTS, PY_ARGS_NUM };

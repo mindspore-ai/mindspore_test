@@ -24,6 +24,7 @@
 #include "ir/tensor.h"
 #include "mindapi/base/type_id.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::graphkernel::inner {
 class GraphBuilder : public LiteGraph::GraphBuilderBase {
@@ -102,28 +103,28 @@ class GraphBuilder : public LiteGraph::GraphBuilderBase {
     tensor::TensorPtr const_tensor;
     switch (type_id) {
       case kNumberTypeBool:
-        const_tensor = std::make_shared<tensor::Tensor>(static_cast<bool>(input), TypeIdToType(type_id));
+        const_tensor = tensor::from_scalar(static_cast<bool>(input), TypeIdToType(type_id));
         break;
       case kNumberTypeInt:
       case kNumberTypeInt8:
       case kNumberTypeInt16:
       case kNumberTypeInt32:
       case kNumberTypeInt64:
-        const_tensor = std::make_shared<tensor::Tensor>(static_cast<int64_t>(input), TypeIdToType(type_id));
+        const_tensor = tensor::from_scalar(static_cast<int64_t>(input), TypeIdToType(type_id));
         break;
       case kNumberTypeUInt:
       case kNumberTypeUInt8:
       case kNumberTypeUInt16:
       case kNumberTypeUInt32:
       case kNumberTypeUInt64:
-        const_tensor = std::make_shared<tensor::Tensor>(static_cast<uint64_t>(input), TypeIdToType(type_id));
+        const_tensor = tensor::from_scalar(static_cast<uint64_t>(input), TypeIdToType(type_id));
         break;
       case kNumberTypeFloat:
       case kNumberTypeFloat16:
       case kNumberTypeFloat32:
       case kNumberTypeFloat64:
       case kNumberTypeBFloat16:
-        const_tensor = std::make_shared<tensor::Tensor>(static_cast<double>(input), TypeIdToType(type_id));
+        const_tensor = tensor::from_scalar(static_cast<double>(input), TypeIdToType(type_id));
         break;
       default:
         MS_LOG(EXCEPTION) << "The input data type should be int, uint, float or bool, But Get :"
@@ -133,7 +134,7 @@ class GraphBuilder : public LiteGraph::GraphBuilderBase {
   }
 
   NodePtr Tensor(std::vector<int64_t> input) const {
-    auto const_tensor = std::make_shared<tensor::Tensor>(input);
+    auto const_tensor = tensor::from_vector(input);
     return Value(const_tensor);
   }
 

@@ -102,7 +102,7 @@ TEST_F(TestEmbeddingCache, test_embedding_cache) {
   const int key_size = host_cache_size;
   std::vector<int> key_vec(key_size);
   std::iota(key_vec.begin(), key_vec.end(), 0);
-  auto key_tensor_ptr = std::make_shared<tensor::Tensor>(key_vec);
+  auto key_tensor_ptr = tensor::from_vector(key_vec);
   int value_size = embedding_size;
   int value_shape_size = key_size * value_size;
   std::vector<int> value_vec(value_shape_size);

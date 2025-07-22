@@ -27,7 +27,7 @@
 
 using mindspore::tensor::TensorPybind;
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace tensor {
 class TestMetaTensor : public UT::Common {
@@ -384,7 +384,7 @@ TEST_F(TestTensor, TensorPyCast) {
 /// Description: Test user data for Tensor.
 /// Expectation: user data works as expected.
 TEST_F(TestTensor, TensorWithUserData) {
-  auto tensor = std::make_shared<Tensor>(3.14f);
+  auto tensor = tensor::from_scalar(3.14f);
   auto mydata = std::make_shared<std::string>("mydata");
 
   // Set user data.

@@ -41,7 +41,7 @@
 #include "utils/ms_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace {
 constexpr int md5_bit_wide = 2;

@@ -51,7 +51,7 @@
 using std::string;
 using std::vector;
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace {
 constexpr auto kReturnPrimNode = "_return_prim_node";

@@ -29,7 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "common/oplib/oplib.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {

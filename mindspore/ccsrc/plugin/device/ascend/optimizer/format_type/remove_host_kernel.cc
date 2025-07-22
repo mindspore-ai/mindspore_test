@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 const BaseRef RemoveHostKernel::DefinePattern() const {

@@ -34,7 +34,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 MIND_API_OPERATOR_IMPL(Fill, BaseOperator);

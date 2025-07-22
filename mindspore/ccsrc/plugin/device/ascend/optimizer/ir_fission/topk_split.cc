@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/optimizer/optimizer_factory.h"
 #include "platform/platform_info.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {

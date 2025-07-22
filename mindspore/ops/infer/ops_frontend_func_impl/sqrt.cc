@@ -25,7 +25,7 @@
 #include "ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 namespace {

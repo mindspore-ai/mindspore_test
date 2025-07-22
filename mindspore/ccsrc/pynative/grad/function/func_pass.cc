@@ -70,8 +70,8 @@ class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
     // Reshape multi-dim labels to 1D labels.
     auto reshape_node = CreateReshape(inputs[kIndex1], shape);
 
-    auto value_on = std::make_shared<tensor::Tensor>(1.0, kFloat32);
-    auto value_off = std::make_shared<tensor::Tensor>(0.0, kFloat32);
+    auto value_on = tensor::from_scalar(1.0, kFloat32);
+    auto value_off = tensor::from_scalar(0.0, kFloat32);
     auto value_axis = MakeValue<int64_t>(-1);
     std::vector<std::string> input_names = {"indices", "depth", "on_value", "off_value", "axis"};
     std::vector<std::string> output_names = {"output"};
@@ -142,7 +142,7 @@ class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
   NodePtr CreateRealDiv(const NodePtr &tile_node) {
     MS_EXCEPTION_IF_NULL(tile_node);
     auto y_value = static_cast<float>(batch_size_);
-    auto y = std::make_shared<tensor::Tensor>(y_value, kFloat32);
+    auto y = tensor::from_scalar(y_value, kFloat32);
     auto y_node = func_builder_->NewFuncNode(y, nullptr, InputType::kConstant);
     y_node->set_abstract(CommonUtils::SetAbstractValueToAnyValue(y_node->Value()->ToAbstract()));
     std::vector<std::string> input_names = {"x", "y"};

@@ -94,7 +94,7 @@ AnfNodePtr InsertNoOpForOutput(const FuncGraphPtr &func_graph, const AnfNodePtr 
   // There is an issue of inconsistent input addresses that will be resolved in the future
   ChangeValueNode(kernel_graph, adam_cnode);
   RemoveOptimizerNode(func_graph, cast);
-  auto cast_value = kernel_graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
+  auto cast_value = kernel_graph->NewValueNode(MakeValue(tensor::from_scalar(1)));
   cast->set_input(1, cast_value);
   auto return_node = func_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);

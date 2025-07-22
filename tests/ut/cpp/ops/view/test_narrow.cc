@@ -30,7 +30,7 @@ class TestViewNarrow : public TestView {
 TEST_F(TestViewNarrow, View) {
   auto prim = std::make_shared<Primitive>("Narrow");
   std::vector<int64_t> tensor_data = {1, 2, 3, 4, 5, 6, 7, 8};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({1, 2, 4});
   int64_t input_dim = 2;
   int64_t input_start = 1;

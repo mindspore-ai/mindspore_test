@@ -30,7 +30,7 @@
 #include "utils/log_adapter.h"
 #include "ir/graph_utils.h"
 #include "pipeline/jit/ps/action.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/parse/parse.h"
 #include "include/common/debug/draw.h"

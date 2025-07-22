@@ -63,7 +63,7 @@
 #include "pybind11/pybind11.h"
 
 #include "utils/phase.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 // namespace to support intermediate representation definition

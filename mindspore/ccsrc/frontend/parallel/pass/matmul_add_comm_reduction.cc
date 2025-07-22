@@ -226,8 +226,7 @@ void HandleNodeBiasAdd(const AnfNodePtr &comm_node, const AnfNodePtr &add_node_i
   MS_EXCEPTION_IF_NULL(bias_dtype);
   auto bias_dtype_ele = bias_dtype->element();
   MS_EXCEPTION_IF_NULL(bias_dtype_ele);
-  mindspore::tensor::TensorPtr tensor_ptr =
-    std::make_shared<mindspore::tensor::Tensor>(rank_size, bias_dtype_ele->GetType());
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(rank_size, bias_dtype_ele->GetType());
   auto const_node = NewValueNode(MakeValue(tensor_ptr));
   const_node->set_abstract(const_node->value()->ToAbstract());
 

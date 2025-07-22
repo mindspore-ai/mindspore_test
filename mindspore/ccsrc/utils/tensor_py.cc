@@ -23,7 +23,7 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/pyobj_manager.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace tensor {
 PyTypeObject *TensorPy_Type;
@@ -32,28 +32,28 @@ TensorPy::TensorPy(const TensorPtr &input) { tensor_ = input; }
 
 TensorPy::TensorPy(const stub::StubNodePtr &stub_node) { stub_ = stub_node; }
 
-TensorPy::TensorPy(int64_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
+TensorPy::TensorPy(int64_t input, const TypePtr &data_type) { tensor_ = tensor::from_scalar(input, data_type); }
 
-TensorPy::TensorPy(int32_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
+TensorPy::TensorPy(int32_t input, const TypePtr &data_type) { tensor_ = tensor::from_scalar(input, data_type); }
 
-TensorPy::TensorPy(int16_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
+TensorPy::TensorPy(int16_t input, const TypePtr &data_type) { tensor_ = tensor::from_scalar(input, data_type); }
 
-TensorPy::TensorPy(int8_t input, const TypePtr &data_type) { tensor_ = std::make_shared<Tensor>(input, data_type); }
+TensorPy::TensorPy(int8_t input, const TypePtr &data_type) { tensor_ = tensor::from_scalar(input, data_type); }
 
 TensorPy::TensorPy(const std::vector<int64_t> &input, const TypePtr &data_type) {
-  tensor_ = std::make_shared<Tensor>(input, data_type);
+  tensor_ = tensor::from_vector(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<int32_t> &input, const TypePtr &data_type) {
-  tensor_ = std::make_shared<Tensor>(input, data_type);
+  tensor_ = tensor::from_vector(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<double> &input, const TypePtr &data_type) {
-  tensor_ = std::make_shared<Tensor>(input, data_type);
+  tensor_ = tensor::from_vector(input, data_type);
 }
 
 TensorPy::TensorPy(const std::vector<float> &input, const TypePtr &data_type) {
-  tensor_ = std::make_shared<Tensor>(input, data_type);
+  tensor_ = tensor::from_vector(input, data_type);
 }
 
 TensorPy::TensorPy(const TensorPy &input)

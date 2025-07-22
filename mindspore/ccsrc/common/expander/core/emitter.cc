@@ -62,7 +62,7 @@ std::pair<bool, std::vector<int64_t>> GetIntList(const NodePtr &node) {
 }
 
 ValuePtr CreateZeroScalar(const TypePtr &type) {
-  auto tensor = std::make_shared<tensor::Tensor>(0, type);
+  auto tensor = tensor::from_scalar(0, type);
   return CreateValueFromTensor(tensor);
 }
 

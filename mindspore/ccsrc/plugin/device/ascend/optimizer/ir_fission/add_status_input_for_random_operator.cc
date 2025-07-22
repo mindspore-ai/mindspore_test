@@ -24,7 +24,7 @@
 #include "proto/random_status.pb.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {

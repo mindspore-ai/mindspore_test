@@ -245,7 +245,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
                                                     size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
 
-  auto tensor = std::make_shared<tensor::Tensor>(static_cast<int64_t>(value), kInt32);
+  auto tensor = tensor::from_scalar(static_cast<int64_t>(value), kInt32);
   auto value_node = mindspore::NewValueNode(tensor);
   value_node->set_abstract(tensor->ToAbstract());
 

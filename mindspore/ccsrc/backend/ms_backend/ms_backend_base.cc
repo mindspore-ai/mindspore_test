@@ -73,7 +73,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace backend {
 namespace ms_backend {

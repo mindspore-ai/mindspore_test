@@ -27,7 +27,7 @@
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

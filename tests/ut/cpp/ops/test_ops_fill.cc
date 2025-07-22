@@ -97,7 +97,7 @@ TEST_P(TestFillTensor, fill_tensor_dyn_shape) {
 }
 
 tensor::TensorPtr CreateTensor(float value, TypePtr dtype) {
-  auto tensor = std::make_shared<tensor::Tensor>(value, dtype);
+  auto tensor = tensor::from_scalar(value, dtype);
   return tensor;
 }
 

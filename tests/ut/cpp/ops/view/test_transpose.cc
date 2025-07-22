@@ -30,7 +30,7 @@ class TestViewTranspose : public TestView {
 TEST_F(TestViewTranspose, View) {
   auto prim = std::make_shared<Primitive>("Transpose");
   std::vector<int64_t> tensor_data = {1, 2, 3, 4, 5, 6};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({2, 3});
   std::vector<int64_t> input_perm_data({1, 0});
   auto input_perm = MakeValue(input_perm_data);

@@ -29,7 +29,7 @@
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 using ShapeRefPtr = std::shared_ptr<dvm::ShapeRef>;

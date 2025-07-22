@@ -39,7 +39,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::graphkernel {
 namespace {

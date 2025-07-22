@@ -41,7 +41,7 @@
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parse {
 extern bool ConvertData(const py::object &obj, mindspore::ValuePtr *data, bool use_signature,

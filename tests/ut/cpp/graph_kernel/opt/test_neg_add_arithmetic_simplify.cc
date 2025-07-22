@@ -62,7 +62,7 @@ TEST_P(TestNegAddArithmeticSimplify, test_arithmetic_simplify) {
   auto input_a = c.NewTensorInput("input_a", kFloat32, param.a_shape);
   auto neg = c.NewCNodeWithBuildInfo("Neg", {input_a}, {});
   auto add = c.NewCNodeWithBuildInfo("Add", {input_a, neg}, {});
-  auto axis = c.NewValueNode(std::make_shared<tensor::Tensor>(param.axis));
+  auto axis = c.NewValueNode(tensor::from_vector(param.axis));
   auto keep_dims = c.NewValueNode(MakeValue<bool>(param.keep_dims));
   auto skip_mode = c.NewValueNode(MakeValue<bool>(param.skip_mode));
   auto reduce = c.NewCNodeWithBuildInfo("ReduceSum", {add, axis, keep_dims, skip_mode}, {});

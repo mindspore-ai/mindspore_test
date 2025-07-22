@@ -28,7 +28,7 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace pijit {
 
@@ -2872,31 +2872,31 @@ template <typename S>
 ValuePtr CastScalarToTensor(S in, const TypeId &type_id) {
   switch (type_id) {
     case kNumberTypeInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<int>(in), kInt32);
+      return tensor::from_scalar(static_cast<int>(in), kInt32);
     case kNumberTypeFloat16:
-      return std::make_shared<tensor::Tensor>(static_cast<float16>(in), kFloat16);
+      return tensor::from_scalar(static_cast<float16>(in), kFloat16);
     case kNumberTypeFloat32:
-      return std::make_shared<tensor::Tensor>(static_cast<float>(in), kFloat32);
+      return tensor::from_scalar(static_cast<float>(in), kFloat32);
     case kNumberTypeBool:
-      return std::make_shared<tensor::Tensor>(static_cast<bool>(in), kBool);
+      return tensor::from_scalar(static_cast<bool>(in), kBool);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(in), kInt64);
+      return tensor::from_scalar(static_cast<int64_t>(in), kInt64);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::Tensor>(static_cast<double>(in), kFloat64);
+      return tensor::from_scalar(static_cast<double>(in), kFloat64);
     case kNumberTypeInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<int16_t>(in), kInt16);
+      return tensor::from_scalar(static_cast<int16_t>(in), kInt16);
     case kNumberTypeInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<int8_t>(in), kInt8);
+      return tensor::from_scalar(static_cast<int8_t>(in), kInt8);
     case kNumberTypeUInt64:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(in), kUInt64);
+      return tensor::from_scalar(static_cast<uint64_t>(in), kUInt64);
     case kNumberTypeUInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<uint32_t>(in), kUInt32);
+      return tensor::from_scalar(static_cast<uint32_t>(in), kUInt32);
     case kNumberTypeUInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<uint16_t>(in), kUInt16);
+      return tensor::from_scalar(static_cast<uint16_t>(in), kUInt16);
     case kNumberTypeUInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<uint8_t>(in), kUInt8);
+      return tensor::from_scalar(static_cast<uint8_t>(in), kUInt8);
     case kNumberTypeBFloat16:
-      return std::make_shared<tensor::Tensor>(static_cast<bfloat16>(in), kBFloat16);
+      return tensor::from_scalar(static_cast<bfloat16>(in), kBFloat16);
     default:
       MS_LOG(DEBUG) << "Not support cast to dst type: " << TypeIdToType(type_id)->ToString();
       return nullptr;

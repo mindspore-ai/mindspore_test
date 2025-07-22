@@ -25,7 +25,7 @@
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 template <typename T>

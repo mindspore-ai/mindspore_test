@@ -51,7 +51,7 @@ class TestMetaDslApi : public UT::Common {
   }
 
   AbstractTensorPtr NewAbstractTensor(int64_t input, const TypePtr &data_type) {
-    return std::make_shared<AbstractTensor>(std::make_shared<tensor::Tensor>(input, data_type));
+    return std::make_shared<AbstractTensor>(tensor::from_scalar(input, data_type));
   }
 
   AbstractTensorPtr NewAbstractTensor(const TypePtr &element_type, const ShapeVector &shape) {

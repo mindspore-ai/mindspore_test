@@ -34,7 +34,7 @@ class PyBoostConverterTest : public PyCommon {};
 TEST_F(PyBoostConverterTest, ToTensorTest1) {
   Converter converter(&ops::gSin);
 
-  auto tensor_py = NewPyTensor(std::make_shared<tensor::Tensor>(1));
+  auto tensor_py = NewPyTensor(tensor::from_scalar(1));
 
   py::list list;
   list.append(tensor_py);
@@ -48,7 +48,7 @@ TEST_F(PyBoostConverterTest, ToTensorTest1) {
 TEST_F(PyBoostConverterTest, ToTensorTest3) {
   Converter converter(&ops::gAdd);
 
-  auto x_obj = NewPyTensor(std::make_shared<tensor::Tensor>(1));
+  auto x_obj = NewPyTensor(tensor::from_scalar(1));
   auto y_obj = py::float_(1.0);
 
   py::list list;
@@ -69,8 +69,8 @@ TEST_F(PyBoostConverterTest, ToTensorTest3) {
 TEST_F(PyBoostConverterTest, ToTensorOptionalTest) {
   Converter converter(&ops::gClampTensor);
 
-  auto input = NewPyTensor(std::make_shared<tensor::Tensor>(1));
-  auto min = NewPyTensor(std::make_shared<tensor::Tensor>(1));
+  auto input = NewPyTensor(tensor::from_scalar(1));
+  auto min = NewPyTensor(tensor::from_scalar(1));
   auto max = py::none();
 
   py::list list;
@@ -95,7 +95,7 @@ TEST_F(PyBoostConverterTest, ToIntOptionalTest1) {
   py::gil_scoped_acquire gil;
   Converter converter(&ops::gArgMaxExt);
 
-  auto input = NewPyTensor(std::make_shared<tensor::Tensor>(1));
+  auto input = NewPyTensor(tensor::from_scalar(1));
   auto dim = py::none();
   auto keep_dim = py::bool_(true);
 
@@ -123,7 +123,7 @@ TEST_F(PyBoostConverterTest, ToIntOptionalTest2) {
   py::gil_scoped_acquire gil;
   Converter converter(&ops::gArgMaxExt);
 
-  auto input = NewPyTensor(std::make_shared<tensor::Tensor>(1));
+  auto input = NewPyTensor(tensor::from_scalar(1));
   auto dim = py::int_(1);
   auto keep_dim = py::bool_(false);
 

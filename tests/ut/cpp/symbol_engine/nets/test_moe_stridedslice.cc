@@ -32,8 +32,8 @@ TEST_F(TestNet, moe_stridedslice_1) {
   int64_t off_val = 0LL;
   auto t1 = cg.NewCNode(
     "OneHot",
-    {x, cg.NewValueNode(MakeValue<int64_t>(8)), cg.NewValueNode(std::make_shared<tensor::Tensor>(on_val, kInt64)),
-     cg.NewValueNode(std::make_shared<tensor::Tensor>(off_val, kInt64)), cg.NewValueNode(MakeValue<int64_t>(-1))});
+    {x, cg.NewValueNode(MakeValue<int64_t>(8)), cg.NewValueNode(tensor::from_scalar(on_val, kInt64)),
+     cg.NewValueNode(tensor::from_scalar(off_val, kInt64)), cg.NewValueNode(MakeValue<int64_t>(-1))});
   auto t2 =
     cg.NewCNode("ReduceSum", {t1, cg.NewValueNode(MakeValue<std::vector<int64_t>>({1})),
                               cg.NewValueNode(MakeValue<bool>(false)), cg.NewValueNode(MakeValue<bool>(false))});
@@ -71,8 +71,8 @@ TEST_F(TestNet, moe_stridedslice_2) {
   int64_t on_val = 1LL;
   int64_t off_val = 0LL;
   auto t1 = cg.NewCNode(
-    "OneHot", {x, val8, cg.NewValueNode(std::make_shared<tensor::Tensor>(on_val, kInt64)),
-               cg.NewValueNode(std::make_shared<tensor::Tensor>(off_val, kInt64)), cg.NewValueNode<int64_t>(-1)});
+    "OneHot", {x, val8, cg.NewValueNode(tensor::from_scalar(on_val, kInt64)),
+               cg.NewValueNode(tensor::from_scalar(off_val, kInt64)), cg.NewValueNode<int64_t>(-1)});
   auto t2 = cg.NewCNode("ReduceSum",
                         {t1, cg.NewValueNode(std::vector<int64_t>{1}), cg.NewValueNode(false), cg.NewValueNode(false)});
   auto t3 = cg.NewCNode("Max", {t2});

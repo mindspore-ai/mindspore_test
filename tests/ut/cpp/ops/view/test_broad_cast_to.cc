@@ -35,7 +35,7 @@ TEST_F(TestViewBroadcastTo, func) {
   auto input_perm = MakeValue(perm_data);
 
   std::vector<int64_t> tensor_data = {1, 2, 3, 4};
-  auto input_tensor = std::make_shared<tensor::Tensor>(tensor_data, kInt64);
+  auto input_tensor = tensor::from_vector(tensor_data, kInt64);
   input_tensor->set_shape({1, 4});
 
   auto storage_list = BroadcastToCalc(prim, std::vector<ValuePtr>({input_tensor, input_perm}));

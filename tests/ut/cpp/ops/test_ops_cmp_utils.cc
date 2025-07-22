@@ -22,7 +22,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 namespace {

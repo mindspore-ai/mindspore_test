@@ -25,7 +25,7 @@
 #include "common/ms_factory.h"
 #include "utils/ms_utils_secure.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace {

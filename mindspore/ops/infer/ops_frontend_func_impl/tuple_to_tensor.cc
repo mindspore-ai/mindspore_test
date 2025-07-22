@@ -44,7 +44,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 constexpr auto kTupleToTensor = "TupleToTensor";

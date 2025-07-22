@@ -41,7 +41,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parallel {
 // One dimensional shape placeholder.
@@ -264,7 +264,7 @@ CNodePtr PsEmbeddingCacheInserter::CreateReturnNode(const FuncGraphPtr graph, co
   MS_EXCEPTION_IF_NULL(output_node);
 
   // Create fake output value node to make sure the output abstract is the same for each subgraph.
-  auto fake_output_tensor = std::make_shared<tensor::Tensor>(1.0);
+  auto fake_output_tensor = tensor::from_scalar(1.0);
   auto fake_output_value = NewValueNode(fake_output_tensor);
   MS_EXCEPTION_IF_NULL(fake_output_value);
   fake_output_value->set_abstract(fake_output_tensor->ToAbstract());

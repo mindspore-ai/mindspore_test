@@ -20,7 +20,7 @@
 #include "infer/ops_func_impl/reciprocal.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_constants.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::ops {
 std::vector<TypeId> ReciprocalFuncImpl::InferType(const PrimitivePtr &primitive,

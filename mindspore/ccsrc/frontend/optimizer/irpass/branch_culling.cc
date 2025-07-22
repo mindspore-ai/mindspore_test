@@ -276,7 +276,7 @@ inline void ResetSharedOp() {
 
 tensor::TensorPtr ConstData() {
   std::vector<int64_t> shp = {1};
-  tensor::TensorPtr const_data = std::make_shared<tensor::Tensor>(kInt64->type_id(), shp);
+  tensor::TensorPtr const_data = tensor::empty(kInt64->type_id(), shp, device::DeviceType::kCPU);
   auto *val = static_cast<int64_t *>(const_data->data_c());
   *val = 0;
   return const_data;

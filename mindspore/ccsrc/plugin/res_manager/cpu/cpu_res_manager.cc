@@ -25,7 +25,7 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace cpu {

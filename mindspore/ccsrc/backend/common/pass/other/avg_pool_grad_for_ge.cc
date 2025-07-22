@@ -59,7 +59,7 @@ const AnfNodePtr AvgPoolGradForGE::Process(const FuncGraphPtr &graph, const AnfN
     auto shape_vector = input_x_shape->cast<abstract::ShapePtr>()->shape();
     std::vector<int32_t> value_node_data;
     (void)std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(value_node_data), LongToInt);
-    auto shape_tensor = std::make_shared<tensor::Tensor>(value_node_data, TypeIdToType(TypeId::kNumberTypeInt32));
+    auto shape_tensor = tensor::from_vector(value_node_data, TypeIdToType(TypeId::kNumberTypeInt32));
     shape_node = AnfAlgo::ConvertValueToNode(kernel_graph, shape_tensor);
   }
   // new avg_pool_grad_node

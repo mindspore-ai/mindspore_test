@@ -273,13 +273,13 @@ class CNodeDecoder {
   tensor::TensorPtr DecodeScalar(const nlohmann::json &scalar_json) const {
     auto type_id = StringToTypeId(scalar_json[kJsonKeyDataType]);
     if (type_id == TypeId::kNumberTypeFloat16) {
-      return std::make_shared<tensor::Tensor>(static_cast<float>(scalar_json[kJsonKeyValue]), kFloat16);
+      return tensor::from_scalar(static_cast<float>(scalar_json[kJsonKeyValue]), kFloat16);
     } else if (type_id == TypeId::kNumberTypeFloat32) {
-      return std::make_shared<tensor::Tensor>(static_cast<float>(scalar_json[kJsonKeyValue]), kFloat32);
+      return tensor::from_scalar(static_cast<float>(scalar_json[kJsonKeyValue]), kFloat32);
     } else if (type_id == TypeId::kNumberTypeInt32) {
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(scalar_json[kJsonKeyValue]), kInt32);
+      return tensor::from_scalar(static_cast<int64_t>(scalar_json[kJsonKeyValue]), kInt32);
     } else if (type_id == TypeId::kNumberTypeInt64) {
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(scalar_json[kJsonKeyValue]), kInt64);
+      return tensor::from_scalar(static_cast<int64_t>(scalar_json[kJsonKeyValue]), kInt64);
     }
     MS_LOG(ERROR) << "Fail to parse scalar " << scalar_json[kJsonKeyValue]
                   << " in json, because its type: " << scalar_json[kJsonKeyDataType]

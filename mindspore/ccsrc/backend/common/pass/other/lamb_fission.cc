@@ -190,11 +190,11 @@ AnfNodePtr CreateLayerNormNode(const FuncGraphPtr &graph, const AnfNodePtr &inpu
   // Calc the sum of reducesum
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  auto keep_dim_tensor = std::make_shared<tensor::Tensor>(false);
+  auto keep_dim_tensor = tensor::from_scalar(false);
   MS_EXCEPTION_IF_NULL(keep_dim_tensor);
   auto keep_dim_node = kernel_graph->NewValueNode(keep_dim_tensor->ToAbstract(), keep_dim_tensor);
   MS_EXCEPTION_IF_NULL(keep_dim_node);
-  auto skip_tensor = std::make_shared<tensor::Tensor>(false);
+  auto skip_tensor = tensor::from_scalar(false);
   MS_EXCEPTION_IF_NULL(skip_tensor);
   auto skip_node = kernel_graph->NewValueNode(skip_tensor->ToAbstract(), skip_tensor);
   MS_EXCEPTION_IF_NULL(skip_node);
@@ -308,10 +308,10 @@ const AnfNodePtr LambFissionGe::Process(const FuncGraphPtr &graph, const AnfNode
   auto new_global_step = CreateCastNode(graph, global_step_node, kNumberTypeFloat32);
 
   // cast delay flag to float32
-  auto flag = std::make_shared<tensor::Tensor>(1.0);
+  auto flag = tensor::from_scalar(1.0);
   auto weight_decay_flag = CreateValueNode(graph, flag);
 
-  auto num = std::make_shared<tensor::Tensor>(1.0);
+  auto num = tensor::from_scalar(1.0);
   auto num_one = CreateValueNode(graph, num);
   // create 1-beta1
   auto sub_beta1 = CreateNodeOfBinaryOp(graph, kSubOpName, num_one, ori_inputs[kBeta1Index], ori_inputs[kBeta1Index]);

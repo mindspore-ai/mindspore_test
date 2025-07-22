@@ -134,7 +134,7 @@ AnfNodePtr GetTransformedKeyNode(const AnfNodePtr &old_key_node, SymbolicKeyConv
     transformed_key = ++key_counter;
     (void)symbolic_key_map.emplace(std::make_pair(symbolic_key_inst, transformed_key));
   }
-  auto tensor_key = std::make_shared<mindspore::tensor::Tensor>(transformed_key);
+  auto tensor_key = tensor::from_scalar(transformed_key);
   auto transformed_key_node = NewValueNode(tensor_key);
   transformed_key_node->set_abstract(tensor_key->ToAbstract());
   return transformed_key_node;

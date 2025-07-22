@@ -117,7 +117,7 @@ bool AxisNormalizer::Process(const AnfNodePtr &graph_kernel_node) const {
       changed = true;
       std::sort(axis_vec.begin(), axis_vec.end());
       ValuePtr new_axis_value = nullptr;
-      new_axis_value = std::make_shared<tensor::Tensor>(axis_vec);
+      new_axis_value = tensor::from_vector(axis_vec);
       auto new_axis_node = std::make_shared<ValueNode>(new_axis_value);
       new_axis_node->set_abstract(new_axis_value->ToAbstract());
       Callback::Instance()->SetBasicNodeKernelInfo(

@@ -23,7 +23,7 @@
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 #if defined(__linux__) && defined(WITH_BACKEND)

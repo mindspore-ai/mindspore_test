@@ -349,7 +349,7 @@ tensor::TensorPtr generate_key_tensor_ptr(const tensor::TensorPtr &tensor_ptr) {
   for (auto i = 0; i != cel_num; i++) {
     key_vec[i] = i;
   }
-  return std::make_shared<tensor::Tensor>(key_vec);
+  return tensor::from_vector(key_vec);
 }
 
 void EmbeddingCacheTableManager::WarmUpHostCacheItemBatch(const int32_t batch_count, const WarmUpCacheMapEntry &entry) {

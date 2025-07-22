@@ -23,7 +23,7 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 struct MaskedSelectShapeParams {

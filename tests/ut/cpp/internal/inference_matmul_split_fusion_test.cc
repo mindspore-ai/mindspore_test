@@ -23,7 +23,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/phase.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace opt {

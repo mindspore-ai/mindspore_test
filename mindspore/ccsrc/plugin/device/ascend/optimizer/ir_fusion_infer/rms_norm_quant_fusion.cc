@@ -34,7 +34,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 template <typename T>

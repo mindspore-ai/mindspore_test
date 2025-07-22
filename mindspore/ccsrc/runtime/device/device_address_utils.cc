@@ -47,7 +47,7 @@
 #endif
 #include "runtime/pipeline/pipeline.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore {

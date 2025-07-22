@@ -33,7 +33,7 @@
 #include "frontend/operator/ops.h"
 #include "include/common/debug/draw.h"
 #include "ir/tensor.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "utils/symbolic.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_b.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"

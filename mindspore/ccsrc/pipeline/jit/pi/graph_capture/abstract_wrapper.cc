@@ -32,7 +32,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace pijit {
 constexpr auto kTensorModule = "mindspore.common";

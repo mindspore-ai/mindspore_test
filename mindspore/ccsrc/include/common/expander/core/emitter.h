@@ -294,7 +294,14 @@ class COMMON_EXPORT Emitter {
   /// \brief Emit a Tensor node.
   template <typename T>
   NodePtr Tensor(T data, TypePtr type_ptr = nullptr) {
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(data, type_ptr);
+    auto tensor_ptr = tensor::from_scalar(data, type_ptr);
+    return EmitValue(tensor_ptr);
+  }
+
+  /// \brief Emit a Tensor node.
+  template <typename T>
+  NodePtr Tensor(std::vector<T> data, TypePtr type_ptr = nullptr) {
+    auto tensor_ptr = tensor::from_vector(data, type_ptr);
     return EmitValue(tensor_ptr);
   }
 

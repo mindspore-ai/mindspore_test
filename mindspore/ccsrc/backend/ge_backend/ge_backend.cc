@@ -74,7 +74,7 @@
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace backend {
 namespace ge_backend {

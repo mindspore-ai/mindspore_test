@@ -1009,9 +1009,9 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_t
     output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {
     double input_value = py::cast<py::float_>(input_object);
-    output = std::make_shared<tensor::Tensor>(input_value, kFloat32);
+    output = tensor::from_scalar(input_value, kFloat32);
   } else if (py::isinstance<py::int_>(input_object)) {
-    output = std::make_shared<tensor::Tensor>(py::cast<int64_t>(input_object), kInt64);
+    output = tensor::from_scalar(py::cast<int64_t>(input_object), kInt64);
   } else if (py::isinstance<py::list>(input_object)) {
     ValuePtrList values;
     auto list_inputs = py::cast<py::list>(input_object);

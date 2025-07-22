@@ -118,7 +118,7 @@ AbstractBasePtr NormalizeSequenceIndex(const ShapeVector &data_shape, const Abst
     int_index_val = NormalizeTupleIndex::CheckRange(int_index_val, dim_size);
     output_list_elements.emplace_back(int_index_val);
   }
-  auto output = std::make_shared<tensor::Tensor>(output_list_elements);
+  auto output = tensor::from_vector(output_list_elements);
   return output->ToAbstract();
 }
 
@@ -138,7 +138,7 @@ AbstractBasePtr NormalizeNoneIndex(const ShapeVector &data_shape, size_t dim_ind
   for (int64_t i = 0; i < dim_size; i++) {
     (void)output_list_elements.emplace_back(i);
   }
-  auto output = std::make_shared<tensor::Tensor>(output_list_elements);
+  auto output = tensor::from_vector(output_list_elements);
   return output->ToAbstract();
 }
 
@@ -175,7 +175,7 @@ AbstractBasePtr NormalizeBoolSequenceIndex(const ShapeVector &data_shape, const 
   if (output_list_elements.empty()) {
     MS_EXCEPTION(IndexError) << "The sequence element(tuple/list) in tuple index can't be empty.";
   }
-  auto output = std::make_shared<tensor::Tensor>(output_list_elements);
+  auto output = tensor::from_vector(output_list_elements);
   return output->ToAbstract();
 }
 
@@ -198,7 +198,7 @@ AbstractBasePtr NormalizeEllipsisIndex(const ShapeVector &data_shape, size_t dim
   }
   size_t ellipse_occupy_dims = data_shape.size() - not_ellipse_occupy_dims;
   if (dim_index >= ellipse_occupy_dims) {
-    auto tensor = std::make_shared<tensor::Tensor>(std::vector<int64_t>{1});
+    auto tensor = tensor::from_vector(std::vector<int64_t>{1});
     return tensor->ToAbstract();
   }
   size_t ellipse_occupy_dims_i = ellipse_position + dim_index;
@@ -210,7 +210,7 @@ AbstractBasePtr NormalizeEllipsisIndex(const ShapeVector &data_shape, size_t dim
   for (int64_t i = 0; i < ellipse_occupy_dim; i++) {
     (void)ellipse_to_list.emplace_back(i);
   }
-  auto tensor = std::make_shared<tensor::Tensor>(ellipse_to_list);
+  auto tensor = tensor::from_vector(ellipse_to_list);
   return tensor->ToAbstract();
 }
 

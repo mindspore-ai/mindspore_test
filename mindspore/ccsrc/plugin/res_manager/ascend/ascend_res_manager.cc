@@ -59,7 +59,7 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_err_manager.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace ascend {

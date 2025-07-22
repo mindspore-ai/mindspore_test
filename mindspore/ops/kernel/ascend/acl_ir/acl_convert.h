@@ -361,7 +361,7 @@ class AttrToInputConverter : public AttrHelper<AttrToInputConverter> {
 
   template <typename T>
   void ConvertValue(const ValuePtr &value, const AttrDeclType<T> &, TensorParams *) {
-    auto tensor = std::make_shared<tensor::Tensor>(GetValue<T>(value));
+    auto tensor = tensor::from_scalar(GetValue<T>(value));
     auto tensor_data_ptr = tensor->data_c();
     auto size = static_cast<size_t>(tensor->DataNBytes());
     data_.resize(size);

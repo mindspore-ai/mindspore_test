@@ -23,7 +23,7 @@
 #include "utils/ms_utils_secure.h"
 #include "utils/hash_table.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 using device::HashTable;
 namespace tensor {

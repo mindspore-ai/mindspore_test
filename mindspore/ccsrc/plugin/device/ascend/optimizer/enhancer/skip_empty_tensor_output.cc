@@ -22,7 +22,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace {

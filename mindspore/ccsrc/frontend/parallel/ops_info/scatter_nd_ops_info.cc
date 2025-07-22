@@ -250,8 +250,8 @@ Status ScatterNdMulDivBaseInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto div = anf_node_list[2];
   auto dtype = anf_node_list[3];
   auto reshape_updates_mask = anf_node_list[4];
-  auto reverse_sub = gen_g_.PushBack(
-    {gen_g_.NewOpInst(SUB), NewValueNode(std::make_shared<tensor::Tensor>(1.0, kFloat32)), reshape_updates_mask});
+  auto reverse_sub =
+    gen_g_.PushBack({gen_g_.NewOpInst(SUB), NewValueNode(tensor::from_scalar(1.0, kFloat32)), reshape_updates_mask});
   auto add_mask = gen_g_.PushBack({gen_g_.NewOpInst(ADD), mul, reverse_sub});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
@@ -281,7 +281,7 @@ std::vector<AnfNodePtr> ScatterNdOpsInfo::PrepareReplaceGraph() {
   Shape indices_slice_value;
   (void)std::copy(input_slice_shape.begin(), input_slice_shape.begin() + static_cast<different_type>(gather_dims_size_),
                   std::back_inserter(indices_slice_value));
-  auto indices_slice_value_tensor = std::make_shared<mindspore::tensor::Tensor>(indices_slice_value, kInt32);
+  auto indices_slice_value_tensor = tensor::from_vector(indices_slice_value, kInt32);
   Shape indices_shape_size(inputs_shape_[1].size(), 1);
   indices_shape_size[indices_shape_size.size() - 1] = -1;
   auto reshape_indices_slice =
@@ -302,7 +302,7 @@ std::vector<AnfNodePtr> ScatterNdOpsInfo::PrepareReplaceGraph() {
   auto delta_value =
     std::accumulate(dev_accum_shape.begin() + static_cast<different_type>(gather_begin_position + gather_dims_size_),
                     dev_accum_shape.end(), 0, std::plus<int64_t>());
-  auto accum_value_tensor = std::make_shared<mindspore::tensor::Tensor>(accum_value, kInt32);
+  auto accum_value_tensor = tensor::from_vector(accum_value, kInt32);
   auto reshape_accum_value = gen_g_.PushBack(
     {gen_g_.NewOpInst(RESHAPE), ValuePtrToAnfNodePtr(accum_value_tensor), NewValueNode(MakeValue(indices_shape_size))});
   auto rank_mul = gen_g_.PushBack({gen_g_.NewOpInst(MUL), div, reshape_accum_value});

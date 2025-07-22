@@ -89,7 +89,7 @@ AnfNodePtr CreateUpdateStateNode(const FuncGraphPtr &graph, const bool is_need_u
 }
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, double value) {
-  auto tensor = std::make_shared<tensor::Tensor>(value);
+  auto tensor = tensor::from_scalar(value);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);
   kernel_graph->AddValueNodeToGraph(value_node);

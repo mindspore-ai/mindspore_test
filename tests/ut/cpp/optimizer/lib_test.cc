@@ -24,7 +24,7 @@
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/manager.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "ir/value.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"

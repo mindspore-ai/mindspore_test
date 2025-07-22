@@ -56,7 +56,7 @@ const AnfNodePtr UnsortedSegmentSumReplace::Process(const FuncGraphPtr &func_gra
   auto num_segments = common::AnfAlgo::GetNodeAttr<int64_t>(node, kNumSegments);
   const auto num_segments_type = kInt32;
   auto value_node =
-    kernel_graph->NewValueNode(std::make_shared<tensor::Tensor>(static_cast<int32_t>(num_segments), num_segments_type));
+    kernel_graph->NewValueNode(tensor::from_scalar(static_cast<int32_t>(num_segments), num_segments_type));
   MS_EXCEPTION_IF_NULL(value_node);
   // create UnsortedSegmentSum
   std::vector<AnfNodePtr> new_inputs{NewValueNode(std::make_shared<Primitive>(kUnsortedSegmentSumOpName))};

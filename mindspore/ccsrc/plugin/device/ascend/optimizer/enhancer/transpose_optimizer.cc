@@ -83,7 +83,7 @@ const AnfNodePtr TransposeOptimizer::Process(const FuncGraphPtr &func_graph, con
         if (!need_change_flag) {
           return nullptr;
         }
-        perm_tensor = std::make_shared<tensor::Tensor>(value64, kInt64);
+        perm_tensor = tensor::from_vector(value64, kInt64);
         break;
       }
       case TypeId::kNumberTypeInt32: {
@@ -92,7 +92,7 @@ const AnfNodePtr TransposeOptimizer::Process(const FuncGraphPtr &func_graph, con
         if (!need_change_flag) {
           return nullptr;
         }
-        perm_tensor = std::make_shared<tensor::Tensor>(value32, kInt32);
+        perm_tensor = tensor::from_vector(value32, kInt32);
         break;
       }
       default:

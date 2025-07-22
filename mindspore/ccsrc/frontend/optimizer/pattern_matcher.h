@@ -28,7 +28,7 @@
 #include "ir/func_graph.h"
 #include "utils/shape_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 ///

@@ -75,7 +75,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace session {
 MS_REG_SESSION(kSessionBasic, SessionBasic);
@@ -88,7 +88,7 @@ BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_outpu
   auto &node = node_output_pair.first;
   MS_EXCEPTION_IF_NULL(node);
   if (HasAbstractMonad(node)) {
-    return std::make_shared<tensor::Tensor>(int64_t(0), kBool);
+    return tensor::from_scalar(int64_t(0), kBool);
   }
   // if node is a value node, no need sync addr from device to host
   if (node->isa<ValueNode>()) {

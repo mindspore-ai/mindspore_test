@@ -59,7 +59,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::session {
 using abstract::AbstractTensor;
@@ -2584,7 +2584,7 @@ void AnfRuntimeAlgorithm::FlattenInputArg(const BaseRef &arg, const AnfNodePtr &
     (void)flatten_tensors->emplace_back(ScalarToTensor(utils::cast<ScalarPtr>(arg)));
   } else if (utils::isa<Monad>(arg)) {
     // If value is a monad, replace it with an unused tensor.
-    flatten_tensors->push_back(std::make_shared<tensor::Tensor>(int64_t(0), kBool));
+    flatten_tensors->push_back(tensor::from_scalar(int64_t(0), kBool));
   } else if (utils::isa<ValueSequencePtr>(arg)) {
     auto value_sequence = utils::cast<ValueSequencePtr>(arg);
     MS_EXCEPTION_IF_NULL(value_sequence);

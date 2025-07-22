@@ -270,7 +270,7 @@ AnfNodePtr ValuePtrToAnfNodePtr(const ValuePtr &value_ptr) {
 AnfNodePtr CreateInt32Tensor(int64_t value, bool int64_type) {
   mindspore::tensor::TensorPtr tensor_ptr;
   auto dtype = int64_type ? kInt64 : kInt32;
-  tensor_ptr = std::make_shared<tensor::Tensor>(value, dtype);
+  tensor_ptr = tensor::from_scalar(value, dtype);
 
   ValuePtr value_ptr = MakeValue(tensor_ptr);
   auto anf_node_ptr = ValuePtrToAnfNodePtr(value_ptr);
@@ -280,7 +280,7 @@ AnfNodePtr CreateInt32Tensor(int64_t value, bool int64_type) {
 }
 
 AnfNodePtr CreateFP32Tensor(float value) {
-  mindspore::tensor::TensorPtr tensor_ptr = std::make_shared<tensor::Tensor>(value, kFloat32);
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(value, kFloat32);
   ValuePtr value_ptr = MakeValue(tensor_ptr);
   auto anf_node_ptr = ValuePtrToAnfNodePtr(value_ptr);
   return anf_node_ptr;

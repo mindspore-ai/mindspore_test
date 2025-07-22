@@ -18,7 +18,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

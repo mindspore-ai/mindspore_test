@@ -34,7 +34,7 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 struct UpsampleBackwardParams {

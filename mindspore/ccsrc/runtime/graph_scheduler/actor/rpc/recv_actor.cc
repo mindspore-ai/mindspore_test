@@ -26,7 +26,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace runtime {
 RecvActor::~RecvActor() {

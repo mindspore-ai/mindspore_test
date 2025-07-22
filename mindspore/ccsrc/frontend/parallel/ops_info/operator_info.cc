@@ -844,7 +844,7 @@ Operator CreateDivOp(float scale) {
   OperatorAttrs operator_attrs;
   OperatorParams operator_param;
   constexpr size_t parameter_pos = 2;
-  mindspore::tensor::TensorPtr tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(scale);
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(scale);
   ValuePtr scale_value = MakeValue(tensor_ptr);
   (void)operator_param.emplace_back(std::make_pair(std::make_pair(Y, scale_value), parameter_pos));
   OperatorArgs operator_arg = std::make_pair(operator_attrs, operator_param);
@@ -3332,7 +3332,7 @@ AnfNodePtr CreateTensorTupleAnfNodePtr(const tensor::TensorPtrList &tensor_tuple
 
 Operator CreateDivOpWithType(float divisor, const TypePtr &dtype) {
   OperatorName operator1_name = REAL_DIV;
-  mindspore::tensor::TensorPtr tensor_ptr = std::make_shared<mindspore::tensor::Tensor>(divisor, dtype);
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(divisor, dtype);
   ValuePtr op1_param_value = MakeValue(tensor_ptr);
   Attr op1_param = std::make_pair("divisor", op1_param_value);
   OperatorParams operator1_params = {std::make_pair(op1_param, 2)};

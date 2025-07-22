@@ -35,7 +35,7 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace py = pybind11;
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace ascend {

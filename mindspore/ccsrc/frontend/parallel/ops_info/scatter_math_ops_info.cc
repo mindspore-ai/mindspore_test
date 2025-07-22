@@ -175,8 +175,7 @@ Status ScatterMathOpsInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   std::vector<int64_t> mask_shape = inputs_shape_[1];
   (void)mask_shape.insert(mask_shape.end(), inputs_shape_[2].size() - inputs_shape_[1].size(), 1);
   auto reshape = gen_g.PushBack({gen_g.NewOpInst(RESHAPE), cast, NewValueNode(MakeValue(mask_shape))});
-  auto sub_mask =
-    gen_g.PushBack({gen_g.NewOpInst(SUB), NewValueNode(std::make_shared<tensor::Tensor>(1.0, kFloat32)), reshape});
+  auto sub_mask = gen_g.PushBack({gen_g.NewOpInst(SUB), NewValueNode(tensor::from_scalar(1.0, kFloat32)), reshape});
   auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gen_g.virtual_input_node(), reshape});
   auto add_mask = gen_g.PushBack({gen_g.NewOpInst(ADD), mul, sub_mask});
   auto info_position = name_.find("Info");

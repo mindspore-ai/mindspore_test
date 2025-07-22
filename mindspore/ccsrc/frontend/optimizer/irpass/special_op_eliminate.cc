@@ -43,7 +43,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "utils/ms_utils_secure.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace irpass {
@@ -600,8 +600,7 @@ AnfNodePtr AllReduceConstElim::operator()(const OptimizerPtr &, const AnfNodePtr
       }
       auto constant_tensor = constant_value_node->value()->cast<tensor::TensorPtr>();
       auto tensor_dtype = constant_tensor->Dtype();
-      auto num_of_device_node =
-        NewValueNode(std::make_shared<tensor::Tensor>(static_cast<int64_t>(num_of_devices), tensor_dtype));
+      auto num_of_device_node = NewValueNode(tensor::from_scalar(static_cast<int64_t>(num_of_devices), tensor_dtype));
       // Multiply nodes
       auto mul_prim = prim::GetPythonOps("tensor_mul", "mindspore.ops.functional");
       MS_EXCEPTION_IF_NULL(mul_prim);

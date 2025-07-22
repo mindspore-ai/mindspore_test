@@ -105,7 +105,7 @@ void ProcessSend(const FuncGraphPtr &graph, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(manager);
   auto [fg, new_send] = CreateNewCNode(manager, node, true);
 
-  auto value_node = NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
+  auto value_node = NewValueNode(MakeValue(tensor::from_scalar(1)));
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(value_node->value());
   auto value_abs = value_node->value()->ToAbstract();
@@ -138,7 +138,7 @@ void ProcessNodeWithoutOutput(const FuncGraphPtr &graph, const CNodePtr &node) {
   The cut boundary must have an address
   Node---->Depend---->Tensormove
   */
-  auto value_node = NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
+  auto value_node = NewValueNode(MakeValue(tensor::from_scalar(1)));
   MS_EXCEPTION_IF_NULL(value_node);
   MS_EXCEPTION_IF_NULL(value_node->value());
   auto value_abs = value_node->value()->ToAbstract();

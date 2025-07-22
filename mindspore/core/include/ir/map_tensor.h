@@ -30,7 +30,7 @@
 #include "mindapi/base/macros.h"
 #include "utils/shape_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 using HashTableExportData = std::vector<std::shared_ptr<std::vector<char>>>;
 

@@ -37,7 +37,7 @@
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -113,27 +113,27 @@ tensor::TensorPtr PyBoostUtils::ScalarToTensor(const ScalarPtr &scalar, const Ty
   TypeId type_id = data_type->type_id();
   switch (type_id) {
     case kNumberTypeBool:
-      return std::make_shared<tensor::Tensor>(GetValue<bool>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<bool>(scalar), tensor_dtype);
     case kNumberTypeInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
     case kNumberTypeInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
     case kNumberTypeInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::Tensor>(GetValue<int64_t>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<int64_t>(scalar), tensor_dtype);
     case kNumberTypeUInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt64:
-      return std::make_shared<tensor::Tensor>(GetValue<uint64_t>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<uint64_t>(scalar), tensor_dtype);
     case kNumberTypeFloat32:
-      return std::make_shared<tensor::Tensor>(GetValue<float>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<float>(scalar), tensor_dtype);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::Tensor>(GetValue<double>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<double>(scalar), tensor_dtype);
     default:
       MS_LOG(EXCEPTION) << "When convert scalar to tensor, the scalar type: " << data_type << " is invalid.";
   }

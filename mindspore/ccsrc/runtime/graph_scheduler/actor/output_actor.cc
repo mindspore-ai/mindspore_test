@@ -24,7 +24,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace runtime {
 using distributed::collective::CollectiveManager;

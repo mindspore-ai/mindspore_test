@@ -25,7 +25,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/singleton.h"
 #include "utils/ms_context.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 bool TrtConverterContext::Init() {

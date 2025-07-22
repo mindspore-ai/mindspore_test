@@ -25,7 +25,7 @@
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 using float_complex = std::complex<float>;

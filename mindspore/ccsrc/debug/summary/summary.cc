@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_h.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_i.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::debug {
 constexpr int kSummaryGetItem = 2;

@@ -49,7 +49,7 @@
 #include "utils/singleton.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_map.h"
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 
 namespace mindspore {
 namespace backend {

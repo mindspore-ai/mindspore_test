@@ -24,7 +24,7 @@
 #include <queue>
 #include <algorithm>
 
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -42,7 +42,7 @@
 
 using mindspore::runtime::DeviceTensorStore;
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 static std::vector<std::string> g_overflow_operators;
 

@@ -47,10 +47,10 @@ tensor::TensorPtr CastValueTensor(const tensor::TensorPtr &src, const TypePtr &d
   TypeId dst_type_id = dst_type->type_id();
   if (src_type_id == kNumberTypeInt64 && dst_type_id == kNumberTypeInt32) {
     auto vec = TensorValueToVector<int64_t>(src);
-    return std::make_shared<tensor::Tensor>(CastVector<int64_t, int32_t>(vec), dst_type);
+    return tensor::from_vector(CastVector<int64_t, int32_t>(vec), dst_type);
   } else if (src_type_id == kNumberTypeFloat64 && dst_type_id == kNumberTypeFloat32) {
     auto vec = TensorValueToVector<double>(src);
-    return std::make_shared<tensor::Tensor>(vec, dst_type);
+    return tensor::from_vector(vec, dst_type);
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "Can not convert data type from " << TypeIdToString(src_type_id) << " to "
                                << TypeIdToString(dst_type_id);
