@@ -202,7 +202,7 @@ class InternalQMatmulSplitSiluMulOut1 : public InternalMultiWeightMatmulBase {
 
 MS_INTERNAL_KERNEL_FACTORY_REG(QMatmulSplitSiluMulOut1, internal::kInternalMultiWeightMatmulOpName,
                                InternalQMatmulSplitSiluMulOut1);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_3, INDEX_4);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_2, INDEX_3);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QMatmulSplitSiluMulOut1, OUTPUT_NUM_1, INDEX_0);
 
 // QMatmulSplitSiluFastgeluAddMulOut1
@@ -218,8 +218,8 @@ class InternalQMatmulSplitSiluFastgeluAddMulOut1 : public InternalMultiWeightMat
 
 MS_INTERNAL_KERNEL_FACTORY_REG(QMatmulSplitSiluFastgeluAddMulOut1, internal::kInternalMultiWeightMatmulOpName,
                                InternalQMatmulSplitSiluFastgeluAddMulOut1);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluFastgeluAddMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_3,
-                                     INDEX_4);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QMatmulSplitSiluFastgeluAddMulOut1, INPUT_NUM_4, INDEX_0, INDEX_1, INDEX_2,
+                                     INDEX_3);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QMatmulSplitSiluFastgeluAddMulOut1, OUTPUT_NUM_1, INDEX_0);
 
 }  // namespace kernel
