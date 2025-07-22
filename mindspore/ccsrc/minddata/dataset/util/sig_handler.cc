@@ -68,17 +68,44 @@ void SIGINTHandler(int signal, siginfo_t *info, void *context) {
 /// \brief Release the shared memory and message queue when got signal TERM / CHLD
 void ReleaseShmAndMsg() {
   std::string current_pid = std::to_string(getpid());
+  std::string ppid = std::to_string(getppid());
 
   {
     std::lock_guard<std::mutex> lock(shm_mgs_id_mtx_);
     // release the shm & msg used by the current process when the main process is killed
     for (auto &item : g_shm_id) {
       // so just release the shm used by the current process
-      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
-      // scenario 2: for the worker process, the item.first is "WorkerPID"
-      if (item.first.find(current_pid) == std::string::npos) {
+      // scenario 1: for the map / batch in process mode,
+      //     the map / batch thread in main process, the item.first is MainProcessPID_WorkerPID_"PyFuncOp" /
+      //                                                               MainProcessPID_WorkerPID_"BatchOp"
+      //     the map / batch worker, the item.first is WorkerPID_MainProcessPID_"MapOp" /
+      //                                               WorkerPID_MainProcessPID_"BatchOp"
+      // scenario 2: for the independent dataset mode
+      //     main process, the item.first is MainProcessPID_IndependentProcessPID_"ReceiveBridgeOp"
+      //     independent process, the item.first is IndependentProcessPID_ParentPID_"SendBridgeOp"
+      if (item.first.find(current_pid) != 0) {
         continue;
       }
+
+      // no need to release the shm & msg in the map worker / batch worker / independent process when the main process
+      // is still alive
+      auto first_underline_char = item.first.find("_");
+      if (first_underline_char == std::string::npos || first_underline_char <= 0) {
+        MS_LOG(ERROR) << "Couldn't find first char '_' in the key which is " << item.first;
+        return;
+      }
+      auto second_underline_char = item.first.find("_", first_underline_char + 1);
+      if (second_underline_char == std::string::npos) {
+        MS_LOG(ERROR) << "Couldn't find second char '_' in the key which is " << item.first;
+        return;
+      }
+
+      auto substr_ppid = item.first.substr(first_underline_char + 1, second_underline_char - first_underline_char - 1);
+      if (ppid == substr_ppid && kill(std::stoi(ppid), 0) == 0) {  // parent process is still alive
+        continue;
+      }
+
+      // release the shm
       if (item.second != -1) {
         if (shmctl(item.second, IPC_RMID, NULL) == -1 && errno != EINVAL) {
           MS_LOG(ERROR) << "shmctl shm_id: " << std::to_string(item.second)
@@ -88,20 +115,13 @@ void ReleaseShmAndMsg() {
         }
         g_shm_id[item.first] = -1;
       }
-    }
 
-    for (auto &item : g_msg_id) {
-      // so just release the msg used by the current process
-      // scenario 1: for the thread in main process, the item.first is "MainProcessPID_WorkerPID"
-      // scenario 2: for the worker process, the item.first is "WorkerPID"
-      if (item.first.find(current_pid) == std::string::npos) {
-        continue;
-      }
-      if (item.second != -1) {
-        if (msgctl(item.second, IPC_RMID, 0) == -1 && errno != EINVAL) {
-          MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(item.second) << " failed.";
+      // release the msg
+      if (g_msg_id[item.first] != -1) {
+        if (msgctl(g_msg_id[item.first], IPC_RMID, 0) == -1 && errno != EINVAL) {
+          MS_LOG(ERROR) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " failed.";
         } else {
-          MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(item.second) << " successfully.";
+          MS_LOG(INFO) << "Delete msg queue id: " << std::to_string(g_msg_id[item.first]) << " successfully.";
         }
         g_msg_id[item.first] = -1;
       }

@@ -641,15 +641,15 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
 
   std::string current_pid = std::to_string(getpid());
   // register the shm_id & msg_id by MainProcessPID_WorkerPID
-  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
-                        msg_queues_[worker_id]->msg_queue_id_);
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]) + "_BatchOp",
+                        shm_queues_[worker_id]->GetShmID(), msg_queues_[worker_id]->msg_queue_id_);
 
   // 2. send message queue which contains shared memory to Python Process Worker
   auto ret = msg_queues_[worker_id]->MsgSnd(kMasterSendDataMsg, shm_queues_[worker_id]->GetShmID(),
                                             shm_queues_[worker_id]->GetShmSize());
 
-  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), shm_queues_[worker_id]->GetShmID(),
-                        msg_queues_[worker_id]->msg_queue_id_);
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]) + "_BatchOp",
+                        shm_queues_[worker_id]->GetShmID(), msg_queues_[worker_id]->msg_queue_id_);
 
   if (ret != Status::OK()) {
     return ret;
@@ -664,8 +664,8 @@ Status BatchOp::ComputeWithWorker(TensorTable *input, TensorTable *output, CBatc
   // 1. get message queue which contains shared memory from Python Process Worker
   RETURN_IF_NOT_OK(msg_queues_[worker_id]->MsgRcv(kWorkerSendDataMsg));
 
-  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]), msg_queues_[worker_id]->shm_id_,
-                        msg_queues_[worker_id]->msg_queue_id_);
+  RegisterShmIDAndMsgID(current_pid + "_" + std::to_string(worker_pids_[worker_id]) + "_BatchOp",
+                        shm_queues_[worker_id]->GetShmID(), msg_queues_[worker_id]->msg_queue_id_);
 
   if (msg_queues_[worker_id]->GetErrorStatus()) {
     // got err from Python Process Worker
