@@ -23,7 +23,7 @@ def test_msrun_auto_parallel_sharding_propagation():
     Expectation: Run success.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10918 "
                     "--join=True --log_dir=./auto_parallel_logs/sharding_paopagation pytest -s -v "
                     "auto_parallel_train.py::test_auto_parallel_sharding_propagation")
     assert ret == 0
@@ -37,7 +37,7 @@ def test_msrun_auto_parallel_recursive_programming():
     Expectation: Run success.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10919 "
                     "--join=True --log_dir=./auto_parallel_logs/recursive_programming pytest -s -v "
                     "auto_parallel_train.py::test_auto_parallel_recursive_programming")
     assert ret == 0

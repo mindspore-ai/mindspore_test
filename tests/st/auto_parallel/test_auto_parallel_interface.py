@@ -26,7 +26,7 @@ def test_msrun_pipeline_remove_redundancy():
     '''
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10801 --join=True --log_dir=./test_cpkt_pp2/auto_parallel/remove_redundancy_log "
+        "--master_port=10901 --join=True --log_dir=./test_cpkt_pp2/auto_parallel/remove_redundancy_log "
         "pytest -s cpkt_rm_redundancy_auto_parallel.py"
     )
     assert return_code == 0
@@ -41,7 +41,7 @@ def test_msrun_cpkt_transfer_functional():
     '''
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10801 --join=True --log_dir=./test_cpkt_transfer/cpkt_transfer_log "
+        "--master_port=10902 --join=True --log_dir=./test_cpkt_transfer/cpkt_transfer_log "
         "pytest -s cpkt_transfer_functional_model_auto_parallel.py"
     )
     assert return_code == 0
@@ -56,7 +56,7 @@ def test_msrun_transformer_opt():
     '''
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10801 --join=True --log_dir=./test_ascend_config/ascend_config_log "
+        "--master_port=10903 --join=True --log_dir=./test_ascend_config/ascend_config_log "
         "pytest -s transformer_opt_auto_parallel.py"
     )
     assert return_code == 0

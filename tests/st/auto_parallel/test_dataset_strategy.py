@@ -23,7 +23,7 @@ def test_msrun_data_strategy_dataset_parallel():
     Expectation: The difference between the new loss and the baseline loss is in line with expectations.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10915 "
                     "--join=True --log_dir=./dataset_strategy_logs/data_parallel pytest -s -v "
                     "dataset_strategy.py::test_dataset_strategy_data_parallel")
     assert ret == 0
@@ -36,7 +36,7 @@ def test_msrun_data_strategy_fullbatch():
     Expectation: The difference between the new loss and the baseline loss is in line with expectations.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10916 "
                     "--join=True --log_dir=./dataset_strategy_logs/full_batch pytest -s -v "
                     "dataset_strategy.py::test_dataset_strategy_full_batch")
     assert ret == 0
@@ -49,7 +49,7 @@ def test_msrun_dataset_strategy_2_1_1_2_1():
     Expectation: The difference between the new loss and the baseline loss is in line with expectations.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10917 "
                     "--join=True --log_dir=./dataset_strategy_logs/2_1_1_2_1 pytest -s -v "
                     "dataset_strategy.py::test_dataset_strategy_using_tuple")
     assert ret == 0
