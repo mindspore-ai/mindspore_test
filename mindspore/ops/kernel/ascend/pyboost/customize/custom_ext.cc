@@ -17,6 +17,7 @@
 #include "kernel/ascend/pyboost/customize/custom_ext.h"
 #include <algorithm>
 #include <string>
+#include "utils/stream_guard.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
@@ -108,7 +109,7 @@ void CustomLaunchAclnnImpl(const std::string &aclnn_name, const ValuePtrList &in
                            const tensor::TensorPtrList &outputs) {
   auto p = std::make_shared<Primitive>("CustomLaunchAclnn");
   auto op = std::make_shared<CustomAclnnOp>(p, runtime::OpRunner::GetDeviceContext("Ascend"));
-  op->set_stream_id(PyBoostUtils::cur_stream_id());
+  op->set_stream_id(CurrentStream::id());
 
   tensor::TensorPtrList input_tensors;
   input_tensors.reserve(inputs.size());

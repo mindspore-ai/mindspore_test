@@ -25,8 +25,9 @@ inline bool GetSeqLenFromInputTensor(const TensorPtr &input_tensor, std::vector<
     return false;
   }
 
-  auto input_tensor_value = static_cast<int32_t *>(input_tensor->data_c());
-  auto input_tensor_value_num = input_tensor->Size() / sizeof(int32_t);
+  auto tensor_on_cpu = input_tensor->cpu();
+  auto input_tensor_value = static_cast<int32_t *>(tensor_on_cpu->data_c());
+  auto input_tensor_value_num = tensor_on_cpu->Size() / sizeof(int32_t);
   seq_len->clear();
   for (size_t i = 0; i < input_tensor_value_num; i++) {
     (*seq_len).emplace_back(input_tensor_value[i]);
