@@ -557,14 +557,10 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
       return nullptr;
     }
 
-    if (length < SECUREC_MEM_MAX_LEN) {
-      int ret_code = memcpy_s(me_data_ptr, length, ge_tensor->GetData(), length);
-      if (ret_code != EOK) {
-        MS_LOG(ERROR) << "Memcpy_s from ge_tensor to me_tensor failed.";
-        return nullptr;
-      }
-    } else {
-      (void)memcpy(me_data_ptr, ge_tensor->GetData(), length);
+    int ret_code = Memcpy(me_data_ptr, length, ge_tensor->GetData(), length);
+    if (ret_code != EOK) {
+      MS_LOG(ERROR) << "Memcpy from ge_tensor to me_tensor failed.";
+      return nullptr;
     }
 
     return make_shared<MeTensor>(me_tensor);
