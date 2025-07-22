@@ -1174,7 +1174,8 @@ bool MSBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompiler
     MS_EXCEPTION_IF_NULL(graph);
     if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(), [&](const CNodePtr &kernel) {
           MS_EXCEPTION_IF_NULL(kernel);
-          return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
+          return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute" ||
+                 common::AnfAlgo::GetCNodeName(kernel) == "JoinedStr";
         })) {
       MS_LOG(INFO) << "Disable pynative and graph pipeline for graph: " << graph_compiler_info->name_
                    << ", because the graph contains PyExecute op.";

@@ -1965,6 +1965,12 @@ MS_REGISTER_HAL_COPY_FUNC(
     device::ResKey res_key{DeviceType::kAscend, device_id};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
+    if (stream_id != kDefaultStreamIndex) {
+      if (!AscendStreamMng::GetInstance().SyncStream(kDefaultStreamIndex)) {
+        MS_LOG(ERROR) << "Sync stream failed, stream id: " << kDefaultStreamIndex;
+        return false;
+      }
+    }
     return res_manager->Copy(dst, src, size, device::CopyType::kD2H, stream_id);
   }));
 MS_REGISTER_HAL_RES_MANAGER(kAscendDevice, DeviceType::kAscend, AscendResManager);

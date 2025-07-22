@@ -1113,8 +1113,8 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
   }
 }
 
-void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr& tensor_address,
-                               const KernelTensorPtr& kernel_tensor, const device::DeviceAddressPtr& device_address) {
+void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &tensor_address,
+                               const KernelTensorPtr &kernel_tensor, const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(tensor_address);
   MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -1176,7 +1176,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
     PrepareOffloadedParameter(tensor, tensor_address, kernel_tensor, device_tensor);
     MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
   }
-  if (device_tensor != nullptr && tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
+  if (tensor_address->device_name() != graph_parameter_store->GetParameterDeviceName(outer_index, inner_index)) {
     PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
   }
