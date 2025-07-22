@@ -104,7 +104,7 @@ def test_cluster_monitor_dtpGroup():
             os.mkdir(f"device{i}_cluster_monitor_dtpgroup")
         cluster_path = os.path.join(os.getcwd(), "cluster_monitor_log")
         os.mkdir(cluster_path)
-        set_port()
+        set_port(64833)
         set_cluster_monitor_env(cluster_path, "enable:true,steptime:true,dtpGroup:false")
         ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
                         "pytest -s cluster_monitor_case.py::test_cluster_monitor_dtpgroup_env")
