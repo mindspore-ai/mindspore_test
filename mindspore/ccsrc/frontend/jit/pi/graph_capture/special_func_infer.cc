@@ -28,6 +28,8 @@
 #include "frontend/jit/pi/graph_capture/graph_build.h"
 #include "frontend/jit/pi/graph_guard/infer.h"
 #include "frontend/jit/pi/graph_capture/side_effect.h"
+#include "frontend/jit/pi/capture_context.h"
+#include "frontend/jit/pi/python_adapter/py_code.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {
@@ -915,13 +917,22 @@ static FuncKey KeyFinderSkipModule(const py::object &callable) {
   if (PyMethod_Check(func_info)) {
     func_info = PyMethod_GET_FUNCTION(func_info);
   }
-  if (!PyFunction_Check(func_info) && !PyCFunction_Check(func_info) && !PyType_Check(func_info)) {
-    func_info = reinterpret_cast<PyObject *>(Py_TYPE(func_info));
+  if (!PyFunction_Check(func_info)) {
+    MS_LOG(INFO) << "Is not a function, cannot trace bytecode. " << std::string(py::str(callable));
+    return FUNC_KEY_PIJIT_FORBIDDEN;
   }
-  if (IsPiJitLogOn(LogCfg::kGraphBreak)) {
-    MS_LOG(ERROR) << "func " << std::string(py::str(func_info)) << " is forbidden to analyze, module is " << mod;
+  auto code = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info));
+  if (code == nullptr) {
+    MS_LOG(INFO) << "No code object, cannot trace bytecode. " << std::string(py::str(callable));
+    return FUNC_KEY_PIJIT_FORBIDDEN;
   }
-  return FUNC_KEY_PIJIT_FORBIDDEN;
+  PyCodeWrapper co(code);
+  if (CaptureContext::GetInstance()->IsSkipFile(co.FileName())) {
+    MS_LOG(INFO) << "Forbidden to trace bytecode in file: " << co.FileName();
+    return FUNC_KEY_PIJIT_FORBIDDEN;
+  }
+  // Allow to trace bytecode of thirty-party by default.
+  return FUNC_KEY_EMPTY;
 }
 
 static FuncKey FindFuncKey(const py::object &callable) {

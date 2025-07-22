@@ -210,9 +210,12 @@ SKIP_RULES = {
         "genericpath",
     ),
     "third_party": (
+        "jax",
         "numpy",
         "pandas",
         "sklearn",
+        "tensorflow",
+        "tensorrt",
         "tqdm",
         "tree",
     ),

@@ -2321,6 +2321,7 @@ py::object GraphBuilder::GetFuncInfo(ValueNode *func_node) {
 }
 
 bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::object &callable) {
+  MS_LOG(DEBUG) << "Do whitelist func infer: " << ToString(call_node);
   AObject::Type vobj_type = call_node->input(0)->GetVobj()->GetType();
   if (vobj_type == AObject::kTypeCell) {
     std::string module_name = GetTopModule(callable);
@@ -2331,6 +2332,7 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
 
   InferFunc infer_func = FindInferFunc(callable);
   if (infer_func == nullptr) {
+    MS_LOG(DEBUG) << "No infer function found";
     return false;
   }
 
@@ -3080,6 +3082,7 @@ bool GraphBuilder::ResolveNoGrad(CallNode *call_node) {
 
 // todo: this function should merge with resolve callable and delete useless part.
 py::object GraphBuilder::ResolveCallableWithByteCode(CallNode *call_node, StopTraceReason *stop_reason) {
+  MS_LOG(DEBUG) << "Start resolve callable: " << ToString(call_node);
   AObject *callable = call_node->input(0)->GetVobj();
   py::object callable_info;
   *stop_reason = StopTraceReason::kNonStopTrace;
@@ -4910,6 +4913,7 @@ bool GraphBuilder::HandleCallTensorClass(CallNode *call_node) {
 }
 
 ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
+  MS_LOG(DEBUG) << "Start handle call class: " << ToString(call_node);
   if (IsMakeNamedtuple(call_node)) {
     return HandleMakeNamedtuple(call_node);
   }

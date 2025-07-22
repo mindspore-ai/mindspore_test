@@ -70,6 +70,7 @@ class CaptureContext {
   // check the code need skip
   bool IsSkip(const PyFrameWrapper &f) const;
   bool IsSkip(PyCodeObject *co, PyObject *globals) const;
+  bool IsSkipFile(const char *file) const;
 
   // set context attribute
   void SetContext(const py::args &va, const py::kwargs &kw);
@@ -86,7 +87,6 @@ class CaptureContext {
 
   // white list check
   bool IsSkipModule(PyCodeObject *co, const std::string &module_name) const;
-  bool IsSkipFile(const char *file) const;
   bool IsSkipCode(PyCodeObject *co, const std::string &module_name) const;
 
   // shared config at context
