@@ -22,6 +22,8 @@
 #include <vector>
 #include <shared_mutex>
 #include "kernel/environ.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace kernel {

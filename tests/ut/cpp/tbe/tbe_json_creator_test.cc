@@ -22,11 +22,9 @@
 #include "kernel/kash/kernel_pack.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "plugin/device/ascend/optimizer/buffer_fusion/ub_pattern_fusion.h"
 #include "plugin/device/ascend/kernel/tbe/tbe_json/single_tbe_json_creator.h"
 #include "plugin/device/ascend/kernel/tbe/tbe_json/fusion_tbe_json_creator.h"
-#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::kernel {
 namespace {

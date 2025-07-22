@@ -23,6 +23,7 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/device/res_manager/swap_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"

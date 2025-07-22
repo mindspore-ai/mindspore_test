@@ -18,8 +18,6 @@
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/kernel_info.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 
 #define private public
 #define protected public

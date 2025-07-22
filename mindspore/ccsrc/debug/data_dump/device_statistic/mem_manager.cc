@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 #include "include/common/debug/common.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {

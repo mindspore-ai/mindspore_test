@@ -19,6 +19,7 @@
 #include "runtime/device/move_to.h"
 #include "common/device_type.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {

@@ -21,7 +21,6 @@
 #include "kernel/kash/kernel_pack.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "plugin/device/ascend/optimizer/buffer_fusion/ub_pattern_fusion.h"
 #include "plugin/device/ascend/optimizer/buffer_fusion/eltwise_fusion_pass.h"
 #include "plugin/device/ascend/optimizer/buffer_fusion/conv2dbackprop_eltwise_eltwise_fusion_pass.h"

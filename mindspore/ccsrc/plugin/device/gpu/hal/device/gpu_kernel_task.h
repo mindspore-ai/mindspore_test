@@ -23,6 +23,7 @@
 #include "ir/tensor_storage_info.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/pipeline/task/kernel_task.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore::device::gpu {
 class GpuContiguousKernelTask : public runtime::KernelTask {

@@ -28,7 +28,6 @@
 #include "include/backend/optimizer/pass_manager.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
 
