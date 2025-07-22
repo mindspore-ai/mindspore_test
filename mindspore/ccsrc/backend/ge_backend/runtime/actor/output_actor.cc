@@ -467,7 +467,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
           << "Device(id:" << device_id << ") memory isn't enough and alloc failed in output actor, kernel name: "
           << output_node->fullname_with_scope() << ", alloc size: " << tensor_device_address->GetSize() << "B.";
       }
-      if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
+      if (mindspore::runtime::IsDisableRuntimeConfig(mindspore::runtime::kRuntimeCopyAsync)) {
         MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
                       << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
         if (!SyncCopy(tensor_device_address, device_tensor, kDefaultStreamIndex) || !res_manager->SyncAllStreams()) {

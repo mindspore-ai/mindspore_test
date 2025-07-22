@@ -76,6 +76,7 @@
 #include "debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include "kernel/ascend/acl/acl_kernel_mod.h"
 #include "plugin/device/ascend/hal/hardware/ascend_device_res_manager.h"
@@ -1133,7 +1134,7 @@ void AscendKernelExecutor::DoStreamAssign(
   }
   MS_LOG(INFO) << "Status record: start stream assign, " << kernel_graph->ToString();
   // stream assign
-  if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
     AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), mock_exec_order, res_manager_);
@@ -1242,7 +1243,7 @@ void AscendKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const 
   const auto &all_nodes = TopoSort(graph->get_return());
   MS_VLOG(VL_FLOW) << "The size of execution order: " << nodes.size();
   MS_VLOG(VL_FLOW) << "The size of all node: " << all_nodes.size();
-  if (common::IsEnableRuntimeConfig(common::kRuntimeCompileStat)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeCompileStat)) {
     std::cout << "The size of execution order: " << nodes.size() << std::endl;
     std::cout << "The size of all node: " << all_nodes.size() << std::endl;
   }

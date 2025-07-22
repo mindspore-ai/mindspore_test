@@ -199,7 +199,7 @@ size_t GetDefragMemoryStepFreq() {
   static std::once_flag init_flag;
   std::call_once(init_flag, [&]() {
     MS_LOG(INFO) << "Init defrag memory step freq.";
-    const auto &value = common::GetConfigValue(common::kAllocConf, common::kAllocDefragMemoryStepFreq);
+    const auto &value = memory::mem_pool::GetAllocConfigValue(memory::mem_pool::kAllocDefragMemoryStepFreq);
     MS_LOG(INFO) << "Config defrag memory step freq : " << value << ".";
     if (value.size() != 0) {
       std::stringstream sstream(value);

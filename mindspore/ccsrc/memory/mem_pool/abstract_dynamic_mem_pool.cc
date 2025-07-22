@@ -421,7 +421,7 @@ MemBlock *MemBufAllocator::ExpandBlock(size_t size) {
 AbstractDynamicMemPool::AbstractDynamicMemPool() {}
 
 void AbstractDynamicMemPool::Initialize(size_t init_size, size_t increase_size, size_t max_size) {
-  const auto &value = common::GetConfigValue(common::kAllocConf, common::kAllocDefragMemoryStepFreq);
+  const auto &value = memory::mem_pool::GetAllocConfigValue(memory::mem_pool::kAllocDefragMemoryStepFreq);
   std::string dump_key = "dump";
   enable_dump_memory_ = value.find(dump_key) != std::string::npos;
 

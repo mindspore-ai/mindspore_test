@@ -29,6 +29,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/draw.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -766,7 +767,7 @@ void GeGraphExecutor::AllocGEFixMemory() const {
       MS_LOG(INFO) << "GE fixed memory size == 0, skip update GE fixed memory.";
       return Status::SUCCESS;
     }
-    if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
+    if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat)) {
       std::cout << "[MS_RUNTIME_PROF]"
                 << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                 << ", size: " << size << ", memory: " << memory << std::endl;
@@ -975,7 +976,7 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
   }
 
   bool is_dynamic_shape = kg->is_dynamic_shape();
-  if (IsMemoryPoolRecycle() && !is_dynamic_shape) {
+  if (memory::mem_pool::IsMemoryPoolRecycle() && !is_dynamic_shape) {
     auto max_static_memory_size = ge_res_manager_->GetMaxUsedMemorySize();
     auto feature_memory_size = ge_message_manager_.GetFeatureMemory(graph_name);
     if (feature_memory_size != 0) {

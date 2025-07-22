@@ -24,6 +24,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_base_symbol.h"
@@ -301,7 +302,7 @@ int64_t GetCacheCapaticy() {
   bool is_configured = device::ascend::OpTuningConf::GetInstance()->IsAclnnCacheConfigured();
   bool global_cache = device::ascend::OpTuningConf::GetInstance()->IsEnableAclnnGlobalCache();
   size_t capaticy_from_user = device::ascend::OpTuningConf::GetInstance()->AclnnCacheQueueLength();
-  std::string capaticy_from_env = common::GetRuntimeConfigValue(common::kRuntimeAclnnCacheQueueLength);
+  std::string capaticy_from_env = runtime::GetRuntimeConfigValue(runtime::kRuntimeAclnnCacheQueueLength);
   if (!is_configured) {
     if (capaticy_from_env.empty()) {
       ms_cache_capaticy = -1;

@@ -183,7 +183,7 @@ void TrackerGraph::Dump(const std::string &graph_path) {
   std::lock_guard<std::mutex> lock(mutex_);
   RaceCheck();
 
-  static bool is_simple_tracker = common::IsEnableAllocConfig(common::kAllocSimpleTracker);
+  static bool is_simple_tracker = memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocSimpleTracker);
   if (is_simple_tracker) {
     MS_LOG(WARNING) << "Simple tracker, skip dump";
     return;

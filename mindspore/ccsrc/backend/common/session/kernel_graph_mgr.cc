@@ -34,6 +34,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/config_manager.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "load_mindir/load_model.h"
 #include "include/common/debug/dump_proto.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -2962,7 +2963,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
       MS_LOG(EXCEPTION) << "Failed to get graph id for graph:" << graph_name << " from json.";
     }
     auto kernel_graph = std::make_shared<KernelGraph>();
-    if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
+    if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
       kernel_graph->set_graph_id(graph_json[kGraphId]);
       kernel_graph->set_is_from_cache(true);
     } else {
@@ -2978,7 +2979,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructMultiKernelGraphByCache(
     all_out_graph.push_back(kernel_graph);
 
     mindspore::HashMap<std::string, AnfNodePtr> name_to_node;
-    if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
+    if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
       std::string mindir_path = GetKernelGraphMindIRPath(kernel_graph, cache_path);
       auto real_path = Common::CreatePrefixPath(mindir_path, true);
       if (!CheckPath(real_path)) {
@@ -3036,7 +3037,7 @@ void KernelGraphMgr::BuildGraphAndAttrForSingleCache(
       continue;
     }
     KernelGraphPtr kernel_graph = nullptr;
-    if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
+    if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
       kernel_graph = NewKernelGraph();
       kernel_graph->set_is_from_cache(true);
       MS_LOG(DEBUG) << "kernel_graph:" << kernel_graph->ToString();
@@ -3105,7 +3106,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructSingleKernelGraphByCache(
   });
   MS_LOG(DEBUG) << "Construct kernel graph and its params that exist correspond frontend param.";
   BuildGraphAndAttrForSingleCache(model_json, all_out_graph, graphid_to_graph, graph_ids_node_name, &name_to_node);
-  if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
     MS_LOG(INFO) << "Load mindir for single cache without thread.";
     std::vector<FuncGraphPtr> graphs_for_load;
     (void)(std::transform(all_out_graph->begin(), all_out_graph->end(), std::back_inserter(graphs_for_load),
@@ -3229,7 +3230,7 @@ std::vector<KernelGraphPtr> KernelGraphMgr::ConstructKernelGraph(std::vector<Ker
   std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> graph_ids_node_name;
   std::vector<std::vector<KernelGraphPtr>> root_sub_graphs;
   nlohmann::json model_json;
-  if (common::IsDisableRuntimeConfig(common::kRuntimeThreadLoadCache)) {
+  if (runtime::IsDisableRuntimeConfig(runtime::kRuntimeThreadLoadCache)) {
     MS_LOG(INFO) << "Disable thread load by backend config. Start to load mindir by compile "
                     "cache without thread.";
     PROF_START(Cache_LoadJson);

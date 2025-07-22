@@ -270,8 +270,7 @@ bool EnableAsyncInfer() {
 }
 
 bool EnableTraceMemory() {
-  static const bool enable_mem_tracker = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-                                         !common::GetAllocConfigValue(common::kAllocMemoryTrackerPath).empty();
+  static const bool enable_mem_tracker = memory::mem_pool::IsEnableMemTrack();
   if (enable_mem_tracker) {
     return false;
   }
@@ -317,7 +316,7 @@ void ResetPipelineAndTraceMemoryStatus() {
 }
 
 bool EnableKbkSubGraphExecute() {
-  static bool disable_sub_graph_mode = common::IsDisableRuntimeConfig(common::kRuntimeKbkSubGraphMode);
+  static bool disable_sub_graph_mode = runtime::IsDisableRuntimeConfig(runtime::kRuntimeKbkSubGraphMode);
   if (disable_sub_graph_mode) {
     return false;
   }
@@ -339,7 +338,7 @@ bool EnableKbkSubGraphExecute() {
 }
 
 bool EnableInputOptimize() {
-  static bool disable_input_optimize = common::IsDisableRuntimeConfig(common::kRuntimeInputOptimize);
+  static bool disable_input_optimize = runtime::IsDisableRuntimeConfig(runtime::kRuntimeInputOptimize);
   if (disable_input_optimize) {
     return false;
   }
@@ -360,7 +359,7 @@ bool EnableInputOptimize() {
 }
 
 bool EnableRuntimePipeline() {
-  static bool disable_runtime_pipeline = common::IsDisableRuntimeConfig(common::kRuntimePipeline);
+  static bool disable_runtime_pipeline = runtime::IsDisableRuntimeConfig(runtime::kRuntimePipeline);
   if (disable_runtime_pipeline) {
     return false;
   }
@@ -391,7 +390,7 @@ size_t GetDefragMemoryStepFreq() {
   static std::once_flag init_flag;
   std::call_once(init_flag, [&]() {
     MS_LOG(INFO) << "Init defrag memory step freq.";
-    const auto &value = common::GetConfigValue(common::kAllocConf, common::kAllocDefragMemoryStepFreq);
+    const auto &value = memory::mem_pool::GetAllocConfigValue(memory::mem_pool::kAllocDefragMemoryStepFreq);
     MS_LOG(INFO) << "Config defrag memory step freq : " << value << ".";
     if (value.size() != 0) {
       std::stringstream sstream(value);
@@ -472,8 +471,7 @@ bool CopyDataForParameter(const DeviceTensorPtr &dst_device_tensor, const Device
   MS_LOG(DEBUG) << "Async copy from device tensor:" << src_device_tensor << " to:" << dst_device_tensor
                 << " by stream id:" << stream_id;
   auto ret = AsyncCopy(dst_device_tensor, src_device_tensor, stream_id, false);
-  static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input = common::IsEnableRuntimeConfig(kSyncCopyInput);
+  static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput);
   if (sync_copy_input) {
     if (!SyncAllStreamForDeviceAddress(dst_device_tensor)) {
       MS_LOG(ERROR) << "Failed to sync all stream.";
@@ -1094,9 +1092,8 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
 }
 
 void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t outer_index, size_t inner_index) {
-  static const std::string kSyncCopyInput = "sync_copy_input";
-  static bool sync_copy_input =
-    common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
+  static bool sync_copy_input = runtime::IsEnableRuntimeConfig(runtime::kRuntimeSyncCopyInput) ||
+                                runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync_copy_input) {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_EXCEPTION_IF_NULL(tensor);

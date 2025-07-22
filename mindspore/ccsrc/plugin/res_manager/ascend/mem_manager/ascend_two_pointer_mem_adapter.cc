@@ -164,7 +164,7 @@ uint8_t *AscendTwoPointerMemAdapter::MallocDynamicDevMem(size_t size, const std:
 
 void AscendTwoPointerMemAdapter::ResetDynamicMemory() {
   cur_dynamic_mem_offset_ = 0;
-  if (IsMemoryPoolRecycle()) {
+  if (memory::mem_pool::IsMemoryPoolRecycle()) {
     max_dynamic_mem_offset_ = 0;
   }
   if (AscendVmmAdapter::GetInstance().IsEnabled()) {
@@ -189,7 +189,7 @@ std::string AscendTwoPointerMemAdapter::DevMemStatistics() const {
     oss << "\nTotal Static Memory size: " << (ms_used_hbm_size_ - static_mem_offset_) / kMBToByte << "M";
     oss << "\nTotal Dynamic memory size: " << history_max_dynamic_mem_offset_ / kMBToByte << "M";
   }
-  if (IsMemoryPoolRecycle()) {
+  if (memory::mem_pool::IsMemoryPoolRecycle()) {
     size_t max_actual = std::max(actual_peak_memory_, (ms_used_hbm_size_ - static_mem_offset_));
     oss << "\nActual peak memory usage: " << max_actual / kMBToByte << "M";
   } else if (context->IsKByKExecutorMode()) {

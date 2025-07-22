@@ -25,6 +25,7 @@
 
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/utils/utils.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
@@ -234,7 +235,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
     memory_malloc_mstx_callback_(device_addr, align_size);
   }
 
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -253,7 +254,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
         GenAllocateMemoryTimeEvent(device_addr, align_size, stream_id, from_persistent_mem, from_persistent_mem);
       ReportMemoryTimeEvent(time_event);
     }
-    if (IsMemoryPoolRecycle()) {
+    if (memory::mem_pool::IsMemoryPoolRecycle()) {
       (void)mem_bufs_.insert(device_addr);
     }
   }
@@ -370,7 +371,7 @@ DeviceMemPtr DynamicMemPoolBestFit::FindMemBufInSpecifiedMng(size_t size, bool f
   auto &mem_buf_map = mem_mng->GetOrCreateMemBufMap(stream_id, target_status);
   auto iter = mem_buf_map.lower_bound(size);
   if (iter != mem_buf_map.end()) {
-    if (IsMemoryPoolRecycle()) {
+    if (memory::mem_pool::IsMemoryPoolRecycle()) {
       // Ensure that the addresses corresponding to the same Tensor for each step are consistent, making the memory pool
       // recycling function more stable.
       auto find_size = iter->first;
@@ -698,7 +699,7 @@ const std::pair<size_t, size_t> DynamicMemPoolBestFit::FreeIdleMemsByEagerFree()
   const auto [common_free_size, common_real_free_size] = eager_free_mem_func(common_mem_);
   auto free_size = persistent_free_size + common_free_size;
   auto real_free_size = persistent_real_free_size + common_real_free_size;
-  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat);
+  static bool is_enable_memory_statistics = runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat);
   if (is_enable_memory_statistics) {
     std::cout << "Total eager free memory : " << free_size << ", real free : " << real_free_size
               << ", not free size: " << (free_size - real_free_size) << "." << std::endl;
@@ -806,7 +807,7 @@ void DynamicMemPoolBestFit::FreeTensorMemInner(const DeviceMemPtr &device_addr) 
   MS_EXCEPTION_IF_NULL(mem_buf);
   if (PreCombineMemBuf(mem_buf, mem_mng)) {
     CombineMemBuf(mem_block, iter, mem_mng, mem_buf->status_, DynamicMemBufStatus::kMemBufIdle);
-    if (IsMemoryPoolRecycle()) {
+    if (memory::mem_pool::IsMemoryPoolRecycle()) {
       (void)mem_bufs_.erase(device_addr);
     }
     MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY) << "Free memory details, name:"
@@ -863,7 +864,7 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
     memory_free_mstx_callback_(mem_buf->device_addr_);
   }
 
-  if (IsNeedProfilieMemoryLog()) {
+  if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -1138,8 +1139,8 @@ void DynamicMemPoolBestFit::ReleaseDeviceRes() {
 
 void DynamicMemPoolBestFit::DumpDynamicMemPoolStateInfo() {
   size_t total_used_size_list[static_cast<int>(memory::mem_pool::MemType::kOther) + 1] = {0};
-  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) ||
-                                            common::IsEnableRuntimeConfig(common::kRuntimeMemoryTrack);
+  static bool is_enable_memory_statistics = runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat) ||
+                                            runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryTrack);
   auto fn = [&](const MemStatusManagerPtr &mem_mng, const std::string &mem_type) {
     MS_EXCEPTION_IF_NULL(mem_mng);
     if (mem_mng->Empty()) {

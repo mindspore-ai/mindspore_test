@@ -16,6 +16,7 @@
 #include "include/backend/mem_reuse/mem_pool_util.h"
 
 #include "include/common/debug/common.h"
+#include "include/common/utils/utils.h"
 #include "utils/file_utils.h"
 #include "utils/ms_utils.h"
 
@@ -39,8 +40,33 @@ const std::map<MemType, std::string> kMemTypeStr = {{MemType::kWeight, "Weight"}
 
 std::string MemTypeToStr(MemType mem_type) { return kMemTypeStr.at(mem_type); }
 
+bool IsEnableMemTrack() {
+  return IsEnableAllocConfig(kAllocMemoryTracker) || !GetAllocConfigValue(kAllocMemoryTrackerPath).empty();
+}
+
+bool IsNeedProfilieMemoryLog() {
+  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsCompileSimulation();
+  return is_need_profile_memory_log;
+}
+
+bool IsMemoryPoolRecycle() {
+  static bool disable_optimize_mem = IsDisableAllocConfig(kAllocMemoryRecycle);
+  static bool disable_ge_kernel = IsDisableGeKernel();
+  if (!disable_ge_kernel || disable_optimize_mem) {
+    return false;
+  }
+  if (!IsJit()) {
+    return false;
+  }
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto is_ge = context_ptr->GetBackend() == kBackendGE;
+  auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
+  return is_ge && task_sink;
+}
+
 std::string GeneratePath(size_t rank_id, const std::string &file_name, const std::string &suffix) {
-  std::string path = common::GetAllocConfigValue(common::kAllocMemoryTrackerPath);
+  std::string path = GetAllocConfigValue(kAllocMemoryTrackerPath);
   if (path.empty()) {
     path = "./";
   }

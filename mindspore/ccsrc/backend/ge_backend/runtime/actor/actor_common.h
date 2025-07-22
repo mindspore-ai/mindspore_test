@@ -34,6 +34,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "debug/profiler/profiler.h"

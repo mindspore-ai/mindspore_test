@@ -68,7 +68,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
       return;
     }
 
-    if (IsNeedProfilieMemoryLog()) {
+    if (memory::mem_pool::IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: MemoryManagerActor, device address class ptr: "
                       << output_address << ", device address size: " << device_tensor->GetSize()
@@ -298,7 +298,7 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context), error_info);
   }
 
-  if (common::IsEnableAllocConfig(common::kAllocSomasWholeBlock)) {
+  if (memory::mem_pool::IsEnableAllocConfig(memory::mem_pool::kAllocSomasWholeBlock)) {
     try {
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), memory::mem_pool::MemType::kKernel);
       auto device_ptr = device_context->device_res_manager_->AllocateMemory(somas_info->whole_block_size_);

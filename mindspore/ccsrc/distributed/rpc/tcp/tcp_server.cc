@@ -15,6 +15,7 @@
  */
 
 #include "include/backend/distributed/rpc/tcp/tcp_server.h"
+#include "include/common/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace distributed {
@@ -44,7 +45,7 @@ uint32_t TCPServer::GetPort() const { return port_; }
 
 bool TCPServer::InitializeImpl(const std::string &url, const MemAllocateCallback &allocate_cb) {
   if (tcp_comm_ == nullptr) {
-    const auto &value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeClusterThreadNum);
+    const auto &value = runtime::GetRuntimeConfigValue(runtime::kRuntimeClusterThreadNum);
     MS_LOG(INFO) << "Config cluster threads num : " << value << ".";
     // Enable multi threads by default.
     if (value.size() == 0 || (value != "False" && value != "false" && value != "FALSE")) {

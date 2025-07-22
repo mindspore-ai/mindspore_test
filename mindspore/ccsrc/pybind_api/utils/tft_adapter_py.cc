@@ -16,6 +16,7 @@
 
 #include <vector>
 #include "include/common/pybind_api/api_register.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -236,7 +237,7 @@ void CleanRootInfo() {
 
 void RePreLaunchSendRecv(int32_t device_id) {
   MS_LOG(WARNING) << "Try to pre-launch send recv. device id: " << device_id;
-  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  static auto disable_pre_build_comm = runtime::IsDisableRuntimeConfig(runtime::kRuntimePreBuildCommKernel);
   if (disable_pre_build_comm) {
     return;
   }

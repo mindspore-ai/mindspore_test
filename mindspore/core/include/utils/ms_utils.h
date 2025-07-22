@@ -69,56 +69,6 @@ namespace common {
 inline const char *SafeCStr(const std::string &str) { return str.c_str(); }
 MS_CORE_API const char *SafeCStr(const std::string &&str);
 
-// Memory dev config.
-const char kAllocConf[] = "MS_ALLOC_CONF";
-const char kAllocAclAllocator[] = "acl_allocator";
-const char kAllocSomasWholeBlock[] = "somas_whole_block";
-const char kAllocEnableVmm[] = "enable_vmm";
-const char kAllocVmmAlignSize[] = "vmm_align_size";
-const char kAllocMemoryRecycle[] = "memory_recycle";
-const char kAllocMemoryTracker[] = "memory_tracker";
-const char kAllocSimpleTracker[] = "simple_tracker";
-const char kAllocMemoryTrackerPath[] = "memory_tracker_path";
-const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
-const char kAllocMemoryPool[] = "older_pool";
-
-// Runtime dev config.
-const char kRuntimeConf[] = "MS_DEV_RUNTIME_CONF";
-const char kRuntimeInline[] = "inline";
-const char kRuntimeSwitchInline[] = "switch_inline";
-const char kRuntimeNewRefCount[] = "new_ref_count";
-const char kRuntimeControlFlowOptimize[] = "control_flow_optimize";
-const char kRuntimeMultiStream[] = "multi_stream";
-const char kRuntimePipeline[] = "pipeline";
-const char kRuntimeGraphPipeline[] = "graph_pipeline";
-const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";
-const char kRuntimeCommunicationLaunchGroup[] = "communication_launch_group";
-const char kRuntimeInsertTensorMove[] = "insert_tensormove";
-const char kRuntimeAllfinite[] = "all_finite";
-const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
-const char kRuntimeGeKernel[] = "ge_kernel";
-const char kAclnnViewOp[] = "MS_DEV_VIEW_OP";
-const char kRuntimeCache[] = "backend_compile_cache";
-const char kRuntimeCopyAsync[] = "copy_async";
-const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
-const char kRuntimeThreadLoadCache[] = "multi_thread_load_cache";
-const char kRuntimeAsyncInitComm[] = "async_init_comm";
-const char kRuntimeCpuAffinityList[] = "cpu_affinity_list";
-const char kRuntimeCpuAffinityMoudule[] = "cpu_affinity_module";
-const char kRuntimeActorThreadFixBind[] = "actor_thread_fix_bind";
-const char kRuntimeInputOptimize[] = "input_optimize";
-const char kRuntimeCommInitLcclOnly[] = "comm_init_lccl_only";
-// Runtime debug config.
-const char kRuntimeMemoryTrack[] = "memory_track";
-const char kRuntimeMemoryStat[] = "memory_statistics";
-const char kRuntimeCompileStat[] = "compile_statistics";
-const char kRuntimePerformanceStat[] = "performance_statistics";
-const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
-const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
-const char kRuntimeAclnnCache[] = "aclnn_cache";
-const char kRuntimePreBuildCommKernel[] = "pre_build_comm_kernel";
-const char kRuntimeExecutionOrderCheckIteration[] = "execution_order_check_iteration";
-const char kRuntimeHPMode[] = "high_performance_mode";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';
@@ -127,13 +77,6 @@ const char kColon = ':';
 const char kWhiteSpace[] = " \t";
 MS_CORE_API void ResetConfig(const std::string &config);
 MS_CORE_API std::string GetConfigValue(const std::string &config, const std::string &config_key);
-MS_CORE_API bool IsEnableRuntimeConfig(const std::string &runtime_config);
-MS_CORE_API bool IsDisableRuntimeConfig(const std::string &runtime_config);
-MS_CORE_API std::string GetRuntimeConfigValue(const std::string &runtime_config);
-MS_CORE_API std::string GetAllocConfigValue(const std::string &alloc_config);
-MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
-MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
-MS_CORE_API bool IsEnableAclnnViewOp(const std::string &op);
 
 // Get env thread safe with cache.
 struct EnvHelper;

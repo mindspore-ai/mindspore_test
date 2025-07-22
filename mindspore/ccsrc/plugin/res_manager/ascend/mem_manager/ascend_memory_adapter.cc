@@ -24,6 +24,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "utils/ms_utils.h"
 #include "include/common/runtime_conf/runtime_conf.h"
+#include "include/common/runtime_conf/runtime_env.h"
 
 namespace mindspore {
 namespace device {
@@ -181,7 +182,7 @@ bool AscendMemAdapter::Initialize() {
   };
 
   MS_LOG(INFO) << get_init_info();
-  if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat)) {
     std::cout << "[MS_RUNTIME_PROF]" << get_init_info() << std::endl;
   }
   initialized_ = true;
@@ -226,7 +227,7 @@ bool AscendMemAdapter::DeInitialize() {
   if (common::IsCompileSimulation() || common::IsNeedMemoryStatistic()) {
     MS_LOG(WARNING) << oss_buf.str();
   }
-  if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeMemoryStat)) {
     std::cout << "[MS_RUNTIME_PROF]" << oss_buf.str() << std::endl;
   }
   device_hbm_total_size_ = 0;

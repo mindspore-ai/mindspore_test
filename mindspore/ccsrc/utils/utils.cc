@@ -304,15 +304,14 @@ bool IsOneOfDynRankNeedPadShape(const std::string &format) {
   return kOpFormats.find(format) != kOpFormats.end();
 }
 
-bool IsEnableRefMode() { return true; }
-
 bool IsDisableGeKernel() {
-  static bool config_enable_ge_kernel = common::IsEnableRuntimeConfig(common::kRuntimeGeKernel);
+  static std::string value = common::GetConfigValue("MS_DEV_RUNTIME_CONF", "ge_kernel");
+  static bool config_enable_ge_kernel = (value == "True" || value == "true");
   if (config_enable_ge_kernel) {
     return false;
   }
 
-  static bool config_disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  static bool config_disable_ge_kernel = (value == "False" || value == "false");
   // ge_kbk mix can not use rank_table
   static bool use_hccl_rank_table = !common::UseHostCollective() && !common::GetEnv("RANK_TABLE_FILE").empty();
   auto context = MsContext::GetInstance();
@@ -321,38 +320,6 @@ bool IsDisableGeKernel() {
   static bool use_ascend910 = context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice &&
                               context->ascend_soc_version() == kAscendVersion910;
   return config_disable_ge_kernel || use_hccl_rank_table || use_ascend910;
-}
-
-bool IsNeedProfilieMemoryLog() {
-  static bool is_need_profile_memory_log = IsDisableGeKernel() && common::IsCompileSimulation();
-  return is_need_profile_memory_log;
-}
-
-bool IsMemoryPoolRecycle() {
-  static bool disable_optimize_mem = common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
-  static bool disable_ge_kernel = IsDisableGeKernel();
-  if (!disable_ge_kernel || disable_optimize_mem) {
-    return false;
-  }
-  if (!IsJit()) {
-    return false;
-  }
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  auto is_ge = context_ptr->GetBackend() == kBackendGE;
-  auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  return is_ge && task_sink;
-}
-
-bool IsEnableGraphPipeline() {
-#ifndef WITH_BACKEND
-  // Disabled graph pipeline in UT scenario, because the scenario does not use the MS backend, but instead uses the VM
-  // backend.
-  return false;
-#endif
-
-  static bool enable_graph_pipeline = !common::IsDisableRuntimeConfig(common::kRuntimeGraphPipeline);
-  return enable_graph_pipeline && (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
 }
 
 size_t GetSystemMemorySize(const std::string &key) {

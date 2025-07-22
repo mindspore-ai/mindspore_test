@@ -34,6 +34,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/runtime_conf/runtime_env.h"
 #include "debug/profiler/profiling.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/graph_optimizer.h"
@@ -106,7 +107,7 @@ void AscendGraphOptimizeACL(const KernelGraphPtr &kernel_graph) {
   opt_acl_pm->AddPass(std::make_shared<opt::ProcessCallInline>());
   opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
 
-  if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
+  if (runtime::IsEnableRuntimeConfig(runtime::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());
   } else {
     opt_acl_pm->AddPass(std::make_shared<InsertTensorMoveForCommunication>());
