@@ -1238,12 +1238,31 @@ def test_hccl_all_gather():
         all_gather(output_tensor, input_tensor)
         _pynative_executor.sync()
 
+
 def test_hccl_all_gather_diff_shape():
     """
     Feature: test distributed op
     Description: test comm op in python native
     Expectation: success
     """
+    ## 同步场景某个rank tensor为空
+    if rank == 0:
+        data = ms.Tensor(shape=(0), dtype=ms.int64)
+    else:
+        data = ms.Tensor(np.ones([2, 2]), dtype=ms.int64)
+    expect_output = [np.ones([2, 2]) if ii != 0 else np.array([]) for ii in range(size)]
+    output_tensor = [
+        (
+            ms.Tensor(np.zeros([2, 2]).astype(np.int64))
+            if ii != 0
+            else ms.Tensor(shape=(0), dtype=ms.int64)
+        )
+        for ii in range(size)
+    ]
+    output_handle = all_gather(output_tensor, data)
+    assert output_handle is None
+    for out_i, expect_i in zip(output_tensor, expect_output):
+        assert np.allclose(out_i.asnumpy(), expect_i)
     ## 同步场景多维tensor
     ## rank0 : [0, 0], rank1: [[1, 1], [1, 1]], rank2: [[2, 2], [2, 2], [2, 2]]...
     data = ms.Tensor(np.ones([rank + 1, 2]) * rank, dtype=ms.int64)

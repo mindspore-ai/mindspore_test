@@ -101,7 +101,9 @@ void DistCommAllGatherAscendCustomize(const std::shared_ptr<OpRunner> &op, const
         for (int r = 0; r < rank_size_imm; r++) {
           uint64_t offset = recv_offset_byte[r];
           auto copy_size = recv_size_byte[r];
-
+          if (copy_size == 0) {
+            continue;
+          }
           auto data_ptr = GetDevicePtrFromTensor(op_name, gather_tensors[r]);
           auto cp_ret =
             CALL_ASCEND_API(aclrtMemcpyAsync, data_ptr, copy_size, static_cast<char *>(output_data_ptr) + offset,
