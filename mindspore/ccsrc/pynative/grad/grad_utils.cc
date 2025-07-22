@@ -410,6 +410,7 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::TensorPtr &src_tensor, co
     if (src_tensor->is_parameter()) {
       base_tensor->set_param_info(src_tensor->param_info());
     }
+    base_tensor->set_storage_info(src_tensor->storage_info());
     base_tensor->set_device_address(nullptr);
     ViewInfo view_info(base_tensor);
     output->set_version(src_tensor->version());

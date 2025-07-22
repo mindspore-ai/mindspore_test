@@ -3566,7 +3566,7 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
   auto input_tensor = input->BuildValue()->cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_storage_offset =
-    input_tensor->storage_info() == nullptr ? 0 : output_tensor->storage_info()->storage_offset;
+    input_tensor->storage_info() == nullptr ? 0 : input_tensor->storage_info()->storage_offset;
 
   auto grad_rank = output_tensor->storage_info()->shape.size();
   std::vector<int64_t> out_shape, out_strides;
