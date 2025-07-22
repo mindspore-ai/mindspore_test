@@ -39,7 +39,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
   explicit AscendCommunicationGroup(
     const std::string &name, const std::vector<uint32_t> &group_ranks, uint32_t global_rank, uint32_t local_group_rank,
     uint32_t local_group_size,
-    const std::unordered_map<std::string, std::variant<uint32_t, std::string>> &hccl_config = {});
+    const std::unordered_map<std::string, std::variant<int64_t, uint32_t, std::string>> &hccl_config = {});
 
   ~AscendCommunicationGroup() override = default;
 
@@ -73,6 +73,8 @@ class AscendCommunicationGroup : public CommunicationGroup {
   // rank table.
   bool InitByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank, HcclCommConfig *config);
 
+  bool InitByHcclComm();
+
   // Initialpize HCCL config parameters, such as hcclBufferSize and hcclDeterministic.
   void InitHcclCommConfig(HcclCommConfig *config);
 
@@ -83,7 +85,7 @@ class AscendCommunicationGroup : public CommunicationGroup {
   HcclComm comm_;
 
   // hccl_config pass from previous GroupOptions.
-  std::unordered_map<std::string, std::variant<uint32_t, std::string>> hccl_config_;
+  std::unordered_map<std::string, std::variant<int64_t, uint32_t, std::string>> hccl_config_;
 
   char inner_comm_name_[INNER_COMM_NAME_MAX_LENGTH];
 };
