@@ -35,6 +35,44 @@ async_dump_dict = {
     }
 }
 
+sync_kbyk_dump_dict = {
+    "common_dump_settings": {
+        "op_debug_mode": 0,
+        "dump_mode": 0,
+        "path": "",
+        "net_name": "Net",
+        "iteration": "all",
+        "input_output": 0,
+        "saved_data": "statistic",
+        "kernels": ["name-regex(.+Add.*)"],
+        "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
+        "statistic_category": ["max", "min", "avg", "l2norm"]
+    },
+    "e2e_dump_settings": {
+        "enable": True,
+        "trans_flag": True
+    }
+}
+
+async_kbyk_dump_dict = {
+    "common_dump_settings": {
+        "op_debug_mode": 0,
+        "dump_mode": 0,
+        "path": "",
+        "net_name": "Net",
+        "iteration": "all",
+        "input_output": 0,
+        "saved_data": "statistic",
+        "kernels": ["name-regex(.+Add.*)"],
+        "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
+        "statistic_category": ["max", "min", "avg", "l2norm"]
+    },
+    "e2e_dump_settings": {
+        "enable": False,
+        "trans_flag": False
+    }
+}
+
 e2e_dump_dict = {
     "common_dump_settings": {
         "dump_mode": 0,
@@ -248,6 +286,12 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', over
         data = async_dump_dict_acl
         data["common_dump_settings"]["path"] = dump_path
         data["common_dump_settings"]["dump_mode"] = 2
+    elif test_key == "test_sync_kbyk_dump":
+        data = sync_kbyk_dump_dict
+        data["common_dump_settings"]["path"] = dump_path
+    elif test_key == "test_async_kbyk_dump":
+        data = async_kbyk_dump_dict
+        data["common_dump_settings"]["path"] = dump_path
     else:
         raise ValueError(
             "Failed to generate dump json file. The test name value " + test_key + " is invalid.")
@@ -272,6 +316,10 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
         data["e2e_dump_settings"]["stat_calc_mode"] = "device"
     elif test_key == "test_e2e_async_dump":
         data = e2e_async_dump_dict
+    elif test_key == "test_sync_kbyk_dump":
+        data = sync_kbyk_dump_dict
+    elif test_key == "test_async_kbyk_dump":
+        data = async_kbyk_dump_dict
     else:
         raise ValueError(
             "Failed to generate statistic dump json file. The test name value " + test_key + " is invalid.")
