@@ -1404,8 +1404,8 @@ class CustomOpBuilder:
                 if file_ext not in ('.yaml', '.yml'):
                     raise ValueError(f"Invalid file extension: {file_ext} for {filename}")
 
-                dest_path = os.path.join(dest_path, filename)
-                shutil.copy2(file_path, dest_path)
+                _dest_path = os.path.join(dest_path, filename)
+                shutil.copy2(file_path, _dest_path)
 
         yaml_files = [self.yaml] if isinstance(self.yaml, str) else self.yaml
         doc_files = [self.doc] if isinstance(self.doc, str) else self.doc
