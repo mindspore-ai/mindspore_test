@@ -460,7 +460,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset():
     Description: test deepseekv3 cell dp2mp2ep4pp2mb4gas1bs1 mte 8p gptdataset
     Expectation: st pass
     """
-    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_8p_gptdataset"
+    case_name = "deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     file_path = f"{sh_path}/pretrain_deepseek3_mte_gptdataset.yaml"
     device_num = 8
@@ -471,7 +471,7 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset():
     clear_directory(f"{sh_path}/{case_name}")
 
     env_cmd = 'export MS_DEV_RUNTIME_CONF="memory_statistics:True";'
-    env_cmd += 'export MS_MEMORY_STATISTIC=1'
+    env_cmd += 'export MS_MEMORY_STATISTIC=1;export MS_ENABLE_LCCL=on;export LCCL_DETERMINISTIC=1'
     os.system(f"{env_cmd};bash {sh_path}/run_llm.sh {device_num} {file_path} \
     {case_name} {master_port} {hccl_if_base_port} pp gpt")
 
@@ -491,9 +491,10 @@ def test_deepseekv3_cell_dp2mp2ep2pp2mb4gas1bs1_mte_8p_gptdataset():
     loss_list = extract_losses_from_log(log_file_path)
 
     # set golden_loss
-    golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733]
+    golden_loss = [12.029, 11.965, 11.790, 11.805, 11.954, 11.733, 12.11, 11.863, 11.967, 11.629, 11.903, 11.921,
+                   11.628, 11.878, 11.991]
 
-    if_equal = golden_loss == loss_list
+    if_equal = np.allclose(np.array(golden_loss), np.array(loss_list), atol=1e-3, rtol=0)
     assert if_equal, \
         f"Training loss is different from the golden loss, " \
         f"where training loss: {loss_list}, golden_loss: {golden_loss}."

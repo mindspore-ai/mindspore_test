@@ -46,7 +46,7 @@ train_dataset: &train_dataset
     type: BlendedMegatronDatasetDataLoader
     datasets_type: "GPTDataset"
     sizes:
-      - 24 # train dataset size
+      - 60 # train dataset size
       - 0
       - 0
     config:
