@@ -67,6 +67,10 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
   if (size_expression == 0) {
     return;
   }
+  if (MS_UNLIKELY(static_cast<uint64_t>(g_hash_offset) > SIZE_MAX - size_expression)) {
+    MS_LOG(ERROR) << "Hash buf is overflow.";
+    return;
+  }
   if (g_hash_offset + size_expression >= g_hash_buf_size) {
     g_hash_offset = g_hash_buf_max_size;
     return;
