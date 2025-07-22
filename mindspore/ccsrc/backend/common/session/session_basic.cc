@@ -72,6 +72,7 @@
 #endif
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
+#include "mindspore/ccsrc/debug/summary/summary.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
@@ -1069,21 +1070,18 @@ void SessionBasic::GetModelOutputsInfo(uint32_t graph_id, std::vector<tensor::Te
   }
 }
 
-void SessionBasic::RegisterSummaryCallBackFunc(const CallBackFunc &callback) {
-  MS_EXCEPTION_IF_NULL(callback);
-  Summary::GetInstance().RegisterSummaryCallBackFunc(callback);
-}
+void SessionBasic::RegisterSummaryCallBackFunc() { debug::Summary::GetInstance().RegisterSummaryCallBackFunc(); }
 
 void SessionBasic::RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Recurse set summary nodes for all graphs in graph: " << graph->graph_id() << " start";
-  Summary::GetInstance().RecurseSetSummaryNodesForAllGraphs(graph);
+  debug::Summary::GetInstance().RecurseSetSummaryNodesForAllGraphs(graph);
 }
 
 void SessionBasic::SetSummaryNodes(KernelGraph *graph) {
   MS_LOG(DEBUG) << "Update summary Start";
   MS_EXCEPTION_IF_NULL(graph);
-  Summary::GetInstance().SetSummaryNodes(graph);
+  debug::Summary::GetInstance().SetSummaryNodes(graph);
 }
 
 void SessionBasic::Summary(KernelGraph *graph) {
@@ -1094,7 +1092,7 @@ void SessionBasic::Summary(KernelGraph *graph) {
     MS_LOG(WARNING) << "The Summary operator can not collect data correctly. Detail: the data sink mode is used and the"
                        " sink size(in model.train() python api) is not equal to 1.";
   }
-  Summary::GetInstance().SummaryTensor(graph);
+  debug::Summary::GetInstance().SummaryTensor(graph);
 }
 
 void SessionBasic::CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const {

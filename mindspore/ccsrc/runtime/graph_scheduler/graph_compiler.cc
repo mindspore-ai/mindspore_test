@@ -736,9 +736,9 @@ void GraphCompiler::UpdateRefCount(const std::set<KernelWithIndex> &input_kernel
   session_->HandleOpInputs(input_kernels_with_index, ref_count, op_output_map);
 }
 
-void GraphCompiler::RegisterSummaryCallBackFunc(const CallBackFunc &callback) const {
+void GraphCompiler::RegisterSummaryCallBackFunc() const {
   MS_EXCEPTION_IF_NULL(session_);
-  session_->RegisterSummaryCallBackFunc(callback);
+  session_->RegisterSummaryCallBackFunc();
 }
 
 void GraphCompiler::Summary(const std::vector<KernelGraphPtr> &graphs) const {

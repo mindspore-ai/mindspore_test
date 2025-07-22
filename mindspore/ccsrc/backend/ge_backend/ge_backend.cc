@@ -627,7 +627,7 @@ BackendGraphId GEBackend::Build(const FuncGraphPtr &func_graph, const BackendJit
   }
 
   // Register a summary callback function, which is called in the final stages of summary.
-  debug::Summary::GetInstance().RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
+  debug::Summary::GetInstance().RegisterSummaryCallBackFunc();
 
   // check if supported in ge_backend, and the compile_type
   auto compile_type = CheckGraph(func_graph);

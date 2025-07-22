@@ -255,9 +255,9 @@ void GraphCompiler::CreateDeviceAddress(const KernelGraphPtr &graph) const {
   MS_LOG(INFO) << "Status record: end create device address. graph id: " << graph->graph_id();
 }
 
-void GraphCompiler::RegisterSummaryCallBackFunc(const CallBackFunc &callback) const {
+void GraphCompiler::RegisterSummaryCallBackFunc() const {
   MS_EXCEPTION_IF_NULL(session_);
-  session_->RegisterSummaryCallBackFunc(callback);
+  session_->RegisterSummaryCallBackFunc();
 }
 
 void GraphCompiler::Summary(const std::vector<KernelGraphPtr> &graphs) const {
