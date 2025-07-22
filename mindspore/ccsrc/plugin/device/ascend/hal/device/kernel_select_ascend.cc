@@ -32,6 +32,7 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "plugin/res_manager/ascend/hal_manager/ascend_hal_manager.h"
 #include "common/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
@@ -644,6 +645,12 @@ std::tuple<bool, std::string, ExceptionType, bool> SelectKernelInfoWithMsg(const
   device::ascend::ErrorAclType acl_err_type = device::ascend::ErrorAclType::kNormalOp;
   std::tuple<bool, std::string, ExceptionType, bool> result = std::make_tuple(true, "", NoExceptionType, false);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
+
+  if (kernel::IsEnableCustomNode(node)) {
+    GenerateKernelBuildInfo(node, KernelType::CUSTOM_KERNEL);
+    CollectOpSelectedType(op_name, SelectedKernelType::CUSTOM_KERNEL, op_selected_num, &op_selected_type);
+    return result;
+  }
 
   if (kernel::IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);

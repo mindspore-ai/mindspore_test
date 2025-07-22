@@ -27,22 +27,25 @@ class CustomSwap : public ms::pynative::PyboostRunner {
     auto &y = inputs()[1];
     int32_t *x_base_ptr = static_cast<int32_t *>(x.GetDataPtr());
     int32_t *y_base_ptr = static_cast<int32_t *>(y.GetDataPtr());
-    int32_t *workspace = static_cast<int32_t *>(workspace_ptr());
+    int32_t *ws_base_ptr = static_cast<int32_t *>(workspace_ptr());
     for (size_t i = 0; i < x.numel(); i++) {
-      workspace[i] = x_base_ptr[i];
+      ws_base_ptr[i] = x_base_ptr[i];
+    }
+    for (size_t i = 0; i < x.numel(); i++) {
       x_base_ptr[i] = y_base_ptr[i];
-      y_base_ptr[i] = workspace[i];
+    }
+    for (size_t i = 0; i < x.numel(); i++) {
+      y_base_ptr[i] = ws_base_ptr[i];
     }
   }
 };
 
-std::vector<ms::Tensor> custom_swap(const ms::Tensor &x, const ms::Tensor &y) {
+void custom_swap(const ms::Tensor &x, const ms::Tensor &y) {
   std::make_shared<CustomSwap>("Swap")->Run({x, y}, {x, y});
-  return {x, y};
 }
 
 auto pyboost_swap(const ms::Tensor &x, const ms::Tensor &y) {
-  return ms::pynative::PyboostRunner::Call<2>(custom_swap, x, y);
+  return ms::pynative::PyboostRunner::Call<0>(custom_swap, x, y);
 }
 
 PYBIND11_MODULE(MS_EXTENSION_NAME, m) {

@@ -62,6 +62,7 @@
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
+#include "plugin/device/ascend/kernel/custom/custom_kernel_build.h"
 #include "common/ms_factory.h"
 #include "common/kernel_build_info.h"
 #include "kernel/ascend/acl_ir/acl_helper.h"
@@ -189,6 +190,8 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
     } else if (kernel_type == KernelType::ATB_KERNEL) {
       kernel_mod_ptr = kernel::AtbKernelBuild(kernel);
+    } else if (kernel_type == KernelType::CUSTOM_KERNEL) {
+      kernel_mod_ptr = kernel::CustomKernelBuild(kernel);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "The kernel: " << kernel->fullname_with_scope()
