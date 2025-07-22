@@ -53,6 +53,7 @@ class MaskedFillCpuKernelMod : public NativeCpuKernelMod {
   size_t inner_size_{1};
   size_t value_size_{1};
   int64_t batch_rank_{0};
+  bool is_empty_tensor_{False};
   std::vector<size_t> mask_index_;
   std::vector<size_t> input_index_;
   bool need_broadcast_{false};

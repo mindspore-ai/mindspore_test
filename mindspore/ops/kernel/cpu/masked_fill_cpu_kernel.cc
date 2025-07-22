@@ -50,6 +50,13 @@ int MaskedFillCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return ret;
   }
   ShapeVector input_shape = inputs.at(kIndex0)->GetShapeVector();
+  is_empty_tensor_ =
+    std::any_of(input_shape.begin(), input_shape.end(), [](const int64_t shape) { return shape == 0; });
+  // No need to process when input is empty tensor.
+  if (is_empty_tensor_) {
+    return KRET_OK;
+  }
+
   ShapeVector mask_shape = inputs.at(kIndex1)->GetShapeVector();
   ShapeVector value_shape = inputs.at(kIndex2)->GetShapeVector();
   ShapeVector output_shape = outputs.at(kIndex0)->GetShapeVector();
@@ -99,6 +106,11 @@ int MaskedFillCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 template <typename T>
 bool MaskedFillCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
+  // No need to process when input is empty tensor.
+  if (is_empty_tensor_) {
+    return true;
+  }
+
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kMaskedFillInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kMaskedFillOutputsNum, kernel_name_);
 

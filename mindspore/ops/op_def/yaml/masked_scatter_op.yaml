@@ -1,0 +1,15 @@
+#operator masked_scatter
+masked_scatter:
+    args:
+        input:
+            dtype: tensor
+        mask:
+            dtype: tensor
+        source:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True
+        Ascend: MaskedScatterAscend
