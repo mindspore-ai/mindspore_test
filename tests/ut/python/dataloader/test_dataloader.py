@@ -1,5 +1,7 @@
 import collections
+import multiprocessing
 import numpy as np
+import pytest
 
 import mindspore as ms
 import mindspore.dataset.dataloader as ds
@@ -122,6 +124,7 @@ def test_dataloader_mapdataset_multi_process_exception():
     for data in dataloader:
         print(data)
 
+
 def test_dataloader_iterdataset_multi_process():
     """
     Feature: 
@@ -151,3 +154,60 @@ def test_tensordataset():
     print(len(dataset))
     for data in dataset:
         print(data)
+
+
+def test_dataloader_iterdataset_multi_process_with_start_method():
+    """
+    Feature:
+    Description:
+    Expectation:
+    """
+    '''
+    import torch.utils.data as torchdata
+    class MyIterDataset(torchdata.IterableDataset):
+        def __init__(self, num_samples):
+            super().__init__()
+            self.num_samples = num_samples
+            self.data = [np.array(idx) for idx in range(num_samples)]
+
+        def __iter__(self):
+            return iter(self.data)
+    '''
+    dataset = MyIterDataset(3)
+
+    dataloader = ds.DataLoader(dataset, batch_size=None, num_workers=2, prefetch_factor=2,
+                               multiprocessing_context="fork")
+    for data in dataloader:
+        print(data)
+
+    dataloader = ds.DataLoader(dataset, batch_size=None, num_workers=2, prefetch_factor=2,
+                               multiprocessing_context=multiprocessing.get_context("spawn"))
+    for data in dataloader:
+        print(data)
+
+
+def test_dataloader_iterdataset_multi_process_with_start_method_exception():
+    """
+    Feature:
+    Description: Testing start_method exceptions under multiprocessing
+    Expectation:
+    """
+    '''
+    import torch.utils.data as torchdata
+    class MyIterDataset(torchdata.IterableDataset):
+        def __init__(self, num_samples):
+            super().__init__()
+            self.num_samples = num_samples
+            self.data = [np.array(idx) for idx in range(num_samples)]
+
+        def __iter__(self):
+            return iter(self.data)
+    '''
+    dataset = MyIterDataset(3)
+
+    with pytest.raises(ValueError) as e:
+        dataloader = ds.DataLoader(dataset, batch_size=None, num_workers=2, prefetch_factor=2,
+                                   multiprocessing_context="error_start_method")
+        for _ in dataloader:
+            pass
+    assert "multiprocessing_context option should specify a valid start method in" in str(e.value)

@@ -4,6 +4,7 @@ import random
 import numpy as np
 import queue
 from dataclasses import dataclass
+from mindspore import context
 from typing import Optional
 
 import mindspore as ms
@@ -90,6 +91,8 @@ def worker_loop(
     # See NOTE [ Data Loader Multiprocessing Shutdown Logic ] for details on the
     # logic of this function.
     logger.warning(f"come into subprocess, pid:{os.getpid()}")
+
+    context.set_context(device_target="CPU")
 
     try:
         seed = base_seed + worker_id

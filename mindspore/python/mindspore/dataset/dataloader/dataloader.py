@@ -194,6 +194,43 @@ class DataLoader(Generic[_T_co]):
         else:
             return _SingleProcessIterator(self)
 
+    @property
+    def multiprocessing_context(self):
+        return self.__multiprocessing_context
+
+    @multiprocessing_context.setter
+    def multiprocessing_context(self, multiprocessing_context):
+        if multiprocessing_context is not None:
+            if self.num_workers > 0:
+                if isinstance(multiprocessing_context, str):
+                    valid_start_methods = multiprocessing.get_all_start_methods()
+                    if multiprocessing_context not in valid_start_methods:
+                        raise ValueError(
+                            "multiprocessing_context option "
+                            f"should specify a valid start method in {valid_start_methods!r}, but got "
+                            f"multiprocessing_context={multiprocessing_context!r}"
+                        )
+                    multiprocessing_context = multiprocessing.get_context(
+                        multiprocessing_context
+                    )
+
+                if not isinstance(
+                        multiprocessing_context, multiprocessing.context.BaseContext
+                ):
+                    raise TypeError(
+                        "multiprocessing_context option should be a valid context "
+                        "object or a string specifying the start method, but got "
+                        f"multiprocessing_context={multiprocessing_context}"
+                    )
+            else:
+                raise ValueError(
+                    "multiprocessing_context can only be used with "
+                    "multi-process loading (num_workers > 0), but got "
+                    f"num_workers={self.num_workers}"
+                )
+
+        self.__multiprocessing_context = multiprocessing_context
+
 
 class _Iterator(Generic[_T_co]):
     def __init__(self, dataloader: DataLoader) -> None:
