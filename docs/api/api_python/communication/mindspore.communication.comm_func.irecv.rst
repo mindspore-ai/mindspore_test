@@ -22,8 +22,8 @@ mindspore.communication.comm_func.irecv
         CommHandle是一个异步工作句柄。
 
     异常：
-        - **TypeError** - src不是int或group不是str。
-        - **ValueError** - 该线程的rank id 大于通信组的rank size。
+        - **TypeError** - src不是int，或group不是str。
+        - **ValueError** - 该线程的rank id大于通信组的rank size。
 
     样例：
 
