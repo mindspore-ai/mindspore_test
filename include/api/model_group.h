@@ -41,7 +41,11 @@ enum class ModelGroupFlag : int {
 
 class MS_API ModelGroup {
  public:
+  /// \brief Constructor of ModelGroup.
+  ///
+  /// \param[in] flags The flags of model group.
   explicit ModelGroup(ModelGroupFlag flags = ModelGroupFlag::kShareWorkspace);
+  /// \brief Destructor of ModelGroup.
   ~ModelGroup() = default;
 
   /// \brief Add models that require shared workspace memory.
