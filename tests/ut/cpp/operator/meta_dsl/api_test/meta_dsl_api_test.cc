@@ -16,6 +16,7 @@
 
 #include "ir/manager.h"
 #include "ir/graph_utils.h"
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"

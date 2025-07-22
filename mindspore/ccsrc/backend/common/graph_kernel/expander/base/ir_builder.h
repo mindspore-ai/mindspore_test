@@ -20,6 +20,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "common/common_utils.h"
 #include "include/common/utils/utils.h"
@@ -56,7 +57,7 @@ class IrBuilder {
   }
   /// \brief build a Tensor node from data list
   NodePtr Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type) const {
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(data_type, shape, data, src_data_type);
+    auto tensor_ptr = tensor::from_buffer(data_type, shape, data, src_data_type);
     return e->EmitValue(tensor_ptr);
   }
   /// \brief build a imm value node

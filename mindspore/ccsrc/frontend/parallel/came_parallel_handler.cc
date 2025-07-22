@@ -35,6 +35,7 @@
 #include "frontend/parallel/graph_util/get_parallel_info.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/node_check.h"
+#include "ir/tensor_new.h"
 #include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "utils/trace_base.h"

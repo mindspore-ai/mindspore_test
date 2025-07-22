@@ -21,7 +21,7 @@
 #include <vector>
 #include <string>
 #include <random>
-
+#include "ir/tensor_new.h"
 #include "include/common/random.h"
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 
@@ -107,7 +107,7 @@ TEST_F(TestEmbeddingCache, test_embedding_cache) {
   int value_shape_size = key_size * value_size;
   std::vector<int> value_vec(value_shape_size);
   std::iota(value_vec.begin(), value_vec.end(), 1);
-  auto value_tensor_ptr = std::make_shared<tensor::Tensor>(
+  auto value_tensor_ptr = tensor::from_buffer(
     TypeId::kNumberTypeUInt32, std::vector<int64_t>({key_size, value_size}), value_vec.data(), value_shape_size << 2);
   embedding_cache_manager.StoreWarmUpPtr(param_key, key_tensor_ptr, value_tensor_ptr, key_tensor_ptr);
   auto host_cache_ptrs = embedding_cache_manager.host_cache_ptrs();

@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "frontend/ir/tensor_py.h"
 #include "include/common/pybind_api/api_register.h"
@@ -27,7 +28,6 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 using tensor::TensorPybind;
 

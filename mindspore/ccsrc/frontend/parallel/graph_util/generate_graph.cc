@@ -29,6 +29,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "frontend/parallel/graph_util/node_info.h"
+#include "ir/tensor_new.h"
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/parse_base.h"

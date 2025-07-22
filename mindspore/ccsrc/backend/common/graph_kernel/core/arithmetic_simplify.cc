@@ -24,6 +24,7 @@
 #include <utility>
 
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/anf_utils.h"

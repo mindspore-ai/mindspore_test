@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"

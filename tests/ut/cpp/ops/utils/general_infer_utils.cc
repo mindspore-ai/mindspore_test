@@ -27,6 +27,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "ops/op_def.h"
 #include "utils/anf_utils.h"
 #include "utils/shape_utils.h"
@@ -37,7 +38,6 @@
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/operator/meta_dsl/common/meta_impl.h"
 
-#include "ir/tensor_new.h"
 namespace UT {
 void InitPythonPath();
 }

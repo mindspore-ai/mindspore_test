@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/fill_scalar.h"
 #include "infer/ops_func_impl/fill_tensor.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "ir/tensor_new.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"

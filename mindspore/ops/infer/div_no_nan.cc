@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 
+#include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
@@ -41,7 +42,6 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 namespace {

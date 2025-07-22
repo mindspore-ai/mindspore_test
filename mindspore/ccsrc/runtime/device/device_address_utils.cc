@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "common/device_address.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/py_execute_utils.h"
@@ -191,8 +192,8 @@ void DeviceAddressUtils::CopyNoneTensorDataToDevice(const device::DeviceContext 
     auto value = GetValue<std::string>(kernel_tensor->GetValueTrack());
     size_t tensor_size = value.size();
     ShapeVector tensor_shape{SizeToLong(tensor_size)};
-    auto string_tensor = std::make_shared<tensor::Tensor>(TypeId::kObjectTypeString, tensor_shape,
-                                                          const_cast<void *>(node_value), tensor_size);
+    auto string_tensor =
+      tensor::from_buffer(TypeId::kObjectTypeString, tensor_shape, const_cast<void *>(node_value), tensor_size);
     const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);

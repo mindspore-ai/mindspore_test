@@ -22,6 +22,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace opt {

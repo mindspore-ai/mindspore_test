@@ -188,22 +188,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] shape The shape represented by ShapeVector of the tensor.
   Tensor(TypeId data_type, const ShapeVector &shape);
 
-  /// \brief Create a tensor with input data buffer.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] data_len The length of data in bytes.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len);
-
-  /// \brief Create a tensor with input data buffer and given source data type.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] src_data_type The source data type.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type);
-
   /// \brief Create a chunk tensor with the given data size.
   ///
   /// \param[in] data_type [TypeId] Data type of the tensor.

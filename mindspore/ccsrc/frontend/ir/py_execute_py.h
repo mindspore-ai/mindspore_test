@@ -24,6 +24,7 @@
 #include <memory>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "pybind_api/pybind_patch.h"
 
@@ -40,7 +41,6 @@
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace abstract {
 using PyObjectWrapperPtr = std::shared_ptr<parse::PyObjectWrapper>;

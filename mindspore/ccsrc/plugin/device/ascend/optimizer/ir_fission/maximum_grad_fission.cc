@@ -18,6 +18,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"

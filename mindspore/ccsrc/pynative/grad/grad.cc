@@ -26,6 +26,7 @@
 #include "ir/named.h"
 #include "ir/primal_attr.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/environ_conversion.h"
 #include "frontend/optimizer/fallback_rewriter.h"

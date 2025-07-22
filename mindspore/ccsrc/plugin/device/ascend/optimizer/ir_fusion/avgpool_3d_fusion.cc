@@ -19,12 +19,12 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace {

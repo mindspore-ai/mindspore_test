@@ -23,6 +23,7 @@
 #include <utility>
 #include <memory>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "kernel/ascend/acl_ir/acl_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "common/kernel.h"

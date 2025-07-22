@@ -25,7 +25,7 @@
 #include <functional>
 #include <numeric>
 #include <utility>
-
+#include "ir/tensor_new.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/anf_utils.h"
 #include "utils/hash_map.h"
@@ -252,7 +252,7 @@ tensor::TensorPtr PrimOp::CalcByOperator(const NodePtrList &inputs, const DAttrs
     std::vector<TM> res;
     (void)std::transform(input_a.begin(), input_a.end(), std::back_inserter(res),
                          [&func_map, &op](const TM &i) { return func_map[op](i); });
-    return std::make_shared<tensor::Tensor>(tid, this->shape, &res[0], tid);
+    return tensor::from_buffer(tid, this->shape, &res[0], tid);
   } else if (inputs.size() == binary_input_num) {
     mindspore::HashMap<std::string, std::function<TM(const TM &, const TM &)>> func_map = {
       {"Add", [](const TM &a, const TM &b) { return a + b; }},
@@ -275,7 +275,7 @@ tensor::TensorPtr PrimOp::CalcByOperator(const NodePtrList &inputs, const DAttrs
     for (size_t i = 0; i < input_a.size(); i++) {
       (void)res.emplace_back(func_map[op](input_a[i], input_b[i]));
     }
-    return std::make_shared<tensor::Tensor>(tid, this->shape, &res[0], tid);
+    return tensor::from_buffer(tid, this->shape, &res[0], tid);
   }
   return nullptr;
 }
@@ -353,7 +353,7 @@ NodePtr ReshapeOp::InferValue(const NodePtrList &inputs, const DAttrs &) {
     return nullptr;
   }
   void *tensor_data = inputs[0]->As<inner::ConstTensorNode>()->data()->data_c();
-  tensor::TensorPtr result_tensor = std::make_shared<tensor::Tensor>(this->type, this->shape, tensor_data, this->type);
+  tensor::TensorPtr result_tensor = tensor::from_buffer(this->type, this->shape, tensor_data, this->type);
   return std::make_shared<ConstTensorNode>(result_tensor);
 }
 
@@ -526,7 +526,7 @@ NodePtr ConstantOfShapeOp::InferValue(const NodePtrList &inputs, const DAttrs &a
   } else {
     return nullptr;
   }
-  auto tensor = std::make_shared<tensor::Tensor>(this->type, this->shape, &res[0], kNumberTypeFloat32);
+  auto tensor = tensor::from_buffer(this->type, this->shape, &res[0], kNumberTypeFloat32);
   return std::make_shared<ConstTensorNode>(tensor);
 }
 
@@ -554,7 +554,7 @@ std::vector<DShape> ConstantOfShapeOp::InferShape(const NodePtrList &inputs, con
 }
 
 NodePtr ShapeOp::InferValue(const NodePtrList &inputs, const DAttrs &) {
-  auto tensor = std::make_shared<tensor::Tensor>(this->type, this->shape, inputs[0]->shape.data(), kNumberTypeInt64);
+  auto tensor = tensor::from_buffer(this->type, this->shape, inputs[0]->shape.data(), kNumberTypeInt64);
   return std::make_shared<ConstTensorNode>(tensor);
 }
 
@@ -821,7 +821,7 @@ tensor::TensorPtr GatherOp::CalcGather(const NodePtrList &inputs, const DAttrs &
         }
       }
     }
-    return std::make_shared<tensor::Tensor>(this->type, this->shape, &res[0], this->type);
+    return tensor::from_buffer(this->type, this->shape, &res[0], this->type);
   }
   return nullptr;
 }
@@ -923,7 +923,7 @@ tensor::TensorPtr ConcatOp::CalcConcat(const NodePtrList &inputs, const DAttrs &
         }
       }
     }
-    return std::make_shared<tensor::Tensor>(this->type, this->shape, &res[0], this->type);
+    return tensor::from_buffer(this->type, this->shape, &res[0], this->type);
   }
   return nullptr;
 }
@@ -1166,7 +1166,7 @@ tensor::TensorPtr StridedSliceOnnxOp::CalcStridedSliceOnnx(const NodePtrList &in
     return;
   };
   func(0, 0);
-  return std::make_shared<tensor::Tensor>(this->type, this->shape, &res[0], this->type);
+  return tensor::from_buffer(this->type, this->shape, &res[0], this->type);
 }
 
 NodePtr StridedSliceOnnxOp::InferValue(const NodePtrList &inputs, const DAttrs &attrs) {

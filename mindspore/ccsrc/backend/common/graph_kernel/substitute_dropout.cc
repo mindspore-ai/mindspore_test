@@ -23,6 +23,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "common/kernel_build_info.h"
 #include "include/backend/kernel_info.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -59,8 +60,8 @@ AnfNodePtr DropoutExpanderDeco::Run(const AnfNodePtr &node) {
     uniform_real_shape->set_abstract(std::make_shared<abstract::AbstractTensor>(kInt64, ShapeVector{rank}));
     Callback::Instance()->ResetKernelInfo(uniform_real_shape);
   } else {
-    auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector(1, SizeToLong(shape.size())),
-                                                   static_cast<void *>(&shape[0]), kNumberTypeInt64);
+    auto tensor = tensor::from_buffer(kNumberTypeInt64, ShapeVector(1, SizeToLong(shape.size())),
+                                      static_cast<void *>(&shape[0]), kNumberTypeInt64);
     uniform_real_shape = NewValueNode(tensor);
     uniform_real_shape->set_abstract(tensor->ToAbstract());
     uniform_real_shape->set_kernel_info(std::make_shared<device::KernelInfo>());

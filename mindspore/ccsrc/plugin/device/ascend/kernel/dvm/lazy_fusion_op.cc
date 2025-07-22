@@ -20,6 +20,7 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "base/bfloat16.h"
 #include "infer/ops_func_impl/tile.h"
 #include "plugin/device/ascend/kernel/dvm/lazy_fusion_kernel.h"
@@ -56,7 +57,6 @@
     MS_LOG(INFO) << op_name << " call end, kernel id is " << (k->id()) << " " << k; \
   } while (0)
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

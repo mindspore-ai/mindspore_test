@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "pynative/pynative_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"

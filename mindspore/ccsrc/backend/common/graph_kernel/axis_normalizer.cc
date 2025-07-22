@@ -22,6 +22,7 @@
 #include "backend/common/graph_kernel/adapter/callback_impl.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/common/utils/anfalgo.h"
+#include "ir/tensor_new.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/array_ops.h"

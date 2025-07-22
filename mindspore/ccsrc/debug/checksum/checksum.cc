@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "debug/checksum/checksum_kernel.h"
 #include "debug/checksum/checksum_mgr.h"
 #include "runtime/device/res_manager/hal_res_manager.h"

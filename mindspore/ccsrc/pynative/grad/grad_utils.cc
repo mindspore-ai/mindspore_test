@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "ir/tensor_new.h"
 #include "backend/graph_compiler/transform.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

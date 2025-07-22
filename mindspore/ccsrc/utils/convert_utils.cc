@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/hashing.h"

@@ -20,6 +20,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
@@ -27,7 +28,6 @@
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

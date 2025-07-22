@@ -24,6 +24,7 @@
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "frontend/optimizer/opt.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindapi/base/type_id.h"
@@ -44,7 +45,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {

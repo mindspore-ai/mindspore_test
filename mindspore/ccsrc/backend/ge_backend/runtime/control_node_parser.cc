@@ -27,6 +27,7 @@
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "abstract/abstract_function.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "kernel/framework_utils.h"

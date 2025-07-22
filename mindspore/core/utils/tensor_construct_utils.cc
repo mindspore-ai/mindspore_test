@@ -88,7 +88,7 @@ tensor::TensorPtr TensorConstructUtils::CreateTensor(const TypePtr &type, const 
                                                      void *data) {
   MS_EXCEPTION_IF_NULL(type);
   auto type_id = ExtractTypeId(type);
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape, data, type_id);
+  tensor::TensorPtr tensor = tensor::from_buffer(type_id, shape, data, type_id);
   return tensor;
 }
 

@@ -24,6 +24,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/debug/anf_dump_utils.h"
@@ -280,9 +281,9 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
           }
         } else {
           std::string type = t_data->GetTypeString();
-          converted_tensor = std::make_shared<tensor::Tensor>(
-            ConvertStringToTypeId(type), t_data->GetShape(),
-            static_cast<void *>(const_cast<char *>(t_data->GetDataPtr())), t_data->GetByteSize());
+          converted_tensor =
+            tensor::from_buffer(ConvertStringToTypeId(type), t_data->GetShape(),
+                                static_cast<void *>(const_cast<char *>(t_data->GetDataPtr())), t_data->GetByteSize());
         }
 
         json[arg_name] = converted_tensor->DataToString(false);

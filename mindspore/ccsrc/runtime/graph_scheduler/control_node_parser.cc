@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <functional>
 #include <map>
+#include "ir/tensor_new.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

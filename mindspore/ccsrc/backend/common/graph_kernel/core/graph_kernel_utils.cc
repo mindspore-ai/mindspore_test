@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"

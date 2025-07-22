@@ -34,6 +34,7 @@
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_address_maker.h"
+#include "ir/tensor_new.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore {
@@ -131,13 +132,6 @@ Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape)
     : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape)) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len)
-    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, data_len))) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type)
-    : Tensor(data_type, shape,
-             MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type))) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)

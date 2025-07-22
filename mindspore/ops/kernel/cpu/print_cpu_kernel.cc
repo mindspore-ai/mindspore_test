@@ -21,6 +21,7 @@
 #include <string>
 #include <complex>
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "infer/print.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 
@@ -103,11 +104,11 @@ void PrintCpuKernelMod::LaunchKernel(size_t index, const std::vector<kernel::Ker
       std::cout << *num << std::endl;
     }
   } else {
-    Tensor tensor(data_types_[index], input_shapes_[index], inputs[index]->device_ptr(),
-                  input_sizes_[index] * sizeof(T));
+    auto tensor = tensor::from_buffer(data_types_[index], input_shapes_[index], inputs[index]->device_ptr(),
+                                      input_sizes_[index] * sizeof(T));
     if (value_type_.count(index) > 0) {
       // not a tensor
-      auto out = tensor.DataToString(true);
+      auto out = tensor->DataToString(true);
       if (value_type_[index] != 0) {
         // tuple, not scalar
         (void)std::replace(out.begin(), out.end(), '[', '(');
@@ -115,7 +116,7 @@ void PrintCpuKernelMod::LaunchKernel(size_t index, const std::vector<kernel::Ker
       }
       std::cout << out << std::endl;
     } else {
-      std::cout << tensor.ToStringNoLimit() << std::endl;
+      std::cout << tensor->ToStringNoLimit() << std::endl;
     }
   }
 }

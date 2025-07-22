@@ -16,6 +16,7 @@
 
 #include <map>
 #include <string>
+#include "ir/tensor_new.h"
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"

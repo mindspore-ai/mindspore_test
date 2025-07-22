@@ -23,8 +23,8 @@
 #include "frontend/optimizer/opt.h"
 #include "include/backend/optimizer/helper.h"
 #include "utils/trace_base.h"
-
 #include "ir/tensor_new.h"
+
 namespace mindspore {
 namespace opt {
 constexpr size_t kInputNum = 3;

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "ir/tensor_new.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_constants.h"
@@ -85,7 +86,7 @@ AbstractBasePtr NormalizeIntIndex(const ShapeVector &data_shape, const AbstractB
   int64_t int_index_val = GetValue<int64_t>(index_val_abs->GetValue());
   int64_t dim = data_shape[new_dim_index];
   int_index_val = NormalizeTupleIndex::CheckRange(int_index_val, dim);
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{}, &int_index_val, sizeof(int64_t));
+  auto tensor = tensor::from_buffer(kNumberTypeInt64, ShapeVector{}, &int_index_val, sizeof(int64_t));
   output_index_val_abs = tensor->ToAbstract();
   return output_index_val_abs;
 }

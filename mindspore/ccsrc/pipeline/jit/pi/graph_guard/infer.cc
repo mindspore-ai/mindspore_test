@@ -27,6 +27,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/stub_tensor.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/flags.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
@@ -41,7 +42,6 @@
 #include "include/common/utils/tensor_py.h"
 #include "include/common/pynative/common_utils.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parse {
 extern bool ConvertData(const py::object &obj, mindspore::ValuePtr *data, bool use_signature,

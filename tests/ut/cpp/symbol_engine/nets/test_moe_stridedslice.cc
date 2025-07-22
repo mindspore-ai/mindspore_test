@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "ir/tensor_new.h"
 #include "symbol_engine/nets/test_net.h"
 #include "common/graph_optimizer_test_framework.h"
 

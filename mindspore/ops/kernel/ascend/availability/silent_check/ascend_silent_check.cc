@@ -33,6 +33,7 @@
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/max.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/inplace_copy.h"
 #include "mindspore/ccsrc/pyboost/auto_generate/norm.h"
@@ -59,7 +60,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_n.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace silentcheck {
 namespace ascend {

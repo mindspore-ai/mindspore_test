@@ -18,6 +18,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"

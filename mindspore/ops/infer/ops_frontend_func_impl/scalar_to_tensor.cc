@@ -22,6 +22,7 @@
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ir/dtype.h"
+#include "ir/tensor_new.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

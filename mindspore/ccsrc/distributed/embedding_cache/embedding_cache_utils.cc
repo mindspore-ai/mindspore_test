@@ -17,6 +17,7 @@
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include <algorithm>
 #include <thread>
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))

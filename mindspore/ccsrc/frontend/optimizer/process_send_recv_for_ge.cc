@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <queue>
+#include "ir/tensor_new.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"

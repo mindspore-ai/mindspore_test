@@ -19,6 +19,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/anfalgo.h"

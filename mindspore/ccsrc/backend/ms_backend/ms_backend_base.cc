@@ -26,6 +26,7 @@
 #include <windows.h>
 #endif
 
+#include "ir/tensor_new.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "backend/graph_compiler/transform.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
@@ -73,7 +74,6 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/distributed/collective/collect_hccl_init_info.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace backend {
 namespace ms_backend {

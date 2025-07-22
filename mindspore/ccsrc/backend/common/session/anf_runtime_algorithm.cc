@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "ir/func_graph_cloner.h"
 #include "utils/shape_utils.h"
@@ -59,7 +60,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "ir/tensor_new.h"
 
 namespace mindspore::session {
 using abstract::AbstractTensor;

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include <unordered_map>
+#include "ir/tensor_new.h"
 #include "common/common_utils.h"
 #include "common/kernel_mod_cache.h"
 #include "mindapi/base/type_id.h"
@@ -37,7 +38,6 @@
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 #include "mindspore/ccsrc/include/backend/optimizer/op_adaptation_info_factory.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

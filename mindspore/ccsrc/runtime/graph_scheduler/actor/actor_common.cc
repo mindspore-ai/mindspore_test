@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include <memory>
 #include <unordered_map>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
@@ -1092,8 +1093,8 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
   }
 }
 
-void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr& tensor_address,
-                               const KernelTensorPtr& kernel_tensor, const device::DeviceAddressPtr& device_address) {
+void PrepareOffloadedParameter(Tensor *tensor, const device::DeviceAddressPtr &tensor_address,
+                               const KernelTensorPtr &kernel_tensor, const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(tensor_address);
   MS_EXCEPTION_IF_NULL(kernel_tensor);

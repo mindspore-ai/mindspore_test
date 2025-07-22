@@ -23,11 +23,11 @@
 
 #include "include/securec.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "frontend/ir/tensor_py.h"
 
 using mindspore::tensor::TensorPybind;
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace tensor {
 class TestMetaTensor : public UT::Common {

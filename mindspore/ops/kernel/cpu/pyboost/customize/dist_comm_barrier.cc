@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"

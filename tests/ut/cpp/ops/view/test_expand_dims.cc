@@ -15,6 +15,7 @@
  */
 
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/expand_dims_view_strides_calc.h"
 
 namespace mindspore {

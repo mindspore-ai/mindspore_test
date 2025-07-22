@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"

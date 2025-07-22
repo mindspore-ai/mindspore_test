@@ -18,6 +18,7 @@
 
 #include <utility>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "ir/dtype.h"
@@ -44,7 +45,6 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 constexpr auto kTupleToTensor = "TupleToTensor";

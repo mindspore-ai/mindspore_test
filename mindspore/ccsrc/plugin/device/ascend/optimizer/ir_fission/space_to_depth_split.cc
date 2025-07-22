@@ -17,13 +17,13 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/lite_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "frontend/optimizer/opt.h"
 #include "include/backend/optimizer/helper.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace {

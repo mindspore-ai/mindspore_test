@@ -19,6 +19,7 @@
 #include <string>
 #include <algorithm>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -450,7 +451,7 @@ CNodePtr CreateMul(const FuncGraphPtr &graph, const CNodePtr &sparse_softmax_nod
   }
   std::vector<float> tensor_value(softmax_output_shape[0], 1.0 / softmax_output_shape[0]);
   auto buf_size = sizeof(float) * tensor_value.size();
-  auto tensor_y = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, tensor_shape, tensor_value.data(), buf_size);
+  auto tensor_y = tensor::from_buffer(kNumberTypeFloat32, tensor_shape, tensor_value.data(), buf_size);
   auto y_node = CreateValueNode(tensor_y, kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(y_node);
 

@@ -32,6 +32,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/cell.h"
 #include "ir/dtype.h"
+#include "ir/tensor_new.h"
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"
 #include "include/common/fallback.h"
@@ -44,7 +45,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parse {
 namespace {

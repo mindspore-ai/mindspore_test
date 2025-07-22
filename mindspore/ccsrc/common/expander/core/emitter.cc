@@ -23,6 +23,7 @@
 #include <utility>
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

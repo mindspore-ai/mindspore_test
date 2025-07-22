@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "include/common/debug/draw.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -40,7 +41,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #endif
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parallel {
 bool OperatorLabel::operator<(const OperatorLabel &label) const { return to_string() < label.to_string(); }

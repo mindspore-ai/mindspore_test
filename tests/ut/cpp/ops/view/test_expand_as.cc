@@ -15,6 +15,7 @@
  */
 
 #include "test_view.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/view/expand_as_strides_calc.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

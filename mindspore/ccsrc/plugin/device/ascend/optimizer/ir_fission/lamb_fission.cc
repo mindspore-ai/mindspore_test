@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"

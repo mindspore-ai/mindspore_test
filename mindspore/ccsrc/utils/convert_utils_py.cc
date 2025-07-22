@@ -35,6 +35,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/param_info.h"
+#include "ir/tensor_new.h"
 #include "frontend/ir/base_ref_py.h"
 #include "ir/dtype/tensor_type.h"
 #include "utils/ms_context.h"

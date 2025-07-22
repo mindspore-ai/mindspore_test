@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "pybind11/pytypes.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "utils/hash_set.h"
@@ -333,7 +334,6 @@ py::array TensorIndex::MakeNdArray(const py::object &a, int64_t dim_size) {
   return new_array;
 }
 
-#include "ir/tensor_new.h"
 namespace Convert {
 string ConvertTypeToString(const TensorIndex &index) {
   if (index.IsNone())
@@ -894,7 +894,7 @@ TensorPtr TensorIndex::IntToTensor(int64_t int_index, const ShapeVector &shape) 
   int64_t dim_size = shape[0];
   auto out_i = static_cast<int32_t>(CheckRange(int_index, dim_size));
   if (shape.size() == 1) {
-    return std::make_shared<Tensor>(kNumberTypeInt32, ShapeVector({1, 1}), &out_i, int32_bytes_number);
+    return tensor::from_buffer(kNumberTypeInt32, ShapeVector({1, 1}), &out_i, int32_bytes_number);
   }
 
   ShapeVector index_shape(shape.begin() + 1, shape.end());
@@ -2136,7 +2136,7 @@ py::object TensorIndex::SetItemByNumber(const ShapeVector &data_shape, const Typ
     value_transfer_args.push_back(VectorToPyTuple<int64_t>(value_shape));
   } else {
     auto out_i = static_cast<int32_t>(CheckRange(index, dim_size));
-    new_index = std::make_shared<Tensor>(kNumberTypeInt32, ShapeVector({1, 1}), &out_i, int32_bytes_number);
+    new_index = tensor::from_buffer(kNumberTypeInt32, ShapeVector({1, 1}), &out_i, int32_bytes_number);
     ShapeVector updates_shape = {1};
     (void)updates_shape.insert(updates_shape.end(), data_shape.begin() + 1, data_shape.end());
     (void)value_transfer_types.emplace_back(static_cast<int>(ValueTransferType::kBroadCast));

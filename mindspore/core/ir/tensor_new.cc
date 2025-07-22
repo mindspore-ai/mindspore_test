@@ -36,6 +36,16 @@ TensorPtr empty(TypeId data_type, const ShapeVector &shape, device::DeviceType d
 
 TensorPtr from_tensor(const TensorPtr &tensor) { return std::make_shared<Tensor>(*tensor); }
 
+TensorPtr from_buffer(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len) {
+  return std::make_shared<Tensor>(
+    data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, data_len)));
+}
+
+TensorPtr from_buffer(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type) {
+  return std::make_shared<Tensor>(
+    data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type)));
+}
+
 template TensorPtr from_scalar(int64_t input, const TypePtr &data_type);
 template TensorPtr from_scalar(int32_t input, const TypePtr &data_type);
 template TensorPtr from_scalar(int16_t input, const TypePtr &data_type);

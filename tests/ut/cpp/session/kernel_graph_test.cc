@@ -18,6 +18,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "ir/param_info.h"
+#include "ir/tensor_new.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -27,7 +28,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace session {
 using device::KernelInfo;

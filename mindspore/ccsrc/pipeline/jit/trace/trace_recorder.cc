@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -43,7 +44,6 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace py = pybind11;
-#include "ir/tensor_new.h"
 namespace mindspore {
 constexpr size_t kPrimResultIndex = 0;
 constexpr size_t kFileNameIndex = 1;

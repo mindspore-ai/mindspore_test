@@ -20,11 +20,11 @@
 #include "runtime/device/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "ir/tensor_new.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace runtime {
 using distributed::collective::CollectiveManager;

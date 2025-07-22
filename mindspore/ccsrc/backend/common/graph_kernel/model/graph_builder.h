@@ -22,9 +22,9 @@
 
 #include "ir/dtype.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "mindapi/base/type_id.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
-#include "ir/tensor_new.h"
 
 namespace mindspore::graphkernel::inner {
 class GraphBuilder : public LiteGraph::GraphBuilderBase {

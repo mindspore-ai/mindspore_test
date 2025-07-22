@@ -17,13 +17,13 @@
 #include "include/common/utils/tensor_py.h"
 
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "debug/profiler/profiler.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/pyobj_manager.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace tensor {
 PyTypeObject *TensorPy_Type;

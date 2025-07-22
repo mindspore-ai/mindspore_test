@@ -35,6 +35,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"

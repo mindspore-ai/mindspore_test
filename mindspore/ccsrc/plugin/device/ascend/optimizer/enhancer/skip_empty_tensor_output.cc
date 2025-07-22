@@ -18,11 +18,11 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace {

@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/optimizer/enhancer/transpose_optimizer.h"
 #include <vector>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

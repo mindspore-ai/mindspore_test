@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -46,7 +47,7 @@ using mindspore::profiler::ProfilerManager;
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
-#include "ir/tensor_new.h"
+
 namespace mindspore {
 namespace pynative {
 enum class RunOpArgsEnum : size_t { PY_PRIM = 0, PY_NAME, PY_INPUTS, PY_ARGS_NUM };
@@ -69,8 +70,8 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
   MS_EXCEPTION_IF_NULL(new_shape);
   if (value->isa<mindspore::tensor::Tensor>()) {
     auto tensor_value = value->cast<mindspore::tensor::TensorPtr>();
-    return std::make_shared<mindspore::tensor::Tensor>(tensor_value->data_type(), new_shape->shape(),
-                                                       tensor_value->data_c(), tensor_value->Size());
+    return tensor::from_buffer(tensor_value->data_type(), new_shape->shape(), tensor_value->data_c(),
+                               tensor_value->Size());
   }
   if (value->isa<ValueTuple>()) {
     std::vector<ValuePtr> values;

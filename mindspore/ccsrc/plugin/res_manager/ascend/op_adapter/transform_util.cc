@@ -25,6 +25,7 @@
 #include "utils/shape_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "ir/device_address_maker.h"
+#include "ir/tensor_new.h"
 
 #ifndef ENABLE_LITE_ACL
 #include "include/common/utils/python_adapter.h"

@@ -22,6 +22,7 @@
 #include <utility>
 #include <functional>
 
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
@@ -41,7 +42,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace parallel {
 // One dimensional shape placeholder.

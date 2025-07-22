@@ -25,6 +25,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/manager.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "pipeline/jit/ps/resource.h"
@@ -45,7 +46,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 

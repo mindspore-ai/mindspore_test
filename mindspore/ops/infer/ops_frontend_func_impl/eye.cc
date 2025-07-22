@@ -16,12 +16,12 @@
 
 #include "infer/ops_func_impl/eye.h"
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 class EyeFrontendFuncImpl : public OpFrontendFuncImpl {

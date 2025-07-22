@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <vector>
+#include "ir/tensor_new.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/reduce_max.h"
@@ -22,7 +23,6 @@
 #include "utils/tensor_construct_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace ops {
 

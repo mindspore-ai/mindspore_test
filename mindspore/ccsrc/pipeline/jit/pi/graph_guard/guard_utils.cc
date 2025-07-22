@@ -16,6 +16,7 @@
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
 #include <cstdint>
 #include <regex>
+#include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "frontend/ir/primitive_py.h"
 #include "frontend/ir/cell_py.h"
@@ -28,7 +29,6 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/tensor_py.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace pijit {
 

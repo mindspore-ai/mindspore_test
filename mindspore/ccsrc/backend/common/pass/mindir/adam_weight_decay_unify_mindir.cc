@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/pass/mindir/adam_weight_decay_unify_mindir.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

@@ -17,6 +17,7 @@
 
 #include <functional>
 #include "frontend/parallel/dynamic_creator.h"
+#include "ir/tensor_new.h"
 #include "ir/core_ops_primitive.h"
 
 namespace mindspore {

@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include <deque>
+#include "ir/tensor_new.h"
 #include "include/common/utils/parallel_context.h"
 #include "debug/profiler/profiler.h"
 #include "common/kernel.h"

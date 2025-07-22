@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"

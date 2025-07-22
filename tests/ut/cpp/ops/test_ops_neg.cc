@@ -17,6 +17,7 @@
 #include <memory>
 #include "abstract/ops/primitive_infer_map.h"
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
@@ -41,7 +42,7 @@ class TestNegInferValue : public TestOps, public testing::WithParamInterface<Neg
 
 TEST_P(TestNegInferValue, neg_infer_value) {
   auto &param = GetParam();
-  auto x_tensor = std::make_shared<tensor::Tensor>(param.x_type, param.x_shape, (void *)&param.x_data[0], param.x_type);
+  auto x_tensor = tensor::from_buffer(param.x_type, param.x_shape, (void *)&param.x_data[0], param.x_type);
   auto x = x_tensor->ToAbstract();
   ASSERT_NE(x, nullptr);
   std::vector<abstract::AbstractBasePtr> input_args{std::move(x)};

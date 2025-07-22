@@ -25,11 +25,11 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/securec.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "frontend/ir/tensor_py.h"
 #include "plugin/res_manager/cpu/cpu_device_address/cpu_device_address.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 
-#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 using device::DeviceAddressPtr;
