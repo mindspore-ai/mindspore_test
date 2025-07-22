@@ -235,6 +235,12 @@ void OutputActor::FetchParameterInput(OpContext<KernelTensor> *const context) {
     auto parameter_kernel_tensor = FetchParameter(parameter_index.second, GetAID());
     MS_EXCEPTION_IF_NULL(parameter_kernel_tensor);
     auto device_tensor = parameter_kernel_tensor->device_address().get();
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    MS_EXCEPTION_IF_NULL(device_contexts_[output_position]);
+    if (device_contexts_[output_position]->GetDeviceType() != device_tensor->GetDeviceType()) {
+      device_contexts_[output_position] = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {device_tensor->device_name(), device_tensor->device_id()});
+    }
     // Create the device address and put it into host tensor.
     if (old_to_new_device_address_.count(device_tensor) > 0) {
       new_tensor->set_device_address(old_to_new_device_address_[device_tensor]);
