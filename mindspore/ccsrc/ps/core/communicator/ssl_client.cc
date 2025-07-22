@@ -39,7 +39,7 @@ SSLClient::~SSLClient() { CleanSSL(); }
 
 void SSLClient::InitSSL() {
   CommUtil::InitOpensslLib();
-  ssl_ctx_ = SSL_CTX_new(TLS_server_method());
+  ssl_ctx_ = SSL_CTX_new(TLS_client_method());
   if (!ssl_ctx_) {
     MS_LOG(EXCEPTION) << "SSL_CTX_new failed";
   }
