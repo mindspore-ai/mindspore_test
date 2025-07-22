@@ -129,13 +129,13 @@ void GatherInfo(const T &arg, const Args &... args) {
   GatherInfo(args...);
 }
 
-void RefreshAddr(mindspore::kernel::KernelTensor *);
+BACKEND_EXPORT void RefreshAddr(mindspore::kernel::KernelTensor *);
 inline void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &tensor_and_trans) {
   RefreshAddr(tensor_and_trans.first);
 }
 
-void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
-void RefreshAddr(device::DeviceAddress *device_address);
+BACKEND_EXPORT void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
+BACKEND_EXPORT void RefreshAddr(device::DeviceAddress *device_address);
 
 inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
   for (auto tensor : tensor_list) {
@@ -143,8 +143,8 @@ inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &te
   }
 }
 
-void RefreshAddr(const device::DeviceAddressPtr &device_address);
-void RefreshAddr(const mindspore::tensor::TensorPtr &tensor);
+BACKEND_EXPORT void RefreshAddr(const device::DeviceAddressPtr &device_address);
+BACKEND_EXPORT void RefreshAddr(const mindspore::tensor::TensorPtr &tensor);
 
 template <typename Args>
 void RefreshAddr(const Args &values) {}
