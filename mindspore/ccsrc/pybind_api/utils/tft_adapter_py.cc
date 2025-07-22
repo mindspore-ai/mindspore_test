@@ -221,6 +221,23 @@ void RebuildSubCommunication() {
 }
 bool IsRebootNode() { return UCEException::GetInstance().is_reboot_node(); }
 
+void SetIsRebootNode(bool is_reboot) {
+  MS_LOG(WARNING) << "Set is reboot node flag: " << is_reboot;
+  UCEException::GetInstance().set_reboot_node(is_reboot);
+}
+
+void SetIsArf(bool is_arf) {
+  MS_LOG(WARNING) << "Set is arf flag: " << is_arf;
+  UCEException::GetInstance().set_is_arf(is_arf);
+  if (!is_arf) {
+    // reset reboot node flag when reset arf flag at train step end
+    UCEException::GetInstance().set_reboot_node(false);
+    UCEException::GetInstance().set_rebuild_group_flag(false);
+  }
+}
+
+bool GetIsArf() { return UCEException::GetInstance().is_arf(); }
+
 void CleanRootInfo() {
   if (!UCEException::GetInstance().need_clean_rootinfo() || UCEException::GetInstance().check_rootinfo_clean_flag()) {
     return;
@@ -274,5 +291,8 @@ void RegTFT(py::module *m) {
   (void)m->def("_rebuild_world_group", &RebuildHcclWorldGroup, "Rebuild comm.");
   (void)m->def("is_reboot_node", &IsRebootNode, "Get reboot node flag.");
   (void)m->def("_pre_launch_send_recv", &RePreLaunchSendRecv, "PreLaunch Send Recv before launch graph.");
+  (void)m->def("set_is_reboot_node", &SetIsRebootNode, "Set reboot node flag for arf.");
+  (void)m->def("check_is_arf", &GetIsArf, "Get arf flag.");
+  (void)m->def("set_is_arf", &SetIsArf, "Set arf flag.");
 }
 }  // namespace mindspore

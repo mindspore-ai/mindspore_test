@@ -23,9 +23,9 @@ from mindspore.common import dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
-from mindspore.parallel._recovery_context import _set_recovery_context
 from mindspore.common.api import jit_class
 from mindspore._c_expression import _tft_start_record_threads, _tft_finish_record_threads
+from mindspore._c_expression import set_is_reboot_node
 
 
 @jit_class
@@ -181,7 +181,7 @@ class TftHandle:
         if self.tft.tft_is_reboot_node():
             logger.warning("tft report reboot init finish ")
             tft.tft_report_error(tft.ReportState.RS_INIT_FINISH.value)
-            _set_recovery_context(is_reboot_node=True)
+            set_is_reboot_node(True)
             ret = tft.tft_wait_next_action()
             if ret != tft.Action.RETRY.value:
                 raise RuntimeError(f"ARF init failed!")

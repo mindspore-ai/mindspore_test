@@ -35,8 +35,8 @@ from mindspore._c_expression import TensorPy as Tensor_
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 import mindspore
 import mindspore.common.dtype as mstype
-from mindspore.parallel._recovery_context import _set_recovery_context
 from mindspore import runtime
+from mindspore._c_expression import set_is_arf
 
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
@@ -181,7 +181,7 @@ def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
     logger.warning(f"Enter _tft_rebuild_sub_groups, device id: {ctx.device_id}")
     _rebuild_world_group()
     _rebuild_sub_group()
-    _set_recovery_context(is_arf=True)
+    set_is_arf(True)
     logger.warning(f"try to pre launch send recv before real launch")
     _pre_launch_send_recv(context.get_context('device_id'))
     logger.warning(f"Pre launch send recv before real launch end")
