@@ -117,6 +117,7 @@ struct CopyFuncRegister {
   namespace {                                                                                  \
   static CopyFuncRegister<device_type> g_maker_register(sync_func, async_func, sync_ptr_func); \
   }
+// This interface is only used by kernel tensor to get host value, and the default stream would be sync in it.
 MS_CORE_API bool CopyToHost(device::DeviceType device_type, void *dst, const void *src, uint64_t size,
                             size_t stream_id);
 MS_CORE_API bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync, size_t stream_id);

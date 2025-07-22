@@ -962,7 +962,8 @@ void KernelRunner::CopyInputDeviceTensor(KernelTensorPtr kernel_tensor, size_t i
   }
   if (inference_param) {
     MS_LOG(EXCEPTION) << GetAID().Name()
-                      << " not support copy parameter input for parallel dispatch, input index: " << input_index;
+                      << " not support copy parameter input for parallel dispatch, input index: " << input_index
+                      << " input kernel tensor:" << kernel_tensor->ToString();
   }
   uint64_t start_time = 0;
   PROFILER_START(start_time);
