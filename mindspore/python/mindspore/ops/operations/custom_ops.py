@@ -251,79 +251,79 @@ class Custom(ops.PrimitiveWithInfer):
             - str: If func is of str type, then str should be a path of file along with a function name.
               This could be used when func_type is "aot".
 
-              1. for "aot":
+              for "aot":
 
-                 a) GPU/CPU platform.
-                 "aot" means ahead of time, in which case Custom directly launches user defined "xxx.so" file as an
-                 operator. Users need to compile a handwriting "xxx.cu"/"xxx.cc" file into "xxx.so" ahead of time,
-                 and offer the path of the file along with a function name.
+              a) GPU/CPU platform.
+              "aot" means ahead of time, in which case Custom directly launches user defined "xxx.so" file as an
+              operator. Users need to compile a handwriting "xxx.cu"/"xxx.cc" file into "xxx.so" ahead of time,
+              and offer the path of the file along with a function name.
 
-                 - "xxx.so" file generation:
+              - "xxx.so" file generation:
 
-                   1) GPU Platform: Given user defined "xxx.cu" file (ex. "{path}/add.cu"), use nvcc command to compile
-                   it.(ex. "nvcc --shared -Xcompiler -fPIC -o add.so add.cu")
+                1) GPU Platform: Given user defined "xxx.cu" file (ex. "{path}/add.cu"), use nvcc command to compile
+                it.(ex. "nvcc --shared -Xcompiler -fPIC -o add.so add.cu")
 
-                   2) CPU Platform: Given user defined "xxx.cc" file (ex. "{path}/add.cc"), use g++/gcc command to
-                   compile it.(ex. "g++ --shared -fPIC  -o add.so add.cc")
+                2) CPU Platform: Given user defined "xxx.cc" file (ex. "{path}/add.cc"), use g++/gcc command to
+                compile it.(ex. "g++ --shared -fPIC  -o add.so add.cc")
 
-                 - Define a "xxx.cc"/"xxx.cu" file:
+              - Define a "xxx.cc"/"xxx.cu" file:
 
-                   "aot" is a cross-platform identity. The functions defined in "xxx.cc" or "xxx.cu" share
-                   the same args. Typically, the function should be as:
+                "aot" is a cross-platform identity. The functions defined in "xxx.cc" or "xxx.cu" share
+                the same args. Typically, the function should be as:
 
-                   .. code-block::
+                .. code-block::
 
-                       int func(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes,
-                               void *stream, void *extra)
+                    int func(int nparam, void **params, int *ndims, int64_t **shapes, const char **dtypes,
+                            void *stream, void *extra)
 
-                   Parameters:
+                Parameters:
 
-                   - nparam(int): total number of inputs plus outputs; suppose the operator has 2 inputs and 3 outputs,
-                     then nparam=5
-                   - params(void \*\*): a pointer to the array of inputs and outputs' pointer; the pointer type of
-                     inputs and outputs is void \* ; suppose the operator has 2 inputs and 3 outputs, then the first
-                     input's pointer is params[0] and the second output's pointer is params[3]
-                   - ndims(int \*): a pointer to the array of inputs and outputs' dimension num; suppose params[i] is a
-                     1024x1024 tensor and params[j] is a 77x83x4 tensor, then ndims[i]=2, ndims[j]=3.
-                   - shapes(int64_t \*\*): a pointer to the array of inputs and outputs' shapes(int64_t \*); the ith
-                     input's jth dimension's size is shapes[i][j](0<=j<ndims[i]); suppose params[i] is a 2x3 tensor and
-                     params[j] is a 3x3x4 tensor, then shapes[i][0]=2, shapes[j][2]=4.
-                   - dtypes(const char \*\*): a pointer to the array of inputs and outputs' types(const char \*);
-                     (ex. "float32", "float16", "float", "float64", "int", "int8", "int16", "int32", "int64", "uint",
-                     "uint8", "uint16", "uint32", "uint64", "bool")
-                   - stream(void \*): stream pointer, only used in cuda file
-                   - extra(void \*): used for further extension
+                - nparam(int): total number of inputs plus outputs; suppose the operator has 2 inputs and 3 outputs,
+                  then nparam=5
+                - params(void \*\*): a pointer to the array of inputs and outputs' pointer; the pointer type of
+                  inputs and outputs is void \* ; suppose the operator has 2 inputs and 3 outputs, then the first
+                  input's pointer is params[0] and the second output's pointer is params[3]
+                - ndims(int \*): a pointer to the array of inputs and outputs' dimension num; suppose params[i] is a
+                  1024x1024 tensor and params[j] is a 77x83x4 tensor, then ndims[i]=2, ndims[j]=3.
+                - shapes(int64_t \*\*): a pointer to the array of inputs and outputs' shapes(int64_t \*); the ith
+                  input's jth dimension's size is shapes[i][j](0<=j<ndims[i]); suppose params[i] is a 2x3 tensor and
+                  params[j] is a 3x3x4 tensor, then shapes[i][0]=2, shapes[j][2]=4.
+                - dtypes(const char \*\*): a pointer to the array of inputs and outputs' types(const char \*);
+                  (ex. "float32", "float16", "float", "float64", "int", "int8", "int16", "int32", "int64", "uint",
+                  "uint8", "uint16", "uint32", "uint64", "bool")
+                - stream(void \*): stream pointer, only used in cuda file
+                - extra(void \*): used for further extension
 
-                   Return Value(int):
+                Return Value(int):
 
-                   - 0: MindSpore will continue to run if this aot kernel is successfully executed
-                   - others: MindSpore will raise exception and exit
+                - 0: MindSpore will continue to run if this aot kernel is successfully executed
+                - others: MindSpore will raise exception and exit
 
-                   Examples: see details in tests/st/ops/graph_kernel/custom/aot_test_files/
+                Examples: see details in tests/st/ops/graph_kernel/custom/aot_test_files/
 
-                 - Use it in Custom:
+              - Use it in Custom:
 
-                   .. code-block::
+                .. code-block::
 
-                       Custom(func="{dir_path}/{file_name}:{func_name}",...)
-                       (ex. Custom(func="./reorganize.so:CustomReorganize", out_shape=[1], out_dtype=mstype.float32,
-                       "aot"))
+                    Custom(func="{dir_path}/{file_name}:{func_name}",...)
+                    (ex. Custom(func="./reorganize.so:CustomReorganize", out_shape=[1], out_dtype=mstype.float32,
+                    "aot"))
 
-                 b) Ascend platform.
-                 Before using Custom operators on the Ascend platform, users must first develop custom operators
-                 based on Ascend C and compile them. The complete development and usage process can refer to the
-                 tutorial `AOT-Type Custom Operators(Ascend)
-                 <https://www.mindspore.cn/tutorials/en/master/custom_program/operation/op_custom_ascendc.html>`_.
-                 By passing the name of the operator through the input parameter `func`, there are two usage methods
-                 based on the implementation of the infer function:
+              b) Ascend platform.
+              Before using Custom operators on the Ascend platform, users must first develop custom operators
+              based on Ascend C and compile them. The complete development and usage process can refer to the
+              tutorial `AOT-Type Custom Operators(Ascend)
+              <https://www.mindspore.cn/tutorials/en/master/custom_program/operation/op_custom_ascendc.html>`_.
+              By passing the name of the operator through the input parameter `func`, there are two usage methods
+              based on the implementation of the infer function:
 
-                 - Python infer: If the operator's infer function is implemented in Python, that is, the infer shape
-                   function is passed through the `out_shape` parameter, and the infer type is passed throuht the
-                   `out_dtype`, then the `func` should be specified as the operator name, for example,
-                   `func="CustomName"`.
-                 - C++ infer: If the operator's infer function is implemented through C++, then pass the path of the
-                   infer function implementation file in `func` and separate the operator name with `:`,
-                   for example: `func="add_custom_infer.cc:AddCustom"` .
+              - Python infer: If the operator's infer function is implemented in Python, that is, the infer shape
+                function is passed through the `out_shape` parameter, and the infer type is passed throuht the
+                `out_dtype`, then the `func` should be specified as the operator name, for example,
+                `func="CustomName"`.
+              - C++ infer: If the operator's infer function is implemented through C++, then pass the path of the
+                infer function implementation file in `func` and separate the operator name with `:`,
+                for example: `func="add_custom_infer.cc:AddCustom"` .
 
         out_shape (Union[function, list, tuple], optional): The output shape infer function or the value of output
             shape of `func`. Default: ``None`` .
