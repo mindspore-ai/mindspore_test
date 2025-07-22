@@ -1104,7 +1104,7 @@ def test_export_muls():
         raise RuntimeError(f"Export operator Muls to ONNX failed!")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_export_muls_with_saved_dirs():
     """
     Feature: Export Muls to onnx and set dirs
