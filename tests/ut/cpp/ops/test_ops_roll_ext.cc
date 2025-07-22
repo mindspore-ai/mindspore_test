@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/roll.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -24,7 +25,6 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct RollExtParams {
@@ -59,7 +59,7 @@ class TestRollExtSimpleInfer : public TestOps, public testing::WithParamInterfac
 
 TEST_P(TestRollExtSimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));
   input_values.push_back(std::move(param.shifts));

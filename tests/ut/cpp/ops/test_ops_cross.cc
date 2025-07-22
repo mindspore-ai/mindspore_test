@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
@@ -22,7 +23,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct CrossShapeParams {
@@ -85,8 +85,8 @@ TEST_P(TestCrossException, exception) {
 
 TEST_P(TestCrossSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
-  auto other = tensor::empty(param.other_type->type_id(), param.other_shape, device::DeviceType::kCPU);
+  auto input = tensor::from_spec(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
+  auto other = tensor::from_spec(param.other_type->type_id(), param.other_shape, device::DeviceType::kCPU);
   auto expect_shape = ShapeArray{param.input_shape};
   auto expect_type = TypePtrList{param.input_type};
   CrossFuncImpl cross_func_impl;

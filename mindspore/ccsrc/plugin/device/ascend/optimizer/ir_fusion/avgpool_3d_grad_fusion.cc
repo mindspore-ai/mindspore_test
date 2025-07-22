@@ -19,13 +19,13 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/avgpool_3d_fusion.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -120,7 +120,7 @@ AnfNodePtr ConstructMultiplier(const FuncGraphPtr &func_graph, const ShapeVector
   MS_EXCEPTION_IF_NULL(func_graph);
   //  assist tensor 2
   std::vector<int64_t> assist_shape = ori_shape;  // NCDHW
-  tensor::TensorPtr tensor = tensor::empty(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr tensor = tensor::from_spec(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   auto tensor_data = static_cast<float16 *>(tensor->data_c());
   auto pad_d = pad_list[kDim0] + pad_list[kDim1];

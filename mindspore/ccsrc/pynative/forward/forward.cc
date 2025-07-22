@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -46,7 +47,7 @@ using mindspore::profiler::ProfilerManager;
 #include "include/common/utils/tensor_py.h"
 #include "mindspore/ccsrc/frontend/expander/bprop/bprop.h"
 #include "utils/stream_guard.h"
-#include "ir/tensor_api.h"
+
 namespace mindspore {
 namespace pynative {
 enum class RunOpArgsEnum : size_t { PY_PRIM = 0, PY_NAME, PY_INPUTS, PY_ARGS_NUM };
@@ -69,8 +70,8 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
   MS_EXCEPTION_IF_NULL(new_shape);
   if (value->isa<mindspore::tensor::Tensor>()) {
     auto tensor_value = value->cast<mindspore::tensor::TensorPtr>();
-    return std::make_shared<mindspore::tensor::Tensor>(tensor_value->data_type(), new_shape->shape(),
-                                                       tensor_value->data_c(), tensor_value->Size());
+    return tensor::from_buffer(tensor_value->data_type(), new_shape->shape(), tensor_value->data_c(),
+                               tensor_value->Size());
   }
   if (value->isa<ValueTuple>()) {
     std::vector<ValuePtr> values;
@@ -126,7 +127,7 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     CreateDeviceAddressForTensor(op_run_info, tensor);
 #endif
     // This constructor will make a tensor with the new id
-    auto new_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
+    auto new_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kNone);
     // todo: check tensor->data need ?
     new_tensor->set_need_pipeline_sync(true);
     new_tensor->set_device_address(tensor->device_address());
@@ -1008,7 +1009,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
                                              runtime::KernelTaskType task_type, bool is_multi_output) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(storage_info);
-  auto output_tensor = tensor::empty(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
+  auto output_tensor = tensor::from_spec(input_tensor->data_type(), storage_info->shape, device::DeviceType::kNone);
   output_tensor->set_need_pipeline_sync(true);
   output_tensor->set_contiguous_callback([this](const DeviceSyncPtr &device_address) -> DeviceSyncPtr {
     return TensorContiguousCallback(device_address, device_address->GetTensorStorageInfo());

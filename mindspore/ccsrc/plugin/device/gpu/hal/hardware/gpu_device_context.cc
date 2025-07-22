@@ -79,7 +79,7 @@
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "backend/common/backend_common_callback.h"
 #include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 
 namespace mindspore {
 namespace device {
@@ -888,7 +888,7 @@ void MallocMemoryAndCopyValue(const device::DeviceAddressPtr &device_address,
   std::reverse(vec.begin(), vec.end());
   vec.resize(kMaxDim, 0);
   ShapeVector shape{SizeToLong(device_address->GetSize() / sizeof(int64_t))};
-  auto tensor = tensor::empty(kNumberTypeInt64, shape, device::DeviceType::kCPU);
+  auto tensor = tensor::from_spec(kNumberTypeInt64, shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(tensor);
   MS_EXCEPTION_IF_NULL(tensor->device_address());
   auto tensor_device_address = dynamic_cast<DeviceAddress *>(tensor->device_address().get());

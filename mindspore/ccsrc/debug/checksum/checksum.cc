@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "debug/checksum/checksum_kernel.h"
 #include "debug/checksum/checksum_mgr.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
@@ -41,7 +42,7 @@ inline TensorPtr KernelTensor2Tensor(KernelTensorPtr kernel_tensor) {
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  auto out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
+  auto out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {

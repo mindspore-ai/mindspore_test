@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
@@ -25,7 +26,6 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace cpu {
@@ -114,7 +114,7 @@ tensor::TensorPtr CPUResManager::GetSliceByTensorListIndexHandle(const std::vect
   size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
                                 before_padding_size[end - 1]);
   ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
-  auto tensor = tensor::empty(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
+  auto tensor = tensor::from_spec(tensor_list[start]->data_type(), shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
   auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
 
@@ -136,7 +136,7 @@ tensor::TensorPtr CPUResManager::GetSliceByPaddingShapeHandle(const tensor::Tens
   auto type_size = UnitSizeInBytes(type_id);
   size_t tensor_size = (end - start) * type_size;
   ShapeVector shape = {static_cast<int64_t>(end - start)};
-  auto tensor = tensor::empty(type_id, shape, device::DeviceType::kNone);
+  auto tensor = tensor::from_spec(type_id, shape, device::DeviceType::kNone);
   MS_EXCEPTION_IF_NULL(first_tensor->device_address());
   auto ptr = first_tensor->device_address()->GetMutablePtr();
   auto offset_size = start * type_size;

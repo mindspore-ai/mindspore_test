@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_tdt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::device::ascend {
 
@@ -94,7 +94,7 @@ mindspore::tensor::TensorPtr ConvertDataItemToTensorPtr(acltdtDataItem *item) {
     return nullptr;
   }
   auto type_id = type_iter->second;
-  auto tensor_ptr = tensor::empty(type_id, tensor_shape, device::DeviceType::kCPU);
+  auto tensor_ptr = tensor::from_spec(type_id, tensor_shape, device::DeviceType::kCPU);
   if (acl_data_size == 0) {
     return tensor_ptr;
   }
@@ -192,7 +192,7 @@ bool ScopeAclTdtDataset::FinishSliceTensor() {
       return false;
     }
     auto type_id = type_iter->second;
-    auto tensor_ptr = tensor::empty(type_id, sliced_tensor_->tensor_shape_, device::DeviceType::kCPU);
+    auto tensor_ptr = tensor::from_spec(type_id, sliced_tensor_->tensor_shape_, device::DeviceType::kCPU);
     if (!CopyDataToTensor(reinterpret_cast<const uint8_t *>(tensor_data.c_str()), tensor_ptr, tensor_data.size())) {
       return false;
     }

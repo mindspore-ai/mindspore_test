@@ -27,6 +27,7 @@
 #include "abstract/utils.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "abstract/abstract_function.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "kernel/framework_utils.h"
@@ -1316,7 +1317,7 @@ tensor::TensorPtr ControlNodeParser::CreateTensorForValue(const ValuePtr &value)
   MS_EXCEPTION_IF_NULL(value);
   tensor::TensorPtr tensor = nullptr;
   if (value->isa<Monad>()) {
-    tensor = std::make_shared<tensor::Tensor>(int8_t('U'), TypeIdToType(kNumberTypeInt8));
+    tensor = tensor::from_scalar(int8_t('U'), TypeIdToType(kNumberTypeInt8));
   } else if (value->isa<Scalar>()) {
     const auto scalar_value = value->cast<ScalarPtr>();
     MS_EXCEPTION_IF_NULL(scalar_value);

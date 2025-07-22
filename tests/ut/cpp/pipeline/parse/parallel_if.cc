@@ -28,7 +28,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "pipeline/jit/ps/action.h"
 #include "ir/func_graph_cloner.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
@@ -62,8 +62,8 @@ class TestParallelIf : public UT::Common {
 
     pipeline::ResourcePtr res1 = std::make_shared<pipeline::Resource>();
 
-    tensor::TensorPtr x_tensor = tensor::empty(kFloat32->type_id(), std::vector<int64_t>{1}, device::DeviceType::kCPU);
-    tensor::TensorPtr y_tensor = tensor::empty(kFloat32->type_id(), std::vector<int64_t>{1}, device::DeviceType::kCPU);
+    tensor::TensorPtr x_tensor = tensor::from_spec(kFloat32->type_id(), std::vector<int64_t>{1}, device::DeviceType::kCPU);
+    tensor::TensorPtr y_tensor = tensor::from_spec(kFloat32->type_id(), std::vector<int64_t>{1}, device::DeviceType::kCPU);
 
     AbstractBasePtr abstract_x = abstract::FromValue(x_tensor, true);
     AbstractBasePtr abstract_y = abstract::FromValue(y_tensor, true);

@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
@@ -34,12 +35,11 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 template <typename T>
 std::shared_ptr<ValueNode> CreateZeroTensor(const ShapeVector &gamma_shape, TypeId gamma_type) {
-  tensor::TensorPtr assist_tensor = tensor::empty(gamma_type, gamma_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(gamma_type, gamma_shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(gamma_type));
   T *dst_data_t = reinterpret_cast<T *>(assist_tensor->data_c());
   const auto data_size = sizeof(T);
@@ -71,7 +71,7 @@ std::shared_ptr<ValueNode> CreateNewGammaTensor(const AnfNodePtr &gamma, const A
   void *scale_data = scale_param_cpu->data_c();
   auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
   auto rank_offset = need_rank_offset ? global_rank_id * len : 0;
-  tensor::TensorPtr assist_tensor = tensor::empty(gamma_type, shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(gamma_type, shape, device::DeviceType::kCPU);
   void *dst_data = assist_tensor->data_c();
 
   T *gamma_data_t = reinterpret_cast<T *>(gamma_data) + rank_offset;
@@ -89,7 +89,7 @@ std::shared_ptr<ValueNode> CreateNewGammaTensor(const AnfNodePtr &gamma, const A
 template <typename T>
 std::shared_ptr<ValueNode> CreateScaleTensor(TypeId gamma_type) {
   ShapeVector shape = {1};
-  tensor::TensorPtr assist_tensor = tensor::empty(gamma_type, shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(gamma_type, shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(gamma_type));
   T *dst_data_t = reinterpret_cast<T *>(assist_tensor->data_c());
   dst_data_t[0] = static_cast<T>(1.0);
@@ -104,7 +104,7 @@ std::shared_ptr<ValueNode> CreateOffsetTensor(const AnfNodePtr &offset) {
   int8_t *offset_data_t = reinterpret_cast<int8_t *>(offset_data);
 
   ShapeVector shape = {1};
-  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeInt8, shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(kNumberTypeInt8, shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(TypeIdToType(kNumberTypeInt8));
   int8_t *dst_data_t = reinterpret_cast<int8_t *>(assist_tensor->data_c());
   dst_data_t[0] = offset_data_t[0];

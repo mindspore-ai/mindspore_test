@@ -15,6 +15,7 @@
  */
 
 #include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "ir/tensor_new.h"
 #include "grad/grad_utils.h"
 
 namespace mindspore::expander::bprop {
@@ -108,7 +109,7 @@ REG_BPROP_BUILDER("Eigh").SetBody(BODYFUNC(ib) {
         }
       }
     }
-    auto eye_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, eye_shape, &eyes_value[0], kNumberTypeInt32);
+    auto eye_tensor = tensor::from_buffer(kNumberTypeInt32, eye_shape, &eyes_value[0], kNumberTypeInt32);
     return ib->Value(eye_tensor);
   };
 

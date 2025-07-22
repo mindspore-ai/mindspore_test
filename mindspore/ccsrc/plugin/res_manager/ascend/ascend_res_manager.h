@@ -40,11 +40,12 @@ struct MemUceInfo {
 
 class ASCEND_RES_MANAGER_EXPORT PinMemoryAllocator : public AddressAllocator {
  public:
-  PinMemoryAllocator(std::shared_ptr<SwapManager> swap_manager) : swap_manager_(swap_manager) {};
+  explicit PinMemoryAllocator(std::shared_ptr<SwapManager> swap_manager) : swap_manager_(swap_manager) {}
   virtual ~PinMemoryAllocator() = default;
 
-  virtual void *Alloc(size_t size, uint32_t stream_id) override;
-  virtual bool Free(void *address_ptr) override;
+  void *Alloc(size_t size, uint32_t stream_id) override;
+  bool Free(void *address_ptr) override;
+
  private:
   std::shared_ptr<SwapManager> swap_manager_{nullptr};
 };

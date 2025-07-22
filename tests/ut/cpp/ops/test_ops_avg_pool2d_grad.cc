@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/avg_pool2d_grad.h"
 #include "ir/dtype/type.h"
@@ -27,7 +28,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
-#include "ir/tensor_api.h"
 
 namespace mindspore::ops {
 struct AvgPool2DGradParams {
@@ -74,8 +74,8 @@ TEST_P(TestAvgPool2DGrad, dyn_shape) {
   ShapeCompare(inferred_shape, expect_shape);
   // simple infer
   if (param.is_static) {
-    auto grad = tensor::empty(kNumberTypeFloat32, param.grad_shape, device::DeviceType::kCPU);
-    auto image = tensor::empty(kNumberTypeFloat32, param.image_shape, device::DeviceType::kCPU);
+    auto grad = tensor::from_spec(kNumberTypeFloat32, param.grad_shape, device::DeviceType::kCPU);
+    auto image = tensor::from_spec(kNumberTypeFloat32, param.image_shape, device::DeviceType::kCPU);
     std::vector<ValuePtr> input_valus{grad,          image,           param.kernel_size, param.stride,
                                       param.padding, param.ceil_mode, count_include_pad, divisor_override};
     auto expect_shape = ShapeArray{param.out_shape};

@@ -19,13 +19,13 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>
@@ -71,7 +71,7 @@ class LessFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto type_id = x1_tensor->data_type();
     auto data_size = x1_tensor->DataSize();
-    auto result_tensor = tensor::empty(kNumberTypeBool, x1_shape, device::DeviceType::kCPU);
+    auto result_tensor = tensor::from_spec(kNumberTypeBool, x1_shape, device::DeviceType::kCPU);
     auto iter = less_impl_list.find(type_id);
     if (iter == less_impl_list.end()) {
       MS_LOG(DEBUG) << "For '" << primitive->name() << "', 'x1' is " << x1_tensor->ToString()

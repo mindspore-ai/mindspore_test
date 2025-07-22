@@ -18,6 +18,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "plugin/device/ascend/llm_boost/ascend_native/boost_model_ascend_native.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "common/kernel.h"
@@ -146,7 +147,7 @@ mindspore::tensor::TensorPtr CreateMSTensor(internal::Tensor *tensor) {
   copy(tensor->desc.dims.begin(), tensor->desc.dims.end(), back_inserter(shape));
   void *data = tensor->hostData;
   size_t data_len = tensor->dataSize;
-  auto btensor = std::make_shared<mindspore::tensor::Tensor>(data_type, shape, data, data_len);
+  auto btensor = tensor::from_buffer(data_type, shape, data, data_len);
   return btensor;
 }
 }  // namespace

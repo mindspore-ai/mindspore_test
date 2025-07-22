@@ -19,6 +19,7 @@
 
 #include <utility>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "ir/dtype/type.h"
 #include "mindapi/base/format.h"
@@ -53,7 +54,7 @@ ValuePtr CreateScalar(T v) {
 template <typename T>
 tensor::TensorPtr CreateTensor(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+  auto tensor = tensor::from_buffer(type, shape, data_ptr, type);
   return tensor;
 }
 

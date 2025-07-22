@@ -29,6 +29,7 @@
 #include "utils/hash_map.h"
 #include "ops/primitive_c.h"
 #include "ir/manager.h"
+#include "ir/tensor_new.h"
 #include "abstract/utils.h"
 #include "common/common_utils.h"
 #include "base/base_ref_utils.h"
@@ -76,7 +77,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace session {
 MS_REG_SESSION(kSessionBasic, SessionBasic);
@@ -89,7 +89,7 @@ BaseRef GetNodeOutputTensorFromInputs(const session::KernelWithIndex &node_outpu
   auto &node = node_output_pair.first;
   MS_EXCEPTION_IF_NULL(node);
   if (HasAbstractMonad(node)) {
-    return std::make_shared<tensor::Tensor>(int64_t(0), kBool);
+    return tensor::from_scalar(int64_t(0), kBool);
   }
   // if node is a value node, no need sync addr from device to host
   if (node->isa<ValueNode>()) {
@@ -145,11 +145,11 @@ BaseRef CreateNodeOutputTensor(const session::KernelWithIndex &node_output_pair,
   if (is_internal_output) {
     tensor = graph->GetInternalOutputTensor(node, output_index);
     if (tensor == nullptr) {
-      tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
+      tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
       graph->AddInternalOutputTensor(node, output_index, tensor);
     }
   } else {
-    tensor = tensor::empty(type_id, shape, device::DeviceType::kCPU);
+    tensor = tensor::from_spec(type_id, shape, device::DeviceType::kCPU);
   }
   MS_EXCEPTION_IF_NULL(tensor);
   if (is_internal_output) {
@@ -669,8 +669,7 @@ ValuePtr SessionBasic::GetValueNodeOutput(const AnfNodePtr &node, size_t output_
   } else if (value->isa<StringImm>()) {
     auto value_string = GetValue<std::string>(value);
     const ShapeVector shape = {1, SizeToLong(value_string.size())};
-    tensor::TensorPtr tensor =
-      std::make_shared<tensor::Tensor>(kObjectTypeString, shape, value_string.data(), value_string.size());
+    tensor::TensorPtr tensor = tensor::from_buffer(kObjectTypeString, shape, value_string.data(), value_string.size());
     MS_EXCEPTION_IF_NULL(tensor);
     tensor->set_sync_status(kNeedSyncHostToDevice);
     return tensor;
@@ -993,7 +992,7 @@ void SessionBasic::GetModelInputsInfo(uint32_t graph_id, std::vector<tensor::Ten
       auto input_shape = AnfAlgo::GetOutputDeviceShape(parameter, 0);
       auto kernel_build_info = AnfAlgo::GetSelectKernelBuildInfo(parameter);
       auto data_type = kernel_build_info->GetOutputDeviceType(0);
-      auto ms_tensor = tensor::empty(data_type, input_shape, device::DeviceType::kCPU);
+      auto ms_tensor = tensor::from_spec(data_type, input_shape, device::DeviceType::kCPU);
       (void)inputs->emplace_back(ms_tensor);
       (void)inputs_name->emplace_back(parameter->name());
     }

@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "include/common/utils/utils.h"
@@ -27,7 +28,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -142,7 +142,7 @@ void GenerateCoffeData(const std::vector<int64_t> &coffe_shape, const std::vecto
 ValueNodePtr AvgPoolFusion::ConstructFilterValueNode(const KernelGraphPtr &graph, float factor,
                                                      const std::vector<int64_t> &assist_shape) const {
   MS_EXCEPTION_IF_NULL(graph);
-  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
   auto tensor_data = reinterpret_cast<float16 *>(assist_tensor->data_c());
   int64_t assist_size = std::accumulate(assist_shape.begin(), assist_shape.end(), 1, std::multiplies<int64_t>());
   for (int64_t i = 0; i < assist_size; ++i) {
@@ -161,7 +161,7 @@ ValueNodePtr AvgPoolFusion::ConstructFilterValueNodeDynamic(const KernelGraphPtr
                                                             const std::vector<int64_t> &assist_shape,
                                                             const std::vector<int64_t> &host_shape) const {
   MS_EXCEPTION_IF_NULL(graph);
-  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(kNumberTypeFloat16, assist_shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   tensor::DeviceInfo device_info{kOpFormat_FRACTAL_Z, tensor_type, kOpFormat_FRACTAL_Z};
   assist_tensor->set_device_info(device_info);
@@ -211,7 +211,7 @@ ValueNodePtr AvgPoolFusion::ConstructCoffeValueNode(const KernelGraphPtr &graph,
   std::vector<int64_t> pad = {pad_top, pad_bottom, pad_left, pad_right};
 
   std::vector<int64_t> coffe_shape = {1, out_c1, out_h, out_w, out_c0};
-  tensor::TensorPtr coffe_tensor = tensor::empty(kNumberTypeFloat16, coffe_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr coffe_tensor = tensor::from_spec(kNumberTypeFloat16, coffe_shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   tensor::DeviceInfo device_info{kOpFormat_NC1HWC0, tensor_type, kOpFormat_NC1HWC0};
   coffe_tensor->set_device_info(device_info);

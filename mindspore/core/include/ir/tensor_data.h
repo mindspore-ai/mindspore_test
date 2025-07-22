@@ -639,7 +639,7 @@ MS_CORE_API std::string GetTensorDataString(TypeId data_type, const ShapeVector 
                                             size_t ndim, bool use_comma);
 
 template <template <class> class ImplClass = TensorDataImpl, typename... Args>
-TensorDataPtr MakeTensorData(TypeId data_type, Args &&...args) {
+TensorDataPtr MakeTensorData(TypeId data_type, Args &&... args) {
   switch (data_type) {
     case kNumberTypeBool:
       return std::make_shared<ImplClass<bool>>(std::forward<Args>(args)...);

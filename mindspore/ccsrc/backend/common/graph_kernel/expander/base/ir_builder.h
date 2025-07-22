@@ -20,6 +20,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "common/common_utils.h"
 #include "include/common/utils/utils.h"
@@ -42,16 +43,21 @@ class IrBuilder {
   virtual NodePtrList Expand() = 0;
 
   /// \brief build a Tensor node from shape
-  NodePtr Tensor(std::vector<int64_t> input) const { return e->EmitValue(std::make_shared<tensor::Tensor>(input)); }
+  NodePtr Tensor(std::vector<int64_t> input) const { return e->EmitValue(tensor::from_vector(input)); }
 
   /// \brief build a Tensor node from imm data
   template <typename T>
   NodePtr Tensor(T data, const TypePtr &type_ptr) const {
-    return e->EmitValue(std::make_shared<tensor::Tensor>(data, type_ptr));
+    return e->EmitValue(tensor::from_scalar(data, type_ptr));
+  }
+  /// \brief build a Tensor node from imm data
+  template <typename T>
+  NodePtr Tensor(std::vector<T> data, const TypePtr &type_ptr) const {
+    return e->EmitValue(tensor::from_vector(data, type_ptr));
   }
   /// \brief build a Tensor node from data list
   NodePtr Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type) const {
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(data_type, shape, data, src_data_type);
+    auto tensor_ptr = tensor::from_buffer(data_type, shape, data, src_data_type);
     return e->EmitValue(tensor_ptr);
   }
   /// \brief build a imm value node

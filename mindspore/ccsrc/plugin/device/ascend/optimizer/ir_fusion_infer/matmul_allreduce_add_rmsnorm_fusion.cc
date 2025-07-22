@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/ascend/collective/multi_ascend_collective_comm_lib.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "ir/core_ops_name.h"
@@ -34,7 +35,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 static const std::vector<uint32_t> supported_rank_size{1, 2, 4, 8};
@@ -172,7 +172,7 @@ CNodePtr MatMulAllReduceAddRmsNormFusion::CreateMatMulAllReduceAddRmsNormNode(co
   // create empty bias node
   TypeId bias_tensor_type = kNumberTypeFloat16;
   std::vector<int64_t> bias_tensor_shape = {0};
-  auto empty_bias_tensor = tensor::empty(bias_tensor_type, bias_tensor_shape, device::DeviceType::kCPU);
+  auto empty_bias_tensor = tensor::from_spec(bias_tensor_type, bias_tensor_shape, device::DeviceType::kCPU);
   auto bias = CreateValueNodeWithKernelInfo(func_graph, empty_bias_tensor);
 
   auto residual = utils::cast<AnfNodePtr>((*equiv)[residual_]);

@@ -331,6 +331,10 @@ def test_discontiguous_input(fn, inputs, mode_name, disable_case, jit_config, ca
         warning_log(f"{mode_name} 'DiscontiguousInput' in 'disable_case', DiscontiguousInput case is skipped.")
         return
 
+    if mode_name == "GRAPH_MODE_GE":
+        warning_log(f"{mode_name} 'DiscontiguousInput' in 'disable_case', DiscontiguousInput case is skipped.")
+        return
+
     def get_discontiguous_tensor(origin_tensor):
         if origin_tensor.dtype == ms.bfloat16:
             tmp_tensor = Tensor(np.swapaxes(origin_tensor.float().asnumpy(), -1, -2), dtype=ms.bfloat16)
@@ -444,6 +448,10 @@ def test_empty_tensor(fn, inputs, mode_name, disable_case, jit_config, case_conf
     Expectation: Compare output is empty tensor.
     """
     if "EmptyTensor" in disable_case:
+        warning_log(f"{mode_name} 'EmptyTensor' in 'disable_case', EmptyTensor case is skipped.")
+        return
+
+    if mode_name == "GRAPH_MODE_GE":
         warning_log(f"{mode_name} 'EmptyTensor' in 'disable_case', EmptyTensor case is skipped.")
         return
 

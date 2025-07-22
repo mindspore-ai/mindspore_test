@@ -23,7 +23,7 @@
 #include "debug/dump/tensordump_control.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "ir/tensor.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 
@@ -33,7 +33,7 @@ namespace {
 void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr) {
   MS_EXCEPTION_IF_NULL(tensor_ptr);
   if (tensor_ptr->data_type_c() == TypeId::kNumberTypeBFloat16) {
-    auto new_tensor = tensor::empty(TypeId::kNumberTypeFloat32, tensor_ptr->shape(), device::DeviceType::kCPU);
+    auto new_tensor = tensor::from_spec(TypeId::kNumberTypeFloat32, tensor_ptr->shape(), device::DeviceType::kCPU);
     auto input_addr = static_cast<bfloat16 *>(tensor_ptr->device_address()->GetMutablePtr());
     auto output_addr = static_cast<float *>(new_tensor->device_address()->GetMutablePtr());
     size_t size = SizeOf(tensor_ptr->shape());

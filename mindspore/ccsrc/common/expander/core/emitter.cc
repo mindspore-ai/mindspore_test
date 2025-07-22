@@ -23,6 +23,7 @@
 #include <utility>
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -62,7 +63,7 @@ std::pair<bool, std::vector<int64_t>> GetIntList(const NodePtr &node) {
 }
 
 ValuePtr CreateZeroScalar(const TypePtr &type) {
-  auto tensor = std::make_shared<tensor::Tensor>(0, type);
+  auto tensor = tensor::from_scalar(0, type);
   return CreateValueFromTensor(tensor);
 }
 

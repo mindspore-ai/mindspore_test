@@ -15,13 +15,13 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/cummin_ext.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct CumminExtShapeParams {
@@ -54,7 +54,7 @@ TEST_P(TestCumminExt, dyn_shape) {
 
 TEST_P(TestCumminExtSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   auto expect_shape = ShapeArray{param.x_shape, param.x_shape};
   auto expect_type = TypePtrList{param.x_type, kInt64};
 

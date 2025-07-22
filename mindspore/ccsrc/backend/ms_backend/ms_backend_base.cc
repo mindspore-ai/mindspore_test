@@ -26,6 +26,7 @@
 #include <windows.h>
 #endif
 
+#include "ir/tensor_new.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "backend/graph_compiler/transform.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
@@ -72,7 +73,6 @@
 
 #include "include/backend/distributed/collective/collective_manager.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace backend {
 namespace ms_backend {
@@ -1374,7 +1374,7 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
     // Create split tensor.
     auto split_tensor_shape = BaseShapeToShape((*tensor_shape)[i]);
     auto split_tensor_size = SizeOf(split_tensor_shape) * GetTypeByte(TypeIdToType(tensor_type_id));
-    auto split_tensor = tensor::empty(tensor_type_id, split_tensor_shape, device::DeviceType::kNone);
+    auto split_tensor = tensor::from_spec(tensor_type_id, split_tensor_shape, device::DeviceType::kNone);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, split_tensor_size, kernel::GetFormatFromStrToEnum(device_tensor->format()), device_tensor->type_id(),

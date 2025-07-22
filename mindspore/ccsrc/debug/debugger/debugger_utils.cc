@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "backend/common/session/session_basic.h"
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/data_dump/tensor_info_collect.h"
@@ -52,7 +53,6 @@ using AddressPtrList = std::vector<mindspore::kernel::AddressPtr>;
 using KernelGraph = mindspore::session::KernelGraph;
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
@@ -442,7 +442,7 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
 void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_tensor, TypeId host_type,
                       size_t host_size, ShapeVector host_shape) {
   if (host_type == kNumberTypeInt4) {
-    auto int8_tensor = tensor::empty(TypeId::kNumberTypeInt8, host_shape, device::DeviceType::kCPU);
+    auto int8_tensor = tensor::from_spec(TypeId::kNumberTypeInt8, host_shape, device::DeviceType::kCPU);
     bool split_succeed =
       SplitInt8ToInt4x2(out_tensor->data_c(), host_size, int8_tensor->data_c(), int8_tensor->DataSize());
     if (!split_succeed) {
@@ -533,7 +533,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       if (host_type == kNumberTypeInt4 && !GetSampleNum()) {
         host_shape.back() *= 2;
       }
-      mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
+      mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(out_tensor);
       size_t host_size = LongToSize(out_tensor->DataNBytes());
       if (host_size == 0) {
@@ -676,7 +676,7 @@ inline mindspore::tensor::TensorPtr KernelTensor2Tensor(device::KernelTensorPtr 
   auto device_tensor = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
 
-  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
+  mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {

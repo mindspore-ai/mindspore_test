@@ -18,6 +18,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
 namespace mindspore::ops {
@@ -119,7 +120,7 @@ struct ConcatInferValueParams {
 
 static tensor::TensorPtr CreateTensor(const ShapeVector &shape, std::vector<float> value) {
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, shape, data_ptr, kNumberTypeFloat32);
+  auto tensor = tensor::from_buffer(kNumberTypeFloat32, shape, data_ptr, kNumberTypeFloat32);
   return tensor;
 }
 

@@ -18,6 +18,7 @@
 #include "mindapi/ir/tensor.h"
 #include "mindapi/helper.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::api {
 using TensorImpl = mindspore::tensor::Tensor;
@@ -27,7 +28,7 @@ MIND_API_BASE_IMPL(Tensor, TensorImpl, Value);
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape) : Value(std::make_shared<TensorImpl>(data_type, shape)) {}
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len)
-    : Value(std::make_shared<TensorImpl>(data_type, shape, data, data_len)) {}
+    : Value(mindspore::tensor::from_buffer(data_type, shape, data, data_len)) {}
 
 const ShapeVector &Tensor::shape() const { return ToRef<TensorImpl>(impl_).shape(); }
 

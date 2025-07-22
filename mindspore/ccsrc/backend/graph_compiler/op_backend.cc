@@ -27,7 +27,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore::compile {
@@ -333,7 +333,8 @@ tensor::TensorPtr PostRunOp::CreateOutputTensor(const AnfNodePtr &output_node, s
 
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
-  auto tensor = tensor::empty(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
+  auto tensor =
+    tensor::from_spec(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
   // Put device tensor into host tensor.
   tensor->set_device_address(device_tensor);
@@ -489,7 +490,7 @@ tensor::TensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerInfoP
   // when infer type is not equal to device type.
   const auto &address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(address);
-  auto tensor = tensor::empty(address->type_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
+  auto tensor = tensor::from_spec(address->type_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
   // Put device tensor into host tensor.
   address->SetNodeIndex(output_node, output_index);

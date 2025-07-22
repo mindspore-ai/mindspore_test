@@ -24,6 +24,7 @@
 #include "backend/ge_backend/pass/ge_backend_optimization.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "ir/manager.h"
+#include "ir/tensor_new.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "include/common/utils/config_manager.h"
@@ -73,7 +74,6 @@
 #include "plugin/res_manager/ascend/collective/ascend_collective_comm_lib.h"
 #include "plugin/res_manager/ascend/collective/hccl_watch_dog_thread.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace backend {
 namespace ge_backend {
@@ -1410,7 +1410,7 @@ void GEBackend::ConstructOutputs(const KernelGraphPtr &func_graph, std::vector<t
     }
 
     auto out_tensor =
-      tensor::empty(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
+      tensor::from_spec(output_addr->type_id(), output_kernel_tensor->GetShapeVector(), device::DeviceType::kNone);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, output_addr->GetSize(), kernel::GetFormatFromStrToEnum(output_addr->format()), output_addr->type_id(),

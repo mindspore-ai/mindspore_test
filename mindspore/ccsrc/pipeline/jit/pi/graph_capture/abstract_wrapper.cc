@@ -19,6 +19,7 @@
 #include <memory>
 #include <algorithm>
 
+#include "ir/tensor_new.h"
 #include "ir/cell.h"
 #include "ir/core_ops_primitive.h"
 #include "include/common/utils/python_adapter.h"
@@ -32,7 +33,6 @@
 #include "frontend/operator/composite/composite.h"
 #include "pipeline/jit/pi/graph_build/parameter_manager.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pijit {
 constexpr auto kTensorModule = "mindspore.common";
@@ -94,7 +94,7 @@ ValuePtr MaybeMakeEmptyTensor(const AbstractBasePtr &abs) {
     auto abs_tensor = abs->cast<abstract::AbstractTensorPtr>();
     TypePtr tensor_type_ptr = abs_tensor->element()->BuildType();
     ShapeVector tensor_shape = abs_tensor->shape()->shape();
-    auto tensor = tensor::empty(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kNone);
+    auto tensor = tensor::from_spec(tensor_type_ptr->type_id(), tensor_shape, device::DeviceType::kNone);
     if (abs->isa<abstract::AbstractRefTensor>()) {
       auto abs_ref_tensor = abs->cast<abstract::AbstractRefPtr>();
       if (abs_ref_tensor->is_parameter()) {

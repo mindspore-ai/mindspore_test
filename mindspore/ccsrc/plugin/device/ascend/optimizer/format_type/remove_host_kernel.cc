@@ -15,11 +15,11 @@
  */
 
 #include "plugin/device/ascend/optimizer/format_type/remove_host_kernel.h"
+#include "ir/tensor_new.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 const BaseRef RemoveHostKernel::DefinePattern() const {
@@ -39,7 +39,7 @@ const AnfNodePtr RemoveHostKernel::Process(const FuncGraphPtr &graph, const AnfN
     auto cnode = node->cast<CNodePtr>();
     auto output_shape = common::AnfAlgo::GetOutputInferShape(cnode, 0);
     auto output_type = TypeId::kNumberTypeInt64;
-    auto tensor = tensor::empty(output_type, output_shape, device::DeviceType::kCPU);
+    auto tensor = tensor::from_spec(output_type, output_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(tensor);
     auto data = static_cast<int64_t *>(tensor->data_c());
     MS_EXCEPTION_IF_NULL(data);

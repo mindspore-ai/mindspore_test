@@ -25,7 +25,7 @@
 #include "include/common/debug/common.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 
@@ -41,7 +41,7 @@ TensorPtr SyncDeviceToHostTensor(KernelTensorPtr kernel_tensor) {
   auto dtype_id = kernel_tensor->dtype_id();
   const auto &shape_vec = kernel_tensor->GetShapeVector();
 
-  mindspore::tensor::TensorPtr out_tensor = tensor::empty(dtype_id, shape_vec, device::DeviceType::kCPU);
+  mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(dtype_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor->device_address());
   device::ResKey res_key{device_addr->GetDeviceType(), device_addr->device_id()};
   auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);

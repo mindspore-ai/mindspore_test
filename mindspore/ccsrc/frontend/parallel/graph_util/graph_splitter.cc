@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "include/common/debug/draw.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -40,7 +41,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 #endif
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parallel {
 bool OperatorLabel::operator<(const OperatorLabel &label) const { return to_string() < label.to_string(); }
@@ -80,15 +80,15 @@ ValueNodePtr CreateFakeValueNode(bool use_origin_node, const AnfNodePtr &origin_
     if (use_fake_shape) {
       // Assign send's output shape as {1};
       ShapeVector fake_shape = {kSizeOne};
-      fake_tensor = tensor::empty(type_id, fake_shape, device::DeviceType::kCPU);
+      fake_tensor = tensor::from_spec(type_id, fake_shape, device::DeviceType::kCPU);
     } else {
       auto shape = origin_abstract->shape();
       MS_EXCEPTION_IF_NULL(shape);
-      fake_tensor = tensor::empty(type_id, shape->shape(), device::DeviceType::kCPU);
+      fake_tensor = tensor::from_spec(type_id, shape->shape(), device::DeviceType::kCPU);
       fake_tensor->set_base_shape(shape->Clone());
     }
   } else {
-    fake_tensor = std::make_shared<tensor::Tensor>(1.0);
+    fake_tensor = tensor::from_scalar(1.0);
   }
 
   MS_EXCEPTION_IF_NULL(fake_tensor);
@@ -173,9 +173,8 @@ AnfNodePtr CreateReplacedOutputNode(const FuncGraphPtr &func_graph, const AnfNod
       MS_EXCEPTION_IF_NULL(tensor_abstract_element_build_type);
       auto tensor_abstract_shape = tensor_abstract->shape();
       MS_EXCEPTION_IF_NULL(tensor_abstract_shape);
-      auto fake_tensor =
-          tensor::empty(tensor_abstract_element_build_type->type_id(), tensor_abstract_shape->shape(),
-                        device::DeviceType::kCPU);
+      auto fake_tensor = tensor::from_spec(tensor_abstract_element_build_type->type_id(),
+                                           tensor_abstract_shape->shape(), device::DeviceType::kCPU);
       MS_EXCEPTION_IF_NULL(fake_tensor);
       auto fake_value_node = NewValueNode(fake_tensor);
       MS_EXCEPTION_IF_NULL(fake_value_node);
@@ -883,8 +882,7 @@ CNodePtr ParameterServerMode::CreateGradMeanNode(const AnfNodePtr &gradient, siz
   auto addn_abstract = gradient->abstract()->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(addn_abstract);
   // Use reciprocal of the divisor so Mul node should be created.
-  auto divisor_tensor =
-    std::make_shared<tensor::Tensor>(1 / static_cast<double>(divisor), addn_abstract->element()->BuildType());
+  auto divisor_tensor = tensor::from_scalar(1 / static_cast<double>(divisor), addn_abstract->element()->BuildType());
   MS_EXCEPTION_IF_NULL(divisor_tensor);
   auto divisor_value_node = NewValueNode(divisor_tensor);
   MS_EXCEPTION_IF_NULL(divisor_value_node);
@@ -1689,7 +1687,7 @@ void GraphSplitter::AddControlEdgeForProcessWithoutIndegree() {
 ControlEdgeNodePair GraphSplitter::CreateControlEdgeNode(const OperatorLabel &src_label,
                                                          const OperatorLabel &dst_label) {
   // Control src node's input is a value node. It has not practical meaning.
-  auto fake_tensor = std::make_shared<tensor::Tensor>(1.0);
+  auto fake_tensor = tensor::from_scalar(1.0);
   MS_EXCEPTION_IF_NULL(fake_tensor);
   auto fake_value = NewValueNode(fake_tensor);
   MS_EXCEPTION_IF_NULL(fake_value);

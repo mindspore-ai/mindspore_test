@@ -17,6 +17,7 @@
 #include "include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include <algorithm>
 #include <thread>
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
@@ -349,7 +350,7 @@ tensor::TensorPtr generate_key_tensor_ptr(const tensor::TensorPtr &tensor_ptr) {
   for (auto i = 0; i != cel_num; i++) {
     key_vec[i] = i;
   }
-  return std::make_shared<tensor::Tensor>(key_vec);
+  return tensor::from_vector(key_vec);
 }
 
 void EmbeddingCacheTableManager::WarmUpHostCacheItemBatch(const int32_t batch_count, const WarmUpCacheMapEntry &entry) {

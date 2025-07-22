@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include "ir/tensor.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"
@@ -44,7 +44,7 @@ Tensor::RealTensorHolder::RealTensorHolder(const mindspore::ValuePtr &value)
     : value_(value), tensor_(value->cast<mindspore::tensor::TensorPtr>()) {}
 
 Tensor::Tensor(TypeId type_id, const ShapeVector &shape)
-    : Tensor(mindspore::tensor::empty(type_id, shape, mindspore::device::DeviceType::kNone)) {}
+    : Tensor(mindspore::tensor::from_spec(type_id, shape, mindspore::device::DeviceType::kNone)) {}
 
 Tensor::Tensor(const mindspore::ValuePtr &value) {
   if (value != nullptr) {

@@ -17,13 +17,13 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/lite_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "frontend/optimizer/opt.h"
 #include "include/backend/optimizer/helper.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -46,7 +46,8 @@ tensor::TensorPtr CreateTensor(const AnfNodePtr &node) {
                 << ", " << block_size << ", " << block_size << ")";
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kFloat16);
   tensor::DeviceInfo device_info{kOpFormat_NC1HWC0, tensor_type};
-  tensor::TensorPtr assist_tensor = tensor::empty(kFloat16->type_id(), assist_input_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor =
+    tensor::from_spec(kFloat16->type_id(), assist_input_shape, device::DeviceType::kCPU);
   assist_tensor->set_device_info(device_info);
 
   // 2 set value of tensor

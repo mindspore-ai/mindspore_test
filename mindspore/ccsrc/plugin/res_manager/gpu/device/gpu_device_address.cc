@@ -20,6 +20,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/gpu/device/gpu_device_manager.h"
 #include "plugin/res_manager/gpu/device/gpu_memory_allocator.h"
 #include "plugin/res_manager/gpu/device/gpu_hash_table_util.h"
@@ -27,7 +28,6 @@
 #include "plugin/res_manager/gpu/device/gpu_event.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace gpu {
@@ -356,7 +356,7 @@ DeviceAddressPtr GPUDeviceAddress::CloneDeviceAddress() {
 mindspore::tensor::TensorPtr GPUDeviceAddress::LoadMemToHost(const std::string &tensor_name,
                                                              const ShapeVector &host_shape, TypeId host_type, bool,
                                                              bool) const {
-  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
+  mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
   size_t host_size = out_tensor->DataNBytes();
   if (host_size == 0) {
     MS_LOG(INFO) << "Host size is 0 for tensor: " << tensor_name << ", no need to load.";

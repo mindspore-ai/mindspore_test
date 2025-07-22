@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include <memory>
 #include <unordered_map>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_op_name.h"
@@ -1095,7 +1096,7 @@ void SetNodeIndexForTensorAddress(const DeviceTensorPtr &device_tensor, const De
 void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t outer_index, size_t inner_index) {
   static const std::string kSyncCopyInput = "sync_copy_input";
   static bool sync_copy_input =
-      common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
+    common::IsEnableRuntimeConfig(kSyncCopyInput) || runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync_copy_input) {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     MS_EXCEPTION_IF_NULL(tensor);
@@ -1103,8 +1104,8 @@ void CheckInputSize(const KernelTensorPtr &kernel_tensor, Tensor *tensor, size_t
     if (!graph_parameter_store->IsPositionDynamic(outer_index, inner_index) &&
         (kernel_tensor->format() == DEFAULT_FORMAT || kernel_tensor->format() == ND)) {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Outer index: " << outer_index << ", inner index: " << inner_index << ", dynamic is "
-      << graph_parameter_store->IsPositionDynamic(outer_index, inner_index) << kernel_tensor->ToString();
+        << "Outer index: " << outer_index << ", inner index: " << inner_index << ", dynamic is "
+        << graph_parameter_store->IsPositionDynamic(outer_index, inner_index) << kernel_tensor->ToString();
       if (kernel_tensor->tensor_storage_info() == nullptr && kernel_tensor->size() != tensor->Size()) {
         MS_LOG(ERROR) << "The tensor size " << tensor->Size() << " is different from kernel tensor size "
                       << kernel_tensor->size();
@@ -1166,7 +1167,7 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
   auto tensor_address = std::static_pointer_cast<DeviceTensor>(tensor->device_address());
   if (tensor_address == nullptr) {
     // Tensor with initializer but didn't init_data yet.
-    auto empty_tensor = tensor::empty(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
+    auto empty_tensor = tensor::from_spec(tensor->data_type(), tensor->shape(), device::DeviceType::kCPU);
     tensor->set_device_address(empty_tensor->device_address());
     tensor_address = std::static_pointer_cast<DeviceTensor>(empty_tensor->device_address());
   }

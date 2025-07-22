@@ -22,6 +22,7 @@
 #include <string>
 #include <algorithm>
 
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
@@ -160,7 +161,7 @@ ValueNodePtr CreateMeanMatrixValueNode(const FuncGraphPtr &func_graph, const Anf
       MS_LOG(EXCEPTION) << "Call memcpy_s error, errorno(" << ret << ")";
     }
   }
-  auto output_tensor = std::make_shared<tensor::Tensor>(x_dtype, output_shape, &output[0], kNumberTypeFloat32);
+  auto output_tensor = tensor::from_buffer(x_dtype, output_shape, &output[0], kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(output_tensor);
   auto abstract = std::make_shared<abstract::AbstractTensor>(TypeIdToType(x_dtype), output_shape);
   MS_EXCEPTION_IF_NULL(abstract);
@@ -183,7 +184,7 @@ ValueNodePtr CreateKernelMatrixValueNode(const FuncGraphPtr &func_graph, const A
   std::vector<int64_t> kernel_shape = {1, x_shape[kDim1], k_size[kDim2], k_size[kDim3]};
   auto data_size = std::accumulate(kernel_shape.begin(), kernel_shape.end(), int64_t(1), std::multiplies<int64_t>());
   std::vector<float> data(data_size, kKernelMatrixInitNum);
-  auto kernel_matrix_tensor = std::make_shared<tensor::Tensor>(x_dtype, kernel_shape, &data[0], kNumberTypeFloat32);
+  auto kernel_matrix_tensor = tensor::from_buffer(x_dtype, kernel_shape, &data[0], kNumberTypeFloat32);
   MS_EXCEPTION_IF_NULL(kernel_matrix_tensor);
   auto abstract = std::make_shared<abstract::AbstractTensor>(TypeIdToType(x_dtype), kernel_shape);
   MS_EXCEPTION_IF_NULL(abstract);

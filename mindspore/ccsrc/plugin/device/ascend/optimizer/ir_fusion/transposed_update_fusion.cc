@@ -25,7 +25,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {
@@ -40,7 +40,7 @@ tensor::TensorPtr CreatePermTensor(const CNodePtr &transposed) {
   std::vector<int64_t> perm_shape = {SizeToLong(perm.size())};
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
-  auto perm_tensor = tensor::empty(kNumberTypeInt32, perm_shape, device::DeviceType::kCPU);
+  auto perm_tensor = tensor::from_spec(kNumberTypeInt32, perm_shape, device::DeviceType::kCPU);
   perm_tensor->set_device_info(device_info);
   auto data_ptr = perm_tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);

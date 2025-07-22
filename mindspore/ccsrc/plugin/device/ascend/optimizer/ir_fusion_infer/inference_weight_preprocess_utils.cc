@@ -21,10 +21,10 @@
 #include <limits>
 #include <memory>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -86,15 +86,15 @@ std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node
   tensor::TensorPtr assist_tensor;
   TensorTypePtr tensor_type;
   if (w_type_id == kNumberTypeInt8) {
-    assist_tensor = tensor::empty(kNumberTypeInt32, shape, device::DeviceType::kCPU);
+    assist_tensor = tensor::from_spec(kNumberTypeInt32, shape, device::DeviceType::kCPU);
     tensor_type = std::make_shared<TensorType>(kInt32);
     ConvertDataType<int8_t, int32_t>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
   } else if (w_type_id == kNumberTypeFloat16) {
-    assist_tensor = tensor::empty(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
+    assist_tensor = tensor::from_spec(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
     tensor_type = std::make_shared<TensorType>(kFloat32);
     ConvertDataType<float16, float>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
   } else if (w_type_id == kNumberTypeBFloat16) {
-    assist_tensor = tensor::empty(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
+    assist_tensor = tensor::from_spec(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
     tensor_type = std::make_shared<TensorType>(kFloat32);
     ConvertDataType<bfloat16, float>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
   } else {
@@ -199,7 +199,7 @@ std::shared_ptr<ValueNode> CreateWeightTensor(TypeId type_id, const std::vector<
                                               const std::vector<int64_t> &n_len_list, const int64_t &k_len,
                                               const std::shared_ptr<Type> &w_dtype, const bool &need_rank_offset,
                                               const uint32_t &global_rank_id) {
-  tensor::TensorPtr assist_tensor = tensor::empty(type_id, weight_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(type_id, weight_shape, device::DeviceType::kCPU);
   auto data_ptr = assist_tensor->data_c();
   if (type_id == TypeId::kNumberTypeBFloat16) {
     ConcatWeightsToNewTensor<bfloat16>(data_ptr, data_c_list, k_len, n_len_list, need_rank_offset, global_rank_id);
@@ -244,7 +244,7 @@ std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const
   auto scale_param_cpu = scale_param->cpu();
   void *scale_data = scale_param_cpu->data_c();
   auto global_rank_id = distributed::collective::CollectiveManager::instance()->global_rank_id();
-  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeInt32, shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(kNumberTypeInt32, shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
   auto len = shape[0];
 
@@ -326,7 +326,7 @@ std::shared_ptr<ValueNode> ConvertInt32BiasForMultiRank(const AnfNodePtr &bias_n
     need_rank_offset = true;
   }
 
-  tensor::TensorPtr assist_tensor = tensor::empty(kNumberTypeInt32, shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(kNumberTypeInt32, shape, device::DeviceType::kCPU);
   TensorTypePtr tensor_type = std::make_shared<TensorType>(kInt32);
   auto len = shape[0];
 

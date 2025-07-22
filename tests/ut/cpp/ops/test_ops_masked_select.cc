@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
@@ -23,7 +24,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct MaskedSelectShapeParams {
@@ -56,8 +56,8 @@ TEST_P(TestMaskedSelect, dyn_shape) {
 
 TEST_P(TestMaskedSelectSimpleInfer, simple_infer) {
   const auto &param = GetParam();
-  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
-  auto mask = tensor::empty(param.mask_type->type_id(), param.mask_shape, device::DeviceType::kCPU);
+  auto input = tensor::from_spec(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
+  auto mask = tensor::from_spec(param.mask_type->type_id(), param.mask_shape, device::DeviceType::kCPU);
   int64_t num = std::accumulate(param.input_shape.begin(), param.input_shape.end(), 1, std::multiplies<int64_t>());
   auto expect_shape = ShapeArray{{num}};
   auto expect_type = TypePtrList{param.input_type};

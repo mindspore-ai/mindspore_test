@@ -18,7 +18,7 @@
 #include "utils/trace_base.h"
 #include "include/common/utils/anfalgo.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace session {
 std::shared_ptr<session::KernelGraph> SingleKernelGraph::ConstructKernelGraphBasedOnSingleOp(
@@ -37,7 +37,7 @@ std::shared_ptr<session::KernelGraph> SingleKernelGraph::ConstructKernelGraphBas
   }
   auto input_num = input_dtypes.size();
   for (size_t i = 0; i < input_num; ++i) {
-    auto tensor = tensor::empty(input_dtypes[i], input_shapes[i], device::DeviceType::kCPU);
+    auto tensor = tensor::from_spec(input_dtypes[i], input_shapes[i], device::DeviceType::kCPU);
     auto value_node = graph->NewValueNode(tensor);
     inputs.push_back(value_node);
   }

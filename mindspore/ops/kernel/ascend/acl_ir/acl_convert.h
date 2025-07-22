@@ -23,6 +23,7 @@
 #include <utility>
 #include <memory>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "kernel/ascend/acl_ir/acl_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "common/kernel.h"
@@ -361,7 +362,7 @@ class AttrToInputConverter : public AttrHelper<AttrToInputConverter> {
 
   template <typename T>
   void ConvertValue(const ValuePtr &value, const AttrDeclType<T> &, TensorParams *) {
-    auto tensor = std::make_shared<tensor::Tensor>(GetValue<T>(value));
+    auto tensor = tensor::from_scalar(GetValue<T>(value));
     auto tensor_data_ptr = tensor->data_c();
     auto size = static_cast<size_t>(tensor->DataNBytes());
     data_.resize(size);

@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
@@ -82,7 +83,7 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
   }
 
   MS_LOG(DEBUG) << "Process node: " << node->fullname_with_scope();
-  auto tensor = std::make_shared<tensor::Tensor>(0.0);
+  auto tensor = tensor::from_scalar(0.0);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);

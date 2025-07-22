@@ -165,8 +165,9 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
   }
 
   auto dst_storage_offset = LongToSize(dst->storage_offset());
-  if (dst_storage_offset != 0 || src->Size() != dst->Size() || dst->data_c() == nullptr) {
-    MS_LOG(DEBUG) << "InplaceCopyD2H don't support discontiguous dst yet.";
+  if (dst_storage_offset != 0 || src->Size() != dst->Size()) {
+    MS_LOG(DEBUG) << "InplaceCopyD2H don't support discontiguous dst yet. dst_storage_offset " << dst_storage_offset
+                  << " src size " << src->Size() << " dist size " << dst->Size();
     return InplaceCopyD2D(op, dst, src);
   }
 
@@ -187,6 +188,7 @@ tensor::TensorPtr InplaceCopyD2H(const std::shared_ptr<OpRunner> &op, const Tens
                                            runtime::ProfilerEvent::kPyNativeLaunchTask, "InplaceCopyD2H", false);
         device_context->device_res_manager_->BindDeviceToCurrentThread(false);
         void *dst_ptr = dst->data_c();
+        MS_EXCEPTION_IF_NULL(dst_ptr);
 
         if (MS_UNLIKELY(src_ptr == nullptr)) {
           MS_LOG(ERROR) << "src device_ptr: " << src_ptr << ", Maybe you free the device memory before InplaceCopyD2H"

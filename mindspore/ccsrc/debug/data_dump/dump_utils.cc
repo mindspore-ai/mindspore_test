@@ -24,7 +24,7 @@
 #include <queue>
 #include <algorithm>
 
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -42,7 +42,7 @@
 
 using mindspore::runtime::DeviceTensorStore;
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 static std::vector<std::string> g_overflow_operators;
 
@@ -235,7 +235,7 @@ bool AscendDumpMemToFile(const device::DeviceAddress &addr, const std::string &f
       MS_VLOG(VL_DUMP) << "Cannot create tensor with type: " << TypeIdLabel(host_type);
       return false;
     }
-    mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, host_shape, device::DeviceType::kCPU);
+    mindspore::tensor::TensorPtr out_tensor = tensor::from_spec(host_type, host_shape, device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(out_tensor);
     size_t host_size = LongToSize(out_tensor->DataNBytes());
     auto clone_device_address = res_manager->CreateDeviceAddress(
@@ -312,7 +312,8 @@ mindspore::tensor::TensorPtr LoadDeviceAddressToHost(const device::DeviceAddress
     constexpr int64_t kNumber2 = 2;
     corrected_host_shape.back() *= kNumber2;
   }
-  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, corrected_host_shape, device::DeviceType::kCPU);
+  mindspore::tensor::TensorPtr out_tensor =
+    tensor::from_spec(host_type, corrected_host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {

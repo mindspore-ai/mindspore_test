@@ -32,7 +32,7 @@
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/optimizer/optimizer_factory.h"
 #include "platform/platform_info.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {
@@ -51,7 +51,7 @@ tensor::TensorPtr ConstructAssistTensor(size_t assist_len, bool is_segment_sort 
   auto dtype = is_int32 ? kInt32 : kFloat16;
   TensorTypePtr tensor_type = std::make_shared<TensorType>(dtype);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
-  tensor::TensorPtr assist_tensor = tensor::empty(dtype->type_id(), assist_shape, device::DeviceType::kCPU);
+  tensor::TensorPtr assist_tensor = tensor::from_spec(dtype->type_id(), assist_shape, device::DeviceType::kCPU);
   assist_tensor->set_device_info(device_info);
 
   // set value of tensor

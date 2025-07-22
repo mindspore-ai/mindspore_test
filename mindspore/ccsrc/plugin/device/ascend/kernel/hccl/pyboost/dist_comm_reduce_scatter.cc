@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -25,7 +26,6 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -42,7 +42,7 @@ void DistCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, c
   input_shape[0] = static_cast<int64_t>(input_shape[0] * rank_size_imm);
 
   TensorPtr input_tensor =
-    tensor::empty(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kNone);
+    tensor::from_spec(static_cast<TypeId>(other_tensor->data_type_c()), input_shape, device::DeviceType::kNone);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, scatter_tensors);
   // Avoid h2d copy.
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, {input_tensor});

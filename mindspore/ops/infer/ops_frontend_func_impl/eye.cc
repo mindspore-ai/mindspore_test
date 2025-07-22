@@ -16,12 +16,12 @@
 
 #include "infer/ops_func_impl/eye.h"
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops_utils/op_utils.h"
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 #include "ops/ops_frontend_func_impl.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 class EyeFrontendFuncImpl : public OpFrontendFuncImpl {
@@ -43,7 +43,7 @@ class EyeFrontendFuncImpl : public OpFrontendFuncImpl {
         MS_CHECK_VALUE(dtype_ptr.has_value(), prim_name + " error: dtype input should has valid value.");
         auto dtype_id = static_cast<TypeId>(dtype_ptr.value());
         auto out_shape = ShapeVector{n, m};
-        auto result_tensor = tensor::empty(dtype_id, out_shape, device::DeviceType::kCPU);
+        auto result_tensor = tensor::from_spec(dtype_id, out_shape, device::DeviceType::kCPU);
         return result_tensor;
       }
     }

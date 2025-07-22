@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/common/graph_kernel/model/op_node.h"
@@ -331,21 +332,21 @@ tensor::TensorPtr InputValue2Tensor(ValuePtr input_value) {
   tensor::TensorPtr input_tensor = nullptr;
   if (input_value->isa<Int32Imm>() || input_value->isa<Int64Imm>()) {
     auto input_num = AnfUtils::GetIntValue(input_value);
-    input_tensor = std::make_shared<tensor::Tensor>(input_num);
+    input_tensor = tensor::from_scalar(input_num);
   } else if (input_value->isa<ValueSequence>()) {
     auto input_seq = input_value->cast<ValueSequencePtr>()->value();
     std::vector<int64_t> input_vec;
     (void)std::transform(input_seq.begin(), input_seq.end(), std::back_inserter(input_vec),
                          [](auto v) { return AnfUtils::GetIntValue(v); });
-    input_tensor = std::make_shared<tensor::Tensor>(input_vec);
+    input_tensor = tensor::from_vector(input_vec);
   } else if (input_value->isa<tensor::Tensor>()) {
     input_tensor = input_value->cast<tensor::TensorPtr>();
   } else if (input_value->isa<BoolImm>()) {
     auto input_bool = GetValue<bool>(input_value);
-    input_tensor = std::make_shared<tensor::Tensor>(input_bool);
+    input_tensor = tensor::from_scalar(input_bool);
   } else if (input_value->isa<FP32Imm>()) {
     auto value = GetValue<float>(input_value);
-    input_tensor = std::make_shared<tensor::Tensor>(value);
+    input_tensor = tensor::from_scalar(value);
   } else {
     MS_LOG(EXCEPTION) << "Unsupported Type in InputValue2Tensor";
   }

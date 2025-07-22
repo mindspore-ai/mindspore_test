@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <string>
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "utils/anf_utils.h"
@@ -65,8 +66,8 @@ TEST_P(TestArithmeticSimplify, test_arithmetic_simplify) {
   std::vector<float> const_value(
     std::accumulate(param.const_shape.begin(), param.const_shape.end(), 1, std::multiplies<int64_t>()), 3);
   auto input_const = c.NewValueNode(
-    std::make_shared<tensor::Tensor>(kNumberTypeFloat32, param.const_shape, &const_value[0], kNumberTypeFloat32));
-  auto axis = c.NewValueNode(std::make_shared<tensor::Tensor>(param.axis));
+    tensor::from_buffer(kNumberTypeFloat32, param.const_shape, &const_value[0], kNumberTypeFloat32));
+  auto axis = c.NewValueNode(tensor::from_vector(param.axis));
   auto keep_dims = c.NewValueNode(MakeValue<bool>(param.keep_dims));
   auto skip_mode = c.NewValueNode(MakeValue<bool>(param.skip_mode));
   auto mul = c.NewCNodeWithBuildInfo("Mul", {input_a, input_const}, {});

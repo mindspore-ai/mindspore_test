@@ -25,6 +25,7 @@
 #include "utils/shape_utils.h"
 #include "plugin/res_manager/ascend/op_adapter/op_adapter_util.h"
 #include "ir/device_address_maker.h"
+#include "ir/tensor_new.h"
 
 #ifndef ENABLE_LITE_ACL
 #include "include/common/utils/python_adapter.h"
@@ -508,7 +509,7 @@ MeTensorPtr TransformUtil::GenerateMeTensor(const GeTensorPtr &ge_tensor, const 
     void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(ge_tensor->GetData()));
     return make_shared<MeTensor>(me_type, me_dims, true, data);
   } else {
-    MeTensorPtr me_tensor = tensor::empty(me_type, me_dims, DeviceType::kCPU);
+    MeTensorPtr me_tensor = tensor::from_spec(me_type, me_dims, DeviceType::kCPU);
 
     // Get the writable data pointer of the tensor and cast it to its data type.
     auto me_data_ptr = me_tensor->data_c();

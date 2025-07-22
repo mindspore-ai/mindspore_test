@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -28,7 +29,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 
@@ -71,7 +71,7 @@ TEST_P(TestRemainderScalarTensorSimpleInfer, simple_infer) {
   auto prim = std::make_shared<Primitive>("RemainderScalarTensor");
   ASSERT_NE(prim, nullptr);
 
-  auto y = tensor::empty(param.y_type->type_id(), param.y_shape, device::DeviceType::kCPU);
+  auto y = tensor::from_spec(param.y_type->type_id(), param.y_shape, device::DeviceType::kCPU);
   ASSERT_NE(y, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(param.x));

@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 
 namespace mindspore::graphkernel::expanders {
@@ -56,9 +57,9 @@ class ClipByNorm : public OpDesc {
     std::vector<float> tensor_data1(data_len, 1.0);
 
     auto tensor_zero =
-      std::make_shared<tensor::Tensor>(kNumberTypeFloat32, reduce_sum->shape, tensor_data0.data(), kNumberTypeFloat32);
+      tensor::from_buffer(kNumberTypeFloat32, reduce_sum->shape, tensor_data0.data(), kNumberTypeFloat32);
     auto tensor_one =
-      std::make_shared<tensor::Tensor>(kNumberTypeFloat32, reduce_sum->shape, tensor_data1.data(), kNumberTypeFloat32);
+      tensor::from_buffer(kNumberTypeFloat32, reduce_sum->shape, tensor_data1.data(), kNumberTypeFloat32);
 
     auto greater = gb.Greater(reduce_sum, gb.Value(tensor_zero));
     auto safe_reduce_sum = gb.Select(greater, reduce_sum, gb.Value(tensor_one));

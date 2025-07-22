@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
@@ -27,7 +28,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct BCEWithLogitsBackwardParams {
@@ -75,11 +75,11 @@ class TestBCEWithLogitsBackwardSimpleInfer : public TestOps,
 
 TEST_P(TestBCEWithLogitsBackwardSimpleInfer, dyn_shape) {
   const auto &param = GetParam();
-  auto grad_output = tensor::empty(param.grad_output_type->type_id(), param.grad_output_shape, device::DeviceType::kCPU);
-  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
-  auto target = tensor::empty(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
-  auto weight = tensor::empty(param.weight_type->type_id(), param.weight_shape, device::DeviceType::kCPU);
-  auto posWight = tensor::empty(param.posWeight_type->type_id(), param.posWeight_shape, device::DeviceType::kCPU);
+  auto grad_output = tensor::from_spec(param.grad_output_type->type_id(), param.grad_output_shape, device::DeviceType::kCPU);
+  auto input = tensor::from_spec(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
+  auto target = tensor::from_spec(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
+  auto weight = tensor::from_spec(param.weight_type->type_id(), param.weight_shape, device::DeviceType::kCPU);
+  auto posWight = tensor::from_spec(param.posWeight_type->type_id(), param.posWeight_shape, device::DeviceType::kCPU);
   ValuePtrList input_values;
   input_values.push_back(std::move(grad_output));
   input_values.push_back(std::move(input));

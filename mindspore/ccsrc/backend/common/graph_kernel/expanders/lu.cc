@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 #include <memory>
-
+#include "ir/tensor_new.h"
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 #include "backend/common/graph_kernel/expanders/utils.h"
 #include "backend/common/graph_kernel/expanders/custom_op_utils.h"
@@ -84,7 +84,7 @@ class LU : public OpDesc {
       ShapeVector ind_shape{kBlock, kBlock, 2};
       std::vector<int64_t> ind_value = GetIndicesValue(i * kBlock, (i + 1) * kBlock, i * kBlock, (i + 1) * kBlock);
 
-      auto ind_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ind_shape, &ind_value[0], kNumberTypeInt64);
+      auto ind_tensor = tensor::from_buffer(kNumberTypeInt64, ind_shape, &ind_value[0], kNumberTypeInt64);
       auto first_indices = gb.Value(ind_tensor);
       input_x = gb.Emit("ScatterNdUpdate", {input_x, first_indices, custom_lu_decomp_result},
                         {{"use_locking", MakeValue(false)}});
@@ -108,8 +108,8 @@ class LU : public OpDesc {
         ShapeVector sec_indices_shape{kBlock, num - (i + 1) * kBlock, 2};
         std::vector<int64_t> sec_indicse_value = GetIndicesValue(i * kBlock, (i + 1) * kBlock, (i + 1) * kBlock, num);
 
-        auto sec_indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, sec_indices_shape,
-                                                                   &sec_indicse_value[0], kNumberTypeInt64);
+        auto sec_indices_tensor =
+          tensor::from_buffer(kNumberTypeInt64, sec_indices_shape, &sec_indicse_value[0], kNumberTypeInt64);
         auto sec_indices = gb.Value(sec_indices_tensor);
         input_x = gb.Emit("ScatterNdUpdate", {input_x, sec_indices, custom_trsmL_off_diag_result},
                           {{"use_locking", MakeValue(false)}});
@@ -133,7 +133,7 @@ class LU : public OpDesc {
         std::vector<int64_t> thi_indices_v = GetIndicesValue((i + 1) * kBlock, num, i * kBlock, (i + 1) * kBlock);
 
         auto thi_indices_tensor =
-          std::make_shared<tensor::Tensor>(kNumberTypeInt64, third_indices_shape, &thi_indices_v[0], kNumberTypeInt64);
+          tensor::from_buffer(kNumberTypeInt64, third_indices_shape, &thi_indices_v[0], kNumberTypeInt64);
         auto thi_indices = gb.Value(thi_indices_tensor);
         input_x =
           gb.Emit("ScatterNdUpdate", {input_x, thi_indices, custom_trsmUT_result}, {{"use_locking", MakeValue(false)}});
@@ -154,21 +154,21 @@ class LU : public OpDesc {
         ShapeVector final_indices_shape{num - (i + 1) * kBlock, num - (i + 1) * kBlock, 2};
         std::vector<int64_t> final_indicse_value = GetIndicesValue((i + 1) * kBlock, num, (i + 1) * kBlock, num);
 
-        auto final_indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, final_indices_shape,
-                                                                     &final_indicse_value[0], kNumberTypeInt64);
+        auto final_indices_tensor =
+          tensor::from_buffer(kNumberTypeInt64, final_indices_shape, &final_indicse_value[0], kNumberTypeInt64);
         auto f_indices = gb.Value(final_indices_tensor);
         input_x = gb.Emit("ScatterNdUpdate", {input_x, f_indices, final_update}, {{"use_locking", MakeValue(false)}});
       }
     }
     ShapeVector eyes_shape{num, num};
     std::vector<int32_t> eyes_value = GetEyesValue(num);
-    auto eyes_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, eyes_shape, &eyes_value[0], kNumberTypeInt32);
+    auto eyes_tensor = tensor::from_buffer(kNumberTypeInt32, eyes_shape, &eyes_value[0], kNumberTypeInt32);
     auto eyes = gb.Value(eyes_tensor);
     auto eyes_cnode = gb.Reshape(eyes, eyes_shape);
 
     ShapeVector r_shape{num};
     std::vector<int32_t> r_value = GetRangeValue(num);
-    auto range_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt32, r_shape, &r_value[0], kNumberTypeInt32);
+    auto range_tensor = tensor::from_buffer(kNumberTypeInt32, r_shape, &r_value[0], kNumberTypeInt32);
     auto range = gb.Value(range_tensor);
     auto range_cnode = gb.Reshape(range, r_shape);
     return {input_x, range_cnode, eyes_cnode};

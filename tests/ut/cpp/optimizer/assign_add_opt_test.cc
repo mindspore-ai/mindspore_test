@@ -25,6 +25,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/manager.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "pipeline/jit/ps/resource.h"
@@ -45,7 +46,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 
@@ -61,7 +61,7 @@ FuncGraphPtr GenerateBackwardFuncGraph() {
   bg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   bg->debug_info()->set_name("Backward");
   std::vector<int64_t> shape = {64, 64};
-  std::shared_ptr<tensor::Tensor> mock_input_tensor = tensor::empty(kNumberTypeInt32, shape, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> mock_input_tensor = tensor::from_spec(kNumberTypeInt32, shape, device::DeviceType::kCPU);
   AbstractBasePtr abstract = abstract::FromValue(mock_input_tensor, true);
   AnfNodePtr param0 = bg->add_parameter();
   param0->set_abstract(abstract);
@@ -143,7 +143,7 @@ FuncGraphPtr GenerateForwardGraph(FuncGraphPtr bg) {
   fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   fg->debug_info()->set_name("Forward");
   std::vector<int64_t> shape = {64, 64};
-  std::shared_ptr<tensor::Tensor> mock_input_tensor = tensor::empty(kNumberTypeInt32, shape, device::DeviceType::kCPU);
+  std::shared_ptr<tensor::Tensor> mock_input_tensor = tensor::from_spec(kNumberTypeInt32, shape, device::DeviceType::kCPU);
   AbstractBasePtr abstract = abstract::FromValue(mock_input_tensor, true);
   AnfNodePtr param0 = fg->add_parameter();
   param0->set_abstract(abstract);

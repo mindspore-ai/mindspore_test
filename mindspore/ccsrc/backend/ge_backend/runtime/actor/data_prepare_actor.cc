@@ -23,6 +23,7 @@
 #include "backend/ge_backend/runtime/actor/debug_actor.h"
 #include "backend/ge_backend/runtime/actor/profiler_actor.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
+#include "ir/tensor_new.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
@@ -727,8 +728,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     size_t string_tensor_size = tensor_size + 1;
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto string_tensor = std::make_shared<tensor::Tensor>(
-      kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), string_tensor_size);
+    auto string_tensor = tensor::from_buffer(kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()),
+                                             string_tensor_size);
 
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
       device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});
@@ -797,9 +798,8 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   auto copy_to_device = [&device_tensor, &node, this, &context, index]() {
     auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto tensor =
-      std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
-                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
+    auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
+                                      const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
 
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(
       device::ResKey{device_tensor->GetDeviceType(), device_tensor->device_id()});

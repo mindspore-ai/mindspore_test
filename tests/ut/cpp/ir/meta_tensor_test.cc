@@ -23,11 +23,11 @@
 
 #include "include/securec.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "frontend/ir/tensor_py.h"
 
 using mindspore::tensor::TensorPybind;
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace tensor {
 class TestMetaTensor : public UT::Common {
@@ -129,7 +129,7 @@ TEST_F(TestTensor, PyArrayScalarTest) {
 
 TEST_F(TestTensor, InitScalarTest) {
   std::vector<int64_t> dimensions;
-  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, dimensions, device::DeviceType::kCPU);
+  TensorPtr tensor = tensor::from_spec(TypeId::kNumberTypeInt64, dimensions, device::DeviceType::kCPU);
   uint8_t *data_buf = reinterpret_cast<uint8_t *>(tensor->data_c());
 
   int64_t num = 1;
@@ -238,8 +238,8 @@ TEST_F(TestTensor, ValueEqualTest) {
   ASSERT_TRUE(t1->ValueEqual(*t2));
 
   std::vector<int64_t> shape = {6};
-  TensorPtr t3 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
-  TensorPtr t4 = tensor::empty(kInt32->type_id(), shape, device::DeviceType::kCPU);
+  TensorPtr t3 = tensor::from_spec(kInt32->type_id(), shape, device::DeviceType::kCPU);
+  TensorPtr t4 = tensor::from_spec(kInt32->type_id(), shape, device::DeviceType::kCPU);
   ASSERT_TRUE(t3->ValueEqual(*t3));
   ASSERT_TRUE(t3->ValueEqual(*t4));
   ASSERT_FALSE(t3->ValueEqual(*t1));
@@ -346,7 +346,7 @@ TEST_F(TestTensor, TensorDataTest) {
   float ge_tensor_data[] = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6};
 
   // Create a Tensor with wanted data type and shape
-  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeFloat32, std::vector<int64_t>({2, 3}), device::DeviceType::kCPU);
+  TensorPtr tensor = tensor::from_spec(TypeId::kNumberTypeFloat32, std::vector<int64_t>({2, 3}), device::DeviceType::kCPU);
 
   // Get the writable data pointer from the tensor
   float *me_tensor_data = reinterpret_cast<float *>(tensor->data_c());
@@ -369,7 +369,7 @@ TEST_F(TestTensor, TensorDataTest) {
 
 TEST_F(TestTensor, TensorPyCast) {
   std::vector<int64_t> shape{2, 3, 4, 5};
-  auto tensor = tensor::empty(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
+  auto tensor = tensor::from_spec(kNumberTypeFloat32, shape, device::DeviceType::kCPU);
   PyObject *tensor_py = TensorPythonInit(tensor);
   py::object tensor_obj = py::reinterpret_borrow<py::object>(tensor_py);
   py::tuple py_tuple = py::make_tuple(tensor_obj);
@@ -384,7 +384,7 @@ TEST_F(TestTensor, TensorPyCast) {
 /// Description: Test user data for Tensor.
 /// Expectation: user data works as expected.
 TEST_F(TestTensor, TensorWithUserData) {
-  auto tensor = std::make_shared<Tensor>(3.14f);
+  auto tensor = tensor::from_scalar(3.14f);
   auto mydata = std::make_shared<std::string>("mydata");
 
   // Set user data.
@@ -413,7 +413,7 @@ TEST_F(TestTensor, TensorWithUserData) {
 TEST_F(TestTensor, TensorSetShapeDataTest) {
   // Create a Tensor with wanted data type and shape
   std::vector<int64_t> old_shape({2, 3});
-  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, std::vector<int64_t>(old_shape), device::DeviceType::kCPU);
+  TensorPtr tensor = tensor::from_spec(TypeId::kNumberTypeInt64, std::vector<int64_t>(old_shape), device::DeviceType::kCPU);
   tensor->set_shape(old_shape);
   ASSERT_EQ(6, tensor->DataSize());
   ASSERT_NE(nullptr, tensor->unsafe_data());
@@ -440,7 +440,7 @@ TEST_F(TestTensor, TensorSetShapeDataTest) {
 TEST_F(TestTensor, TensorOffloadTest) {
   // Create a Tensor with wanted data type and shape
   std::vector<int64_t> tensor_shape({2, 3});
-  TensorPtr tensor = tensor::empty(TypeId::kNumberTypeInt64, tensor_shape, device::DeviceType::kCPU);
+  TensorPtr tensor = tensor::from_spec(TypeId::kNumberTypeInt64, tensor_shape, device::DeviceType::kCPU);
   ASSERT_EQ(6, tensor->DataSize());
   ASSERT_NE(nullptr, tensor->unsafe_data());
 

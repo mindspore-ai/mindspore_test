@@ -188,142 +188,6 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \param[in] shape The shape represented by ShapeVector of the tensor.
   Tensor(TypeId data_type, const ShapeVector &shape);
 
-  /// \brief Create a tensor with input data buffer.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] data_len The length of data in bytes.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len);
-
-  /// \brief Create a tensor with input data buffer and given source data type.
-  ///
-  /// \param[in] data_type [TypeId] Data type of the tensor.
-  /// \param[in] shape The shape represented by ShapeVector of the tensor.
-  /// \param[in] data The input data to be copied into tensor.
-  /// \param[in] src_data_type The source data type.
-  Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type);
-
-  /// \brief Create 1 dimension tensor from an int vector.
-  ///
-  /// \param[in] input [std::vector<int64_t>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<int64_t> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from an int vector.
-  ///
-  /// \param[in] input [std::vector<int32_t>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<int32_t> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from a float vector.
-  ///
-  /// \param[in] input [std::vector<double>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<double> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 1 dimension tensor from a float vector.
-  ///
-  /// \param[in] input [std::vector<float>] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(const std::vector<float> &input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int64_t scalar.
-  ///
-  /// \param[in] input [int64] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int64_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int32_t scalar.
-  ///
-  /// \param[in] input [int32] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int32_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int16_t scalar.
-  ///
-  /// \param[in] input [int16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int16_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from an int8_t scalar.
-  ///
-  /// \param[in] input [int8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(int8_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a double scalar.
-  ///
-  /// \param[in] input [double] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(double input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float scalar.
-  ///
-  /// \param[in] input [float] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float16 scalar.
-  ///
-  /// \param[in] input [float16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float16 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float8_e5m2 scalar.
-  ///
-  /// \param[in] input [float8_e5m2] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float8_e5m2 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a float8_e4m3fn scalar.
-  ///
-  /// \param[in] input [float8_e4m3fn] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(float8_e4m3fn input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a hifloat8 scalar.
-  ///
-  /// \param[in] input [hifloat8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(hifloat8 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a bfloat16 scalar.
-  ///
-  /// \param[in] input [bfloat16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(bfloat16 input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint64 scalar.
-  ///
-  /// \param[in] input [uint64] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint64_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint32 scalar.
-  ///
-  /// \param[in] input [uint32] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint32_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint16 scalar.
-  ///
-  /// \param[in] input [uint16] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint16_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a uint8 scalar.
-  ///
-  /// \param[in] input [uint8] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(uint8_t input, const TypePtr &data_type = nullptr);
-
-  /// \brief Create 0 dimension tensor from a bool scalar.
-  ///
-  /// \param[in] input [bool] the data for tensor.
-  /// \param[in] data_type [TypeId] data type.
-  explicit Tensor(bool input, const TypePtr &data_type = nullptr);
-
   /// \brief Create a chunk tensor with the given data size.
   ///
   /// \param[in] data_type [TypeId] Data type of the tensor.
@@ -416,8 +280,14 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return Tensor on CPU.
   TensorPtr cpu() const;
 
+  /// \brief Get total number of Tensor elements.
+  ///
+  /// \return Total number of Tensor elements.
   size_t DataSize() const { return SizeOf(shape_); }
 
+  /// \brief Get byte size of a single element.
+  ///
+  /// \return Byte size of a single element.
   ssize_t DataItemSize() const {
     if (device_sync_ != nullptr && device_sync_->has_data()) {
       return device_sync_->data()->itemsize();
@@ -425,10 +295,20 @@ class MS_CORE_API Tensor : public MetaTensor {
     return static_cast<ssize_t>(abstract::TypeIdSize(data_type_));
   }
 
+  /// \brief Get total number of bytes.
+  ///
+  /// \return Total number of bytes.
   size_t DataNBytes() const { return DataSize() * DataItemSize(); }
 
+  /// \brief Get number of dimensions.
+  ///
+  /// \return Number of dimensions.
   ssize_t DataNDim() const { return shape_.size(); }
 
+  /// \brief Get display information about data of this Tensor.
+  ///
+  /// \param[in] use_comma Whether to use comma.
+  /// \return The display information.
   std::string DataToString(bool use_comma) const;
 
   /// \brief Get the internal data ptr. The ptr maybe null if the data is not initialized.
@@ -436,8 +316,15 @@ class MS_CORE_API Tensor : public MetaTensor {
   /// \return The ptr in device_address of Tensor.
   const void *unsafe_data() const;
 
+  /// \brief Set the data type of this Tensor.
+  ///
+  /// \param[in] data_type Tensor data type.
   TypeId set_data_type(TypeId data_type) override;
 
+  /// \brief Set the shape of this Tensor.
+  ///
+  /// \param[in] shape Tensor shape.
+  /// \return The shape's size.
   size_t set_shape(const ShapeVector &shape) override;
 
   /// \brief Get information about shape and data type.

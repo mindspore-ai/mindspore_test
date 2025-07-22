@@ -25,7 +25,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/singleton.h"
 #include "utils/ms_context.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 bool TrtConverterContext::Init() {
@@ -279,7 +279,7 @@ std::tuple<std::map<size_t, size_t>, std::vector<session::KernelWithIndex>> TrtC
 }
 
 std::shared_ptr<tensor::Tensor> TrtConverterContext::CreateTempWeight(const TypeId &type, const ShapeVector &shape) {
-  auto tensor = tensor::empty(type, shape, device::DeviceType::kCPU);
+  auto tensor = tensor::from_spec(type, shape, device::DeviceType::kCPU);
   temp_weights_.push_back(tensor);
   return tensor;
 }

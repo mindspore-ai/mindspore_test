@@ -16,6 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -27,7 +28,6 @@
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 
@@ -73,9 +73,9 @@ TEST_P(TestXlogyTensorSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>("XLogy");
   ASSERT_NE(prim, nullptr);
-  auto x = tensor::empty(dtype_param.x_type->type_id(), shape_param.x_shape, device::DeviceType::kCPU);
+  auto x = tensor::from_spec(dtype_param.x_type->type_id(), shape_param.x_shape, device::DeviceType::kCPU);
   ASSERT_NE(x, nullptr);
-  auto y = tensor::empty(dtype_param.y_type->type_id(), shape_param.y_shape, device::DeviceType::kCPU);
+  auto y = tensor::from_spec(dtype_param.y_type->type_id(), shape_param.y_shape, device::DeviceType::kCPU);
   ASSERT_NE(y, nullptr);
   ValuePtrList input_values;
   input_values.push_back(std::move(x));

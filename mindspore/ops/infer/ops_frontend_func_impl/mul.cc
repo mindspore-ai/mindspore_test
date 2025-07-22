@@ -22,8 +22,8 @@
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
+#include "ir/tensor_new.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>
@@ -90,7 +90,7 @@ class MulFrontendFuncImpl : public OpFrontendFuncImpl {
 
     auto data_size = x1_tensor->DataSize();
     auto dtype = x1_tensor->data_type();
-    auto result_tensor = tensor::empty(dtype, (x1_shape.empty() ? x2_shape : x1_shape), device::DeviceType::kCPU);
+    auto result_tensor = tensor::from_spec(dtype, (x1_shape.empty() ? x2_shape : x1_shape), device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(result_tensor);
     auto iter = mul_impl_list.find(dtype);
     if (iter == mul_impl_list.end()) {

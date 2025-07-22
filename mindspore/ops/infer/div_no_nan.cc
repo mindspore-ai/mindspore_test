@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 
+#include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
@@ -41,7 +42,6 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -98,7 +98,7 @@ ValuePtr DivNoNanInferValue(const PrimitivePtr &prim, const std::vector<Abstract
   MS_EXCEPTION_IF_NULL(x2_tensor);
   auto type_id = x1_tensor->data_type();
   auto data_size = x1_tensor->DataSize();
-  auto result_tensor = tensor::empty(type_id, result_shape->shape(), device::DeviceType::kCPU);
+  auto result_tensor = tensor::from_spec(type_id, result_shape->shape(), device::DeviceType::kCPU);
   switch (type_id) {
     case kNumberTypeBool: {
       DivNoNanImpl<bool>(x1_tensor->data_c(), x2_tensor->data_c(), result_tensor->data_c(), data_size);

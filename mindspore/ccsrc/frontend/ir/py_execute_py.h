@@ -24,6 +24,7 @@
 #include <memory>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "pybind11/pybind11.h"
 #include "pybind_api/pybind_patch.h"
 
@@ -40,7 +41,6 @@
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace abstract {
 using PyObjectWrapperPtr = std::shared_ptr<parse::PyObjectWrapper>;
@@ -95,7 +95,7 @@ class PyExecuteInitializer {
     } else if (IsShapeEmpty(kernel_tensor->GetShapeVector())) {
       auto type_id =
         (kernel_tensor->dtype_id() == TypeId::kTypeUnknown ? TypeId::kNumberTypeInt64 : kernel_tensor->dtype_id());
-      return tensor::empty(type_id, kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
+      return tensor::from_spec(type_id, kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
     }
 
     MS_LOG(DEBUG) << "Type:" << kernel_tensor->dtype_id() << " shape:" << kernel_tensor->GetShapeVector()
@@ -113,7 +113,7 @@ class PyExecuteInitializer {
     }
 
     tensor::TensorPtr tensor =
-      tensor::empty(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
+      tensor::from_spec(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(), device::DeviceType::kCPU);
     MS_EXCEPTION_IF_NULL(tensor);
     if (LongToSize(tensor->DataNBytes()) != kernel_tensor_value->GetDataSize()) {
       MS_LOG(EXCEPTION) << "Invalid host tensor size:" << tensor->DataNBytes()
@@ -218,11 +218,11 @@ class PyExecuteInitializer {
       const auto &infer_shape = std::make_shared<abstract::Shape>(tensor->shape());
       return tensor->ToAbstract();
     } else if (py::isinstance<py::bool_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<bool>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<bool>(output))->ToAbstract();
     } else if (py::isinstance<py::int_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<int64_t>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<int64_t>(output))->ToAbstract();
     } else if (py::isinstance<py::float_>(output)) {
-      return std::make_shared<tensor::Tensor>(py::cast<float>(output))->ToAbstract();
+      return tensor::from_scalar(py::cast<float>(output))->ToAbstract();
     } else if (py::isinstance<py::list>(output) || py::isinstance<py::tuple>(output)) {
       ValuePtr converted_res = nullptr;
       if (parse::ConvertData(output, &converted_res)) {

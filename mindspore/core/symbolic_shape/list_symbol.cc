@@ -18,6 +18,7 @@
 #include "symbolic_shape/symbol.h"
 #include "symbolic_shape/utils.h"
 #include "symbolic_shape/int_symbol.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace symshape {
@@ -83,7 +84,7 @@ ValuePtr ToTensor(TypeId type, const SymbolPtrList &symbols) {
   values.reserve(symbols.size());
   (void)std::transform(symbols.begin(), symbols.end(), std::back_inserter(values),
                        [](const SymbolPtr &s) { return static_cast<T>(s->as<S>()->value()); });
-  return std::make_shared<tensor::Tensor>(type, ShapeVector{static_cast<int64_t>(values.size())}, values.data(), type);
+  return tensor::from_buffer(type, ShapeVector{static_cast<int64_t>(values.size())}, values.data(), type);
 }
 
 ValuePtr ToTensorOf(const TypePtr &type, const SymbolPtrList &symbols) {

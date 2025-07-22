@@ -19,6 +19,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/anfalgo.h"
@@ -156,11 +157,9 @@ const CNodePtr ConvertBasePaddings::ProcessSliceNConcat(const FuncGraphPtr &func
     auto input_paddings_type_id = common::AnfAlgo::GetPrevNodeOutputInferDataType(pad_node, kIndex1);
     std::shared_ptr<tensor::Tensor> fill_tensor;
     if (input_paddings_type_id == kNumberTypeInt32) {
-      fill_tensor =
-        std::make_shared<tensor::Tensor>(std::vector<int32_t>(padding_dst_length - padding_src_length, 0), kInt32);
+      fill_tensor = tensor::from_vector(std::vector<int32_t>(padding_dst_length - padding_src_length, 0), kInt32);
     } else if (input_paddings_type_id == kNumberTypeInt64) {
-      fill_tensor =
-        std::make_shared<tensor::Tensor>(std::vector<int64_t>(padding_dst_length - padding_src_length, 0), kInt64);
+      fill_tensor = tensor::from_vector(std::vector<int64_t>(padding_dst_length - padding_src_length, 0), kInt64);
     } else {
       MS_LOG_EXCEPTION << "Unsupported data type for PadV3 padddings input.";
     }

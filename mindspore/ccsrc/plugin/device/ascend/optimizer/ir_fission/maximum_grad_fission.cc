@@ -18,6 +18,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
@@ -78,7 +79,7 @@ AnfNodePtr CreateValueNodeFromAxis(size_t axis_num) {
   for (size_t i = 0; i < axis_num; ++i) {
     (void)axis.emplace_back(SizeToLong(i));
   }
-  auto tensor = std::make_shared<tensor::Tensor>(axis, TypeIdToType(TypeId::kNumberTypeInt64));
+  auto tensor = tensor::from_vector(axis, TypeIdToType(TypeId::kNumberTypeInt64));
   MS_EXCEPTION_IF_NULL(tensor);
   auto value_node = NewValueNode(tensor);
   ShapeVector shape = {SizeToLong(axis_num)};

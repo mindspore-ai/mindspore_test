@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
@@ -53,7 +54,7 @@ AnfNodePtr CreateNodeOfUnaryOp(const FuncGraphPtr &graph, const string &op_name,
 }
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, double value) {
-  auto tensor = std::make_shared<tensor::Tensor>(value);
+  auto tensor = tensor::from_scalar(value);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);

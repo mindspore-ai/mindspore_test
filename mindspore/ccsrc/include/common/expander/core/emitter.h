@@ -27,6 +27,7 @@
 #include "include/common/expander/core/node.h"
 #include "ir/func_graph.h"
 #include "ir/functor.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/comparison_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
@@ -294,13 +295,20 @@ class COMMON_EXPORT Emitter {
   /// \brief Emit a Tensor node.
   template <typename T>
   NodePtr Tensor(T data, TypePtr type_ptr = nullptr) {
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(data, type_ptr);
+    auto tensor_ptr = tensor::from_scalar(data, type_ptr);
+    return EmitValue(tensor_ptr);
+  }
+
+  /// \brief Emit a Tensor node.
+  template <typename T>
+  NodePtr Tensor(std::vector<T> data, TypePtr type_ptr = nullptr) {
+    auto tensor_ptr = tensor::from_vector(data, type_ptr);
     return EmitValue(tensor_ptr);
   }
 
   /// \brief Emit a tensor node.
   NodePtr Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type) {
-    auto tensor_ptr = std::make_shared<tensor::Tensor>(data_type, shape, data, src_data_type);
+    auto tensor_ptr = tensor::from_buffer(data_type, shape, data, src_data_type);
     return EmitValue(tensor_ptr);
   }
 

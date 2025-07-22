@@ -18,7 +18,7 @@
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "mindspore/ccsrc/pyboost/customize/op_common.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
@@ -27,7 +27,7 @@ void InnerCommIrecvGPUCustomize(const std::shared_ptr<OpRunner> &op, const Int64
   // Create Fake tensor for irecv
   auto shape_vector = ConvertValueTupleToVector<int64_t>(shape);
   auto dtype_id = GetValue<int64_t>(dtype);
-  auto input_tensor = tensor::empty(static_cast<TypeId>(dtype_id), shape_vector, device::DeviceType::kNone);
+  auto input_tensor = tensor::from_spec(static_cast<TypeId>(dtype_id), shape_vector, device::DeviceType::kNone);
 
   auto pre_func = [op, input_tensor]() {
     OpRunner::InferOpOutput(op, input_tensor);

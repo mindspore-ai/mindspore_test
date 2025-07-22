@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/embedding_cache/device_embedding_operation.h"
 #include <string>
+#include "ir/tensor_new.h"
 #include "kernel/framework_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
@@ -187,7 +188,7 @@ bool DeviceEmbeddingOperation::MemcpyHostToDeviceAsync(void *dst, const void *sr
   kernel_tensor->set_stream_id(stream_id);
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
-  auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
+  auto tensor = tensor::from_buffer(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
   RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address, tensor->device_address(), stream_id),
                            "Async memcpy host to device failed.");
 
@@ -210,7 +211,7 @@ bool DeviceEmbeddingOperation::MemcpyDeviceToHostAsync(void *dst, const void *sr
   kernel_tensor->set_stream_id(stream_id);
   auto device_address = kernel_tensor->device_address();
   MS_ERROR_IF_NULL(device_address);
-  auto tensor = std::make_shared<tensor::Tensor>(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
+  auto tensor = tensor::from_buffer(kTypeUnknown, ShapeVector{}, const_cast<void *>(host_ptr), size);
   RETURN_IF_FALSE_WITH_LOG(AsyncCopy(device_address, tensor->device_address(), stream_id),
                            "Async memcpy device to host failed.");
 
@@ -245,7 +246,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
                                                     size_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_context);
 
-  auto tensor = std::make_shared<tensor::Tensor>(static_cast<int64_t>(value), kInt32);
+  auto tensor = tensor::from_scalar(static_cast<int64_t>(value), kInt32);
   auto value_node = mindspore::NewValueNode(tensor);
   value_node->set_abstract(tensor->ToAbstract());
 
@@ -280,7 +281,7 @@ ValueNodePtr DeviceEmbeddingOperation::NewValueNode(int64_t value, const DeviceC
   MS_EXCEPTION_IF_NULL(address);
 
   // Sync tensor value.
-  auto new_tensor = std::make_shared<tensor::Tensor>(output_type_id, ShapeVector{}, tensor->data_c(), tensor_size);
+  auto new_tensor = tensor::from_buffer(output_type_id, ShapeVector{}, tensor->data_c(), tensor_size);
   MS_EXCEPTION_IF_CHECK_FAIL(AsyncCopy(address, new_tensor->device_address(), stream_id),
                              "Async memcpy host to device failed.");
   MS_EXCEPTION_IF_CHECK_FAIL(device_context->device_res_manager_->SyncStream(stream_id), "Synchronize stream failed.");

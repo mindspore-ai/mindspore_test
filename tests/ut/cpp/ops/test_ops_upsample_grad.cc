@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "infer/ops_func_impl/upsample_bicubic2d_grad.h"
 #include "infer/ops_func_impl/upsample_bilinear2d_grad.h"
 #include "infer/ops_func_impl/upsample_linear1d_grad.h"
@@ -34,7 +35,6 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct UpsampleBackwardParams {
@@ -90,7 +90,7 @@ TEST_P(TestUpsampleBackward, dyn_shape) {
                             {std::make_shared<TensorType>(kFloat32)});
 
   // Simple Infer
-  ValuePtrList input_values{tensor::empty(kNumberTypeFloat32, param.dout_shape, device::DeviceType::kCPU)};
+  ValuePtrList input_values{tensor::from_spec(kNumberTypeFloat32, param.dout_shape, device::DeviceType::kCPU)};
   std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
                  [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
 }

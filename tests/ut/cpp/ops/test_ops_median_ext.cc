@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "infer/ops_func_impl/median_ext.h"
 #include "infer/ops_func_impl/median_dim.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct MedianDimShapeParams {
@@ -78,7 +78,7 @@ class TestMedianDimSimple : public TestOps, public testing::WithParamInterface<M
 
 TEST_P(TestMedianDimSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
   auto axis = param.axis;
   auto keep_dims = param.keep_dims;
 
@@ -142,7 +142,7 @@ class TestMedianExtSimple : public TestOps, public testing::WithParamInterface<M
 
 TEST_P(TestMedianExtSimple, simple_infer) {
   const auto &param = GetParam();
-  auto x = tensor::empty(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
+  auto x = tensor::from_spec(param.x_type->type_id(), param.x_shape, device::DeviceType::kCPU);
 
   auto expect_shape = ShapeArray{param.values_shape};
   auto expect_type = TypePtrList{param.values_type};

@@ -25,7 +25,7 @@
 #include "abstract/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace abstract {
@@ -118,8 +118,8 @@ TEST_F(TestData, test_build_shape) {
 
   std::vector<int64_t> weight1_dims = {2, 20, 5, 5};
   std::vector<int64_t> weight2_dims = {2, 2, 5, 5};
-  tensor::TensorPtr weight1 = tensor::empty(kNumberTypeInt64, weight1_dims, device::DeviceType::kCPU);
-  tensor::TensorPtr weight2 = tensor::empty(kNumberTypeInt64, weight2_dims, device::DeviceType::kCPU);
+  tensor::TensorPtr weight1 = tensor::from_spec(kNumberTypeInt64, weight1_dims, device::DeviceType::kCPU);
+  tensor::TensorPtr weight2 = tensor::from_spec(kNumberTypeInt64, weight2_dims, device::DeviceType::kCPU);
 
   AbstractBasePtr abstract_weight1 = FromValue(weight1, true);
   AbstractBasePtr abstract_weight2 = FromValue(weight2, true);

@@ -22,6 +22,7 @@
 #include "graph/types.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"
@@ -35,7 +36,6 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace py = pybind11;
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace ascend {
@@ -642,7 +642,7 @@ bool AscendDeviceAddress::SyncDeviceToDeviceWithDiffFormatType(const DeviceSync 
                     << ", device address type: " << TypeIdLabel(src_device_address->type_id());
     (void)host_shape.emplace_back(1);
   }
-  auto host_tensor = tensor::empty(src_device_address->type_id(), host_shape, device::DeviceType::kCPU);
+  auto host_tensor = tensor::from_spec(src_device_address->type_id(), host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(host_tensor);
   auto host_tensor_size = LongToSize(host_tensor->DataNBytes());
   auto host_tensor_type = host_tensor->data_type();
@@ -1018,7 +1018,8 @@ mindspore::tensor::TensorPtr AscendDeviceAddress::LoadMemToHost(const std::strin
     constexpr int64_t kNumber2 = 2;
     corrected_host_shape.back() *= kNumber2;
   }
-  mindspore::tensor::TensorPtr out_tensor = tensor::empty(host_type, corrected_host_shape, device::DeviceType::kCPU);
+  mindspore::tensor::TensorPtr out_tensor =
+    tensor::from_spec(host_type, corrected_host_shape, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->DataNBytes());
   if (host_size == 0) {

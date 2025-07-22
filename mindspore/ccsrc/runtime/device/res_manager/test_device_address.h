@@ -26,6 +26,8 @@
 #include "abstract/abstract_function.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
+#include "include/common/utils/anfalgo.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/communication_op_fusion.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 #include "runtime/hardware/device_context.h"
@@ -61,7 +63,8 @@ class TestDeviceAddress : public DeviceAddress {
                     uint32_t device_id)
       : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
   ~TestDeviceAddress() {}
-  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr, bool sync_on_demand) const override {
+  bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr,
+                        bool sync_on_demand) const override {
     return true;
   }
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,

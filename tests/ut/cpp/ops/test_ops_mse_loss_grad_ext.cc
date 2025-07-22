@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/mse_loss_grad_ext.h"
 #include "ops/test_ops.h"
@@ -23,7 +24,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -88,11 +88,11 @@ TEST_P(TestMSELossGradExtSimpleInfer, simple_infer) {
 
   auto prim = std::make_shared<Primitive>(op_name);
   ASSERT_NE(prim, nullptr);
-  auto grad_output = tensor::empty(param.grad_output_type->type_id(), param.grad_output_shape, device::DeviceType::kCPU);
+  auto grad_output = tensor::from_spec(param.grad_output_type->type_id(), param.grad_output_shape, device::DeviceType::kCPU);
   ASSERT_NE(grad_output, nullptr);
-  auto input = tensor::empty(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
+  auto input = tensor::from_spec(param.input_type->type_id(), param.input_shape, device::DeviceType::kCPU);
   ASSERT_NE(input, nullptr);
-  auto target = tensor::empty(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
+  auto target = tensor::from_spec(param.target_type->type_id(), param.target_shape, device::DeviceType::kCPU);
   ASSERT_NE(input, nullptr);
   ValuePtrList input_values;
   input_values.emplace_back(grad_output);

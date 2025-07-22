@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
@@ -27,7 +28,6 @@
 #include "infer/ops_func_impl/sinh.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 
@@ -58,7 +58,7 @@ TEST_P(TestSinh, sinh_dyn_shape) {
   ASSERT_TRUE(*output_dtype == *expect_dtype);
 
   // simple infer
-  auto input_value = tensor::empty(dtype_param.input_type->type_id(), shape_param.input_shape, device::DeviceType::kCPU);
+  auto input_value = tensor::from_spec(dtype_param.input_type->type_id(), shape_param.input_shape, device::DeviceType::kCPU);
   auto expect_shape_simple_infer = {shape_param.output_shape};
   auto expect_dtype_simple_infer = {dtype_param.output_type};
   DoFuncImplSimpleInferAndCompare<SinhFuncImpl>(kNameSinh, {input_value}, {expect_shape_simple_infer},

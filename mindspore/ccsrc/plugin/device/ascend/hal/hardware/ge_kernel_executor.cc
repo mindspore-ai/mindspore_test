@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include <deque>
+#include "ir/tensor_new.h"
 #include "include/common/utils/parallel_context.h"
 #include "debug/profiler/profiler.h"
 #include "common/kernel.h"
@@ -381,7 +382,7 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
   if (last_call != nullptr) {
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
     if (!enable_infer_boost) {
-      auto value_node = graph->NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(1)));
+      auto value_node = graph->NewValueNode(MakeValue(tensor::from_scalar(1)));
       MS_EXCEPTION_IF_NULL(value_node);
       CNodePtr tensor_move = nullptr;
       auto depend = graph->NewCNode({NewValueNode(prim::kPrimDepend), value_node, out});

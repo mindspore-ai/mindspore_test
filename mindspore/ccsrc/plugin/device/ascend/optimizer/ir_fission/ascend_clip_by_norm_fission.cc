@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {
@@ -146,7 +146,7 @@ AnfNodePtr AscendClipByNormFission::CreateReduceSumNode(const FuncGraphPtr &func
 AnfNodePtr AscendClipByNormFission::CreateConstantNode(const FuncGraphPtr &func_graph, const AnfNodePtr &inp,
                                                        const ShapeVector &shape_vec, const TypeId &type_id,
                                                        const std::string &op_name) const {
-  auto tensor = tensor::empty(type_id, shape_vec, device::DeviceType::kCPU);
+  auto tensor = tensor::from_spec(type_id, shape_vec, device::DeviceType::kCPU);
   MS_EXCEPTION_IF_NULL(func_graph);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
