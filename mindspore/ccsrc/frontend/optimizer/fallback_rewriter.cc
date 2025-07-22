@@ -1844,18 +1844,16 @@ class AfterOptARewriter : public BaseRewriter {
       const auto &new_str = (py::str(ValueToPyData(value))).cast<std::string>();
       return AnfNodePtrList{NewValueNode(new_str)};
     }
-    if (!abstract->isa<abstract::AbstractSequence>() && !abstract->isa<abstract::AbstractDictionary>()) {
-      return AnfNodePtrList{node};
-    }
-    if (!node->isa<CNode>()) {
-      return AnfNodePtrList{node};
-    }
-    auto fg = node->func_graph();
-    MS_EXCEPTION_IF_NULL(fg);
-    AnfNodePtrList new_inputs;
     if (abstract->isa<abstract::AbstractDictionary>()) {
       MS_LOG(EXCEPTION) << "Joined Str do not support dictionary input yet";
     }
+    if (!abstract->isa<abstract::AbstractSequence>()) {
+      return AnfNodePtrList{node};
+    }
+    // If node is CNode or Parameter, need to flatten abstract.
+    auto fg = node->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    AnfNodePtrList new_inputs;
     std::string left = abstract->isa<abstract::AbstractTuple>() ? "(" : "[";
     std::string right = abstract->isa<abstract::AbstractTuple>() ? ")" : "]";
     PrimitivePtr getitem_prim =

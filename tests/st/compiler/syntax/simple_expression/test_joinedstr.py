@@ -20,6 +20,7 @@ import numpy as np
 from mindspore import ops
 from mindspore import Tensor
 from mindspore import context
+from mindspore import mutable
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 
@@ -568,3 +569,45 @@ def test_joinedstr_infer_type():
     input_x = Tensor([1])
     res = func(input_x)
     assert res == Tensor([2])
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_raise_joinedstr_mutable_list_tensor():
+    """
+    Feature: Test raise syntax in lax mode.
+    Description: Test raise syntax in lax mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x, y):
+        if y >= 1:
+            raise ValueError(f"The input can not be {x}.")
+        return y + 1
+
+    input_x = mutable([Tensor([1]), Tensor([2]), Tensor([3])])
+    input_y = Tensor(1)
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x, input_y)
+        print(res)
+    assert "The input can not be [[1], [2], [3]]." in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_raise_joinedstr_mutable_nested_sequence_tensor():
+    """
+    Feature: Test raise syntax in lax mode.
+    Description: Test raise syntax in lax mode.
+    Expectation: Throw correct exception when needed.
+    """
+    @jit
+    def func(x, y):
+        if y >= 1:
+            raise ValueError(f"The input can not be {x}.")
+        return y + 1
+
+    input_x = mutable(([Tensor([1]), Tensor([2])], Tensor([3])))
+    input_y = Tensor(1)
+    with pytest.raises(ValueError) as raise_info:
+        res = func(input_x, input_y)
+        print(res)
+    assert "The input can not be ([[1], [2]], [3])." in str(raise_info.value)
