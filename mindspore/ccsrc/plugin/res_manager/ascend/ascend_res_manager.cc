@@ -841,9 +841,9 @@ ShapeVector GetDeviceShape(ShapeVector *host_shape, const DeviceAddress *src_dev
     device_shape = trans::TransShapeToDevice(*host_shape, src_device_address->format(), node_index.first,
                                              node_index.second, src_device_address->type_id());
   } else {
-    if (!src_device_address->host_shape().empty()) {
+    if (!src_device_address->GetShapeVector().empty()) {
       host_shape->clear();
-      *host_shape = src_device_address->host_shape();
+      *host_shape = src_device_address->GetShapeVector();
     }
     *host_shape = trans::PaddingShape(*host_shape, src_device_address->format());
     device_shape = trans::TransShapeToDevice(*host_shape, src_device_address->format(), node_index.first,
@@ -1284,7 +1284,7 @@ bool AscendResManager::SyncDeviceToDeviceWithDiffFormatType(const DeviceSyncPtr 
   MS_EXCEPTION_IF_NULL(src_device_address);
   MS_LOG(DEBUG) << "Copy device to device for different format, src device address:" << src_device_address->ToString()
                 << " dst device address:" << dst_device_address->ToString() << " stream id:" << stream_id;
-  auto host_shape = src_device_address->host_shape();
+  auto host_shape = src_device_address->GetShapeVector();
   if (host_shape.empty()) {
     MS_LOG(WARNING) << "Host shape of source device address is empty, emplace back shape [1],  device address size: "
                     << src_device_address->GetSize()

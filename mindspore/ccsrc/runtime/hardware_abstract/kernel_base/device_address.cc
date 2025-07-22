@@ -113,7 +113,6 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
   shape_vector_ = other.shape_vector_;
   padding_type_ = other.padding_type();
   is_view_ = other.is_view();
-  host_shape_ = other.host_shape();
   SetDevicePtrDeleter();
 }
 
@@ -127,8 +126,7 @@ DeviceAddress::~DeviceAddress() {
 
 std::string DeviceAddress::ToString() const {
   std::ostringstream ofs;
-  ofs << this << " device type:" << GetDeviceType() << " host shape:" << host_shape_
-      << " tensor storage info:" << tensor_storage_info_;
+  ofs << this << " device type:" << GetDeviceType() << " tensor storage info:" << tensor_storage_info_;
   if (tensor_storage_info_ != nullptr) {
     ofs << tensor_storage_info_->ToString();
   }
@@ -149,18 +147,13 @@ std::string DeviceAddress::ToString() const {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
   ofs << " is view:" << is_view_ << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
-      << " padding type:" << padding_type_ << " status:" << status_;
+      << " padding type:" << padding_type_;
   return ofs.str();
 }
 
 const void *DeviceAddress::GetPtr() const { return GetDevicePtr(); }
 
-void DeviceAddress::set_ptr(void *ptr) {
-  pointer_ref_count_->set_ptr(ptr);
-  if (ptr != nullptr) {
-    status_ = DeviceAddressStatus::kInDevice;
-  }
-}
+void DeviceAddress::set_ptr(void *ptr) { pointer_ref_count_->set_ptr(ptr); }
 
 size_t DeviceAddress::GetSize() const {
   if (tensor_storage_info_ && (tensor_storage_info_->ori_size != 0)) {
@@ -204,10 +197,6 @@ void DeviceAddress::set_from_persistent_mem(bool from_persistent_mem) { from_per
 bool DeviceAddress::need_recycle() const { return need_recycle_; }
 
 void DeviceAddress::set_need_recycle(bool need_recycle) { need_recycle_ = need_recycle; }
-
-void DeviceAddress::set_status(DeviceAddressStatus status) { status_ = status; }
-
-DeviceAddressStatus DeviceAddress::status() const { return status_; }
 
 void *DeviceAddress::GetMutablePtr() const { return GetDevicePtr(); }
 
@@ -332,10 +321,6 @@ void DeviceAddress::Swap(DeviceAddress *other) {
   SetDevicePtr(nullptr);
   this->set_from_mem_pool(false);
 }
-
-const ShapeVector &DeviceAddress::host_shape() const { return host_shape_; }
-
-void DeviceAddress::set_host_shape(const ShapeVector &host_shape) { host_shape_ = host_shape; }
 
 HeterogeneousInfoPtr DeviceAddress::heterogeneous_info() const { return hete_info_; }
 

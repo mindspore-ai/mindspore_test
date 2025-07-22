@@ -1458,7 +1458,7 @@ void GraphScheduler::PersistDeviceTensorForValueNode(const AnfNodePtr &value_nod
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {value_node, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->host_shape(), device_name, device_id);
+      device_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     auto other_type_device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(other_type_device_tensor);
@@ -1510,7 +1510,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {parameter, 0}, nullptr, device_tensor->GetSize(), device_tensor->format(), device_tensor->type_id(),
-      device_tensor->host_shape(), device_name, device_id);
+      device_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(device_tensor->stream_id());
     auto other_type_device_tensor = kernel_tensor->device_address().get();
     if (front_node->isa<ValueNode>()) {
@@ -1575,7 +1575,7 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
 
     const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
       {backend_node, index}, nullptr, sub_device_tensor->GetSize(), sub_device_tensor->format(),
-      sub_device_tensor->type_id(), sub_device_tensor->host_shape(), device_name, device_id);
+      sub_device_tensor->type_id(), sub_device_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(backend_node));
     auto new_device_tensor = kernel_tensor->device_address().get();
     MS_EXCEPTION_IF_NULL(new_device_tensor);

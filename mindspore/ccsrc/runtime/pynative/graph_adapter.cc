@@ -276,7 +276,7 @@ void GraphAdapter::HandleBackoffValueNode(const ValueNodePtr &value_node, const 
     MS_EXCEPTION_IF_NULL(device_tensor);
 
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(nullptr, device_tensor->GetSize(), old_kernel_tensor->format(),
-                                                     device_tensor->type_id(), old_kernel_tensor->host_shape(),
+                                                     device_tensor->type_id(), old_kernel_tensor->GetShapeVector(),
                                                      real_device_context->device_context_key().device_name_,
                                                      real_device_context->device_context_key().device_id_);
 
@@ -329,7 +329,7 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
     auto value = abs->GetValue();
     const auto &kernel_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value);
     kernel_tensor->set_device_address(device_address);
-    kernel_tensor->set_host_shape(tensor->shape());
+    device_address->SetShapeVector(tensor->shape());
     tensor->set_device_address(device_address);
     auto front_node = AnfAlgo::FetchFrontNodeByBackendNode(value_node, *graph);
     MS_EXCEPTION_IF_NULL(front_node);

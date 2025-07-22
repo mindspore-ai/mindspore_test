@@ -267,16 +267,6 @@ using TensorPtr = std::shared_ptr<tensor::Tensor>;
 
 enum class StorageType { kDevice, kHost, kFile };
 
-enum class DeviceAddressStatus {
-  kInDevice,
-  kInHost,
-  kInFile,
-  kInDeviceToHost,
-  kInHostToDevice,
-  kInHostToFile,
-  kInFileToHost
-};
-
 // The flag of device address.
 constexpr size_t kDeviceAddressFlagInit = 0;
 // Indicates that it is the device address of ref node.
@@ -328,14 +318,10 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   virtual void set_communication_ptr(uint8_t *communication_ptr);
   bool is_ptr_persisted() const;
   void set_is_ptr_persisted(bool is_ptr_persisted);
-  void set_host_shape(const ShapeVector &shape);
-  const ShapeVector &host_shape() const;
   bool from_persistent_mem() const;
   void set_from_persistent_mem(bool from_persistent_mem);
   bool need_recycle() const;
   void set_need_recycle(bool need_recycle);
-  void set_status(DeviceAddressStatus status);
-  DeviceAddressStatus status() const;
   void *GetMutablePtr() const override;
   // Get the shape vector for Tensor/Sequence/Scalar.
   const ShapeVector &GetShapeVector() const;
@@ -445,13 +431,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // If yes, the device address cannot be reused with the host address in CPU.
   bool is_view_{false};
 
-  // The flag identify where data is stored
-  mutable DeviceAddressStatus status_{DeviceAddressStatus::kInDevice};
-  // Move to kernel tensor later.
-  // host_shape_/hete_info_/user_data_ will be removed from device address later.
-  // The flatten shape(maybe after padding) vector.
-  // Note: the 'host_shape_' will be repalced by 'shape_vector_' in the future.
-  ShapeVector host_shape_{};
   // heterogeneous info
   HeterogeneousInfoPtr hete_info_{nullptr};
 

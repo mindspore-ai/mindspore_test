@@ -126,10 +126,10 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
-               const ValuePtr &value, const ShapeVector &host_shape, const UserDataPtr &user_data = nullptr);
+               const ValuePtr &value);
 
   explicit KernelTensor(const DeviceAddressPtr &device_address)
-      : KernelTensor(device_address, nullptr, nullptr, nullptr, {}) {}
+      : KernelTensor(device_address, nullptr, nullptr, nullptr) {}
 
   KernelTensor(const KernelTensor &other);
   KernelTensor &operator=(const KernelTensor &) = delete;
@@ -167,18 +167,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   // Get the device shape vector for Tensor/Sequence/Scalar.
   const ShapeVector &GetDeviceShapeVector() const;
-
-  // Get host shape for KernelTensor.
-  const ShapeVector &host_shape() const {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    return device_address_->host_shape();
-  }
-
-  // Set host shape for KernelTensor.
-  void set_host_shape(const ShapeVector &host_shape) {
-    MS_EXCEPTION_IF_NULL(device_address_);
-    device_address_->set_host_shape(host_shape);
-  }
 
   // Get the object type of the KernelTensor.
   TypePtr GetType() const override { return type_; }

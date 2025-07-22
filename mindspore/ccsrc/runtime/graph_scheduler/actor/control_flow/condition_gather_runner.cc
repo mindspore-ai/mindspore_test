@@ -192,7 +192,7 @@ void ConditionGatherRunner::Init() {
     const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
-      kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_device_tensor->host_shape(),
+      kernel::GetFormatFromStrToEnum(input_device_tensor->format()), input_device_tensor->GetShapeVector(),
       input_device_tensor->GetSize(), input_device_tensor->type_id()));
   }
 

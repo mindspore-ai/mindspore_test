@@ -218,7 +218,7 @@ void ControlNodeScheduler::BuildGraphParameterStoreForControlNode(const GraphCom
     MS_EXCEPTION_IF_NULL(sub_abstract);
     const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
       sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-      device_address->format(), device_address->type_id(), device_address->host_shape(),
+      device_address->format(), device_address->type_id(), device_address->GetShapeVector(),
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));
@@ -294,7 +294,7 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
       MS_EXCEPTION_IF_NULL(sub_abstract);
       const auto &kernel_tensor = AnfAlgo::CreateKernelTensor(
         sub_abstract->BuildShape(), sub_abstract->BuildType(), nullptr, nullptr, device_address->GetSize(),
-        device_address->format(), device_address->type_id(), old_kernel_tensor->host_shape(),
+        device_address->format(), device_address->type_id(), old_kernel_tensor->GetShapeVector(),
         device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(parameter_with_index.first));

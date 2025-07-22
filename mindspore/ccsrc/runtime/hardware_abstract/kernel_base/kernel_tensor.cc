@@ -105,7 +105,7 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_
                            const UserDataPtr &user_data) {
   MS_EXCEPTION_IF_NULL(device_address);
   device_address_ = device_address;
-  device_address_->set_host_shape(host_shape);
+  device_address_->SetShapeVector(host_shape);
   user_data_ = user_data;
   if (dtype_id == kTypeUnknown) {
     SetType(TypeIdToType(dtype_id));
@@ -127,22 +127,22 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   device_address_->pointer_ref_count()->set_deleter(pointer_ref_count->deleter());
   device_address_->pointer_ref_count()->set_allocator(pointer_ref_count->allocator());
   device_address_->SetSize(size);
-  device_address_->SetShapeVector(shape_vector);
+  if (IsDynamic(host_shape)) {
+    device_address_->SetShapeVector(host_shape);
+  } else {
+    device_address_->SetShapeVector(shape_vector);
+  }
   device_address_->set_format(format);
   device_address_->set_type_id(dtype_id);
   device_address_->SetDeviceType(device::GetDeviceTypeByName(device_name));
   device_address_->set_device_id(device_id);
-  device_address_->set_host_shape(host_shape);
   user_data_ = user_data;
 }
 
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
-                           const TypePtr &type, const ValuePtr &value, const ShapeVector &host_shape,
-                           const UserDataPtr &user_data) {
+                           const TypePtr &type, const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(device_address);
   device_address_ = device_address;
-  set_user_data(user_data);
-  device_address_->set_host_shape(host_shape);
 
   host_info_ = std::make_unique<KernelHostInfo>();
   if (type) {
@@ -176,7 +176,6 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
   task_id_on_stream_ = other.task_id_on_stream_;
   MS_EXCEPTION_IF_NULL(other.device_address_);
   device_address_ = other.device_address_->CloneDeviceAddress();
-  device_address_->set_host_shape(other.host_shape());
 }
 
 inline void KernelTensor::CheckHostInfoValid() {

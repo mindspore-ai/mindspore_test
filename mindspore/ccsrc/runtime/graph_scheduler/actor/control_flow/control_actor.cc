@@ -510,7 +510,7 @@ CNodePtr CreateRealMakeTuple(const std::vector<KernelTensor *> &addr_list, const
     MS_EXCEPTION_IF_NULL(addr_kernel);
     const auto &addr = addr_kernel->device_address();
     MS_EXCEPTION_IF_NULL(addr);
-    auto abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(addr->type_id()), addr->host_shape());
+    auto abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(addr->type_id()), addr->GetShapeVector());
     abs_list.emplace_back(abs);
     formats.emplace_back(addr->format());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Create new abstract:" << abs->ToString();
@@ -542,7 +542,7 @@ void CheckDeviceAddressConsist(OpContext<KernelTensor> *const context, const std
     return;
   }
   // Check consistence of device address.
-  const auto &shape = addr_list[0]->device_address()->host_shape();
+  const auto &shape = addr_list[0]->device_address()->GetShapeVector();
   const auto &size = addr_list[0]->device_address()->GetSize();
   const auto &type = addr_list[0]->device_address()->type_id();
   const auto &device_name = device::GetDeviceNameByType(addr_list[0]->GetDeviceType());
@@ -554,14 +554,14 @@ void CheckDeviceAddressConsist(OpContext<KernelTensor> *const context, const std
                     << " size:" << size << " shape:" << shape << " device name:" << device_name << " type:" << type
                     << " addr2:" << addr_list[i]->device_address().get()
                     << " size:" << addr_list[i]->device_address()->GetSize()
-                    << " shape:" << addr_list[i]->device_address()->host_shape()
+                    << " shape:" << addr_list[i]->device_address()->GetShapeVector()
                     << " device name:" << device::GetDeviceNameByType(addr_list[i]->GetDeviceType()) << " type"
                     << addr_list[i]->device_address()->type_id() << " for actor:" << actor_name;
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Failed to merge two device address");
     }
-    if (shape != addr_list[i]->host_shape()) {
+    if (shape != addr_list[i]->GetShapeVector()) {
       MS_LOG(WARNING) << "Merge two device address with different shape, addr1 shape:" << shape
-                      << " addr2 shape:" << addr_list[i]->host_shape() << " for actor:" << actor_name;
+                      << " addr2 shape:" << addr_list[i]->GetShapeVector() << " for actor:" << actor_name;
     }
   }
 }
@@ -581,7 +581,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   MS_EXCEPTION_IF_NULL(addr_list[0]->device_address());
   const auto &total_size = addr_list[0]->device_address()->GetSize() * addr_list.size();
   ShapeVector total_shape = {SizeToLong(addr_list.size())};
-  const auto &shape = addr_list[0]->device_address()->host_shape();
+  const auto &shape = addr_list[0]->device_address()->GetShapeVector();
   total_shape.insert(total_shape.end(), shape.begin(), shape.end());
   auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
     {device::GetDeviceNameByType(addr_list[0]->device_address()->GetDeviceType()),
@@ -654,7 +654,7 @@ void ControlActor::MergeDeviceAddress(OpContext<KernelTensor> *const context,
   created_kernel_tensors_.emplace_back(new_kernel_tensor);
   MS_LOG(DEBUG) << "actor:" << GetAID() << " create new device address:" << new_device_tensor
                 << " for addr list size:" << addr_list.size()
-                << " device address shape:" << new_device_tensor->host_shape();
+                << " device address shape:" << new_device_tensor->GetShapeVector();
   (*kernel_tensor) = new_kernel_tensor;
   return;
 }

@@ -372,7 +372,7 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   } else {
     auto kernel_tensor = AnfAlgo::CreateKernelTensor(
       nullptr, device_tensor->GetSize(), kernel::GetFormatFromStrToEnum(device_tensor->format()),
-      device_tensor->type_id(), device_tensor->host_shape(), device_name, device_id);
+      device_tensor->type_id(), device_tensor->GetShapeVector(), device_name, device_id);
     kernel_tensor->SetType(output_kernel_tensor->GetType());
     kernel_tensor->SetShape(output_kernel_tensor->GetShape());
     kernel_tensor->set_stream_id(device_tensor->stream_id());
@@ -445,7 +445,7 @@ void OutputActor::UpdateOutputDeviceAddress() {
     auto node_with_index = device_tensor->GetNodeIndex();
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
-    tensor_device_address->set_host_shape(tensor->shape());
+    tensor_device_address->SetShapeVector(tensor->shape());
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {
       continue;

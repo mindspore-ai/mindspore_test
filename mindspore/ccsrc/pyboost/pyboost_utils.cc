@@ -343,7 +343,7 @@ void PyBoostUtils::GetKernelTensor(const DeviceContext *device_context, size_t s
   auto value = tmp_abs->GetValue();
   auto kernel_tensor = std::make_shared<KernelTensor>(shape, type, value);
   kernel_tensor->set_device_address(device_address);
-  kernel_tensor->set_host_shape(tensor->shape());
+  device_address->SetShapeVector(tensor->shape());
   MS_LOG(DEBUG) << "Create input " << tmp_abs->ToString() << " device address for " << index
                 << "th input, Shape: " << shape->ToString() << ", Type: " << type->ToString()
                 << ", Value: " << (value ? value->ToString() : "nullptr") << " device address:" << device_address.get()
