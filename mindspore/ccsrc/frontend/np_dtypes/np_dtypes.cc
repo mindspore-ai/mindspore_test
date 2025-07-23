@@ -1016,12 +1016,8 @@ void NpType_CopySwapN(void *dest, npy_intp dstride, void *src, npy_intp sstride,
   }
   if (swap && sizeof(T) == sizeof(int16_t)) {
     for (npy_intp i = 0; i < n; i++) {
+      *reinterpret_cast<T *>(dst_p + dstride * i) = *reinterpret_cast<T *>(src_p + sstride * i);
       char *r = dst_p + dstride * i;
-      errno_t ret = memcpy_s(r, sizeof(T), src_p + sstride * i, sizeof(T));
-      if (ret != EOK) {
-        PyErr_Format(PyExc_MemoryError, "memcpy_s failed: %d.", ret);
-        return;
-      }
       std::swap(r[0], r[1]);
     }
   } else if (dstride == sizeof(T) && sstride == sizeof(T)) {
@@ -1031,11 +1027,15 @@ void NpType_CopySwapN(void *dest, npy_intp dstride, void *src, npy_intp sstride,
       return;
     }
   } else {
-    for (npy_intp i = 0; i < n; i++) {
-      errno_t ret = memcpy_s(dst_p + dstride * i, sizeof(T), src_p + sstride * i, sizeof(T));
-      if (ret != EOK) {
-        PyErr_Format(PyExc_MemoryError, "memcpy_s failed: %d.", ret);
-        return;
+    if (sstride == 0) {
+      T value = *reinterpret_cast<T *>(src_p);
+#pragma omp parallel for
+      for (npy_intp i = 0; i < n; i++) {
+        *reinterpret_cast<T *>(dst_p + dstride * i) = value;
+      }
+    } else {
+      for (npy_intp i = 0; i < n; i++) {
+        *reinterpret_cast<T *>(dst_p + dstride * i) = *reinterpret_cast<T *>(src_p + sstride * i);
       }
     }
   }
