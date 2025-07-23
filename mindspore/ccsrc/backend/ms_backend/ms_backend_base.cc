@@ -1478,6 +1478,9 @@ void MSBackendBase::ConstructOutputByTupleTensor(tensor::TensorPtr output_tensor
       MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:" << device_context->device_context_key().device_id_
                         << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
                         << split_device_tensor->GetSize() << "B.";
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
     if (copy_offset_size + split_tensor_size > tensor_device_size) {
       MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#The copy size is out of range, copy size:"
@@ -1857,15 +1860,15 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
 }
 
 namespace {
-bool IsMemoryLeak(const device::DeviceAddress *const device_tensor) {
-  if (device_tensor == nullptr || device_tensor->new_ref_count() == SIZE_MAX) {
+bool IsMemoryLeak(const KernelTensorPtr &kernel_tensor) {
+  if (kernel_tensor == nullptr || kernel_tensor->new_ref_count() == SIZE_MAX) {
     return false;
   }
-  if (device_tensor->GetPtr() != nullptr) {
+  if (kernel_tensor->device_ptr() != nullptr) {
     return true;
   }
-  if (device_tensor->new_ref_count() != 0) {
-    MS_LOG(INFO) << "Ref count is not 0 after run graph for device address:" << device_tensor->ToString();
+  if (kernel_tensor->new_ref_count() != 0) {
+    MS_LOG(INFO) << "Ref count is not 0 after run graph for device address:" << kernel_tensor->ToString();
   }
   return false;
 }
@@ -1874,8 +1877,7 @@ void CheckMemoryLeak(const runtime::AbstractActorPtr &actor, const KernelTensorP
   if (kernel_tensor == nullptr) {
     return;
   }
-  const auto &device_tensor = kernel_tensor->device_address().get();
-  if (IsMemoryLeak(device_tensor)) {
+  if (IsMemoryLeak(kernel_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
                       << " output kernel tensor:" << kernel_tensor->ToString();
   }
@@ -1885,8 +1887,7 @@ void CheckMemoryLeakV2(const runtime::KernelRunnerPtr &actor, const KernelTensor
   if (kernel_tensor == nullptr) {
     return;
   }
-  const auto &device_tensor = kernel_tensor->device_address().get();
-  if (IsMemoryLeak(device_tensor)) {
+  if (IsMemoryLeak(kernel_tensor)) {
     MS_LOG(EXCEPTION) << "Memory leak detected in actor:" << actor->GetAID()
                       << " output kernel tensor:" << kernel_tensor->ToString();
   }
@@ -1943,8 +1944,7 @@ void StrictCheckForDeviceAddress(const runtime::ActorSet *actor_set) {
         if (kernel_tensor == nullptr) {
           continue;
         }
-        const auto &device_tensor = kernel_tensor->device_address().get();
-        if (IsMemoryLeak(device_tensor)) {
+        if (IsMemoryLeak(kernel_tensor)) {
           MS_LOG(EXCEPTION) << "Memory leak detected in parameter store for kernel tensor:"
                             << kernel_tensor->ToString();
         }

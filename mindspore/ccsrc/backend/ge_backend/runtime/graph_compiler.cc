@@ -67,10 +67,10 @@ void SetSummaryNodesRefCount(const KernelGraph *graph) {
   for (const auto &item : summary_nodes) {
     const AnfNodePtr &node = item.second.first;
     size_t index = IntToSize(item.second.second);
-    auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
-    MS_EXCEPTION_IF_NULL(device_address);
-    device_address->set_original_ref_count(SIZE_MAX);
-    device_address->ResetRefCount();
+    auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    kernel_tensor->set_original_ref_count(SIZE_MAX);
+    kernel_tensor->ResetRefCount();
   }
 }
 

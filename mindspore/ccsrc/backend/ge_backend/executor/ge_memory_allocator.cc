@@ -159,15 +159,17 @@ device::DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_
   MS_EXCEPTION_IF_NULL(output_device_addr);
   if (ref_map.find(output_with_index) != ref_map.end()) {
     auto input_with_index = ref_map[output_with_index];
-    auto input_device_address = AnfAlgo::GetMutableOutputAddr(input_with_index.first, input_with_index.second, false);
+    auto input_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_with_index.first, input_with_index.second, false);
+    MS_EXCEPTION_IF_NULL(input_kernel_tensor);
+    auto input_device_address = input_kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(input_device_address);
     MS_LOG(INFO) << "The output node " << output_node->fullname_with_scope()
                  << " is in ref_map, set the same device_address ptr as the corresponding input, input node: "
                  << input_with_index.first->fullname_with_scope();
     // Update the reference count of device address.
-    output_device_addr->set_pointer_ref_count(input_device_address->pointer_ref_count());
-    output_device_addr->IncreaseOriginalRefCount();
-    output_device_addr->ResetRefCount();
+    kernel_tensor->set_pointer_ref_count(input_kernel_tensor.get());
+    kernel_tensor->IncreaseOriginalRefCount();
+    kernel_tensor->ResetRefCount();
   }
   if (memory::mem_pool::IsMemoryPoolRecycle() && need_alloc_output_cnt <= kNeedRecycleOutput) {
     MS_LOG(INFO) << "Set Memory Pool Recycle, graph: " << kernel_graph->ToString()
@@ -263,9 +265,7 @@ void EnableGraphInputZeroCopy(const KernelGraphPtr &graph) {
     if (AnfAlgo::OutputAddrExist(input, 0)) {
       auto input_kernel_tensor = AnfAlgo::GetOutputKernelTensor(input, 0, false);
       MS_EXCEPTION_IF_NULL(input_kernel_tensor);
-      auto input_address = input_kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(input_address);
-      input_address->set_is_ptr_persisted(false);
+      input_kernel_tensor->set_is_ptr_persisted(false);
       input_kernel_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
       MS_LOG(INFO) << "Enable zero copy for input " << input->DebugString();
     }
@@ -288,11 +288,11 @@ void EnableGraphOutputZeroCopy(const KernelGraphPtr &graph) {
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(DEBUG) << "EnableGraphOutputZeroCopy check node:" << node->DebugString();
     if (node->isa<CNode>() && AnfAlgo::OutputAddrExist(node, index)) {
-      auto device_address = AnfAlgo::GetMutableOutputAddr(node, index, false);
-      MS_EXCEPTION_IF_NULL(device_address);
-      device_address->set_is_ptr_persisted(false);
+      auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, index, false);
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      kernel_tensor->set_is_ptr_persisted(false);
       MS_LOG(DEBUG) << "Disable ptr persisted in output node:" << node->DebugString() << " index:" << index
-                    << " address:" << device_address << " for graph:" << graph->ToString();
+                    << " kernel tensor:" << kernel_tensor->ToString() << " for graph:" << graph->ToString();
     }
   }
 }

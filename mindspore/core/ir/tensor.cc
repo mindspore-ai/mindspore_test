@@ -321,12 +321,6 @@ const DeviceSyncPtr &Tensor::device_address() const { return device_sync_; }
 
 void Tensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
-  // To support the old and new runtime coexistence, the output of old runtime may be the input of new runtime, so the
-  // device address cannot be released through ref count and set max ref count in this scenario.
-  if (need_update_ref_count && (device_sync_ != nullptr)) {
-    device_sync_->set_original_ref_count(SIZE_MAX);
-    device_sync_->ResetRefCount();
-  }
 }
 
 TensorStorageInfoPtr Tensor::storage_info() const {
@@ -384,8 +378,6 @@ DeviceSyncPtr Tensor::CallContiguousCallback() const {
   DeviceSyncPtr contiguous_device_address = nullptr;
   if (contiguous_callback_ != nullptr && storage_info() != nullptr) {
     contiguous_device_address = contiguous_callback_(device_address());
-    contiguous_device_address->set_original_ref_count(SIZE_MAX);
-    contiguous_device_address->ResetRefCount();
   }
   return contiguous_device_address;
 }

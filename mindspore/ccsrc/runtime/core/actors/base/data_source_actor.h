@@ -119,7 +119,7 @@ class HostQueueDataSourceActor : public DataSourceActor {
   // The index of different device context for the same parameter.
   std::vector<std::pair<size_t, size_t>> heter_index_pair_;
   // The ref relationship of device address.
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors_;
 
   // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
   bool is_infer_phase_;

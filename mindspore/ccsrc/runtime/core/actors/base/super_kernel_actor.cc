@@ -282,10 +282,10 @@ void SuperKernelActor::Init() {
       MS_EXCEPTION_IF_NULL(kernel_tensor);
       auto device_address = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_address);
-      if (device_address->is_ptr_persisted() || graph_->is_dynamic_shape()) {
+      if (kernel_tensor->is_ptr_persisted() || graph_->is_dynamic_shape()) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Actor:" << GetAID() << " skip alloc memory for device address:" << device_address
-          << " is persist:" << device_address->is_ptr_persisted() << " is dynamic shape:" << graph_->is_dynamic_shape()
+          << " is persist:" << kernel_tensor->is_ptr_persisted() << " is dynamic shape:" << graph_->is_dynamic_shape()
           << " output node:" << output_node->DebugString();
         continue;
       }
@@ -410,7 +410,7 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<KernelTensor> *const con
       }
 
       if (!enable_kbk_sub_graph_execute_ || ActorDispatcher::enable_use_trace_memory()) {
-        if (input_data->data_->device_address()->new_ref_count() != SIZE_MAX) {
+        if (input_data->data_->new_ref_count() != SIZE_MAX) {
           (void)memory_free_list.emplace_back(input_data->data_);
         }
 
@@ -750,7 +750,7 @@ void SuperKernelActor::UpdateOutputAddress(
     KernelTensorPtr real_input = kernel_actor->input_kernel_tensors_[kernel_input_index];
     MS_EXCEPTION_IF_NULL(real_input);
     const std::vector<size_t> &actor_output_indices = pair.second;
-    real_input->device_address()->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
+    real_input->IncreaseNewRefCount(GetAID().Name(), actor_output_indices.size());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
       << "Increase ref count to:" << real_input->new_ref_count() << " increase size:" << actor_output_indices.size() - 1
       << " for kernel tensor:" << real_input->ToString() << " in actor:" << GetAID();
@@ -802,9 +802,7 @@ void SuperKernelActor::FreeInputParamWithoutUser(OpContext<KernelTensor> *const 
     for (const auto &iter : input_params_no_user_) {
       auto kernel_tensor = FetchParameter(iter.second, GetAID());
       MS_EXCEPTION_IF_NULL(kernel_tensor);
-      auto device_tensor = kernel_tensor->device_address().get();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      if (device_tensor->new_ref_count() != SIZE_MAX) {
+      if (kernel_tensor->new_ref_count() != SIZE_MAX) {
         // No user for this input in graph.
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Free ref count for no used parameter:" << iter.second.first.first->DebugString()
@@ -1443,12 +1441,15 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const DeviceContext *device_
   MS_EXCEPTION_IF_NULL(copy_device_tensor);
   copy_kernel_tensor->set_user_data(node_kernel_tensor->user_data());
   copy_kernel_tensor->set_need_sync_user_data(node_kernel_tensor->need_sync_user_data());
-  if ((copy_device_tensor->GetPtr() == nullptr) &&
-      (!device_context->device_res_manager_->AllocateMemory(copy_device_tensor.get()))) {
-    MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
-                  << ") memory isn't enough and alloc failed, kernel name: " << GetAID()
-                  << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
-    return true;
+  if (copy_device_tensor->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(copy_device_tensor.get())) {
+      MS_LOG(ERROR) << "Device(id:" << std::to_string(device_context->device_context_key().device_id_)
+                    << ") memory isn't enough and alloc failed, kernel name: " << GetAID()
+                    << ", alloc size: " + std::to_string(copy_device_tensor->GetSize()) << "B.";
+      return true;
+    }
+    static std::string name = "Alloc memory";
+    copy_kernel_tensor->IncreaseNewRefCount(name);
   }
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
     << "Alloc memory for device tensor:" << copy_device_tensor << " ptr:" << copy_device_tensor->GetPtr()
@@ -1504,7 +1505,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     DeviceTensorPtr copy_device_tensor = nullptr;
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
-    if (!node_device_tensor->is_ptr_persisted()) {
+    if (!node_device_kernel_tensor->is_ptr_persisted()) {
       if (CopyInputDataPersistedHandle(device_context, input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }

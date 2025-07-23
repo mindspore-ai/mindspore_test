@@ -34,7 +34,7 @@ DeviceSyncPtr MakeGPUDeviceAddress(TypeId data_type, const ShapeVector &shape, v
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "GPU", 0);
   if (deleter != nullptr) {
-    device_address->SetPointerRefCountDeleter(std::move(deleter));
+    device_address->SetDevicePointerDeleter(std::move(deleter));
   }
   return device_address;
 }

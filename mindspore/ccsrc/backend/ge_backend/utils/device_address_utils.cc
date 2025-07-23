@@ -420,7 +420,7 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   MS_EXCEPTION_IF_NULL(host_context);
   MS_EXCEPTION_IF_NULL(host_context->device_res_manager_);
   auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-    old_device_address->pointer_ref_count()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
+    old_device_address->device_pointer()->ptr(), old_device_address->size(), old_device_address->GetShapeVector(),
     old_kernel_tensor->format(), old_device_address->type_id(), device_name, old_device_address->stream_id());
   new_device_address->SetShapeVector(old_kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = old_kernel_tensor->CloneKernelTensor();
@@ -433,8 +433,8 @@ KernelTensorPtr DeviceAddressUtils::CloneEmptyKernelTensor(const KernelTensorPtr
   new_kernel_tensor->set_need_sync_user_data(old_kernel_tensor->need_sync_user_data());
   MS_LOG(DEBUG) << "Create device tensor:" << new_device_address << " type:" << new_device_address->type_id();
 
-  new_device_address->set_original_ref_count(old_device_address->original_ref_count());
-  new_device_address->ResetRefCount();
+  new_kernel_tensor->set_original_ref_count(old_kernel_tensor->original_ref_count());
+  new_kernel_tensor->ResetRefCount();
   auto node = old_device_address->GetNodeIndex();
   new_device_address->SetNodeIndex(node.first, node.second);
   new_device_address->set_padding_type(old_device_address->padding_type());

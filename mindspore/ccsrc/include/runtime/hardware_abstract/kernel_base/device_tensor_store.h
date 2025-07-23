@@ -47,7 +47,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceTensorStore {
     std::unique_lock<std::shared_mutex> lock(map_mutex_);
     const auto &iter = kernel_tensors_.find(key);
     MS_EXCEPTION_IF_NULL(value->device_address());
-    value->device_address()->set_new_ref_count(SIZE_MAX);
+    value->set_new_ref_count(SIZE_MAX);
     MS_LOG(DEBUG) << "Device tensor store set ref count to max for kernel tensor:" << value
                   << ", device address: " << value->device_address().get() << " node:" << key->DebugString();
     if (iter == kernel_tensors_.end()) {

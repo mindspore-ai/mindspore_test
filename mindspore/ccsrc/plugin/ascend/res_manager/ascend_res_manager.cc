@@ -469,7 +469,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
-  if (address->pointer_ref_count()->ptr() != nullptr) {
+  if (address->device_pointer()->ptr() != nullptr) {
     MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
@@ -493,7 +493,6 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
 
   address->set_from_mem_pool(true);
   address->set_ptr(device_ptr);
-  address->IncreaseNewRefCount();
   if (enable_memory_tracker_) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }

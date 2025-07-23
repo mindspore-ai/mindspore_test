@@ -73,29 +73,29 @@ class AddressAllocator {
 
   /**
    * @brief Free memory for device address
-   * @param address_ptr - Raw pointer in PointerRefCount that needs to be freed
+   * @param address_ptr - Raw pointer in DevicePointer that needs to be freed
    * @return true if free succeeds, false otherwise
    */
   virtual bool Free(void *address_ptr) = 0;
 };
 
-// PointerRefCount encapsulates pointer and reference count-related operations, and supports custom allocator and
-// delteter resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same PointerRefCount
+// DevicePointer encapsulates pointer and reference count-related operations, and supports custom allocator and
+// delteter resources. In Ref scenarios, KernelTensor of different DeviceAddress may hold the same DevicePointer
 // object.
-class PointerRefCount {
+class DevicePointer {
  public:
   // The arguments are pointer and a bool variable that identifies whether pointer is from the memory pool.
   using Deleter = std::function<void(void *, bool)>;
 
-  PointerRefCount() = default;
-  explicit PointerRefCount(void *ptr) : ptr_(ptr) {}
-  PointerRefCount(void *ptr, const Deleter &deleter, std::shared_ptr<AddressAllocator> allocator = nullptr)
+  DevicePointer() = default;
+  explicit DevicePointer(void *ptr) : ptr_(ptr) {}
+  DevicePointer(void *ptr, const Deleter &deleter, std::shared_ptr<AddressAllocator> allocator = nullptr)
       : ptr_(ptr), deleter_(deleter), allocator_(std::move(allocator)) {}
 
-  PointerRefCount(const PointerRefCount &) = delete;
-  PointerRefCount &operator=(const PointerRefCount &) = delete;
+  DevicePointer(const DevicePointer &) = delete;
+  DevicePointer &operator=(const DevicePointer &) = delete;
 
-  ~PointerRefCount() {
+  ~DevicePointer() {
     try {
       if (ptr_ != nullptr && allocator_ && from_mem_pool_) {
         allocator_->Free(ptr_);
@@ -104,17 +104,15 @@ class PointerRefCount {
       }
       ptr_ = nullptr;
     } catch (const std::exception &e) {
-      MS_LOG(ERROR) << "PointerRefCount destructed failed: " << e.what();
+      MS_LOG(ERROR) << "DevicePointer destructed failed: " << e.what();
     } catch (...) {
-      MS_LOG(ERROR) << "PointerRefCount destructed failed.";
+      MS_LOG(ERROR) << "DevicePointer destructed failed.";
     }
   }
 
   std::string ToString() const {
     std::ostringstream ofs;
-    ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " origin ref count:" << original_ref_count_
-        << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_
-        << " new ref count:" << new_ref_count_;
+    ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " deleter:" << (deleter_ != nullptr);
     return ofs.str();
   }
 
@@ -123,64 +121,10 @@ class PointerRefCount {
   // Set raw pointer.
   void set_ptr(void *ptr) { ptr_ = ptr; }
 
-  // Get whether pointer in PointerRefCount is allocated from the memory pool.
+  // Get whether pointer in DevicePointer is allocated from the memory pool.
   bool from_mem_pool() const { return from_mem_pool_; }
-  // Set whether pointer in PointerRefCount is allocated from the memory pool.
+  // Set whether pointer in DevicePointer is allocated from the memory pool.
   void set_from_mem_pool(bool from_mem_pool) { from_mem_pool_ = from_mem_pool; }
-
-  // The related interface of static reference count operation.
-  void set_original_ref_count(size_t original_ref_count) { original_ref_count_ = original_ref_count; }
-  size_t original_ref_count() const { return original_ref_count_; }
-  void set_ref_count(size_t ref_count) { ref_count_ = ref_count; }
-  size_t ref_count() const { return ref_count_.load(); }
-  void IncreaseOriginalRefCount() {
-    if (original_ref_count_ < SIZE_MAX) {
-      original_ref_count_++;
-    }
-  }
-  void DecreaseOriginalRefCount() {
-    if ((original_ref_count_ < SIZE_MAX) && (original_ref_count_ > 0)) {
-      original_ref_count_--;
-    }
-  }
-
-  void IncreaseRefCount(size_t increase_cnt) {
-    if (ref_count() < SIZE_MAX && (SIZE_MAX - ref_count()) > increase_cnt) {
-      ref_count_ += increase_cnt;
-      return;
-    }
-    MS_LOG(EXCEPTION) << "The reference count is:" << ref_count() << ", and can't add: " << increase_cnt << " more.";
-  }
-  size_t DecreaseRefCount() { return --ref_count_; }
-  void ResetRefCount() { ref_count_ = original_ref_count_; }
-
-  // The related interface of dynamic reference count operation.
-  void set_dynamic_ref_count(int32_t dynamic_ref_count) { dynamic_ref_count_ = dynamic_ref_count; }
-  int32_t dynamic_ref_count() const { return dynamic_ref_count_; }
-
-  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
-    if (dynamic_ref_count_ < INT32_MAX && (INT32_MAX - dynamic_ref_count_) > increase_cnt) {
-      auto ret = dynamic_ref_count_.fetch_add(increase_cnt) + increase_cnt;
-      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
-      return;
-    }
-    MS_LOG(EXCEPTION) << "The dynamic reference count is:" << dynamic_ref_count_ << ", and can't add: " << increase_cnt
-                      << " more.";
-  }
-  void IncreaseDynamicRefCount(const std::string &op_object) {
-    if (dynamic_ref_count_ < INT32_MAX) {
-      auto ret = ++dynamic_ref_count_;
-      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
-    }
-  }
-  int32_t DecreaseDynamicRefCount(const std::string &op_object) {
-    if (dynamic_ref_count_ <= 0) {
-      MS_LOG(EXCEPTION) << "The dynamic reference count is invalid value:" << dynamic_ref_count_;
-    }
-    auto ret = --dynamic_ref_count_;
-    MS_LOG(DEBUG) << op_object << " The dynamic ref count decreases to:" << ret << " for ptr:" << ptr();
-    return ret;
-  }
 
   // Get pointer resource destructor.
   Deleter deleter() const { return deleter_; }
@@ -192,56 +136,19 @@ class PointerRefCount {
 
   void set_allocator(std::shared_ptr<AddressAllocator> allocator) { allocator_ = allocator; }
 
-  bool is_ptr_persisted() const { return is_ptr_persisted_; }
-  void set_is_ptr_persisted(bool is_ptr_persisted) { is_ptr_persisted_ = is_ptr_persisted; }
-
-  // New ref count interface.
-  void IncreaseNewRefCount(size_t i = 1) {
-    if (new_ref_count_ < SIZE_MAX) {
-      new_ref_count_ += i;
-    }
-  }
-  size_t DecreaseNewRefCount() {
-    if (new_ref_count_ == 0) {
-      MS_LOG(EXCEPTION) << "Failed to decrease ref count:" << this;
-    }
-    if (new_ref_count_ == SIZE_MAX) {
-      return SIZE_MAX;
-    }
-    return --new_ref_count_;
-  }
-  void set_new_ref_count(size_t new_ref_count) { new_ref_count_ = new_ref_count; }
-  size_t new_ref_count() const { return new_ref_count_.load(); }
-
  private:
   void *ptr_{nullptr};
 
   // Whether ptr_  is allocated from the memory pool.
   bool from_mem_pool_{false};
 
-  // The static reference count, the value can be calculated at compile phase.
-  size_t original_ref_count_{1};
-  // The current reference count value, it will be decreased in the running, and reset by original_ref_count_ when it is
-  // zero.
-  std::atomic<size_t> ref_count_{1};
-
-  std::atomic<size_t> new_ref_count_{0};
-
-  // The dynamic reference count, the value can be calculated at compile phase.
-  std::atomic_int32_t dynamic_ref_count_{INT32_MAX};
-
   // The pointer resource destructor.
   Deleter deleter_;
 
   // The device address allocator that contains allocate memory and delete memory functions.
   std::shared_ptr<AddressAllocator> allocator_;
-
-  // The device address of the node that owns the device address cannot be updated and replaced.
-  // Application scenario: set to true when the hardware execution mode requires that ptr cannot be changed during
-  // execution.
-  bool is_ptr_persisted_{false};
 };
-using PointerRefCountPtr = std::shared_ptr<PointerRefCount>;
+using DevicePointerPtr = std::shared_ptr<DevicePointer>;
 
 enum class NeedAllocateHeteRes : int64_t { NoNeedHeteRes = 0, NeedHostMem = 1, NeedDiskFile = 2 };
 struct HeterogeneousInfo {
@@ -312,8 +219,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   bool from_mem_pool() const;
   void set_from_mem_pool(bool from_mem_pool) const;
   virtual void set_communication_ptr(uint8_t *communication_ptr);
-  bool is_ptr_persisted() const;
-  void set_is_ptr_persisted(bool is_ptr_persisted);
   bool from_persistent_mem() const;
   void set_from_persistent_mem(bool from_persistent_mem);
   bool need_recycle() const;
@@ -341,34 +246,6 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   void SetNodeIndex(const AnfNodePtr &node, size_t out_index);
   KernelWithIndex GetNodeIndex() const;
 
-  void IncreaseNewRefCount(const std::string &op_name, size_t i = 1);
-  void IncreaseNewRefCount(size_t i = 1);
-  size_t DecreaseNewRefCount(const std::string &op_name);
-  void set_new_ref_count(size_t new_ref_count) const;
-  size_t new_ref_count() const;
-
-  // The related interface of reference count operation.
-  void set_original_ref_count(size_t original_ref_count) const override;
-  size_t original_ref_count() const override;
-  void set_ref_count(size_t ref_count) const override;
-  size_t ref_count() const override;
-  void ResetRefCount() override;
-
-  void IncreaseOriginalRefCount();
-  void DecreaseOriginalRefCount();
-
-  void IncreaseRefCount(size_t increase_cnt);
-  size_t DecreaseRefCount();
-
-  // The related interface of dynamic reference count operation.
-  void set_dynamic_ref_count(int32_t dynamic_ref_count);
-
-  int32_t dynamic_ref_count() const;
-
-  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt);
-  void IncreaseDynamicRefCount(const std::string &op_object);
-  int32_t DecreaseDynamicRefCount(const std::string &op_object);
-
   // Return whether DeviceAddress has a valid ptr.
   bool IsPtrValid() const;
 
@@ -378,18 +255,16 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   void ClearUserData() {}
 
   std::pair<AnfNodeWeakPtr, size_t> node_index() const;
-  void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) override;
+  void SetDevicePointerDeleter(std::function<void(void *, bool)> &&deleter) override;
 
-  const PointerRefCountPtr &pointer_ref_count() const;
-  void set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt);
+  const DevicePointerPtr &device_pointer() const;
+  void set_device_pointer(const DevicePointerPtr &ptr_ref_cnt);
 
   size_t size() const { return size_; }
 
-  void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) {
-    pointer_ref_count_->set_allocator(allocator);
-  }
+  void set_allocator(const std::shared_ptr<AddressAllocator> &allocator) { device_pointer_->set_allocator(allocator); }
 
-  std::shared_ptr<AddressAllocator> allocator() const { return pointer_ref_count_->allocator(); }
+  std::shared_ptr<AddressAllocator> allocator() const { return device_pointer_->allocator(); }
 
   void set_data(tensor::TensorDataPtr &&data) override;
   const tensor::TensorDataPtr &data() const override;
@@ -402,8 +277,8 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // automatically when DeviceAddress destructed.
   void SetDevicePtrDeleter();
 
-  void *GetDevicePtr() const { return pointer_ref_count_->ptr(); }
-  void SetDevicePtr(void *ptr) const { pointer_ref_count_->set_ptr(ptr); }
+  void *GetDevicePtr() const { return device_pointer_->ptr(); }
+  void SetDevicePtr(void *ptr) const { device_pointer_->set_ptr(ptr); }
 
   // {node, out_index}
   std::pair<AnfNodeWeakPtr, size_t> node_index_{AnfNodePtr(nullptr), 0};
@@ -420,7 +295,7 @@ class RUNTIME_HARDWARE_EXPORT DeviceAddress : public mindspore::DeviceSync {
   // the data for numpy object.
   tensor::TensorDataPtr data_;
 
-  PointerRefCountPtr pointer_ref_count_;
+  DevicePointerPtr device_pointer_;
   TensorStorageInfoPtr tensor_storage_info_{nullptr};
   uint32_t stream_id_{0};
   size_t size_{0};

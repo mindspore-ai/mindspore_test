@@ -129,26 +129,24 @@ void GraphParameterStore::ResetAddrRefCount(size_t outer_index, size_t inner_ind
   bool is_ref_count_max = kernel_tensor_with_info.second.first == SIZE_MAX;
 
   if (kernel_tensor_with_info.first != nullptr) {
-    auto &device_tensor = kernel_tensor_with_info.first->device_address();
-    if (device_tensor != nullptr) {
-      auto user_cnt = kernel_tensor_with_info.second.first;
-      if (user_cnt > 0) {
-        // When allocate memory, the ref count would be increase, so it should be decrease here.
-        if (is_ref_count_max) {
-          device_tensor->set_new_ref_count(SIZE_MAX);
-        } else {
-          static std::string name = "Parameter store";
-          device_tensor->IncreaseNewRefCount(name, user_cnt - 1);
-        }
-        kernel_tensor_with_info.first->ClearFlag(device::kDeviceAddressFlagNotUsed);
-        MS_LOG(DEBUG) << "Parameter store set new ref count:" << (user_cnt - 1)
-                      << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
+    auto &kernel_tensor = kernel_tensor_with_info.first;
+    auto user_cnt = kernel_tensor_with_info.second.first;
+    if (user_cnt > 0) {
+      // When allocate memory, the ref count would be increase, so it should be decrease here.
+      if (is_ref_count_max) {
+        kernel_tensor->set_new_ref_count(SIZE_MAX);
       } else {
-        MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index
-                      << " inner index:" << inner_index << " for device address:" << device_tensor;
+        static std::string name = "Parameter store";
+        kernel_tensor->IncreaseNewRefCount(name, user_cnt - 1);
       }
-      return;
+      kernel_tensor_with_info.first->ClearFlag(device::kDeviceAddressFlagNotUsed);
+      MS_LOG(DEBUG) << "Parameter store set new ref count:" << (user_cnt - 1)
+                    << " for kernel tensor:" << kernel_tensor_with_info.first->ToString();
+    } else {
+      MS_LOG(DEBUG) << "User count:0 for parameter store outer index:" << outer_index << " inner index:" << inner_index
+                    << " for kernel tensor:" << kernel_tensor->ToString();
     }
+    return;
   }
 }
 
@@ -308,8 +306,8 @@ void GraphParameterStore::ReleaseData() {
     auto &kernel_tensor = kernel_tensor_with_info.first;
     if (kernel_tensor != nullptr) {
       auto &device_tensor = kernel_tensor->device_address();
-      if (device_tensor != nullptr && device_tensor->new_ref_count() == SIZE_MAX &&
-          !device_tensor->is_ptr_persisted()) {
+      if (device_tensor != nullptr && kernel_tensor->new_ref_count() == SIZE_MAX &&
+          !kernel_tensor->is_ptr_persisted()) {
         MS_LOG(DEBUG) << "Set store device tensor: " << device_tensor.get() << " ptr null, outer idx: " << index.first
                       << ", inner idx: " << index.second << ", info: " << kernel_tensor->ToString();
         // Record released info, so that it can check input next step.
