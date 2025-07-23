@@ -362,7 +362,9 @@ class MS_API Model {
   ///
   /// \return Status of operation.
   Status Evaluate(std::shared_ptr<dataset::Dataset> ds, std::vector<TrainCallBack *> cbs);
-
+  /// \brief Performs the implication.
+  ///
+  /// \return the implication of the model.
   const std::shared_ptr<ModelImpl> impl() const { return impl_; }
 
   /// \brief Get model info by key

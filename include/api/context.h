@@ -50,6 +50,7 @@ class DeviceInfoContext;
 /// \brief Context is used to store environment variables during execution.
 class MS_API Context {
  public:
+  /// \brief Data of context.
   struct Data;
   Context();
   ~Context() = default;
