@@ -74,8 +74,6 @@ void StorageBase::InplaceReSize(int64_t size) {
     }
     device_data_->set_ptr(device_ptr);
     device_data_->set_from_mem_pool(true);
-    static std::string name = "Alloc memory";
-    device_data_->IncreaseNewRefCount(name);
     device_data_->SetSize(size);
     return;
   }

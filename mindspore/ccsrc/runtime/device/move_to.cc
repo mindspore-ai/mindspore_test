@@ -135,11 +135,15 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     dst_addr = host_context->device_res_manager_->CreateDeviceAddress(
       nullptr, size, host_shape, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, to, 0);
     MS_EXCEPTION_IF_NULL(dst_addr);
+    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(dst_addr, type_id, host_shape);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kPyNativeOutput,
                                                    dst_addr->GetSize(), dst_addr.get());
     if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
       MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
                         << ") isn't enough. Allocate size: " << size;
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
     dst_tensor->set_device_address(dst_addr);
   } else if (dst_addr->GetMutablePtr() == nullptr) {

@@ -43,14 +43,7 @@ class DeviceSync {
   virtual void ClearDeviceMemory() = 0;
   virtual TensorStorageInfoPtr GetTensorStorageInfo() const = 0;
 
-  // The related interface of reference count operation.
-  virtual void set_original_ref_count(size_t original_ref_count) const = 0;
-  virtual size_t original_ref_count() const = 0;
-  virtual void set_ref_count(size_t ref_count) const = 0;
-  virtual size_t ref_count() const = 0;
-  virtual void ResetRefCount() = 0;
-
-  virtual void SetPointerRefCountDeleter(std::function<void(void *, bool)> &&deleter) = 0;
+  virtual void SetDevicePointerDeleter(std::function<void(void *, bool)> &&deleter) = 0;
 
   virtual ~DeviceSync() {}
 

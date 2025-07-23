@@ -53,7 +53,7 @@ class MemoryManagerActor : public ActorBase {
   void FreeBatchMemory(const std::vector<KernelTensorPtr> *free_list, OpContext<kernel::KernelTensor> *const op_context,
                        const AID &from_aid);
 
-  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const std::string &op_name);
+  void FreeMemoryByRefCount(const KernelTensorPtr &kernel_tensor, const std::string &op_name);
 
   // Wait the MemoryManagerActor to finish running all current messages.
   void Wait(OpContext<kernel::KernelTensor> *const op_context, const AID &from_aid);

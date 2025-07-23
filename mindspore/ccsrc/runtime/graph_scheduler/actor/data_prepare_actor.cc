@@ -95,6 +95,9 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
     if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
       SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *device_context, node->fullname_with_scope(),
                                                   device_tensor->GetSize());
+    } else {
+      static std::string name = "Alloc memory";
+      kernel_tensor->IncreaseNewRefCount(name);
     }
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
       MarkTensorAsOutput, "SyncTensorData", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
@@ -345,9 +348,11 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   if (tensor_address == nullptr) {
     return;
   }
-  tensor_address->set_new_ref_count(SIZE_MAX);
 
-  auto device_address = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(input_node, 0, false);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  kernel_tensor->set_new_ref_count(SIZE_MAX);
+  auto device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_address);
   if (tensor_address == device_address) {
     tensor_address->SetNodeIndex(input_node, 0);
@@ -356,7 +361,7 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
 
   // If tensor address and device address are different (heterogeneous scenarios), or device address is persisted
   // Update device address data in data source actor process.
-  if (device_address->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
+  if (kernel_tensor->is_ptr_persisted() || (tensor_address->GetDeviceType() != device_address->GetDeviceType()) ||
       (!AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(tensor_address->format()),
                                     kernel::GetFormatFromStrToEnum(device_address->format()))) ||
       (tensor_address->type_id() != device_address->type_id())) {
@@ -368,18 +373,18 @@ void DataPrepareActor::UpdateDeviceAddressForDataNode(const AnfNodePtr &input_no
   MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Update device address of " << input_node->DebugString() << " to "
                                                << tensor_address.get() << " ptr:" << tensor_address->GetPtr();
   tensor_address->SetNodeIndex(input_node, 0);
-  auto ref_iter = ref_device_tensors_.find({input_node, 0});
-  if (ref_iter == ref_device_tensors_.end()) {
+  auto ref_iter = ref_kernel_tensors_.find({input_node, 0});
+  if (ref_iter == ref_kernel_tensors_.end()) {
     return;
   }
-  for (const auto &ref_address : ref_iter->second) {
-    if (ref_address == nullptr) {
+  for (const auto &ref_kernel_tensor : ref_iter->second) {
+    if (ref_kernel_tensor == nullptr) {
       continue;
     }
-    ref_address->set_pointer_ref_count(tensor_address->pointer_ref_count());
+    ref_kernel_tensor->set_pointer_ref_count(kernel_tensor.get());
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-      << "Set pointer ref count:" << tensor_address->pointer_ref_count() << " from node:" << input_node->DebugString()
-      << " device address:" << tensor_address << " to device address:" << ref_address;
+      << "Set pointer ref count:" << tensor_address->device_pointer() << " from node:" << input_node->DebugString()
+      << " device address:" << kernel_tensor->ToString() << " to device address:" << ref_kernel_tensor->ToString();
   }
 }
 
@@ -1014,6 +1019,9 @@ void DataPrepareActor::PrepareDataForControlValueNode(const KernelWithIndex &nod
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForControlValueNode", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
@@ -1092,6 +1100,9 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForStringValue", device::GetDeviceNameByType(device_tensor->GetDeviceType()),
@@ -1162,6 +1173,9 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   if (!device_context->device_res_manager_->AllocateMemory(device_tensor.get(), kDefaultStreamIndex)) {
     SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context, node->fullname_with_scope(),
                                                 device_tensor->GetSize());
+  } else {
+    static std::string name = "Alloc memory";
+    kernel_tensor->IncreaseNewRefCount(name);
   }
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
     MarkTensorAsOutput, "PrepareDataForSequenceAndScalarValue",
@@ -1240,6 +1254,8 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
                                                   backend_node->fullname_with_scope(),
                                                   another_device_tensor->GetSize());
     }
+    static std::string name = "Alloc memory";
+    another_kernel_tensor->IncreaseNewRefCount(name);
     if (need_alloc_memory) {
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
         MarkTensorAsOutput, "CopyDataFromDeviceTensorStore",
@@ -1338,7 +1354,7 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     } else if (host_tensor_address != device_tensor) {
       // In the scenario of training + inference , the device address of the weight node can not be changed when
       // multi-graphs sink mode is set.
-      if (device_tensor->is_ptr_persisted() ||
+      if (node_kernel_tensor->is_ptr_persisted() ||
           !AnfAlgo::IsEquivalentFormat(kernel::GetFormatFromStrToEnum(host_tensor_address->format()),
                                        kernel::GetFormatFromStrToEnum(device_tensor->format()))) {
         if ((device_tensor->GetPtr() == nullptr) &&
@@ -1346,6 +1362,8 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
           SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(real_strategy_, *context, *device_context,
                                                       backend_node->fullname_with_scope(), device_tensor->GetSize());
         }
+        static std::string name = "Alloc memory";
+        host_kernel_tensor->IncreaseNewRefCount(name);
         if (!skip_h2d &&
             (!SyncAllStreamForDeviceAddress(
                device_tensor->GetDeviceType() == device::DeviceType::kCPU ? host_tensor_address : device_tensor) ||

@@ -216,23 +216,23 @@ size_t GetDefragMemoryStepFreq() {
   return defrag_memory_step_freq;
 }
 
-void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
-  MS_EXCEPTION_IF_NULL(device_tensor);
+void UpdateRefCount(const KernelTensorPtr &kernel_tensor, bool is_max_ref_count) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
   if (is_max_ref_count) {
-    device_tensor->set_original_ref_count(SIZE_MAX);
-    MS_LOG(DEBUG) << "Set origin ref count max for device address:" << device_tensor;
+    kernel_tensor->set_original_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set origin ref count max for kernel tensor:" << kernel_tensor->ToString();
   } else {
-    device_tensor->IncreaseOriginalRefCount();
-    MS_LOG(DEBUG) << "Add origin ref count for device address:" << device_tensor
-                  << " origin ref count:" << device_tensor->original_ref_count();
+    kernel_tensor->IncreaseOriginalRefCount();
+    MS_LOG(DEBUG) << "Add origin ref count for kernel tensor:" << kernel_tensor->ToString()
+                  << " origin ref count:" << kernel_tensor->original_ref_count();
   }
-  device_tensor->ResetRefCount();
+  kernel_tensor->ResetRefCount();
 }
 
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count) {
   MS_EXCEPTION_IF_NULL(node);
-  auto device_tensor = AnfAlgo::GetMutableOutputAddr(node, output_idx, false);
-  UpdateRefCount(device_tensor.get(), is_max_ref_count);
+  auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, output_idx, false);
+  UpdateRefCount(kernel_tensor, is_max_ref_count);
 }
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor) {
@@ -248,11 +248,13 @@ void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor) {
   host_context->device_res_manager_->FreeMemory(device_tensor);
 }
 
-void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor) {
-  MS_EXCEPTION_IF_NULL(device_tensor);
+void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes,
+                           const KernelTensorPtr &kernel_tensor) {
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  auto device_tensor = kernel_tensor->device_address();
   device_tensor->ClearHeldByNodes();
-  device_tensor->set_original_ref_count(SIZE_MAX);
-  device_tensor->ResetRefCount();
+  kernel_tensor->set_original_ref_count(SIZE_MAX);
+  kernel_tensor->ResetRefCount();
 
   for (auto &node : held_by_nodes) {
     auto value_node = node.lock();

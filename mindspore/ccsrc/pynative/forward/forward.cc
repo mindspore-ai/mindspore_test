@@ -1010,7 +1010,7 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
   auto output_device_address = kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(output_device_address);
 
-  output_device_address->set_pointer_ref_count(input_device_address->pointer_ref_count());
+  output_device_address->set_device_pointer(input_device_address->device_pointer());
   output_tensor->set_device_address(output_device_address);
   autograd::CreationType creationType =
     is_multi_output

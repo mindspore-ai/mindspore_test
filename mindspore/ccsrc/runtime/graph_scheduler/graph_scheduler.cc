@@ -371,16 +371,14 @@ void InitGraphParameterStore(const GraphCompilerInfo &graph_compiler_info) {
 void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
   MS_EXCEPTION_IF_NULL(node);
 
-  auto continuous_device_addresses = std::make_shared<std::vector<std::weak_ptr<device::DeviceAddress>>>();
+  auto continuous_kernel_tensors = std::make_shared<std::vector<std::weak_ptr<KernelTensor>>>();
   if (is_input) {
     const auto &intput_sizes = AnfAlgo::GetNodeInputSizeList(node);
     for (size_t i = 0; i < intput_sizes.size(); ++i) {
       const auto &kernel_tensor = AnfAlgo::GetPrevNodeOutputKernelTensor(node, i, false);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
-      auto device_tensor = kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      kernel_tensor->set_continuous_device_addresses(continuous_device_addresses);
-      continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
+      kernel_tensor->set_continuous_kernel_tensors(continuous_kernel_tensors);
+      continuous_kernel_tensors->emplace_back(std::weak_ptr<KernelTensor>(kernel_tensor));
     }
   } else {
     const auto &kernel_mod = AnfAlgo::GetKernelMod(node);
@@ -389,10 +387,8 @@ void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
     for (size_t i = 0; i < output_sizes.size(); ++i) {
       const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(node, i, false);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
-      auto device_tensor = kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      kernel_tensor->set_continuous_device_addresses(continuous_device_addresses);
-      continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
+      kernel_tensor->set_continuous_kernel_tensors(continuous_kernel_tensors);
+      continuous_kernel_tensors->emplace_back(std::weak_ptr<KernelTensor>(kernel_tensor));
     }
   }
 }
@@ -997,10 +993,8 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTenso
     }
     for (auto output_kernel_tensor : kernel_actor->GetOutputDeviceTensors()) {
       MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-      const auto &output_device_tensor = output_kernel_tensor->device_address();
-      MS_EXCEPTION_IF_NULL(output_device_tensor);
-      if (output_device_tensor->new_ref_count() != SIZE_MAX) {
-        output_device_tensor->set_new_ref_count(0);
+      if (output_kernel_tensor->new_ref_count() != SIZE_MAX) {
+        output_kernel_tensor->set_new_ref_count(0);
       }
     }
     kernel_actor->ResetState(context);
@@ -1015,10 +1009,8 @@ void ClearKernelActorDataForUce(ActorSet *const actor_set, OpContext<KernelTenso
       }
       for (auto output_kernel_tensor : kernel_actor->GetOutputDeviceTensors()) {
         MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-        const auto &output_device_tensor = output_kernel_tensor->device_address();
-        MS_EXCEPTION_IF_NULL(output_device_tensor);
-        if (output_device_tensor->new_ref_count() != SIZE_MAX) {
-          output_device_tensor->set_new_ref_count(0);
+        if (output_kernel_tensor->new_ref_count() != SIZE_MAX) {
+          output_kernel_tensor->set_new_ref_count(0);
         }
       }
       kernel_actor->ResetState();
@@ -1807,20 +1799,20 @@ void GraphScheduler::BuildGraphParameterStore(const GraphCompilerInfo &graph_com
   control_node_scheduler_.BuildGraphParameterStoreForControlNode(graph_compiler_info, memory_manager_aid_);
 }
 
-std::map<KernelWithIndex, std::vector<DeviceTensor *>> CollectRefDeviceTensor(const KernelGraphPtr &graph) {
+std::map<KernelWithIndex, std::vector<KernelTensorPtr>> CollectRefKernelTensor(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
-  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors;
+  std::map<KernelWithIndex, std::vector<KernelTensorPtr>> ref_kernel_tensors;
   for (const auto &pair : graph->GetRefMap()) {
     MS_EXCEPTION_IF_NULL(pair.first.first);
     const auto &origin_node_with_index = graph->GetRefNodeRecursive(pair.first);
     if (origin_node_with_index.first->isa<Parameter>() &&
         AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second) &&
         AnfAlgo::OutputAddrExist(origin_node_with_index.first, origin_node_with_index.second)) {
-      ref_device_tensors[origin_node_with_index].emplace_back(
-        AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
+      ref_kernel_tensors[origin_node_with_index].emplace_back(
+        AnfAlgo::GetOutputKernelTensor(pair.first.first, pair.first.second, false));
     }
   }
-  return ref_device_tensors;
+  return ref_kernel_tensors;
 }
 
 std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const GraphCompilerInfo &graph_compiler_info,
@@ -1837,7 +1829,7 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
     // Build host queue data source actor.
     const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
     const auto &root_parameters = graph_compiler_info.origin_parameters_order_;
-    auto ref_device_tensors = CollectRefDeviceTensor(graph);
+    auto ref_kernel_tensors = CollectRefKernelTensor(graph);
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
@@ -1899,11 +1891,11 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
           }
         }
         (void)host_queue_ds_actor->data_node_with_indexs_.emplace_back(input_node, 0);
-        auto iter = ref_device_tensors.find({input_node, 0});
-        if (iter != ref_device_tensors.end()) {
-          host_queue_ds_actor->ref_device_tensors_[{input_node, 0}] = iter->second;
-          for (const auto &device_tensor : iter->second) {
-            MS_LOG(DEBUG) << "Add ref device tensor:" << device_tensor
+        auto iter = ref_kernel_tensors.find({input_node, 0});
+        if (iter != ref_kernel_tensors.end()) {
+          host_queue_ds_actor->ref_kernel_tensors_[{input_node, 0}] = iter->second;
+          for (const auto &kernel_tensor : iter->second) {
+            MS_LOG(DEBUG) << "Add ref kernel tensor:" << kernel_tensor->ToString()
                           << " for input node:" << input_node->DebugString();
           }
         }
@@ -2106,7 +2098,7 @@ DataPrepareActorPtr GraphScheduler::BuildDataPrepareActor(const GraphCompilerInf
     actor_name, memory_manager_aid_, debug_aid_, profiler_aid_, &graph_compiler_info, host_queue_ds_actor, host_queue);
   MS_EXCEPTION_IF_NULL(data_prepare_actor);
   if (host_queue_ds_actor != nullptr) {
-    data_prepare_actor->ref_device_tensors_ = host_queue_ds_actor->ref_device_tensors_;
+    data_prepare_actor->ref_kernel_tensors_ = host_queue_ds_actor->ref_kernel_tensors_;
   }
   MS_LOG(INFO) << "Create data prepare actor: " << actor_name;
   InsertActor(data_prepare_actor.get());
@@ -3591,7 +3583,7 @@ void GraphScheduler::PersistDeviceTensorForParameter(const AnfNodePtr &parameter
   MS_EXCEPTION_IF_NULL(old_kernel_tensor);
   auto device_tensor = old_kernel_tensor->device_address();
   MS_EXCEPTION_IF_NULL(device_tensor);
-  if (IsPersistentDeviceTensor(parameter) || device_tensor->is_ptr_persisted()) {
+  if (IsPersistentDeviceTensor(parameter) || old_kernel_tensor->is_ptr_persisted()) {
     device_tensor->SetNodeIndex(parameter, 0);
     SchedulerHelper::AddDeviceTensorStore(front_node, old_kernel_tensor);
   }
@@ -3711,7 +3703,7 @@ void GraphScheduler::PersistDeviceTensorForRootGraphControlNode(const GraphCompi
     const auto &new_device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(new_device_tensor);
     new_device_tensor->SetNodeIndex(backend_node, index);
-    new_device_tensor->set_is_ptr_persisted(sub_device_tensor->is_ptr_persisted());
+    kernel_tensor->set_is_ptr_persisted(sub_kernel_tensor->is_ptr_persisted());
     new_device_tensor->set_from_persistent_mem(true);
     kernel_tensor->set_user_data(sub_kernel_tensor->user_data());
 
@@ -3819,9 +3811,9 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
         auto device_tensor = kernel_tensor->device_address().get();
         MS_EXCEPTION_IF_NULL(device_tensor);
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
-            << "\tsize:" << device_tensor->GetSize() << "\tnew_ref_count:" << device_tensor->new_ref_count()
+            << "\tsize:" << device_tensor->GetSize() << "\tnew_ref_count:" << kernel_tensor->new_ref_count()
             << "\tflag:" << kernel_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
-            << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
+            << "\tis_ptr_persisted:" << kernel_tensor->is_ptr_persisted() << "\n ";
       }
     }
     return;
@@ -3849,7 +3841,7 @@ void DumpParameterTensor(const GraphCompilerInfo &graph_compiler_info, const Ker
       ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
           << "\tsize:" << device_tensor->GetSize() << "\tflag:" << kernel_tensor->flag()
           << "\tdevice_type:" << device_tensor->GetDeviceType()
-          << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
+          << "\tis_ptr_persisted:" << kernel_tensor->is_ptr_persisted() << "\n ";
     }
   }
 }
@@ -3881,7 +3873,7 @@ void GraphScheduler::DumpDeviceTensorStore(const GraphCompilerInfo &graph_compil
         ofs << "\t\t\tdevice tensor value:" << device_tensor << "\tptr:" << device_tensor->GetPtr()
             << "\tsize:" << device_tensor->GetSize() << "\tstream id:" << device_tensor->stream_id()
             << "\tflag:" << kernel_tensor->flag() << "\tdevice_type:" << device_tensor->GetDeviceType()
-            << "\tis_ptr_persisted:" << device_tensor->is_ptr_persisted() << "\n ";
+            << "\tis_ptr_persisted:" << kernel_tensor->is_ptr_persisted() << "\n ";
       }
     }
 

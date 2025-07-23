@@ -113,9 +113,9 @@ void SuperKernelActor::Init() {
       MS_EXCEPTION_IF_NULL(device_address);
       auto kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, output_with_index.second, false);
       MS_EXCEPTION_IF_NULL(kernel_tensor);
-      if (device_address->is_ptr_persisted() || graph_->is_dynamic_shape()) {
+      if (kernel_tensor->is_ptr_persisted() || graph_->is_dynamic_shape()) {
         MS_LOG(DEBUG) << "Actor:" << GetAID() << " skip alloc memory for device address:" << device_address
-                      << " is persist:" << device_address->is_ptr_persisted()
+                      << " is persist:" << kernel_tensor->is_ptr_persisted()
                       << " is dynamic shape:" << graph_->is_dynamic_shape()
                       << " output node:" << output_node->DebugString();
         continue;
@@ -402,9 +402,8 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
     MS_EXCEPTION_IF_NULL(node_device_address);
     // create device address with correct context.
     auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
-      node_device_address->pointer_ref_count()->ptr(), node_device_address->size(),
-      node_device_address->GetShapeVector(), node_kernel_tensor->format(), node_device_address->type_id(), device_name,
-      node_device_address->stream_id());
+      node_device_address->device_pointer()->ptr(), node_device_address->size(), node_device_address->GetShapeVector(),
+      node_kernel_tensor->format(), node_device_address->type_id(), device_name, node_device_address->stream_id());
     new_device_address->SetShapeVector(node_kernel_tensor->GetShapeVector());
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
@@ -479,7 +478,7 @@ bool SuperKernelActor::CopyInputData(const OpContext<KernelTensor> *context, con
     DeviceTensorPtr copy_device_tensor = nullptr;
     // If the input is not a persist device address, in a heterogeneous scenario, a new device address needs to
     // be created. And set ptr to node device address to support the zero copy of graph input nodes.
-    if (!node_device_tensor->is_ptr_persisted()) {
+    if (!node_device_kernel_tensor->is_ptr_persisted()) {
       if (CopyInputDataPersistedHandle(input_kernel_tensors_[i], node_device_kernel_tensor, i)) {
         continue;
       }

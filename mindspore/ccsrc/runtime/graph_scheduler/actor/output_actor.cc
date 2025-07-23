@@ -193,7 +193,7 @@ void OutputActor::FreeSummaryNodeMem() {
                                                    << " index:" << index << " device address:" << output_device_addr;
       continue;
     }
-    if (!IsOutputAddressPersisted(output_device_addr.get(), summary_nodes_[i])) {
+    if (!IsOutputAddressPersisted(output_kernel_tensor, summary_nodes_[i])) {
       FreeMemoryByDeviceContext(output_kernel_tensor->device_address().get(), nullptr);
     }
   }
@@ -562,7 +562,6 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
       << " output index:" << output_index << " output position:" << output_position
       << ", origin output device tensor: " << device_tensor;
     tensor->set_device_address(tensor_device_address);
-    tensor_device_address->set_new_ref_count(SIZE_MAX);
     old_to_new_device_address_[device_tensor] = tensor_device_address;
   }
 
@@ -638,7 +637,6 @@ void OutputActor::HandleOutput() {
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.
-    tensor_device_address->set_new_ref_count(SIZE_MAX);
     auto node_with_index = device_tensor->GetNodeIndex();
     tensor_device_address->SetNodeIndex(node_with_index.first, node_with_index.second);
     tensor_device_address->set_from_persistent_mem(device_tensor->from_persistent_mem());
@@ -650,7 +648,7 @@ void OutputActor::HandleOutput() {
     // The outputs may have the same output node, so need skip when the node has been done.
     if (tensor_device_address->GetPtr() != nullptr) {
       // For trace memory, the new ref count will always be 0.
-      if (!ActorDispatcher::enable_use_trace_memory() || device_tensor->new_ref_count() > 0) {
+      if (!ActorDispatcher::enable_use_trace_memory() || kernel_tensor->new_ref_count() > 0) {
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
           << "Free same kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
         MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context,
@@ -664,13 +662,14 @@ void OutputActor::HandleOutput() {
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
     bool need_release_mem = true;
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
-    if (IsOutputAddressPersisted(device_tensor.get(), output_nodes_[i], &need_release_mem)) {
+    if (IsOutputAddressPersisted(kernel_tensor, output_nodes_[i], &need_release_mem)) {
       if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
         const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
         MS_EXCEPTION_IF_NULL(src_address);
-        tensor_device_address->set_pointer_ref_count(src_address->pointer_ref_count());
-        MS_LOG(DEBUG) << "Output actor share the same pointer ref count:" << src_address->pointer_ref_count()
-                      << " between device address:" << tensor_device_address << " and:" << src_address;
+        tensor_device_address->set_device_pointer(src_address->device_pointer());
+        MS_LOG(DEBUG) << "Output actor share the same pointer:" << src_address->device_pointer()
+                      << " between device address:" << tensor_device_address->ToString()
+                      << " and:" << src_address->ToString();
         continue;
       }
       device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), memory::mem_pool::MemType::kOther,
@@ -688,10 +687,10 @@ void OutputActor::HandleOutput() {
       if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
         const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
         MS_EXCEPTION_IF_NULL(src_address);
-        tensor_device_address->set_pointer_ref_count(src_address->pointer_ref_count());
+        tensor_device_address->set_device_pointer(src_address->device_pointer());
         MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-          << "Output actor share the same pointer ref count:" << src_address->pointer_ref_count()
-          << " between device address:" << tensor_device_address << " and:" << src_address;
+          << "Output actor share the same pointer ref count:" << src_address->device_pointer()
+          << " between device address:" << tensor_device_address->ToString() << " and:" << src_address->ToString();
         continue;
       }
 

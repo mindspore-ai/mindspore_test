@@ -272,13 +272,14 @@ bool IsControlFlowActor(KernelTransformType actor_type);
 
 size_t GetDefragMemoryStepFreq();
 
-void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count = false);
+void UpdateRefCount(const KernelTensorPtr &kernel_tensor, bool is_max_ref_count = false);
 // Update the reference count of device tensor by the output index of node.
 void UpdateRefCount(const AnfNodePtr &node, size_t output_idx, bool is_max_ref_count = false);
 
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor);
 // The memory free for the pynative bprop graph which is managed by the value node.
-void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes, DeviceTensor *device_tensor);
+void FreeMemoryByValueNode(const std::vector<std::weak_ptr<ValueNode>> &held_by_nodes,
+                           const KernelTensorPtr &kernel_tensor);
 
 KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const KernelGraphPtr &graph,
                                              const std::vector<AnfNodePtr> &host_parameters = {},
