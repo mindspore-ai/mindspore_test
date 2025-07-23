@@ -13,7 +13,7 @@ mindspore.dataset.vision.ToType
         - **data_type** (Union[mindspore.dtype, numpy.dtype]) - 输出图像的数据类型，例如 ``numpy.float32`` 。
 
     异常：
-        - **TypeError** - 当 `data_type` 的类型不为 :class:`mindspore.dtype` 或 :class:`numpy.dtype` 。
+        - **TypeError** - 当 `data_type` 的类型不为 :class:`mindspore.dtype` 或 `numpy.dtype` 。
 
     教程样例：
         - `视觉变换样例库

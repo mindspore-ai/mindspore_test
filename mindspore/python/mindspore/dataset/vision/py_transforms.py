@@ -493,7 +493,7 @@ class HWC2CHW(py_transforms.PyTensorOperation):
     If the input image is of shape <H, W>, it will remain unchanged.
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `numpy.ndarray` .
         TypeError: If shape of the input image is not <H, W> or <H, W, C>.
 
     Supported Platforms:
@@ -575,8 +575,8 @@ class LinearTransformation(py_transforms.PyTensorOperation):
         mean_vector (numpy.ndarray): A mean vector in shape of (D,), where :math:`D = C \times H \times W` .
 
     Raises:
-        TypeError: If `transformation_matrix` is not of type :class:`numpy.ndarray` .
-        TypeError: If `mean_vector` is not of type :class:`numpy.ndarray` .
+        TypeError: If `transformation_matrix` is not of type `numpy.ndarray` .
+        TypeError: If `mean_vector` is not of type `numpy.ndarray` .
 
     Supported Platforms:
         ``CPU``
@@ -711,7 +711,7 @@ class Normalize(py_transforms.PyTensorOperation):
             and be arranged in channel order.
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `numpy.ndarray` .
         TypeError: If dimension of the input image is not 3.
         NotImplementedError: If dtype of the input image is int.
         ValueError: If lengths of `mean` and `std` are not equal.
@@ -780,7 +780,7 @@ class NormalizePad(py_transforms.PyTensorOperation):
             Default: ``"float32"``.
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `numpy.ndarray` .
         TypeError: If dimension of the input image is not 3.
         NotImplementedError: If dtype of the input image is int.
         ValueError: If lengths of `mean` and `std` are not equal.
@@ -1930,7 +1930,7 @@ class ToPIL(py_transforms.PyTensorOperation):
         The conversion mode will be determined by the data type using `PIL.Image.fromarray` .
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` or `PIL.Image.Image` .
+        TypeError: If the input image is not of type `numpy.ndarray` or `PIL.Image.Image` .
 
     Supported Platforms:
         ``CPU``
@@ -1974,7 +1974,7 @@ class ToTensor(py_transforms.PyTensorOperation):
         output_type (numpy.dtype, optional): The desired dtype of the output image. Default: ``numpy.float32`` .
 
     Raises:
-        TypeError: If the input image is not of type `PIL.Image.Image` or :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `PIL.Image.Image` or `numpy.ndarray` .
         TypeError: If dimension of the input image is not 2 or 3.
 
     Supported Platforms:
@@ -2018,7 +2018,7 @@ class ToType(py_transforms.PyTensorOperation):
         output_type (numpy.dtype): The desired dtype of the output image, e.g. ``numpy.float32`` .
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `numpy.ndarray` .
 
     Supported Platforms:
         ``CPU``
