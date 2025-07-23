@@ -14,12 +14,11 @@
 # ============================================================================
 import pytest
 import numpy as np
+from mindspore import mutable
 from mindspore import jit, ops
-from mindspore import Tensor
+from mindspore import Tensor, Parameter
+from mindspore.nn import Cell
 from tests.mark_utils import arg_mark
-
-from mindspore import context
-context.set_context(save_graphs=True, save_graphs_path="./ir")
 
 
 @pytest.mark.skip(reason='wait for ops')
@@ -123,3 +122,136 @@ def test_remote_ops_grad_load_grad():
     x = Tensor([1, 2, 3, 4])
     ret = grad_foo(x)
     assert np.all(ret.asnumpy() == np.array((1, 2, 3, 4)))
+
+
+@pytest.mark.skip(reason='wait for ops')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_in_for_loop():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.param_a = Parameter(Tensor([1, 1, 1]), name="param_a")
+            self.param_b = Parameter(Tensor([1, 1, 1]), name="param_b")
+            self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
+            self.params = self.trainable_params()
+            self.prefetch = ops.Prefetch()
+            self.depend = ops.Depend()
+            self.detach = ops.Detach()
+
+        @jit
+        def construct(self, a, b, c):
+            m = (a, b, c)
+            a = 0
+            for i in range(3):
+                prefetch_result = self.prefetch(self.params[i], a, False)
+                cur = self.depend(m[i], prefetch_result)
+                a = a + cur + self.params[i]
+                detach_result = self.detach(m[i], a, False)
+                a = self.depend(a, detach_result)
+            return a
+
+
+    x = Tensor([1, 1, 1])
+    y = Tensor([1, 1, 1])
+    z = Tensor([1, 1, 1])
+    net = Net()
+    ret = net(x, y, z)
+    assert np.all(ret.asnumpy() == np.array((6, 6, 6)))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_in_for_loop_grad():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.param_a = Parameter(Tensor([1, 1, 1]), name="param_a")
+            self.param_b = Parameter(Tensor([1, 1, 1]), name="param_b")
+            self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
+            self.params = self.trainable_params()
+            self.prefetch_params = (self.param_b, self.param_c, None)
+            self.prefetch = ops.Prefetch()
+            self.depend = ops.Depend()
+            self.detach = ops.Detach()
+
+        @jit
+        def construct(self, a, b, c):
+            m = (a, b, c)
+            a = 0
+            for i in range(3):
+                prefetch_result = self.prefetch(self.prefetch_params[i], a, False)
+                cur = self.depend(m[i], prefetch_result)
+                a = ops.relu(a + cur + self.params[i])
+                detach_result = self.detach(m[i], a, False)
+                a = self.depend(a, detach_result)
+            return a
+
+    class GradNet(Cell):
+        def __init__(self, net):
+            super(GradNet, self).__init__()
+            self.weights = net.trainable_params()
+            self.net = net
+
+        @jit
+        def construct(self, *inputs):
+            return ops.grad(self.net, weights=self.weights)(*inputs)
+
+
+    x = Tensor([1, 1, 1])
+    y = Tensor([1, 1, 1])
+    z = Tensor([1, 1, 1])
+    net = GradNet(Net())
+    net(x, y, z)
+
+
+@pytest.mark.skip(reason='wait for ops')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_remote_ops_in_for_variable_loop():
+    """
+    Feature: Remote memory base operator
+    Description: Base scene.
+    Expectation: No Exception.
+    """
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.param_a = Parameter(Tensor([1, 1, 1]), name="param_a")
+            self.param_b = Parameter(Tensor([1, 1, 1]), name="param_b")
+            self.param_c = Parameter(Tensor([1, 1, 1]), name="param_c")
+            self.params = self.trainable_params()
+            self.prefetch = ops.Prefetch()
+            self.depend = ops.Depend()
+            self.detach = ops.Detach()
+
+        @jit
+        def construct(self, a, b, c, d):
+            m = (a, b, c)
+            a = Tensor([0, 0, 0])
+            for i in range(d):
+                prefetch_result = self.prefetch(self.params[i], a, False)
+                cur = self.depend(m[i], prefetch_result)
+                a = a + cur + self.params[i]
+                detach_result = self.detach(m[i], a, False)
+                a = self.depend(a, detach_result)
+            return a
+
+
+    x = Tensor([1, 1, 1])
+    y = Tensor([1, 1, 1])
+    z = Tensor([1, 1, 1])
+    d = mutable(3)
+    net = Net()
+    ret = net(x, y, z, d)
+    assert np.all(ret.asnumpy() == np.array((6, 6, 6)))
