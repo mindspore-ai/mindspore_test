@@ -1603,7 +1603,7 @@ KernelTensorPtr SchedulerHelper::CloneKernelTensorWithDeviceInfo(const KernelTen
   auto new_device_address = device_context->device_res_manager_->CreateDeviceAddress(
     device_address->pointer_ref_count()->ptr(), device_address->size(), device_address->GetShapeVector(),
     kernel_tensor->format(), device_address->type_id(), device_context->device_context_key().device_name_,
-    device_context->device_context_key().device_id_, device_address->stream_id());
+    device_address->stream_id());
   new_device_address->SetShapeVector(kernel_tensor->GetShapeVector());
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   new_kernel_tensor->set_user_data(kernel_tensor->user_data());

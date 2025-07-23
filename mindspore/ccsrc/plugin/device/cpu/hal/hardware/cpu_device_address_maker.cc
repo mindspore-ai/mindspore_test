@@ -26,7 +26,7 @@ DeviceSyncPtr MakeCPUDeviceAddress(TypeId data_type, const ShapeVector &shape, v
                                    DeviceAddressDeleter &&deleter) {
   auto data_size = SizeOf(shape) * abstract::TypeIdSize(data_type);
   auto device_address =
-    std::make_shared<DeviceAddress>(data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0, 0);
+    std::make_shared<DeviceAddress>(data_ptr, data_size, shape, Format::DEFAULT_FORMAT, data_type, "CPU", 0);
   if (deleter != nullptr) {
     device_address->SetPointerRefCountDeleter(std::move(deleter));
   }

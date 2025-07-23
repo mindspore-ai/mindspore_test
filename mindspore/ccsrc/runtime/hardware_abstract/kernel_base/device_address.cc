@@ -16,6 +16,7 @@
 
 #include "include/runtime/hardware_abstract/kernel_base/device_address.h"
 #include "include/runtime/hardware_abstract/kernel_base/format_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {
@@ -49,42 +50,20 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeI
   SetDevicePtrDeleter();
 }
 
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &device_name, uint32_t device_id) {
-  pointer_ref_count_ = std::make_shared<PointerRefCount>();
-  pointer_ref_count_->set_ptr(ptr);
-  size_ = size;
-  device_type_ = device::GetDeviceTypeByName(device_name);
-  device_id_ = device_id;
-  SetDevicePtrDeleter();
-}
-
-DeviceAddress::DeviceAddress(void *ptr, size_t size, const string &format, TypeId type_id,
-                             const std::string &device_name, uint32_t device_id) {
-  pointer_ref_count_ = std::make_shared<PointerRefCount>();
-  pointer_ref_count_->set_ptr(ptr);
-  size_ = size;
-  device_type_ = device::GetDeviceTypeByName(device_name);
-  dtype_id_ = type_id;
-  format_ = kernel::GetFormatFromStrToEnum(format);
-  device_id_ = device_id;
-  SetDevicePtrDeleter();
-}
-
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                             TypeId type_id, const std::string &device_name, uint32_t device_id, uint32_t stream_id)
+                             TypeId type_id, const std::string &device_name, uint32_t stream_id)
     : pointer_ref_count_(std::make_shared<PointerRefCount>(ptr)),
       stream_id_(stream_id),
       size_(size),
       format_(format),
       dtype_id_(type_id),
       device_type_(device::GetDeviceTypeByName(device_name)),
-      device_id_(device_id),
       shape_vector_(shape_vector) {
   SetDevicePtrDeleter();
 }
 
 DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id,
-                             const KernelWithIndex &node_index, const std::string &device_name, uint32_t device_id)
+                             const KernelWithIndex &node_index, const std::string &device_name)
     : node_index_(node_index) {
   pointer_ref_count_ = std::make_shared<PointerRefCount>();
   pointer_ref_count_->set_ptr(ptr);
@@ -92,7 +71,6 @@ DeviceAddress::DeviceAddress(void *ptr, size_t size, const std::string &format, 
   device_type_ = device::GetDeviceTypeByName(device_name);
   dtype_id_ = type_id;
   format_ = kernel::GetFormatFromStrToEnum(format);
-  device_id_ = device_id;
   SetDevicePtrDeleter();
 }
 
@@ -107,12 +85,10 @@ DeviceAddress::DeviceAddress(const DeviceAddress &other) {
   size_ = other.size_;
   format_ = other.format_;
   dtype_id_ = other.dtype_id_;
-  device_id_ = other.device_id_;
   device_type_ = other.device_type_;
   dtype_id_ = other.dtype_id_;
   shape_vector_ = other.shape_vector_;
   padding_type_ = other.padding_type();
-  is_view_ = other.is_view();
   SetDevicePtrDeleter();
 }
 
@@ -130,7 +106,7 @@ std::string DeviceAddress::ToString() const {
   if (tensor_storage_info_ != nullptr) {
     ofs << tensor_storage_info_->ToString();
   }
-  ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+  ofs << " size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_
       << " device name:" << device::GetDeviceNameByType(device_type_) << " shape vector:{";
   std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
   ofs << "} point ref count:";
@@ -146,7 +122,7 @@ std::string DeviceAddress::ToString() const {
   if (node_index.first != nullptr) {
     ofs << " node:" << node_index.first->fullname_with_scope() << " index:" << node_index.second;
   }
-  ofs << " is view:" << is_view_ << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
+  ofs << " from persist mem:" << from_persistent_mem_ << " need recycle:" << need_recycle_
       << " padding type:" << padding_type_;
   return ofs.str();
 }
@@ -213,8 +189,12 @@ void DeviceAddress::set_tensor_storage_info(const TensorStorageInfoPtr &tensor_s
 device::DeviceType DeviceAddress::GetDeviceType() const { return device_type_; }
 void DeviceAddress::SetDeviceType(const device::DeviceType &device_type) { device_type_ = device_type; }
 
-uint32_t DeviceAddress::device_id() const { return device_id_; }
-void DeviceAddress::set_device_id(uint32_t device_id) { device_id_ = device_id; }
+uint32_t DeviceAddress::device_id() const {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  return device_id;
+}
 
 void DeviceAddress::set_stream_id(uint32_t stream_id) { stream_id_ = stream_id; }
 
@@ -338,10 +318,6 @@ void DeviceAddress::set_pointer_ref_count(const PointerRefCountPtr &ptr_ref_cnt)
   MS_EXCEPTION_IF_NULL(ptr_ref_cnt);
   pointer_ref_count_ = ptr_ref_cnt;
 }
-
-void DeviceAddress::set_is_view(bool is_view) { is_view_ = is_view; }
-
-bool DeviceAddress::is_view() const { return is_view_; }
 
 DeviceAddressPtr DeviceAddress::CloneDeviceAddress() { return std::make_shared<DeviceAddress>(*this); }
 

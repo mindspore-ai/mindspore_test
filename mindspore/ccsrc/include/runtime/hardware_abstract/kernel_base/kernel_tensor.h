@@ -121,8 +121,7 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
                const ValuePtr &value, void *device_ptr, size_t size, const std::string &format, TypeId dtype_id,
-               const ShapeVector &host_shape, const string &device_name, uint32_t device_id,
-               const UserDataPtr &user_data = nullptr);
+               const ShapeVector &host_shape, const string &device_name, const UserDataPtr &user_data = nullptr);
 
   // Constructor of KernelTensor by shape, type, value and device info.
   KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape, const TypePtr &type,
@@ -351,9 +350,6 @@ class RUNTIME_HARDWARE_EXPORT KernelTensor : public AbstractBase {
 
   // Get device id.
   uint32_t device_id() const { return device_address_->device_id(); }
-
-  // Set device id.
-  void set_device_id(uint32_t device_id) { device_address_->set_device_id(device_id); }
 
   // Get logical stream id.
   uint32_t stream_id() const { return device_address_->stream_id(); }

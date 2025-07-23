@@ -689,23 +689,14 @@ DeviceAddressPtr AscendResManager::CreateDeviceAddress() const {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_address = std::make_shared<DeviceAddress>(nullptr, 0, kAscendDevice);
   device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
-  device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
 
 DeviceAddressPtr AscendResManager::CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
                                                        const Format &format, TypeId type_id,
-                                                       const std::string &device_name, uint32_t device_id,
-                                                       uint32_t stream_id) const {
-  auto real_device_id = device_id;
-  if (device_name.empty()) {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    real_device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    MS_LOG(DEBUG) << "Create device address with real device id: " << real_device_id;
-  }
+                                                       const std::string &device_name, uint32_t stream_id) const {
   auto device_address =
-    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kAscendDevice, real_device_id, stream_id);
+    std::make_shared<DeviceAddress>(ptr, size, shape_vector, format, type_id, kAscendDevice, stream_id);
   return device_address;
 }
 
@@ -1572,7 +1563,6 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     }
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
     // create device for all tensor in tensor list
@@ -1581,7 +1571,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
       const auto &tensor = tensor_list[i];
       auto format = GetFormat(tensor);
       auto device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), before_padding_sizes[i], tensor->shape(),
-                                                format, tensor->data_type(), device_name, device_id, stream_id);
+                                                format, tensor->data_type(), device_name, stream_id);
       MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(ptr)
                     << ", size:" << before_padding_sizes[i] << ", shape:" << tensor->shape()
                     << ", data_type:" << TypeIdToString(tensor->data_type());
@@ -1632,7 +1622,7 @@ std::pair<std::vector<size_t>, std::vector<size_t>> AscendResManager::AllocDevic
     const auto &ptr = device_ptr_list[i];
     auto format = GetFormat(tensor);
     auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), format,
-                                              tensor->data_type(), device_name, device_id, stream_id);
+                                              tensor->data_type(), device_name, stream_id);
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
     MS_EXCEPTION_IF_NULL(device_address);
@@ -1698,11 +1688,9 @@ tensor::TensorPtr AscendResManager::GetSliceByTensorListIndexHandle(const std::v
   auto stream_id = DefaultStream();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
-  auto device_address =
-    CreateDeviceAddress(ptr, size, shape, Format::ND, tensor->data_type(), device_name, device_id, stream_id);
+  auto device_address = CreateDeviceAddress(ptr, size, shape, Format::ND, tensor->data_type(), device_name, stream_id);
   tensor->set_device_address(device_address);
   return tensor;
 }
@@ -1721,11 +1709,10 @@ TensorPtr AscendResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr
   auto stream_id = DefaultStream();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 
   auto device_address = CreateDeviceAddress(reinterpret_cast<uint8_t *>(ptr) + offset_size, tensor_size, shape,
-                                            Format::ND, type_id, device_name, device_id, stream_id);
+                                            Format::ND, type_id, device_name, stream_id);
   MS_LOG(DEBUG) << "Create DeviceAddress, offset size to ptr0:" << offset_size << ", tensor_size:" << tensor_size
                 << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
   tensor->set_device_address(device_address);

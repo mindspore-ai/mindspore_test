@@ -59,9 +59,8 @@ class TestDeviceAddress : public DeviceAddress {
   TestDeviceAddress() : DeviceAddress() {}
   TestDeviceAddress(void *ptr, size_t size, const std::string &device_name = "CPU")
       : DeviceAddress(ptr, size, device_name) {}
-  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
-                    uint32_t device_id)
-      : DeviceAddress(ptr, size, format, type_id, device_name, device_id) {}
+  TestDeviceAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name)
+      : DeviceAddress(ptr, size, format, type_id, device_name) {}
   ~TestDeviceAddress() {}
 
   void ClearDeviceMemory() {}
@@ -128,19 +127,17 @@ class TestResManager : public device::DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress(void *const device_ptr, size_t device_size, const string &format, TypeId type_id,
                                        const ShapeVector &shape) const {
-    return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU", 0);
+    return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU");
   }
 
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
-                                       uint32_t stream_id) const {
-    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
+                                       TypeId type_id, const std::string &device_name, uint32_t stream_id) const {
+    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name);
   }
 
   DeviceAddressPtr CreateDeviceAddress() const {
     auto device_address = std::make_shared<TestDeviceAddress>();
     device_address->SetDeviceType(device::GetDeviceTypeByName(device_context_->device_context_key().device_name_));
-    device_address->set_device_id(device_context_->device_context_key().device_id_);
     return device_address;
   }
   bool LoadCollectiveCommLib() { return false; }

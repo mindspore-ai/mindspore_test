@@ -404,13 +404,12 @@ bool SuperKernelActor::CopyInputDataPersistedHandle(const KernelTensorPtr &input
     auto new_device_address = host_context->device_res_manager_->CreateDeviceAddress(
       node_device_address->pointer_ref_count()->ptr(), node_device_address->size(),
       node_device_address->GetShapeVector(), node_kernel_tensor->format(), node_device_address->type_id(), device_name,
-      device_id, node_device_address->stream_id());
+      node_device_address->stream_id());
     new_device_address->SetShapeVector(node_kernel_tensor->GetShapeVector());
     auto new_kernel_tensor = node_kernel_tensor->CloneKernelTensor();
     MS_EXCEPTION_IF_NULL(new_kernel_tensor);
     new_kernel_tensor->set_device_address(new_device_address);
     new_kernel_tensor->SetDeviceType(node_device_tensor->GetDeviceType());
-    new_kernel_tensor->set_device_id(node_device_tensor->device_id());
     new_kernel_tensor->set_device_ptr(nullptr);
     new_kernel_tensor->set_user_data(node_kernel_tensor->user_data());
     new_kernel_tensor->set_need_sync_user_data(node_kernel_tensor->need_sync_user_data());
