@@ -115,7 +115,7 @@ _ckpt_fs_initialized = False
 
 def tensor_to_np_type(tensor_type_str):
     """tensor to numpy type"""
-    if tensor_type_str == "bfloat16":
+    if tensor_type_str == "BFloat16":
         from mindspore.common import np_dtype
         if not np_dtype.np_dtype_valid(True):
             raise TypeError(
@@ -124,7 +124,7 @@ def tensor_to_np_type(tensor_type_str):
                 "and the major versions are same."
             )
         return np_dtype.bfloat16
-    return _tensor_to_np_type[tensor_type_str]
+    return _tensor_to_np_type.get(tensor_type_str)
 
 
 def init_ckpt_file_system(fs: FileSystem):
@@ -1284,11 +1284,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                 continue
             data = element.tensor.tensor_content
             data_type = element.tensor.tensor_type
-            np_type = tensor_to_np_type(data_type)
             ms_type = tensor_to_ms_type[data_type]
-            if data_type == 'str':
-                str_length = int(len(data) / 4)
-                np_type = np_type + str(str_length)
             param_data_list.append(data)
             if (element_id == len(checkpoint_list.value) - 1) or \
                     (element.tag != checkpoint_list.value[element_id + 1].tag):
@@ -1296,6 +1292,8 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
                 param_data_list.clear()
                 dims = element.tensor.dims
                 if data_type == 'str':
+                    str_length = int(len(data) / 4)
+                    np_type = "U" + str(str_length)
                     str_value = np.frombuffer(new_data, np_type)
                     parameter_dict[element.tag] = str(str_value[0])
                 else:

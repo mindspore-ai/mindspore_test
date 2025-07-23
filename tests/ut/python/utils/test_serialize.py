@@ -69,6 +69,15 @@ class Net(nn.Cell):
         return x
 
 
+class NetWithDtype(nn.Cell):
+    """Net with parameter of specific dtype."""
+    def __init__(self, dtype):
+        super().__init__()
+        self.param = Parameter(Tensor([1, 2, 3], dtype=dtype), name="param")
+
+    def construct(self, x):
+        return x + self.param
+
 _input_x = Tensor(np.random.randint(0, 255, [1, 3, 224, 224]).astype(np.float32))
 _cur_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -338,6 +347,41 @@ def test_load_param_into_net():
     parameter_dict["conv1.weight"] = one_param
     load_param_into_net(net, parameter_dict)
     assert net.conv1.weight.data.asnumpy()[0][0][0][0] == 1
+
+
+def test_save_load_checkpoint_for_different_type():
+    """
+    Feature: Test save/load checkpoint.
+    Description: test save and load checkpoint for parameter with different type.
+    Expectation: Success.
+    """
+    # test qint4x2
+    net = NetWithDtype(mstype.qint4x2)
+    ckpt_file_name = './qint4x2.ckpt'
+    if os.path.exists(ckpt_file_name):
+        os.remove(ckpt_file_name)
+
+    save_checkpoint(net, ckpt_file_name)
+    param_dict = load_checkpoint(ckpt_file_name)
+    assert len(param_dict) == 1
+    assert isinstance(param_dict['param'], Parameter)
+    assert param_dict['param'].data.dtype == mstype.qint4x2
+    if os.path.exists(ckpt_file_name):
+        os.remove(ckpt_file_name)
+
+    # test bfloat16
+    net = NetWithDtype(mstype.bfloat16)
+    ckpt_file_name = './bfloat16.ckpt'
+    if os.path.exists(ckpt_file_name):
+        os.remove(ckpt_file_name)
+
+    save_checkpoint(net, ckpt_file_name)
+    param_dict = load_checkpoint(ckpt_file_name)
+    assert len(param_dict) == 1
+    assert isinstance(param_dict['param'], Parameter)
+    assert param_dict['param'].data.dtype == mstype.bfloat16
+    if os.path.exists(ckpt_file_name):
+        os.remove(ckpt_file_name)
 
 
 def test_save_checkpoint_for_network():
