@@ -8,9 +8,7 @@ if(ENABLE_DEBUGGER)
     include_directories("${CMAKE_BINARY_DIR}/debug/debugger")
 endif()
 
-if(NOT BUILD_LITE)
-    add_subdirectory(common)
-endif()
+add_subdirectory(common)
 
 # ===== CPU
 add_subdirectory(cpu)

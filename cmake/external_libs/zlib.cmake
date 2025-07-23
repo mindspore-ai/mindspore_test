@@ -6,11 +6,7 @@ else()
     set(SHA256 "17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c")
 endif()
 
-if(BUILD_LITE)
-    set(ZLIB_PATCH_ROOT ${TOP_DIR}/third_party/patch/zlib)
-else()
-    set(ZLIB_PATCH_ROOT ${CMAKE_SOURCE_DIR}/third_party/patch/zlib)
-endif()
+set(ZLIB_PATCH_ROOT ${CMAKE_SOURCE_DIR}/third_party/patch/zlib)
 
 mindspore_add_pkg(zlib
         VER 1.3.1

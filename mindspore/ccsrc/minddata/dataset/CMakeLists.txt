@@ -203,9 +203,7 @@ endif()
 ######################################################################
 
 ################# Link with external libraries ########################
-if(NOT MSLITE_ENABLE_CLOUD_MIND_DATA)
-    target_link_libraries(_c_dataengine PRIVATE proto_input mindspore::sentencepiece)
-endif()
+target_link_libraries(_c_dataengine PRIVATE proto_input mindspore::sentencepiece)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if(ENABLE_PYTHON)
@@ -255,12 +253,7 @@ else()
     endif()
 endif()
 
-if(MSLITE_ENABLE_CLOUD_MIND_DATA)
-    target_link_libraries(_c_dataengine PRIVATE mindspore::grpc++)
-    target_link_libraries(_c_dataengine PUBLIC mindspore::protobuf)
-else()
-    target_link_libraries(_c_dataengine PRIVATE mindspore_core)
-endif()
+target_link_libraries(_c_dataengine PRIVATE mindspore_core)
 
 if(USE_GLOG)
     target_link_libraries(_c_dataengine PRIVATE mindspore::glog)
@@ -280,7 +273,7 @@ if(MS_BUILD_GRPC)
     endif()
 endif()
 
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin" AND NOT MSLITE_ENABLE_CLOUD_MIND_DATA)
+if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set_target_properties(_c_dataengine PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 endif()

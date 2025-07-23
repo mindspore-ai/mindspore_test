@@ -98,6 +98,7 @@
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/op_adapter.cc"                   "runtime/references"
 "mindspore/mindspore/ccsrc/plugin/res_manager/ascend/op_adapter/custom_op_infer.cc"              "runtime/references"
 "mindspore/mindspore/ops/kernel/cpu/grid_sampler_2d_grad_cpu_kernel.h"                           "legal/copyright"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/aicore/op_proto"                          "build/include"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

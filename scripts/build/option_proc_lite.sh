@@ -16,40 +16,6 @@
 
 set -e
 
-build_option_proc_n()
-{
-  if [[ "X$OPTARG" == "Xoff" || "X$OPTARG" == "Xlite" || "X$OPTARG" == "Xfull" || "X$OPTARG" == "Xlite_cv"  || "X$OPTARG" == "Xwrapper" ]]; then
-    export COMPILE_MINDDATA_LITE="$OPTARG"
-  else
-    echo "Invalid value ${OPTARG} for option -n"
-    usage
-    exit 1
-  fi  
-}
-
-build_option_proc_upper_i()
-{
-  COMPILE_LITE="on"
-  if [[ "$OPTARG" == "arm64" ]]; then
-    LITE_PLATFORM="arm64"
-  elif [[ "$OPTARG" == "arm32" ]]; then
-    LITE_PLATFORM="arm32"
-  elif [[ "$OPTARG" == "x86_64" ]]; then
-    export LITE_PLATFORM="x86_64"
-  else
-    echo "-I parameter must be arm64、arm32 or x86_64"
-    exit 1
-  fi
-}
-
-build_option_proc_upper_a()
-{
-  export COMPILE_LITE="on"
-  if [[ "$OPTARG" == "on" ]]; then
-    export LITE_ENABLE_AAR="on"
-  fi  
-}
-
 build_option_proc_upper_w()
 {
   if [[ "$OPTARG" != "sse" && "$OPTARG" != "off" && "$OPTARG" != "avx" && "$OPTARG" != "avx512" && "$OPTARG" != "neon" ]]; then

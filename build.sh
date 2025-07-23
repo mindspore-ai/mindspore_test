@@ -72,31 +72,23 @@ init_default_options
 process_options "$@"
 parse_device
 
-if [[ "X$COMPILE_LITE" = "Xon" ]]; then
-  export COMPILE_MINDDATA_LITE
-  export ENABLE_VERBOSE
-  export LITE_PLATFORM
-  export LITE_ENABLE_AAR
-  source mindspore/lite/build_lite.sh
+mkdir -pv "${BUILD_PATH}/package/mindspore/lib"
+mkdir -pv "${BUILD_PATH}/package/mindspore/lib/plugin"
+update_submodule
+
+build_mindspore
+
+if [[ "X$ENABLE_MAKE_CLEAN" = "Xon" ]]; then
+  make_clean
+fi
+if [[ "X$ENABLE_ACL" == "Xon" ]] && [[ "X$ENABLE_D" == "Xoff" ]]; then
+    echo "acl mode, skipping deploy phase"
+    rm -rf ${BASEPATH}/output/_CPack_Packages/
+elif [[ "X$FASTER_BUILD_FOR_PLUGINS" == "Xon" ]]; then
+    echo "plugin mode, skipping deploy phase"
+    rm -rf ${BASEPATH}/output/_CPack_Packages/
 else
-  mkdir -pv "${BUILD_PATH}/package/mindspore/lib"
-  mkdir -pv "${BUILD_PATH}/package/mindspore/lib/plugin"
-  update_submodule
-
-  build_mindspore
-
-  if [[ "X$ENABLE_MAKE_CLEAN" = "Xon" ]]; then
-    make_clean
-  fi
-  if [[ "X$ENABLE_ACL" == "Xon" ]] && [[ "X$ENABLE_D" == "Xoff" ]]; then
-      echo "acl mode, skipping deploy phase"
-      rm -rf ${BASEPATH}/output/_CPack_Packages/
-  elif [[ "X$FASTER_BUILD_FOR_PLUGINS" == "Xon" ]]; then
-      echo "plugin mode, skipping deploy phase"
-      rm -rf ${BASEPATH}/output/_CPack_Packages/
-  else
-      cp -rf ${BUILD_PATH}/package/mindspore/lib ${BASEPATH}/mindspore/python/mindspore
-      cp -rf ${BUILD_PATH}/package/mindspore/*.so ${BASEPATH}/mindspore/python/mindspore
-  fi
+    cp -rf ${BUILD_PATH}/package/mindspore/lib ${BASEPATH}/mindspore/python/mindspore
+    cp -rf ${BUILD_PATH}/package/mindspore/*.so ${BASEPATH}/mindspore/python/mindspore
 fi
 echo "---------------- MindSpore: build end   ----------------"
