@@ -435,7 +435,7 @@ class Cell(Cell_):
     @property
     def compiled(self):
         """
-        Get whether cell is compiled.
+        Get whether `Cell` is compiled in graph mode.
         """
         return self._compiled
 

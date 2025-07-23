@@ -48,6 +48,11 @@
 
         在图模式下使用，用于标识是否使用自定义的反向传播函数。
 
+    .. py:method:: compiled
+        :property:
+
+        在图模式下使用，用于标记 `Cell` 是否已被编译。
+
     .. py:method:: buffers(recurse: bool = True)
 
         返回Cell缓冲区的迭代器，只包含缓冲区本身。
