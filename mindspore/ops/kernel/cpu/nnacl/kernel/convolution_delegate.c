@@ -262,6 +262,14 @@ int ConvolutionDelegateRelease(struct KernelBase *self) {
     free(convolution_delegate->convolution_);
     convolution_delegate->convolution_ = NULL;
   }
+  if (convolution_delegate->need_free_weight_ && convolution_delegate->origin_weight_ != NULL) {
+    free(convolution_delegate->origin_weight_);
+    convolution_delegate->origin_weight_ = NULL;
+  }
+  if (convolution_delegate->need_free_bias_ && convolution_delegate->origin_bias_ != NULL) {
+    free(convolution_delegate->origin_bias_);
+    convolution_delegate->origin_bias_ = NULL;
+  }
   return NNACL_OK;
 }
 
