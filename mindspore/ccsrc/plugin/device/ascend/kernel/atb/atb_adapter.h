@@ -71,6 +71,18 @@ class ParamSetter {
   atb::VariantPack variant_pack;
   aclrtStream stream{nullptr};
 };
+
+class AtbContextManager {
+ public:
+  static AtbContextManager &GetInstance();
+  atb::Context *GetContext(const aclrtStream &stream);
+  ~AtbContextManager();
+
+ private:
+  AtbContextManager() = default;
+  mindspore::HashMap<aclrtStream, atb::Context *> context_map_{};
+};
+
 }  // namespace mindspore::device::ascend
 
 #endif  // MINDSPORE_CCSRC_DEVICE_ASCEND_ATB_ADAPTER_H_
