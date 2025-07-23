@@ -48,7 +48,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         self.PYBOOST_MINT_CLASS_DEF = template.PYBOOST_MINT_CLASS_DEF
         self.PYBOOST_OVERLOAD_MINT_CLASS_DEF = template.PYBOOST_OVERLOAD_MINT_CLASS_DEF
         self.TENSOR_FUNC_UT_BODY = template.TENSOR_FUNC_UT_BODY
-        self.TENSOR_FUNC_UT_OVERLOAD_BODY = template.TENSOR_FUNC_UT_OVERLOAD_BODY
+        self.PYBOOST_OVERLOAD_UT_BODY = template.PYBOOST_OVERLOAD_UT_BODY
 
         self.single_case_template = Template(
             'case ${case_id}:\n'
@@ -71,8 +71,8 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = ${pyboost_base_func_name}_OP(${prim_name}, parse_args.src_types_, ${convert_args});\n'
-            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
-            'return res;\n'
+            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            'return py::reinterpret_steal<py::object>(res);\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -202,7 +202,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         signatures_str = self._generate_func_signatures_str(func_protos)
         dispatch_cases = self._get_dispatch_cases(func_protos)
         ut_dispatch_cases = self._get_ut_dispatch_cases(func_protos)
-        ut_overload_body = self.TENSOR_FUNC_UT_OVERLOAD_BODY.replace(ut_dispatch_cases=ut_dispatch_cases)
+        ut_overload_body = self.PYBOOST_OVERLOAD_UT_BODY.replace(ut_dispatch_cases=ut_dispatch_cases)
 
         max_size = 0
         for tensor_proto in func_protos:

@@ -3,10 +3,10 @@ class ${cpp_func_name}Functional : public Functional {
   ${cpp_func_name}Functional() : Functional("${func_name}") {};
   ~${cpp_func_name}Functional() = default;
   py::object Call(const py::args &args, const py::kwargs &kwargs) {
-    static PythonArgParser parser({
+    static mindspore::pynative::PythonArgParser parser({
     ${signatures}
       }, "${func_name}");
-    auto parse_args = parser.Parse(args, kwargs, false);
+    auto parse_args = parser.Parse(args.ptr(), kwargs.ptr(), false);
     auto backend = DeviceManagerConf::GetInstance()->device_type();
     #ifndef ENABLE_TEST
       switch (parse_args.GetOvertLoadIndex()) {

@@ -37,6 +37,10 @@ namespace trace {
 FRONTEND_EXPORT void Capture(const py::args &args, py::object *res);
 FRONTEND_EXPORT void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res);
 FRONTEND_EXPORT void Capture(const std::vector<py::object> &args_vec, const PrimitivePtr &prim, py::object *res);
+FRONTEND_EXPORT void CapturePy(PyObject *args, PyObject **res);
+FRONTEND_EXPORT void CapturePy(PyObject *args, const PrimitivePtr &prim, PyObject **res);
+FRONTEND_EXPORT void CapturePy(const std::vector<PyObject *> &args_vec, const PrimitivePtr &prim, PyObject **res);
+
 FRONTEND_EXPORT void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive,
                                              py::object *res);
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);

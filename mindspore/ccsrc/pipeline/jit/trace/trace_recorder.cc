@@ -292,6 +292,16 @@ void Capture(const py::args &args, py::object *res) {
   *res = CaptureRun(py::args(py::tuple(args[1])), *res, args[0]);
 }
 
+void CapturePy(PyObject *args, PyObject **res) {
+  if (!IsTracing()) {
+    return;
+  }
+  py::args py_args = py::reinterpret_borrow<py::args>(args);
+  py::object py_res = py::reinterpret_borrow<py::object>(*res);
+  py::object capture_res = CaptureRun(py::args(py::tuple(py_args[1])), py_res, py_args[0]);
+  *res = capture_res.ptr();
+}
+
 void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res) {
   if (!IsTracing()) {
     return;
@@ -306,6 +316,24 @@ void Capture(const py::list &args, const PrimitivePtr &prim, py::object *res) {
   const auto debug_info = GenerateDebugInfos(file_names, linenos);
   trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
   *res = prim_res;
+}
+
+void CapturePy(PyObject *args, const PrimitivePtr &prim, PyObject **res) {
+  if (!IsTracing()) {
+    return;
+  }
+  py::list py_args = py::reinterpret_borrow<py::list>(args);
+  py::object py_res = py::reinterpret_borrow<py::object>(*res);
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  std::string method = "prepare_op";
+  py::tuple op_info = jit_context.attr(method.c_str())(prim->name(), py_res, *py_args);
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::tuple &inputs = op_info[kArgsIndex];
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
+  *res = prim_res.ptr();
 }
 
 void CaptureResolveOperation(const py::tuple &args, const std::string &named_primitive, py::object *res) {
@@ -348,6 +376,27 @@ void Capture(const std::vector<py::object> &args_vec, const PrimitivePtr &prim, 
   const auto debug_info = GenerateDebugInfos(file_names, linenos);
   trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
   *res = prim_res;
+}
+
+void CapturePy(const std::vector<PyObject *> &args_vec, const PrimitivePtr &prim, PyObject **res) {
+  if (!IsTracing()) {
+    return;
+  }
+  py::tuple args(args_vec.size());
+  for (size_t i = 0; i < args_vec.size(); ++i) {
+    args[i] = py::reinterpret_borrow<py::object>(args_vec[i]);
+  }
+  py::object py_res = py::reinterpret_borrow<py::object>(*res);
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  std::string method = "prepare_op";
+  py::tuple op_info = jit_context.attr(method.c_str())(prim->name(), py_res, *args);
+  const py::object &prim_res = op_info[kPrimResultIndex];
+  const py::list &file_names = op_info[kFileNameIndex];
+  const py::list &linenos = op_info[kLineNumberIndex];
+  const py::tuple &inputs = op_info[kArgsIndex];
+  const auto debug_info = GenerateDebugInfos(file_names, linenos);
+  trace::TraceRecorder::GetInstance()->ProcessNewNode(prim, prim_res, debug_info, py::args(inputs), false);
+  *res = prim_res.ptr();
 }
 
 py::object CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {

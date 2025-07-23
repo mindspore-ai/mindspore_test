@@ -73,7 +73,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '  ${gpu_dispatcher}\n'
             '} else {\n'
             '  MS_LOG(ERROR) << "Device target is not supported!";\n'
-            '  return py::none();\n'
+            '  Py_RETURN_NONE;\n'
             '}'
         )
         self.pyboost_return_template = Template(
@@ -81,24 +81,32 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'auto res = mindspore::pynative::'
             '${pyboost_function}(mindspore::prim::kPrim${class_name}, parse_args.src_types_, ${convert_args});\n'
-            'trace::Capture(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
+            'trace::CapturePy(parse_args.arg_list_, mindspore::prim::kPrim${class_name}, &res);\n'
             'return res;\n'
         )
         self.callback_python_template = Template(
+            'py::object self_new = py::reinterpret_borrow<py::object>(self);\n'
+            'py::args py_args_new = py::reinterpret_borrow<py::args>(py_args);\n'
+            'py::dict empty_dict = py::dict();\n'
+            'py::kwargs py_kwargs_new = py::kwargs(empty_dict);\n'
+            'if (py_kwargs != NULL && py_kwargs != Py_None) {\n'
+            '  py_kwargs_new = py::reinterpret_borrow<py::kwargs>(py_kwargs);\n'
+            '}\n'
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(self, *py_args, **py_kwargs);\n'
-            'return res;\n'
+            'py::object res = fn(self_new, *py_args_new, **py_kwargs_new);\n'
+            'MS_LOG(INFO) << "after Callback python method: ${py_method}";\n'
+            'return res.release().ptr();\n'
         )
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
             'fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'res = fn(self, *py_args, **py_kwargs);\n'
+            'res = fn(self_new, *py_args_new, **py_kwargs_new);\n'
             'break;\n'
         )
         self.header_func_header_template = Template(
-            "py::object TensorMethod${cpp_func_name}"
-            "(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs);\n"
+            "PyObject* TensorMethod${cpp_func_name}"
+            "(PyObject* self, PyObject* py_args, PyObject* py_kwargs);\n"
         )
 
     def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
@@ -383,7 +391,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             dispatch_cases_str += self.single_case_template.replace(case_id=idx,
                                                                     device_dispatcher=device_dispatcher_str)
         dispatch_cases_str += 'default:\n'
-        dispatch_cases_str += '  return py::none();'
+        dispatch_cases_str += '  Py_RETURN_NONE;'
         return dispatch_cases_str
 
     def _get_ut_dispatch_cases(self, func_protos):

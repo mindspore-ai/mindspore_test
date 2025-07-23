@@ -23,6 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include <tuple>
+#include <Python.h>
 #include "pynative/base.h"
 #include "pynative/pynative_execute.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
@@ -123,6 +124,7 @@ struct PyParser {
   static void ParseOpInputByPythonObj(const FrontendOpRunInfoPtr &op_run_info, const py::list &op_inputs,
                                       bool stub = false);
   static std::string BuilidPyInputTypeString(const py::object &obj);
+  static std::string BuildPyObjectInputTypeString(PyObject *obj);
 
   static inline bool IsSupportTensorCast(const std::vector<ops::OP_DTYPE> &cast_types) {
     for (const auto &type : cast_types) {
@@ -133,6 +135,7 @@ struct PyParser {
     return false;
   }
   static void PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &op_inputs, size_t idx);
+  static void PrintTypeCastErrorForPyObject(const ops::OpDefPtr &op_def, PyObject *op_inputs, size_t idx);
 };
 
 // Data convert
@@ -164,6 +167,7 @@ struct PyBoost {
   static void UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
                                const AbstractBasePtr &abstract, const ValuePtr &real_out);
   static PrimitivePtr ConvertPrimitive(const py::object &obj);
+  static PrimitivePtr ConvertPrimitiveForPyObject(PyObject *obj);
 
   static py::object RunPyFunction(const PrimitivePtr &prim, const py::list &args);
   template <typename T>

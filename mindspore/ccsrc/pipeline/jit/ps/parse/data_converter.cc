@@ -1275,9 +1275,25 @@ ValuePtr ConvertTensor(const py::object &obj) {
   return nullptr;
 }
 
+ValuePtr ConvertPyObjectTensor(PyObject *obj) {
+  if (tensor::IsPyObjectTensorPy(obj)) {
+    return tensor::ConvertPyObjectToValue(obj);
+  }
+
+  return nullptr;
+}
+
 TensorPtr ConvertTensorValue(const py::object &obj) {
   if (tensor::IsTensorPy(obj)) {
     return tensor::ConvertToTensor(obj);
+  }
+
+  return nullptr;
+}
+
+TensorPtr ConvertPyObjectTensorValue(PyObject *obj) {
+  if (tensor::IsPyObjectTensorPy(obj)) {
+    return tensor::ConvertPyObjectToTensor(obj);
   }
 
   return nullptr;

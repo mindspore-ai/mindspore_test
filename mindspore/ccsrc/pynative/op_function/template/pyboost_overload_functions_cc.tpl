@@ -17,7 +17,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "mindspore/ccsrc/pynative/op_function/auto_generate/tensor_func_utils.h"
 #include "pynative/op_function/converter.h"
-#include "frontend/ir/arg_handler.h"
+#include "frontend/ir/arg_handler_py.h"
 #include "pipeline/jit/trace/trace_recorder.h"
 #include "pynative/op_function/auto_generate/pyboost_core.h"
 #include "pynative/op_function/customize/direct_ops.h"

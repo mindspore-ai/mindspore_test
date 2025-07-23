@@ -1,4 +1,4 @@
-py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE>& source_type, ${input_args}) {
+PYNATIVE_EXPORT PyObject* ${func_name}_OP(const PrimitivePtr &prim, const std::vector<ops::OP_DTYPE>& source_type, ${input_args}) {
   MS_LOG(DEBUG) << "Run ${func_name} start";
   auto op_run_info = PyNativeAlgo::PyBoost::Init_Pyboost(prim);
   op_run_info->source_type = source_type;
@@ -27,5 +27,5 @@ py::object PYNATIVE_EXPORT ${func_name}_OP(const PrimitivePtr &prim, const std::
       }, op_run_info));
 
     MS_LOG(DEBUG) << "Run ${func_name} end";
-    return py::reinterpret_steal<py::object>(tensor::TransformOutput(py_output));
+    return tensor::TransformOutput(py_output);
 }

@@ -27,16 +27,9 @@ namespace tensor {
 
 #define DEFINE_TENSOR_METHOD_CPYWRAPPER(NAME)                                                          \
   static PyObject *TensorMethod##NAME##_CPyWrapper(PyObject *self, PyObject *args, PyObject *kwargs) { \
-    py::object result;                                                                                 \
+    PyObject* result;                                                                                  \
     try {                                                                                              \
-      py::dict empty_dict;                                                                             \
-      py::kwargs py_kwargs(empty_dict);                                                                \
-      if (kwargs != NULL) {                                                                            \
-        py_kwargs = py::reinterpret_borrow<py::kwargs>(kwargs);                                        \
-      }                                                                                                \
-      py::object py_self = py::reinterpret_borrow<py::object>(self);                                   \
-      py::args py_args = py::reinterpret_borrow<py::args>(args);                                       \
-      result = TensorMethod##NAME(py_self, py_args, py_kwargs);                                        \
+      result = TensorMethod##NAME(self, args, kwargs);                                                 \
     } catch (py::error_already_set &e) {                                                               \
       e.restore();                                                                                     \
       return NULL;                                                                                     \
@@ -52,7 +45,7 @@ namespace tensor {
       }                                                                                                \
       return NULL;                                                                                     \
     }                                                                                                  \
-    return result.release().ptr();                                                                     \
+    return result;                                                                                     \
   }
 
 

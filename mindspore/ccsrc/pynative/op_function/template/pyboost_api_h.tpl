@@ -16,6 +16,7 @@
 
 #include "pynative/pynative_utils.h"
 #include "pybind11/pybind11.h"
+#include <Python.h>
 
 namespace py = pybind11;
 namespace mindspore::pynative {
