@@ -56,7 +56,6 @@ namespace mindspore {
 namespace pijit {
 extern TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_depth);
 
-void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg);
 static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1);
 
 const char *GraphBuilder::ID___self__ = "__self__";
@@ -2504,22 +2503,6 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   return super_obj;
 }
 
-void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::string &msg) {
-  if (!IsPiJitLogOn(LogCfg::kGuard)) {
-    return;
-  }
-  auto tr = GetTrace(node, false, true, 0, -1);
-  std::stringstream s;
-  if (node->GetVobj() == nullptr || node->GetVobj()->GetPyObject().ptr() == nullptr) {
-    s << "infer failed\n";
-  } else {
-    std::map<Trace *, size_t> cache;
-    s << "trace:\n" << (tr ? tr->FormatString(&cache).c_str() : "trace failed") << "\n";
-  }
-  s << msg << " [" << node->ToString() << "]";
-  GRAPH_JIT_LOG_F("%s", s.str().c_str());
-}
-
 static py::object FilterCTensorInZip(AObject *vobj, py::object obj) {
   if (IsZipPyObject(reinterpret_cast<PyTypeObject *>(static_cast<AbstractType *>(vobj)->GetPyObject().ptr())) &&
       IsCTensorPyObject(obj.ptr())) {
@@ -3343,37 +3326,6 @@ static bool GuardLoopSequence(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_
   return true;
 }
 
-bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1) {
-  PyObject *seq = seq_node->GetVobj()->GetPyObject().ptr();
-  if (seq != nullptr && seq_size == -1) {
-    seq_size = PySequence_Size(seq);
-  }
-  if (seq == nullptr || seq_size == -1) {
-    PyErr_Clear();
-    return false;
-  }
-  if (!graph->GuardSequenceNodeLength(seq_node, seq_size)) {
-    return false;
-  }
-  auto input_nodes = seq_node->inputs();
-  for (size_t i = 1; i < input_nodes.size(); ++i) {
-    ValueNode *input_node = input_nodes[i];
-    if (input_node == nullptr) {
-      return false;
-    }
-    TracePtr tr = graph->TraceValueNode(input_node);
-    if (tr == nullptr) {
-      return graph->GuardValueNodeClosure(input_node);
-    }
-    if (!(graph->GetGuardManager()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
-      MS_LOG(INFO) << "Iterator guard fail: " << seq_node->ToString();
-      return false;
-    }
-  }
-  MS_LOG(INFO) << "Iterator guard success: " << seq_node->ToString();
-  return true;
-}
-
 bool GraphBuilder::TraceRunForIterSequence(int jump_bci, int seq_size) {
   MS_LOG(DEBUG) << "Start do sequence FOR_ITER, seq size: " << seq_size;
   if (seq_size < 0) {
@@ -3985,25 +3937,6 @@ StopTraceReason GraphBuilder::TraceRun() {
   }
   PIJIT_DEBUG_LOG(LogCfg::kTraceSource) << "Trace func end: " << func_desc;
   return graph_->GetStopTraceReason();
-}
-
-/**
- * build graph and infer func result
- * it used to infer mindspore function, maybe replace with mindspore func_graph to infer.
- */
-AObject *InferFuncResult(const py::object &callable, const py::object &args, const py::object &kwargs,
-                         const GraphJitConfig &conf, bool clear_guard) {
-  MS_LOG(INTERNAL_EXCEPTION) << "dead code, shouldn't reach here";
-}
-
-AObject *InferFuncResult(const py::object &func, const std::vector<AObject *> &stack_args, int opcode,
-                         const GraphJitConfig &conf, bool clear_guard) {
-  MS_LOG(INTERNAL_EXCEPTION) << "dead code, shouldn't reach here";
-}
-
-AObject *InferFuncResult(const py::object &callable, const py::object &args, const py::object &kwargs,
-                         const GraphJitConfig &conf) {
-  return InferFuncResult(callable, args, kwargs, conf, true);
 }
 
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }

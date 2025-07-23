@@ -244,12 +244,6 @@ std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t l
 
 std::string AbstractObjectBase::ToString() const {
   std::stringstream s;
-#define ABSTRACT_MS_FLAG_DEF(unit, bit) s << ((ms_flag_ & kMsFlag##unit) ? #unit "|" : "");
-#include "abstract_ms_flag.def"
-#undef ABSTRACT_MS_FLAG_DEF
-  if (ms_flag_) {
-    s.seekp(-1, s.cur);
-  }
   if (type_object_ != nullptr) {
     s << (type_object_->tp_name ? type_object_->tp_name : "<unnamed>");
   } else {
@@ -1027,32 +1021,6 @@ AObject *AbstractSequence::GetItem(AObject *k) {
   auto res = AObject::MakeAObject(type_, type_object_, nullptr, elements);
   res->AddUser(this);
   return res;
-}
-
-bool AbstractSequence::SetItem(AObject *k, AObject *v) {
-  MS_EXCEPTION_IF_NULL(k);
-  auto subscript = Utils::FormatSubscript(k->GetPyObject(), size());
-  // invalid subscript object
-  if (subscript.empty()) {
-    return false;
-  }
-  InitElementsListIfNeed();
-  std::vector<AObject *> elements(elements_);
-  constexpr int start_index = 0;
-  if (subscript.back() == 0) {
-    elements[subscript[start_index]] = v;
-  } else {
-    constexpr int step_index = 1;
-    constexpr int len_index = 2;
-    for (Py_ssize_t index = 0; index < subscript[len_index]; index++) {
-      elements[subscript[start_index] + index * subscript[step_index]] = v->GetItem(Convert(py::int_(index)));
-    }
-  }
-  auto seq = static_cast<AbstractSequence *>(MakeAObject(type_, type_object_, nullptr, elements));
-  seq->element_type_ =
-    v->GetType() == element_type_ ? element_type_ : v->GetType() == kTypeAnyValue ? kTypeAnyValue : kTypeMultiType;
-  SetNextVersion(seq);
-  return true;
 }
 
 void AbstractSequence::CreateVersionWithNewValue() {
