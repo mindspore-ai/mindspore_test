@@ -32,6 +32,7 @@
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
+#include "utils/trace_base.h"
 #include "op_def/framework_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
@@ -517,12 +518,6 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<KernelTensor> *const context) {
   MemoryTraceManager::GetInstance().PickMemoryTrackInfoForGraph(graph_->graph_id());
   if (!ActorDispatcher::enable_static_shape()) {
-    if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && already_allocate_trace_memory_) {
-      MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-      GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
-      FreeTraceMemory();
-    }
-
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, GetAID().Name());
 
     const std::shared_ptr<mindspore::HashMap<CNodePtr, std::vector<KernelMemoryTraceBlockPtr>>> &all_kernel_block_info =
@@ -885,6 +880,77 @@ void SuperKernelActor::SyncDispatchKernel(OpContext<KernelTensor> *const context
   }
 }
 
+bool SuperKernelActor::LaunchKernelForCaptureGraph(OpContext<KernelTensor> *const context,
+                                                   const KernelRunnerPtr &kernel_actor, size_t index, bool is_graph) {
+  kernel_actor->UpdateRefDeviceAddress(context, true);
+  kernel_actor->UpdateGraphOutputRefCount(context);
+  kernel_actor->UpdateMemoryFreeList(context);
+  auto kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_mod = kernel_actor->kernel_mod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  // Update output device address for Parameter as graph output case.
+  const auto &input_to_output_iter = kernel_input_to_actor_output_indices_.find(kernel.get());
+  if (input_to_output_iter != kernel_input_to_actor_output_indices_.end()) {
+    const auto &kernel_inputs_to_actor_outputs = input_to_output_iter->second;
+    UpdateOutputAddress(kernel_inputs_to_actor_outputs, kernel_actor);
+  }
+  if (LLMManager::GetInstance().need_force_resize(kernel_mod->kernel_name())) {
+    kernel_actor->ResizeKernelMod();
+    kernel_actor->FetchOutputDeviceTensor(context);
+    kernel_actor->FetchWorkspaceDeviceTensor();
+  }
+
+  if (!kernel_actor->memory_alloc_list_.empty()) {
+    kernel_actor->SendMemoryAllocReqHP(context, GraphCaptureManager::GetInstance().GetStreamId());
+  }
+
+  if (!kernel_actor->LaunchKernelHP(context, IsSkippedLaunch(kernel, nullptr))) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
+                                             kernel->fullname_with_scope()
+                                        << trace::DumpSourceLines(kernel);
+  }
+
+  if (kernel_actor->is_dynamic_shape() && kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+    kernel_mod->UpdateOutputShapeAndSize(kernel_actor->input_launch_tensors_, kernel_actor->output_launch_tensors_);
+  }
+  // In capture mode, If launch single op, record the related infos, include the device_ptr, shape and size.
+  if (!is_graph) {
+    GraphCaptureManager::GetInstance().RecodeInfoForSingleOp(kernel_actor, index);
+  }
+
+  if (kernel_actor->new_memory_free_list_.size() > 0 && kernel_actor->copy_output_kernel_tensors_.empty()) {
+    kernel_actor->SendMemoryFreeReq(context);
+  }
+  return true;
+}
+
+bool SuperKernelActor::LaunchKernelForReplayGraph(OpContext<KernelTensor> *const context,
+                                                  const KernelRunnerPtr &kernel_actor, size_t index) {
+  auto kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kernel_mod = kernel_actor->kernel_mod();
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+
+  // In replay mode, before launch single op, recover all the infos.
+  GraphCaptureManager::GetInstance().RecoverInfoForSingleOp(kernel_actor, index);
+
+  kernel_actor->ResizeKernelMod();
+  kernel_actor->FetchOutputDeviceTensor(context);
+  kernel_actor->FetchWorkspaceDeviceTensor();
+
+  if (!kernel_actor->LaunchKernelHP(context, IsSkippedLaunch(kernel, nullptr))) {
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "#umsg#Kernel error:#umsg#Launch kernel failed: " +
+                                             kernel->fullname_with_scope()
+                                        << trace::DumpSourceLines(kernel);
+  }
+
+  if (kernel_actor->is_dynamic_shape() && kernel_mod->IsNeedUpdateOutputShapeAndSize()) {
+    MS_LOG(EXCEPTION) << "Replay single op meet shape changed!";
+  }
+  return true;
+}
+
 bool SuperKernelActor::LaunchKernel(OpContext<KernelTensor> *const context, const KernelRunnerPtr &kernel_actor,
                                     bool hp_mode, bool sync_run) {
   if (!ActorDispatcher::enable_use_trace_memory()) {
@@ -1220,9 +1286,8 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   }
 
   MS_LOG(DEBUG) << "Run graph: " << graph_->ToString()
-                << ", enable capture graph global: " << GraphCaptureManager::GetInstance().GetEnableGraphCapture()
-                << ", enable trace memory: " << enable_trace_memory_
-                << ", already allocate trace memory: " << already_allocate_trace_memory_;
+                << ", enable capture graph global: " << GraphCaptureManager::GetInstance().GetEnableGraphCapture();
+
   if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
                   << ", phase: " << graph_phase_;
@@ -1232,11 +1297,6 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
       MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->ToString();
       return;
     }
-  } else if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && enable_trace_memory_ &&
-             already_allocate_trace_memory_) {
-    MS_LOG(INFO) << "Clear captured graph when execute graph: " << graph_->ToString();
-    GraphCaptureManager::GetInstance().Reset(device_contexts_[0]);
-    FreeTraceMemory();
   }
 
   device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
@@ -1246,16 +1306,17 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
   } else {
     bool need_capture_graph = enable_capture_graph_ && !GraphCaptureManager::GetInstance().HasCapturedGraph() &&
                               ActorDispatcher::enable_static_shape();
-    bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph() &&
-                             ActorDispatcher::enable_static_shape();
+    bool need_replay_graph = enable_capture_graph_ && GraphCaptureManager::GetInstance().HasCapturedGraph();
+    GraphCaptureManager::GetInstance().SetInReplay(need_replay_graph);
+
     if (!need_capture_graph && !need_replay_graph) {
       if (!LaunchAllKernels(context, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
           << "Launch kernels by execution order failed for graph: " << graph_->ToString();
       }
     } else if (need_capture_graph) {
-      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, 0, kernel_actors_,
-                                                                          &memory_free_lists_);
+      GraphCaptureManager::GetInstance().Initialize(device_contexts_[0]);
+      GraphCaptureManager::GetInstance().FetchAllInputsBeforeCaptureGraph(context, kernel_actors_, &memory_free_lists_);
       if (!GraphCaptureManager::GetInstance().LaunchAllKernelsWithCapture(
             context, kernel_actors_, this, is_high_perf_mode_ && IsHighPerfModeAtExec())) {
         MS_INTERNAL_EXCEPTION(RuntimeError)
@@ -1276,6 +1337,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<KernelTensor> *const con
         MS_LOG(EXCEPTION) << "check parameter error when replay capture graph, it's seems like the parameter device "
                              "address has changed.";
       }
+      GraphCaptureManager::GetInstance().ResetInfoForSingleOp(kernel_actors_);
     }
   }
 
@@ -1655,15 +1717,19 @@ void SuperKernelActor::BuildAndLinkKernelActors() {
     }
 
     enable_capture_graph_ = GraphCaptureManager::GetInstance().GetEnableGraphCapture() &&
-                            (graph_phase_.find("increment") != std::string::npos) && enable_trace_memory_ &&
-                            graph_->is_dynamic_shape();
+                            (graph_phase_.find("increment") != std::string::npos) && graph_->is_dynamic_shape();
     if (enable_capture_graph_) {
       auto ret =
         GraphCaptureManager::GetInstance().FindSupportCaptureKernelPositions(kernel_actors_, device_contexts_[0]);
       if (ret) {
+        size_t stream_id = kIndex3;
+        device_contexts_[0]->device_res_manager_->CreateStream(&stream_id);
+        MS_LOG(WARNING) << "Create new stream for capture graph, stream id: " << stream_id;
+        GraphCaptureManager::GetInstance().SetStreamId(stream_id);
         MS_LOG(INFO) << "Enable acl graph for graph: " << graph_->ToString() << ", phase: " << graph_phase_;
-        GraphCaptureManager::GetInstance().Initialize(device_contexts_[0]);
       } else {
+        MS_LOG(INFO) << "Can't find any available op to capture in graph: " << graph_->ToString()
+                     << ", phase: " << graph_phase_;
         GraphCaptureManager::GetInstance().SetEnableGraphCapture(false);
         enable_capture_graph_ = false;
       }

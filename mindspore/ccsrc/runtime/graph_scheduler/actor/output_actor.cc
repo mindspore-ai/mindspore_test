@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/hardware_abstract/device_context/device_context_manager.h"
+#include "runtime/graph_scheduler/graph_capture/graph_capture_manager.h"
 #include "runtime/device/device_address_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
@@ -659,9 +660,8 @@ void OutputActor::HandleOutput() {
     auto device_context = device_contexts_[i];
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-    bool need_release_mem = true;
     // If the output node whose output address ptr can't be changed, then alloc the new device memory and copy the data:
-    if (IsOutputAddressPersisted(kernel_tensor, output_nodes_[i], &need_release_mem)) {
+    if (IsOutputAddressPersisted(kernel_tensor, output_nodes_[i])) {
       if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
         const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
         MS_EXCEPTION_IF_NULL(src_address);
@@ -681,7 +681,8 @@ void OutputActor::HandleOutput() {
       }
       SyncOutputFromTensor(tensor_device_address, device_tensor, output_node);
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
-        << "Copy graph output from device address:" << device_tensor << " to:" << tensor_device_address;
+        << "Copy graph output from device address:" << device_tensor->ToString()
+        << " to:" << tensor_device_address->ToString();
     } else {
       if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[repeat_index[i]] != nullptr) {
         const auto &src_address = std::dynamic_pointer_cast<DeviceTensor>(outputs_[repeat_index[i]]->device_address());
@@ -705,7 +706,10 @@ void OutputActor::HandleOutput() {
     }
     // If enable kernel launch capture, the kernel output as graph output will be captured and can not release device
     // memory.
-    if (need_release_mem) {
+    if (GraphCaptureManager::GetInstance().GetEnableGraphCapture() && GraphCaptureManager::GetInstance().InReplay()) {
+      GraphCaptureManager::GetInstance().SetInReplay(false);
+      kernel_tensor->set_device_ptr(nullptr);
+    } else {
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Free kernel tensor:" << kernel_tensor << " for actor:" << GetAID();
       MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(kernel_tensor.get(), real_device_context,

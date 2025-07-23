@@ -36,6 +36,9 @@ tensor::TensorPtr LLMManager::get_graph_input(const std::string &name) {
 }
 
 void LLMManager::add_graph_input(const std::string &name, tensor::TensorPtr tensor) {
+  if (tensor->device_address()->GetDeviceType() != device::DeviceType::kCPU) {
+    tensor = tensor->cpu();
+  }
   graph_inputs_map_[name] = tensor;
 }
 

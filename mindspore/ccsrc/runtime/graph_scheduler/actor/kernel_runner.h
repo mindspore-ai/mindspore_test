@@ -63,7 +63,7 @@ class KernelRunner {
 
   // The memory related operation interface.
   void SendMemoryAllocReq(OpContext<KernelTensor> *const context);
-  void SendMemoryAllocReqHP(OpContext<KernelTensor> *const context);
+  void SendMemoryAllocReqHP(OpContext<KernelTensor> *const context, uint32_t stream_id = kDefaultStreamIndex);
   void SendMemoryFreeReq(OpContext<KernelTensor> *const context);
 
   const CNodePtr &kernel() const { return kernel_; }
@@ -128,7 +128,9 @@ class KernelRunner {
   const std::set<size_t> &modifiable_ref_output_indexes() const { return modifiable_ref_output_indexes_; }
   const std::vector<KernelTensorPtr> &workspace_kernel_tensors() { return workspace_kernel_tensors_; }
   const std::vector<KernelTensorPtr> &output_kernel_tensors() { return output_kernel_tensors_; }
-  const std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
+  std::vector<KernelTensorPtr> &input_kernel_tensors() { return input_kernel_tensors_; }
+  std::vector<KernelTensor *> &input_launch_tensors() { return input_launch_tensors_; }
+  std::vector<abstract::AbstractBasePtr> &input_kernel_tensors_for_infer() { return input_kernel_tensors_for_infer_; }
   SomasInfo *somas_info() const { return somas_info_; }
   const std::set<size_t> &somas_graph_output_indexes() const { return somas_graph_output_indexes_; }
   const std::vector<const DeviceContext *> &device_contexts() const { return device_contexts_; }
