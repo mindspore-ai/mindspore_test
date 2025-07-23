@@ -9,7 +9,7 @@ mindspore.dataset.vision.ToTensor
         - **output_type** (Union[mindspore.dtype, numpy.dtype]，可选) - 输出图像的数据类型。默认值： ``np.float32`` 。
 
     异常：
-        - **TypeError** - 当输入图像的类型不为 `PIL.Image.Image` 或 :class:`numpy.ndarray` 。
+        - **TypeError** - 当输入图像的类型不为 `PIL.Image.Image` 或 `numpy.ndarray` 。
         - **TypeError** - 输入图像的维度不为2或3。
 
     教程样例：
