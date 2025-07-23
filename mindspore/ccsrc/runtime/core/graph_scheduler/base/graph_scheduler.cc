@@ -519,6 +519,32 @@ void CheckInferPerformanceFeature(const GraphCompilerInfo &graph_compiler_info, 
       << ". The kernel group launch(parallel launch) feature can not work in this case. Please "
          "eliminate heterogeneity(cpu kernel) and control flow, or disable kernel group launch feature.";
   }
+
+  bool enable_capture_graph = EnableCaptureGraph();
+  // The capture graph can not use in multi-stream and multi-subgraph case.
+  if (enable_capture_graph) {
+    for (auto &graph : graph_compiler_info.graphs_) {
+      MS_EXCEPTION_IF_NULL(graph);
+      if (graph->enable_multi_stream()) {
+        MS_LOG(EXCEPTION)
+          << "The capture graph feature doesn't support multi-stream case, please eliminate "
+             "multi-stream(communication and computing pperators use different stream), or disable "
+             "capture graph feature by set capture graph false in your python script. Note: Disabling the capture "
+             "graph feature will reduce network execution performance. ";
+      }
+    }
+
+    if (multi_sub_graph) {
+      MS_LOG(EXCEPTION) << "The increment/decode graph(" << graph_compiler_info.name_
+                        << ") has multi sub graph, it may be due to the cutting of graphs caused by "
+                           "heterogeneity(cpu kernel) or control flow."
+                        << " Sub graphs num: " << graph_compiler_info.graphs_.size()
+                        << ". The capture graph feature can not work in this case. Please eliminate heterogeneity(cpu "
+                           "kernel) and control flow, or disable capture graph feature by set capture graph false in "
+                           "your python script. Note: "
+                           "Disabling the capture will  reduce network execution performance.";
+    }
+  }
 }
 }  // namespace
 

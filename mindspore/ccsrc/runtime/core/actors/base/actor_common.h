@@ -484,6 +484,8 @@ bool IsSkippedLaunch(const CNodePtr &kernel = nullptr, const KernelGraphPtr &ker
 
 bool EnableTraceMemory();
 
+bool EnableCaptureGraph();
+
 void ResetPipelineStatus();
 void ResetTraceMemoryStatus();
 void ResetPipelineAndTraceMemoryStatus();

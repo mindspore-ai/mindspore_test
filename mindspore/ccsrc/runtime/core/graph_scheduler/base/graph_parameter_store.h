@@ -219,6 +219,8 @@ class BACKEND_EXPORT GraphParameterStore {
     return parameter_kernel_tensors_;
   }
 
+  const std::vector<ShapeVector> &GetHostTensorsShape() const { return host_tensors_shape_; }
+
   void SetParameterUsedTimes(size_t outer_index, size_t inner_index, size_t times);
 
   bool IsConcurrentlyUse(size_t outer_index, size_t inner_index);

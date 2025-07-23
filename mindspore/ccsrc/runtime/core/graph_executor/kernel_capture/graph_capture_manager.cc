@@ -16,7 +16,9 @@
 
 #include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include <string>
+#include <algorithm>
 #include "include/runtime/utils/runtime_conf/runtime_conf.h"
+#include "runtime/hardware_abstract/device_context/device_context_manager.h"
 #include "utils/llm_manager.h"
 
 namespace mindspore {
@@ -64,6 +66,20 @@ bool GraphCaptureManager::CheckKernelSupportCapture(const KernelRunnerPtr &kerne
   auto &llm_manager = LLMManager::GetInstance();
   if (llm_manager.need_force_resize(kernel_mod->kernel_name())) {
     return false;
+  }
+
+  const auto &op_capture_skip = RuntimeConf::GetInstance()->GetNotCaptureOpList();
+  auto kernel_name = common::AnfAlgo::GetCNodeName(kernel_runner->kernel());
+  std::transform(kernel_name.begin(), kernel_name.end(), kernel_name.begin(), ::tolower);
+
+  for (const auto &not_capture_op : op_capture_skip) {
+    auto lower_op = not_capture_op;
+    std::transform(lower_op.begin(), lower_op.end(), lower_op.begin(), ::tolower);
+
+    if (kernel_name == lower_op) {
+      MS_LOG(INFO) << "Not capturing op: " << not_capture_op;
+      return false;
+    }
   }
 
   return true;
@@ -131,41 +147,11 @@ bool GraphCaptureManager::FindSupportCaptureKernelPositions(const std::vector<Ke
 }
 
 void GraphCaptureManager::Initialize(const DeviceContext *device_context) {
-  if (init_) {
-    MS_LOG(EXCEPTION) << "GraphCaptureManager has already initialized.";
-  }
-
+  std::vector<CaptureGraphPtr> cur_capture_graphs;
   for (size_t i = 0; i < capture_graph_num_; i++) {
-    capture_graphs_.push_back(device_context->device_res_manager_->CreateCaptureGraph());
+    cur_capture_graphs.push_back(device_context->device_res_manager_->CreateCaptureGraph());
   }
-  if (!capture_graphs_.empty()) {
-    capture_graph_ = capture_graphs_.front();
-    MS_EXCEPTION_IF_NULL(capture_graph_);
-  }
-
-  init_ = true;
-}
-
-void GraphCaptureManager::Reset(const DeviceContext *device_context) {
-  capture_graphs_.clear();
-
-  for (size_t i = 0; i < capture_graph_num_; i++) {
-    capture_graphs_.push_back(device_context->device_res_manager_->CreateCaptureGraph());
-  }
-
-  if (!capture_graphs_.empty()) {
-    capture_graph_ = capture_graphs_.front();
-    MS_EXCEPTION_IF_NULL(capture_graph_);
-  }
-  if (!fixed_addrs_for_update_.empty()) {
-    fixed_addrs_for_update_.clear();
-  }
-  if (!fixed_addrs_for_set_inputs_.empty()) {
-    fixed_addrs_for_set_inputs_.clear();
-  }
-  if (!weight_kv_addrs_.empty()) {
-    weight_kv_addrs_.clear();
-  }
+  capture_graphs_[shape_key_] = cur_capture_graphs;
 }
 
 bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *const context,
@@ -178,7 +164,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
     if (executor.first == CAPTURE_GRAPH) {
       size_t start = capture_kernel_range_positions_[executor.second].first;
       size_t end = capture_kernel_range_positions_[executor.second].second;
-      const auto &cur_capture_graph = capture_graphs_[executor.second];
+      const auto &cur_capture_graph = capture_graphs_[shape_key_][executor.second];
       MS_EXCEPTION_IF_NULL(cur_capture_graph);
       cur_capture_graph->CaptureBegin(0);
       MS_LOG(DEBUG) << "Begin captrue graph, executor index: " << i << ", range[" << start << ", " << end << "].";
@@ -188,11 +174,11 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
         if (kernel_runner == nullptr) {
           continue;
         }
-
-        if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
+        if (!super_kernel_actor->LaunchKernelForCaptureGraph(context, kernel_runner, j, true)) {
           MS_LOG(ERROR) << "Launch kernel in capture mode failed: " << kernel_runner->kernel()->fullname_with_scope();
           return false;
         }
+        RecordGraphOutputKernelInfo(context, kernel_runner, j);
       }
       cur_capture_graph->CaptureEnd(0);
       MS_LOG(DEBUG) << "Begin replay captrue graph, executor index: " << i << ", range[" << start << ", " << end
@@ -202,7 +188,7 @@ bool GraphCaptureManager::LaunchAllKernelsWithCapture(OpContext<KernelTensor> *c
       auto &kernel_runner = kernel_runners[executor.second];
       MS_LOG(DEBUG) << "Begin launch kernel, executor order index: " << executor.second
                     << ", kernel: " << kernel_runner->kernel()->fullname_with_scope();
-      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
+      if (!super_kernel_actor->LaunchKernelForCaptureGraph(context, kernel_runner, executor.second, false)) {
         MS_LOG(ERROR) << "Launch kernel failed: " << kernel_runner->kernel()->fullname_with_scope();
         return false;
       }
@@ -217,35 +203,93 @@ bool GraphCaptureManager::LaunchAllKernelsWithReplayGraph(OpContext<KernelTensor
                                                           SuperKernelActor *super_kernel_actor, bool hp_mode) {
   MS_LOG(INFO) << "Begin launch all kernels with replay graph.";
   size_t executor_num = executors_.size();
+  PreprocessGraphOutputForReplayGraph(kernel_runners);
   for (size_t i = 0; i < executor_num; i++) {
     auto &executor = executors_[i];
     if (executor.first == CAPTURE_GRAPH) {
-      MS_EXCEPTION_IF_NULL(capture_graphs_[executor.second]);
-      capture_graphs_[executor.second]->ExecuteCaptureGraph(0);
+      MS_EXCEPTION_IF_NULL(capture_graphs_[shape_key_][executor.second]);
+      capture_graphs_[shape_key_][executor.second]->ExecuteCaptureGraph(0);
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch sub graph in replay step";
     } else {
       auto &kernel_runner = kernel_runners[executor.second];
       FetchNonFixedInput(kernel_runner, context, 0);
-      if (!super_kernel_actor->LaunchKernel(context, kernel_runner, hp_mode, true)) {
+      if (!super_kernel_actor->LaunchKernelForReplayGraph(context, kernel_runner, executor.second)) {
         MS_LOG(ERROR) << "Launch kernel failed: " << kernel_runner->kernel()->fullname_with_scope();
         return false;
       }
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "End launch single op in replay step";
     }
   }
   MS_LOG(INFO) << "End launch all kernels with replay graph.";
   return true;
 }
 
+void GraphCaptureManager::RecordGraphOutputKernelInfo(OpContext<KernelTensor> *const context,
+                                                      const KernelRunnerPtr &kernel_actor, size_t index) {
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_KERNEL) << "Record current kernel actor: "
+                                       << kernel_actor->kernel()->fullname_with_scope();
+  const auto &cur_output_kernel_tensors = kernel_actor->output_kernel_tensors();
+  const auto &is_output_kernels = kernel_actor->is_output_kernel();
+  CaptureKernelInfoList fix_output_graph_kernel_tensors;
+  for (size_t i = 0; i < cur_output_kernel_tensors.size(); ++i) {
+    if (is_output_kernels[i]) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
+        << "Record graph output for capture graph, output kernel tensor info: "
+        << cur_output_kernel_tensors[i]->ToString();
+      fix_output_graph_kernel_tensors.emplace_back(std::make_shared<CaptureKernelInfo>(
+        cur_output_kernel_tensors[i]->device_ptr(), cur_output_kernel_tensors[i]->size(),
+        cur_output_kernel_tensors[i]->GetShape()->Clone()));
+    }
+  }
+  fix_replay_graph_output_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_output_graph_kernel_tensors;
+}
+
+void GraphCaptureManager::PreprocessGraphOutputForReplayGraph(const std::vector<KernelRunnerPtr> &kernel_runners) {
+  size_t executor_num = executors_.size();
+  for (size_t i = 0; i < executor_num; i++) {
+    auto &executor = executors_[i];
+    if (executor.first == CAPTURE_GRAPH) {
+      size_t start = capture_kernel_range_positions_[executor.second].first;
+      size_t end = capture_kernel_range_positions_[executor.second].second;
+      for (size_t j = start; j <= end; j++) {
+        const auto &kernel_runner = kernel_runners[j];
+        if (kernel_runner == nullptr) {
+          continue;
+        }
+        RecoverGraphOutputKernelInfo(kernel_runner, j);
+      }
+    }
+  }
+}
+
+void GraphCaptureManager::RecoverGraphOutputKernelInfo(const KernelRunnerPtr &kernel_actor, size_t index) {
+  MS_LOG(INFO) << "Recover current kernel actor: " << kernel_actor->kernel()->fullname_with_scope();
+  size_t tmp = 0;
+  auto kernel_with_idx = std::make_pair(kernel_actor, index);
+  auto cur_output_kernel_tensors = kernel_actor->output_kernel_tensors();
+  const auto &is_output_kernels = kernel_actor->is_output_kernel();
+  const auto &cur_fix_output_graph_kernel_tensor_info = fix_replay_graph_output_info_[shape_key_][kernel_with_idx];
+  for (size_t i = 0; i < cur_output_kernel_tensors.size(); ++i) {
+    if (is_output_kernels[i]) {
+      cur_output_kernel_tensors[i]->set_device_ptr(cur_fix_output_graph_kernel_tensor_info[tmp]->device_ptr);
+      cur_output_kernel_tensors[i]->SetShape(cur_fix_output_graph_kernel_tensor_info[tmp]->shape);
+      cur_output_kernel_tensors[i]->set_size(cur_fix_output_graph_kernel_tensor_info[tmp]->size);
+      tmp++;
+    }
+  }
+}
+
 void GraphCaptureManager::HandleFirstUserMemoryFree(const KernelTensorPtr &kernel_tensor,
                                                     const KernelRunnerPtr &kernel_actor,
                                                     std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
-  if (ActorDispatcher::enable_use_trace_memory() && kernel_tensor->new_ref_count() != SIZE_MAX) {
+  if (kernel_tensor->new_ref_count() != SIZE_MAX) {
     memory_free_lists->back().emplace_back(kernel_tensor);
     MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "Add memory free list for tensor:" << kernel_tensor->ToString();
   }
 }
 
-bool GraphCaptureManager::IsWeightOrKVCache(GraphParameterStore *cur_graph_parameter_store, const AnfNodePtr &node,
-                                            size_t parameter_idx) {
+bool GraphCaptureManager::IsNonFixedInput(GraphParameterStore *cur_graph_parameter_store, const AnfNodePtr &node,
+                                          size_t parameter_idx) {
   bool is_weight = cur_graph_parameter_store->GetPositionWeight(parameter_idx);
   std::string cur_node_name = node->fullname_with_scope();
   bool is_kv_cache =
@@ -254,9 +298,10 @@ bool GraphCaptureManager::IsWeightOrKVCache(GraphParameterStore *cur_graph_param
 }
 
 void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
-  OpContext<KernelTensor> *const context, size_t stream_id, const std::vector<KernelRunnerPtr> &kernel_runners,
+  OpContext<KernelTensor> *const context, const std::vector<KernelRunnerPtr> &kernel_runners,
   std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
   MS_LOG(INFO) << "Begin fetch all kernels inputs before capture graph.";
+  InitFixedInputInfoForSingleOp(kernel_runners);
   size_t kernel_num = kernel_runners.size();
   auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
   MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
@@ -265,13 +310,13 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
     if (kernel_actor == nullptr) {
       continue;
     }
+    auto kernel_with_idx = std::make_pair(kernel_actor, i);
     for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
       size_t kernel_input_index = parameter_index.first;
       auto outer_index = parameter_index.second.second;
       auto node = parameter_index.second.first.first;
       bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
-      auto kernel_tensor =
-        FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, stream_id, false);
+      auto kernel_tensor = FetchParameter(parameter_index.second, kernel_actor->GetAID(), is_first_user, 0, false);
       const auto &device_tensor = kernel_tensor->device_address();
       MS_EXCEPTION_IF_NULL(device_tensor);
       auto cur_device_context = kernel_actor->device_contexts()[0];
@@ -289,16 +334,18 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
         MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
       }
       // deal weight/KV Cache
-      if (IsWeightOrKVCache(cur_graph_parameter_store, node, outer_index)) {
+      if (IsNonFixedInput(cur_graph_parameter_store, node, outer_index)) {
         // Save the weight or kv value for the subsequent CheckParameterNotChange function.
-        if (weight_kv_addrs_.find(parameter_index.second.first) == weight_kv_addrs_.end()) {
-          weight_kv_addrs_[parameter_index.second.first] = {kernel_tensor, parameter_index.second.second, kernel_actor};
+        if (weight_kv_addrs_[shape_key_].find(parameter_index.second.first) == weight_kv_addrs_[shape_key_].end()) {
+          weight_kv_addrs_[shape_key_][parameter_index.second.first] = {kernel_tensor, parameter_index.second.second,
+                                                                        kernel_actor};
         }
         kernel_actor->SetInputDeviceTensor(kernel_tensor, kernel_input_index);
         continue;
       }
       // deal with normal inputs
-      if (fixed_addrs_for_set_inputs_.find(parameter_index.second.first) == fixed_addrs_for_set_inputs_.end()) {
+      if (fixed_addrs_for_set_inputs_[shape_key_].find(parameter_index.second.first) ==
+          fixed_addrs_for_set_inputs_[shape_key_].end()) {
         const auto storage_info = device_tensor->GetTensorStorageInfo();
         if (storage_info) {
           MS_LOG(EXCEPTION)
@@ -325,27 +372,78 @@ void GraphCaptureManager::FetchAllInputsBeforeCaptureGraph(
           device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, kernel_actor->GetAID().Name(),
                                                          memory::mem_pool::MemType::kOther,
                                                          fix_device_tensor->GetSize(), fix_device_tensor.get());
-          if (!cur_device_context->device_res_manager_->AllocateMemory(fix_device_tensor.get(), kDefaultStreamIndex)) {
+          if (!cur_device_context->device_res_manager_->AllocateMemory(fix_device_tensor.get(), GetStreamId())) {
             SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(strategy, *context, *(cur_device_context),
                                                         kernel_actor->GetAID().Name(), fix_device_tensor->GetSize());
           }
         }
-        if (!AsyncCopy(fix_device_tensor, device_tensor, stream_id)) {
+        if (!AsyncCopy(fix_device_tensor, device_tensor, 0)) {
           MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
                             << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
         }
+        fix_kernel_tensor->set_new_ref_count(SIZE_MAX);
+
         // The fixed_addrs_for_set_inputs_ is to set input for kernel actors during the capture phase.
-        fixed_addrs_for_set_inputs_[parameter_index.second.first] = fix_kernel_tensor;
+        fixed_addrs_for_set_inputs_[shape_key_][parameter_index.second.first] = fix_kernel_tensor;
         // The fixed_addrs_for_update_ is to update the fix_addr again before the replay phase.
-        fixed_addrs_for_update_.emplace_back(parameter_index, fix_kernel_tensor, kernel_actor);
+        fixed_addrs_for_update_[shape_key_].emplace_back(parameter_index, fix_kernel_tensor, kernel_actor);
       }
-      kernel_actor->SetInputDeviceTensor(fixed_addrs_for_set_inputs_[parameter_index.second.first], kernel_input_index);
+      if (IsSingleOp(kernel_runners, i)) {
+        fix_network_input_for_replay_single_op_[shape_key_][kernel_with_idx][kernel_input_index] =
+          fixed_addrs_for_set_inputs_[shape_key_][parameter_index.second.first];
+      }
+      kernel_actor->SetInputDeviceTensor(fixed_addrs_for_set_inputs_[shape_key_][parameter_index.second.first],
+                                         kernel_input_index);
 
       if (is_first_user) {
         HandleFirstUserMemoryFree(kernel_tensor, kernel_actor, memory_free_lists);
       }
     }
   }
+}
+
+bool GraphCaptureManager::IsSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners, size_t kernel_index) {
+  size_t executor_num = executors_.size();
+  for (size_t i = 0; i < executor_num; i++) {
+    auto &executor = executors_[i];
+    if (executor.first != CAPTURE_GRAPH && executor.second == kernel_index) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void GraphCaptureManager::InitFixedInputInfoForSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners) {
+  size_t executor_num = executors_.size();
+  for (size_t i = 0; i < executor_num; i++) {
+    auto &executor = executors_[i];
+    if (executor.first != CAPTURE_GRAPH) {
+      auto kernel_idx = executor.second;
+      auto &kernel_runner = kernel_runners[kernel_idx];
+      auto kernel_with_idx = std::make_pair(kernel_runner, kernel_idx);
+      auto cur_input_kernel_tensors = kernel_runner->input_kernel_tensors();
+      std::vector<KernelTensorPtr> fix_input_kernel_tensors_for_single_op;
+      fix_input_kernel_tensors_for_single_op.resize(cur_input_kernel_tensors.size());
+      fix_network_input_for_replay_single_op_[shape_key_][kernel_with_idx] = fix_input_kernel_tensors_for_single_op;
+    }
+  }
+}
+
+bool GraphCaptureManager::IsNonFixedInputInReplay(const KernelRunnerPtr &kernel_runner, size_t kernel_input_index) {
+  for (const auto &parameter_index : kernel_runner->parameter_indexs()) {
+    size_t cur_kernel_input_index = parameter_index.first;
+    if (cur_kernel_input_index == kernel_input_index) {
+      auto outer_index = parameter_index.second.second;
+      auto node = parameter_index.second.first.first;
+      auto cur_graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+      MS_EXCEPTION_IF_NULL(cur_graph_parameter_store);
+      if (IsNonFixedInput(cur_graph_parameter_store, node, outer_index)) {
+        return true;
+      }
+      return false;
+    }
+  }
+  return false;
 }
 
 void GraphCaptureManager::FetchNonFixedInput(const KernelRunnerPtr &kernel_actor,
@@ -355,7 +453,7 @@ void GraphCaptureManager::FetchNonFixedInput(const KernelRunnerPtr &kernel_actor
   for (const auto &parameter_index : kernel_actor->parameter_indexs()) {
     auto outer_index = parameter_index.second.second;
     auto node = parameter_index.second.first.first;
-    if (IsWeightOrKVCache(cur_graph_parameter_store, node, outer_index)) {
+    if (IsNonFixedInput(cur_graph_parameter_store, node, outer_index)) {
       size_t kernel_input_index = parameter_index.first;
       bool is_first_user = kernel_actor->is_first_used_params()[kernel_input_index];
       bool has_h2d_copy = false;
@@ -380,7 +478,7 @@ void GraphCaptureManager::FetchNonFixedInput(const KernelRunnerPtr &kernel_actor
 void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
   size_t stream_id, std::queue<std::vector<KernelTensorPtr>> *memory_free_lists) {
   MS_LOG(INFO) << "Begin update all fixed inputs before replay graph.";
-  for (const auto &fix_pair : fixed_addrs_for_update_) {
+  for (const auto &fix_pair : fixed_addrs_for_update_[shape_key_]) {
     auto parameter_index = std::get<kIndex0>(fix_pair);
     auto fix_kernel_tensor = std::get<kIndex1>(fix_pair);
     auto kernel_actor = std::get<kIndex2>(fix_pair);
@@ -416,7 +514,7 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
         device_tensor->type_id() != real_input_info->type_id_) {
       MS_EXCEPTION(RuntimeError) << "Does not support heterogeneous scenarios";
     }
-    if (!AsyncCopy(fix_kernel_tensor->device_address(), device_tensor, stream_id)) {
+    if (!AsyncCopy(fix_kernel_tensor->device_address(), device_tensor, 0)) {
       MS_LOG(EXCEPTION) << "Async copy failed, src kernel tensor: " << kernel_tensor->ToString()
                         << ", dst kernel tensor: " << fix_kernel_tensor->ToString();
     }
@@ -427,7 +525,7 @@ void GraphCaptureManager::UpdateFixAddressBeforeReplayGraph(
 }
 
 bool GraphCaptureManager::CheckParameterNotChange(size_t stream_id) {
-  for (const auto &weight_kv_addr : weight_kv_addrs_) {
+  for (const auto &weight_kv_addr : weight_kv_addrs_[shape_key_]) {
     auto old_kernel_tensor = std::get<kIndex0>(weight_kv_addr.second);
     MS_EXCEPTION_IF_NULL(old_kernel_tensor);
     auto outer_idx = std::get<kIndex1>(weight_kv_addr.second);
@@ -449,6 +547,126 @@ bool GraphCaptureManager::CheckParameterNotChange(size_t stream_id) {
     }
   }
   return true;
+}
+
+void GraphCaptureManager::SetShapeKey() {
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  const auto &host_tensor_shape = graph_parameter_store->GetHostTensorsShape();
+  std::stringstream ss;
+  for (size_t i = 0; i < host_tensor_shape.size(); ++i) {
+    for (size_t j = 0; j < host_tensor_shape[i].size(); ++j) {
+      if (i > 0 || j > 0) {
+        ss << "-";
+      }
+      ss << host_tensor_shape[i][j];
+    }
+  }
+  shape_key_ = ss.str();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_ACTOR) << "Cur shape: " << shape_key_;
+}
+
+bool GraphCaptureManager::HasCapturedGraph() {
+  auto it = capture_graphs_.find(shape_key_);
+  if (it != capture_graphs_.end()) {
+    return true;
+  }
+  return false;
+}
+
+void GraphCaptureManager::RecodeInfoForSingleOp(const KernelRunnerPtr &kernel_actor, size_t index) {
+  const auto &cur_input_kernel_tensors = kernel_actor->input_kernel_tensors();
+  const auto &cur_output_kernel_tensors = kernel_actor->output_kernel_tensors();
+  const auto &cur_workspace_kernel_tensors = kernel_actor->workspace_kernel_tensors();
+  CaptureKernelInfoList fix_input_kernel_infos;
+  CaptureKernelInfoList fix_output_kernel_infos;
+  CaptureKernelInfoList fix_workspace_kernel_infos;
+
+  fix_input_kernel_infos.reserve(cur_input_kernel_tensors.size());
+  fix_output_kernel_infos.reserve(cur_output_kernel_tensors.size());
+  fix_workspace_kernel_infos.reserve(cur_workspace_kernel_tensors.size());
+
+  for (size_t i = 0; i < cur_input_kernel_tensors.size(); ++i) {
+    fix_input_kernel_infos.emplace_back(std::make_shared<CaptureKernelInfo>(
+      cur_input_kernel_tensors[i]->device_ptr(), cur_input_kernel_tensors[i]->size(),
+      cur_input_kernel_tensors[i]->GetShape()->Clone()));
+  }
+  for (size_t i = 0; i < cur_output_kernel_tensors.size(); ++i) {
+    fix_output_kernel_infos.emplace_back(std::make_shared<CaptureKernelInfo>(
+      cur_output_kernel_tensors[i]->device_ptr(), cur_output_kernel_tensors[i]->size(),
+      cur_output_kernel_tensors[i]->GetShape()->Clone()));
+  }
+  for (size_t i = 0; i < cur_workspace_kernel_tensors.size(); ++i) {
+    fix_workspace_kernel_infos.emplace_back(std::make_shared<CaptureKernelInfo>(
+      cur_workspace_kernel_tensors[i]->device_ptr(), cur_workspace_kernel_tensors[i]->size(),
+      cur_workspace_kernel_tensors[i]->GetShape()->Clone()));
+  }
+  fix_single_op_input_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_input_kernel_infos;
+  fix_single_op_output_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_output_kernel_infos;
+  fix_single_op_workspace_info_[shape_key_][std::make_pair(kernel_actor, index)] = fix_workspace_kernel_infos;
+}
+
+void GraphCaptureManager::RecoverInfoForSingleOp(const KernelRunnerPtr &kernel_actor, size_t index) {
+  auto kernel_with_idx = std::make_pair(kernel_actor, index);
+  const auto &cur_fix_input_kernel_tensor_info = fix_single_op_input_info_[shape_key_][kernel_with_idx];
+  const auto &cur_fix_output_kernel_tensor_info = fix_single_op_output_info_[shape_key_][kernel_with_idx];
+  const auto &cur_fix_workspace_kernel_tensor_info = fix_single_op_workspace_info_[shape_key_][kernel_with_idx];
+  for (size_t i = 0; i < kernel_actor->input_kernel_tensors().size(); ++i) {
+    if (IsNonFixedInputInReplay(kernel_actor, i)) {
+      MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "skip fetch kv_cache and weight index: " << i;
+      continue;
+    }
+    if (fix_network_input_for_replay_single_op_[shape_key_][kernel_with_idx][i] == nullptr) {
+      kernel_actor->input_kernel_tensors()[i]->set_device_ptr(cur_fix_input_kernel_tensor_info[i]->device_ptr);
+      kernel_actor->input_kernel_tensors()[i]->SetShape(cur_fix_input_kernel_tensor_info[i]->shape);
+      kernel_actor->input_kernel_tensors()[i]->set_size(cur_fix_input_kernel_tensor_info[i]->size);
+    } else {
+      kernel_actor->SetInputDeviceTensor(fix_network_input_for_replay_single_op_[shape_key_][kernel_with_idx][i], i);
+    }
+  }
+  for (size_t i = 0; i < kernel_actor->output_kernel_tensors().size(); ++i) {
+    kernel_actor->output_kernel_tensors()[i]->set_device_ptr(cur_fix_output_kernel_tensor_info[i]->device_ptr);
+    kernel_actor->output_kernel_tensors()[i]->SetShape(cur_fix_output_kernel_tensor_info[i]->shape);
+    kernel_actor->output_kernel_tensors()[i]->set_size(cur_fix_output_kernel_tensor_info[i]->size);
+  }
+  for (size_t i = 0; i < kernel_actor->workspace_kernel_tensors().size(); ++i) {
+    kernel_actor->workspace_kernel_tensors()[i]->set_device_ptr(cur_fix_workspace_kernel_tensor_info[i]->device_ptr);
+    kernel_actor->workspace_kernel_tensors()[i]->SetShape(cur_fix_workspace_kernel_tensor_info[i]->shape);
+    kernel_actor->workspace_kernel_tensors()[i]->set_size(cur_fix_workspace_kernel_tensor_info[i]->size);
+  }
+}
+
+void GraphCaptureManager::ResetInfoForSingleOp(const std::vector<KernelRunnerPtr> &kernel_runners) {
+  size_t executor_num = executors_.size();
+  for (size_t i = 0; i < executor_num; ++i) {
+    auto &executor = executors_[i];
+    if (executor.first != CAPTURE_GRAPH) {
+      auto &kernel_runner = kernel_runners[executor.second];
+      auto kernel_with_idx = std::make_pair(kernel_runner, executor.second);
+      const auto &is_output_kernels = kernel_runner->is_output_kernel();
+      for (size_t j = 0; j < kernel_runner->input_kernel_tensors().size(); ++j) {
+        if (IsNonFixedInputInReplay(kernel_runner, j)) {
+          MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS) << "skip free kv_cache and weight index: " << i;
+          continue;
+        }
+        if (fix_network_input_for_replay_single_op_[shape_key_][kernel_with_idx][j] == nullptr) {
+          kernel_runner->input_kernel_tensors()[j]->set_device_ptr(nullptr);
+        } else {
+          kernel_runner->input_launch_tensors()[j] = nullptr;
+          kernel_runner->input_kernel_tensors()[j] = nullptr;
+          kernel_runner->input_kernel_tensors_for_infer()[j] = nullptr;
+        }
+      }
+      for (size_t j = 0; j < kernel_runner->output_kernel_tensors().size(); ++j) {
+        if (!is_output_kernels[j]) {
+          kernel_runner->output_kernel_tensors()[j]->set_device_ptr(nullptr);
+        }
+      }
+      for (size_t j = 0; j < kernel_runner->workspace_kernel_tensors().size(); ++j) {
+        kernel_runner->workspace_kernel_tensors()[j]->set_device_ptr(nullptr);
+      }
+    }
+  }
 }
 
 void GraphCaptureManager::Finalize() {

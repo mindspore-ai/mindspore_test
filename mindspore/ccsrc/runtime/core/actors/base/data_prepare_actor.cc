@@ -29,6 +29,7 @@
 #include "backend/common/device_address_utils.h"
 #include "runtime/core/graph_scheduler/base/scheduler_helper.h"
 #include "runtime/core/graph_executor/pipeline/runtime_pipeline.h"
+#include "runtime/core/graph_executor/kernel_capture/graph_capture_manager.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
@@ -424,6 +425,9 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
   }
   auto isDyn = graph_parameter_store->RecordGraphInputsAndIsDyn(graph_compiler_info_, inference_input_indexes_,
                                                                 inference_parameters_);
+  if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
+    GraphCaptureManager::GetInstance().SetShapeKey();
+  }
   MS_LOG(INFO) << "Prepare for actor set: " << graph_compiler_info_->name_ << ", convert static shape: " << (!isDyn)
                << ", dynamic shape: " << has_dynamic_shape_ << ", enable trace memory: " << enable_trace_memory_
                << ", enable parallel dispatch: " << EnableParallelDispatchKernel()
@@ -432,6 +436,9 @@ void DataPrepareActor::RecordGraphInputsForInputOptimize(const VectorRef &args) 
     ActorDispatcher::set_enable_static_shape(!isDyn);
     const auto &phase = graph_compiler_info_->graph_phase_;
     bool is_increment_graph = (phase.find("increment") != std::string::npos);
+    if (GraphCaptureManager ::GetInstance().GetEnableGraphCapture()) {
+      GraphCaptureManager::GetInstance().SetIncrementGraph(is_increment_graph);
+    }
     if (enable_trace_memory_ && is_increment_graph) {
       if (has_continuous_memory()) {
         MS_LOG(EXCEPTION)

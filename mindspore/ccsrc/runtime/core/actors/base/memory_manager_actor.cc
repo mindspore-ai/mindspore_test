@@ -83,7 +83,8 @@ void MemoryManagerActor::AllocateMemory(const std::vector<KernelTensorPtr> *allo
 
 void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *alloc_list,
                                           const DeviceContext *device_context,
-                                          OpContext<KernelTensor> *const op_context, const AID &from_aid) {
+                                          OpContext<KernelTensor> *const op_context, const AID &from_aid,
+                                          uint32_t stream_id) {
   for (auto &kernel_tensor : *alloc_list) {
     MS_EXCEPTION_IF_NULL(kernel_tensor);
     auto device_tensor = kernel_tensor->device_address().get();
@@ -95,7 +96,7 @@ void MemoryManagerActor::AllocateMemoryHP(const std::vector<KernelTensorPtr> *al
     try {
       bool success = false;
       if (kernel_tensor->continuous_kernel_tensors() == nullptr) {
-        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+        success = device_context->device_res_manager_->AllocateMemory(device_tensor, stream_id);
         if (success) {
           static std::string name = "Alloc memory";
           kernel_tensor->IncreaseNewRefCount(name);
