@@ -1480,6 +1480,36 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     MS_LOG(INTERNAL_EXCEPTION) << "Resolve node failed";
   }
 
+  // If exist side effects of the class method, need insert the Dependent node to retain the side effect info.
+  // h = method(xx, xxx)
+  // h.wait()   // wait() will be parsed into a subgraph
+  // Process h.wait
+  if (IsValueNode<FuncGraph>(new_node)) {
+    auto out_cnode = out_node->cast_ptr<CNode>();
+    MS_EXCEPTION_IF_NULL(out_cnode);
+    auto handle_node = out_cnode->input(1);
+    MS_EXCEPTION_IF_NULL(handle_node);
+    bool need_insert_depend = false;
+    if (handle_node->isa<CNode>()) {
+      MS_LOG(DEBUG) << "handle_node: " << handle_node->DebugString()
+                    << " side_effect:" << handle_node->cast<CNodePtr>()->has_side_effect_node();
+      if (handle_node->cast<CNodePtr>()->has_side_effect_node()) {
+        need_insert_depend = true;
+      }
+    }
+    MS_LOG(DEBUG) << "need_insert_depend: " << need_insert_depend;
+    if (need_insert_depend) {
+      auto func = GetValueNode<FuncGraphPtr>(new_node);
+      auto output = func->output();
+      MS_EXCEPTION_IF_NULL(output);
+      auto depend = func->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), output, handle_node});
+      MS_LOG(DEBUG) << "depend: " << depend->DebugString();
+      depend->set_has_side_effect_node(true);
+      MS_LOG(DEBUG) << "Set has_side_effect_node flag for depend: " << out_cnode->DebugString();
+      func->set_output(depend);
+    }
+  }
+
   auto prim = GetPrimitiveWithoutDoSignature(new_node);
   SetSparseBpropFlag(prim, out_conf);
   SetSideEffectFlag(prim, out_conf);

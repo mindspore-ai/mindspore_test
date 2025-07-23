@@ -1113,7 +1113,15 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input,
   // Recheck input
   auto cnode = node_input->cast<CNodePtr>();
   if (IsPrimitiveCNode(cnode, prim::kPrimStopGradient)) {
-    return GetIgnoreBuildValueFlag(cnode->input(1), cnode->input(1)->abstract());
+    auto input = cnode->input(1);
+    // Do not replace call resolve node which maybe has side effect.
+    // %0 = resolve(namespace, attr)
+    // %1 = %0(args)
+    // %2 = stop_gradient(%1)  if replace, the side effect node which in resolve node maybe miss.
+    if (input->cast<CNodePtr>() != nullptr && IsPrimitiveCNode(input->cast<CNodePtr>()->input(0), prim::kPrimResolve)) {
+      return true;
+    }
+    return GetIgnoreBuildValueFlag(input, input->abstract());
   }
   if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     auto inner_inputs = cnode->inputs();
