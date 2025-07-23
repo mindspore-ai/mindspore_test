@@ -39,7 +39,7 @@ def check_results(commands, results):
     subprocess.check_output(["grep", "MS_DEV_P2P_HCCL_BUFFSIZE, and the value is 24 MB.", commands[0][1]])
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
 def test_train():
     """
     Feature: Trainer.train()
