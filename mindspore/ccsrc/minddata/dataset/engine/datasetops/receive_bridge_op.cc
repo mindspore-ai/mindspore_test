@@ -155,15 +155,18 @@ Status ReceiveBridgeOp::operator()() {
   TaskManager::FindMe()->Post();
 
   std::string current_pid = std::to_string(getpid());
+  std::string independent_pid = std::to_string(subprocess_pid_);
   // register the shm_id & msg_id by MainProcessPID_"ReceiveBridgeOp"
-  RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+  RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                        msg_queue_.msg_queue_id_);
 
   // Get msg from the independent dataset process by msg_queue_
   receive_info_.normal_row_.sample_ = 0;
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
   auto status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
 
-  RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+  RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                        msg_queue_.msg_queue_id_);
 
   // First: check the err_status_
   if (err_status_ != Status::OK()) {
@@ -215,9 +218,11 @@ Status ReceiveBridgeOp::operator()() {
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
     }
 
-    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+    RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                          msg_queue_.msg_queue_id_);
     RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
-    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+    RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                          msg_queue_.msg_queue_id_);
 
     if (eoe_row) {
       receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
@@ -230,10 +235,12 @@ Status ReceiveBridgeOp::operator()() {
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
     }
 
-    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+    RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                          msg_queue_.msg_queue_id_);
     // Get msg from the independent dataset process by msg_queue_
     status = msg_queue_.MsgRcv(kWorkerSendDataMsg);
-    RegisterShmIDAndMsgID(current_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(), msg_queue_.msg_queue_id_);
+    RegisterShmIDAndMsgID(current_pid + "_" + independent_pid + "_ReceiveBridgeOp", receive_queue_.GetShmID(),
+                          msg_queue_.msg_queue_id_);
 
     // First: check the err_status_
     if (err_status_ != Status::OK()) {
