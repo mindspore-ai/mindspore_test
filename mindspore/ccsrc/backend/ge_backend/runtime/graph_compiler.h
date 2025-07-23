@@ -37,7 +37,6 @@
 namespace mindspore {
 namespace ge_backend {
 namespace runtime {
-using session::CallBackFunc;
 using session::GraphOutputInfo;
 using session::InputInfo;
 using session::KernelGraph;
@@ -147,7 +146,7 @@ class GraphCompiler {
   }
 
   // Register a summary callback function, which is called in the final stages of summary.
-  void RegisterSummaryCallBackFunc(const CallBackFunc &callback) const;
+  void RegisterSummaryCallBackFunc() const;
   // Execute graph summary.
   void Summary(const std::vector<KernelGraphPtr> &graphs) const;
 

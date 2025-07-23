@@ -37,7 +37,6 @@
 namespace mindspore {
 using device::DeviceContext;
 using session::BackendOpRunInfo;
-using session::CallBackFunc;
 using session::GraphOutputInfo;
 using session::InputInfo;
 using session::KernelGraph;
@@ -170,7 +169,7 @@ class GraphCompiler {
                       std::map<KernelWithIndex, tensor::TensorPtr> *op_output_map) const;
 
   // Register a summary callback function, which is called in the final stages of summary.
-  void RegisterSummaryCallBackFunc(const CallBackFunc &callback) const;
+  void RegisterSummaryCallBackFunc() const;
   // Execute graph summary.
   void Summary(const std::vector<KernelGraphPtr> &graphs) const;
 

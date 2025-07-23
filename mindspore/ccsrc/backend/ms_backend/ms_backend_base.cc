@@ -1772,7 +1772,7 @@ BackendGraphId MSBackendBase::Build(const FuncGraphPtr &func_graph, const Backen
   auto origin_output_node = root_graph->output();
 
   // Register a summary callback function, which is called in the final stages of summary.
-  graph_compiler_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
+  graph_compiler_->RegisterSummaryCallBackFunc();
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);

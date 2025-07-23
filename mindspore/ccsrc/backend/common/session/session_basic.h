@@ -39,7 +39,6 @@
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#include "mindspore/ccsrc/debug/summary/summary.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/visible.h"
 
@@ -53,9 +52,6 @@ namespace mindspore {
 const char kSessionBasic[] = "SessionBasic";
 
 namespace session {
-using mindspore::debug::CallBackFunc;
-using mindspore::debug::Summary;
-
 using AnyList = std::vector<Any>;
 using AnyListPtr = std::shared_ptr<AnyList>;
 
@@ -97,7 +93,7 @@ class Executor;
 class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_shared_from_this<SessionBasic> {
  public:
   using KernelGraphMgr::ConstructKernelGraph;
-  SessionBasic() : summary_callback_(nullptr), device_id_(0) {
+  SessionBasic() : device_id_(0) {
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
     debugger_ = nullptr;
 #endif
@@ -106,13 +102,13 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   virtual void Init(uint32_t device_id) { device_id_ = device_id; }
   void InitExecutor(const std::string &device_name, uint32_t device_id);
   virtual void SyncStream() const {}
-  virtual ~SessionBasic() { summary_callback_ = nullptr; }
+  virtual ~SessionBasic() {}
 
   void BuildGraph(GraphId graphId);
   void RunGraph(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
   void RunGraphAsync(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
 
-  virtual void RegisterSummaryCallBackFunc(const CallBackFunc &callback);
+  virtual void RegisterSummaryCallBackFunc();
   virtual GraphId GetFinalRunGraph() const { return kInvalidGraphId; }
   bool IsGetNextGraph(const std::shared_ptr<KernelGraph> &kernel_graph, std::string *channel_name) const;
   virtual bool CheckModelInputs(uint32_t graph_id, const std::vector<tensor::TensorPtr> &inputs,
@@ -259,7 +255,6 @@ class BACKEND_COMMON_EXPORT SessionBasic : public KernelGraphMgr, public std::en
   virtual std::string GetCommWorldGroup() { return std::string(); }
   void GetConstValueDepend(const CNodePtr &cnode, std::set<int64_t> *const_input_attr_index) const;
   mindspore::HashMap<GraphInfo, std::shared_ptr<KernelGraph>> run_op_graphs_;
-  CallBackFunc summary_callback_;
   uint32_t device_id_;
   // rank id of physical device
   uint32_t rank_id_{0};

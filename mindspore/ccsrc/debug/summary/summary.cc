@@ -15,8 +15,13 @@
  */
 
 #include "mindspore/ccsrc/debug/summary/summary.h"
+#include <memory>
+#include <map>
+#include <string>
+#include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/callbacks.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
@@ -120,7 +125,7 @@ void Summary::SummaryTensor(KernelGraph *graph) {
   summary_callback_(0, params_list);
 }
 
-void Summary::RegisterSummaryCallBackFunc(const CallBackFunc &callback) { summary_callback_ = callback; }
+void Summary::RegisterSummaryCallBackFunc() { summary_callback_ = mindspore::callbacks::SummarySaveCallback; }
 
 void Summary::SetSummaryNodes(KernelGraph *graph) {
   MS_LOG(DEBUG) << "Update summary Start";

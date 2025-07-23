@@ -32,7 +32,7 @@ class BACKEND_COMMON_EXPORT Summary {
   static Summary &GetInstance();
   void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
   void SummaryTensor(KernelGraph *graph);
-  void RegisterSummaryCallBackFunc(const CallBackFunc &callback);
+  void RegisterSummaryCallBackFunc();
   void SetSummaryNodes(KernelGraph *graph);
 
  private:
