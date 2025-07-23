@@ -2759,8 +2759,8 @@ class LinearTransformation(PyTensorOperation):
         mean_vector (numpy.ndarray): A mean vector in shape of (D,), where :math:`D = C \times H \times W` .
 
     Raises:
-        TypeError: If `transformation_matrix` is not of type :class:`numpy.ndarray` .
-        TypeError: If `mean_vector` is not of type :class:`numpy.ndarray` .
+        TypeError: If `transformation_matrix` is not of type `numpy.ndarray` .
+        TypeError: If `mean_vector` is not of type `numpy.ndarray` .
 
     Supported Platforms:
         ``CPU``
@@ -6911,7 +6911,7 @@ class ToPIL(PyTensorOperation):
     Convert the input decoded numpy.ndarray image to PIL Image.
 
     Raises:
-        TypeError: If the input image is not of type :class:`numpy.ndarray` or `PIL.Image.Image` .
+        TypeError: If the input image is not of type `numpy.ndarray` or `PIL.Image.Image` .
 
     Supported Platforms:
         ``CPU``
@@ -6975,7 +6975,7 @@ class ToTensor(ImageTensorOperation):
             Default: ``np.float32`` .
 
     Raises:
-        TypeError: If the input image is not of type `PIL.Image.Image` or :class:`numpy.ndarray` .
+        TypeError: If the input image is not of type `PIL.Image.Image` or `numpy.ndarray` .
         TypeError: If dimension of the input image is not 2 or 3.
 
     Supported Platforms:
@@ -7053,7 +7053,7 @@ class ToType(TypeCast):
             such as ``numpy.float32`` .
 
     Raises:
-        TypeError: If `data_type` is not of type :class:`mindspore.dtype` or :class:`numpy.dtype` .
+        TypeError: If `data_type` is not of type :class:`mindspore.dtype` or `numpy.dtype` .
 
     Supported Platforms:
         ``CPU`` ``GPU`` ``Ascend``

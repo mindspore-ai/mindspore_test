@@ -12,7 +12,7 @@ mindspore.dataset.audio.PhaseVocoder
     异常：
         - **TypeError** - 当 `rate` 的类型不为float。
         - **ValueError** - 当 `rate` 不为正数。
-        - **TypeError** - 当 `phase_advance` 的类型不为 :class:`numpy.ndarray` 。
+        - **TypeError** - 当 `phase_advance` 的类型不为 `numpy.ndarray` 。
         - **RuntimeError** - 当输入音频的shape不为<..., freq, num_frame, complex=2>。
 
     教程样例：
