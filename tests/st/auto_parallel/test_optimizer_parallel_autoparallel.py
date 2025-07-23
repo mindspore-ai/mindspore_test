@@ -23,7 +23,7 @@ def test_msrun_data_parallel_model_programming():
     Expectation: The difference between the new loss and the baseline loss is in line with expectations.
     """
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10920 "
                     "--join=True --log_dir=./optimizer_parallel_logs/model_programming_8_1_1_1 pytest -s -v "
                     "optimizer_parallel_autoparallel.py::test_optimizer_parallel_model_programming")
     assert ret == 0
@@ -36,7 +36,7 @@ def test_msrun_data_parallel_functional_programming():
     Expectation: The difference between the new loss and the baseline loss is in line with expectations.
     """
     ret = os.system("export GLOG_v=2 && msrun --worker_num=8 --local_worker_num=8 "
-                    "--master_addr=127.0.0.1 --master_port=10807 "
+                    "--master_addr=127.0.0.1 --master_port=10921 "
                     "--join=True --log_dir=./optimizer_parallel_logs/functional_programming_8_1_1_1 pytest -s -v "
                     "optimizer_parallel_autoparallel.py::test_optimizer_parallel_functional_programming")
     assert ret == 0
