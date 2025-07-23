@@ -1177,6 +1177,9 @@ void PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
     MS_LOG(DEBUG) << "Prepare offloaded parameter: " << front_node.first->fullname_with_scope();
   }
   if (tensor_address->device_name() != graph_parameter_store->GetParameterDeviceName(outer_index, inner_index)) {
+    MS_LOG(DEBUG) << "tensor address:" << tensor_address->ToString() << " parameter store device type:"
+                  << graph_parameter_store->GetParameterDeviceName(outer_index, inner_index)
+                  << " outer index:" << outer_index << " inner index:" << inner_index;
     PrepareForNonTensorAddress(parameter_index, tensor, from_aid, is_first_user, stream_id);
     return;
   }
