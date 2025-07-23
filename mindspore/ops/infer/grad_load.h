@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_DETACH_H_
-#define MINDSPORE_CORE_OPS_DETACH_H_
+#ifndef MINDSPORE_CORE_OPS_GRAD_LOAD_H_
+#define MINDSPORE_CORE_OPS_GRAD_LOAD_H_
 #include <map>
 #include <memory>
 #include <string>
@@ -25,15 +25,15 @@
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameDetach = "Detach";
+constexpr auto kNameGradLoad = "GradLoad";
 constexpr auto kDataIndex = 0;
-class OPS_API Detach : public BaseOperator {
+class OPS_API GradLoad : public BaseOperator {
  public:
-  MIND_API_BASE_MEMBER(Detach);
-  Detach() : BaseOperator(kNameDetach) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
+  MIND_API_BASE_MEMBER(GradLoad);
+  GradLoad() : BaseOperator(kNameGradLoad) { InitIOName({"x", "data", "depend_nodes", "sync"}, {"output"}); }
   void Init() const {}
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_DETACH_H_
+#endif  // MINDSPORE_CORE_OPS_GRAD_LOAD_H_

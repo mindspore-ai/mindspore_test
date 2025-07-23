@@ -26,10 +26,11 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameToRemote = "ToRemote";
+constexpr auto kDataIndex = 0;
 class OPS_API ToRemote : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(ToRemote);
-  ToRemote() : BaseOperator(kNameToRemote) { InitIOName({"x"}, {"output"}); }
+  ToRemote() : BaseOperator(kNameToRemote) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
   void Init() const {}
 };
 }  // namespace ops

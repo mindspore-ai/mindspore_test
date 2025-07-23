@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/prefetch.h"
+#include "infer/grad_load.h"
 
 #include <memory>
 #include <string>
@@ -37,8 +37,8 @@
 
 namespace mindspore {
 namespace ops {
-MIND_API_OPERATOR_IMPL(Prefetch, BaseOperator);
-class PrefetchInfer : public abstract::OpInferBase {
+MIND_API_OPERATOR_IMPL(GradLoad, BaseOperator);
+class GradLoadInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
                           const std::vector<AbstractBasePtr> &input_args) const override {
@@ -54,12 +54,12 @@ class PrefetchInfer : public abstract::OpInferBase {
   AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const override {
     MS_EXCEPTION_IF_NULL(input_args[kDataIndex]);
-    constexpr size_t input_num = 3;
+    constexpr size_t input_num = 4;
     const auto &prim_name = primitive->name();
     CheckAndConvertUtils::CheckInputArgs(input_args, kLessEqual, input_num, prim_name);
     return input_args[kDataIndex];
   }
 };
-REGISTER_PRIMITIVE_OP_INFER_IMPL(Prefetch, prim::kPrimPrefetch, PrefetchInfer, false);
+REGISTER_PRIMITIVE_OP_INFER_IMPL(GradLoad, prim::kPrimGradLoad, GradLoadInfer, false);
 }  // namespace ops
 }  // namespace mindspore

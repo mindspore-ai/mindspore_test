@@ -42,18 +42,22 @@ class DetachInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
                           const std::vector<AbstractBasePtr> &input_args) const override {
-    return std::make_shared<abstract::AbstractScalar>(kValueAny, kBool)->BuildShape();
+    MS_EXCEPTION_IF_NULL(input_args[kDataIndex]);
+    return input_args[kDataIndex]->BuildShape();
   }
 
   TypePtr InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const override {
-    return std::make_shared<abstract::AbstractScalar>(kValueAny, kBool)->BuildType();
+    MS_EXCEPTION_IF_NULL(input_args[kDataIndex]);
+    return input_args[kDataIndex]->BuildType();
   }
 
   AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const override {
+    MS_EXCEPTION_IF_NULL(input_args[kDataIndex]);
+    constexpr size_t input_num = 3;
     const auto &prim_name = primitive->name();
-    CheckAndConvertUtils::CheckInputArgs(input_args, kGreaterEqual, 1, prim_name);
-    return std::make_shared<abstract::AbstractScalar>(kValueAny, kBool);
+    CheckAndConvertUtils::CheckInputArgs(input_args, kLessEqual, input_num, prim_name);
+    return input_args[kDataIndex];
   }
 };
 REGISTER_PRIMITIVE_OP_INFER_IMPL(Detach, prim::kPrimDetach, DetachInfer, false);

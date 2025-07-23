@@ -26,10 +26,11 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNamePrefetch = "Prefetch";
+constexpr auto kDataIndex = 0;
 class OPS_API Prefetch : public BaseOperator {
  public:
   MIND_API_BASE_MEMBER(Prefetch);
-  Prefetch() : BaseOperator(kNamePrefetch) { InitIOName({"x"}, {"output"}); }
+  Prefetch() : BaseOperator(kNamePrefetch) { InitIOName({"x", "depend_nodes", "sync"}, {"output"}); }
   void Init() const {}
 };
 }  // namespace ops

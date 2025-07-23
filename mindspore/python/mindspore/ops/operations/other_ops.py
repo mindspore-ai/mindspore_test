@@ -925,3 +925,27 @@ class Reusing(Primitive):
 
     def __call__(self, x):
         return x
+
+
+class ToRemote(Primitive):
+    @prim_attr_register
+    def __init__(self):
+        """Initialize ToRemote"""
+
+
+class Detach(Primitive):
+    @prim_attr_register
+    def __init__(self):
+        """Initialize Detach"""
+
+
+class Prefetch(Primitive):
+    @prim_attr_register
+    def __init__(self):
+        """Initialize Prefetch"""
+
+
+class GradLoad(Primitive):
+    @prim_attr_register
+    def __init__(self):
+        """Initialize GradLoad"""
