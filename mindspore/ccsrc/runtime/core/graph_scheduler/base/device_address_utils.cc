@@ -994,7 +994,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
+    device_context->device_context_key().device_name_, stream_id);
 
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->SetShapeVector(tensor->shape());
@@ -1018,7 +1018,6 @@ void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, con
   const auto &device_sync = tensor->device_address();
   auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
   MS_EXCEPTION_IF_NULL(device_address);
-  device_address->set_is_view(is_view);
 
   auto mem_type =
     tensor->is_parameter() ? memory::mem_pool::MemType::kWeight : memory::mem_pool::MemType::kPyNativeInput;
@@ -1226,7 +1225,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
     const auto &format = GetFormatByTensorShape(device_context, tensor->shape());
     auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
       nullptr, tensor_size, tensor->shape(), format, tensor->data_type(),
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
+      device_context->device_context_key().device_name_, stream_id);
     MS_EXCEPTION_IF_NULL(device_address);
     device_address->SetShapeVector(tensor->shape());
     tensor->set_device_address(device_address);
@@ -1244,7 +1243,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
   const auto &format = GetFormatByTensorShape(device_context, output_tensor->shape());
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, size, output_tensor->shape(), format, output_tensor->data_type(),
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
+    device_context->device_context_key().device_name_, stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   device_address->SetShapeVector(output_tensor->shape());
   output_tensor->set_device_address(device_address);
@@ -1308,7 +1307,7 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddressWithoutKernel
   MS_EXCEPTION_IF_NULL(device_context);
   auto device_address = device_context->device_res_manager_->CreateDeviceAddress(
     nullptr, workspace_size, ShapeVector(), Format::DEFAULT_FORMAT, kTypeUnknown,
-    device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
+    device_context->device_context_key().device_name_, stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "WorkspaceAddress", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", memory::mem_pool::MemType::kWorkSpace,

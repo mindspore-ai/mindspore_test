@@ -117,7 +117,7 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, TypeId dtype_
 KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstract::BaseShapePtr &shape,
                            const TypePtr &type, const ValuePtr &value, void *device_ptr, size_t size,
                            const std::string &format, TypeId dtype_id, const ShapeVector &host_shape,
-                           const string &device_name, uint32_t device_id, const UserDataPtr &user_data)
+                           const string &device_name, const UserDataPtr &user_data)
     : KernelTensor(shape, type, value) {
   MS_EXCEPTION_IF_NULL(device_address);
   auto shape_vector = device_address_->GetShapeVector();
@@ -135,7 +135,6 @@ KernelTensor::KernelTensor(const DeviceAddressPtr &device_address, const abstrac
   device_address_->set_format(format);
   device_address_->set_type_id(dtype_id);
   device_address_->SetDeviceType(device::GetDeviceTypeByName(device_name));
-  device_address_->set_device_id(device_id);
   user_data_ = user_data;
 }
 

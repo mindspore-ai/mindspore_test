@@ -200,7 +200,6 @@ device::DeviceAddressPtr GeDeviceResManager::CreateDeviceAddress() const {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_address = std::make_shared<device::DeviceAddress>(nullptr, 0, kAscendDevice);
   device_address->SetDeviceType(device::GetDeviceTypeByName(ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET)));
-  device_address->set_device_id(ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID));
   return device_address;
 }
 

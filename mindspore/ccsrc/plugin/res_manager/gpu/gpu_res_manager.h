@@ -54,7 +54,7 @@ class GPUResManager : public DeviceResManager {
 
   DeviceAddressPtr CreateDeviceAddress() const override;
   DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector, const Format &format,
-                                       TypeId type_id, const std::string &device_name, uint32_t device_id,
+                                       TypeId type_id, const std::string &device_name,
                                        uint32_t stream_id) const override;
 
   bool SyncCopy(const DeviceSyncPtr &dst_device_sync, const DeviceSyncPtr &src_device_sync,
