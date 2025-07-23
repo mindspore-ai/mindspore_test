@@ -42,7 +42,6 @@ void ValueNode::SetVobj(AObject *object_info) {
     return;
   }
   if (this->vobj_ != nullptr && this->vobj_->GetType() != AObject::kTypeAnyValue && object_info != nullptr) {
-    MS_LOG(INFO) << "Try to overwrite vobj with a new one, detail refer to the info log.";
     MS_LOG(INFO) << "Try to overwrite " << this->vobj_->ToString() << " with " << object_info->ToString() << " for "
                  << ToString();
   }
@@ -65,13 +64,6 @@ AObject *ValueNode::get_attr(const std::string &nam) {
     return AObject::MakeAObject(AObject::kTypeAnyValue);
   }
   return GetVobj()->GetAttr(nam);
-}
-
-AObject *ValueNode::binary_subscr(ValueNode *sub) {
-  if (vobj_ == nullptr) {
-    return AObject::MakeAObject(AObject::kTypeAnyValue);
-  }
-  return GetVobj()->GetItem(sub->GetVobj());
 }
 
 bool ValueNode::IsConstantValue() const {

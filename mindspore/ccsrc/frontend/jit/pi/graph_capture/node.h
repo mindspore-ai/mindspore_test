@@ -122,8 +122,6 @@ class ValueNode : public InstrNode {
   const auto &GetOwnVobj() const { return vobj_; }
   AObject *get_attr(const std::string &nam);
 
-  AObject *binary_subscr(ValueNode *sub);
-
   std::string ToString() const override;
 
   bool IsConstantValue() const;

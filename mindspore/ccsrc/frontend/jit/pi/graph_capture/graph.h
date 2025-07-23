@@ -161,8 +161,7 @@ class Graph {
 
   const FrameStates &GetFrame(int bci) const;
   void SetFrame(int bci, const FrameStates &f);
-  auto &GetFrames() { return frame_states_; }
-  const auto &GetFrames() const { return frame_states_; }
+
   Allocator &allocator() { return alloc_; }
   ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                           const std::string &name = "");
