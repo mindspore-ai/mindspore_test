@@ -5814,7 +5814,7 @@ def nonzero(input, *, as_tuple=False):
         input (Tensor): The input tensor.
 
     .. note::
-        - Ascend: Rank of Input tensor can be equal to 0 except jit level O2 mode.
+        - Ascend: Rank of Input tensor can be equal to 0 except GE backend.
         - CPU/GPU: Rank of Input tensor should be greater than or eaqual to 1.
 
     Keyword Args:

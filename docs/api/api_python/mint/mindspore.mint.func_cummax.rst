@@ -11,7 +11,7 @@ mindspore.mint.cummax
         \end{array}
 
     .. note::
-        Ascend不支持O2模式。
+        Ascend不支持GE后端。
 
     参数：
         - **input** (Tensor) - 输入Tensor，要求维度大于0。

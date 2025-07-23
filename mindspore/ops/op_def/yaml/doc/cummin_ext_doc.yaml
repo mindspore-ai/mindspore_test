@@ -9,7 +9,7 @@ cummin_ext:
             \end{array}
 
         .. note::
-            O2 mode is not supported in Ascend.
+            GE backend is not supported in Ascend.
 
         Args:
             input (Tensor): The input Tensor, The dimension must be greater than 0.
