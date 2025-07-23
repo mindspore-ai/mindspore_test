@@ -350,10 +350,10 @@ def test_ring_attention_semi_auto_parallel_alltoallv(input_layout):
     B, N, S, D = 8, 16, 1024, 128
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D, input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_send_recv=False)
-    if os.path.exists("./ring_attention_semi_auto_parallel_alltoallv/rank_0"):
-        shutil.rmtree("./ring_attention_semi_auto_parallel_alltoallv/rank_0")
+    if os.path.exists("./ring_attention_semi_auto_parallel_alltoallv"):
+        shutil.rmtree("./ring_attention_semi_auto_parallel_alltoallv")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./ring_attention_semi_auto_parallel_alltoallv/rank_0/*validate*.ir"
+    file = "./ring_attention_semi_auto_parallel_alltoallv/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -387,10 +387,10 @@ def test_ring_attention_semi_auto_parallel_send_recv(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_send_recv=True)
-    if os.path.exists("./ring_attention_semi_auto_parallel_send_recv/rank_0"):
-        shutil.rmtree("./ring_attention_semi_auto_parallel_send_recv/rank_0")
+    if os.path.exists("./ring_attention_semi_auto_parallel_send_recv"):
+        shutil.rmtree("./ring_attention_semi_auto_parallel_send_recv")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./ring_attention_semi_auto_parallel_send_recv/rank_0/*validate*.ir"
+    file = "./ring_attention_semi_auto_parallel_send_recv/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -431,10 +431,10 @@ def test_flash_sp_semi_auto_parallel(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True)
-    if os.path.exists("./flash_sp_semi_auto_parallel/rank_0"):
-        shutil.rmtree("./flash_sp_semi_auto_parallel/rank_0")
+    if os.path.exists("./flash_sp_semi_auto_parallel"):
+        shutil.rmtree("./flash_sp_semi_auto_parallel")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./flash_sp_semi_auto_parallel/rank_0/*validate*.ir"
+    file = "./flash_sp_semi_auto_parallel/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -475,10 +475,10 @@ def test_flash_sp_semi_auto_parallel_bf16(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True, enable_bf16=True)
-    if os.path.exists("./flash_sp_semi_auto_parallel_bf16/rank_0"):
-        shutil.rmtree("./flash_sp_semi_auto_parallel_bf16/rank_0")
+    if os.path.exists("./flash_sp_semi_auto_parallel_bf16"):
+        shutil.rmtree("./flash_sp_semi_auto_parallel_bf16")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./flash_sp_semi_auto_parallel_bf16/rank_0/*validate*.ir"
+    file = "./flash_sp_semi_auto_parallel_bf16/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -519,10 +519,10 @@ def test_flash_sp_semi_auto_parallel_not_full(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True)
-    if os.path.exists("./test_flash_sp_semi_auto_parallel_not_full/rank_0"):
-        shutil.rmtree("./test_flash_sp_semi_auto_parallel_not_full/rank_0")
+    if os.path.exists("./test_flash_sp_semi_auto_parallel_not_full"):
+        shutil.rmtree("./test_flash_sp_semi_auto_parallel_not_full")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./test_flash_sp_semi_auto_parallel_not_full/rank_0/*validate*.ir"
+    file = "./test_flash_sp_semi_auto_parallel_not_full/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -563,10 +563,10 @@ def test_flash_sp_semi_auto_parallel_multi_fa(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True, multi_fa=True)
-    if os.path.exists("./flash_sp_semi_auto_parallel_multi_fa/rank_0"):
-        shutil.rmtree("./flash_sp_semi_auto_parallel_multi_fa/rank_0")
+    if os.path.exists("./flash_sp_semi_auto_parallel_multi_fa"):
+        shutil.rmtree("./flash_sp_semi_auto_parallel_multi_fa")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./flash_sp_semi_auto_parallel_multi_fa/rank_0/*validate*.ir"
+    file = "./flash_sp_semi_auto_parallel_multi_fa/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -630,10 +630,10 @@ def test_ring_attention_semi_auto_parallel_cp(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_cp=True)
-    if os.path.exists("./ring_attention_semi_auto_parallel_cp/rank_0"):
-        shutil.rmtree("./ring_attention_semi_auto_parallel_cp/rank_0")
+    if os.path.exists("./ring_attention_semi_auto_parallel_cp"):
+        shutil.rmtree("./ring_attention_semi_auto_parallel_cp")
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./ring_attention_semi_auto_parallel_cp/rank_0/*validate*.ir"
+    file = "./ring_attention_semi_auto_parallel_cp/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -656,7 +656,7 @@ def test_ring_attention_semi_auto_parallel_cp(input_layout):
     assert out == "3"
     context.reset_auto_parallel_context()
 
-    file = "./ring_attention_semi_auto_parallel_cp/rank_0/*opt_pass_2_opt_a*.ir"
+    file = "./ring_attention_semi_auto_parallel_cp/*opt_pass_2_opt_a*.ir"
     para = "call"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],

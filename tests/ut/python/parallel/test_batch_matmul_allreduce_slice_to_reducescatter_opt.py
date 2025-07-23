@@ -29,7 +29,7 @@ def setup_function():
 
 
 def check_output(dir_name, num_comm_ops=1):
-    file = "%s/rank_0/*validate*.ir" % dir_name
+    file = "%s/*validate*.ir" % dir_name
     prim_name = "ReduceScatter("
     tag_name = "forward_op"
     output = subprocess.check_output(

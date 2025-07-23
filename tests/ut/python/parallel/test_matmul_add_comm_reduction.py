@@ -61,7 +61,7 @@ class GradWrap(nn.Cell):
 
 
 def check_output(num_comm_ops=1):
-    file = "./graph_comm_reduction/rank_0/*validate*.ir"
+    file = "./graph_comm_reduction/*validate*.ir"
     prim_name = "AllReduce("
     tag_name = "comm_reduction"
     output = subprocess.check_output(
@@ -112,8 +112,8 @@ def test_matmul_add_comm_reduction_normal():
     w2 = Tensor(np.ones([32, 64]), dtype=ms.float16)
     b1 = Tensor(np.ones([64]), dtype=ms.float16)
     b2 = Tensor(np.ones([64]), dtype=ms.float16)
-    if os.path.exists("./graph_comm_reduction/rank_0"):
-        shutil.rmtree("./graph_comm_reduction/rank_0")
+    if os.path.exists("./graph_comm_reduction"):
+        shutil.rmtree("./graph_comm_reduction")
     # compile
     compile_net(net, x, w1, w2, b1, b2)
     check_output()
@@ -167,8 +167,8 @@ def test_matmul_add_comm_reduction_two_matmul_left():
     w2 = Tensor(np.ones([32, 64]), dtype=ms.float16)
     b1 = Tensor(np.ones([64]), dtype=ms.float16)
     b2 = Tensor(np.ones([64]), dtype=ms.float16)
-    if os.path.exists("./graph_comm_reduction/rank_0"):
-        shutil.rmtree("./graph_comm_reduction/rank_0")
+    if os.path.exists("./graph_comm_reduction"):
+        shutil.rmtree("./graph_comm_reduction")
     # compile
     compile_net(net, x, w1, w2, b1, b2)
     check_output(0)
@@ -229,8 +229,8 @@ def test_matmul_add_comm_reduction_one_matmul_one_batch_matmul():
     w2 = Tensor(np.ones([128, 8, 16]), dtype=ms.float16)
     b1 = Tensor(np.ones([64]), dtype=ms.float16)
     w3 = Tensor(np.ones([128, 8, 8]), dtype=ms.float16)
-    if os.path.exists("./graph_comm_reduction/rank_0"):
-        shutil.rmtree("./graph_comm_reduction/rank_0")
+    if os.path.exists("./graph_comm_reduction"):
+        shutil.rmtree("./graph_comm_reduction")
     # compile
     compile_net(grad_net, x, w1, w2, b1, w3)
     check_output()

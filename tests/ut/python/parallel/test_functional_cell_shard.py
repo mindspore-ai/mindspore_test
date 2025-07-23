@@ -126,7 +126,7 @@ def test_cell_shard_with_layout_be_set_and_propagate():
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="cell")))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 1), 'tensor_map': (2, 0), "
@@ -154,7 +154,7 @@ def test_ms_shard_with_layout_be_set_and_propagate():
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 1), 'tensor_map': (2, 0), "
@@ -182,7 +182,7 @@ def test_ms_shard_with_multi_dim_and_interleaved_parallel_layout():
     x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, shard_key="ms")))
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
+    file = f"{ir_graph_path}/step_parallel_begin_*"
     para1 = "PrimFunc_AShardIdentity(%1)"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 4, 2, 2), 'tensor_map': ((3, 0, 2), 1), "
@@ -230,7 +230,7 @@ def test_cell_shard_with_out_layout_be_set_and_propagate():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell", parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((2, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -258,7 +258,7 @@ def test_cell_shard_with_out_strategy_be_set_and_propagate():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell", in_parameter_plan=parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((2, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -286,7 +286,7 @@ def test_cell_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "cell", in_parameter_plan=parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((8, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -314,7 +314,7 @@ def test_ms_shard_with_out_layout_be_set_and_propagate():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms", in_parameter_plan=parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((2, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -343,7 +343,7 @@ def test_ms_shard_with_out_strategy_be_set_and_propagate():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms", in_parameter_plan=parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((2, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -371,7 +371,7 @@ def test_ms_shard_with_out_strategy_be_set_and_propagate_reduce_scatter():
     parameter_plan = {"self.subnet.w1": layout("mp", "sp")}
     net = GradWrap(NetWithLoss(ShardNet(in_layout1, out_layout1, "ms", in_parameter_plan=parameter_plan)))
     phase = compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1 = "PrimFunc_MatMul(%4"
     in_strategy = "out_strategy: ((8, 1))"
     check_layout_config(para1, file, in_strategy)
@@ -504,7 +504,7 @@ def test_ms_shard_pp_interleave_with_correct_group_rank_ids():
     model = ms.train.Model(pipeline_net, optimizer=optimizer)
     model.train(2, dataset, dataset_sink_mode=False)
 
-    file = f"{ir_graph_path}/rank_0/*_validate_*"
+    file = f"{ir_graph_path}/*_validate_*"
     para1_str = "= Send("
     group_rank_ids_str = 'group_rank_ids: (0, 4)'
     check_layout_config(para1_str, file, group_rank_ids_str)
@@ -528,7 +528,7 @@ def test_cell_shard_with_layout_be_set_and_propagate_defer_inline_0():
     in_layout2 = (layout("mp", "sp"),)
     net.network.network.relu.shard(in_layout2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    file = f"{ir_graph_path}/04_inline_*"
     para1_str = "= Shard(.*ShardSubNet_construct"
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -559,7 +559,7 @@ def test_cell_nested_shard_with_layout_be_set_and_propagate_1():
     in_layout2 = (layout("mp", "sp"),)
     net.network.network.shard(in_layout2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    file = f"{ir_graph_path}/04_inline_*"
     para1_str = "y) = Shard("
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -592,7 +592,7 @@ def test_cell_nested_shard_with_layout_be_set_and_propagate_2():
     out_strategy2 = ((4, 2),)
     net.network.network.shard(in_strategy2, out_strategy2)
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    file = f"{ir_graph_path}/04_inline_*"
     para1_str = "y) = Shard("
     in_layout1_str = (
         '(((I64(2), I64(4), I64(1)), (I64(2), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'
@@ -632,7 +632,7 @@ def test_cell_nested_and_repeated_shard_with_layout_be_set_and_propagate_3():
     net.network.network.shard(in_strategy4, out_strategy4)
 
     compile_net(net, x)
-    file = f"{ir_graph_path}/rank_0/04_inline_*"
+    file = f"{ir_graph_path}/04_inline_*"
     para1_str = "y) = Shard("
     in_layout3_str = (
         '(((I64(2), I64(4), I64(1)), (I64(1), I64(0)), Bool(0), ("dp", "sp", "mp"))), None'

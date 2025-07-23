@@ -508,7 +508,7 @@ def test_sharding_strategy_save_and_load4():
         net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
         net.set_train()
         _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
-        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        file = f"{ir_graph_path}/step_auto_parallel_begin_*"
         in_layout_cfg1 = (
             "in_layout: ({'device_matrix': (2, 2, 2, 2), 'tensor_map': ((3, 0), 2), 'interleaved_parallel': true, "
             "'alias_name': (dp, mp, sp, interleaved_parallel)}, {'device_matrix': (2, 2, 2, 2), 'tensor_map': (2, 1), "
@@ -603,7 +603,7 @@ def test_sharding_strategy_save_and_load5():
         net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
         net.set_train()
         _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
-        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        file = f"{ir_graph_path}/step_auto_parallel_begin_*"
         in_layout_cfg1 = (
             "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': (2, 1), 'interleaved_parallel': false, "
             "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (1, 0), "
@@ -698,7 +698,7 @@ def test_sharding_strategy_save_and_load6():
         net = NetForSaveAndLoad(w1, w2, in_layout1, in_layout2, out_layout1, out_layout2)
         net.set_train()
         _cell_graph_executor.compile(net, x, b1, b2, b3, phase='train')
-        file = f"{ir_graph_path}/rank_0/step_auto_parallel_begin_*"
+        file = f"{ir_graph_path}/step_auto_parallel_begin_*"
         in_layout_cfg1 = (
             "in_layout: ({'device_matrix': (2, 2, 2), 'tensor_map': (2, 1), 'interleaved_parallel': false, "
             "'alias_name': (dp, mp, sp)}, {'device_matrix': (2, 2, 2), 'tensor_map': (1, 0), "

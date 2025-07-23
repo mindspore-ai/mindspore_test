@@ -197,7 +197,7 @@ def test_zero_bubble_v():
     """
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = "0"
     graph_root_path = "./graph1"
-    rank_graph_path = graph_root_path + "/rank_0/"
+    rank_graph_path = graph_root_path + "/"
     context.set_context(save_graphs=True, save_graphs_path=graph_root_path)
     context.set_auto_parallel_context(device_num=32, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -270,7 +270,7 @@ def test_zero_bubble_v():
 def zero_bubble_v_recompute(rank_id):
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = "0"
     graph_root_path = "./graph" + str(rank_id)
-    rank_graph_path = graph_root_path + "/rank_0/"
+    rank_graph_path = graph_root_path + "/"
     context.set_context(save_graphs=True, save_graphs_path=graph_root_path)
     context.set_auto_parallel_context(device_num=32, global_rank=rank_id)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -366,7 +366,7 @@ def test_zero_bubble_v_new_api():
     """
     os.environ["MS_DEV_JIT_ENABLE_VIEW_OP"] = "0"
     graph_root_path = "./graph_new_api"
-    rank_graph_path = graph_root_path + "/rank_0/"
+    rank_graph_path = graph_root_path + "/"
     context.set_context(save_graphs=True, save_graphs_path=graph_root_path)
     context.set_auto_parallel_context(device_num=32, global_rank=0)
     stage_config = {"_backbone.cell1": 0, "_backbone.cell2": 1, "_backbone.cell3": 2,

@@ -320,7 +320,7 @@ def test_dataset_broadcast_set_dataset_layout():
     model.train(2, dataset, dataset_sink_mode=True)
     step_parallel_end = find_graph_file_name('./datasink_layout_graph/', 'step_parallel_end')
     log_output = subprocess.check_output(
-        ["grep -r '%s' %s " % ('GetNext', './datasink_layout_graph/rank_0/' + step_parallel_end)],
+        ["grep -r '%s' %s " % ('GetNext', './datasink_layout_graph/' + step_parallel_end)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     match_shape = re.findall(r"shapes: (\(\(\d+, \d+\), \(\d+, \d+\)\))", log_cnt)
@@ -367,7 +367,7 @@ def test_dataset_broadcast_replace_get_next():
     model.train(2, dataset, dataset_sink_mode=True)
     optimizer_ir = find_file_name('./datasink_layout_replace_get_next/', 'optimizer')
     log_output = subprocess.check_output(
-        ["grep -A 1 -r '%s' %s " % ('Broadcast', './datasink_layout_replace_get_next/rank_0/' + optimizer_ir)],
+        ["grep -A 1 -r '%s' %s " % ('Broadcast', './datasink_layout_replace_get_next/' + optimizer_ir)],
         shell=True)
     log_cnt = str(log_output, 'utf-8').strip()
     match_shape = re.findall(r"TupleShape(\(\(\d+, \d+\), \(\d+, \d+\)\))", log_cnt)

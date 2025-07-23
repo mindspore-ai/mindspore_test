@@ -147,7 +147,7 @@ class TestGlobalNormInserted:
 
         """
         # Find the step_parallel_end
-        ir_files = glob.glob(os.path.join(self.output_path, 'rank_0', 'step_parallel_end*.ir'))
+        ir_files = glob.glob(os.path.join(self.output_path, 'step_parallel_end*.ir'))
         assert len(ir_files) == 1
         appear_count = 0
         with open(ir_files[0], 'r') as fp:

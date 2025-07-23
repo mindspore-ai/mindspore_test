@@ -27,6 +27,7 @@
 #include "utils/ms_context.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/system/base.h"
+#include "utils/distributed_meta.h"
 
 namespace mindspore {
 static const int MAX_DIRECTORY_LENGTH = 1024;
@@ -89,7 +90,7 @@ inline std::string GetSaveGraphsPathName(const std::string &file_name, const std
   } else {
     save_graphs_path = save_path;
   }
-  if (IsStandAlone()) {
+  if (!DistributedMeta::GetInstance()->initialized()) {
     return save_graphs_path + "/" + file_name;
   }
   return save_graphs_path + "/rank_" + std::to_string(GetRank()) + "/" + file_name;

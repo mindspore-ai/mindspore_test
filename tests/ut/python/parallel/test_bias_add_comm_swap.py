@@ -102,7 +102,7 @@ def test_bias_add_comm_swap():
     # compile
     compile_net(net, x, w, b)
 
-    file = "./test_bias_add_comm_swap/rank_0/*validate*.ir"
+    file = "./test_bias_add_comm_swap/*validate*.ir"
     prim_name = "ReduceScatter"
     para = "bias_add_comm_swap"
     output = subprocess.check_output(

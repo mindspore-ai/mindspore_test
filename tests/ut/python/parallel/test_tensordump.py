@@ -99,7 +99,7 @@ def check_tensordump_num_from_ir(graph_dir):
     cnt = 0
     if not os.path.exists(graph_dir):
         logger.critical(f"When executing ut of tensordump, directory: {graph_dir} is not exist")
-    validate_ir = glob.glob(f"{graph_dir}/rank_0/*_validate_*.ir")[0]
+    validate_ir = glob.glob(f"{graph_dir}/*_validate_*.ir")[0]
     with open(validate_ir, "r", encoding="utf-8") as file:
         for line in file:
             cnt += 1 if "TensorDump(" in line else 0
