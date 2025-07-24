@@ -132,7 +132,7 @@ int64_t GetCubeSizeByType(const TypeId &data_type) {
     return kCube32;
   }
   if (C0_64.find(data_type) != C0_64.end()) {
-    return kCube64;
+    return kCube32;
   }
   return kCube16;
 }
