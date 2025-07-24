@@ -1280,44 +1280,12 @@ bool AnfAlgo::IsInplaceNode(const mindspore::AnfNodePtr &kernel, const string &t
 }
 
 bool AnfAlgo::IsCommunicationOp(const std::string &prim_name) {
-  static const std::set<std::string> kCommunicationOpNames = {kAllReduceOpName,
-                                                              kAllGatherOpName,
-                                                              kBroadcastOpName,
-                                                              kReduceScatterOpName,
-                                                              kSendOpName,
-                                                              kReceiveOpName,
-                                                              kAlltoAllOpName,
-                                                              kAllToAllOpName,
-                                                              kAllToAllvOpName,
-                                                              kMuxReceiveOpName,
-                                                              kMuxSendOpName,
-                                                              kMoeDistributeDispatch,
-                                                              kBarrierOpName,
-                                                              kCollectiveScatterOpName,
-                                                              kCollectiveGatherOpName,
-                                                              kMatMulAllReduceOpName,
-                                                              kBatchISendIRecvOpName,
-                                                              kAlltoAllVOpName,
-                                                              kAlltoAllVGEOpName,
-                                                              kAllGatherVOpName,
-                                                              kReduceScatterVOpName,
-                                                              kMoeDistributeCombine,
-                                                              kReduceOpName,
-                                                              kAllGatherMatmulOpName,
-                                                              kMatmulReduceScatterOpName};
-  return (kCommunicationOpNames.find(prim_name) != kCommunicationOpNames.end());
+  return IsNaiveCommunicationOp(prim_name) || IsCommunicationFusionOp(prim_name);
 }
 
 bool AnfAlgo::IsCommunicationOp(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  if (!node->isa<CNode>()) {
-    return false;
-  }
-  if (HasNodeAttr("is_comm_op", node->cast<CNodePtr>())) {
-    return true;
-  }
-  auto kernel_name = AnfAlgo::GetCNodeName(node);
-  return IsCommunicationOp(kernel_name);
+  return IsNaiveCommunicationOp(node) || IsCommunicationFusionOp(node);
 }
 
 bool AnfAlgo::IsLcclCommunicationOp(const AnfNodePtr &node) {
@@ -1335,15 +1303,41 @@ bool AnfAlgo::IsLcclCommunicationOp(const AnfNodePtr &node) {
   return (collective_comm_lib == "LCCL") ? true : false;
 }
 
-bool AnfAlgo::IsCommFusionOp(const std::string &kernel_name) {
-  bool is_comm_fusion_op = (kernel_name == kMatMulAllReduceOpName) || (kernel_name == kMoeDistributeCombine) ||
-                           (kernel_name == kMoeDistributeDispatch) || (kernel_name == kQbmmAllReduceAdd) ||
-                           (kernel_name == kMatmulAllReduceAddRmsNorm);
-  return is_comm_fusion_op;
+bool AnfAlgo::IsCommunicationFusionOp(const std::string &kernel_name) {
+  static const std::set<std::string> kCommunicationFusionOpNames = {
+    kMatMulAllReduceOpName,     kMoeDistributeCombine,      kMoeDistributeDispatch, kQbmmAllReduceAdd,
+    kMatmulAllReduceAddRmsNorm, kMatmulReduceScatterOpName, kAllGatherMatmulOpName};
+  return kCommunicationFusionOpNames.find(kernel_name) != kCommunicationFusionOpNames.end();
 }
 
-bool AnfAlgo::IsNaiveCommOp(const AnfNodePtr &node, const std::string &kernel_name) {
-  return IsCommunicationOp(node) && !IsCommFusionOp(kernel_name);
+bool AnfAlgo::IsCommunicationFusionOp(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto kernel_name = AnfAlgo::GetCNodeName(node);
+  return IsCommunicationFusionOp(kernel_name);
+}
+
+bool AnfAlgo::IsNaiveCommunicationOp(const std::string &kernel_name) {
+  static const std::set<std::string> kCommunicationOpNames = {
+    kAllReduceOpName, kAllGatherOpName,   kBroadcastOpName,         kReduceScatterOpName,    kSendOpName,
+    kReceiveOpName,   kAlltoAllOpName,    kAllToAllOpName,          kAllToAllvOpName,        kMuxReceiveOpName,
+    kMuxSendOpName,   kBarrierOpName,     kCollectiveScatterOpName, kCollectiveGatherOpName, kBatchISendIRecvOpName,
+    kAlltoAllVOpName, kAlltoAllVGEOpName, kAllGatherVOpName,        kReduceScatterVOpName,   kReduceOpName};
+  return kCommunicationOpNames.find(kernel_name) != kCommunicationOpNames.end();
+}
+
+bool AnfAlgo::IsNaiveCommunicationOp(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  if (HasNodeAttr(kAttrIsCommOp, node->cast<CNodePtr>())) {
+    return true;
+  }
+  auto kernel_name = AnfAlgo::GetCNodeName(node);
+  return IsNaiveCommunicationOp(kernel_name);
 }
 
 bool AnfAlgo::IsDtypeFormatSensitiveOp(const AnfNodePtr &node) {

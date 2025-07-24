@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include "plugin/device/ascend/kernel/hccl/hcom_matmul_reduce_scatter.h"
 #include "hccl/hccl_types.h"
 #include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
-#include "plugin/device/ascend/kernel/hccl/hcom_matmul_reduce_scatter.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/rt.h"
+#include "mindspore/core/include/utils/anf_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -29,7 +30,7 @@ bool HcomMatMulReduceScatterKernel::Init(const std::vector<KernelTensor *> &inpu
     MS_LOG(EXCEPTION) << "Output number of MatMulReduceScatter should be 1, but got " << outputs.size();
   }
 
-  std::vector<KernelTensor *> real_inputs(inputs.begin(), inputs.begin() + 2);
+  std::vector<KernelTensor *> real_inputs(inputs.begin(), inputs.begin() + kSizeTwo);
 
   if (!HcclKernel::Init(real_inputs, outputs)) {
     MS_LOG(ERROR) << "Call HcclKernel::Init failed.";
@@ -65,7 +66,7 @@ bool HcomMatMulReduceScatterKernel::Init(const std::vector<KernelTensor *> &inpu
 
 int HcomMatMulReduceScatterKernel::Resize(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  std::vector<KernelTensor *> real_inputs(inputs.begin(), inputs.begin() + 2);
+  std::vector<KernelTensor *> real_inputs(inputs.begin(), inputs.begin() + kSizeTwo);
   int ret = HcclKernel::Resize(real_inputs, outputs);
   if (ret != KRET_OK) {
     MS_LOG(ERROR) << "Resize failed";
