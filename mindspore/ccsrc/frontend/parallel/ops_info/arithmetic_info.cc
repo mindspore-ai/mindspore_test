@@ -621,7 +621,7 @@ Status OuterInfo::InferOutputTensorInfo() {
 
 ReplaceGraphPtr OuterInfo::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel() ||
-      inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
+      inputs_tensor_info_[kIndex1].tensor_layout().IsInterleavedParallel()) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "For distributed operator " << name_ << " it does not support "
                                        << "interleaved parallel.";
   }
