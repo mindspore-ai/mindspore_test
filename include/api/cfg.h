@@ -28,35 +28,50 @@ namespace mindspore {
 constexpr int iter_th = 1000;
 class MS_API MixPrecisionCfg {
  public:
+  /// \brief Constructor of mix precision training config.
   MixPrecisionCfg() {
     this->dynamic_loss_scale_ = false;
     this->loss_scale_ = 128.0f;
     this->keep_batchnorm_fp32_ = true;
     this->num_of_not_nan_iter_th_ = iter_th;
   }
+  /// \brief Constructor of mix precision training config.
+  ///
+  /// \param[in] rhs The config of mix precision.
   MixPrecisionCfg(const MixPrecisionCfg &rhs) {
     this->dynamic_loss_scale_ = rhs.dynamic_loss_scale_;
     this->loss_scale_ = rhs.loss_scale_;
     this->keep_batchnorm_fp32_ = rhs.keep_batchnorm_fp32_;
     this->num_of_not_nan_iter_th_ = rhs.num_of_not_nan_iter_th_;
   }
+  /// \brief Destructor of mix precision config.
   ~MixPrecisionCfg() = default;
 
-  bool dynamic_loss_scale_ = false;   /**< Enable/disable dynamic loss scale during mix precision training */
-  float loss_scale_;                  /**< Initial loss scale factor  */
-  bool keep_batchnorm_fp32_ = true;   /**< Keep batch norm in FP32 while training */
-  uint32_t num_of_not_nan_iter_th_;   /**< a threshold for modifying loss scale when dynamic loss scale is enabled */
-  bool is_raw_mix_precision_ = false; /**< Is mix precision model export from mindspore  */
+  /// \brief Enable/disable dynamic loss scale during mix precision training.
+  bool dynamic_loss_scale_ = false;
+  /// \brief Initial loss scale factor.
+  float loss_scale_;
+  /// \brief Keep batch norm in FP32 while training.
+  bool keep_batchnorm_fp32_ = true;
+  /// \brief A threshold for modifying loss scale when dynamic loss scale is enabled.
+  uint32_t num_of_not_nan_iter_th_;
+  /// \brief Is mix precision model export from mindspore.
+  bool is_raw_mix_precision_ = false;
 };
 
 class MS_API TrainCfg {
  public:
+  /// \brief Constructor of training config.
   TrainCfg() = default;
+  /// \brief Constructor of training config.
+  ///
+  /// \param[in] rhs The training config.
   TrainCfg(const TrainCfg &rhs) {
     this->loss_name_ = rhs.loss_name_;
     this->mix_precision_cfg_ = rhs.mix_precision_cfg_;
     this->accumulate_gradients_ = rhs.accumulate_gradients_;
   }
+  /// \brief Destructor of training config.
   ~TrainCfg() = default;
 
   /// \brief obtain part of the name that identify a loss kernel.
@@ -67,9 +82,11 @@ class MS_API TrainCfg {
   ///
   /// \param[in] loss_name define part of the name that identify a loss kernel.
   inline void SetLossName(const std::vector<std::string> &loss_name);
-
+  /// \brief Optimization level.
   OptimizationLevel optimization_level_ = kO0;
-  MixPrecisionCfg mix_precision_cfg_; /**< Mix precision configuration */
+  /// \brief Mix precision configuration.
+  MixPrecisionCfg mix_precision_cfg_;
+  /// \brief If accumulate gradients is used.
   bool accumulate_gradients_ = false;
 
  private:
