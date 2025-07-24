@@ -177,9 +177,10 @@ kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, con
     return kernel_mod;
   }
 
-  if (common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH") != nullptr) {
+  static const auto ms_op_plugin_path = common::EnvHelper::GetInstance()->GetEnv("MS_OP_PLUGIN_PATH");
+  if (ms_op_plugin_path != nullptr) {
     // if env var MS_OP_PLUGIN_PATH is set, then use custom op plugin to load op
-    const std::string custom_op_name = "CustomOpPlugin";
+    constexpr auto custom_op_name = "CustomOpPlugin";
     kernel_mod = device_context->GetKernelExecutor()->CreateKernelMod(custom_op_name);
     MS_EXCEPTION_IF_NULL(kernel_mod);
 
