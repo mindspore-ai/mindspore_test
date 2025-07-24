@@ -17,6 +17,8 @@
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
+#else
+#include <windows.h>
 #endif
 
 #include <vector>
@@ -36,7 +38,10 @@ CustomOpPluginCpuKernelMod::~CustomOpPluginCpuKernelMod() {
   if (handle_ != nullptr) {
     dlclose(handle_);
   }
-
+#else
+  if (handle_ != nullptr) {
+    FreeLibrary(static_cast<HMODULE>(handle_));
+  }
 #endif
 }
 
@@ -56,6 +61,57 @@ bool CustomOpPluginCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   kernel_name_ = primitive_->name();
   SetKernelPath();
+
+  if (!handle_) {
+#if !defined(_WIN32) && !defined(_WIN64)
+    handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
+    if (!handle_) {
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
+                    << "' should be successful, but error occurs! Error message is: " << dlerror();
+      return false;
+    }
+#else
+    handle_ = LoadLibraryA(file_path_.c_str());
+    if (!handle_) {
+      DWORD error = GetLastError();
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, LoadLibrary file '" << file_path_
+                    << "' should be successful, but error occurs! Error code: " << error;
+      return false;
+    }
+#endif
+  }
+
+  if (!reg_func_) {
+    const std::string reg_func_name = "IsKernelRegistered";
+#if !defined(_WIN32) && !defined(_WIN64)
+    reg_func_ = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(dlsym(handle_, reg_func_name.c_str()));
+    if (auto error_info = dlerror(); error_info != nullptr) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << reg_func_name
+                        << "'. Error info: " << error_info;
+    }
+#else
+    reg_func_ = reinterpret_cast<std::add_pointer<bool(const char *)>::type>(
+      GetProcAddress(static_cast<HMODULE>(handle_), reg_func_name.c_str()));
+    if (!reg_func_) {
+      DWORD error = GetLastError();
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << reg_func_name
+                        << "'. Error code: " << error;
+    }
+#endif
+  }
+
+  try {
+    bool ret = reg_func_(primitive_->name().c_str());
+    if (!ret) {
+      MS_LOG(INFO) << "Can't find '" << kernel_name_ << " on CPU in op plugin";
+      return false;
+    }
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "For '" << kernel_name_ << "' on CPU, operator failed when executing user defined file "
+                    << file_path_ << "! "
+                    << "Error message is " << e.what();
+    return false;
+  }
 
   for (size_t i = 0; i < inputs.size(); i++) {
     auto in_shape = inputs[i]->GetShapeVector();
@@ -98,18 +154,27 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
     params.push_back(static_cast<void *>(workspace[i]->device_ptr()));
   }
 
-#if !defined(_WIN32) && !defined(_WIN64)
-
   if (!handle_) {
+#if !defined(_WIN32) && !defined(_WIN64)
     handle_ = dlopen(file_path_.c_str(), RTLD_LAZY | RTLD_LOCAL);
     if (!handle_) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, dlopen file '" << file_path_
                     << "' should be successful, but error occurs! Error message is: " << dlerror();
       return false;
     }
+#else
+    handle_ = LoadLibraryA(file_path_.c_str());
+    if (!handle_) {
+      DWORD error = GetLastError();
+      MS_LOG(ERROR) << "For '" << kernel_name_ << "' on CPU, LoadLibrary file '" << file_path_
+                    << "' should be successful, but error occurs! Error code: " << error;
+      return false;
+    }
+#endif
   }
 
   if (!aot_func_) {
+#if !defined(_WIN32) && !defined(_WIN64)
     aot_func_ =
       reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
         dlsym(handle_, func_name_.c_str()));
@@ -117,6 +182,16 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << func_name_
                         << "'. Error info: " << error_info;
     }
+#else
+    aot_func_ =
+      reinterpret_cast<std::add_pointer<int(int, void **, int *, int64_t **, const char **, void *, void *)>::type>(
+        GetProcAddress(static_cast<HMODULE>(handle_), func_name_.c_str()));
+    if (!aot_func_) {
+      DWORD error = GetLastError();
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "' on CPU, error occurs when fetching function '" << func_name_
+                        << "'. Error code: " << error;
+    }
+#endif
   }
 
   int nparam = SizeToInt(params.size());
@@ -140,10 +215,6 @@ bool CustomOpPluginCpuKernelMod::Launch(const std::vector<KernelTensor *> &input
                       << "Any return value not equal to 0 will be treated as user defined error code and we will "
                          "terminate execution. If termination is not your purpose, please set return value to 0.";
   }
-
-#else
-  MS_LOG(EXCEPTION) << "Custom AOT Operator doesn't support Windows currently";
-#endif
 
   return true;
 }
