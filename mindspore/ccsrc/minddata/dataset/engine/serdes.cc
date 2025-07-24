@@ -19,7 +19,6 @@
 #include <iomanip>
 #include <stack>
 
-#include "include/common/utils/utils.h"
 #include "minddata/dataset/core/pybind_support.h"
 #include "utils/file_utils.h"
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"

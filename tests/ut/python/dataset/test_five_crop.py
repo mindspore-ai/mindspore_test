@@ -25,6 +25,7 @@ from util import visualize_list, save_and_check_md5_pil
 
 DATA_DIR = ["../data/dataset/test_tf_file_3_images/train-0000-of-0001.data"]
 SCHEMA_DIR = "../data/dataset/test_tf_file_3_images/datasetSchema.json"
+IMAGENET_DIR = "../data/dataset/testPK/data"
 
 GENERATE_GOLDEN = False
 
@@ -74,6 +75,30 @@ def test_five_crop_op(plot=False):
         # The output data should be of a 4D tensor shape, a stack of 5 images.
         assert len(image_2.shape) == 4
         assert image_2.shape[0] == 5
+
+
+def test_five_crop_multiprocessing():
+    """
+    Feature: Test FiveCrop operator with multiprocessing
+    Description: Test FiveCrop operator with multiprocessing
+    Expectation: Output is the same as expected output
+    """
+    logger.info("Test FiveCrop operator with multiprocessing")
+
+    dataset = ds.ImageFolderDataset(IMAGENET_DIR, num_samples=20, num_parallel_workers=8, shuffle=False)
+    transforms = [
+        vision.Decode(to_pil=True),
+        vision.FiveCrop(20),
+        lambda *images: np.stack([vision.ToTensor()(image) for image in images])
+    ]
+    transform = mindspore.dataset.transforms.Compose(transforms)
+    num_parallel_workers = 8
+    data = dataset.map(input_columns=["image"], operations=transform, num_parallel_workers=num_parallel_workers,
+                       python_multiprocessing=True)
+    num_iter = 0
+    for _ in data.create_dict_iterator(output_numpy=True):
+        num_iter += 1
+    assert num_iter == 20
 
 
 def test_five_crop_error_msg():
