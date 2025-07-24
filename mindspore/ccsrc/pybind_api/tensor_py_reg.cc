@@ -531,6 +531,26 @@ extern PyObject *TensorPython_asnumpy(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION_END
 }
 
+extern PyObject *TensorPython_numpy_non_blocking(PyObject *self, PyObject *args) {
+  HANDLE_MS_EXCEPTION
+  PyType<TensorPy> *py_tensor;
+  pybind11::array np_array;
+  if (self == NULL) {
+    PyObject *oriTensor;
+    if (!PyArg_ParseTuple(args, "O", &oriTensor)) {
+      return nullptr;
+    }
+    py_tensor = (PyType<TensorPy> *)oriTensor;
+  } else {
+    py_tensor = (PyType<TensorPy> *)self;
+  }
+  TensorPy &tensorPy = py_tensor->value;
+  auto tensor = tensorPy.GetTensor();
+  np_array = TensorPybind::NumpyNonBlocking(*tensor);
+  return np_array.release().ptr();
+  HANDLE_MS_EXCEPTION_END
+}
+
 extern PyObject *TensorPython_data_sync(PyObject *self, PyObject *args) {
   HANDLE_MS_EXCEPTION
   runtime::Pipeline::Get().WaitAll();
@@ -1134,6 +1154,19 @@ static PyMethodDef Tensor_methods[] = {
                                 Returns:
                                     numpy.ndarray.
    
+                                Examples:
+                                    >>> data = mindspore.Tensor(np.ones((2, 3)))
+                                    >>> array = data.asnumpy()
+                                    >>> array
+                                    array([[1., 1., 1.],
+                                           [1., 1., 1.]])
+                                )mydelimiter"},
+  {"_numpy_non_blocking", (PyCFunction)TensorPython_numpy_non_blocking, METH_VARARGS, R"mydelimiter(
+                                Convert tensor to numpy.ndarray.
+
+                                Returns:
+                                    numpy.ndarray.
+
                                 Examples:
                                     >>> data = mindspore.Tensor(np.ones((2, 3)))
                                     >>> array = data.asnumpy()

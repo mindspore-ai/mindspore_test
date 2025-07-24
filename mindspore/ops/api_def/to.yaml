@@ -1,0 +1,21 @@
+to:
+  - op_yaml: to_device_op.yaml
+    py_method: tensor_to
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: to_dtype_op.yaml
+    py_method: tensor_to
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: to_other_op.yaml
+    py_method: tensor_to
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
