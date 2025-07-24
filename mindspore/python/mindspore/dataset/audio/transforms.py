@@ -2793,7 +2793,7 @@ class PhaseVocoder(AudioTensorOperation):
     Raises:
         TypeError: If `rate` is not of type float.
         ValueError: If `rate` is not a positive number.
-        TypeError: If `phase_advance` is not of type :class:`numpy.ndarray` .
+        TypeError: If `phase_advance` is not of type `numpy.ndarray` .
         RuntimeError: If input tensor is not in shape of <..., freq, num_frame, complex=2>.
 
     Supported Platforms:

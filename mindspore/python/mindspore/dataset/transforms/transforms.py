@@ -1171,7 +1171,7 @@ class TypeCast(TensorOperation):
             to be cast to.
 
     Raises:
-        TypeError: If `data_type` is not of MindSpore data type bool, int, float, string or type :class:`numpy.dtype` .
+        TypeError: If `data_type` is not of MindSpore data type bool, int, float, string or type `numpy.dtype` .
 
     Supported Platforms:
         ``CPU`` ``GPU`` ``Ascend``
