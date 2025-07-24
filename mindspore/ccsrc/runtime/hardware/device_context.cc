@@ -19,6 +19,10 @@
 
 namespace mindspore {
 namespace device {
+void *DeviceResManager::AllocateOffloadMemory(size_t size) const { return offloaded_mem_pool_->MallocHost(size); }
+
+void DeviceResManager::FreeOffloadMemory(void *ptr) const { offloaded_mem_pool_->FreeHost(ptr); }
+
 bool DeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   if (address->GetPtr() != nullptr) {
