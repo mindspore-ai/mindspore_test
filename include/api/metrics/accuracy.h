@@ -25,10 +25,18 @@ constexpr int METRICS_MULTILABEL = 1;
 
 class MS_API AccuracyMetrics : public Metrics {
  public:
+  /// \brief Constructor of AccuracyMetrics.
+  ///
+  /// \param[in] accuracy_metrics The metrics of accuracy.
+  /// \param[in] input_indexes The indexes of inputs.
+  /// \param[in] output_indexes The indexes of outputs.
   explicit AccuracyMetrics(int accuracy_metrics = METRICS_CLASSIFICATION, const std::vector<int> &input_indexes = {1},
                            const std::vector<int> &output_indexes = {0});
+  /// \brief Destructor of AccuracyMetrics.
   virtual ~AccuracyMetrics();
+  /// \brief Clear the accuracy metrics.
   void Clear() override;
+  /// \brief Eval function.
   float Eval() override;
 };
 
