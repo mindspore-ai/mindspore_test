@@ -26,6 +26,7 @@
 namespace mindspore {
 namespace ops {
 constexpr auto kNameDType = "DType";
+constexpr auto kNameDTypeId = "DTypeId";
 
 /// \brief Returns the data type of the input tensor as mindspore.dtype.
 /// Refer to Python API @ref mindspore.ops.DType for more details.
@@ -34,6 +35,17 @@ class OPS_API DType : public BaseOperator {
   MIND_API_BASE_MEMBER(DType);
   /// \brief Constructor.
   DType() : BaseOperator(kNameDType) { InitIOName({"x"}, {"output"}); }
+  /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.DType for the inputs.
+  void Init() const {}
+};
+
+/// \brief Returns the data type of the input tensor as mindspore.dtype.
+/// Refer to Python API @ref mindspore.ops.DType for more details.
+class OPS_API DTypeId : public BaseOperator {
+ public:
+  MIND_API_BASE_MEMBER(DTypeId);
+  /// \brief Constructor.
+  DTypeId() : BaseOperator(kNameDTypeId) { InitIOName({"x"}, {"output"}); }
   /// \brief Init. Refer to the parameters of Python API @ref mindspore.ops.DType for the inputs.
   void Init() const {}
 };

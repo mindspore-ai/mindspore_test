@@ -12,39 +12,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from functools import reduce
 import numpy as np
 import pytest
 
 import mindspore as ms
-import mindspore.common.dtype as mstype
-from mindspore.ops.auto_generate import dropout_ext_op
-from mindspore.nn import DropoutExt
-from mindspore.ops.function.nn_func import dropout_ext
-from mindspore.nn import Cell
-from tests.st.utils import test_utils
+from mindspore import mint, nn
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
-def generate_random_input(shape, dtype):
+def generate_ones_input(shape, dtype):
     return np.ones(shape).astype(dtype)
 
 
 @test_utils.run_with_cell
 def dropout_forward_func(x, p=0.4, inplace=False):
-    return dropout_ext(x, p, True, inplace)
+    return mint.nn.functional.dropout(x, p, True, inplace)
+
+
+@test_utils.run_with_cell
+def dropout_forward_func_grad(x, p=0.4, inplace=False):
+    x = x * 1
+    return mint.nn.functional.dropout(x, p, True, inplace)
 
 
 @test_utils.run_with_cell
 def dropout_backward_func(x, p=0.4, inplace=False):
-    return ms.grad(dropout_forward_func, (0))(x, p, inplace)
+    return ms.grad(dropout_forward_func_grad, (0))(x, p, inplace)
+
+
+class Dropout_nn(nn.Cell):
+    def __init__(self, p=0.5, inplace=False):
+        super().__init__()
+        self.net = mint.nn.Dropout(p, inplace)
+        self.net.set_train()
+
+    def construct(self, x):
+        return self.net(x)
+
+
+@test_utils.run_with_cell
+def dropout_forward_nn(x, p=0.4, inplace=False):
+    net = Dropout_nn(p, inplace)
+    return net(x)
+
+
+@test_utils.run_with_cell
+def dropout_forward_nn_grad(x, p=0.4, inplace=False):
+    net = Dropout_nn(p, inplace)
+    x = x * 1
+    return net(x)
+
+
+@test_utils.run_with_cell
+def dropout_backward_nn(x, p=0.4, inplace=False):
+    return ms.grad(dropout_forward_nn_grad, (0))(x, p, inplace)
 
 
 def compare_output(x, p, output):
     # check output
     keep_prob = 1 - p
-    if output.dtype == mstype.bfloat16:
-        output_np = output.astype(mstype.float32).asnumpy()
+    if output.dtype == ms.bfloat16:
+        output_np = output.astype(ms.float32).asnumpy()
     else:
         output_np = output.asnumpy()
     elem_count = x.size
@@ -54,7 +85,7 @@ def compare_output(x, p, output):
     expect_sum = np.array(nonzero_count / (1 - p), dtype=np.float64)
     output_sum = np.sum(output_np.astype(np.float64))
 
-    if output.dtype == mstype.float32:
+    if output.dtype == ms.float32:
         np.testing.assert_allclose(output_sum, expect_sum, rtol=1e-3)
     else:
         np.testing.assert_allclose(output_sum, expect_sum, rtol=1e-2)
@@ -63,8 +94,8 @@ def compare_output(x, p, output):
 def compare_grad(x, p, grad):
     # check grad
     keep_prob = 1 - p
-    if grad.dtype == mstype.bfloat16:
-        grad_np = grad.astype(mstype.float32).asnumpy()
+    if grad.dtype == ms.bfloat16:
+        grad_np = grad.astype(ms.float32).asnumpy()
     else:
         grad_np = grad.asnumpy()
     elem_count = x.size
@@ -74,20 +105,19 @@ def compare_grad(x, p, grad):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
-@pytest.mark.parametrize('dtype', [np.float16, np.float32])
-def test_func_dropout_normal(mode, dtype):
+@pytest.mark.parametrize('inplace', [True, False])
+def test_func_dropout_ext_normal(mode, inplace):
     """
-    Feature: pyboost function.
+    Feature: mint.nn.functional.dropout
     Description: test function dropout normal.
     Expectation: expect correct result.
     """
-    x_np = generate_random_input((1280, 77, 77), dtype)
+    x_np = generate_ones_input((1280, 77, 77), np.float32)
     x = ms.Tensor(x_np)
     p = 0.1
 
     if mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
-        inplace = True
     else:
         ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
         inplace = False
@@ -97,168 +127,240 @@ def test_func_dropout_normal(mode, dtype):
     if inplace:
         compare_output(x_np, p, x)
 
-    x1_np = generate_random_input((3, 4096, 1280), dtype)
+    x1_np = generate_ones_input((3, 4096, 1280), np.float32)
     x1 = ms.Tensor(x1_np)
     p1 = 0.1
-    grad = dropout_backward_func(x1, p1)
+    grad = dropout_backward_func(x1, p1, inplace)
     compare_grad(x1_np, p1, grad)
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_func_dropout_bfloat16(context_mode):
-    """
-    Feature: pyboost function.
-    Description: test function dropout normal.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=context_mode)
-    ms.set_context(jit_level='O0')
-    x = generate_random_input((128, 128), np.float32)
-    p = 0.4
-    output = dropout_forward_func(ms.Tensor(x).astype(mstype.bfloat16), p)
-    compare_output(x, p, output)
-
-    x1 = generate_random_input((256, 256), np.float32)
-    p1 = 0.3
-    grad = dropout_backward_func(ms.Tensor(x1).astype(mstype.bfloat16), p1)
-    compare_grad(x1, p1, grad)
-
-
-def compare_func(x, p, output, mask=None):
-    device_target = ms.context.get_context("device_target")
-    keep_prob = 1 - p
-    if device_target != "Ascend":
-        # check output
-        output_np = output.asnumpy()
-        elem_count = x.size
-        nonzero_count = np.count_nonzero(output_np)
-        assert (elem_count * (keep_prob - 0.1)) < nonzero_count < (elem_count * (keep_prob + 0.1))
-        output_sum = np.sum(output_np)
-        x_sum = np.sum(x)
-        assert abs(output_sum - x_sum) / x_sum < 0.1
-        # check mask
-        if mask is not None:
-            mask_np = mask.asnumpy()
-            mask_sum = np.sum(mask_np)
-            assert np.count_nonzero(mask_np) == nonzero_count
-            assert abs(mask_sum - nonzero_count) / nonzero_count < 0.1
-    else:
-        # check output
-        output_np = output.asnumpy()
-        elem_count = x.size
-        nonzero_count = np.count_nonzero(output_np)
-        assert (elem_count * (keep_prob - 0.1)) < nonzero_count < (elem_count * (keep_prob + 0.1))
-        output_sum = np.sum(output_np)
-        x_sum = np.sum(x)
-        assert abs(output_sum - x_sum) / x_sum < 0.1
-        # check mask
-        if mask is not None:
-            assert len(mask.shape) == 1
-            assert np.ceil(reduce(lambda a, b: a * b, x.shape) / 128) * 16 == mask.shape[0]
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['kbk', 'pynative'])
-def test_nn_DropoutExt_normal(mode):
+@pytest.mark.parametrize('inplace', [True, False])
+def test_nn_dropout_ext_normal(mode, inplace):
     """
-    Feature: nn.DropoutExt
-    Description: forward
+    Feature: mint.nn.Dropout
+    Description: test function dropout normal.
     Expectation: success
     """
-    x_np = np.array(np.random.random((16, 16, 16, 16)), np.float32)
-    x = ms.tensor(x_np)
-    p = 0.4
+    x_np = generate_ones_input((1280, 77, 77), np.float32)
+    x = ms.Tensor(x_np)
+    p = 0.1
 
     if mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
-        inplace = True
     else:
         ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
         inplace = False
 
-    net = DropoutExt(p, inplace)
-    net.set_train()
-
-    output = net(x)
-    compare_func(x_np, p, output)
-
+    output = dropout_forward_nn(x, p, inplace)
+    compare_output(x_np, p, output)
     if inplace:
-        compare_func(x_np, p, x)
+        compare_output(x_np, p, x)
+
+    x1_np = generate_ones_input((3, 4096, 1280), np.float32)
+    x1 = ms.Tensor(x1_np)
+    p1 = 0.1
+    grad = dropout_backward_nn(x1, p1, inplace)
+    compare_grad(x1_np, p1, grad)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_nn_DropoutExt_bf16(context_mode):
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_func_dropout_ext_bfloat16(mode):
     """
-    Feature: nn.DropoutExt
+    Feature: mint.nn.functional.dropout
+    Description: test function dropout normal.
+    Expectation: expect correct result.
+    """
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+
+    x = generate_ones_input((128, 128), np.float32)
+    p = 0.4
+    output = dropout_forward_func(ms.Tensor(x, dtype=ms.bfloat16), p)
+    compare_output(x, p, output)
+
+    x1 = generate_ones_input((256, 256), np.float32)
+    p1 = 0.3
+    grad = dropout_backward_func(ms.Tensor(x1, dtype=ms.bfloat16), p1)
+    compare_grad(x1, p1, grad)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_nn_dropout_ext_bf16(mode):
+    """
+    Feature: mint.nn.Dropout
     Description: bf16
     Expectation: success
     """
-    ms.set_context(jit_level='O0')
-    ms.context.set_context(mode=context_mode)
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
 
-    x = np.array(np.random.random((128, 128)), np.float32)
+    x = generate_ones_input((128, 128), np.float32)
     p = 0.4
+    output = dropout_forward_nn(ms.Tensor(x, dtype=ms.bfloat16), p)
+    compare_output(x, p, output)
 
-    net = DropoutExt(p)
-    net.set_train()
-
-    output = net(ms.tensor(x, mstype.bfloat16))
-    compare_func(x, p, output.float())
-
-
-class DropoutExtCell(Cell):
-    def __init__(self):
-        super().__init__()
-        self.dropout_ext = dropout_ext_op
-        self.seed = ms.Tensor(1, mstype.int64)
-        self.offset = ms.Tensor(1, mstype.int64)
-
-    def construct(self, x, p):
-        return self.dropout_ext(x, p, self.seed, self.offset)
+    x1 = generate_ones_input((256, 256), np.float32)
+    p1 = 0.1
+    grad = dropout_backward_nn(ms.Tensor(x1, dtype=ms.bfloat16), p1)
+    compare_grad(x1, p1, grad)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_DropoutExt_normal(context_mode):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_func_dropout_ext_dynamic():
     """
-    Feature: ops.DropoutExt
-    Description: forward
+    Feature: mint.nn.functional.dropout
+    Description: dynamic
     Expectation: success
     """
-    ms.set_context(jit_level='O0')
-    ms.context.set_context(mode=context_mode)
+    state = ms.get_rng_state()
+    @test_utils.run_with_cell
+    def dropout_ext_func(x, p, inplace):
+        ms.set_rng_state(state)
+        y = x * 1
+        return mint.nn.functional.dropout(y, p, inplace=inplace)
 
-    dropout_cell = DropoutExtCell()
+    x1 = ms.Tensor(generate_ones_input((2, 3, 4), np.float32))
+    x2 = ms.Tensor(generate_ones_input((2, 3, 4, 5), np.float32))
+    p1 = 0.3
+    p2 = 0.7
 
-    x = np.array(np.random.random((128, 128)), np.float32)
-    p = 0.4
+    TEST_OP(dropout_ext_func,
+            [[x1, p1, False], [x2, p2, False]],
+            "",
+            disable_input_check=True,
+            disable_yaml_check=True,
+            disable_mode=["GRAPH_MODE"])
 
-    output, mask = dropout_cell(ms.tensor(x), p)
-    compare_func(x, p, output, mask)
+    TEST_OP(dropout_ext_func,
+            [[x1, p1, True], [x2, p2, True]],
+            "",
+            disable_input_check=True,
+            disable_yaml_check=True,
+            disable_mode=["GRAPH_MODE"])
 
-    dropout_cell.set_inputs(ms.tensor(shape=[None, None], dtype=ms.float32), ms.mutable(p))
 
-    x = np.array(np.random.random((256, 128)), np.float32)
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+@pytest.mark.parametrize('inplace', [True, False])
+def test_func_dropout_ext_rng_state(mode, inplace):
+    """
+    Feature: mint.nn.functional.dropout
+    Description: test function with random status.
+    Expectation: expect correct result.
+    """
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
 
-    output, mask = dropout_cell(ms.tensor(x), ms.mutable(p))
-    compare_func(x, p, output, mask)
+    p = 0.3
 
-    x = np.array(np.random.random((128, 256)), np.float32)
+    state = ms.get_rng_state()
+    x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out1 = dropout_forward_func(x, p, inplace)
 
-    output, mask = dropout_cell(ms.tensor(x), ms.mutable(p))
-    compare_func(x, p, output, mask)
+    y = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out2 = dropout_forward_func(y, p, inplace)
 
-    dropout_cell.set_inputs(ms.tensor(shape=None, dtype=ms.float32), ms.mutable(p))
+    ms.set_rng_state(state)
+    z = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out3 = dropout_forward_func(z, p, inplace)
 
-    x = np.array(np.random.random((128, 128, 128)), np.float32)
+    if inplace:
+        assert not (x.asnumpy() == y.asnumpy()).all()
+        assert (x.asnumpy() == z.asnumpy()).all()
+    else:
+        assert not (out1.asnumpy() == out2.asnumpy()).all()
+        assert (out1.asnumpy() == out3.asnumpy()).all()
 
-    output, mask = dropout_cell(ms.tensor(x), ms.mutable(p))
-    compare_func(x, p, output, mask)
 
-    x = np.array(np.random.random((16, 16, 16, 16)), np.float32)
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+@pytest.mark.parametrize('inplace', [True, False])
+def test_nn_dropout_ext_rng_state(mode, inplace):
+    """
+    Feature: mint.nn.Dropout
+    Description: test function with random status.
+    Expectation: expect correct result.
+    """
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
 
-    output, mask = dropout_cell(ms.tensor(x), ms.mutable(p))
-    compare_func(x, p, output, mask)
+    net = Dropout_nn(0.3, inplace)
+
+    state = ms.get_rng_state()
+    x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out1 = net(x)
+
+    y = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out2 = net(y)
+
+    ms.set_rng_state(state)
+    z = ms.Tensor(generate_ones_input((10, 10), np.float32))
+    out3 = net(z)
+
+    if inplace:
+        assert not (x.asnumpy() == y.asnumpy()).all()
+        assert (x.asnumpy() == z.asnumpy()).all()
+    else:
+        assert not (out1.asnumpy() == out2.asnumpy()).all()
+        assert (out1.asnumpy() == out3.asnumpy()).all()
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_func_dropout_generalize(mode):
+    """
+    Feature: mint.nn.functional.dropout
+    Description: test function.
+    Expectation: expect correct result.
+    """
+    @test_utils.run_with_cell
+    def dropout_func(x, p, training=True, inplace=False):
+        return mint.nn.functional.dropout(x, p, training, inplace)
+
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+
+    for training in [True, False]:
+        for p in [-3, -0.3]:
+            with pytest.raises(ValueError):
+                x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+                _ = dropout_func(x, p, training)
+                if mode == 'pynative':
+                    _pynative_executor.sync()
+
+    for inplace in [True, False]:
+        for p in [True, 1, 1.0]:
+            x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+            out = dropout_func(x, p, True, inplace)
+            expect = np.zeros_like(x.asnumpy())
+            assert (out.asnumpy() == expect).all()
+            if inplace:
+                assert (x.asnumpy() == expect).all()
+
+    for inplace in [True, False]:
+        for p in [0.0, 0, False]:
+            x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+            out = dropout_func(x, p, True, inplace)
+            assert (out.asnumpy() == x.asnumpy()).all()
+
+        x = ms.Tensor(generate_ones_input((10, 10), np.float32))
+        out = dropout_func(x, 0.5, False, inplace)
+        assert (out.asnumpy() == x.asnumpy()).all()
+
+        x = ms.mint.empty((10, 0, 10), device="Ascend")
+        out = dropout_func(x, 0.5, True, inplace)
+        assert (out.asnumpy() == x.asnumpy()).all()

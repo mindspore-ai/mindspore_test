@@ -209,7 +209,7 @@ class DropoutExt(Cell):
     Dropout is a means of regularization that reduces overfitting by preventing correlations between neuronal nodes.
     The operator randomly sets some neurons output to 0 according to `p`, which means the probability of discarding
     during training. And the return will be multiplied by :math:`\frac{1}{1-p}` during training.
-    During the reasoning, this layer returns the same Tensor as the `x`.
+    During the reasoning, this layer returns the same Tensor as the `input`.
 
     This technique is proposed in paper `Dropout: A Simple Way to Prevent Neural Networks from Overfitting
     <http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf>`_ and proved to be effective to reduce
@@ -228,14 +228,13 @@ class DropoutExt(Cell):
             If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Inputs:
-        - **x** (Tensor) - The input of Dropout.
+        - **input** (Tensor) - The input of Dropout.
 
     Outputs:
-        Tensor, output tensor with the same shape as the `x`.
+        Tensor, output tensor with the same shape as the `input`.
 
     Raises:
-        TypeError: If the dtype of `p` is not float.
-        ValueError: If length of shape of `x` is less than 1.
+        TypeError: If the dtype of `inplace` is not bool.
 
     Supported Platforms:
         ``Ascend``
@@ -259,17 +258,9 @@ class DropoutExt(Cell):
         self.inplace = inplace
         self.generator_step = Tensor(12, mstype.int64)
 
-    def construct(self, x):
-        if not self.training or self.p == 0:
-            return x
-
+    def construct(self, input):
         seed, offset = default_generator._step(self.generator_step)  # pylint: disable=protected-access
-        out, _ = ops.auto_generate.dropout_ext_op(x, self.p, seed, offset)
-
-        if self.inplace:
-            x.copy_(out)
-            return x
-        return out
+        return ops.auto_generate.func_dropout_ext_op(input, self.p, self.training, self.inplace, seed, offset)
 
 
 class Dropout1d(Cell):

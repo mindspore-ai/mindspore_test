@@ -509,6 +509,8 @@ NodePtr MetaImpl::Shape(const NodePtr &x) { return NewNode({NewValueNode(prim::k
 
 NodePtr MetaImpl::Rank(const NodePtr &x) { return NewNode({NewValueNode(prim::kPrimRank), x}); }
 
+NodePtr MetaImpl::DTypeId(const NodePtr &x) { return NewNode({NewValueNode(prim::kPrimDTypeId), x}); }
+
 NodePtr MetaImpl::Reshape(const NodePtr &x, const NodePtr &shape) {
   return NewNode({NewValueNode(prim::kPrimReshape), x, shape});
 }
