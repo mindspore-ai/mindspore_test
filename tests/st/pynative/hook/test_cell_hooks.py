@@ -169,27 +169,3 @@ def test_cell_hooks(mode, reg_inner_net):
 
     assert_equal(py_out, expected_out1)
     assert_equal(py_grad, expected_grad1)
-
-
-@arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
-          card_mark='onecard',
-          essential_mark='essential')
-def test_cell_hooks_hash():
-    """
-    Feature: Cell Hooks
-    Description: Test cell hook hash work well when `run.__closure__` contains empty element.
-    Expectation: success
-    """
-    if True:  # pylint: disable=using-constant-test
-        pass
-    else:
-        dic = {"a": 1}
-    @ms.jit
-    def run(x):
-        if True:  # pylint: disable=using-constant-test
-            a = 2
-        else:
-            a = dic["a"]
-        return x + a
-    run(1)

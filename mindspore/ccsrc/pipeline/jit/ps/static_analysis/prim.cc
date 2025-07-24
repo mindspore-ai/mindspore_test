@@ -1017,13 +1017,11 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
             !value->isa<FuncGraph>());
   });
 
-  AbstractBasePtr abs_base = nullptr;
-  ValuePtr value = nullptr;
   prim_->BeginRecordAddAttr();
   if (need_infer_value && eval_impl_.IsImplInferValue()) {
-    value = eval_impl_.InferValue(prim_, args);
+    auto value = eval_impl_.InferValue(prim_, args);
     if (value != nullptr) {
-      abs_base = value->ToAbstract();
+      auto abs_base = value->ToAbstract();
       prim_->EndRecordAddAttr();
       auto added_attrs = prim_->evaluate_added_attrs();
       return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
@@ -1032,7 +1030,7 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   auto output_abs = eval_impl_.InferShapeAndType(nullptr, prim_, args);
   const auto &rw_write_indexes = rw_write_input_indexes();
   const auto &inplace_indexes = inplace_input_indexes();
-  abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
+  auto abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
   MS_EXCEPTION_IF_NULL(abs_base);
   // Set output's kHasViewOutputFlag according to input args
   if (prim_->name() == kDependOpName) {
@@ -1898,6 +1896,7 @@ EvalResultPtr GetClassAttrFromPyObject(const py::object &cls_obj, const std::str
     ValuePtr item_value = item_arg->BuildValue();
     MS_EXCEPTION_IF_NULL(item_value);
     const auto &item_str = item_value->cast_ptr<StringImm>();
+    MS_EXCEPTION_IF_NULL(item_str);
     const std::string &item_name = item_str->value();
     return TransPropertyToFunc(out_conf, cls_obj, item_name);
   }
@@ -3618,7 +3617,7 @@ class CreateInstanceEvaluator final : public TransitionPrimEvaluator {
   }
 };
 
-class PartialEvaluator : public Evaluator {
+class PartialEvaluator final : public Evaluator {
  public:
   PartialEvaluator() : Evaluator("PartialEvaluator") {}
   ~PartialEvaluator() override = default;
@@ -3714,7 +3713,7 @@ class PartialEvaluator : public Evaluator {
   }
 };
 
-class WhileLoopEvaluator : public Evaluator {
+class WhileLoopEvaluator final : public Evaluator {
  public:
   WhileLoopEvaluator() : Evaluator("WhileLoopEvaluator") {}
   ~WhileLoopEvaluator() override = default;
@@ -3817,7 +3816,7 @@ class WhileLoopEvaluator : public Evaluator {
   }
 };
 
-class ScanEvaluator : public Evaluator {
+class ScanEvaluator final : public Evaluator {
  public:
   ScanEvaluator() : Evaluator("ScanEvaluator") {}
   ~ScanEvaluator() override = default;
@@ -4160,7 +4159,7 @@ class ScanEvaluator : public Evaluator {
   }
 };
 
-class ForiLoopEvaluator : public Evaluator {
+class ForiLoopEvaluator final : public Evaluator {
  public:
   ForiLoopEvaluator() : Evaluator("ForiLoopEvaluator") {}
   ~ForiLoopEvaluator() override = default;

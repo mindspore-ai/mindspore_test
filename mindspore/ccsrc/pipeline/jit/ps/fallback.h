@@ -51,9 +51,6 @@ CNodePtr CreatePyExecuteCNodeInOrder(const AnfNodePtr &orig_node, const AnfNodeP
 CNodePtr CreatePyInterpretCNode(const FuncGraphPtr &fg, const std::string &script_text,
                                 const py::object &global_dict_obj, const AnfNodePtr &local_dict_node,
                                 const NodeDebugInfoPtr &debug_info = nullptr);
-CNodePtr CreatePyInterpretCNodeInOrder(const FuncGraphPtr &fg, const std::string &script_text,
-                                       const py::object &global_dict_obj, const AnfNodePtr &local_dict_node,
-                                       const NodeDebugInfoPtr &debug_info = nullptr);
 
 // Create primitive cnode to PyInterpret/PyExecute node with specific function name.
 AnfNodePtr ConvertCNodeToPyInterpretForPrim(const CNodePtr &cnode, const string &name);

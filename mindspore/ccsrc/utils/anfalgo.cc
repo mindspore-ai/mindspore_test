@@ -264,10 +264,15 @@ bool IsNodeDynamicShape(const AnfNodePtr &node) {
     MS_LOG(DEBUG) << "Set Output Dynamic Shape Attr to Node:" << cnode->fullname_with_scope()
                   << " debug string:" << cnode->DebugString();
   }
-  if (IsPrimitiveCNode(node, prim::kPrimPyExecute) && node->abstract()->isa<abstract::AbstractSequence>()) {
-    AnfAlgo::SetNodeAttrSafely(kAttrOutputIsDynamicShape, MakeValue(true), cnode);
-    MS_LOG(DEBUG) << "Set Output Dynamic Shape Attr to Node:" << cnode->fullname_with_scope();
-    return true;
+
+  if (IsPrimitiveCNode(node, prim::kPrimPyExecute)) {
+    auto abs = node->abstract();
+    MS_EXCEPTION_IF_NULL(abs);
+    if (abs->isa<abstract::AbstractSequence>()) {
+      AnfAlgo::SetNodeAttrSafely(kAttrOutputIsDynamicShape, MakeValue(true), cnode);
+      MS_LOG(DEBUG) << "Set Output Dynamic Shape Attr to Node:" << cnode->fullname_with_scope();
+      return true;
+    }
   }
   return in_dynamic || out_dynamic;
 }

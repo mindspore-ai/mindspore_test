@@ -270,12 +270,12 @@ bool IsDynamicShapeGraph(const FuncGraphPtr &func_graph) {
 }
 
 abstract::AnalysisResult AbstractAnalyze(const abstract::AnalysisEnginePtr &engine, const FuncGraphPtr &func_graph,
-                                         const abstract::AbstractBasePtrList &args_abs, bool is_load_resoure,
+                                         const abstract::AbstractBasePtrList &args_abs, bool is_load_resource,
                                          bool clear) {
   MS_LOG(DEBUG) << "AbstractAnalyze start";
   py::gil_scoped_acquire gil;
   MS_EXCEPTION_IF_NULL(engine);
-  if (clear || is_load_resoure) {
+  if (clear || is_load_resource) {
     auto manager = engine->func_graph_manager();
     MS_EXCEPTION_IF_NULL(manager);
     engine->Clear();
@@ -284,7 +284,7 @@ abstract::AnalysisResult AbstractAnalyze(const abstract::AnalysisEnginePtr &engi
       MS_EXCEPTION_IF_NULL(node);
       // Handle previous inferred value for CNode if is loaded from MindIR
       // If the primitive is not defined in front end, keep the inferred value loaded from MindIR.
-      if (is_load_resoure) {
+      if (is_load_resource) {
         auto primitive = GetCNodePrimitive(node);
         if (primitive != nullptr) {
           auto is_load = primitive->GetAttr("is_load");
