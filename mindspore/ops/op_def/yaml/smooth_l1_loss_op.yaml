@@ -18,8 +18,6 @@ smooth_l1_loss:
     returns:
         output:
             dtype: tensor
-    function:
-        disable: True
     dispatch:
         enable: True
         Ascend: SmoothL1LossAscend
