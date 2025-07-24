@@ -78,6 +78,26 @@ bool Initialize() {
   return true;
 }
 
+bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                cluster::TCPStoreClientPtr store) {
+  if (!InitializeCluster(url, timeout, world_size, node_id, store)) {
+    MS_LOG(EXCEPTION) << "Failed to initialize distributed job cluster without scheduler!";
+  }
+
+  PROF_START(distributed_collective_init);
+  // Initialize the collective manager regardless of whether the cluster is initialized or not.
+  if (!InitializeCollective()) {
+    MS_LOG(EXCEPTION)
+      << "Failed to initialize collective communication because some processes in the cluster are not successfully "
+         "spawned. You can run command: 'grep -rn -E 'ERROR|CRITICAL' -C 10' in your log directory to filter out error "
+         "info.";
+  }
+  PROF_END(distributed_collective_init);
+
+  MsException::Instance().CheckException();
+  return true;
+}
+
 bool Finalize() {
   if (!FinalizeCollective()) {
     MS_LOG(ERROR) << "Failed to finalize collective communication.";
@@ -132,6 +152,31 @@ bool InitializeCluster() {
       auto global_rank_size = cluster_ctx->node_num(cluster_ctx->node_role());
       collective::CollectiveManager::instance()->set_global_rank_size(global_rank_size);
     }
+  }
+#endif
+  return true;
+}
+
+bool InitializeCluster(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                       cluster::TCPStoreClientPtr store) {
+  MS_LOG(WARNING) << "Start initializing cluster without scheduler process...";
+  if (!cluster::ClusterContext::instance()->Initialize(url, timeout, world_size, node_id, store)) {
+    MS_LOG(ERROR) << "Failed to initialize cluster.";
+    return false;
+  }
+#if ((defined ENABLE_CPU) && (!defined _WIN32) && !defined(__APPLE__))
+  auto node = cluster::ClusterContext::instance()->node();
+  MS_EXCEPTION_IF_NULL(node);
+
+  if (cluster::ClusterContext::instance()->initialized() && !collective::CollectiveManager::instance()->initialized()) {
+    // Scheduler don't use collective communication library.
+    const auto &cluster_ctx = cluster::ClusterContext::instance();
+    MS_EXCEPTION_IF_NULL(cluster_ctx);
+
+    // Global rank id and size should be manually set if cluster is initialized by MindSpore communication framework.
+    collective::CollectiveManager::instance()->set_global_rank_id(node->rank_id());
+    auto global_rank_size = cluster_ctx->node_num(cluster_ctx->node_role());
+    collective::CollectiveManager::instance()->set_global_rank_size(global_rank_size);
   }
 #endif
   return true;

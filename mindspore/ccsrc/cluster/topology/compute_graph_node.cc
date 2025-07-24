@@ -394,10 +394,6 @@ bool ComputeGraphNode::Reconnect() {
   return hb_client_->IsConnected(server_url);
 }
 
-std::shared_ptr<std::string> ComputeGraphNode::RetrieveMessageFromMSN(const std::string &msg_name, uint32_t timeout) {
-  return RetrieveMessageFromMSN(msg_name, msg_name);
-}
-
 // The transaction of the exchange process is as follows:
 // step 1: RANK[0]       - Start the exchange process (set EXCHANGE_META_${name} flag);
 // step 2: RANK[1-(N-1)] - Start the exchange process (check EXCHANGE_META_${name} flag);
@@ -487,53 +483,11 @@ bool ComputeGraphNode::ExchangeMetadata(const std::string &biz, const size_t &ra
   return true;
 }
 
-std::vector<std::string> ComputeGraphNode::GetHostNames(const std::string &role) {
-  auto retval = RetrieveMessageFromMSN(std::to_string(static_cast<int>(MessageName::kGetHostNames)), role);
-  if (retval != nullptr) {
-    MS_LOG(INFO) << "Worker gets host names " << *retval;
-    nlohmann::json hostnames;
-    size_t retry_num = 60;
-    do {
-      try {
-        if (retval != nullptr) {
-          hostnames = nlohmann::json::parse(*retval);
-        } else {
-          MS_LOG(ERROR) << "Get hostnames from sched failed, receive empty message.";
-        }
-        break;
-      } catch (const std::exception &e) {
-        MS_LOG(ERROR) << "Worker failed to parse hostname json " << e.what() << ". Retry number: " << retry_num;
-        retval = RetrieveMessageFromMSN(std::to_string(static_cast<int>(MessageName::kGetHostNames)), role);
-        retry_num--;
-        (void)sleep(kExecuteInterval);
-      }
-    } while (retry_num != 0);
-    MS_LOG(DEBUG) << "Successfully get hostnames from scheduler: " << hostnames.dump();
-    return hostnames.at(kHostNames).get<std::vector<std::string>>();
-  } else {
-    return std::vector<std::string>();
-  }
-}
-
 void ComputeGraphNode::set_abnormal_callback(std::shared_ptr<std::function<void(void)>> abnormal_callback) {
   abnormal_callback_ = abnormal_callback;
 }
 
 const std::string &ComputeGraphNode::client_ip() const { return client_ip_; }
-
-std::shared_ptr<std::string> ComputeGraphNode::RetrieveMessageFromMSN(const std::string &msg_name,
-                                                                      const std::string &msg_body, uint32_t) {
-  MS_EXCEPTION_IF_NULL(tcp_client_);
-
-  auto message = CreateMessage(meta_server_addr_.GetUrl(), msg_name, msg_body);
-  MS_EXCEPTION_IF_NULL(message);
-
-  auto retval = tcp_client_->ReceiveSync(std::move(message));
-  if (retval != rpc::NULL_MSG) {
-    return std::make_shared<std::string>(retval->body);
-  }
-  return nullptr;
-}
 }  // namespace topology
 }  // namespace cluster
 }  // namespace distributed

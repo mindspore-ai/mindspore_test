@@ -68,8 +68,8 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
     MS_LOG(INFO) << "Node initialize success!";
   }
 
-  cgn_ = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(
-    ClusterContext::instance()->node_base());
+  client_node_ =
+    std::dynamic_pointer_cast<distributed::cluster::topology::TcpNodeBase>(ClusterContext::instance()->node_base());
 
   constexpr size_t kSizeNum3 = 3;
   std::string timeout_env = common::GetEnv(kEnvNodeTimeOut);
@@ -123,17 +123,21 @@ bool MsCollectiveCommLib::CreateCommunicationGroup(const std::string &group_name
 
 bool MsCollectiveCommLib::AllGatherHostHashName(size_t host_hash_name, std::vector<size_t> *host_hash_names) {
   CHECK_IF_NULL(host_hash_names);
-  CHECK_IF_NULL(cgn_);
+  CHECK_IF_NULL(client_node_);
 
   auto role = common::GetEnv(distributed::kEnvRole);
+  // If init_process_group by TcpStore, the role of tcp_client_node is assigned to 'MS_CLIENT'.
+  if (ClusterContext::instance()->is_init_by_store()) {
+    role = distributed::kEnvRoleOfClient;
+  }
   bool success = false;
 
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = (cgn_->enable_recovery()) ? SIZE_MAX : retry_count_;
+  size_t retry = (client_node_->enable_recovery()) ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
-    auto hostnames = cgn_->GetHostNames(role);
+    auto hostnames = client_node_->GetHostNames(role);
     if (hostnames.size() < host_hash_names->size()) {
       auto sleep_time = rand_distrib_(gen);
       MS_LOG(WARNING) << "Retry to get hostname from the meta server node...Retry time: " << retry << "/"
@@ -161,11 +165,11 @@ bool MsCollectiveCommLib::AllGatherHostHashName(size_t host_hash_name, std::vect
 
 bool MsCollectiveCommLib::BroadcastUniqueID(const std::string &group_name, size_t root_info_size, void *root_info) {
   CHECK_IF_NULL(root_info);
-  CHECK_IF_NULL(cgn_);
+  CHECK_IF_NULL(client_node_);
   auto group = GetGroup(group_name);
   CHECK_IF_NULL(group);
 
-  uint32_t group_rank_id = group->GetGroupRank(cgn_->rank_id());
+  uint32_t group_rank_id = group->GetGroupRank(client_node_->rank_id());
   if (group_rank_id == 0) {
     while (!SendUniqueID(group_name, root_info_size, root_info)) {
       MS_LOG(WARNING) << "Send unique id to scheduler failed, retrying...";
@@ -189,28 +193,28 @@ bool MsCollectiveCommLib::BroadcastUniqueID(const std::string &group_name, size_
 }
 
 void MsCollectiveCommLib::ClearUniqueID(const std::string &group_name) const {
-  CHECK_IF_NULL(cgn_);
+  CHECK_IF_NULL(client_node_);
   // clear unique id after broadcast success.
-  std::string node_role_prefix = cgn_->role() + "_";
+  std::string node_role_prefix = client_node_->role() + "_";
   std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
-  (void)cgn_->DeleteMetadata(group_info_key);
+  (void)client_node_->DeleteMetadata(group_info_key);
 }
 
 bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t root_info_size,
                                        const void *root_info) const {
   CHECK_IF_NULL(root_info);
-  CHECK_IF_NULL(cgn_);
+  CHECK_IF_NULL(client_node_);
 
   // Create the group info which contains the unique id and send it to the meta server.
-  std::string node_role_prefix = cgn_->role() + "_";
+  std::string node_role_prefix = client_node_->role() + "_";
   std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
 
   bool success = false;
   // It this is not recovery scenario, retry for 3*200s, which is 10 minutes.
   const size_t interval = 3;
-  size_t retry = (cgn_->enable_recovery()) ? SIZE_MAX : retry_count_;
+  size_t retry = (client_node_->enable_recovery()) ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
-    success = cgn_->PutMetadata(group_info_key, root_info, root_info_size);
+    success = client_node_->PutMetadata(group_info_key, root_info, root_info_size);
     if (!success) {
       MS_LOG(WARNING) << "Failed to send unique id for group " << group_name << ". Retry time: " << retry << "/"
                       << retry_count_;
@@ -225,18 +229,18 @@ bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t roo
 
 bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t root_info_size, void *root_info) {
   CHECK_IF_NULL(root_info);
-  CHECK_IF_NULL(cgn_);
+  CHECK_IF_NULL(client_node_);
 
-  std::string node_role_prefix = cgn_->role() + "_";
+  std::string node_role_prefix = client_node_->role() + "_";
   std::string group_info_key = node_role_prefix + kGroupInfoPrefix + group_name;
   bool success = false;
 
   // Retry every random time interval.
   std::random_device rd;
   std::mt19937 gen(rd());
-  size_t retry = (cgn_->enable_recovery()) ? SIZE_MAX : retry_count_;
+  size_t retry = (client_node_->enable_recovery()) ? SIZE_MAX : retry_count_;
   while (!success && --retry > 0) {
-    auto unique_id = cgn_->GetMetadata(group_info_key);
+    auto unique_id = client_node_->GetMetadata(group_info_key);
     if (unique_id.length() > 0) {
       auto ret = memcpy_s(root_info, root_info_size, unique_id.data(), unique_id.length());
       if (ret != EOK) {

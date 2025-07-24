@@ -205,11 +205,12 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
   std::unique_lock<std::shared_mutex> lock(nodes_mutex_);
   if (nodes_.find(node_id) == nodes_.end()) {
     uint32_t rank_id = 0;
+    if (common::IsStrNumeric(node_id)) {
+      // This means node id is not randomly generated. So directly convert to int.
+      rank_id = static_cast<uint32_t>(std::atoi(node_id.c_str()));
+    }
     if (role != kEnvRoleOfClient) {
-      if (common::IsStrNumeric(node_id)) {
-        // This means node id is not randomly generated. So directly convert to int.
-        rank_id = static_cast<uint32_t>(std::atoi(node_id.c_str()));
-      } else {
+      if (!common::IsStrNumeric(node_id)) {
         rank_id = AllocateRankId(role);
       }
 

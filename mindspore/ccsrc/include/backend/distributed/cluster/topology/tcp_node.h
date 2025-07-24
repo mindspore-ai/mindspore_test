@@ -65,6 +65,19 @@ class BACKEND_COMMON_EXPORT TcpNodeBase : public NodeBase {
   bool ReConnectWithTimeout(const std::function<bool(void)> &func, const std::string &error, size_t time_out);
   // ReConnect to the meta server node.
   bool ReConnect();
+
+  // Return client ip of this cgn which is used for cluster building.
+  const std::string &client_ip() const { return client_ip_; }
+
+  // Get all the hostnames of one type of roles.
+  std::vector<std::string> GetHostNames(const std::string &role);
+
+  // Query the specified message from the meta server node according to the given message name.
+  // Returns nullptr if no message returned after timeout.
+  std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, uint32_t timeout = 5);
+  std::shared_ptr<std::string> RetrieveMessageFromMSN(const std::string &msg_name, const std::string &msg_body,
+                                                      uint32_t timeout = 5);
+
   // The meta server address used to synchronize metadata with other compute graph nodes.
   MetaServerAddress meta_server_addr_;
 
@@ -74,6 +87,7 @@ class BACKEND_COMMON_EXPORT TcpNodeBase : public NodeBase {
   // unit: milliseconds
   size_t timeout_;
   std::mutex mutex_;
+  std::string client_ip_;
 };
 }  // namespace topology
 }  // namespace cluster

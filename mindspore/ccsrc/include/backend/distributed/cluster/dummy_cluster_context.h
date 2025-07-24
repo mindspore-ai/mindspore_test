@@ -23,6 +23,8 @@
 #include <memory>
 #include <atomic>
 #include <vector>
+#include <optional>
+#include <cstdint>
 #include "include/backend/distributed/constants.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
@@ -32,6 +34,8 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 // The dummy cluster context interface. This class is for ut test and windows compiling.
+class TCPStoreClient;
+using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
 class BACKEND_COMMON_EXPORT ClusterContext {
  public:
   ~ClusterContext() = default;
@@ -39,6 +43,8 @@ class BACKEND_COMMON_EXPORT ClusterContext {
   static std::shared_ptr<ClusterContext> instance();
 
   bool Initialize() const;
+  bool Initialize(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                  TCPStoreClientPtr store) const;
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout) const;
   void StopThreadsOnException();
   std::string node_role() const;
