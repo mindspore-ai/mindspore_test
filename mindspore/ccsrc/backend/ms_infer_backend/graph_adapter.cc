@@ -117,7 +117,7 @@ void GraphAdapter::ConvertValueNode(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value);
 
   if (HostValueStore::GetInstance().HasValue(value)) {
-    auto da_tensor = HostValueStore::GetInstance().Get(value);
+    auto da_tensor = HostValueStore::GetInstance().GetDATensorByValue(value);
     MS_EXCEPTION_IF_NULL(da_tensor);
     MS_LOG(INFO) << "Get DATensor: " << da_tensor << " for value: " << value.get() << ", " << value->ToString()
                  << " from HostValueStore";
@@ -161,7 +161,7 @@ void *GraphAdapter::PrepareData(da::tensor::DATensor *da_value, const ValuePtr &
     return PrepareTensorDataToDevice(value->cast<tensor::TensorPtr>());
   } else if (value->isa<ValueSequence>() || value->isa<Scalar>() || value->isa<StringImm>()) {
     da_value->tensorType = da::tensor::TensorType::HOST_TENSOR;
-    HostValueStore::GetInstance().Insert(da_value, value);
+    HostValueStore::GetInstance().InsertValueForDATensor(da_value, value);
     auto kernel_tensor_value = ConvertValueToKernelTensorValue(value);
     MS_EXCEPTION_IF_NULL(kernel_tensor_value);
     (void)converted_values_.emplace(kernel_tensor_value);
@@ -285,7 +285,8 @@ void GraphAdapter::SetupFrontendParameterMapping() {
   }
 }
 
-void UpdateDynamicShape(da::tensor::DATensor *da_node, const AnfNodePtr &input_node, const tensor::TensorPtr &input_tensor) {
+void UpdateDynamicShape(da::tensor::DATensor *da_node, const AnfNodePtr &input_node,
+                        const tensor::TensorPtr &input_tensor) {
   MS_EXCEPTION_IF_NULL(da_node);
   MS_EXCEPTION_IF_NULL(input_node);
   if (input_tensor == nullptr) {
@@ -475,6 +476,7 @@ void GraphAdapter::ConvertCNode(const CNodePtr &node) {
     (void)da_inputs.emplace_back(GetNodeDATensor(inputs[i]));
   }
   auto da_cnode = graph_executor_.AddTensor(da_op, da_inputs);
+  HostValueStore::GetInstance().InsertPrimForDATensor(da_cnode, prim);
   SetNodeOutputType(da_cnode, node);
   apply_map_[node] = da_cnode;
 }

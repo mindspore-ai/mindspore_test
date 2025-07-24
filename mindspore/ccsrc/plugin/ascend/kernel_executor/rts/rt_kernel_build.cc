@@ -37,5 +37,13 @@ KernelModPtr RtOpBuild(const AnfNodePtr &anf_node) {
   }
   return ker_ptr;
 }
+
+KernelModPtr CreateRtKernelMod(const std::string &op_name) {
+  auto kernel_name = op_name;
+  (void)std::transform(kernel_name.begin(), kernel_name.end(), kernel_name.begin(), ::tolower);
+  MS_LOG(INFO) << "Op Name(tolower)[" << kernel_name << "]";
+  auto ker_ptr = RtKernelFactory::Create(kernel_name);
+  return ker_ptr;
+}
 }  // namespace kernel
 }  // namespace mindspore

@@ -32,6 +32,7 @@
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
+#include "plugin/device/ascend/kernel/rts/rt_kernel_build.h"
 
 #include "dalang/dair/tensor/tensor.h"
 #include "backend/ms_infer_backend/ms_kernel_lib.h"
@@ -59,6 +60,12 @@ kernel::KernelModPtr CreateKernelMod(const PrimitivePtr &prim, const std::vector
     MS_LOG(INFO) << "Select aclnn kernel for op: " << op_name;
     return kernel_mod_ptr;
   }
+  // rt kernel Reshape/ReshapeExt
+  kernel_mod_ptr = kernel::CreateRtKernelMod(op_name);
+  if (kernel_mod_ptr) {
+    MS_LOG(INFO) << "Select rt kernel for op: " << op_name;
+    return kernel_mod_ptr;
+  }
   // acl kernel
   kernel_mod_ptr = kernel::CreateAclKernelMod(prim, inputs, outputs);
   if (kernel_mod_ptr) {
@@ -82,6 +89,44 @@ kernel::KernelModPtr SelectKernelMod(const PrimitivePtr &prim, const std::vector
 
   return kernel_mod;
 }
+
+void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
+                             const std::vector<kernel::KernelTensor *> &output_kernel_tensors) {
+  MS_EXCEPTION_IF_NULL(base_shape);
+  size_t output_num = output_kernel_tensors.size();
+  if (output_num > 1) {
+    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_shape);
+    const auto &shapes = sequence_shape->shape();
+    if (shapes.size() != output_num) {
+      MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << output_num
+                        << ", but got: " << shapes.size();
+    }
+    for (size_t i = 0; i < output_num; i++) {
+      const auto &kernel_tensor = output_kernel_tensors[i];
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      kernel_tensor->SetShapeVector(shapes[i]->GetShapeVector());
+    }
+  } else if (output_num == 1) {
+    const auto &kernel_tensor = output_kernel_tensors[0];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
+    if ((kernel_tensor->type_id() != kObjectTypeTuple && kernel_tensor->type_id() != kObjectTypeList) &&
+        sequence_shape != nullptr) {
+      // For the operator prototype whose output is of type Tuple, the back-end operator is expanded as Tensors, and for
+      // single-output scenarios, the InferShape result is TupleShape, and the back-end needs to expand it to
+      // TensorShape. For example, the output of the split operator is only a Tensor scene.
+      const auto &shapes = sequence_shape->shape();
+      if (shapes.size() != 1) {
+        MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << 1 << ", but got: " << shapes.size();
+      }
+
+      kernel_tensor->SetShapeVector(shapes[0]->GetShapeVector());
+    } else {
+      kernel_tensor->SetShapeVector(base_shape->GetShapeVector());
+    }
+  }
+}
 }  // namespace
 
 // DAKernelTensor is a KernelTensor that wraps a DATensor.
@@ -99,7 +144,7 @@ class DAKernelTensor : public kernel::KernelTensor {
 
     // Set host_info_ for GetValue<> call in complex kernel mod, only set value for HOST_TENSOR
     if (tensor->tensorType == da::tensor::TensorType::HOST_TENSOR) {
-      auto host_value = HostValueStore::GetInstance().Get(tensor);
+      auto host_value = HostValueStore::GetInstance().GetValueByDATensor(tensor);
       auto host_value_abs = host_value->ToAbstract();
       MS_EXCEPTION_IF_NULL(host_value_abs);
       SetType(host_value_abs->GetType());
@@ -188,7 +233,8 @@ DAKernel::DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *devic
   stream_ = device_context_->device_res_manager_->GetStream(kDefaultStreamIndex);
   MS_EXCEPTION_IF_NULL(stream_);
 
-  auto prim = ConvertPrimitiveOp(da_tensor->op);
+  auto prim = HostValueStore::GetInstance().GetPrimByDATensor(da_tensor);
+  MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(DEBUG) << "Primitive: " << prim->name();
 
   // Initialize input kernel tensors
@@ -238,52 +284,12 @@ DAKernel::~DAKernel() {
   destroy_tensors(workspaces_);
 }
 
-void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
-                             const std::vector<kernel::KernelTensor *> &output_kernel_tensors) {
-  MS_EXCEPTION_IF_NULL(base_shape);
-  size_t output_num = output_kernel_tensors.size();
-  if (output_num > 1) {
-    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
-    MS_EXCEPTION_IF_NULL(sequence_shape);
-    const auto &shapes = sequence_shape->shape();
-    if (shapes.size() != output_num) {
-      MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << output_num
-                        << ", but got: " << shapes.size();
-    }
-    for (size_t i = 0; i < output_num; i++) {
-      const auto &kernel_tensor = output_kernel_tensors[i];
-      MS_EXCEPTION_IF_NULL(kernel_tensor);
-      kernel_tensor->SetShapeVector(shapes[i]->GetShapeVector());
-    }
-  } else if (output_num == 1) {
-    const auto &kernel_tensor = output_kernel_tensors[0];
-    MS_EXCEPTION_IF_NULL(kernel_tensor);
-    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
-    if ((kernel_tensor->type_id() != kObjectTypeTuple && kernel_tensor->type_id() != kObjectTypeList) &&
-        sequence_shape != nullptr) {
-      // For the operator prototype whose output is of type Tuple, the back-end operator is expanded as Tensors, and for
-      // single-output scenarios, the InferShape result is TupleShape, and the back-end needs to expand it to
-      // TensorShape. For example, the output of the split operator is only a Tensor scene.
-      const auto &shapes = sequence_shape->shape();
-      if (shapes.size() != 1) {
-        MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << 1 << ", but got: " << shapes.size();
-      }
-
-      kernel_tensor->SetShapeVector(shapes[0]->GetShapeVector());
-    } else {
-      kernel_tensor->SetShapeVector(base_shape->GetShapeVector());
-    }
-  }
-}
-
 void DAKernel::InferShapeAndResize() {
   // 1. Infer operator's output's Shape.
-  MS_LOG(INFO) << "Begin InferShape for kernel: " << kernel_mod_->primitive()
-                                       << ", inputs: " << abs_inputs_;
+  MS_LOG(INFO) << "Begin InferShape for kernel: " << kernel_mod_->primitive() << ", inputs: " << abs_inputs_;
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), abs_inputs_);
   MS_EXCEPTION_IF_NULL(base_shape);
-  MS_LOG(INFO) << "End InferShape for kernel: " << kernel_mod_->primitive()
-                                       << ", shape: " << base_shape->ToString();
+  MS_LOG(INFO) << "End InferShape for kernel: " << kernel_mod_->primitive() << ", shape: " << base_shape->ToString();
 
   // 2. Update shape of output kernel tensor.
   UpdateKernelTensorShape(base_shape, outputs_);

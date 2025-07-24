@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_HOST_VALUE_STORE_H_
 #define MINDSPORE_CCSRC_BACKEND_MS_INFER_BACKEND_HOST_VALUE_STORE_H_
 
+#include <string>
 #include <memory>
 #include <unordered_map>
 
@@ -38,7 +39,9 @@ class HostValueStore {
   HostValueStore &operator=(const HostValueStore &) = delete;
   ~HostValueStore() = default;
 
-  void Insert(da::tensor::DATensor *k, const ValuePtr &v) {
+  void InsertValueForDATensor(da::tensor::DATensor *k, const ValuePtr &v) {
+    MS_EXCEPTION_IF_NULL(k);
+    MS_EXCEPTION_IF_NULL(v);
     if (host_da_tensor_value_.find(k) != host_da_tensor_value_.end()) {
       MS_LOG(EXCEPTION) << "Duplicate insert for DATensor: " << k;
     }
@@ -52,7 +55,8 @@ class HostValueStore {
     da_tensor_host_value_[v] = k;
   }
 
-  ValuePtr &Get(da::tensor::DATensor *k) {
+  ValuePtr &GetValueByDATensor(da::tensor::DATensor *k) {
+    MS_EXCEPTION_IF_NULL(k);
     auto iter = host_da_tensor_value_.find(k);
     if (iter == host_da_tensor_value_.end()) {
       MS_LOG(EXCEPTION) << "Cannot find host value store for DATensor: " << k;
@@ -60,10 +64,30 @@ class HostValueStore {
     return iter->second;
   }
 
-  da::tensor::DATensor *Get(const ValuePtr &v) {
+  da::tensor::DATensor *GetDATensorByValue(const ValuePtr &v) {
+    MS_EXCEPTION_IF_NULL(v);
     auto iter = da_tensor_host_value_.find(v);
     if (iter == da_tensor_host_value_.end()) {
       MS_LOG(EXCEPTION) << "Cannot find DATensor for host value: " << v->ToString();
+    }
+    return iter->second;
+  }
+
+  void InsertPrimForDATensor(da::tensor::DATensor *da_tensor, const PrimitivePtr &ms_prim) {
+    MS_EXCEPTION_IF_NULL(da_tensor);
+    MS_EXCEPTION_IF_NULL(ms_prim);
+    if (da_tensor_primitive_.find(da_tensor) != da_tensor_primitive_.end()) {
+      MS_LOG(EXCEPTION) << "Duplicate insert primitive for DATensor: " << da_tensor;
+    }
+    MS_LOG(INFO) << "Insert primitive: " << ms_prim->ToString() << " for DATensor: " << da_tensor;
+    da_tensor_primitive_[da_tensor] = ms_prim;
+  }
+
+  PrimitivePtr &GetPrimByDATensor(da::tensor::DATensor *da_tensor) {
+    MS_EXCEPTION_IF_NULL(da_tensor);
+    auto iter = da_tensor_primitive_.find(da_tensor);
+    if (iter == da_tensor_primitive_.end()) {
+      MS_LOG(EXCEPTION) << "Can not find ms primitive for DATensor: " << da_tensor;
     }
     return iter->second;
   }
@@ -74,6 +98,7 @@ class HostValueStore {
   void Clear() {
     host_da_tensor_value_.clear();
     da_tensor_host_value_.clear();
+    da_tensor_primitive_.clear();
   }
 
  private:
@@ -81,6 +106,7 @@ class HostValueStore {
 
   std::unordered_map<da::tensor::DATensor *, ValuePtr> host_da_tensor_value_;
   std::unordered_map<ValuePtr, da::tensor::DATensor *> da_tensor_host_value_;
+  std::unordered_map<da::tensor::DATensor *, PrimitivePtr> da_tensor_primitive_;
 };
 }  // namespace ms_infer_backend
 }  // namespace backend

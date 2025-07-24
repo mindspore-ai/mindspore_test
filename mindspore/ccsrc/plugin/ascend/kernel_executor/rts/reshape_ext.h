@@ -28,6 +28,7 @@ class ReshapeExtKernel : public RtKernel {
   ReshapeExtKernel() = default;
   ~ReshapeExtKernel() override;
   bool Init(const AnfNodePtr &anf_node) override;
+  bool Init(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *) override;
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx() const override;

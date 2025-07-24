@@ -17,10 +17,13 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_RT_KERNEL_BUILD_H
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_RT_KERNEL_BUILD_H
 
+#include <string>
 #include "include/runtime/hardware_abstract/kernel_base/kernel.h"
+#include "include/backend/visible.h"
 namespace mindspore {
 namespace kernel {
 KernelModPtr RtOpBuild(const AnfNodePtr &anf_node);
+BACKEND_EXPORT KernelModPtr CreateRtKernelMod(const std::string &op_name);
 }  // namespace kernel
 }  // namespace mindspore
 

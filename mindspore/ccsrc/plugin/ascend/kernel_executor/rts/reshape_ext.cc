@@ -23,6 +23,10 @@ namespace mindspore {
 namespace kernel {
 ReshapeExtKernel::~ReshapeExtKernel() {}
 
+bool ReshapeExtKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  return true;
+}
+
 bool ReshapeExtKernel::Init(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(anf_node);
