@@ -26,10 +26,10 @@ internal::InternalOpPtr GroupTopk::CreateKernel(const internal::InputsImmutableI
 }
 
 void GroupTopk::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                     const BaseTensorPtr &token, const BaseTensorPtr &idx_arr, const int64_t &group_num,
-                     const int64_t &k, const int64_t &k_inner) {
-  std::vector<BaseTensorPtr> inputs = {token, idx_arr};
-  std::vector<BaseTensorPtr> outputs = {};
+                     const TensorPtr &token, const TensorPtr &idx_arr, const int64_t &group_num, const int64_t &k,
+                     const int64_t &k_inner) {
+  TensorPtrList inputs = {token, idx_arr};
+  TensorPtrList outputs = {};
   TransInternalShapes(inputs, outputs);
 
   param_.group_num = static_cast<int32_t>(group_num);

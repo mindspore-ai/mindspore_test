@@ -31,7 +31,7 @@ class MoeGatingGroupTopK : public InternalKernelInfo {
   ~MoeGatingGroupTopK() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &x_tensor, const std::optional<BaseTensorPtr> &bias_tensor, const int64_t &k,
+            const TensorPtr &x_tensor, const std::optional<TensorPtr> &bias_tensor, const int64_t &k,
             const int64_t &k_group, const int64_t &group_count, const int64_t &group_select_mode, const int64_t &renorm,
             const int64_t &norm_type, const bool &out_flag, const float &routed_scaling_factor, const float &eps);
 

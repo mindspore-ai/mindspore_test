@@ -26,9 +26,9 @@ internal::InternalOpPtr FastGeLU::CreateKernel(const internal::InputsImmutableIn
 }
 
 void FastGeLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                    const BaseTensorPtr &input_tensor) {
-  BaseTensorPtrList inputs = {input_tensor};
-  BaseTensorPtrList outputs = op->outputs();
+                    const TensorPtr &input_tensor) {
+  TensorPtrList inputs = {input_tensor};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
   GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);

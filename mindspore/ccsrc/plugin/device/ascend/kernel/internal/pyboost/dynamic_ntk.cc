@@ -26,10 +26,10 @@ internal::InternalOpPtr DynamicNTK::CreateKernel(const internal::InputsImmutable
 }
 
 void DynamicNTK::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                      const BaseTensorPtr &position_ids_tensor, const BaseTensorPtr &inv_freq_tensor,
-                      const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype) {
-  BaseTensorPtrList inputs = {position_ids_tensor, inv_freq_tensor, seq_lens_tensor};
-  BaseTensorPtrList outputs = op->outputs();
+                      const TensorPtr &position_ids_tensor, const TensorPtr &inv_freq_tensor,
+                      const TensorPtr &seq_lens_tensor, const TypeId &dtype) {
+  TensorPtrList inputs = {position_ids_tensor, inv_freq_tensor, seq_lens_tensor};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   if (dtype == kNumberTypeFloat16) {

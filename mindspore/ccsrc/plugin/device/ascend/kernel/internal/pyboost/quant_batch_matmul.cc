@@ -32,13 +32,12 @@ uint64_t QuantBatchMatmul::GetOrGenerateOpTilingKey(const uint64_t &tiling_key) 
 }
 
 void QuantBatchMatmul::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                            const uint64_t &tiling_key, const BaseTensorPtr &x, const BaseTensorPtr &y,
-                            const BaseTensorPtr &scale, const std::optional<BaseTensorPtr> &offset,
-                            const std::optional<BaseTensorPtr> &bias,
-                            const std::optional<BaseTensorPtr> &pertoken_scale, const bool transpose_a,
+                            const uint64_t &tiling_key, const TensorPtr &x, const TensorPtr &y, const TensorPtr &scale,
+                            const std::optional<TensorPtr> &offset, const std::optional<TensorPtr> &bias,
+                            const std::optional<TensorPtr> &pertoken_scale, const bool transpose_a,
                             const bool transpose_b, const int64_t dtype) {
-  std::vector<BaseTensorPtr> inputs = {x, y, bias.has_value() ? bias.value() : nullptr, scale};
-  BaseTensorPtrList outputs = op->outputs();
+  TensorPtrList inputs = {x, y, bias.has_value() ? bias.value() : nullptr, scale};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   param_.transpose_a = transpose_a;

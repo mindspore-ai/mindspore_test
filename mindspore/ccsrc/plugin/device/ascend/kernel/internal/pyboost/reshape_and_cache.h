@@ -31,9 +31,8 @@ class ReshapeAndCache : public InternalKernelInfo {
   ~ReshapeAndCache() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &key, const std::optional<BaseTensorPtr> &value,
-            const std::optional<BaseTensorPtr> &key_cache, const std::optional<BaseTensorPtr> &value_cache,
-            const std::optional<BaseTensorPtr> &slot_mapping);
+            const TensorPtr &key, const std::optional<TensorPtr> &value, const std::optional<TensorPtr> &key_cache,
+            const std::optional<TensorPtr> &value_cache, const std::optional<TensorPtr> &slot_mapping);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,

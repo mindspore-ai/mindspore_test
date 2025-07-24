@@ -26,10 +26,10 @@ internal::InternalOpPtr QuantV2::CreateKernel(const internal::InputsImmutableInf
 }
 
 void QuantV2::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                   const BaseTensorPtr &x, const BaseTensorPtr &scale, const BaseTensorPtr &offset,
-                   const bool sqrt_mode, const int64_t rounding_mode, const int64_t dst_type) {
-  std::vector<BaseTensorPtr> inputs = {x, scale, offset};
-  BaseTensorPtrList outputs = op->outputs();
+                   const TensorPtr &x, const TensorPtr &scale, const TensorPtr &offset, const bool sqrt_mode,
+                   const int64_t rounding_mode, const int64_t dst_type) {
+  TensorPtrList inputs = {x, scale, offset};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
   GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);
   LAUNCH_INTERNAL(kernel_name_, op, internal_op_, inputs, outputs, tiling_info_);

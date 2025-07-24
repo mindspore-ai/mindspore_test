@@ -29,7 +29,7 @@ from common.op_proto import OpProto
 from . import pyboost_utils
 from .pyboost_utils import get_input_dtype, tuple_input_to_cpp_type, get_return_type, \
     number_input_to_cpp_type, get_const_number_convert, get_tuple_input_convert, is_optional_param, \
-    get_input_args_type_str, input_dtype_to_cpp_type
+    get_input_args_type_str, input_dtype_to_cpp_type, basic_type_convert_str
 
 
 class OpTemplateParser:
@@ -45,8 +45,8 @@ class OpTemplateParser:
 
     def __init__(self, op_proto: OpProto):
         self.op_proto = op_proto
-
-    def _parse_call_args_types(self, op_args, is_convert=False):
+    @staticmethod
+    def _parse_call_args_types(op_proto, basic_type=False, is_convert=False):
         """
         Parses the data types of the call arguments for the operator.
 
@@ -71,10 +71,10 @@ class OpTemplateParser:
                     op_arg.arg_dtype, is_optional))
             else:
                 call_args_types.append(get_input_dtype(
-                    op_arg.arg_dtype, is_optional))
+                    op_arg.arg_dtype, is_optional, basic_type))
         return call_args_types
 
-    def parse_call_args_with_types(self, is_convert=False):
+    def parse_call_args_with_types(self, basic_type=False, is_convert=False):
         """
         Parses the original call arguments and their types for the operator.
 
@@ -86,7 +86,7 @@ class OpTemplateParser:
         """
         call_args = self.parse_original_call_args(self.op_proto.op_args)
         call_args_after_convert, _, _ = self.op_args_converter()
-        call_args_types = self._parse_call_args_types(self.op_proto.op_args, is_convert)
+        call_args_types = self._parse_call_args_types(self.op_proto, basic_type, is_convert)
         call_args_with_types = []
         if is_convert:
             for type_name, arg_name in zip(call_args_types, call_args_after_convert):
@@ -124,7 +124,8 @@ class OpTemplateParser:
                 call_args_with_tensor.append(call_arg)
         return need_malloc_tensors, tensor_list_convert, call_args_with_tensor
 
-    def parse_original_call_args(self, op_args):
+    @staticmethod
+    def parse_original_call_args(op_args):
         """
         Parses the original call arguments from the operator prototype.
 

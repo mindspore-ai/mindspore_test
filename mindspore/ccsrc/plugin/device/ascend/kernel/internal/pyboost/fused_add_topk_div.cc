@@ -26,15 +26,15 @@ internal::InternalOpPtr FusedAddTopKDiv::CreateKernel(const internal::InputsImmu
 }
 
 void FusedAddTopKDiv::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                           const uint64_t &tiling_key, const BaseTensorPtr &x, const BaseTensorPtr &add_num,
+                           const uint64_t &tiling_key, const TensorPtr &x, const TensorPtr &add_num,
                            const int64_t &group_num, const int64_t &group_topk, const int64_t &n, const int64_t &k,
                            const int64_t &activate_type, const bool &is_norm, const float &scale,
-                           const std::optional<BaseTensorPtr> &mapping_num,
-                           const std::optional<BaseTensorPtr> &mapping_table, const bool &enable_expert_mapping) {
-  std::vector<BaseTensorPtr> inputs = {x, add_num, mapping_num.has_value() ? mapping_num.value() : nullptr,
-                                       mapping_table.has_value() ? mapping_table.value() : nullptr};
+                           const std::optional<TensorPtr> &mapping_num, const std::optional<TensorPtr> &mapping_table,
+                           const bool &enable_expert_mapping) {
+  TensorPtrList inputs = {x, add_num, mapping_num.has_value() ? mapping_num.value() : nullptr,
+                          mapping_table.has_value() ? mapping_table.value() : nullptr};
 
-  std::vector<BaseTensorPtr> outputs = op->outputs();
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   param_.group_num = static_cast<int32_t>(group_num);

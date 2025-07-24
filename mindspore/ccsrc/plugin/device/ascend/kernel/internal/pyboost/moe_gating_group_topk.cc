@@ -26,13 +26,13 @@ internal::InternalOpPtr MoeGatingGroupTopK::CreateKernel(const internal::InputsI
 }
 
 void MoeGatingGroupTopK::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key,
-                              const uint64_t &tiling_key, const BaseTensorPtr &x_tensor,
-                              const std::optional<BaseTensorPtr> &bias_tensor, const int64_t &k, const int64_t &k_group,
+                              const uint64_t &tiling_key, const TensorPtr &x_tensor,
+                              const std::optional<TensorPtr> &bias_tensor, const int64_t &k, const int64_t &k_group,
                               const int64_t &group_count, const int64_t &group_select_mode, const int64_t &renorm,
                               const int64_t &norm_type, const bool &out_flag, const float &routed_scaling_factor,
                               const float &eps) {
-  BaseTensorPtrList inputs = {x_tensor, bias_tensor.has_value() ? bias_tensor.value() : nullptr};
-  BaseTensorPtrList outputs = op->outputs();
+  TensorPtrList inputs = {x_tensor, bias_tensor.has_value() ? bias_tensor.value() : nullptr};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
   param_.k = static_cast<int32_t>(k);
   param_.k_group = static_cast<int32_t>(k_group);

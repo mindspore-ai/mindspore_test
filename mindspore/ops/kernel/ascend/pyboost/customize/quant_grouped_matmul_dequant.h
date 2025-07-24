@@ -28,11 +28,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void QuantGroupedMatmulDequantAscendCustomize(
-  const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor, const BaseTensorPtr &weight_tensor,
-  const BaseTensorPtr &weight_scale_tensor, const BaseTensorPtr &group_list_tensor,
-  const std::optional<BaseTensorPtr> &bias_tensor, const std::optional<BaseTensorPtr> &x_scale_tensor,
-  const std::optional<BaseTensorPtr> &x_offset_tensor, const std::optional<BaseTensorPtr> &smmoth_scale_tensor,
-  const mindspore::StringImmPtr &x_quant_mode, const mindspore::BoolImmPtr &transpose_weight);
+  const std::shared_ptr<OpRunner> &op, const TensorPtr &x_tensor, const TensorPtr &weight_tensor,
+  const TensorPtr &weight_scale_tensor, const TensorPtr &group_list_tensor, const std::optional<TensorPtr> &bias_tensor,
+  const std::optional<TensorPtr> &x_scale_tensor, const std::optional<TensorPtr> &x_offset_tensor,
+  const std::optional<TensorPtr> &smmoth_scale_tensor, const mindspore::StringImmPtr &x_quant_mode,
+  const mindspore::BoolImmPtr &transpose_weight);
 
 }  // namespace pyboost
 }  // namespace kernel

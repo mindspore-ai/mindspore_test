@@ -31,7 +31,7 @@ class QuantV2 : public InternalKernelInfo {
   ~QuantV2() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &x, const BaseTensorPtr &scale, const BaseTensorPtr &offset, const bool sqrt_mode,
+            const TensorPtr &x, const TensorPtr &scale, const TensorPtr &offset, const bool sqrt_mode,
             const int64_t rounding_mode, const int64_t dst_type);
 
  protected:

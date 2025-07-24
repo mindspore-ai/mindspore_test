@@ -26,9 +26,9 @@ internal::InternalOpPtr SiLU::CreateKernel(const internal::InputsImmutableInfoLi
 }
 
 void SiLU::Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-                const BaseTensorPtr &x) {
-  std::vector<BaseTensorPtr> inputs = {x};
-  BaseTensorPtrList outputs = op->outputs();
+                const TensorPtr &x) {
+  TensorPtrList inputs = {x};
+  TensorPtrList outputs = op->outputs();
   TransInternalShapes(inputs, outputs);
 
   GetOrCreateKernel(op, op_key, tiling_key, inputs, outputs);

@@ -31,8 +31,8 @@ class DynamicNTK : public InternalKernelInfo {
   ~DynamicNTK() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &position_ids_tensor, const BaseTensorPtr &inv_freq_tensor,
-            const BaseTensorPtr &seq_lens_tensor, const TypeId &dtype);
+            const TensorPtr &position_ids_tensor, const TensorPtr &inv_freq_tensor, const TensorPtr &seq_lens_tensor,
+            const TypeId &dtype);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,

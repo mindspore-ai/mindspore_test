@@ -31,10 +31,9 @@ class QuantBatchMatmul : public InternalKernelInfo {
   ~QuantBatchMatmul() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &x, const BaseTensorPtr &y, const BaseTensorPtr &scale,
-            const std::optional<BaseTensorPtr> &offset, const std::optional<BaseTensorPtr> &bias,
-            const std::optional<BaseTensorPtr> &pertoken_scale, const bool transpose_a, const bool transpose_b,
-            const int64_t dtype);
+            const TensorPtr &x, const TensorPtr &y, const TensorPtr &scale, const std::optional<TensorPtr> &offset,
+            const std::optional<TensorPtr> &bias, const std::optional<TensorPtr> &pertoken_scale,
+            const bool transpose_a, const bool transpose_b, const int64_t dtype);
 
  protected:
   uint64_t GetOrGenerateOpTilingKey(const uint64_t &tiling_key) const override;

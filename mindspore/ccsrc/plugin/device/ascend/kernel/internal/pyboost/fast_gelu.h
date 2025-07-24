@@ -31,7 +31,7 @@ class FastGeLU : public InternalKernelInfo {
   ~FastGeLU() = default;
 
   void Call(const std::shared_ptr<pyboost::OpRunner> &op, const uint64_t &op_key, const uint64_t &tiling_key,
-            const BaseTensorPtr &input_tensor);
+            const TensorPtr &input_tensor);
 
  protected:
   internal::InternalOpPtr CreateKernel(const internal::InputsImmutableInfoList &inputs,
