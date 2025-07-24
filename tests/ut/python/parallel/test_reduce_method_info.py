@@ -21,6 +21,7 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from tests.ut.python.ops.test_math_ops import VirtualLoss
+from parallel.utils.utils import ParallelValidator
 
 
 def setup_function():
@@ -70,14 +71,14 @@ class GradWrap(nn.Cell):
         return grad_all(self.network)(x, y, b)
 
 
-def compile_net_no_bias(net, x, y):
+def compile_net(net, *inputs):
     net.set_train()
-    _cell_graph_executor.compile(net, x, y)
+    phase, _ = _cell_graph_executor.compile(net, *inputs)
+    return phase
 
 
-def compile_net(net, x, y, b):
-    net.set_train()
-    _cell_graph_executor.compile(net, x, y, b)
+def generate_scalar_tensor_str(value, type_str):
+    return f"Tensor(shape=[], dtype={type_str}, value={value})"
 
 
 # model_parallel test
@@ -144,7 +145,11 @@ def test_sum_mul2():
     x = Tensor(np.ones([128, 128, 64, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 128, 64, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceSum-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 1, 2, 3, 4, 5, 6, 7])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 def test_sum_mul3():
@@ -210,7 +215,11 @@ def test_sum_mul4():
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([128, 32, 1]), dtype=ms.float32)
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceSum-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 1])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 def test_sum_mul5():
@@ -239,7 +248,11 @@ def test_sum_mul5():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceSum-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 32])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 def test_sum_mul6():
@@ -268,7 +281,7 @@ def test_sum_mul6():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_sum_mul7():
@@ -297,7 +310,11 @@ def test_sum_mul7():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceSum-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 8, 16, 24, 32, 40, 48, 56])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 def test_max_mul():
@@ -330,7 +347,11 @@ def test_max_mul():
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([128, 32]), dtype=ms.float32)
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceMax-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 1])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "max"})
 
 
 def test_min_mul():
@@ -363,7 +384,11 @@ def test_min_mul():
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([32, 64]), dtype=ms.float32)
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceMin-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 2, 4, 6])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "min"})
 
 
 def test_reduce_mean_mul_float32():
@@ -397,7 +422,12 @@ def test_reduce_mean_mul_float32():
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([32, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceMean-0"])
+    assert validator.check_node_inputs("RealDiv-0", ["AllReduce-0", generate_scalar_tensor_str(4, "Float32")])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 2, 4, 6])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 class ArgMaxWithValueNet(nn.Cell):
@@ -456,13 +486,13 @@ def gen_inputs_and_compile_net(net):
     x = Tensor(np.ones([128, 64, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 64, 64]), dtype=ms.float32)
     b = Tensor(np.ones([128, 64]), dtype=ms.float32)
-    compile_net(net, x, y, b)
+    return compile_net(net, x, y, b)
 
 
 def gen_inputs_and_compile_net_no_bias(net):
     x = Tensor(np.ones([128, 64, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 64, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    return compile_net(net, x, y)
 
 
 def tobefixed_test_arg_max_with_value_mul_semi_axis_parallel():
@@ -517,7 +547,11 @@ def test_arg_min_with_value_mul_semi_axis_parallel():
     strategy3 = ((2, 4), (2, 4))
     net = GradWrap(NetWithLoss(ArgMinWithValueNet(strategy1, strategy2, strategy3)))
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    gen_inputs_and_compile_net(net)
+    phase = gen_inputs_and_compile_net(net)
+    validator = ParallelValidator(net, phase)
+    validator.check_node_inputs("AllReduce-0", ["TupleGetItem-0"])
+    validator.check_comm_node_rank_list("AllReduce-0", [0, 1])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "min"})
 
 
 def test_arg_min_with_value_mul_semi():
@@ -718,7 +752,7 @@ def test_cross_batch():
 
     x = Tensor(np.ones([32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_cross_batch2():
@@ -751,7 +785,7 @@ def test_cross_batch2():
 
     x = Tensor(np.ones([32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_cross_batch_auto():
@@ -780,7 +814,7 @@ def test_cross_batch_auto():
 
     x = Tensor(np.ones([32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_max_empty_tuple():
@@ -814,7 +848,11 @@ def test_max_empty_tuple():
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([128, 32]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceMax-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 1, 2, 3, 4, 5, 6, 7])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "max"})
 
 
 def test_any_mul():
@@ -845,7 +883,12 @@ def test_any_mul():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("Cast-1", ["ReduceAny-0", validator.placehold_input])
+    assert validator.check_node_inputs("AllReduce-0", ["Cast-1"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 8, 16, 24, 32, 40, 48, 56])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum"})
 
 
 def test_any_mul2():
@@ -876,7 +919,7 @@ def test_any_mul2():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_all_mul():
@@ -907,7 +950,11 @@ def test_all_mul():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("Cast-1", ["ReduceAll-0", validator.placehold_input])
+    assert validator.check_node_inputs("AllReduce-0", ["Cast-1"])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "prod", "group": "hccl_world_group"})
 
 
 def test_all_mul2():
@@ -938,7 +985,7 @@ def test_all_mul2():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_all_mul3():
@@ -969,7 +1016,11 @@ def test_all_mul3():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("Cast-1", ["ReduceAll-0", validator.placehold_input])
+    assert validator.check_node_inputs("AllReduce-0", ["Cast-1"])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "prod", "group": "hccl_world_group"})
 
 
 def test_prod_mul():
@@ -998,7 +1049,11 @@ def test_prod_mul():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceProd-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 4])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "prod"})
 
 
 def test_prod_mul2():
@@ -1027,7 +1082,7 @@ def test_prod_mul2():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    compile_net(net, x, y)
 
 
 def test_prod_mul3():
@@ -1056,7 +1111,11 @@ def test_prod_mul3():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("AllReduce-0", ["ReduceProd-0"])
+    assert validator.check_comm_node_rank_list("AllReduce-0", [0, 1, 2, 3, 4, 5, 6, 7])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "prod"})
 
 
 def test_prod_mul_auto():
@@ -1111,7 +1170,11 @@ def test_square_sum_all_mul():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("TupleGetItem-14", ["SquareSumAll-0", validator.placehold_input])
+    assert validator.check_node_inputs("AllReduce-0", ["TupleGetItem-14"])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum", "group": "hccl_world_group"})
 
 
 def test_square_sum_all_mul2():
@@ -1140,4 +1203,8 @@ def test_square_sum_all_mul2():
 
     x = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
     y = Tensor(np.ones([128, 32, 64]), dtype=ms.float32)
-    compile_net_no_bias(net, x, y)
+    phase = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs("TupleGetItem-18", ["SquareSumAll-0", validator.placehold_input])
+    assert validator.check_node_inputs("AllReduce-0", ["TupleGetItem-18"])
+    assert validator.check_node_attrs("AllReduce-0", {"op": "sum", "group": "hccl_world_group"})

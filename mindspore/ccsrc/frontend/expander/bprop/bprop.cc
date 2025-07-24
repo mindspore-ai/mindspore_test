@@ -332,6 +332,7 @@ class PynativeIRBuilderWithCache : public PynativeIRBuilder {
           (void)input_indexs.emplace_back(it->second);
         }
       }
+      MS_EXCEPTION_IF_NULL(GetCNodePrimitive(node->get()));
       PrimitivePtr primitive =
         node->input_type() == InputType::kConstant ? prim::kPrimTupleGetItem : GetCNodePrimitive(node->get());
       node_map[node] = graph->nodes.size();

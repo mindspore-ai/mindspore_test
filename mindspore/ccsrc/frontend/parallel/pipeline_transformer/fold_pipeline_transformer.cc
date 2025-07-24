@@ -271,6 +271,7 @@ SendAttr FoldPipelineTransformer::InsertSend(const AnfNodePtr &parameter, int64_
   OperatorAttrs attrs = {attr_tag, attr_rank, attr_group, attr_group_back};
   CNodePtr send = CreateCNodeByInputsAndAttr(graph, SEND, SEND, send_input, attrs);
   auto prim = GetCNodePrimitive(send);
+  MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtr care_node;
   bool is_param = true;
   auto op_info_pair = GetOpInfoPair(parameter, parameter, &care_node, &is_param);

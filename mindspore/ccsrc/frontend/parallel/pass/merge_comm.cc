@@ -173,7 +173,9 @@ void MergeAllGather(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphMan
     auto is_same_allgather =
       std::all_of(allgather_list.begin(), allgather_list.end(), [&allgather_cnode1](const CNodePtr &allgather_cnode2) {
         auto ag1_prim = GetCNodePrimitive(allgather_cnode1);
+        MS_EXCEPTION_IF_NULL(ag1_prim);
         auto ag2_prim = GetCNodePrimitive(allgather_cnode2);
+        MS_EXCEPTION_IF_NULL(ag2_prim);
         auto group1 = ag1_prim->GetAttr(GROUP);
         auto group2 = ag2_prim->GetAttr(GROUP);
         if (!group1 || !group2) {

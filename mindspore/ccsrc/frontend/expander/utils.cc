@@ -124,6 +124,7 @@ class PrimpyConverter {
         continue;
       }
       auto primitive = GetCNodePrimitive(node);
+      MS_EXCEPTION_IF_NULL(primitive);
       auto new_prim = ConvertPrimToPrimPy(primitive);
       AnfNodePtrList inputs = {NewValueNode(new_prim)};
       auto cnode = dyn_cast_ptr<CNode>(node);

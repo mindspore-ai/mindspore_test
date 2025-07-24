@@ -73,6 +73,7 @@ bool IsDxMatMul(const CNodePtr &matmul_node) {
     }
     if (IsPrimitiveCNode(node, prim::kPrimAllGather)) {
       auto prim = GetCNodePrimitive(node->cast<CNodePtr>());
+      MS_EXCEPTION_IF_NULL(prim);
       if (prim->instance_name().find("parallel_optimizer") != std::string::npos) {
         return true;
       }

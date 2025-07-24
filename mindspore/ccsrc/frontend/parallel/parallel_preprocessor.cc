@@ -158,6 +158,7 @@ static void PreProcessActualSeqLenInputForFlashAttentionScore(const FuncGraphPtr
           dtype->set_abstract(abstract::FromValue((int64_t)(kInt64->type_id())));
           auto tuple_to_tensor_cnode =
             fa_cnode->func_graph()->NewCNode({NewValueNode(prim::kPrimTupleToTensor), input, dtype});
+          MS_EXCEPTION_IF_NULL(GetCNodePrimitive(tuple_to_tensor_cnode));
           auto abs = GenerateAbsByOpInfer(GetCNodePrimitive(tuple_to_tensor_cnode), {input, dtype});
           tuple_to_tensor_cnode->set_abstract(abs);
           manager->SetEdge(fa_cnode, index + 1, tuple_to_tensor_cnode);

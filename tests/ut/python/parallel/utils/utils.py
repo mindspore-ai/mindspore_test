@@ -44,6 +44,7 @@ def convert_inputs(inputs: [tuple, list], cnode_info_dict: dict, expect_inputs: 
             new_inputs.pop()
     return new_inputs
 
+
 class ParallelValidator:
     """
     Validator for distribute operator.
@@ -82,6 +83,7 @@ class ParallelValidator:
         self._parameter_layout_dict = net.parameter_layout_dict
         self._graph_info_dict = _cell_graph_executor._graph_executor.get_parallel_graph_info(phase)
         self._graph_strategies = _cell_graph_executor._graph_executor.get_strategy(phase)
+        self._placehold_input = "placehold_input"
 
     @property
     def parameter_layout_dict(self):
@@ -90,6 +92,10 @@ class ParallelValidator:
     @property
     def graph_info_dict(self):
         return self._graph_info_dict
+
+    @property
+    def placehold_input(self):
+        return self._placehold_input
 
     @property
     def graph_strategies(self):
@@ -140,6 +146,9 @@ class ParallelValidator:
             return False
         result = []
         for i in range(len(expect_inputs)):
+            if expect_inputs[i] == self._placehold_input:
+                # Placehold input, skip to compare
+                continue
             if isinstance(expect_inputs[i], (int, list, tuple)) and isinstance(inputs[i], str):
                 result.append(str(expect_inputs[i]) in inputs[i])
                 continue
@@ -230,6 +239,15 @@ class ParallelValidator:
         if stgy == strategy:
             return True
         return False
+
+    def check_comm_node_rank_list(self, comm_node, rank_list):
+        if not isinstance(rank_list, (list, tuple)):
+            raise TypeError('Type of rank_list must be tuple or list, but gout {}'.format(type(rank_list)))
+        # Transfer list to tuple str. e.g [0,1,2,3] => '(0, 1, 2, 3)'
+        list_to_rank_list = lambda lst: f"({', '.join(map(str, lst))})" # [0,1,2,3] => '(0, 1, 2, 3)'
+        list_to_group_rank = lambda lst: '-'.join(map(str, lst)) # [0,1,2,3] => '0-1-2-3'
+        return self.check_node_attrs(comm_node, {"rank_list": list_to_rank_list(rank_list)}) or \
+               self.check_node_attrs(comm_node, {"group_ranks": list_to_group_rank(rank_list)})
 
 
 def compile_net(net: Cell, *inputs):

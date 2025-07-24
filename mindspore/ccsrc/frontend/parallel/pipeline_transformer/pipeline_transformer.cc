@@ -1189,6 +1189,7 @@ SendAttr PipelineTransformer::InsertSend(const AnfNodePtr &parameter, int64_t us
   auto graph = enable_share_cell_ ? shared_cell_ : main_graph_;
   CNodePtr send = CreateCNodeByInputsAndAttr(graph, SEND, SEND, AnfNodePtrList{parameter}, attrs);
   auto prim = GetCNodePrimitive(send);
+  MS_EXCEPTION_IF_NULL(prim);
   prim->set_attr(SHAPE, shape_type_pair.first);
   prim->set_attr(DTYPE, shape_type_pair.second);
 
