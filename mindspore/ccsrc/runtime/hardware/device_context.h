@@ -34,6 +34,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "runtime/device/res_manager/memory_manager.h"
+#include "runtime/device/res_manager/auto_mem_offload.h"
 #include "runtime/pipeline/task/task.h"
 #include "ir/device_event.h"
 #include "utils/ms_context.h"
@@ -113,7 +114,9 @@ using DeviceContextPtr = std::shared_ptr<DeviceContext>;
 
 class BACKEND_COMMON_EXPORT DeviceResManager {
  public:
-  DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {}
+  DeviceResManager() : collective_comm_lib_(nullptr), device_context_(nullptr) {
+    offloaded_mem_pool_ = std::make_shared<device::OffloadedMemPool>();
+  }
 
   virtual ~DeviceResManager() = default;
 
@@ -182,7 +185,11 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
     return std::shared_ptr<void>(::malloc(size), ::free);
   }
-
+  // Allocate host memory for offload device memory.
+  virtual void *AllocateOffloadMemory(size_t size) const;
+  // Release host memory which was allocated by AllocateOffloadMemory to pool.
+  // It will not be free to os.
+  virtual void FreeOffloadMemory(void *ptr) const;
   virtual size_t GetAvailableMemSize() const { return 0; }
 
   // Allocate continuous device memory according to size list.
@@ -334,6 +341,7 @@ class BACKEND_COMMON_EXPORT DeviceResManager {
   template <class... Args>
   friend class DeviceInterface;
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
+  std::shared_ptr<device::OffloadedMemPool> offloaded_mem_pool_;
 };
 
 using CallbackFunc = std::function<void(void)>;
