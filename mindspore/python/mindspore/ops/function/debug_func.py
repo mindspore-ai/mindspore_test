@@ -124,6 +124,7 @@ def tensordump(file_name, tensor, mode='out'):
             --master_port=11450 --log_dir=msrun_log --join=True --cluster_time_out=300 tensordump_example.py
 
         >>> import os
+        >>> import time
         >>> import numpy as np
         >>> import mindspore
         >>> from mindspore import nn, context
@@ -154,11 +155,12 @@ def tensordump(file_name, tensor, mode='out'):
         >>> x = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> y = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
         >>> b = mindspore.tensor(0.1 * mindspore.ops.randn(64, 64), mindspore.float32)
-        >>> parallel_net = Autoparallel(net, parallel_mode="semi_auto")
+        >>> parallel_net = AutoParallel(net, parallel_mode="semi_auto")
         >>> parallel_net.dataset_strategy(config="full_batch")
         >>> out = parallel_net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
         >>> # out shape is (64, 64)
+        >>> time.sleep(0.5) # npy file is generated asynchronously, spend an interval time then load it.
         >>> matmul1_output_slice = np.load(f'rank_{rank_id}_mul1_mul2_float32_0.npy')      # load matmul1's output slice
         >>> print(f"matmul1_output_slice is loaded, shape is: {matmul1_output_slice.shape}")
         >>> # matmul1_output_slice is loaded, shape is: (64, 64)
