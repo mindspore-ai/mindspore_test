@@ -18,52 +18,6 @@ from __future__ import division
 
 from mindspore import mint
 from mindspore.nn.cell import Cell
-from mindspore import _checkparam as validator
-
-
-class Dropout2d(Cell):
-    r"""
-    During training, randomly zeroes some channels of the input tensor with probability `p`
-    from a Bernoulli distribution (For a 4-dimensional tensor with a shape of :math:`NCHW`,
-    the channel feature map refers to a 2-dimensional feature map with the shape of :math:`HW`).
-
-    For example, the :math:`j\_th` channel of the :math:`i\_th` sample in the batched input is a to-be-processed
-    `2D` tensor input[i,j].
-    Each channel will be zeroed out independently on every forward call with probability `p` using samples
-    from a Bernoulli distribution.
-
-    `Dropout2d` can improve the independence between channel feature maps.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.mint.nn.functional.dropout2d` for more details.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor, mint
-        >>> import numpy as np
-        >>> dropout = mint.nn.Dropout2d(p=0.5)
-        >>> x = Tensor(np.ones([2, 1, 2, 3]), mindspore.float32)
-        >>> output = dropout(x)
-        >>> print(output.shape)
-        (2, 1, 2, 3)
-    """
-
-    def __init__(self, p=0.5):
-        """Initialize Dropout2d."""
-        super(Dropout2d, self).__init__()
-        validator.check_float_range(p, 0.0, 1.0, validator.INC_BOTH, "p", self.cls_name)
-        self.p = p
-
-    def construct(self, x):
-        if not self.training or self.p == 0:
-            return x
-
-        return mint.nn.functional.dropout2d(x, self.p)
 
 
 class Flatten(Cell):
@@ -118,6 +72,5 @@ class Flatten(Cell):
 
 
 __all__ = [
-    'Dropout2d',
     'Flatten',
 ]

@@ -61,6 +61,7 @@ from mindspore.nn.layer import ReLU
 
 # 14
 from mindspore.nn.layer.basic import DropoutExt as Dropout
+from mindspore.nn.layer.basic import Dropout2dExt as Dropout2d
 # 15
 from mindspore.mint.nn.layer.conv import Conv1d, Conv2d, Conv3d, ConvTranspose2d
 # 16
@@ -259,9 +260,6 @@ from mindspore.mint.nn.layer.activation import Threshold
 
 # 258
 from mindspore.ops.function.nn_func import mse_loss_ext
-
-# 393
-from mindspore.mint.nn.layer.basic import Dropout2d
 
 # 406
 from mindspore.mint.nn.layer.activation import ELU
@@ -1448,9 +1446,6 @@ __all__ = [
 
     # 388
     'AdaptiveMaxPool2d',
-
-    # 393
-    'Dropout2d',
     # 406
     'ELU',
     # 407

@@ -1,7 +1,7 @@
 mindspore.mint.nn.Dropout2d
 ===========================
 
-.. py:class:: mindspore.mint.nn.Dropout2d(p=0.5)
+.. py:class:: mindspore.mint.nn.Dropout2d(p=0.5, inplace=False)
 
     在训练期间，以服从伯努利分布的概率 `p` 随机将输入Tensor的某些通道归零（对于shape为 :math:`NCHW` 的四维Tensor，其通道特征图指的是后两维 :math:`HW` 的二维特征图）。
     例如，在批处理输入中 :math:`i\_th` 批， :math:`j\_th` 通道的 `input[i, j]` `2D` Tensor 是一个待处理数据。
