@@ -324,6 +324,12 @@ void CheckInvalidDoutFromElementsUseFlag(const FuncGraphPtr &func_graph, bool ne
 // For GraphMode and grad under @jit
 bool CheckInvalidViewInplaceDout::operator()(const FuncGraphPtr &root, const OptimizerPtr &opt) {
   MS_EXCEPTION_IF_NULL(root);
+  std::string view_inplace_grad_config = common::GetCompileConfig("ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE");
+  MS_LOG(INFO) << "This view_inplace_grad_config is: " << view_inplace_grad_config;
+  if (view_inplace_grad_config == "2") {
+    // Choose new view inplace grad scheme, just do this check in the old scheme.
+    return false;
+  }
   CheckInvalidDoutFromElementsUseFlag(root, true);
   return false;
 }

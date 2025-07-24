@@ -369,9 +369,9 @@ Value Range:
     0: Choose old or new scheme based on specific control flow scenarios.
     1: Choose old scheme.
     2: Choose new scheme.
-    Default: 0
+    Default: 2
 """
-ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '0'
+ENABLE_VIEW_INPLACE_GRAD_SCHEME_CHOOSE = '2'
 
 __all__ = [
     "COMPILE_PROFILE",

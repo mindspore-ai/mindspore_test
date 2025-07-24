@@ -137,8 +137,11 @@ void VirtualViewGradInsertInner(const FuncGraphPtr &root, const FuncGraphManager
       // 3. If view_node is nullptr, and is_view_output is false, inplace input is not a view output, just ignore
       if (view_node == nullptr) {
         if (is_view_output) {
-          MS_LOG(EXCEPTION) << "Inplace modification of the output of view op is not supported in control flow. cnode:"
-                            << cnode->DebugString() << ". Please check your codes which location is as follows:"
+          MS_LOG(EXCEPTION) << "In backpropagation, inplace modification of the output of view operations within "
+                               "control flow is not supported.\nThe view operator information is ambiguous, "
+                               "and you can avoid this problem by writing the view operator and the inplace operator "
+                               "in the same control flow branch.\nThe node is: "
+                            << cnode->DebugString() << ".\nPlease check your codes which location is as follows:"
                             << trace::GetDebugInfoStr(cnode->debug_info());
         }
         continue;

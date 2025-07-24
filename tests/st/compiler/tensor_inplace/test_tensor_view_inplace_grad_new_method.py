@@ -506,3 +506,31 @@ def test_setitem_simple_case3():
         assert np.all(a_grad.asnumpy() == Tensor([1]).asnumpy())
     finally:
         del os.environ["MS_DEV_TENSOR_INDEX_BOOST"]
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_view_inplace_gradient():
+    """
+    Feature: Support tensor inplace view gradient.
+    Description: Support tensor inplace view gradient.
+    Expectation: no exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, input_tensor1, input_tensor2):
+            input_tensor1_1 = ops.abs(input_tensor1)
+            input_tensor2_1 = ops.abs(input_tensor2)
+            x = select_ext_view_op(input_tensor1_1, 0, 0)
+            y = select_ext_view_op(input_tensor1_1, 0, 1)
+            x.add_(y)
+            m = select_ext_view_op(input_tensor2_1, 0, 0)
+            n = select_ext_view_op(input_tensor2_1, 0, 1)
+            m.add_(x)
+            n.add_(y)
+            return input_tensor2_1
+
+    net = Net()
+    out_expect = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    net.construct = ms.jit(net.construct, backend="ms_backend")
+    out_jit = grad(net, grad_position=1)(Tensor([3, 4]), Tensor([1, 2]))
+    assert np.allclose(out_expect.asnumpy(), out_jit.asnumpy())
