@@ -25,6 +25,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_g.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_r.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel_utils.h"
 
@@ -130,6 +132,10 @@ std::vector<size_t> DetachBackward::DetachDxAndDwGraph(const FuncGraphPtr &fg, b
     // case1: MatMul(Dw)->assign_add->depend
     auto assign_add_input = assign_add_c->input(kIndex2);
     MS_EXCEPTION_IF_NULL(assign_add_input);
+    while (IsPrimitiveCNode(assign_add_input, prim::kPrimCast) ||
+           IsPrimitiveCNode(assign_add_input, prim::kPrimReshape)) {
+      assign_add_input = assign_add_input->cast<CNodePtr>()->input(1);
+    }
     if (!IsPrimitiveCNode(assign_add_input, prim::kPrimMatMul) &&
         !IsPrimitiveCNode(assign_add_input, prim::kPrimTupleGetItem)) {
       dx_out_inputs.emplace_back(cur_input);
@@ -394,6 +400,8 @@ void DetachBackward::HandleClosureGraph(const FuncGraphPtr &fg) {
 }
 
 void DetachBackward::AdapteDwOverlap(const FuncGraphPtr &fg) {
+  static const std::array<const char *, 5> kAttrs = {"matmul_grad_depend1", "matmul_grad_depend2",
+                                                     "matmul_grad_depend3", "recompute_depend1", "recompute_depend2"};
   auto nodes = fg->nodes();
   for (const auto &node : nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimDepend)) {
@@ -401,9 +409,11 @@ void DetachBackward::AdapteDwOverlap(const FuncGraphPtr &fg) {
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    if (cnode->HasAttr("matmul_grad_depend1") || cnode->HasAttr("matmul_grad_depend2") ||
-        cnode->HasAttr("matmul_grad_depend3")) {
-      manager_->Replace(cnode, cnode->input(1));
+    for (const auto &attr : kAttrs) {
+      if (cnode->HasAttr(attr)) {
+        manager_->Replace(cnode, cnode->input(1));
+        break;
+      }
     }
   }
 }
