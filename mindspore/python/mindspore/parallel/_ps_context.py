@@ -114,8 +114,8 @@ def _set_ps_context(**kwargs):
                           Default: ``False``.
         config_file_path (str): Configuration file path used by recovery. Default: ''.
         enable_ssl (bool): Set PS SSL mode enabled or disabled. Default: ``False``.
-                           There might be risk when this is set to False.
-                           It is user's responsibility to ensure the network environment is safe.
+                           When set to False, users need to review and confirm the security of network environment
+                           where the distributed job is located.
         client_password (str): Password to decrypt the secret key stored in the client certificate. Default: ''.
         server_password (str): Password to decrypt the secret key stored in the server certificate. Default: ''.
 
