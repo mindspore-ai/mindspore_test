@@ -78,7 +78,7 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "include/common/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/gpu/arrays/contiguous_gpu_kernel.h"
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 
 namespace mindspore {
 namespace device {

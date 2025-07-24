@@ -20,6 +20,7 @@
 #include <limits>
 #include <set>
 #include <cmath>
+#include "ir/tensor_new.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -28,7 +29,6 @@
 #include "base/float16.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_e.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {

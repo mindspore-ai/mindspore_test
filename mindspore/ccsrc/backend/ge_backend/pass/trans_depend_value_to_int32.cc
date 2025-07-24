@@ -25,7 +25,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {

@@ -23,13 +23,13 @@
 #include <queue>
 #include <mutex>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "plugin/res_manager/ascend/ascend_device_address/ascend_device_address.h"
 #include "plugin/res_manager/ascend/dvm/dvm.h"
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/ccsrc/pyboost/op_runner.h"
 #include "runtime/pynative/lazy_fusion.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 using ShapeRefPtr = std::shared_ptr<dvm::ShapeRef>;

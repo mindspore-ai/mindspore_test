@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/hashing.h"
@@ -269,27 +270,27 @@ tensor::TensorPtr ScalarToTensor(const ScalarPtr &scalar, const std::optional<Ty
   TypeId type_id = data_type->type_id();
   switch (type_id) {
     case kNumberTypeBool:
-      return std::make_shared<tensor::Tensor>(GetValue<bool>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<bool>(scalar), tensor_dtype);
     case kNumberTypeInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int8_t>(scalar)), tensor_dtype);
     case kNumberTypeInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int16_t>(scalar)), tensor_dtype);
     case kNumberTypeInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<int64_t>(GetValue<int32_t>(scalar)), tensor_dtype);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::Tensor>(GetValue<int64_t>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<int64_t>(scalar), tensor_dtype);
     case kNumberTypeUInt8:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint8_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt16:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint16_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt32:
-      return std::make_shared<tensor::Tensor>(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
+      return tensor::from_scalar(static_cast<uint64_t>(GetValue<uint32_t>(scalar)), tensor_dtype);
     case kNumberTypeUInt64:
-      return std::make_shared<tensor::Tensor>(GetValue<uint64_t>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<uint64_t>(scalar), tensor_dtype);
     case kNumberTypeFloat32:
-      return std::make_shared<tensor::Tensor>(GetValue<float>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<float>(scalar), tensor_dtype);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::Tensor>(GetValue<double>(scalar), tensor_dtype);
+      return tensor::from_scalar(GetValue<double>(scalar), tensor_dtype);
     default:
       MS_LOG(EXCEPTION) << "When convert scalar to tensor, the scalar type: " << data_type << " is invalid.";
   }
@@ -313,7 +314,7 @@ tensor::TensorPtr SequenceToTensor(const ValueSequencePtr &sequence) {
   if (element_values.empty()) {
     std::vector<int32_t> array_data;
     MS_LOG(WARNING) << "The value sequence is empty.";
-    return std::make_shared<tensor::Tensor>(std::move(array_data), TypeIdToType(kNumberTypeInt32));
+    return tensor::from_vector(std::move(array_data), TypeIdToType(kNumberTypeInt32));
   }
 
   const auto &first_element = element_values[0];
@@ -327,11 +328,11 @@ tensor::TensorPtr SequenceToTensor(const ValueSequencePtr &sequence) {
   TypeId type_id = data_type->type_id();
   switch (type_id) {
     case kNumberTypeInt32:
-      return std::make_shared<tensor::Tensor>(ConvertValueListToVector<int32_t>(element_values), data_type);
+      return tensor::from_vector(ConvertValueListToVector<int32_t>(element_values), data_type);
     case kNumberTypeInt64:
-      return std::make_shared<tensor::Tensor>(ConvertValueListToVector<int64_t>(element_values), data_type);
+      return tensor::from_vector(ConvertValueListToVector<int64_t>(element_values), data_type);
     case kNumberTypeFloat64:
-      return std::make_shared<tensor::Tensor>(ConvertValueListToVector<double>(element_values), data_type);
+      return tensor::from_vector(ConvertValueListToVector<double>(element_values), data_type);
     default:
       MS_LOG(EXCEPTION) << "When convert sequence to tensor, the sequence type: " << data_type << " is invalid.";
   }

@@ -24,11 +24,11 @@
 #include <algorithm>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "ir/visitor.h"
 #include "ir/func_graph.h"
 #include "utils/shape_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 ///

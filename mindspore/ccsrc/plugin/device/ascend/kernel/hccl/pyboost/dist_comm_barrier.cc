@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -28,7 +29,7 @@ namespace kernel {
 namespace pyboost {
 void DistCommBarrierAscendCustomize(const std::shared_ptr<OpRunner> &op, const StringImmPtr &group) {
   auto op_type_enum = HCCL_REDUCE_SUM;
-  TensorPtr input_tensor = std::make_shared<tensor::Tensor>(0.0);
+  TensorPtr input_tensor = tensor::from_scalar(0.0);
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   op->set_outputs({input_tensor});
   auto run_func = [op, input_tensor, op_type_enum, group]() {

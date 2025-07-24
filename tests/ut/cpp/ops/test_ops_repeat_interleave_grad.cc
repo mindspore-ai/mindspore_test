@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/repeat_interleave_grad.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -45,7 +46,7 @@ class TestRepeatInterleaveGrad : public TestOps, public testing::WithParamInterf
 TEST_P(TestRepeatInterleaveGrad, repeat_interleave_grad_dyn_shape) {
   const auto &param = GetParam();
   auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto repeats_tensor = std::make_shared<tensor::Tensor>(param.repeats_type, param.repeats_shape,
+  auto repeats_tensor = tensor::from_buffer(param.repeats_type, param.repeats_shape,
                                                          (void *)&param.repeats_data[0], param.repeats_type);
   auto repeats = repeats_tensor->ToAbstract();
   ASSERT_NE(x, nullptr);

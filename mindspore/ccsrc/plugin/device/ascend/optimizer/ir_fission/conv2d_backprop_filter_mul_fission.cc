@@ -27,7 +27,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "utils/ms_context.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore::opt {
 namespace {

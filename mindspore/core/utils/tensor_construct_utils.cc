@@ -18,7 +18,7 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 tensor::TensorPtr TensorConstructUtils::CreateZerosTensor(const TypePtr &type, const std::vector<int64_t> &shape) {
   MS_EXCEPTION_IF_NULL(type);
@@ -88,7 +88,7 @@ tensor::TensorPtr TensorConstructUtils::CreateTensor(const TypePtr &type, const 
                                                      void *data) {
   MS_EXCEPTION_IF_NULL(type);
   auto type_id = ExtractTypeId(type);
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_id, shape, data, type_id);
+  tensor::TensorPtr tensor = tensor::from_buffer(type_id, shape, data, type_id);
   return tensor;
 }
 

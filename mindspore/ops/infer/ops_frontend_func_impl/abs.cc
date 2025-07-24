@@ -16,13 +16,13 @@
 
 #include <map>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
 #include "ops_utils/op_constants.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 template <typename T>

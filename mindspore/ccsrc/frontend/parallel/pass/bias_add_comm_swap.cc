@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include "ir/tensor_new.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
@@ -199,8 +200,7 @@ bool HandleNodeBiasAdd(const AnfNodePtr &comm_node, const CNodePtr &add_node) {
   MS_EXCEPTION_IF_NULL(bias_node_abstract);
   const auto bias_dtype = bias_node_abstract->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(bias_dtype);
-  mindspore::tensor::TensorPtr tensor_ptr =
-    std::make_shared<mindspore::tensor::Tensor>(rank_size, bias_dtype->element()->GetType());
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(rank_size, bias_dtype->element()->GetType());
   auto const_node = NewValueNode(MakeValue(tensor_ptr));
   const_node->set_abstract(const_node->value()->ToAbstract());
   AnfNodePtrList mul_node_inputs = {NewValueNode(prim::kPrimMul), bias_node, const_node};

@@ -32,6 +32,7 @@
 #include "ir/func_graph_cloner.h"
 #include "ir/cell.h"
 #include "ir/dtype.h"
+#include "ir/tensor_new.h"
 #include "utils/symbolic.h"
 #include "utils/ms_context.h"
 #include "include/common/fallback.h"
@@ -44,7 +45,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace parse {
 namespace {
@@ -1325,23 +1325,23 @@ ValuePtr ConvertSingleElementToTensor(const py::object &obj) {
   }
 
   auto v = py::cast<T2>(obj);
-  return std::make_shared<tensor::Tensor>(v);
+  return tensor::from_scalar(v);
 }
 
 ValuePtr ConvertNumberToTensor(const py::object &obj) {
   if (py::isinstance<py::bool_>(obj)) {
     auto v = py::cast<bool>(obj);
-    return std::make_shared<tensor::Tensor>(v);
+    return tensor::from_scalar(v);
   }
 
   if (py::isinstance<py::int_>(obj)) {
     auto v = py::cast<int64_t>(obj);
-    return std::make_shared<tensor::Tensor>(v);
+    return tensor::from_scalar(v);
   }
 
   if (py::isinstance<py::float_>(obj)) {
     auto v = py::cast<pyfloat>(obj);
-    return std::make_shared<tensor::Tensor>(v);
+    return tensor::from_scalar(v);
   }
 
   return nullptr;
@@ -1368,7 +1368,7 @@ ValuePtr ConvertSequenceToTensor(const py::object &obj) {
     value_list.emplace_back(value);
   }
 
-  return std::make_shared<tensor::Tensor>(value_list);
+  return tensor::from_vector(value_list);
 }
 
 template <typename TS>

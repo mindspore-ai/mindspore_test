@@ -24,6 +24,7 @@
 #include <utility>
 
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/anf_utils.h"
@@ -407,7 +408,7 @@ inner::NodePtrList PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_
         if (StartWith(i->op(), "const")) {
           inputs.push_back((*const_to_ref)[i->op()]);
         } else {
-          tensor::TensorPtr data = std::make_shared<tensor::Tensor>(static_cast<double>(std::stof(i->op())));
+          tensor::TensorPtr data = tensor::from_scalar(static_cast<double>(std::stof(i->op())));
           inputs.push_back(gb.Value(data));
         }
       }
@@ -423,7 +424,7 @@ inner::NodePtrList PatternTree::AlterGraph(const std::shared_ptr<ParaMap> &para_
       if (StartWith(rhs_root_->op(), "const")) {
         return {(*const_to_ref)[rhs_root_->op()]};
       } else {
-        tensor::TensorPtr data = std::make_shared<tensor::Tensor>(static_cast<double>(std::stof(rhs_root_->op())));
+        tensor::TensorPtr data = tensor::from_scalar(static_cast<double>(std::stof(rhs_root_->op())));
         return {gb.Value(data)};
       }
     }

@@ -15,13 +15,13 @@
  */
 
 #include "ops/test_ops.h"
+#include "ir/tensor_new.h"
 #include "infer/ops_func_impl/scatter_value.h"
 #include "ops/test_value_utils.h"
 #include "mindapi/base/types.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 struct ScatterValueParams {

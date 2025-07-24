@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
@@ -40,7 +41,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_f.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pijit {
 static const size_t DictStep = 2;
@@ -1004,9 +1004,8 @@ bool AbstractSequence::SetItem(AObject *k, AObject *v) {
     }
   }
   auto seq = static_cast<AbstractSequence *>(MakeAObject(type_, type_object_, nullptr, elements));
-  seq->element_type_ = v->GetType() == element_type_   ? element_type_
-                       : v->GetType() == kTypeAnyValue ? kTypeAnyValue
-                                                       : kTypeMultiType;
+  seq->element_type_ =
+    v->GetType() == element_type_ ? element_type_ : v->GetType() == kTypeAnyValue ? kTypeAnyValue : kTypeMultiType;
   SetNextVersion(seq);
   return true;
 }

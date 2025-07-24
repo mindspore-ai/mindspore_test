@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 #include <set>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -50,7 +51,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace pynative {
 namespace PyNativeAlgo {
@@ -106,7 +106,7 @@ ValuePtr CreateNonTensorByAbstract(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   auto type_id = Common::GetTypeFromAbstract(abs);
   if (abs->isa<abstract::AbstractMonad>()) {
-    return std::make_shared<tensor::Tensor>(0);
+    return tensor::from_scalar(0);
   }
   if (type_id == kMetaTypeNone) {
     return kNone;
@@ -540,7 +540,7 @@ ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePt
   MS_EXCEPTION_IF_NULL(abs);
   auto type_id = GetTypeFromAbstract(abs);
   if (abs->isa<abstract::AbstractMonad>()) {
-    return std::make_shared<tensor::Tensor>(0);
+    return tensor::from_scalar(0);
   }
   if (abs->isa<abstract::AbstractSequence>()) {
     auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
@@ -1085,17 +1085,17 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
 inline ValuePtr ConvertScalarToTensor(const ValuePtr &value) {
   auto fp32_imm = value->cast<FP32ImmPtr>();
   if (fp32_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(fp32_imm->value());
+    return tensor::from_scalar(fp32_imm->value());
   }
 
   auto bool_imm = value->cast<BoolImmPtr>();
   if (bool_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(bool_imm->value());
+    return tensor::from_scalar(bool_imm->value());
   }
 
   auto int64_imm = value->cast<Int64ImmPtr>();
   if (int64_imm != nullptr) {
-    return std::make_shared<tensor::Tensor>(int64_imm->value());
+    return tensor::from_scalar(int64_imm->value());
   }
 
   MS_LOG(EXCEPTION) << "Unsupported type: " << value->ToString();

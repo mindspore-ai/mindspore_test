@@ -28,6 +28,7 @@
 #include "utils/log_adapter.h"
 #include "utils/trace_base.h"
 #include "ir/func_graph_cloner.h"
+#include "ir/tensor_new.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "include/common/utils/compile_cache_context.h"
@@ -1440,7 +1441,7 @@ void KernelGraphMgr::GetNewCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
       AddValueNode(backend_node, graph);
       continue;
     } else if ((is_depend && input_idx > kRealInputIndexInDepend && !enable_ge)) {
-      (void)params.emplace_back(graph->NewValueNode(std::make_shared<tensor::Tensor>(SizeToInt(input_idx))));
+      (void)params.emplace_back(graph->NewValueNode(tensor::from_scalar(SizeToInt(input_idx))));
       continue;
     } else if (other_graph_cnode->find(anf) != other_graph_cnode->end()) {
       (void)params.emplace_back((*other_graph_cnode)[anf]);

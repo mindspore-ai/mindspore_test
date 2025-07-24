@@ -16,6 +16,7 @@
 
 #include "ops/utils/general_infer_utils.h"
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
@@ -81,10 +82,10 @@ class TestEqualExtInferValue : public TestOps, public testing::WithParamInterfac
 
 TEST_P(TestEqualExtInferValue, dyn_shape_infer_value) {
   auto &param = GetParam();
-  auto x_tensor = std::make_shared<tensor::Tensor>(param.x_type, param.x_shape, (void *)&param.x_data[0], param.x_type);
+  auto x_tensor = tensor::from_buffer(param.x_type, param.x_shape, (void *)&param.x_data[0], param.x_type);
   auto x = x_tensor->ToAbstract();
   ASSERT_NE(x, nullptr);
-  auto y_tensor = std::make_shared<tensor::Tensor>(param.y_type, param.y_shape, (void *)&param.y_data[0], param.y_type);
+  auto y_tensor = tensor::from_buffer(param.y_type, param.y_shape, (void *)&param.y_data[0], param.y_type);
   auto y = y_tensor->ToAbstract();
   ASSERT_NE(y, nullptr);
   std::vector<abstract::AbstractBasePtr> input_args{std::move(x), std::move(y)};

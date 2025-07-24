@@ -21,7 +21,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/python_adapter.h"
-#include "mindspore/core/include/ir/tensor_api.h"
+#include "mindspore/core/include/ir/tensor_new.h"
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace mindspore {

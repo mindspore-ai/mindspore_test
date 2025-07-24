@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "backend/common/session/session_basic.h"
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/data_dump/tensor_info_collect.h"
@@ -52,7 +53,6 @@ using AddressPtrList = std::vector<mindspore::kernel::AddressPtr>;
 using KernelGraph = mindspore::session::KernelGraph;
 using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;

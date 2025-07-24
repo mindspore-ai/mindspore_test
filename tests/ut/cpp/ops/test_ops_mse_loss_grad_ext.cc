@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "infer/ops_func_impl/mse_loss_grad_ext.h"
 #include "ops/test_ops.h"
@@ -23,7 +24,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {

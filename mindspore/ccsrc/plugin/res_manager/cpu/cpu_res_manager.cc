@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "utils/ms_context.h"
 #include "runtime/device/res_manager/memory_manager.h"
 #include "plugin/res_manager/cpu/cpu_mem_manager/cpu_hash_table_util.h"
@@ -25,7 +26,6 @@
 #include "runtime/device/res_manager/tensor_array.h"
 #include "runtime/device/res_manager/utils/convert_tensor_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace cpu {

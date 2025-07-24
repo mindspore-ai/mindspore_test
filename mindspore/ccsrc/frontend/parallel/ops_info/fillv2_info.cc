@@ -17,6 +17,7 @@
 
 #include <functional>
 #include "frontend/parallel/dynamic_creator.h"
+#include "ir/tensor_new.h"
 #include "ir/core_ops_primitive.h"
 
 namespace mindspore {
@@ -139,7 +140,7 @@ void FillV2Info::ReplaceNodeInputOrAttrs() {
       MS_EXCEPTION_IF_NULL(func_graph);
       auto manager = func_graph->manager();
       MS_EXCEPTION_IF_NULL(manager);
-      auto val_tensor_node = NewValueNode(MakeValue(std::make_shared<tensor::Tensor>(input_shape)));
+      auto val_tensor_node = NewValueNode(MakeValue(tensor::from_vector(input_shape)));
       MS_LOG(INFO) << name_ << ": the new shape is " << input_shape;
       cnode->set_input(kIndex1, val_tensor_node);
     } else {  // dynamic shape

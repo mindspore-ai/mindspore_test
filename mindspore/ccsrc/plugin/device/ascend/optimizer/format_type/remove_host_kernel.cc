@@ -15,11 +15,11 @@
  */
 
 #include "plugin/device/ascend/optimizer/format_type/remove_host_kernel.h"
+#include "ir/tensor_new.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace opt {
 const BaseRef RemoveHostKernel::DefinePattern() const {

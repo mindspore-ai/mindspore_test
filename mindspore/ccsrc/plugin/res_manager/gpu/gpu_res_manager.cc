@@ -31,7 +31,7 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "runtime/device/res_manager/tensor_array.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

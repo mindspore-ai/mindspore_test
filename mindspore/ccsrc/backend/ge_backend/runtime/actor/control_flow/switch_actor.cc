@@ -19,6 +19,7 @@
 #include "abstract/utils.h"
 #include "backend/ge_backend/runtime/actor/output_actor.h"
 #include "utils/log_adapter.h"
+#include "ir/tensor_new.h"
 
 namespace mindspore {
 namespace ge_backend {
@@ -80,7 +81,7 @@ size_t SwitchActor::GetIndex(const OpContext<KernelTensor> *const context) const
   int64_t index = 0;
   char buf[kMaxSwitchCondSize] = {0};
   ShapeVector host_shape;
-  auto tensor = std::make_shared<tensor::Tensor>(type_id, host_shape, buf, size);
+  auto tensor = tensor::from_buffer(type_id, host_shape, buf, size);
   if (!SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
     MS_LOG(ERROR) << GetAID().Name() << " get index from device address failed, type id:" << type_id;
     return 0;

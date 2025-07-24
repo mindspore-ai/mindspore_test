@@ -44,6 +44,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/tensor.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/flash_attention_score_info.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
@@ -72,7 +73,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
 namespace parallel {

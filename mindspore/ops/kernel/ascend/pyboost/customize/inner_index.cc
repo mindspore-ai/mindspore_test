@@ -15,13 +15,13 @@
  */
 
 #include "kernel/ascend/pyboost/customize/inner_index.h"
+#include "ir/tensor_new.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "mindspore/ccsrc/pyboost/op_register.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

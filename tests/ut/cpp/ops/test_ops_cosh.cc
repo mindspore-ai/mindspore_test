@@ -15,6 +15,7 @@
  */
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
@@ -27,7 +28,6 @@
 #include "ops/test_ops_cmp_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 

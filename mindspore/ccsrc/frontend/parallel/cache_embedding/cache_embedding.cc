@@ -36,6 +36,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "frontend/optimizer/optimizer.h"
 #include "ir/func_graph.h"
+#include "ir/tensor_new.h"
 #include "utils/cache_embedding_hashmap_struct.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_a.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_c.h"
@@ -49,7 +50,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_u.h"
-#include "ir/tensor_api.h"
+
 namespace mindspore {
 namespace parallel {
 using ParamMap = mindspore::HashMap<ParameterPtr, ParameterPtr>;

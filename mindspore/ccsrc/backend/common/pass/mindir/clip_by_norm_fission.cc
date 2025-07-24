@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_o.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_z.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace opt {
 namespace {
@@ -119,7 +119,7 @@ ValueNodePtr GetAxisNode(const FuncGraphPtr &graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(graph);
   auto range = GetAxis(node);
-  auto axis_node = CreateValueNode(graph, MakeValue(std::make_shared<tensor::Tensor>(range)));
+  auto axis_node = CreateValueNode(graph, MakeValue(tensor::from_vector(range)));
   MS_EXCEPTION_IF_NULL(axis_node);
   return axis_node;
 }

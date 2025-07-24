@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <set>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "utils/hash_set.h"
 #include "backend/common/pass/const_input_to_attr.h"
@@ -61,11 +62,11 @@ const AnfNodePtr StatelessDropOutGenMaskReplace::Process(const FuncGraphPtr &fun
   ValueNodePtr seed0_node = nullptr;
   ValueNodePtr seed1_node = nullptr;
   if (input_dtype == kNumberTypeInt32) {
-    seed0_node = kernel_graph->NewValueNode(std::make_shared<tensor::Tensor>(static_cast<int32_t>(seed0), kInt32));
-    seed1_node = kernel_graph->NewValueNode(std::make_shared<tensor::Tensor>(static_cast<int32_t>(seed1), kInt32));
+    seed0_node = kernel_graph->NewValueNode(tensor::from_scalar(static_cast<int32_t>(seed0), kInt32));
+    seed1_node = kernel_graph->NewValueNode(tensor::from_scalar(static_cast<int32_t>(seed1), kInt32));
   } else {
-    seed0_node = kernel_graph->NewValueNode(std::make_shared<tensor::Tensor>(seed0, kInt64));
-    seed1_node = kernel_graph->NewValueNode(std::make_shared<tensor::Tensor>(seed1, kInt64));
+    seed0_node = kernel_graph->NewValueNode(tensor::from_scalar(seed0, kInt64));
+    seed1_node = kernel_graph->NewValueNode(tensor::from_scalar(seed1, kInt64));
   }
   MS_EXCEPTION_IF_NULL(seed0_node);
   MS_EXCEPTION_IF_NULL(seed1_node);

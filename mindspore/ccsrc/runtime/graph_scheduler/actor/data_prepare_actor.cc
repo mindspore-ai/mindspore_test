@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <set>
 
+#include "ir/tensor_new.h"
 #include "runtime/graph_scheduler/actor/data_prepare_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
@@ -148,7 +149,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const KernelTensorPtr &kernel_
       host_shape = real_host_tensor->shape();
     }
     if (!skip_h2d && (!device_context->device_res_manager_->SyncAllStreams() ||
-        !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex))) {
+                      !SyncCopy(device_tensor, real_host_tensor->device_address(), kDefaultStreamIndex))) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope() +
                                ", host tensor size: " + std::to_string(host_tensor_size) +
                                ", host tensor type: " + std::to_string(static_cast<int>(host_tensor_type)) +
@@ -1086,8 +1087,8 @@ void DataPrepareActor::PrepareDataForStringValue(const ValueNodePtr &node, size_
     MS_EXCEPTION_IF_NULL(device_tensor);
     // account '\0' to string size, keep consistent with method `CreateDeviceAddressForScalarAndString` defined in
     // `device_address_utils.cc`
-    auto string_tensor = std::make_shared<tensor::Tensor>(
-      kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), tensor_size);
+    auto string_tensor =
+      tensor::from_buffer(kObjectTypeString, shape, const_cast<void *>(kernel_tensor->GetValuePtr()), tensor_size);
     const auto &host_device_address = (dynamic_cast<device::DeviceAddress *>(string_tensor->device_address().get()));
     MS_EXCEPTION_IF_NULL(host_device_address);
     host_device_address->SetSize(tensor_size + 1);
@@ -1160,9 +1161,8 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   auto copy_to_device = [&kernel_tensor, &node, this, &context]() {
     const auto &device_tensor = kernel_tensor->device_address();
     MS_EXCEPTION_IF_NULL(device_tensor);
-    auto tensor =
-      std::make_shared<tensor::Tensor>(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
-                                       const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
+    auto tensor = tensor::from_buffer(kernel_tensor->dtype_id(), kernel_tensor->GetShapeVector(),
+                                      const_cast<void *>(kernel_tensor->GetValuePtr()), kernel_tensor->size());
     if (!SyncAllStreamForDeviceAddress(device_tensor) ||
         !SyncCopy(device_tensor, tensor->device_address(), kDefaultStreamIndex)) {
       std::string error_info = "SyncHostToDevice failed, node name: " + node->fullname_with_scope();

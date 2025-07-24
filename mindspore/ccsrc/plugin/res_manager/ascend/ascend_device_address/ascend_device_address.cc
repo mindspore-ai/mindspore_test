@@ -22,6 +22,7 @@
 #include "graph/types.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "plugin/res_manager/ascend/event/ascend_event.h"
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "abstract/utils.h"
@@ -35,7 +36,6 @@
 #include "runtime/device/res_manager/hal_res_manager.h"
 
 namespace py = pybind11;
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace device {
 namespace ascend {

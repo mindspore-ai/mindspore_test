@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/irpass.h"
@@ -334,9 +335,9 @@ class ConstOutputEliminater : public AnfVisitor {
 
   tensor::TensorPtr Tensor0Builder(TypePtr element_type = nullptr) const {
     if (element_type != nullptr) {
-      return std::make_shared<tensor::Tensor>(0.0, element_type);
+      return tensor::from_scalar(0.0, element_type);
     } else {
-      return std::make_shared<tensor::Tensor>(0.0);
+      return tensor::from_scalar(0.0);
     }
   }
 

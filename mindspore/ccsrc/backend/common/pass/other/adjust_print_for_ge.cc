@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
@@ -143,7 +144,7 @@ const AnfNodePtr AdjustPrintForGe::Process(const FuncGraphPtr &func_graph, const
   (void)primitive->AddAttr(kAttrDynInputSizes, MakeValue(std::vector<int64_t>{-1, num_inputs, -1}));
 
   // add depend node for print
-  auto tensor = std::make_shared<tensor::Tensor>(0.0);
+  auto tensor = tensor::from_scalar(0.0);
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);
   kernel_graph->AddValueNodeToGraph(value_node);
   std::vector<AnfNodePtr> depend_input = {NewValueNode(std::make_shared<Primitive>(kDependOpName)), value_node,

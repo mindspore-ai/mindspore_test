@@ -26,8 +26,8 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_m.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_p.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
+#include "ir/tensor_new.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {
@@ -61,7 +61,7 @@ AbstractBasePtr CreateIntTuple(const std::vector<NumberContainer> &value) {
 template <typename T>
 tensor::TensorPtr CreateTensor(const ShapeVector &shape, const TypeId &dtype, std::vector<T> value) {
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(dtype, shape, data_ptr, dtype);
+  auto tensor = tensor::from_buffer(dtype, shape, data_ptr, dtype);
   return tensor;
 }
 

@@ -16,6 +16,7 @@
 
 #include <map>
 #include <string>
+#include "ir/tensor_new.h"
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"
@@ -88,7 +89,7 @@ FuncGraphPtr ConstructSubGraph_two_same_getitem_idx() {
   auto p1 = c.NewTensorInput("p1", kFloat32, {64128, 4096});
   auto p2 = c.NewTensorInput("p2", kFloat32, {64128, 4096});
   auto p3 = c.NewTensorInput("p3", kFloat32, {64128, 4096});
-  auto const1 = c.NewValueNode(std::make_shared<tensor::Tensor>((float)(0.00099987)));
+  auto const1 = c.NewValueNode(tensor::from_scalar((float)(0.00099987), kFloat32));
   auto node0 = c.NewCNodeWithBuildInfo("Mul", {p2, p2});
   auto node1 = c.NewCNodeWithBuildInfo("Mul", {const1, node0});
   auto node2 = c.NewCNodeWithBuildInfo("Add", {p1, node1});

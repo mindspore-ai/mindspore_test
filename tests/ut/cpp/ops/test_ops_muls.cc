@@ -17,6 +17,7 @@
 #include "ops/utils/general_infer_utils.h"
 #include <vector>
 #include <memory>
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
@@ -55,21 +56,21 @@ INSTANTIATE_TEST_CASE_P(Muls, GeneralInferTest, testing::ValuesIn(prepare_params
 template <typename T>
 tensor::TensorPtr CreateTensorPtr(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+  auto tensor = tensor::from_buffer(type, shape, data_ptr, type);
   return tensor;
 }
 
 tensor::TensorPtr CreateMulsBoolTensorPtr() {
   bool value[4] = {true, true, false, true};
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
+  auto tensor = tensor::from_buffer(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
   return tensor;
 }
 
 tensor::TensorPtr CreateMulsAllFalseBoolTensorPtr() {
   bool value[4] = {false, false, false, false};
   void *data_ptr = &value[0];
-  auto tensor = std::make_shared<tensor::Tensor>(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
+  auto tensor = tensor::from_buffer(kNumberTypeBool, ShapeVector{2, 2}, data_ptr, kNumberTypeBool);
   return tensor;
 }
 

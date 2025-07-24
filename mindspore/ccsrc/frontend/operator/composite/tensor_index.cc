@@ -24,6 +24,7 @@
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
+#include "ir/tensor_new.h"
 #include "frontend/optimizer/opt.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindapi/base/type_id.h"
@@ -44,7 +45,6 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_s.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_t.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {
@@ -464,7 +464,7 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
       if (IsAnyValue(index_abs) || GetValue<bool>(index_abs->BuildValue()) == false) {
         MS_EXCEPTION(IndexError) << "Bool element of tuple index must be 'True', but got 'False'.";
       }
-      (void)normalized_tensors.emplace_back(NewValueNode(std::make_shared<tensor::Tensor>(std::vector<int64_t>{0})));
+      (void)normalized_tensors.emplace_back(NewValueNode(tensor::from_vector(std::vector<int64_t>{0})));
     } else if (index_type_id == kMetaTypeEllipsis) {
       continue;
     } else {
@@ -983,7 +983,7 @@ std::vector<CNodePtr> TensorIndex::GetTupleIndexInfo(const AnfNodePtr &data_node
   (void)get_tuple_index_info_inputs.insert(get_tuple_index_info_inputs.end(), normalized_tensors.begin(),
                                            normalized_tensors.end());
   for (size_t i = normalized_tensors.size(); i < kMaxTensorIndexDimNums; i++) {
-    (void)get_tuple_index_info_inputs.emplace_back(NewValueNode(std::make_shared<tensor::Tensor>((int64_t)1)));
+    (void)get_tuple_index_info_inputs.emplace_back(NewValueNode(tensor::from_scalar((int64_t)1)));
   }
   auto tuple_index_info_node = NewCNode(get_tuple_index_info_inputs, res_graph_);
   // {fancy_position, broadcast_shape, new_index_shape_node, final_shape_node, new_slice_shape_nodes*8}
@@ -1003,7 +1003,7 @@ void PreSetitemByTuple::RemoveExpandedDims(const AnfNodePtr &data_node, const An
                                            const abstract::AbstractTuplePtr &tuple_abs_ptr, int64_t expand_dims_mask) {
   std::vector<AnfNodePtr> indices_out_list{NewValueNode(kPrimMakeTuple)};
   std::vector<AnfNodePtr> normalized_tensors;
-  auto sub_tensor = std::make_shared<tensor::Tensor>(SizeToLong(1));
+  auto sub_tensor = tensor::from_scalar(SizeToLong(1));
   auto sub_tensor_node = NewValueNode(sub_tensor->ToAbstract()->BuildValue());
   bool has_true = false;
   AnfNodePtr has_false_node = NewValueNode(static_cast<int64_t>(0));
@@ -1252,7 +1252,7 @@ FuncGraphPtr HandleBoolTensor::GenerateFuncGraph(const AbstractBasePtrList &args
         new_index_node = res_graph_->NewCNode({NewValueNode(kPrimNonZero), new_index_node});
         (void)non_zero_shape_list.emplace_back(res_graph_->NewCNode({NewValueNode(kPrimShape), new_index_node}));
         for (size_t j = 0; j < tensor_shape.size(); j++) {
-          auto gather_index_tensor = std::make_shared<tensor::Tensor>(SizeToLong(j));
+          auto gather_index_tensor = tensor::from_scalar(SizeToLong(j));
           auto gather_index_tensor_node = NewValueNode(gather_index_tensor->ToAbstract()->BuildValue());
           auto bool_tensor_index_node =
             res_graph_->NewCNode({MakeGatherNode(), new_index_node, gather_index_tensor_node,

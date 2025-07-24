@@ -27,7 +27,7 @@
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore::compile {

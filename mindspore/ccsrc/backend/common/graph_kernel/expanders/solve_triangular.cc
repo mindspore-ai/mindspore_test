@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 #include <memory>
-
+#include "ir/tensor_new.h"
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 #include "backend/common/graph_kernel/expanders/utils.h"
 #include "backend/common/graph_kernel/expanders/custom_op_utils.h"
@@ -76,8 +76,7 @@ class SolveTriangular : public OpDesc {
           (void)indicse_value.emplace_back(v);
         }
       }
-      auto indices_tensor =
-        std::make_shared<tensor::Tensor>(kNumberTypeInt64, indices_shape, &indicse_value[0], kNumberTypeInt64);
+      auto indices_tensor = tensor::from_buffer(kNumberTypeInt64, indices_shape, &indicse_value[0], kNumberTypeInt64);
       auto indices = gb.Value(indices_tensor);
       input_y = gb.Emit("ScatterNdUpdate", {input_y, indices, custom_result}, {{"use_locking", MakeValue(false)}});
 
@@ -105,7 +104,7 @@ class SolveTriangular : public OpDesc {
           }
         }
         auto final_indices_tensor =
-          std::make_shared<tensor::Tensor>(kNumberTypeInt64, indices_shape, &final_indicse_value[0], kNumberTypeInt64);
+          tensor::from_buffer(kNumberTypeInt64, indices_shape, &final_indicse_value[0], kNumberTypeInt64);
         auto final_indices = gb.Value(final_indices_tensor);
         input_y =
           gb.Emit("ScatterNdUpdate", {input_y, final_indices, final_update_y}, {{"use_locking", MakeValue(false)}});

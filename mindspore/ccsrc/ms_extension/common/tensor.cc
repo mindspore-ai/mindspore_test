@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include "ir/tensor.h"
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/include/common/utils/tensor_utils.h"
 #include "mindspore/ccsrc/pynative/pynative_utils.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/data_converter.h"

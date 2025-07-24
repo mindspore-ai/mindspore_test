@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/pass/mindir/adam_weight_decay_unify_mindir.h"
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -32,7 +33,7 @@ constexpr size_t kAdamWeightDecayInputNumWithMonad = 12;
 const std::vector<size_t> kdamWeightDecayIndexMapping = {9, 3, 2, 1, 4, 5, 12, 6, 13, 8, 7};
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, double value) {
-  auto tensor = std::make_shared<tensor::Tensor>(value);
+  auto tensor = tensor::from_scalar(value);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   ValueNodePtr value_node = kernel_graph->NewValueNode(tensor->ToAbstract(), tensor);

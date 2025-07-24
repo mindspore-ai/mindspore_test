@@ -34,6 +34,7 @@
 #include "utils/temp_file_manager.h"
 #include "utils/ms_context.h"
 #include "ir/device_address_maker.h"
+#include "ir/tensor_new.h"
 #include "utils/stream_guard.h"
 
 namespace mindspore {
@@ -42,10 +43,6 @@ static uint64_t MakeId() {
   // Use atomic to make id generator thread safe.
   static std::atomic<uint64_t> last_id{1};
   return last_id.fetch_add(1, std::memory_order_relaxed);
-}
-
-static TypeId TypeIdOf(const TypePtr &data_type, TypeId defaultTypeId) {
-  return data_type ? data_type->type_id() : defaultTypeId;
 }
 
 std::unique_ptr<DeviceInfo> CopyDeviceInfo(const std::unique_ptr<DeviceInfo> &device_info) {
@@ -135,114 +132,6 @@ Tensor::Tensor(TypeId data_type, const ShapeVector &shape, DeviceSyncPtr device_
 
 Tensor::Tensor(TypeId data_type, const ShapeVector &shape)
     : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape)) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, size_t data_len)
-    : Tensor(data_type, shape, MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, data_len))) {}
-
-Tensor::Tensor(TypeId data_type, const ShapeVector &shape, void *data, TypeId src_data_type)
-    : Tensor(data_type, shape,
-             MakeDeviceAddress(data_type, shape, MakeTensorData(data_type, shape, data, src_data_type))) {}
-
-Tensor::Tensor(const std::vector<int64_t> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
-
-Tensor::Tensor(const std::vector<int32_t> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
-
-Tensor::Tensor(const std::vector<double> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
-
-Tensor::Tensor(const std::vector<float> &input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {static_cast<int>(input.size())}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, shape_, input)) {}
-
-Tensor::Tensor(int64_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt64), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(int32_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt32), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(int16_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt16), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(int8_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeInt8), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(double input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(float input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat32), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(float16 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat16), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(float8_e5m2 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E5M2), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(float8_e4m3fn input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeFloat8E4M3FN), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(hifloat8 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeHiFloat8), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-#ifndef KERNEL_EXECUTOR_ANDROID
-Tensor::Tensor(bfloat16 input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeBFloat16), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-#endif
-Tensor::Tensor(uint64_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt64), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(uint32_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt32), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(uint16_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt16), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(uint8_t input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeUInt8), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
-
-Tensor::Tensor(bool input, const TypePtr &data_type)
-    : MetaTensor(TypeIdOf(data_type, kNumberTypeBool), {}),
-      id_(MakeId()),
-      device_sync_(MakeDeviceAddress(data_type_, input)) {}
 
 Tensor::Tensor(TypeId origin_data_type, const ShapeVector &shape, size_t compression_data_size,
                TensorCompressionType compression_type)
@@ -722,7 +611,7 @@ TensorPtr CSRTensor::GetTensorAt(size_t index) const {
     MS_EXCEPTION_IF_NULL(values_);
     return values_;
   } else if (index >= kShapeIdx && index < kShapeIdx + shape().size()) {
-    return std::make_shared<tensor::Tensor>(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
+    return from_scalar(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
   }
   MS_LOG(EXCEPTION) << "Invalid index: " << index << " for CSRTensor: " << ToString();
 }
@@ -735,7 +624,7 @@ TensorPtr COOTensor::GetTensorAt(size_t index) const {
     MS_EXCEPTION_IF_NULL(values_);
     return values_;
   } else if (index >= kShapeIdx && index < kShapeIdx + shape().size()) {
-    return std::make_shared<tensor::Tensor>(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
+    return tensor::from_scalar(shape_[index - kShapeIdx], TypeIdToType(kNumberTypeInt64));
   }
   MS_LOG(EXCEPTION) << "Invalid index: " << index << " for COOTensor: " << ToString();
 }

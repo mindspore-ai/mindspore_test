@@ -34,6 +34,7 @@
 #include "ir/param_info.h"
 #include "ir/map_tensor.h"
 #include "ir/functor.h"
+#include "ir/tensor_new.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -51,7 +52,6 @@
 using std::string;
 using std::vector;
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace {
 constexpr auto kReturnPrimNode = "_return_prim_node";

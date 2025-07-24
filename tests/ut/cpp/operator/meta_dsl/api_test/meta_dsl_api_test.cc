@@ -16,6 +16,7 @@
 
 #include "ir/manager.h"
 #include "ir/graph_utils.h"
+#include "ir/tensor_new.h"
 #include "common/common_test.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/resource.h"
@@ -51,7 +52,7 @@ class TestMetaDslApi : public UT::Common {
   }
 
   AbstractTensorPtr NewAbstractTensor(int64_t input, const TypePtr &data_type) {
-    return std::make_shared<AbstractTensor>(std::make_shared<tensor::Tensor>(input, data_type));
+    return std::make_shared<AbstractTensor>(tensor::from_scalar(input, data_type));
   }
 
   AbstractTensorPtr NewAbstractTensor(const TypePtr &element_type, const ShapeVector &shape) {

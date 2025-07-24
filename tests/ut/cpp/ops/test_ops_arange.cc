@@ -16,6 +16,7 @@
 
 #include <memory>
 #include "common/common_test.h"
+#include "ir/tensor_new.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -40,7 +41,7 @@ OP_FUNC_IMPL_TEST_CASES(
     template <typename T>
     tensor::TensorPtr CreateArangeTensor(const TypeId &type, const ShapeVector &shape, std::vector<T> value) {
       void *data_ptr = &value[0];
-      auto tensor = std::make_shared<tensor::Tensor>(type, shape, data_ptr, type);
+      auto tensor = tensor::from_buffer(type, shape, data_ptr, type);
       return tensor;
     }
     

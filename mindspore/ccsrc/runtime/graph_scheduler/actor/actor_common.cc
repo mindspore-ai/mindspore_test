@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include <memory>
 #include <unordered_map>
+#include "ir/tensor_new.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_op_name.h"

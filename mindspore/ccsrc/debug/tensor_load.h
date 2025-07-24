@@ -25,11 +25,11 @@
 #include <utility>
 #include <deque>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "include/backend/debug/tensor_data.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 class TensorLoader {
  public:
@@ -90,9 +90,9 @@ class TensorLoader {
       }
       auto type_string = node->GetTypeString();
       if (type_string == "bfloat16") {
-        std::shared_ptr<tensor::Tensor> bfloat16_tensor = std::make_shared<tensor::Tensor>(
-          TypeId::kNumberTypeBFloat16, node->GetShape(), static_cast<void *>(const_cast<char *>(node->GetDataPtr())),
-          node->GetByteSize());
+        std::shared_ptr<tensor::Tensor> bfloat16_tensor =
+          tensor::from_buffer(TypeId::kNumberTypeBFloat16, node->GetShape(),
+                              static_cast<void *>(const_cast<char *>(node->GetDataPtr())), node->GetByteSize());
         std::shared_ptr<tensor::Tensor> float32_tensor =
           std::make_shared<tensor::Tensor>(*bfloat16_tensor, TypeId::kNumberTypeFloat32);
         return DumpJsonParser::DumpToFile(path, float32_tensor->data_c(), float32_tensor->Size(),

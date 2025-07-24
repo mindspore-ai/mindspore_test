@@ -28,6 +28,8 @@
 #include <utility>
 #include <regex>
 #include <iomanip>
+
+#include "ir/tensor_new.h"
 #include "openssl/md5.h"
 #include "include/common/debug/common.h"
 #include "include/backend/debug/debugger/debugger.h"
@@ -41,7 +43,6 @@
 #include "utils/ms_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace {
 constexpr int md5_bit_wide = 2;

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include "ir/tensor_new.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include "plugin/res_manager/ascend/hccl_adapter/hccl_adapter.h"
@@ -25,7 +26,6 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace pyboost {

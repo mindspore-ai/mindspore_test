@@ -17,13 +17,13 @@
 #include <complex>
 #include <memory>
 #include <set>
+#include "ir/tensor_new.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops_utils/op_constants.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_l.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {

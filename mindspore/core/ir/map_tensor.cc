@@ -17,13 +17,13 @@
 #include "ir/map_tensor.h"
 #include <vector>
 #include <algorithm>
+#include "ir/tensor_new.h"
 #include "abstract/abstract_value.h"
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils_secure.h"
 #include "utils/hash_table.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 using device::HashTable;
 namespace tensor {
@@ -38,6 +38,24 @@ static ShapeVector ConcatShape(const ShapeVector &a, const ShapeVector &b) {
   ShapeVector result_shape = a;
   (void)result_shape.insert(result_shape.end(), b.cbegin(), b.cend());
   return result_shape;
+}
+
+MapTensor::MapTensor(TypeId key_dtype, TypeId value_dtype, const ShapeVector &value_shape,
+                     const ValuePtr &default_value, const ValuePtr &permit_filter_value,
+                     const ValuePtr &evict_filter_value)
+    : key_dtype_(key_dtype), default_value_(default_value) {
+  data_type_ = value_dtype;
+  value_shape_ = value_shape;
+  key_shape_ = {abstract::Shape::kShapeDimAny};
+  shape_ = {abstract::Shape::kShapeDimAny};
+  (void)shape_.insert(shape_.cend(), value_shape.cbegin(), value_shape.cend());
+  size_ = shape_[0];
+  ShapeVector key_shape = {abstract::Shape::kShapeDimAny};
+  key_tensor_ = tensor::empty(key_dtype, key_shape, device::DeviceType::kCPU);
+  value_tensor_ = tensor::empty(value_dtype, shape_, device::DeviceType::kCPU);
+  status_tensor_ = tensor::empty(kNumberTypeInt, key_shape, device::DeviceType::kCPU);
+  permit_filter_value_ = (permit_filter_value == nullptr) ? std::make_shared<Int64Imm>(1) : permit_filter_value;
+  evict_filter_value_ = (evict_filter_value == nullptr) ? std::make_shared<Int64Imm>(INT64_MAX) : evict_filter_value;
 }
 
 std::size_t MapTensor::hash() const { return static_cast<std::size_t>(tid()); }

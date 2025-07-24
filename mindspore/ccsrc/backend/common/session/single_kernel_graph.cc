@@ -18,7 +18,7 @@
 #include "utils/trace_base.h"
 #include "include/common/utils/anfalgo.h"
 
-#include "ir/tensor_api.h"
+#include "ir/tensor_new.h"
 namespace mindspore {
 namespace session {
 std::shared_ptr<session::KernelGraph> SingleKernelGraph::ConstructKernelGraphBasedOnSingleOp(

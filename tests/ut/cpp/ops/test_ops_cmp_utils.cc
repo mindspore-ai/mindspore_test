@@ -16,13 +16,13 @@
 #include "ops/test_ops_cmp_utils.h"
 #include <memory>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
 #include "abstract/dshape.h"
 #include "abstract/abstract_value.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace ops {
 namespace {

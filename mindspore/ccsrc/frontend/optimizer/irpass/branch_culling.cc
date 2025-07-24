@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
+#include "ir/tensor_new.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/operator/ops.h"
@@ -276,7 +277,7 @@ inline void ResetSharedOp() {
 
 tensor::TensorPtr ConstData() {
   std::vector<int64_t> shp = {1};
-  tensor::TensorPtr const_data = std::make_shared<tensor::Tensor>(kInt64->type_id(), shp);
+  tensor::TensorPtr const_data = tensor::empty(kInt64->type_id(), shp, device::DeviceType::kCPU);
   auto *val = static_cast<int64_t *>(const_data->data_c());
   *val = 0;
   return const_data;

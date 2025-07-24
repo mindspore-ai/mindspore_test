@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 
+#include "ir/tensor_new.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
@@ -394,8 +395,7 @@ AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode
 
   // new div
   size_t group_rank_size = reduce_rank_list.size();
-  mindspore::tensor::TensorPtr tensor_ptr =
-    std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(group_rank_size));
+  mindspore::tensor::TensorPtr tensor_ptr = tensor::from_scalar(static_cast<float>(group_rank_size));
   ValuePtr scale_value = MakeValue(tensor_ptr);
   AnfNodePtr real_div_node =
     gen_g->PushBack({gen_g->NewOpInst(DIV), allreduce, NewValueNode(scale_value)->cast<AnfNodePtr>()});
@@ -405,8 +405,7 @@ AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode
   auto pre_node_eps_ptr = pre_node_eps->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(pre_node_eps_ptr);
   float eps_number = GetValue<float>(pre_node_eps_ptr->value());
-  mindspore::tensor::TensorPtr eps_tensor_ptr =
-    std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(eps_number));
+  mindspore::tensor::TensorPtr eps_tensor_ptr = tensor::from_scalar(static_cast<float>(eps_number));
   AnfNodePtr add_eps = gen_g->PushBack({gen_g->NewOpInst(ADD), real_div_node, NewValueNode(MakeValue(eps_tensor_ptr))});
   MS_EXCEPTION_IF_NULL(add_eps);
   AnfNodePtr rsqrt = gen_g->PushBack({gen_g->NewOpInst(RSQRT), add_eps});

@@ -22,6 +22,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "ir/tensor_new.h"
 #include "utils/anf_utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/utils.h"
@@ -66,7 +67,7 @@ ValuePtr make_value(ShapeVector shape, TypeId type, std::vector<T> values) {
   if (shape.empty()) {
     ret = scalar_creator[type](values[0]);
   } else {
-    ret = std::make_shared<tensor::Tensor>(type, shape, values.data(), values.size() * sizeof(T));
+    ret = tensor::from_buffer(type, shape, values.data(), values.size() * sizeof(T));
   }
   return ret;
 }

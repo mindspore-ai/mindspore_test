@@ -19,6 +19,7 @@
 #include <utility>
 #include <functional>
 
+#include "ir/tensor_new.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "include/common/utils/parallel_context.h"
@@ -186,10 +187,10 @@ Status ROIAlignInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto sub = gen_g.PushBack({gen_g.NewOpInst(SUB), strided_slice, cast_bias});
   auto relu = gen_g.PushBack({gen_g.NewOpInst(RELU), sub});
   auto minimum = gen_g.PushBack({gen_g.NewOpInst(MINIMUM), relu, cast_slice_max_index});
-  auto stack = gen_g.PushBack(
-    {gen_g.NewOpInst(STACK, {std::make_pair(AXIS, MakeValue(-1))}),
-     CreateTensorTupleAnfNodePtr({std::make_shared<tensor::Tensor>(CreateRangeVector(rois_slice_size_)),
-                                  std::make_shared<tensor::Tensor>(std::vector<int64_t>(rois_slice_size_, 0))})});
+  auto stack =
+    gen_g.PushBack({gen_g.NewOpInst(STACK, {std::make_pair(AXIS, MakeValue(-1))}),
+                    CreateTensorTupleAnfNodePtr({tensor::from_vector(CreateRangeVector(rois_slice_size_)),
+                                                 tensor::from_vector(std::vector<int64_t>(rois_slice_size_, 0))})});
   auto tensor_scatter_update =
     gen_g.PushBack({gen_g.NewOpInst(TENSOR_SCATTER_UPDATE), gen_g.virtual_input_node(), stack, minimum});
   auto roi_align =

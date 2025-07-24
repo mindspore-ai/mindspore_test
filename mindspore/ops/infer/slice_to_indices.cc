@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "ir/tensor_new.h"
 #include "ops_utils/op_constants.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -71,7 +72,7 @@ AbstractBasePtr ConstSliceToIndices(const std::vector<int64_t> &init_by_none, co
 
   if (slice_ptr->is_empty_slice()) {
     int64_t empty_stub_data = 0;
-    auto indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{0}, &empty_stub_data, 0);
+    auto indices_tensor = tensor::from_buffer(kNumberTypeInt64, ShapeVector{0}, &empty_stub_data, 0);
     abstract::AbstractBasePtrList elems({6, std::make_shared<abstract::AbstractScalar>(static_cast<int64_t>(1))});
     elems[0] = indices_tensor->ToAbstract();
     return std::make_shared<abstract::AbstractTuple>(elems);
@@ -98,7 +99,7 @@ AbstractBasePtr ConstSliceToIndices(const std::vector<int64_t> &init_by_none, co
     indices_shp = {static_cast<int64_t>(indices.size())};
   }
   auto shp_buf_size = sizeof(int64_t) * indices.size();
-  auto indices_tensor = std::make_shared<tensor::Tensor>(kNumberTypeInt64, indices_shp, indices.data(), shp_buf_size);
+  auto indices_tensor = tensor::from_buffer(kNumberTypeInt64, indices_shp, indices.data(), shp_buf_size);
 
   auto value_shape = data_shape;
   value_shape[0] = SizeToLong(indices.size());

@@ -19,13 +19,13 @@
 #include <memory>
 #include <vector>
 #include "Eigen/Core"
+#include "ir/tensor_new.h"
 #include "abstract/utils.h"
 #include "plugin/device/cpu/hal/device/cpu_common.h"
 #include "include/common/utils/python_adapter.h"
 #include "common/ms_factory.h"
 #include "utils/ms_utils_secure.h"
 
-#include "ir/tensor_api.h"
 namespace mindspore {
 namespace kernel {
 namespace {
