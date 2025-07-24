@@ -170,6 +170,14 @@ def test_float8_value():
     assert not get_tensor_value(min_val).is_integer()
     zero_val = ms.Tensor(math.pow(2, -17), ms.float8_e5m2)
     assert get_tensor_value(zero_val).is_integer()
+    fp8_e5m2_val = ms.Tensor(math.pow(2, -14), ms.float8_e5m2)              # 0 00001 00
+    assert math.isclose(get_tensor_value(fp8_e5m2_val), math.pow(2, -14), abs_tol=1e-10)
+    fp8_e5m2_val = ms.Tensor(-math.pow(2, -14), ms.float8_e5m2)             # 1 00001 00
+    assert math.isclose(get_tensor_value(fp8_e5m2_val), -math.pow(2, -14), abs_tol=1e-10)
+    fp8_e5m2_val = ms.Tensor(math.pow(2, -14) * 0.75, ms.float8_e5m2)       # 0 00000 11
+    assert math.isclose(get_tensor_value(fp8_e5m2_val), math.pow(2, -14) * 0.75, abs_tol=1e-10)
+    fp8_e5m2_val = ms.Tensor(-math.pow(2, -14) * 0.75, ms.float8_e5m2)      # 1 00000 11
+    assert math.isclose(get_tensor_value(fp8_e5m2_val), -math.pow(2, -14) * 0.75, abs_tol=1e-10)
 
     max_val = ms.Tensor(448, ms.float8_e4m3fn)
     assert math.isclose(get_tensor_value(max_val), 448)
@@ -181,6 +189,14 @@ def test_float8_value():
     assert not get_tensor_value(min_val).is_integer()
     zero_val = ms.Tensor(math.pow(2, -10), ms.float8_e4m3fn)
     assert get_tensor_value(zero_val).is_integer()
+    fp8_e4m3fn_val = ms.Tensor(math.pow(2, -6), ms.float8_e4m3fn)           # 0 0001 000
+    assert math.isclose(get_tensor_value(fp8_e4m3fn_val), math.pow(2, -6))
+    fp8_e4m3fn_val = ms.Tensor(-math.pow(2, -6), ms.float8_e4m3fn)          # 1 0001 000
+    assert math.isclose(get_tensor_value(fp8_e4m3fn_val), -math.pow(2, -6))
+    fp8_e4m3fn_val = ms.Tensor(math.pow(2, -6) * 0.75, ms.float8_e4m3fn)    # 0 0000 111
+    assert math.isclose(get_tensor_value(fp8_e4m3fn_val), math.pow(2, -6) * 0.75, abs_tol=1e-6)
+    fp8_e4m3fn_val = ms.Tensor(-math.pow(2, -6) * 0.75, ms.float8_e4m3fn)   # 1 0000 111
+    assert math.isclose(get_tensor_value(fp8_e4m3fn_val), -math.pow(2, -6) * 0.75, abs_tol=1e-6)
 
     max_val = ms.Tensor(32768, ms.hifloat8)
     assert math.isclose(get_tensor_value(max_val), 32768)
@@ -192,6 +208,54 @@ def test_float8_value():
     assert not get_tensor_value(min_val).is_integer()
     zero_val = ms.Tensor(math.pow(2, -23), ms.hifloat8)
     assert get_tensor_value(zero_val).is_integer()
+    hif8_val = ms.Tensor(1.125, ms.hifloat8)                    # 0 0001 001
+    assert math.isclose(get_tensor_value(hif8_val), 1.125)
+    hif8_val = ms.Tensor(-1.625, ms.hifloat8)                   # 1 0001 101
+    assert math.isclose(get_tensor_value(hif8_val), -1.625)
+    hif8_val = ms.Tensor(1.875, ms.hifloat8)                    # 0 0001 111
+    assert math.isclose(get_tensor_value(hif8_val), 1.875)
+    hif8_val = ms.Tensor(2, ms.hifloat8)                        # 0 001 0 000
+    assert math.isclose(get_tensor_value(hif8_val), 2)
+    hif8_val = ms.Tensor(-0.25, ms.hifloat8)                    # 1 001 0 001
+    assert math.isclose(get_tensor_value(hif8_val), -0.25)
+    hif8_val = ms.Tensor(0.5, ms.hifloat8)                      # 0 001 1 000
+    assert math.isclose(get_tensor_value(hif8_val), 0.5)
+    hif8_val = ms.Tensor(3.75, ms.hifloat8)                     # 0 001 0 111
+    assert math.isclose(get_tensor_value(hif8_val), 3.75)
+    hif8_val = ms.Tensor(-3.5, ms.hifloat8)                     # 1 001 0 110
+    assert math.isclose(get_tensor_value(hif8_val), -3.5)
+    hif8_val = ms.Tensor(0.9375, ms.hifloat8)                   # 0 001 1 111
+    assert math.isclose(get_tensor_value(hif8_val), 0.9375)
+    hif8_val = ms.Tensor(4, ms.hifloat8)                        # 0 01 00 000
+    assert math.isclose(get_tensor_value(hif8_val), 4)
+    hif8_val = ms.Tensor(-5, ms.hifloat8)                       # 1 01 00 010
+    assert math.isclose(get_tensor_value(hif8_val), -5)
+    hif8_val = ms.Tensor(0.25, ms.hifloat8)                     # 0 01 10 000
+    assert math.isclose(get_tensor_value(hif8_val), 0.25)
+    hif8_val = ms.Tensor(15, ms.hifloat8)                       # 0 01 01 111
+    assert math.isclose(get_tensor_value(hif8_val), 15)
+    hif8_val = ms.Tensor(-0.203125, ms.hifloat8)                # 1 01 11 101
+    assert math.isclose(get_tensor_value(hif8_val), -0.203125)
+    hif8_val = ms.Tensor(0.234375, ms.hifloat8)                 # 0 01 11 111
+    assert math.isclose(get_tensor_value(hif8_val), 0.234375)
+    hif8_val = ms.Tensor(16, ms.hifloat8)                       # 0 10 000 00
+    assert math.isclose(get_tensor_value(hif8_val), 16)
+    hif8_val = ms.Tensor(-24, ms.hifloat8)                      # 1 10 000 10
+    assert math.isclose(get_tensor_value(hif8_val), -24)
+    hif8_val = ms.Tensor(0.0625, ms.hifloat8)                   # 0 10 100 00
+    assert math.isclose(get_tensor_value(hif8_val), 0.0625)
+    hif8_val = ms.Tensor(224, ms.hifloat8)                      # 0 10 011 11
+    assert math.isclose(get_tensor_value(hif8_val), 224)
+    hif8_val = ms.Tensor(-math.pow(2, -7) * 1.5, ms.hifloat8)   # 1 10 111 10
+    assert math.isclose(get_tensor_value(hif8_val), -math.pow(2, -7) * 1.5, abs_tol=1e-7)
+    hif8_val = ms.Tensor(math.pow(2, -7), ms.hifloat8)          # 0 10 111 00
+    assert math.isclose(get_tensor_value(hif8_val), math.pow(2, -7))
+    hif8_val = ms.Tensor(384, ms.hifloat8)                      # 0 11 0000 1
+    assert math.isclose(get_tensor_value(hif8_val), 384)
+    hif8_val = ms.Tensor(-256, ms.hifloat8)                     # 1 11 0000 0
+    assert math.isclose(get_tensor_value(hif8_val), -256)
+    hif8_val = ms.Tensor(math.pow(2, -15), ms.hifloat8)         # 0 11 1111 0
+    assert math.isclose(get_tensor_value(hif8_val), math.pow(2, -15), abs_tol=1e-10)
 
 
 def test_tensor_method_sub():
