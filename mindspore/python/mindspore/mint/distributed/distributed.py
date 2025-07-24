@@ -22,6 +22,7 @@ from datetime import timedelta
 import numpy as np
 from mindspore import log as logger
 from mindspore.common import dtype as mstype
+from mindspore._checkparam import args_type_check
 from mindspore.ops import ReduceOp, cat
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import TensorPy as Tensor_
@@ -36,6 +37,7 @@ from mindspore.communication._comm_helper import (
     _is_initialized,
     _ExistingGroup,
 )
+from mindspore.communication.management import _init_without_sched
 from mindspore.communication import (
     init,
     get_group_size,
@@ -484,6 +486,7 @@ def is_initialized():
     return _is_initialized()
 
 
+@args_type_check(init_method=str, timeout=timedelta, world_size=int, rank=int, store=TCPStore)
 def init_process_group(backend="hccl",
                        init_method=None,
                        timeout=None,
@@ -502,12 +505,12 @@ def init_process_group(backend="hccl",
 
     Args:
         backend (str, optional): The backend to ues. default is hccl and now only support hccl.
-        init_method (str, invalid): URL specifying how to init collective communication group. Provides parameters
+        init_method (str, optional): URL specifying how to init collective communication group. Provides parameters
             consistent with pytorch, but is not currently support, setting is invalid.
-        timeout (timedelta, invalid): Timeout for API executed. Provides parameters consistent with pytorch, but is not
+        timeout (timedelta, optional): Timeout for API executed. Provides parameters consistent with pytorch, but is not
             currently support, setting is invalid.
         world_size (int, optional): Number of the processes participating in the job.
-        rank (int, invalid): Rank of the current process. Provides parameters consistent with pytorch, but is not
+        rank (int, optional): Rank of the current process. Provides parameters consistent with pytorch, but is not
             currently support, setting is invalid.
         store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address
             information. Provides parameters consistent with pytorch, but is not currently support,
@@ -544,25 +547,34 @@ def init_process_group(backend="hccl",
         >>> init_process_group()
         >>> destroy_process_group()
     """
-    if init_method is not None:
-        logger.warning("init_method is ignored, setting is invalid")
-    if timeout is not None:
-        logger.warning("timeout is ignored, setting is invalid")
-    if store is not None:
-        logger.warning("store is ignored, setting is invalid")
     if pg_options is not None:
         logger.warning("pg_options is ignored, setting is invalid")
     if device_id is not None:
         logger.warning("device_id is ignored, setting is invalid")
-    if rank != -1:
-        logger.warning("rank is ignored, setting is invalid")
     if backend != "hccl":
         raise ValueError(
             "Only support hccl now, please setting backend to hccl or using default value"
         )
 
-    # init hccl & create world group
-    init(backend)
+    if init_method is not None and store is not None:
+        raise ValueError(
+            "Only one of init_method and store is supported."
+        )
+    if init_method is not None or store is not None:
+        if world_size <= 0:
+            raise ValueError(
+                "Specified world_size must be a positive integer."
+            )
+        if rank < 0:
+            raise ValueError(
+                "Specified rank must be a non-negative integer."
+            )
+        if timeout is None:
+            timeout = timedelta(seconds=300)
+        timeout_ms = int(timeout.total_seconds() * 1000)
+        _init_without_sched(backend, init_method, timeout_ms, world_size, rank, store)
+    else:
+        init(backend)
 
     if world_size != -1 and world_size != get_group_size():
         raise ValueError(

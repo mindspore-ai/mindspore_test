@@ -30,16 +30,20 @@ TCPStoreClient::TCPStoreClient(const std::string &ip, int64_t port, bool is_mast
   size_t start_tick = LongToSize(CURRENT_TIMESTAMP_MILLI.count());
   ip_ = ip;
   port_ = port;
+  world_size_ = world_size;
   is_master_ = is_master;
   timeout_ = timeout;
   if (ip.empty()) {
     MS_LOG(EXCEPTION) << "TCPStore does not support empty IP address.";
   }
+
   auto node_id = ps::core::CommUtil::GenerateVariableUUID();
+
   std::string address = ip + ":" + std::to_string(port);
   if (is_master) {
     MS_LOG(DEBUG) << "For TCPStoreClient, start address " << address;
-    server_node_ = std::make_shared<topology::MetaServerNode>(node_id, kEnvRoleOfServer, world_size, timeout_, address);
+    server_node_ =
+      std::make_shared<topology::MetaServerNode>(node_id, kEnvRoleOfServer, world_size_, timeout_, address);
     MS_EXCEPTION_IF_NULL(server_node_);
     server_node_->disable_heartbeat();
     MS_EXCEPTION_IF_CHECK_FAIL(server_node_->Initialize(), "Failed to initialize the master node.");

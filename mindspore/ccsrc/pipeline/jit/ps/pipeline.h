@@ -35,6 +35,12 @@
 
 namespace mindspore {
 // namespace to support pipeline structures definition
+namespace distributed {
+namespace cluster {
+class TCPStoreClient;
+using TCPStoreClientPtr = std::shared_ptr<TCPStoreClient>;
+}  // namespace cluster
+}  // namespace distributed
 namespace pipeline {
 
 namespace py = pybind11;
@@ -90,6 +96,8 @@ bool InitDistribute(const std::map<std::string, std::string> &options);
 FRONTEND_EXPORT void ResetOpId();
 FRONTEND_EXPORT void ResetOpIdWithOffset();
 FRONTEND_EXPORT void InitHccl();
+FRONTEND_EXPORT void InitHccl(std::optional<std::string> url, int64_t timeout, uint32_t world_size, uint32_t node_id,
+                              distributed::cluster::TCPStoreClientPtr store);
 FRONTEND_EXPORT void FinalizeHccl();
 FRONTEND_EXPORT uint32_t GetHcclRankId();
 FRONTEND_EXPORT uint32_t GetHcclRankSize();
