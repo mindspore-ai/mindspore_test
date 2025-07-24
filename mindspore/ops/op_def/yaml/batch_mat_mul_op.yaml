@@ -1,4 +1,4 @@
-#operator batch_matmul
+#operator batch_mat_mul
 batch_mat_mul:
   args:
     x:
