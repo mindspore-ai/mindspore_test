@@ -40,7 +40,8 @@ class CifarMD5Validator:
                         'data_batch_5': '482c414d41f54cd18b22e5b47cb7c3cb',
                         'test_batch': '40351d587109b95175f43aff81a1287e'}
 
-    def calculate_md5(self, file_path):
+    @staticmethod
+    def calculate_md5(file_path):
         """
         Calculate MD5 hash of a file.
 
@@ -76,7 +77,7 @@ class CifarMD5Validator:
             KeyError: If file_name is not found in md5_map.
         """
         expected_md5 = self.md5_map.get(file_name)
-        actual_md5 = self.calculate_md5(os.path.join(file_path, file_name))
+        actual_md5 = CifarMD5Validator.calculate_md5(os.path.join(file_path, file_name))
 
         if actual_md5 is None or expected_md5 is None or actual_md5 != expected_md5:
             logger.warning(f"The MD5 value of {file_name} does not match the official CIFAR10 file."
