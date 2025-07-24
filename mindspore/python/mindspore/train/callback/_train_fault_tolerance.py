@@ -191,7 +191,7 @@ def _tft_rebuild_sub_groups(fault_ranks, args, ctx):
 class TrainFaultTolerance(Callback):
     """
     This callback is used to enable the TFT feature
-    `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc2/mindio/mindiottp/mindiottp001.html>`_
+    `MindIO TFT <https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindiottp/mindiotft001.html>`_
     and will execute TFT operations during training process, such as TFT init, report and exception handle.
 
     Note:
