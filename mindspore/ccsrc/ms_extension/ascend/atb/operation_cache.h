@@ -132,6 +132,7 @@ class EXTENSION_EXPORT AtbContextManager {
         return false;
       }
       used_.store(true);
+      return true;
     }
 
     // Free the atb operation after Execute

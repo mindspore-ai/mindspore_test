@@ -1467,8 +1467,10 @@ class CustomOpBuilder:
         Returns:
             list[str], A list of C++ compiler flags.
         """
-        flags = ['-fstack-protector-all', '-fPIC', '-pie']
-        flags += ['-DENABLE_FAST_HASH_TABLE=1']
+        flags = [f'-DMS_EXTENSION_NAME={self.name}', '-D_GLIBCXX_USE_CXX11_ABI=0', '-DENABLE_FAST_HASH_TABLE=1']
+        flags += ['-std=c++17', '-fstack-protector-all', '-fPIC', '-pie']
+        if self.debug_mode:
+            flags.append('-g')
         if self.backend == "Ascend":
             flags.append('-DCUSTOM_ASCEND_OP')
             if self.enable_atb:
@@ -1484,7 +1486,10 @@ class CustomOpBuilder:
         Returns:
             list[str], A list of linker flags.
         """
-        flags = ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath', '-s']
+        flags = ['-shared']
+        flags += ['-Wl,-z,relro,-z,now,-z,noexecstack', '-Wl,--disable-new-dtags,--rpath']
+        if not self.debug_mode:
+            flags.append('-s')  # strip
         flags += [
             f"-L{os.path.abspath(os.path.join(self._ms_path, 'lib'))}",
             '-lmindspore_core',

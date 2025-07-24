@@ -73,7 +73,7 @@ void AtbOpRunner::LaunchKernel() {
 void AtbOpRunner::_Run() {
   for (auto &inp : _inputs_) {
     if (inp.is_defined() && !inp.is_contiguous()) {
-      inp = ms::Tensor(mindspore::kernel::pyboost::contiguous(inp.tensor()));
+      inp = inp.contiguous();
     }
   }
   PyboostRunner::_Run();
