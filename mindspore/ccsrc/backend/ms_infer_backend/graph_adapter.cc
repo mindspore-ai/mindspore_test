@@ -96,7 +96,7 @@ void GraphAdapter::SetNodeOutputType(da::tensor::DATensor *tensor, const AnfNode
     tensor->type = ConvertDataType(dyn_cast<TensorType>(type)->element());
     SetTensorShape(tensor, shape->GetShapeVector());
   } else if (type->isa<Tuple>()) {
-    graph_executor_.AddTensorList(tensor, AnfUtils::GetOutputTensorNum(node));
+    graph_executor_.CastToTensorList(tensor, AnfUtils::GetOutputTensorNum(node));
     MS_EXCEPTION_IF_CHECK_FAIL(tensor->type == da::tensor::Type_Tensor, "The type of DATensor is not Type_Tensor");
     auto tuple_type = type->cast<TuplePtr>();
     MS_EXCEPTION_IF_NULL(tuple_type);
@@ -285,6 +285,26 @@ void GraphAdapter::SetupFrontendParameterMapping() {
   }
 }
 
+void UpdateDynamicShape(da::tensor::DATensor *da_node, const AnfNodePtr &input_node, const tensor::TensorPtr &input_tensor) {
+  MS_EXCEPTION_IF_NULL(da_node);
+  MS_EXCEPTION_IF_NULL(input_node);
+  if (input_tensor == nullptr) {
+    return;
+  }
+  if (!input_node->isa<Parameter>()) {
+    return;
+  }
+  auto input_param = input_node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(input_param);
+  if (!input_param->has_dynamic_shape()) {
+    return;
+  }
+
+  // Update shape.
+  MS_LOG(INFO) << "Update dynamic shape for parameter:" << input_param->DebugString();
+  SetDATensorTypeAndShape(da_node, input_tensor);
+}
+
 void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
   const auto &frontend_params = func_graph_->GetFuncGraph()->parameters();
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == frontend_params.size(),
@@ -331,6 +351,7 @@ void GraphAdapter::ConvertInputs(const VectorRef &inputs) {
         MS_LOG(INTERNAL_EXCEPTION) << "Can not find parameter '" << backend_param->ToString() << "' in parameter_map_";
       }
       auto da_param = iter->second;
+      UpdateDynamicShape(da_param, backend_param, input_tensor);
 
       auto is_weight = common::AnfAlgo::IsParameterWeight(backend_param->cast<ParameterPtr>());
       if (!is_weight) {

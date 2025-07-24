@@ -29,6 +29,7 @@
 #include "ir/dtype.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/acl/acl_kernel_build.h"
 
@@ -77,9 +78,6 @@ kernel::KernelModPtr SelectKernelMod(const PrimitivePtr &prim, const std::vector
 
   if (!kernel_mod->Init(prim, inputs, outputs)) {
     MS_LOG(EXCEPTION) << "KernelMod Init failed: " << prim->name();
-  }
-  if (kernel_mod->Resize(inputs, outputs) == kernel::KRET_RESIZE_FAILED) {
-    MS_LOG(EXCEPTION) << "KernelMod Resize failed";
   }
 
   return kernel_mod;
@@ -167,6 +165,7 @@ class DAKernel {
   explicit DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *device_context);
   ~DAKernel();
 
+  void InferShapeAndResize();
   void AllocateOutputDeviceMemory();
   void AllocateWorkspaceDeviceMemory();
   void FreeWorkspaceDeviceMemory();
@@ -174,6 +173,7 @@ class DAKernel {
 
  private:
   kernel::KernelModPtr kernel_mod_;
+  AbstractBasePtrList abs_inputs_;
   std::vector<kernel::KernelTensor *> inputs_;
   std::vector<kernel::KernelTensor *> outputs_;
   std::vector<kernel::KernelTensor *> workspaces_;
@@ -194,9 +194,10 @@ DAKernel::DAKernel(da::tensor::DATensor *da_tensor, device::DeviceContext *devic
   // Initialize input kernel tensors
   MS_LOG(INFO) << "Start create input DAKernelTensors";
   for (size_t i = 0; i < da_tensor->inputSize; ++i) {
-    auto input_tensor = new DAKernelTensor(da_tensor->input[i]);
+    auto input_tensor = std::make_shared<DAKernelTensor>(da_tensor->input[i]);
     MS_EXCEPTION_IF_NULL(input_tensor);
-    (void)inputs_.emplace_back(input_tensor);
+    (void)abs_inputs_.emplace_back(input_tensor);
+    (void)inputs_.emplace_back(input_tensor.get());
     MS_LOG(DEBUG) << "input kernel tensors: " << input_tensor->ToString();
   }
   MS_LOG(INFO) << "End create input DAKernelTensors";
@@ -233,9 +234,63 @@ DAKernel::~DAKernel() {
     }
     kernel_tensors.clear();
   };
-  destroy_tensors(inputs_);
   destroy_tensors(outputs_);
   destroy_tensors(workspaces_);
+}
+
+void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
+                             const std::vector<kernel::KernelTensor *> &output_kernel_tensors) {
+  MS_EXCEPTION_IF_NULL(base_shape);
+  size_t output_num = output_kernel_tensors.size();
+  if (output_num > 1) {
+    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
+    MS_EXCEPTION_IF_NULL(sequence_shape);
+    const auto &shapes = sequence_shape->shape();
+    if (shapes.size() != output_num) {
+      MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << output_num
+                        << ", but got: " << shapes.size();
+    }
+    for (size_t i = 0; i < output_num; i++) {
+      const auto &kernel_tensor = output_kernel_tensors[i];
+      MS_EXCEPTION_IF_NULL(kernel_tensor);
+      kernel_tensor->SetShapeVector(shapes[i]->GetShapeVector());
+    }
+  } else if (output_num == 1) {
+    const auto &kernel_tensor = output_kernel_tensors[0];
+    MS_EXCEPTION_IF_NULL(kernel_tensor);
+    auto sequence_shape = base_shape->cast<abstract::SequenceShapePtr>();
+    if ((kernel_tensor->type_id() != kObjectTypeTuple && kernel_tensor->type_id() != kObjectTypeList) &&
+        sequence_shape != nullptr) {
+      // For the operator prototype whose output is of type Tuple, the back-end operator is expanded as Tensors, and for
+      // single-output scenarios, the InferShape result is TupleShape, and the back-end needs to expand it to
+      // TensorShape. For example, the output of the split operator is only a Tensor scene.
+      const auto &shapes = sequence_shape->shape();
+      if (shapes.size() != 1) {
+        MS_LOG(EXCEPTION) << "Invalid SequenceShape, expected elements number: " << 1 << ", but got: " << shapes.size();
+      }
+
+      kernel_tensor->SetShapeVector(shapes[0]->GetShapeVector());
+    } else {
+      kernel_tensor->SetShapeVector(base_shape->GetShapeVector());
+    }
+  }
+}
+
+void DAKernel::InferShapeAndResize() {
+  // 1. Infer operator's output's Shape.
+  MS_LOG(INFO) << "Begin InferShape for kernel: " << kernel_mod_->primitive()
+                                       << ", inputs: " << abs_inputs_;
+  auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), abs_inputs_);
+  MS_EXCEPTION_IF_NULL(base_shape);
+  MS_LOG(INFO) << "End InferShape for kernel: " << kernel_mod_->primitive()
+                                       << ", shape: " << base_shape->ToString();
+
+  // 2. Update shape of output kernel tensor.
+  UpdateKernelTensorShape(base_shape, outputs_);
+
+  if (kernel_mod_->Resize(inputs_, outputs_) == kernel::KRET_RESIZE_FAILED) {
+    MS_LOG(EXCEPTION) << "KernelMod Resize failed";
+  }
 }
 
 void DAKernel::AllocateOutputDeviceMemory() {
@@ -302,6 +357,7 @@ bool MindsporeKernelLib::RunTensor(da::tensor::DATensor *tensor, da::runtime::Me
     kernel_cache[tensor] = kernel;
   }
 
+  kernel_cache[tensor]->InferShapeAndResize();
   kernel_cache[tensor]->AllocateOutputDeviceMemory();
   kernel_cache[tensor]->AllocateWorkspaceDeviceMemory();
   kernel_cache[tensor]->Launch();
