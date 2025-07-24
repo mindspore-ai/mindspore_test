@@ -19,6 +19,7 @@
 #include <set>
 #include <vector>
 #include "utils/ms_utils.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context.h"
 #include "ir/dtype/tensor_type.h"
 

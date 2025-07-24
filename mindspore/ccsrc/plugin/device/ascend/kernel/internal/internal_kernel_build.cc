@@ -25,6 +25,7 @@
 
 #include "plugin/device/ascend/kernel/utils/kernel_plugin.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {

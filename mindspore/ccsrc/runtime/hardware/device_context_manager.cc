@@ -29,6 +29,7 @@
 #include "utils/ms_context.h"
 #include "utils/dlopen_macro.h"
 #include "utils/os.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace {

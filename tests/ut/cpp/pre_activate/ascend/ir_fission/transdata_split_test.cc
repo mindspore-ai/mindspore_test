@@ -18,11 +18,9 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/backend/kernel_info.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/oplib/oplib.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/anfalgo.h"
 
 #define private public
 #define protected public

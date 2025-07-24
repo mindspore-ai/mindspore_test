@@ -31,6 +31,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "abstract/abstract_value.h"
 #include "include/backend/kernel_graph.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/ms_device_shape_transfer.h"
 #include "backend/ge_backend/utils/device_address_utils.h"
 #include "backend/ge_backend/executor/ge_memory_allocator.h"

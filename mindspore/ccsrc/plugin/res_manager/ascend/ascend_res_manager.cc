@@ -38,6 +38,7 @@
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "plugin/res_manager/ascend/symbol_interface/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/backend/anf_runtime_algorithm.h"
 #include "utils/file_utils.h"
 #include "utils/distributed_meta.h"
 #include "graph/def_types.h"

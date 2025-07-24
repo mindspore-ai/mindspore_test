@@ -20,8 +20,6 @@
 #include "backend/common/pass/const_input_to_attr.h"
 #include "backend/common/pass/convert_const_input_to_attr.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 
 #define private public
 #define protected public

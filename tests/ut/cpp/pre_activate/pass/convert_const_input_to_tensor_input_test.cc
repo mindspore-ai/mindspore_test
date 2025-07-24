@@ -19,12 +19,10 @@
 #include "ir/tensor.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "backend/common/pass/convert_const_input_to_tensor_input.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive_d.h"
 
 namespace mindspore {

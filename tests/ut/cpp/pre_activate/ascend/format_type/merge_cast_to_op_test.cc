@@ -15,14 +15,12 @@
  */
 #include "common/backend_common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "frontend/operator/ops.h"
 #include "ir/tensor.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "kernel/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 
 #define private public

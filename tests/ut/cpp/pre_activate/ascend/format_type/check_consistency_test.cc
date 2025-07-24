@@ -16,7 +16,6 @@
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "common/backend_common_test.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/action.h"
 #include "frontend/operator/ops.h"

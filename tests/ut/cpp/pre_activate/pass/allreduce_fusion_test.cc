@@ -20,14 +20,12 @@
 #include "ir/tensor.h"
 #include "ir/manager.h"
 #include "include/common/debug/anf_ir_dump.h"
-#include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/communication_op_fusion.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/kernel_info.h"
 #include "include/backend/optimizer/pass_manager.h"
 #include "kernel/kernel_build_info.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
