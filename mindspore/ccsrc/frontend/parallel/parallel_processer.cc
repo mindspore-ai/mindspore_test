@@ -1395,8 +1395,7 @@ OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cn
         is_tuple_param = param_input_size > 1 ? true : false;
       }
       auto input = next_cnode->input(input_pos);
-      if (is_tuple_param && !IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
-        const auto &func_graph = next_cnode->func_graph();
+      auto get_make_tuple = [&input](const FuncGraphPtr &func_graph, size_t param_input_size) {
         std::vector<AnfNodePtr> make_tuple_inputs;
         make_tuple_inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
         for (size_t i = 0; i < param_input_size; i++) {
@@ -1407,6 +1406,12 @@ OperatorInfoPtr GetNextDistributeOperator(size_t pos_in_param, CNodePtr *next_cn
           make_tuple_inputs.push_back(tuple_get_item);
         }
         auto make_tuple = func_graph->NewCNode(make_tuple_inputs);
+        MS_EXCEPTION_IF_NULL(make_tuple);
+        return make_tuple;
+      };
+      if (is_tuple_param && !IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+        const auto &func_graph = next_cnode->func_graph();
+        auto make_tuple = get_make_tuple(func_graph, param_input_size);
         MS_EXCEPTION_IF_NULL(make_tuple);
         FuncGraphManagerPtr manager = func_graph->manager();
         MS_EXCEPTION_IF_NULL(manager);

@@ -133,7 +133,7 @@ class PipelineCell(Cell):
                                " config segment num:" + str(config_segment_num))
             logger.warning("network:" + str(self.network))
             logger.warning("cell name available:")
-            for cell_name, cell in self.network.cells_and_names():
+            for cell_name, _ in self.network.cells_and_names():
                 logger.warning(cell_name)
             raise KeyError("For 'PipelineCell', the argument 'segment_config' : {} is not "
                            "found in 'network' : {}".format(config_dict, self.network))

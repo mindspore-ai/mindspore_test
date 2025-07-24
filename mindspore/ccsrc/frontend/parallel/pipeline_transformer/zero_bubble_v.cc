@@ -201,23 +201,27 @@ void ZeroBubbleV::ReorderInnerOverlap(const std::vector<BorderPair> &borders,
         ControlOrder(pre_cur.second, cur.first, "inner_overlap");
       }
       const auto &cur_border_type = JudgeBorderType(cur_border);
-      if (cur_border_type == BorderType::kSend) {
-        auto next_users = GetOutputNodesWithFilter(
-          end.first.border, [&](const AnfNodePtr &anode) { return IsPrimitiveCNode(anode, prim::kPrimTupleGetItem); });
-        std::for_each(next_users.begin(), next_users.end(), [this, &cur](const auto &next_user) {
+      auto insert_depend = [this, &cur](const auto &next_users) {
+        for (const auto &next_user : next_users) {
           if (IsPrimitiveCNode(next_user.first, prim::kPrimDepend)) {
             ControlOrder(cur.second, {next_user.first->template cast<CNodePtr>(), 0, 0}, "send_out_1f1b");
           }
-        });
+        }
+      };
+      if (cur_border_type == BorderType::kSend) {
+        auto next_users = GetOutputNodesWithFilter(
+          end.first.border, [&](const AnfNodePtr &anode) { return IsPrimitiveCNode(anode, prim::kPrimTupleGetItem); });
+        insert_depend(next_users);
       }
-      if (cur_border_type == BorderType::kReceive) {
-        const auto &cell_inputs = start.second.border->inputs();
-        std::for_each(cell_inputs.begin(), cell_inputs.end(), [this, cur](const auto &cell_input) {
-          if (IsPrimitiveCNode(cell_input, prim::kPrimDepend)) {
-            ControlOrder({cell_input->template cast<CNodePtr>(), 0, 0}, cur.first, "input_recv_1f1b");
-          }
-        });
+      if (cur_border_type != BorderType::kReceive) {
+        continue;
       }
+      const auto &cell_inputs = start.second.border->inputs();
+      std::for_each(cell_inputs.begin(), cell_inputs.end(), [this, cur](const auto &cell_input) {
+        if (IsPrimitiveCNode(cell_input, prim::kPrimDepend)) {
+          ControlOrder({cell_input->template cast<CNodePtr>(), 0, 0}, cur.first, "input_recv_1f1b");
+        }
+      });
     }
   }
 }
