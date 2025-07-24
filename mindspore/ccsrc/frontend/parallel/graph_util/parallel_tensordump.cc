@@ -379,15 +379,18 @@ std::string GetInModeSuffixedDumpPath(const std::string &ori_path) {
   return oss.str();
 }
 
-void FwdCommunicationParallelTensorDumpHandler::CollectDumpNodes(const AnfNodePtr &start, bool first_recursive) {
+void FwdCommunicationParallelTensorDumpHandler::CollectDumpNodesRecursively(const AnfNodePtr &start,
+                                                                            const bool first_recursive,
+                                                                            std::set<AnfNodePtr> *collect_visited) {
+  MS_EXCEPTION_IF_NULL(start);
   if (first_recursive) {
-    collect_visited_.clear();
+    collect_visited->clear();
   }
-  if (collect_visited_.count(start) != 0) return;
+  if (collect_visited->count(start) != 0) return;
   if (!first_recursive &&
       !IsSomePrimitiveList(start->cast<CNodePtr>(), {DEPEND, INSERTGRADIENTOF, DUMPGRADIENT, RESHAPE}))
     return;
-  collect_visited_.insert(start);
+  collect_visited->insert(start);
   FuncGraphPtr func_graph = start->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr fg_manager = func_graph->manager();
@@ -401,7 +404,54 @@ void FwdCommunicationParallelTensorDumpHandler::CollectDumpNodes(const AnfNodePt
     } else if (IsSomePrimitive(user_node->cast<CNodePtr>(), DUMPGRADIENT)) {
       bwd_dump_hooks_.push_back(user_node);
     }
-    CollectDumpNodes(user_node, false);
+    CollectDumpNodesRecursively(user_node, false, collect_visited);
+  }
+}
+
+void FwdCommunicationParallelTensorDumpHandler::CollectDumpNodes(const AnfNodePtr &anchor, const bool is_multi_output) {
+  if (!anchor) {
+    return;
+  }
+  const FuncGraphPtr &func_graph = anchor->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  const FuncGraphManagerPtr &fg_manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(fg_manager);
+  AnfNodePtr real_search_start;
+  if (is_multi_output) {
+    if (!IsPrimitiveCNode(anchor, prim::kPrimTupleGetItem)) {
+      MS_LOG(EXCEPTION)
+        << "When forward communication op has multioutputs, dump nodes searching should start with a TupleGetItem.";
+    }
+    const CNodePtr &tuple_get_item = anchor->cast<CNodePtr>();
+    const NodeUsersMap &user_map = fg_manager->node_users();
+    const auto tuple_get_item_users = user_map.at(tuple_get_item);
+    if (tuple_get_item_users.size() != SIZE_ONE ||
+        !IsPrimitiveCNode(tuple_get_item_users.front().first, prim::kPrimMakeTuple)) {
+      MS_LOG(EXCEPTION)
+        << "When forward communication op has multioutputs, TupleGetItem user is expected to be a MakeTuple Node.";
+    }
+    const CNodePtr &make_tuple = tuple_get_item_users.front().first->cast<CNodePtr>();
+    const int index_in_tuple = tuple_get_item_users.front().second;
+    const auto make_tuple_users = user_map.at(make_tuple);
+    const auto target_user_pair =
+      std::find_if(make_tuple_users.begin(), make_tuple_users.end(), [index_in_tuple](auto mktuple_user_pair) {
+        const AnfNodePtr &user_node = mktuple_user_pair.first;
+        if (IsPrimitiveCNode(user_node, prim::kPrimTupleGetItem) &&
+            GetTupleGetItemIndex(user_node->cast<CNodePtr>()) + 1 == index_in_tuple) {
+          return true;
+        }
+        return false;
+      });
+    if (target_user_pair != make_tuple_users.end()) {
+      real_search_start = target_user_pair->first;
+    }
+  } else {
+    real_search_start = anchor;
+  }
+  // Start collect dump nodes recursively
+  if (real_search_start) {
+    std::set<AnfNodePtr> collect_visited;
+    (void)CollectDumpNodesRecursively(real_search_start, true, &collect_visited);
   }
 }
 

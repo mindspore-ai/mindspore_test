@@ -86,6 +86,15 @@ def check_dump_path_and_attr(info_list, expect_dump_path, expect_attr_dict):
             return bool(set(expect_attr_dict.items()).issubset(node_attr.items()))
     return False
 
+def check_dump_path_with_input(info_list, expect_dump_path, expect_input):
+    for td_info in info_list:
+        # info format: {'inputs': [], 'attrs' {}}
+        node_dump_path = td_info['inputs'][0]
+        node_dump_content = td_info['inputs'][1]
+        if node_dump_path == expect_dump_path and node_dump_content.startswith(expect_input):
+            return True
+    return False
+
 def check_tensordump_num_from_ir(graph_dir):
     cnt = 0
     if not os.path.exists(graph_dir):
@@ -785,8 +794,10 @@ def test_forward_communication_no_side_effect_tensordump():
 
     phase = compile_net(net, x, y, b)
     validator = ParallelValidator(net, phase)
+    tensordump_node_infos = get_tensordump_node_infos(validator)
     tensordump_num = get_tensordump_node_num(validator)
     assert tensordump_num == 1
+    assert check_dump_path_with_input(tensordump_node_infos, "out1_before_allreduce.npy", "MatMul")
 
 
 def test_forward_communication_fwddump_and_bwddump():

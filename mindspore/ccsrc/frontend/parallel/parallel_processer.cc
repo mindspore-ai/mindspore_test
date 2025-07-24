@@ -593,6 +593,9 @@ static void InserForwardCommunicationForSingleOutput(const CNodePtr &node, const
   for (size_t out_idx = 0; out_idx < op_comm_list.size(); ++out_idx) {
     ForwardOp forward_op_idx = op_comm_list[out_idx];  // op_list of output_idx, {op0, op1, op2}
     std::reverse(forward_op_idx.begin(), forward_op_idx.end());
+    FwdCommDumpHandlerPtr fwd_dump_handler =
+      std::make_shared<FwdCommunicationParallelTensorDumpHandler>(node_to_insert[out_idx]);
+    fwd_dump_handler->CollectDumpNodes(node_to_insert[out_idx], !forward_op_list.empty());
     for (size_t index = 0; index < forward_op_idx.size(); ++index) {
       std::string instance_name_base = FORWARD_OP;
       std::string instance_name = instance_name_base + "_" + CreateInstanceName(node, index);
@@ -612,6 +615,8 @@ static void InserForwardCommunicationForSingleOutput(const CNodePtr &node, const
       forward_input[0]->set_scope(scope);
       (void)manager->Replace(node_to_insert[out_idx], forward_node);  // using Replace function to insert node
     }
+    (void)fwd_dump_handler->MakeInModeBwdHookBeforeFwdComm();
+    (void)fwd_dump_handler->MakeOutModeDumpBeforeFwdComm();
   }
 }
 
