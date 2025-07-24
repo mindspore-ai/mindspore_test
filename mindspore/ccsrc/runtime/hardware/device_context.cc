@@ -26,7 +26,7 @@ void DeviceResManager::FreeOffloadMemory(void *ptr) const { offloaded_mem_pool_-
 bool DeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   if (address->GetPtr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
+    MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
 

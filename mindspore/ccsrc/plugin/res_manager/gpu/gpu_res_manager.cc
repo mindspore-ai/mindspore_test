@@ -173,7 +173,7 @@ bool GPUResManager::AllocateMemory(DeviceAddress *const &address, uint32_t strea
   }
 
   if (address->GetPtr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
+    MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
 
