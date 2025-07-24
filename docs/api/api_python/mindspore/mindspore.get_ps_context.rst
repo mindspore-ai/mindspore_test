@@ -10,7 +10,7 @@ mindspore.get_ps_context
 
           - enable_ps (bool，可选)：表示是否启用参数服务器训练模式。默认值： ``False`` 。
           - config_file_path (str，可选)：配置文件路径，用于容灾恢复等。默认值： ``''`` 。
-          - enable_ssl (bool，可选)：设置是否打开SSL认证。默认值： ``False`` 。默认关闭可能存在安全风险，用户需要保证分布式任务所在网络环境的安全性。
+          - enable_ssl (bool，可选)：设置是否打开SSL认证。默认值： ``False`` 。关闭时需要用户审视并确认分布式任务所在网络环境的安全性。
 
     返回：
         根据key返回属性值。
