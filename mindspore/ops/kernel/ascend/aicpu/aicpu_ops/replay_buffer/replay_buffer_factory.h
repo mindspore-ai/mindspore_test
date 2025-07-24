@@ -23,6 +23,7 @@
 #include <tuple>
 #include <map>
 #include <utility>
+#include "utils/convert_utils_base.h"
 
 namespace aicpu {
 constexpr int64_t kInvalidHandle = -1;
@@ -55,7 +56,7 @@ class ReplayBufferFactory {
   std::shared_ptr<T> GetByHandle(int64_t handle) {
     auto iter = map_handle_to_instances_.find(handle);
     if (iter == map_handle_to_instances_.end()) {
-      AICPU_LOGE("Replay buffer with handle %d not exist.", handle);
+      AICPU_LOGE("Replay buffer with handle %d not exist.", LongToUint(handle));
       return nullptr;
     }
 
