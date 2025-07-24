@@ -31,7 +31,7 @@ class ControlNodeParserTest : public UT::Common {
  public:
   ControlNodeParserTest() {}
 };
-
+namespace {
 FuncGraphPtr BuildFuncGraph() {
   std::vector<int64_t> shp{2, 2};
   auto func_graph = std::make_shared<FuncGraph>();
@@ -165,7 +165,7 @@ void BuildGraphs(std::vector<AnfNodePtr> *control_nodes, FuncGraphPtr *func_grap
 
   (*func_graph) = root_func_graph;
 }
-
+}  // namespace
 /// Feature: control flow support dynamic shape.
 /// Description: Test the parse interface.
 /// Expectation: As expected.

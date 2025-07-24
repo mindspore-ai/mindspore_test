@@ -71,6 +71,10 @@ class TestDeviceAddress : public DeviceAddress {
   }
   void *GetMutablePtr() const { return nullptr; }
   void ClearDeviceMemory() {}
+  bool IsPtrValid() const {
+    return GetDevicePtr() != nullptr || (hete_info_ != nullptr && hete_info_->host_ptr_ != nullptr);
+  }
+  DeviceType GetDeviceType() const { return DeviceType::kCPU; }
 };
 
 class TestKernelMod : public kernel::KernelMod {
@@ -98,7 +102,15 @@ class TestDeviceResManager : public device::DeviceResManager {
     total_size_ -= address->GetSize();
     return true;
   }
-  void FreeMemory(DeviceAddress *const &address) const {}
+  void FreeMemory(DeviceAddress *const &address) const {
+    MS_EXCEPTION_IF_NULL(address);
+    if (address->GetMutablePtr() != nullptr) {
+      address->set_ptr(nullptr);
+    }
+    if (address->heterogeneous_info() != nullptr && address->heterogeneous_info()->host_ptr_ != nullptr) {
+      address->heterogeneous_info()->host_ptr_ = nullptr;
+    }
+  }
   void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
   void FreeMemory(void *const ptr) const {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
@@ -271,7 +283,7 @@ class TestResManager : public device::HalResBase {
                                        uint32_t stream_id, const UserDataPtr &user_data = nullptr) const override {
     return std::make_shared<TestDeviceAddress>(ptr, size, "NCHW", type_id, "CPU", 0);
   }
-  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override {}
+  void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override { return nullptr; }
   void FreeMemory(void *ptr) const override {}
   void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                        const std::vector<size_t> &keep_addr_sizes) const override {}

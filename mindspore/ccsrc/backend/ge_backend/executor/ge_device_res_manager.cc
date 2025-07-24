@@ -67,7 +67,7 @@ bool GeDeviceResManager::AllocateMemory(device::DeviceAddress *const &address, u
   }
 
   if (address->GetPtr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
+    MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
 

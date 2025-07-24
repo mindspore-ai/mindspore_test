@@ -695,7 +695,7 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<KernelTensor> *const co
       if (ref_output_kernel_tensors.empty()) {
         MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
           << "Memory leak detected in copy output device address for kernel: "
-          << kernel_actor->kernel_->fullname_with_scope();
+          << kernel_actor->kernel_->fullname_with_scope() << " device address:" << dest_kernel_tensor->ToString();
       }
       MS_VLOG(VL_RUNTIME_FRAMEWORK_DEVICE_ADDRESS)
         << "Free heter output address:" << dest_kernel_tensor->ToString() << " for actor:" << kernel_actor->GetAID();

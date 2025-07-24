@@ -510,6 +510,8 @@ bool AsyncCopy(const DeviceTensor *dst_device_tensor, const DeviceTensor *src_de
 void FreeMemoryByDeviceContext(DeviceTensor *const device_tensor, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   // The device context may be not accurate in the control flow scene, so need fetch by device name and device id.
+  MS_LOG(DEBUG) << "device context:" << device_context << " context type:" << device_context->GetDeviceType()
+                << " device tensor type:" << device_tensor->GetDeviceType();
   if ((device_context == nullptr) || (device_context->GetDeviceType() != device_tensor->GetDeviceType())) {
     const auto &new_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
       {device_tensor->device_name(), device_tensor->device_id()});

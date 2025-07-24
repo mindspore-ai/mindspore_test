@@ -411,7 +411,7 @@ bool AscendResManager::AllocateMemory(DeviceAddress *const &address, uint32_t st
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
   if (address->pointer_ref_count()->ptr() != nullptr) {
-    MS_LOG(ERROR) << "Memory leak detected!";
+    MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
     return false;
   }
 
@@ -450,7 +450,7 @@ bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &
   MS_EXCEPTION_IF_NULL(hete_info);
   if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedHostMem) {
     if (hete_info->host_ptr_ != nullptr) {
-      MS_LOG(ERROR) << "Memory leak detected!";
+      MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
       return false;
     }
     auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
@@ -459,7 +459,7 @@ bool AscendResManager::AllocateForHete(mindspore::device::DeviceAddress *const &
   }
   if (hete_info->need_alloc_hete_res_ == NeedAllocateHeteRes::NeedDiskFile) {
     if (!hete_info->file_name_.empty()) {
-      MS_LOG(ERROR) << "Memory leak detected!";
+      MS_LOG(ERROR) << "Memory leak detected in device address:" << address->ToString();
       return false;
     }
     auto file_name = swap_manager_->GetSwapFileName(device_id_);
