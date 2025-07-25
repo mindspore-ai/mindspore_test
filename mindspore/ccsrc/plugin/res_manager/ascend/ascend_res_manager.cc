@@ -400,6 +400,9 @@ void AscendResManager::Destroy() {
 
   (void)ErrorManagerAdapter::Finalize();
 
+  // All unmap/free operations will fail after calling aclrtResetDevice in ResetDevice,
+  // so it must be called before that.
+  AscendVmmAdapter::GetInstance().ClearAllMemory();
   AscendHalManager::GetInstance().ResetDevice(device_id_);
 
   initialized_ = false;

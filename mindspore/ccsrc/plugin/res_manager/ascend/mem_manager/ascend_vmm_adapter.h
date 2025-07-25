@@ -59,7 +59,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendVmmAdapter {
     }
     MS_LOG(INFO) << "VMM align size is " << vmm_align_size_;
   }
-  ~AscendVmmAdapter();
+  ~AscendVmmAdapter() = default;
 
  public:
   size_t GetRoundUpAlignSize(size_t input_size) const;
