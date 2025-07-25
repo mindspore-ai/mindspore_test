@@ -8,7 +8,6 @@ include_directories(${NNACL_SIMD_DIR}/..)
 file(GLOB SIMD_CONFIG_HEADER
     ${NNACL_DIR}/base/*_simd.h.in
     ${NNACL_DIR}/fp32/*_simd.h.in
-    ${NNACL_DIR}/fp32/online_fusion/*_simd.h.in
     ${NNACL_DIR}/fp32_grad/*_simd.h.in
 )
 function(generate_simd_header_code)
@@ -98,72 +97,26 @@ file(GLOB KERNEL_SRC
     ${NNACL_DIR}/base/*.c
     ${NNACL_DIR}/fp32_grad/*.c
     ${NNACL_DIR}/kernel/*.c
-    ${NNACL_DIR}/experimental/*.c
-    ${NNACL_DIR}/fp32/online_fusion/*.c
 )
 
 set(KERNEL_AVX512_FILE  ${NNACL_DIR}/fp32/matmul_avx512_fp32.c
-                        ${NNACL_DIR}/fp32/matmul_avx512_mask_fp32.c
-                        ${NNACL_DIR}/fp32/conv_im2col_avx512_fp32.c
 )
 list(REMOVE_ITEM KERNEL_SRC ${KERNEL_AVX512_FILE})
 
-set(KERNEL_AVX_FILE ${NNACL_DIR}/fp32/conv_sw_avx_fp32.c
-                    ${NNACL_DIR}/fp32/conv_1x1_avx_fp32.c
-                    ${NNACL_DIR}/fp32/matmul_avx_fp32.c
-                    ${NNACL_DIR}/fp32/conv_depthwise_avx_fp32.c)
+set(KERNEL_AVX_FILE ${NNACL_DIR}/fp32/matmul_avx_fp32.c
+)
 list(REMOVE_ITEM KERNEL_SRC ${KERNEL_AVX_FILE})
 
-set(KERNEL_ARM64_FILE ${NNACL_DIR}/fp32/conv_sw_arm64_fp32.c)
-list(REMOVE_ITEM KERNEL_SRC ${KERNEL_ARM64_FILE})
+list(REMOVE_ITEM KERNEL_SRC ${NNACL_DIR}/infer/shape_fusion_infer.c)
 
-if(NOT MSLITE_ENABLE_RUNTIME_PASS)
-  list(REMOVE_ITEM KERNEL_SRC ${NNACL_DIR}/infer/shape_fusion_infer.c)
-endif()
-if((NOT DEFINED MSLITE_ENABLE_INT8) OR MSLITE_ENABLE_INT8)
-    file(GLOB KERNEL_SRC_INT8
-            ${NNACL_DIR}/int8/*.c
-            )
-    set(KERNEL_SRC
-            ${KERNEL_SRC}
-            ${KERNEL_SRC_INT8}
-            )
-else()
-    set(KERNEL_SRC
-            ${KERNEL_SRC}
-            ${NNACL_DIR}/int8/pack_int8.c
-            ${NNACL_DIR}/int8/quantize.c
-            )
-endif()
+file(GLOB KERNEL_SRC_INT8
+        ${NNACL_DIR}/int8/*.c
+        )
+set(KERNEL_SRC
+        ${KERNEL_SRC}
+        ${KERNEL_SRC_INT8}
+        )
 
-if(MSLITE_ENABLE_SPARSE_COMPUTE)
-    file(GLOB KERNEL_SRC_SPARSE
-            ${NNACL_DIR}/fp32_sparse/*.c
-            )
-    set(KERNEL_SRC
-            ${KERNEL_SRC}
-            ${KERNEL_SRC_SPARSE}
-            )
-endif()
-
-if(MSLITE_ENABLE_STRING_KERNEL)
-    file(GLOB KERNEL_SRC_INFER_STRING
-            ${NNACL_DIR}/infer/string/*.c
-            )
-    set(KERNEL_SRC
-            ${KERNEL_SRC}
-            ${KERNEL_SRC_INFER_STRING}
-            )
-endif()
-if(MSLITE_ENABLE_CONTROLFLOW)
-    file(GLOB KERNEL_SRC_INFER_CONTROL_TENSORLIST
-            ${NNACL_DIR}/infer/control/*.c
-            )
-    set(KERNEL_SRC
-            ${KERNEL_SRC}
-            ${KERNEL_SRC_INFER_CONTROL_TENSORLIST}
-            )
-endif()
 if(PLATFORM_ARM64)
     file(GLOB ASSEMBLY_SRC ${NNACL_DIR}/assembly/arm64/*.S)
     set_property(SOURCE ${ASSEMBLY_SRC} PROPERTY LANGUAGE C)
@@ -176,16 +129,7 @@ if(PLATFORM_ARM32)
 endif()
 
 if("${X86_64_SIMD}" STREQUAL "sse" OR "${X86_64_SIMD}" STREQUAL "avx" OR "${X86_64_SIMD}" STREQUAL "avx512")
-    file(GLOB ASSEMBLY_SSE_SRC ${NNACL_DIR}/intrinsics/sse/*.c)
-    set_property(SOURCE ${ASSEMBLY_SSE_SRC} PROPERTY LANGUAGE C)
-
-    set(MS_X86_SSE_SRC
-            ${ASSEMBLY_SSE_SRC}
-            ${KERNEL_SSE_FILE})
-    set_source_files_properties(${MS_X86_SSE_SRC} PROPERTIES LANGUAGE C
-        COMPILE_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -fPIC")
-
-    set(MS_X86_SIMD_SRC ${MS_X86_SIMD_SRC} ${MS_X86_SSE_SRC})
+    set(MS_X86_SIMD_SRC ${MS_X86_SIMD_SRC})
 endif()
 
 if("${X86_64_SIMD}" STREQUAL "avx" OR "${X86_64_SIMD}" STREQUAL "avx512")
@@ -206,18 +150,13 @@ endif()
 
 if("${X86_64_SIMD}" STREQUAL "avx512")
     if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        file(GLOB HPC_SRC ${NNACL_DIR}/experimental/HPC-generator/gemm_avx512/*.c
-                          ${NNACL_DIR}/experimental/HPC-generator/gemm_mask_avx512/*.c)
+        file(GLOB HPC_SRC ${NNACL_DIR}/experimental/HPC-generator/gemm_avx512/*.c)
 
         set_property(SOURCE ${HPC_SRC} PROPERTY LANGUAGE C)
     endif()
 
-    file(GLOB ASSEMBLY_AVX512_SRC ${NNACL_DIR}/assembly/avx512/*.S)
-    set_property(SOURCE ${ASSEMBLY_AVX512_SRC} PROPERTY LANGUAGE C)
-
     set(MS_X86_AVX512_SRC
             ${HPC_SRC}
-            ${ASSEMBLY_AVX512_SRC}
             ${KERNEL_AVX512_FILE})
 
     set_source_files_properties(${MS_X86_AVX512_SRC} PROPERTIES LANGUAGE C
@@ -233,12 +172,6 @@ endif()
 ########################### build nnacl library ########################
 if(NOT MSVC)
 string(REPLACE "-fvisibility=hidden" "-fvisibility=default" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-endif()
-
-if(PLATFORM_ARM)
-    set(NO_FAST_MATH_OPTI ${NNACL_DIR}/fp32/resize_fp32.c)
-    set_source_files_properties(${NO_FAST_MATH_OPTI} PROPERTIES LANGUAGE C
-        COMPILE_FLAGS "${CMAKE_C_FLAGS} -fno-fast-math")
 endif()
 
 add_library(nnacl_mid OBJECT ${KERNEL_SRC} ${ASSEMBLY_SRC} ${MS_X86_SIMD_SRC})
@@ -277,15 +210,6 @@ endif()
 
 set(nnacl_static_obj $<TARGET_OBJECTS:nnacl_mid>)
 ########################### arm fp16 build optimize library ########################
-if(PLATFORM_ARM)
-    add_subdirectory(${NNACL_DIR}/optimize)
-    if(TARGET nnacl_optimize_mid)
-        set(nnacl_static_obj ${nnacl_static_obj} $<TARGET_OBJECTS:nnacl_optimize_mid>)
-    endif()
-    if(TARGET nnacl_fp16_mid)
-        set(nnacl_static_obj ${nnacl_static_obj} $<TARGET_OBJECTS:nnacl_fp16_mid>)
-    endif()
-endif()
 if(NOT ${CMAKE_GENERATOR} MATCHES "Ninja")
     add_library(nnacl_static STATIC ${nnacl_static_obj})
     set_target_properties(nnacl_static PROPERTIES OUTPUT_NAME "nnacl")
