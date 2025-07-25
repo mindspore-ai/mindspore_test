@@ -32,8 +32,6 @@ mindspore.amp.auto_mixed_precision
 
     ``Addcdiv`` 、 ``Addcmul`` 、 ``Cross`` 、 ``_PyboostCrossPrim`` 、 ``Dot`` 、 ``GridSampler2D`` 、 ``GridSampler3D`` 、 ``BiasAdd`` 、 ``AddN`` 、 ``Concat``
 
-    关于自动混合精度的详细介绍，请参考 `自动混合精度 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/mixed_precision.html>`_ 。
-
     .. note::
         - 重复调用混合精度接口，如 `custom_mixed_precision` 和 `auto_mixed_precision` ，可能导致网络层数增大，性能降低。
         - 如果使用 :class:`mindspore.train.Model` 和 :func:`mindspore.amp.build_train_network` 等接口来训练经\
