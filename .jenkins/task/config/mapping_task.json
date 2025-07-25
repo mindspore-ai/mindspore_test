@@ -939,7 +939,8 @@
       "mindspore/ops/kernel/gpu/cuda_impl/cuda_ops",
       "mindspore/ops/op_def",
       "mindspore/python",
-      ".gitignore"
+      ".gitignore",
+      "mindspore/lite/java/src/test/java/com/mindspore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
@@ -1042,7 +1043,8 @@
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/op_def",
       "mindspore/python",
-      ".gitignore"
+      ".gitignore",
+      "mindspore/lite/java/src/test/java/com/mindspore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CLOUD_ASCEND",
