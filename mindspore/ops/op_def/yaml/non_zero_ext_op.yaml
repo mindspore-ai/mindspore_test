@@ -13,5 +13,4 @@ non_zero_ext:
     dispatch:
         enable: True
         Ascend: NonZeroExtAscend
-        CPU: None
         GPU: None

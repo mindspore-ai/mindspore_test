@@ -78,5 +78,4 @@ flash_attention_score:
     enable: True
     Ascend: FlashAttentionScoreAscend
     InternalOpAscend: AutoGen
-    CPU: None
     GPU: None

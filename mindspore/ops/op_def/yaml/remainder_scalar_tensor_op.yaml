@@ -14,5 +14,4 @@ remainder_scalar_tensor:
         name: RemainderScalarTensor
     dispatch:
         enable: True
-        CPU: None
         GPU: None

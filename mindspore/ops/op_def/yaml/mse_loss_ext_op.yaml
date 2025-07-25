@@ -17,5 +17,4 @@ mse_loss_ext:
     dispatch:
         enable: True
         Ascend: MSELossExtAscend
-        CPU: None
         GPU: None
