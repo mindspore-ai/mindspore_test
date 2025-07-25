@@ -1112,12 +1112,12 @@ std::vector<int64_t> MatMulExtBPropShapeCalcInferFunc(const ShapeArray &inputs, 
     if (expanded_input_rank > 2) {
       auto it = std::find_if(input_shape.begin(), input_shape.end(), [](int x) { return x != 1; });
       input_shape.erase(input_shape.begin(), it);
-      expanded_input_rank = input_shape.size();
+      expanded_input_rank = SizeToLong(input_shape.size());
     }
     if (expanded_weight_rank > 2) {
       auto it = std::find_if(weight_shape.begin(), weight_shape.end(), [](int x) { return x != 1; });
       weight_shape.erase(weight_shape.begin(), it);
-      expanded_weight_rank = weight_shape.size();
+      expanded_weight_rank = SizeToLong(weight_shape.size());
     }
     if (expanded_weight_rank == 1) {
       expanded_weight_rank++;

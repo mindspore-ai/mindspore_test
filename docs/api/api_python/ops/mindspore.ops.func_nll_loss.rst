@@ -23,6 +23,14 @@
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
 
+    .. warning::
+        - 在GE模式下： `inputs` 需为1维或2维Tensor， `target` 和 `weight` 需为1维，并需满足以下约束条件：
+
+          - 当 `inputs` 为1维时：target_shape[0] == 1 且 weight_shape[0] == inputs_shape[0]。
+          - 当 `inputs` 为2维时：target_shape[0] == inputs_shape[0] 且 weight_shape[0] == inputs_shape[1]。
+
+        - 在GPU或CPU设备上运行时， `inputs` 必须为2维Tensor。
+
     参数：
         - **inputs** (Tensor) - 输入预测值，shape为 :math:`(N, C)` 或 :math:`(N, C, H, W)`
           (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`inputs` 需为对数概率。数据类型仅支持float32或float16。

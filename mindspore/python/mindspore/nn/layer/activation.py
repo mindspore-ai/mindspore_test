@@ -1269,8 +1269,10 @@ class PReLUExt(Cell):
         :align: center
 
     .. note::
-        Channel dim is the 2nd dim of input. When input has dims < 2, then there is
-        no channel dim and the number of channels = 1.
+        - Channel dim is the 2nd dim of input. When input has dims < 2, then there is
+          no channel dim and the number of channels = 1.
+        - In GE mode, the rank of the input tensor must be greater than 1;
+          otherwise, an error will be triggered.
 
     Args:
         num_parameters (int, optional): number of `w` to learn. Although it takes an int as input,
