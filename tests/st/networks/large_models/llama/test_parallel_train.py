@@ -21,7 +21,6 @@ import os
 from multiprocessing.pool import Pool
 
 from tests.mark_utils import arg_mark
-import subprocess
 
 def run_command(command_info):
     cmd, log_path = command_info
@@ -36,7 +35,6 @@ def check_results(commands, results):
         os.system(f"grep -E 'ERROR|error|Error' {results[idx][1]} -C 5")
         os.system(f"cat {results[idx][1]}")
     assert error_idx == []
-    subprocess.check_output(["grep", "MS_DEV_P2P_HCCL_BUFFSIZE, and the value is 24 MB.", commands[0][1]])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
@@ -51,7 +49,7 @@ def test_train():
         os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
 
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    commands = [(f"export MS_DEV_P2P_HCCL_BUFFSIZE=24 && export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
+    commands = [(f"export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
                  f"bash {sh_path}/msrun_launch_llama.sh 4 test_train 8128",
                  f"{sh_path}/test_train/worker_0.log"),
                 (f"export ASCEND_RT_VISIBLE_DEVICES=4,5 && "

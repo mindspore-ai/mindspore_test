@@ -25,6 +25,7 @@
 
 namespace mindspore {
 namespace {
+using GroupOptions = mindspore::device::GroupOptions;
 class AscendCommManager : public CommManager {
  public:
   AscendCommManager() : CommManager("hccl") {}
@@ -32,9 +33,8 @@ class AscendCommManager : public CommManager {
 
   bool CreateGroupSync(const string &group, const std::vector<unsigned int> &rank_id_list) const override {
     // For this method, its will be used only by auto parallel modules.
-    mindspore::device::GroupOptions config;
+    GroupOptions config;
     config.async = false;
-    config.submit_now = false;
     return distributed::collective::CollectiveManager::instance()->CreateCommunicationGroup(group, rank_id_list,
                                                                                             config);
   }

@@ -110,7 +110,9 @@ def model_train(model, epoch, dataset, ckpt_path, ckpt_prefix, integral_save, re
 def load_newest_cpkt_predict(model, parallel_config, ckpt_path, remove_redundancy, inputs, label=None):
     newest_ckpt_file = find_newest_ckpt_file(ckpt_path)
     param_dict = load_checkpoint(newest_ckpt_file, remove_redundancy=remove_redundancy)
+    ms.mint.distributed.barrier()
     param_not_load, _ = load_param_into_net(model.train_network, param_dict, remove_redundancy=remove_redundancy)
+    ms.mint.distributed.barrier()
     print(f"param_not_load = {param_not_load}")
 
     set_parallel_mode(model.train_network, parallel_config)
@@ -144,7 +146,8 @@ def semi_auto_ckpt_redundancy_dp2_mp2_pp2(cur_root_dir, remove_redundancy):
 
     # creat model
     stra_ckpt_file = f"{cur_root_dir}/train_strategy.ckpt"
-    parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_stages": 2,
+    pp_config = {"stages": 2}
+    parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_config": pp_config,
                        "save_strategy_file": stra_ckpt_file}
     parallel_model = create_train_model(parallel_net, net_optim, parallel_config)
 
@@ -157,9 +160,10 @@ def semi_auto_ckpt_redundancy_dp2_mp2_pp2(cur_root_dir, remove_redundancy):
     parallel_mode_get_ckpt_path_with_strategy(strategy_file=stra_ckpt_file, cpkt_path=ckpt_path)
 
     # predict
-    parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_stages": 2,
-                       "load_strategy_file": stra_ckpt_file}
     ms.mint.distributed.barrier()
+    pp_config = {"stages": 2}
+    parallel_config = {"parallel_mode": "semi_auto", "data_strategy": "data_parallel", "pipeline_config": pp_config,
+                       "save_strategy_file": stra_ckpt_file}
     my_predict = load_newest_cpkt_predict(parallel_model, parallel_config, ckpt_path, remove_redundancy, inputs, label)
     print(f"with_redundancy_predict {my_predict}")
     return my_predict

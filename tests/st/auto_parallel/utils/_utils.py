@@ -30,8 +30,13 @@ def set_parallel_mode(obj, parallel_config=None):
     net = AutoParallel(obj, parallel_mode)
     if parallel_config.get("dataset_strategy", None) is not None:
         net.dataset_strategy(parallel_config["dataset_strategy"])
-    if parallel_config.get("pipeline_stages", None) is not None:
-        net.pipeline(parallel_config["pipeline_stages"])
+    if parallel_config.get("pipeline_config", None) is not None:
+        pipeline_config = parallel_config["pipeline_config"]
+        stages = pipeline_config.get("stages", 1)
+        output_broadcast = pipeline_config.get("output_broadcast", False)
+        interleave = pipeline_config.get("interleave", False)
+        scheduler = pipeline_config.get("scheduler", "1f1b")
+        net.pipeline(stages, output_broadcast, interleave, scheduler)
     if parallel_config.get("save_strategy_file", None) is not None:
         net.save_param_strategy_file(parallel_config["save_strategy_file"])
     if parallel_config.get("load_strategy_file", None) is not None:
