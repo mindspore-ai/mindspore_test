@@ -19,5 +19,4 @@ narrow_view:
         side_effect_mem: True
     dispatch:
         enable: True
-        CPU: None
         GPU: None

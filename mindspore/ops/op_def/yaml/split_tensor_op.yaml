@@ -14,7 +14,6 @@ split_tensor:
   view: True
   dispatch:
     enable: True
-    CPU: None
     GPU: None
   function:
     disable: True

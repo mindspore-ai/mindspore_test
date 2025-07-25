@@ -20,5 +20,4 @@ repeat_interleave_tensor:
   dispatch:
     enable: True
     Ascend: RepeatInterleaveTensorAscend
-    CPU: None
     GPU: None

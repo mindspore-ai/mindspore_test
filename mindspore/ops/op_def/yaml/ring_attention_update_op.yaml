@@ -31,5 +31,4 @@ ring_attention_update:
   dispatch:
     enable: True
     Ascend: RingAttentionUpdateAscend
-    CPU: None
     GPU: None

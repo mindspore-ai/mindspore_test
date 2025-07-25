@@ -21,5 +21,4 @@ addmm:
   dispatch:
     enable: True
     Ascend: AddmmAscend
-    CPU: None
     GPU: None

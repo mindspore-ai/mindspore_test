@@ -15,5 +15,4 @@ cumsum_ext:
   dispatch:
     enable: True
     Ascend: CumsumExtAscend
-    CPU: None
     GPU: None

@@ -19,5 +19,4 @@ argmax_ext:
   dispatch:
     enable: True
     Ascend: ArgMaxAscend
-    CPU: None
     GPU: None
