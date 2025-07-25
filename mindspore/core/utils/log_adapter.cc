@@ -1014,8 +1014,7 @@ MS_CORE_API void mindspore_log_init(void) {
 #endif
 #ifdef USE_GLOG
 #define google mindspore_private
-  static bool is_glog_initialzed = false;
-  if (!is_glog_initialzed) {
+  if (!google::IsGoogleLoggingInitialized()) {
     std::string logtostderr = mindspore::GetEnv("GLOG_logtostderr");
     std::string log_dir = mindspore::GetEnv("GLOG_log_dir");
     if (logtostderr == "0" && !log_dir.empty()) {
@@ -1026,7 +1025,6 @@ MS_CORE_API void mindspore_log_init(void) {
     }
 
     google::InitGoogleLogging("mindspore");
-    is_glog_initialzed = true;
   }
 #undef google
 #endif
