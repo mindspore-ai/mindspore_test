@@ -17,34 +17,36 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #include <algorithm>
+#include <exception>
 #include <memory>
 #include <string>
 #include <vector>
+#include "pybind11/pybind11.h"
 #include "utils/log_adapter.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
 #include "mindspore/ops/op_def/image_op_name.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_exception.h"
+#include "include/common/utils/python_adapter.h"
 
 constexpr char kOptimizerEndFlag[] = "optimizer_end";
 
 namespace mindspore::device::ascend {
 
-static std::string GetCurDir() {
-#ifndef _WIN32
-  Dl_info dlInfo;
-  if (dladdr(reinterpret_cast<void *>(GetCurDir), &dlInfo) == 0) {
-    MS_LOG(WARNING) << "GetCurDir fetch dladdr error.";
+namespace {
+std::string GetMindIOPath() {
+  try {
+    const char mindio_pkg_name[] = "mindio_ttp";
+    py::gil_scoped_acquire acquire;
+    py::module mindio_ttp = python_adapter::GetPyModule(mindio_pkg_name);
+    py::list path_attr = python_adapter::GetPyObjAttr(mindio_ttp, "__path__");
+    return py::cast<std::string>(path_attr[0]);
+  } catch (const std::exception &e) {
+    MS_LOG(WARNING) << "Try to get mindio path failed: " << e.what();
     return "";
   }
-  std::string curSoPath(dlInfo.dli_fname);
-  auto curDir = curSoPath.substr(0, curSoPath.find_last_of('/') + 1);
-  MS_LOG(INFO) << "Get cur so dir is " << curDir;
-  return curDir;
-#else
-  return "";
-#endif
 }
+}  // namespace
 
 OptimizerEventInfo &OptimizerEventInfo::GetInstance() {
   static OptimizerEventInfo instance;
@@ -121,37 +123,38 @@ TensorReportUtils &TensorReportUtils::GetInstance() {
   static TensorReportUtils instance;
   static std::once_flag instInitFlag = {};
   std::call_once(instInitFlag, [&]() {
-    auto curDir = GetCurDir();
-    const std::string &msPrefix = "mindspore/lib/plugin";
-    auto found = curDir.find(msPrefix);
-    if (found != std::string::npos) {
-      auto commPrefix = curDir.substr(0, found);
-      const std::string &tftMsPrefix = commPrefix + "mindio_ttp/mindspore_api/";
-      const std::string &tftCommPrefix = commPrefix + "mindio_ttp/framework_ttp/";
-      const std::vector<string> depLibs = {"libttp_framework.so"};
-      for (auto lPath : depLibs) {
-        auto libPath = tftCommPrefix + lPath;
-        void *handle = dlopen(libPath.c_str(), RTLD_LAZY);
-        if (!handle) {
-          MS_LOG(WARNING) << "MindIO feature is switched on, but can't find MindIO install library: " << libPath
-                          << "; Please check if MindIO package installed correctly!";
-          return;
-        }
-      }
-      auto tftSoPath = tftMsPrefix + "libttp_c_api.so";
-      void *handle = dlopen(tftSoPath.c_str(), RTLD_LAZY);
-      MS_LOG(DEBUG) << "Start dlopen TFT so path." << tftSoPath;
-      if (handle) {
-        MS_LOG(INFO) << "dlopen TFT so path successful." << tftSoPath;
-        auto startFunc = DlsymWithCast<TFT_StartUpdatingOsFunPtr>(handle, "MindioTtpSetOptimStatusUpdating");
-        if (startFunc) {
-          MS_LOG(INFO) << "Found TFT optimizer status updating function.";
-          instance.SetTFTCallBack(startFunc);
-        } else {
-          MS_LOG(WARNING) << "MindIO feature is switched on, but can't find report function: "
-                             "MindioTtpSetOptimStatusUpdating; Please check if MindIO package installed correctly!";
-        }
-      }
+    std::string mindio_path = GetMindIOPath();
+    if (mindio_path.empty()) {
+      MS_LOG(WARNING) << "MindIO feature is switched on, but can't find MindIO package";
+      return;
+    }
+
+    // open dependent library libttp_framework.so for libttp_c_api.so
+    const std::string ttp_framework_file = "/framework_ttp/libttp_framework.so";
+    auto framework_so_path = mindio_path + ttp_framework_file;
+    if (dlopen(framework_so_path.c_str(), RTLD_LAZY) == nullptr) {
+      MS_LOG(WARNING) << "MindIO feature is switched on, but try to open library " << ttp_framework_file
+                      << " failed, error: " << dlerror();
+      return;
+    }
+
+    const std::string ttp_so_file = "/mindspore_api/libttp_c_api.so";
+    auto ttp_so_path = mindio_path + ttp_so_file;
+    void *handle = dlopen(ttp_so_path.c_str(), RTLD_LAZY);
+    MS_LOG(DEBUG) << "Start dlopen TFT so file " << ttp_so_path << ".";
+    if (handle == nullptr) {
+      MS_LOG(WARNING) << "MindIO feature is switched on, but try to open library " << ttp_so_path
+                      << " failed, error: " << dlerror();
+      return;
+    }
+    MS_LOG(INFO) << "dlopen TFT so file " << ttp_so_path << " successful.";
+    auto tft_update_start_func = DlsymWithCast<TFT_StartUpdatingOsFunPtr>(handle, "MindioTtpSetOptimStatusUpdating");
+    if (tft_update_start_func) {
+      MS_LOG(INFO) << "Found TFT optimizer status updating function.";
+      instance.SetTFTCallBack(tft_update_start_func);
+    } else {
+      MS_LOG(WARNING) << "MindIO feature is switched on, but can't find report function: "
+                         "MindioTtpSetOptimStatusUpdating; Please check if MindIO package installed correctly!";
     }
   });
   return instance;
