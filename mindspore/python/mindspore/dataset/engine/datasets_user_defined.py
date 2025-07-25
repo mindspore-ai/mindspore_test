@@ -816,25 +816,6 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         collate_fn (Callable[List[numpy.ndarray]], optional): Define how to merge a list of data into a batch.
             Only valid if `batch_sampler` is used. Default: ``None`` , do not use collation function.
 
-    Raises:
-        RuntimeError: If source raises an exception during execution.
-        RuntimeError: If len of column_names does not match output len of source.
-        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
-        ValueError: If sampler and shuffle are specified at the same time.
-        ValueError: If sampler and sharding are specified at the same time.
-        ValueError: If `num_shards` is specified but shard_id is None.
-        ValueError: If shard_id is specified but `num_shards` is None.
-        ValueError: If `shard_id` is not in range of [0, `num_shards` ).
-        TypeError: If `batch_sampler` is not iterable.
-        ValueError: If `batch_sampler` is specified together with `num_samples` ,
-            `shuffle` , `num_shards` , `shard_id` and `sampler`.
-        TypeError: If `collate_fn` is not callable.
-        ValueError: If `collate_fn` is specified while `batch_sampler` is None.
-
-    Tutorial Examples:
-        - `Load & Process Data With Dataset Pipeline
-          <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
-
     .. warning::
         `GeneratorDataset` uses `dill` module implicitly in multiprocessing `spawn` mode to serialize/deserialize
         `source`, which is known to be insecure. It is possible to construct malicious pickle data which will
@@ -888,6 +869,21 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
     .. include:: mindspore.dataset.sampler.txt
+
+    Raises:
+        RuntimeError: If source raises an exception during execution.
+        RuntimeError: If len of column_names does not match output len of source.
+        ValueError: If `num_parallel_workers` exceeds the max thread numbers.
+        ValueError: If sampler and shuffle are specified at the same time.
+        ValueError: If sampler and sharding are specified at the same time.
+        ValueError: If `num_shards` is specified but shard_id is None.
+        ValueError: If shard_id is specified but `num_shards` is None.
+        ValueError: If `shard_id` is not in range of [0, `num_shards` ).
+        ValueError: If `batch_sampler` is specified together with `num_samples` ,
+            `shuffle` , `num_shards` , `shard_id` and `sampler`.
+        ValueError: If `collate_fn` is specified while `batch_sampler` is None.
+        TypeError: If `batch_sampler` is not iterable.
+        TypeError: If `collate_fn` is not callable.
 
     Examples:
         >>> import mindspore.dataset as ds
@@ -947,6 +943,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         >>>
         >>> # list, dict, tuple of Python is also random accessible
         >>> dataset = ds.GeneratorDataset(source=[(np.array(0),), (np.array(1),), (np.array(2),)], column_names=["col"])
+
+    Tutorial Examples:
+        - `Load & Process Data With Dataset Pipeline
+          <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/dataset_gallery.html>`_
     """
 
     @check_generator_dataset
