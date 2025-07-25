@@ -28,6 +28,7 @@
 #include <numeric>
 
 #include "plugin/res_manager/ascend/mbuf_manager/mbuf_receive_manager.h"
+#include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/res_manager/ascend/symbol_interface/acl_rt_symbol.h"
@@ -58,6 +59,8 @@ void AscendDeviceResManager::Destroy() {
   if (!initialized_) {
     return;
   }
+  // To avoid call aclrtProcessReport after process exit, we should to clear all callback threads first.
+  AscendStreamMng::GetInstance().Clear();
   MS_EXCEPTION_IF_NULL(ascend_res_manager_);
   (void)ascend_res_manager_->DestroyAllEvents();
   ascend_res_manager_->Destroy();
