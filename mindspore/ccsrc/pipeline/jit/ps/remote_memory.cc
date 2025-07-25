@@ -21,6 +21,8 @@
 #include <vector>
 #include <set>
 #include "ir/core_ops_primitive.h"
+#include "pipeline/jit/ps/parse/resolve.h"
+#include "pipeline/jit/ps/parse/parse.h"
 
 namespace mindspore {
 namespace remote_memory {
@@ -94,6 +96,83 @@ std::vector<DetachInfo> CollectDetachInfo(const FuncGraphManagerPtr &mng, const 
   }
   return detach_info_list;
 }
+
+AnfNodePtr GenerateWrappedCallFgNode(const FuncGraphPtr &wrapped_fg, const FuncGraphPtr &fg,
+                                     const py::object &prefetch_elements) {
+  AnfNodePtrList wrapped_inputs{NewValueNode(fg)};
+  // No need to prefetch.
+  if (py::isinstance<py::none>(prefetch_elements)) {
+    for (size_t i = 0; i < fg->get_inputs().size(); ++i) {
+      (void)wrapped_inputs.emplace_back(wrapped_fg->add_parameter());
+    }
+    return wrapped_fg->NewCNodeInOrder(wrapped_inputs);
+  }
+  if (!py::isinstance<py::tuple>(prefetch_elements) && !py::isinstance<py::list>(prefetch_elements)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "prefetch_elements should only be none, tuple or list but got: "
+                               << py::str(prefetch_elements);
+  }
+  auto prefetch_tuple = py::tuple(prefetch_elements);
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
+  AnfNodePtrList prefetch_results_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < py::len(prefetch_tuple); ++i) {
+    auto prefetch_param_node = resolver.ResolveParameterObj(wrapped_fg, prefetch_tuple[i]);
+    // todo: Current no depend list and sync.
+    auto empty_depend_list = std::make_shared<ValueTuple>(ValuePtrList());
+    AnfNodePtrList cur_prefetch_inputs{NewValueNode(prim::kPrimPrefetch), prefetch_param_node,
+                                       NewValueNode(empty_depend_list), NewValueNode(MakeValue(false))};
+    auto prefetch_result = wrapped_fg->NewCNodeInOrder(cur_prefetch_inputs);
+    (void)prefetch_results_inputs.emplace_back(prefetch_result);
+  }
+  auto prefetch_result = wrapped_fg->NewCNodeInOrder(prefetch_results_inputs);
+  for (size_t i = 0; i < fg->get_inputs().size(); ++i) {
+    auto wrapped_fg_param = wrapped_fg->add_parameter();
+    auto wrapper_depend_input =
+      wrapped_fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), wrapped_fg_param, prefetch_result});
+    (void)wrapped_inputs.emplace_back(wrapper_depend_input);
+  }
+  return wrapped_fg->NewCNodeInOrder(wrapped_inputs);
+}
+
+AnfNodePtr GenerateWrapperFgReturnNode(const AnfNodePtr &node, const FuncGraphPtr &fg, const py::object &detach,
+                                       bool update) {
+  // No elements to detach.
+  if (py::isinstance<py::none>(detach)) {
+    return node;
+  }
+  if (!py::isinstance<py::tuple>(detach) && !py::isinstance<py::list>(detach)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "detach_elements should only be none, tuple or list but got: " << py::str(detach);
+  }
+  parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
+  auto detach_tuple = py::tuple(detach);
+  AnfNodePtrList detach_nodes;
+  for (size_t i = 0; i < py::len(detach_tuple); ++i) {
+    auto detach_node = resolver.ResolveParameterObj(fg, detach_tuple[i]);
+    (void)detach_nodes.push_back(detach_node);
+  }
+  AnfNodePtr node_after_update = node;
+  if (update) {
+    // todo: No need to update all parameters? Only requires grad parameters or non-optimizer parameters need.
+    AnfNodePtrList update_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
+    for (auto detach_node : detach_nodes) {
+      auto update_result =
+        fg->NewCNodeInOrder({NewValueNode(prim::kPrimToRemote), detach_node, node, NewValueNode(MakeValue(false))});
+      (void)update_result_inputs.emplace_back(update_result);
+    }
+    auto update_result_node = fg->NewCNodeInOrder(update_result_inputs);
+    node_after_update = fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), node, update_result_node});
+  }
+  AnfNodePtrList detach_result_inputs{NewValueNode(prim::kPrimMakeTuple)};
+  for (auto detach_node : detach_nodes) {
+    auto detach_result = fg->NewCNodeInOrder({NewValueNode(prim::kPrimDetach), detach_node, node_after_update,
+                                              NewValueNode(MakeValue(false))});
+    (void)detach_result_inputs.emplace_back(detach_result);
+  }
+  auto detach_result_node = fg->NewCNodeInOrder(detach_result_inputs);
+  auto wrapper_return_node =
+    fg->NewCNodeInOrder({NewValueNode(prim::kPrimDepend), node_after_update, detach_result_node});
+  return wrapper_return_node;
+}
+
 }  // namespace
 
 void AddDetachToGraph(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
@@ -186,6 +265,44 @@ void InsertPrefetchForLoad(const FuncGraphManagerPtr &mng, const FuncGraphPtr &f
     AnfNodePtrList update_input{NewValueNode(prim::kPrimUpdateState), NewValueNode(kUMonad), prefetch_node};
     auto update_node = cur_fg->NewCNode(update_input);
     (void)tr.SetEdge(node, load_monad_index, update_node);
+  }
+  tr.Commit();
+}
+
+FuncGraphPtr WrapGraphWithRemoteOps(const FuncGraphPtr &fg, const py::object &prefetch_elements,
+                                    const py::object &detach_elements, bool update_detach_elements) {
+  MS_EXCEPTION_IF_NULL(fg);
+  FuncGraphPtr wrapped_fg = std::make_shared<FuncGraph>();
+  auto wrapped_call_node = GenerateWrappedCallFgNode(wrapped_fg, fg, prefetch_elements);
+  auto wrapped_return_node =
+    GenerateWrapperFgReturnNode(wrapped_call_node, wrapped_fg, detach_elements, update_detach_elements);
+  wrapped_fg->set_output(wrapped_return_node);
+  return wrapped_fg;
+}
+
+void AddRemoteOpsToGraphs(const FuncGraphManagerPtr &mng, const FuncGraphPtr &func_graph) {
+  auto tr = mng->Transact();
+  const AnfNodePtrList &all_nodes = mindspore::TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  for (auto node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    constexpr size_t prim_index = 0;
+    constexpr auto remote_memory_info = "remote_memory_info";
+    auto cnode = node->cast_ptr<CNode>();
+    auto prim_fg = GetValueNode<FuncGraphPtr>(cnode->input(prim_index));
+    if (prim_fg == nullptr) {
+      continue;
+    }
+    if (!prim_fg->has_attr(remote_memory_info)) {
+      continue;
+    }
+    MS_LOG(INFO) << "Wrap remote ops for function graph: " << prim_fg->ToString();
+    auto remote_memory_info_obj = prim_fg->get_attr(remote_memory_info)->cast<parse::PyObjectWrapperPtr>()->obj();
+    auto prefetch_list = py::getattr(remote_memory_info_obj, "prefetch");
+    auto detach_list = py::getattr(remote_memory_info_obj, "detach");
+    auto new_prim_fg = WrapGraphWithRemoteOps(prim_fg, prefetch_list, detach_list, false);
+    tr.SetEdge(node, prim_index, NewValueNode(new_prim_fg));
   }
   tr.Commit();
 }

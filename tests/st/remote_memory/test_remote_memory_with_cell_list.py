@@ -19,48 +19,51 @@ from mindspore import jit, ops
 from mindspore import Tensor, Parameter
 from mindspore.nn import Cell, CellList
 from tests.mark_utils import arg_mark
+from mindspore import context
+
+context.set_context(mode=context.GRAPH_MODE, save_graphs=True, save_graphs_path="./ir")
+
+
+class NetA(Cell):
+    def __init__(self):
+        super(NetA, self).__init__()
+        self.net_a_param_1 = Parameter(Tensor([1, 1, 1]), name="net_a_param_1")
+        self.net_a_param_2 = Parameter(Tensor([2, 2, 2]), name="net_a_param_2")
+
+    def construct(self, m):
+        m = ops.relu(m + self.net_a_param_1 + self.net_a_param_2)
+        return m
+
+
+class NetB(Cell):
+    def __init__(self):
+        super(NetB, self).__init__()
+        self.net_b_param_1 = Parameter(Tensor([1, 1, 1]), name="net_b_param_1")
+        self.net_b_param_2 = Parameter(Tensor([2, 2, 2]), name="net_b_param_2")
+
+    def construct(self, m):
+        m = ops.relu(m + self.net_b_param_1 + self.net_b_param_2)
+        return m
+
+
+class NetC(Cell):
+    def __init__(self):
+        super(NetC, self).__init__()
+        self.net_c_param_1 = Parameter(Tensor([1, 1, 1]), name="net_c_param_1")
+        self.net_c_param_2 = Parameter(Tensor([2, 2, 2]), name="net_c_param_2")
+
+    def construct(self, m):
+        m = ops.relu(m + self.net_c_param_1 + self.net_c_param_2)
+        return m
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_cell_list_prefetch_and_detach():
+def test_cell_list_prefetch_and_detach_with_default_offset():
     """
-    Feature: Remote memory base operator
-    Description: Base scene.
+    Feature: Test CellList prefetch.
+    Description: CellList prefetch.
     Expectation: No Exception.
     """
-    class NetA(Cell):
-        def __init__(self):
-            super(NetA, self).__init__()
-            self.net_a_param_1 = Parameter(Tensor([1, 1, 1]), name="net_a_param_1")
-            self.net_a_param_2 = Parameter(Tensor([2, 2, 2]), name="net_a_param_2")
-
-        def construct(self, m):
-            m = ops.relu(m + self.net_a_param_1 + self.net_a_param_2)
-            return m
-
-
-    class NetB(Cell):
-        def __init__(self):
-            super(NetB, self).__init__()
-            self.net_b_param_1 = Parameter(Tensor([1, 1, 1]), name="net_b_param_1")
-            self.net_b_param_2 = Parameter(Tensor([2, 2, 2]), name="net_b_param_2")
-
-        def construct(self, m):
-            m = ops.relu(m + self.net_b_param_1 + self.net_b_param_2)
-            return m
-
-
-    class NetC(Cell):
-        def __init__(self):
-            super(NetC, self).__init__()
-            self.net_c_param_1 = Parameter(Tensor([1, 1, 1]), name="net_c_param_1")
-            self.net_c_param_2 = Parameter(Tensor([2, 2, 2]), name="net_c_param_2")
-
-        def construct(self, m):
-            m = ops.relu(m + self.net_c_param_1 + self.net_c_param_2)
-            return m
-
-
     class Net(Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -69,8 +72,37 @@ def test_cell_list_prefetch_and_detach():
             self.cell_list.append(NetB())
             self.cell_list.append(NetC())
             self.layer_num = 3
+            self.cell_list.set_weight_prefetch(1)
 
-        @jit
+        def construct(self, m):
+            for i in range(self.layer_num):
+                m = self.cell_list[i](m)
+            return m
+
+
+    x = Tensor([1, 1, 1])
+    net = Net()
+    ret = net(x)
+    assert np.all(ret.asnumpy() == np.array((10, 10, 10)))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cell_list_prefetch_and_detach_with_custom_offset():
+    """
+    Feature: Test CellList prefetch.
+    Description: CellList prefetch.
+    Expectation: No Exception.
+    """
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.cell_list = CellList()
+            self.cell_list.append(NetA())
+            self.cell_list.append(NetB())
+            self.cell_list.append(NetC())
+            self.layer_num = 3
+            self.cell_list.set_weight_prefetch(offset=2)
+
         def construct(self, m):
             for i in range(self.layer_num):
                 m = self.cell_list[i](m)

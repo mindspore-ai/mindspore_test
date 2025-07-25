@@ -1078,7 +1078,8 @@ bool InsertPrefetchAction(const ResourcePtr &resource) {
   if (func_graph == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "InsertPrefetchAction failed, graph is null";
   }
-  remote_memory::InsertPrefetchForLoad(mng, func_graph);
+  //remote_memory::InsertPrefetchForLoad(mng, func_graph);
+  remote_memory::AddRemoteOpsToGraphs(mng, func_graph);
   return true;
 }
 
@@ -2109,10 +2110,10 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
-  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
-  if (enable_remote) {
+//  static const auto enable_remote = (common::GetCompileConfig("ENABLE_REMOTE") == "1");
+//  if (enable_remote) {
     (void)actions.emplace_back(std::make_pair("insert_prefetch", InsertPrefetchAction));
-  }
+//  }
 
   (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
 
