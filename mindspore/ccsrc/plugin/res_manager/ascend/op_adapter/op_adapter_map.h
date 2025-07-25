@@ -590,6 +590,7 @@ constexpr const char kNameInplaceCopy[] = "InplaceCopy";
 constexpr const char kNameAlltoAllAllGatherBatchMatMul[] = "AlltoAllAllGatherBatchMatMul";
 constexpr const char kNameBatchMatMulReduceScatterAlltoAll[] = "BatchMatMulReduceScatterAlltoAll";
 constexpr const char kNameMeanExt[] = "MeanExt";
+constexpr const char kNameAlltoAll[] = "AlltoAll";
 
 class OpAdapterDesc;
 
