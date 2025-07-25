@@ -42,7 +42,7 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView)
+    SearchSorted, Meshgrid, Squeeze, Slice, TransposeExtView, MaskedScatter)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros, TypeAs
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -3972,52 +3972,6 @@ class RangeV2(Primitive):
         self.init_prim_io_names(inputs=['start', 'limit', 'delta'], outputs=['output'])
         validator.check_value_type("maxlen", maxlen, [int], self.name)
         validator.check_positive_int(maxlen, "maxlen", self.name)
-
-
-class MaskedScatter(Primitive):
-    """
-    Updates the value in the input with value in `updates` according to the `mask`.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Inputs:
-        - **x** (Tensor): The input Tensor to be updated.
-        - **mask** (Tensor[bool]): The mask Tensor indicating which elements should be modified or replaced.
-          The shapes of `mask` and `x` must be the same or broadcastable.
-        - **updates** (Tensor): The values to scatter into the target tensor `x`. It has the same data type as `x`. The
-          number of elements must be greater than or equal to the number of True's in `mask`.
-
-    Outputs:
-        Tensor, with the same type and shape as `x`.
-
-    Raises:
-        TypeError: If `x`, `mask` or `updates` is not a Tensor.
-        TypeError: If data type of `x` is not be supported.
-        TypeError: If dtype of `mask` is not bool.
-        TypeError: If the dim of `x` less than the dim of `mask`.
-        ValueError: If `mask` can not be broadcastable to `x`.
-        ValueError: If the number of elements in `updates` is less than number of True's in `mask`.
-
-    Supported Platforms:
-        ``Ascend`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> mask = Tensor(np.array([True, True, False, True]), mindspore.bool)
-        >>> updates = Tensor(np.array([5., 6., 7.]), mindspore.float32)
-        >>> output = ops.MaskedScatter()(input_x, mask, updates)
-        >>> print(output)
-        [5. 6. 3. 7.]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize MaskedScatter"""
-        self.init_prim_io_names(inputs=['x', 'mask', 'updates'], outputs=['y'])
 
 
 class _TensorScatterOp(PrimitiveWithInfer):
