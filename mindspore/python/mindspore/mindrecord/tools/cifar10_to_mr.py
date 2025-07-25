@@ -49,11 +49,6 @@ class Cifar10ToMR:
         >>> mindrecord_file = "/path/to/mindrecord/file"
         >>> cifar10_to_mr = Cifar10ToMR(cifar10_dir, mindrecord_file)
         >>> cifar10_to_mr.transform()
-
-    .. warning::
-        Cifar10ToMR.transform() uses `pickle` module implicitly, which is known to be insecure.
-        It is possible to construct malicious pickle data which will execute arbitrary code during unpickling.
-        Never load data that could have come from an untrusted source, or that could have been tampered with.
     """
 
     def __init__(self, source, destination):
@@ -111,6 +106,11 @@ class Cifar10ToMR:
 
         Note:
             Please refer to the Examples of :class:`mindspore.mindrecord.Cifar10ToMR` .
+
+        .. warning::
+            `Cifar10ToMR.transform()` uses `pickle` module implicitly, which is known to be insecure.
+            It is possible to construct malicious pickle data which will execute arbitrary code during unpickling.
+            Never load data that could have come from an untrusted source, or that could have been tampered with.
 
         Args:
             fields (list[str], optional): A list of index fields. Default: ``None`` . For index field settings,
