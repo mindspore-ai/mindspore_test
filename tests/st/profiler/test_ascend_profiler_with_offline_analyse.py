@@ -42,8 +42,8 @@ def test_ascend_profiler_offline_analyse_with_single_device():
     with tempfile.TemporaryDirectory() as tmpdir:
         profiler = Profiler(output_path=tmpdir)
         net = TinyAddNet()
-        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
-        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, 32])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, 32])
         net(t0, t1)
         profiler.stop()
         ProfilerInterface.finalize()
@@ -66,8 +66,8 @@ def test_ascend_profiler_offline_analyse_with_multi_devices():
     with tempfile.TemporaryDirectory() as tmpdir:
         profiler = Profiler(output_path=tmpdir)
         net = TinyAddNet()
-        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
-        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, 32])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, 32])
         net(t0, t1)
         profiler.stop()
         ProfilerInterface.finalize()
@@ -97,12 +97,10 @@ def test_new_profiler_offline_analyse_with_single_device():
                                              on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
                                                  tmpdir, analyse_flag=False))
         net = TinyAddNet()
-        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
-        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, 32])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, 32])
         net(t0, t1)
         profile.stop()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
         analyse(profiler_path=tmpdir, data_simplification=False)
         ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
         check_ascend_offline_analyse_files(ascend_ms_dir, True)
@@ -124,12 +122,10 @@ def test_new_profiler_offline_analyse_with_multi_devices():
                                              on_trace_ready=mindspore.profiler.tensorboard_trace_handler(
                                                  tmpdir, analyse_flag=False))
         net = TinyAddNet()
-        t0 = Tensor(dtype=mindspore.float32, shape=[32, None])
-        t1 = Tensor(dtype=mindspore.float32, shape=[32, None])
+        t0 = Tensor(dtype=mindspore.float32, shape=[32, 32])
+        t1 = Tensor(dtype=mindspore.float32, shape=[32, 32])
         net(t0, t1)
         profile.stop()
-        ProfilerInterface.finalize()
-        ProfilerInterface.clear()
         # copy profiler data to rank0 and rank1
         raw_ascend_ms_dir = glob.glob(f"{tmpdir}/*_ascend_ms")[0]
         copy_ascend_ms_dir = os.path.join(tmpdir, 'copy_ascend_ms')
