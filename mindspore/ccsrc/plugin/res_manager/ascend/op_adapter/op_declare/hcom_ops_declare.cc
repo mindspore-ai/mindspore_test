@@ -67,4 +67,12 @@ INPUT_MAP(HcomAllToAllV) = {{1, INPUT_DESC(send_data)},
 OUTPUT_MAP(HcomAllToAllV) = {{0, OUTPUT_DESC(recv_data)}};
 ATTR_MAP(HcomAllToAllV) = {};
 REG_ADPT_DESC(HcomAllToAllV, kNameAlltoAllVGE, ADPT_DESC(HcomAllToAllV));
+
+// HcomAllToAll
+INPUT_MAP(HcomAllToAll) = {{1, INPUT_DESC(x)}};
+OUTPUT_MAP(HcomAllToAll) = {{0, OUTPUT_DESC(y)}};
+ATTR_MAP(HcomAllToAll) = {{"group", ATTR_DESC(group, AnyTraits<std::string>())},
+                          {"no_eliminate", ATTR_DESC(no_eliminate, AnyTraits<bool>())},
+                          {"rank_size", ATTR_DESC(rank_size, AnyTraits<int64_t>())}};
+REG_ADPT_DESC(HcomAllToAll, kNameAlltoAll, ADPT_DESC(HcomAllToAll));
 }  // namespace mindspore::device::ascend
