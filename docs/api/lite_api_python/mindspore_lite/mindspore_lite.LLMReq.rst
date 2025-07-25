@@ -5,34 +5,40 @@ mindspore_lite.LLMReq
 
     LLMEngine的请求类，用于表示多轮推理任务。
 
-    .. py:method:: next_req_id
-
-        获取下一个请求id。
-
-    .. py:method:: req_id
-        :property:
-
-        该推理任务的请求id。
-
-    .. py:method:: prompt_length
-        :property:
-
-        该推理任务的提示词长度。
-
-    .. py:method:: prompt_cluster_id
-        :property:
-
-        LLMEngine中该推理任务的提示词集群id。
+    参数：
+        - **prompt_cluster_id** (int) - 该推理任务的集群id。
+        - **req_id** (int) - 该推理任务的请求id。
+        - **prompt_length** (int) - 该推理任务的提示词长度。
 
     .. py:method:: decoder_cluster_id
         :property:
 
         LLMEngine中该推理任务的解码器集群id。
 
+    .. py:method:: next_req_id
+        :staticmethod:
+
+        获取下一个请求id。
+
+    .. py:method:: prompt_cluster_id
+        :property:
+
+        LLMEngine中该推理任务的提示词集群id。
+
+    .. py:method:: prompt_length
+        :property:
+
+        该推理任务的提示词长度。
+
     .. py:method:: prefix_id
         :property:
 
         LLMEngine中该推理任务的解码器集群id前缀。
+
+    .. py:method:: req_id
+        :property:
+
+        该推理任务的请求id。
 
     .. py:method:: sequence_length
         :property:

@@ -166,10 +166,6 @@ def all_finite(inputs):
         >>> import numpy as np
         >>> x = (Tensor(np.array([np.log(-1), 1, np.log(0)])), Tensor(np.array([1.0])))
         >>> output = amp.all_finite(x)
-
-    Tutorial Examples:
-        - `Automatic Mix Precision - Loss Scaling
-          <https://mindspore.cn/tutorials/en/master/beginner/mixed_precision.html#loss-scaling>`_
     """
     inputs = mutable(inputs)
     _check_overflow_mode = os.environ.get('MS_ASCEND_CHECK_OVERFLOW_MODE')
@@ -184,9 +180,6 @@ class LossScaler(ABC):
     Derived class needs to implement all of its methods. During training, `scale` and `unscale` is used
     to scale and unscale the loss value and gradients to avoid overflow, `adjust` is used to update the
     loss scale value.
-
-    For more information, refer to the `tutorials  <https://mindspore.cn/tutorials/en/master/beginner/
-    mixed_precision.html#loss-scaling>`_.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
@@ -377,10 +370,6 @@ class DynamicLossScaler(LossScaler):
 
         Returns:
             Union(Tensor, tuple(Tensor)), the scaled value.
-
-        Tutorial Examples:
-            - `Automatic Mix Precision - Loss Scaling
-              <https://mindspore.cn/tutorials/en/master/beginner/mixed_precision.html#loss-scaling>`_
         """
         inputs = mutable(inputs)
         return _grad_scale_map(self.scale_value, inputs)
@@ -394,10 +383,6 @@ class DynamicLossScaler(LossScaler):
 
         Returns:
             Union(Tensor, tuple(Tensor)), the unscaled value.
-
-        Tutorial Examples:
-            - `Automatic Mix Precision - Loss Scaling
-              <https://mindspore.cn/tutorials/en/master/beginner/mixed_precision.html#loss-scaling>`_
         """
         inputs = mutable(inputs)
         return _grad_unscale_map(self.scale_value, inputs)
@@ -408,10 +393,6 @@ class DynamicLossScaler(LossScaler):
 
         Args:
             grads_finite (Tensor): a scalar bool Tensor indicating whether the grads are finite.
-
-        Tutorial Examples:
-            - `Automatic Mix Precision - Loss Scaling
-              <https://mindspore.cn/tutorials/en/master/beginner/mixed_precision.html#loss-scaling>`_
         """
         one = ops.ones((), self.scale_value.dtype)
         scale_mul_factor = self.scale_value * self.scale_factor
