@@ -167,7 +167,11 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<KernelTe
         scope_name = cnode->fullname_with_scope();
         auto first_input = cnode->input(1);
         MS_EXCEPTION_IF_NULL(first_input);
-        auto input_value = GetValueNode<StringImmPtr>(first_input);
+        auto abs = first_input->abstract();
+        MS_EXCEPTION_IF_NULL(abs);
+        auto input_value_track = abs->GetValueTrack();
+        MS_EXCEPTION_IF_NULL(input_value_track);
+        auto input_value = dyn_cast_ptr<StringImm>(input_value_track);
         MS_EXCEPTION_IF_NULL(input_value);
         string input_str = input_value->value();
         string new_scope_name = input_str + kNameSeparator + scope_name;
