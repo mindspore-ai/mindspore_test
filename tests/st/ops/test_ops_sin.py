@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.mint import sin
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -113,5 +113,4 @@ def test_ops_sin_dynamic_shape():
     x = generate_random_input((2, 3, 4, 5), np.float32)
     y = generate_random_input((2, 3, 4, 5, 6), np.float32)
 
-    TEST_OP(sin_forward_func
-            , [[ms.Tensor(x)], [ms.Tensor(y)]], 'sin')
+    TEST_OP(sin_forward_func, [[ms.Tensor(x)], [ms.Tensor(y)]])

@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import  ops, mint
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -96,4 +96,4 @@ def test_nn_identity_func_dynamic():
     """
     input1 = generate_random_input((2, 3, 4, 5), np.float32)
     input2 = generate_random_input((3, 3, 4), np.float32)
-    TEST_OP(identity_func, [[ms.Tensor(input1)], [ms.Tensor(input2)]], 'identity')
+    TEST_OP(identity_func, [[ms.Tensor(input1)], [ms.Tensor(input2)]])

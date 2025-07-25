@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -132,7 +132,9 @@ def test_tensor_select_ext_dynamic():
     dim2 = 2
     index2 = 3
     TEST_OP(select_ext_forward_func, [[ms_data1, dim1, index1], [ms_data2, dim2, index2]],
-            'select_ext_view', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -151,5 +153,5 @@ def test_tensor_select_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     condition2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.bool_))
     y2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(select_forward_func, [[ms_data1, condition1, y1], [ms_data2, condition2, y2]], 'select',
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(select_forward_func, [[ms_data1, condition1, y1], [ms_data2, condition2, y2]],
+            disable_mode=['GRAPH_MODE_GE'], case_config={'all_dim_zero': True})

@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import ops, mint, Tensor, jit, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.st.utils import test_utils
 
@@ -102,4 +102,6 @@ def test_logical_xor_dynamic_shape():
     x2, y2, _ = generate_random_input((3, 4), np.int64)
     x2 = Tensor(x2, dtype=ms.int64)
     y2 = Tensor(y2, dtype=ms.int64)
-    TEST_OP(logical_xor_forward_func, [[x, y], [x2, y2]], 'logical_xor', disable_grad=True)
+    TEST_OP(logical_xor_forward_func, [[x, y], [x2, y2]],
+            case_config={'disable_grad': True,
+                         'all_dim_zero': True})

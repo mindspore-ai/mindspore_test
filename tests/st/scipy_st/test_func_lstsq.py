@@ -19,7 +19,7 @@ from mindspore.scipy.linalg import lstsq
 
 import mindspore as ms
 from mindspore import Tensor, jit, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -144,4 +144,5 @@ def test_ops_lstsq_dynamic():
     inputs2 = [Tensor(A2), Tensor(B2)]
 
     TEST_OP(lstsq_forward_func, [inputs1, inputs2],
-            'lstsq_v2', disable_mode=["GRAPH_MODE"], disable_yaml_check=True)
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

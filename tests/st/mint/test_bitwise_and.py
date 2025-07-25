@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import ops, mint, Tensor, jit, context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 
@@ -101,8 +101,7 @@ def test_bitwise_and_dynamic_shape_scalar():
     x2, y2, _ = generate_random_input((3, 4), np.int64)
     x2 = Tensor(x2, dtype=ms.int64)
     y2 = 3
-    TEST_OP(bitwise_and_forward_func, [[x, y], [x2, y2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(bitwise_and_forward_func, [[x, y], [x2, y2]], disable_mode=['GRAPH_MODE_GE'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -118,8 +117,8 @@ def test_bitwise_and_dynamic_shape_tensor():
     x2, y2, _ = generate_random_input((3, 4), np.int64)
     x2 = Tensor(x2, dtype=ms.int64)
     y2 = Tensor(y2, dtype=ms.int64)
-    TEST_OP(bitwise_and_forward_func, [[x, y], [x2, y2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(bitwise_and_forward_func, [[x, y], [x2, y2]], disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
 
 def mint_bitwise_and_binary_compare(input_binary_data, output_binary_data):

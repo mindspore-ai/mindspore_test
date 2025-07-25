@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
@@ -111,7 +111,7 @@ def test_upsample_bilinear_2d_size_dynamic():
     input_case2 = Tensor(np.random.randn(4, 3, 15, 10), dtype=ms.float32)
     net = Net((100, 200), None)
     TEST_OP(net, [[input_case1], [input_case2]],
-            'UpsampleBilinear2d',
-            disable_input_check=True,
-            disable_yaml_check=True,
-            disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})

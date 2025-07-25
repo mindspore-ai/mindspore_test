@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -81,5 +81,7 @@ def test_inverse_dynamic_shape(mode):
     x1 = generate_random_input((3, 3), np.float32)
     x2 = generate_random_input((2, 4, 4), np.float32)
 
-    TEST_OP(inverse_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'matrix_inverse_ext',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(inverse_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'all_dim_zero': True})

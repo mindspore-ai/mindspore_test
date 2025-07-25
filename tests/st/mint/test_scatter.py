@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import mint, Tensor, jit, context, ops
@@ -135,7 +135,10 @@ def test_f_scatter_dynamic():
     Description: test auto grad of op Scatter.
     Expectation: expect correct result.
     """
-    scatter = ops.auto_generate.Scatter()
+    def scatter(input_x, dim, index, src):
+        op = ops.auto_generate.Scatter()
+        return op(input_x, dim, index, src)
+
     input_1 = Tensor(np.zeros((5, 5)), dtype=ms.float32)
     index_1 = Tensor(np.array([[0, 1, 2], [0, 1, 2], [0, 1, 2]]), dtype=ms.int64)
     src_1 = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
@@ -145,8 +148,11 @@ def test_f_scatter_dynamic():
     src_2 = Tensor(np.array([[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]]), dtype=ms.float32)
     dim_2 = 0
     # dynamic string is not supported
-    TEST_OP(scatter, [[input_1, dim_1, index_1, src_1],
-                      [input_2, dim_2, index_2, src_2]], 'scatter', disable_yaml_check=True)
+    TEST_OP(scatter,
+            [[input_1, dim_1, index_1, src_1],
+             [input_2, dim_2, index_2, src_2]],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -156,7 +162,10 @@ def test_f_scatter_scalar_value_dynamic():
     Description: test auto grad of op Scatter.
     Expectation: expect correct result.
     """
-    scatter = ops.auto_generate.ScatterValue()
+    def scatter(input_x, dim, index, src):
+        op = ops.auto_generate.ScatterValue()
+        return op(input_x, dim, index, src)
+
     input_1 = Tensor(np.zeros((5, 5)), dtype=ms.float32)
     index_1 = Tensor(np.array([[0, 1, 2], [0, 1, 2], [0, 1, 2]]), dtype=ms.int64)
     src_1 = 2.
@@ -165,5 +174,8 @@ def test_f_scatter_scalar_value_dynamic():
     index_2 = Tensor(np.array([[[0, 1], [1, 2], [2, 2]], [[0, 1], [1, 2], [2, 2]]]), dtype=ms.int64)
     src_2 = 3.
     dim_2 = 0
-    TEST_OP(scatter, [[input_1, dim_1, index_1, src_1],
-                      [input_2, dim_2, index_2, src_2]], 'scatter_value', disable_yaml_check=True)
+    TEST_OP(scatter,
+            [[input_1, dim_1, index_1, src_1],
+             [input_2, dim_2, index_2, src_2]],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])

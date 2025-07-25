@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit
 from mindspore.mint import narrow
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -122,4 +122,6 @@ def test_ops_narrow_backward_dynamic_shape():
     length2 = 5
 
     TEST_OP(narrow_forward_func, [[ms.Tensor(x1), dim1, start1, length1], [ms.Tensor(x2), dim2, start2, length2]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})

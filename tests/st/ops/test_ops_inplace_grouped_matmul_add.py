@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from mindspore import Tensor, context
 from mindspore import ops, mint
@@ -123,9 +123,10 @@ def test_gmm_dyn_shape():
             inputs_0,
             inputs_1,
         ],
-        "",
-        disable_input_check=True,
-        disable_mode=['GRAPH_MODE', 'PYNATIVE_MODE'],
-        disable_grad=True,
+        disable_mode=['GRAPH_MODE_GE', 'PYNATIVE_MODE'],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True,
+                     'deterministic_use_origin_inputs': True},
         inplace_update=True
     )

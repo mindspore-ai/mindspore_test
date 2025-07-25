@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -65,5 +65,4 @@ def test_ops_isnan_dynamic_shape_ascend(context_mode):
     ms.context.set_context(mode=context_mode)
     x1 = generate_random_input((2, 3, 4, 5), np.float32)
     x2 = generate_random_input((6, 7, 8), np.float32)
-    TEST_OP(isnan_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'isnan',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(isnan_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], disable_mode=['GRAPH_MODE_GE'])

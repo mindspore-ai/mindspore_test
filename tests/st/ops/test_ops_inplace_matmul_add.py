@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, context
@@ -97,8 +97,8 @@ def test_inplace_matmul_add_dyn_shape():
             list(generate_inputs(20, 30, 40, dtype=ms.bfloat16)),
             list(generate_inputs(20, 30, 40, batch=4, dtype=ms.bfloat16)),
         ],
-        "inplace_matmul_add",
-        disable_mode=['GRAPH_MODE', 'PYNATIVE_MODE'],
-        disable_grad=True,
+        disable_mode=['GRAPH_MODE_GE', 'PYNATIVE_MODE'],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_grad': True},
         inplace_update=True
     )

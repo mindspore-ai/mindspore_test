@@ -20,7 +20,7 @@ from mindspore import mint
 
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
@@ -75,4 +75,4 @@ def test_mint_logsigmoid_dyn():
     """
     input1 = ms.Tensor(np.random.randn(2, 3, 4), ms.float32)
     input2 = ms.Tensor(np.random.randn(2, 3, 4, 4), ms.float32)
-    TEST_OP(logsigmoid_forward_func, [[input1], [input2]], 'logsigmoid', disable_mode=["GRAPH_MODE"])
+    TEST_OP(logsigmoid_forward_func, [[input1], [input2]], disable_mode=["GRAPH_MODE_GE"])

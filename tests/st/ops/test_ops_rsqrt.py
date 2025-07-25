@@ -18,7 +18,7 @@ import pytest
 from mindspore import ops
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -116,4 +116,4 @@ def test_rsqrt_dynamic_shape():
     """
     ms_data1 = ms.Tensor(np.abs(np.random.randn(4, 5, 6).astype(np.float32)))
     ms_data2 = ms.Tensor(np.abs(np.random.randn(3, 2, 5, 1).astype(np.float32)))
-    TEST_OP(rsqrt_forward_func, [[ms_data1], [ms_data2]], 'rsqrt')
+    TEST_OP(rsqrt_forward_func, [[ms_data1], [ms_data2]])

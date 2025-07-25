@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit
 from mindspore.mint import cosh
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -110,4 +110,4 @@ def test_ops_cosh_dynamic_shape():
     """
     x1 = generate_random_input((2, 3, 4, 5), np.float32)
     x2 = generate_random_input((4, 5), np.float32)
-    TEST_OP(cosh_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'cosh')
+    TEST_OP(cosh_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

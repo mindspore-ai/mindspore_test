@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -104,5 +104,6 @@ def test_sort_dynamic_shape():
     tensor_2 = ms.Tensor(x2)
     dim_2 = 0
 
-    TEST_OP(sort_forward_func_dyn, [[tensor_1, dim_1], [tensor_2, dim_2]], 'sort_ext',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True)
+    TEST_OP(sort_forward_func_dyn, [[tensor_1, dim_1], [tensor_2, dim_2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

@@ -20,7 +20,7 @@ import mindspore.mint.nn as mnn
 from mindspore import Tensor
 import mindspore.context as context
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -178,12 +178,12 @@ def test_f_max_unpool2d_dynamic_shape():
     output_size2 = (1, 1, 4, 4)
     net = Net(kernel_size=2, stride=2, padding=0)
     TEST_OP(net, [[x1, indices1, output_size1], [x2, indices2, output_size2]],
-            'MaxUnpool2d',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])
 
     TEST_OP(max_unpool2d_forward_func, [[x1, indices1, 2, 2, 0, output_size1],
                                         [x2, indices2, 3, 3, 1, output_size2]],
-            'max_unpool2d',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])

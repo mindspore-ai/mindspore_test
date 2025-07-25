@@ -21,7 +21,7 @@ from mindspore import ops, nn
 from mindspore.common import dtype as mstype
 
 from tests.st.utils.test_utils import to_cell_obj, compare
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -91,7 +91,7 @@ def min_max_case_all_dyn(op_func, data_dtype=np.float32):
     disable_grad = False
     if not data_dtype in [np.float16, np.float32, np.float64, "bfloat16"]:
         disable_grad = True
-    TEST_OP(op_func, [input_case1, input_case2], '', disable_yaml_check=True, disable_grad=disable_grad)
+    TEST_OP(op_func, [input_case1, input_case2], disable_mode=["GRAPH_MODE_GE"], case_config={'disable_grad': disable_grad})
 
 
 def np_min(input_x):

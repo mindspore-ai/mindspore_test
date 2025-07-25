@@ -19,8 +19,8 @@ from mindspore.mint.nn.functional import smooth_l1_loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -196,7 +196,9 @@ def test_ops_smooth_l1_loss_dynamic_shape(reduction):
     beta2 = 2.1
 
     TEST_OP(smooth_l1_loss_forward_func, [[x1, target1, reduction, beta1], [x2, target2, reduction, beta2]],
-            "smooth_l1_loss", disable_input_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 def ops_smooth_l1_loss_binary_compare(input_binary_data, output_binary_data, reduction="mean", beta=1.0):

@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import mindspore as ms
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, jit
@@ -105,6 +105,8 @@ def test_moe_gating_top_k_softmax_dynamic():
     finished2 = np.random.uniform(-1, 1, size=(2, 520,)).astype(bool)
     k2 = 5
 
-    TEST_OP(moe_gating_topk_softmax_forward_func, [[Tensor(x1), Tensor(finished1), k1],\
-            [Tensor(x2), Tensor(finished2), k2]], 'moe_gating_top_k_softmax', disable_mode=['GRAPH_MODE'],\
-            disable_grad=True)
+    TEST_OP(moe_gating_topk_softmax_forward_func,
+            [[Tensor(x1), Tensor(finished1), k1], [Tensor(x2), Tensor(finished2), k2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_grad': True})

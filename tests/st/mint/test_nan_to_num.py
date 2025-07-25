@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -106,8 +106,7 @@ def test_nan_to_num_dynamic_shape():
     inf_num_2 = -255.0
     neg_inf_num_2 = 256.0
     TEST_OP(nan_to_num_forward_func, [[tensor_1, nan_num_1, inf_num_1, neg_inf_num_1],
-                                      [tensor_2, nan_num_2, inf_num_2, neg_inf_num_2]],
-            'nan_to_num',)
+                                      [tensor_2, nan_num_2, inf_num_2, neg_inf_num_2]])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

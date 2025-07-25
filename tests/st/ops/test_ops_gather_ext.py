@@ -20,7 +20,7 @@ import pytest
 import mindspore as ms
 from mindspore import ops, Tensor, jit, context
 from mindspore.common.api import _pynative_executor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import time
 
@@ -134,7 +134,9 @@ def test_gather_ext_dynamic_shape():
     ms_data2 = GenInputData(np.float32, (3, 7, 8, 3))
     ms_indices2 = Tensor(np.random.randint(8, size=(2, 6, 4, 3)))
     dim2 = 2
-    TEST_OP(call_gather, [[ms_data1, dim1, ms_indices1], [ms_data2, dim2, ms_indices2]], 'gather_d')
+    TEST_OP(call_gather, [[ms_data1, dim1, ms_indices1], [ms_data2, dim2, ms_indices2]],
+            disable_case=['ScalarTensor'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',

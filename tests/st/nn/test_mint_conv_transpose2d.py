@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.mint.nn as nn
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
@@ -43,5 +43,8 @@ def test_conv2d_transpose_dyn():
     output_size_1 = (40, 80)
     inputs_1 = [input_1, output_size_1]
 
-    TEST_OP(net, [inputs_0, inputs_1], '', disable_input_check=True,
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(net, [inputs_0, inputs_1],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True})

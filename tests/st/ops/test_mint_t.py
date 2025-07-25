@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -97,7 +97,7 @@ def test_t_dynamic_shape0():
     x = generate_random_input((2,), np.float32)
     y = generate_random_input((5, 6), np.float32)
 
-    TEST_OP(t_forward_func, [[ms.Tensor(x)], [ms.Tensor(y)]], 't_ext', disable_mode=["GRAPH_MODE"])
+    TEST_OP(t_forward_func, [[ms.Tensor(x)], [ms.Tensor(y)]], disable_mode=["GRAPH_MODE_GE"])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
@@ -111,4 +111,4 @@ def test_t_dynamic_shape1():
     x = generate_random_input((2, 3), np.float32)
     y = generate_random_input((8,), np.float32)
 
-    TEST_OP(t_forward_func, [[ms.Tensor(x)], [ms.Tensor(y)]], 't_ext', disable_mode=["GRAPH_MODE"])
+    TEST_OP(t_forward_func, [[ms.Tensor(x)], [ms.Tensor(y)]], disable_mode=["GRAPH_MODE_GE"])

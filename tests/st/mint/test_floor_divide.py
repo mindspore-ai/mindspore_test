@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -104,5 +104,6 @@ def test_floor_divide_dynamic_shape():
     x2 = generate_random_input((2, 3, 4), np.float32)
     other2 = generate_random_input((2, 3, 4), np.float32)
 
-    TEST_OP(floor_divide_forward_func, [[ms.Tensor(x1), ms.Tensor(other1)], [ms.Tensor(x2), ms.Tensor(other2)]],
-            '', disable_yaml_check=True)
+    TEST_OP(floor_divide_forward_func,
+            [[ms.Tensor(x1), ms.Tensor(other1)], [ms.Tensor(x2), ms.Tensor(other2)]],
+            case_config={'all_dim_zero': True})

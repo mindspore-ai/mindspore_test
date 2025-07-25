@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import context, Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 elu_grad_ext = ms.ops.auto_generate.EluGradExt()
 
@@ -78,7 +78,9 @@ def test_elu_grad_ext_dynamic_shape_testop():
 
     TEST_OP(elu_grad_ext, [[ms.Tensor(dy1), ms.Tensor(y1), alpha1, False],
                            [ms.Tensor(dy2), ms.Tensor(y2), alpha2, False]],
-            'elu_grad_ext', disable_grad=True, disable_input_check=True)
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -20,7 +20,7 @@ import pytest
 import mindspore as ms
 from mindspore.mint import remainder
 from mindspore import ops, set_context, Tensor, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -195,7 +195,15 @@ def test_remainder_dynamic(context_mode):
     inputs_seq_tensor_scalar = [[input_tensor_1, other_scalar_1], [input_tensor_2, other_scalar_2]]
     inputs_seq_scalar_tensor = [[input_scalar_1, other_tensor_1], [input_scalar_2, other_tensor_2]]
 
-    TEST_OP(remainder, inputs_seq_tensor_tensor, 'remainder_tensor_tensor', disable_mode=['GRAPH_MODE'])
-    TEST_OP(remainder, inputs_seq_tensor_scalar, 'remainder_tensor_scalar', disable_mode=['GRAPH_MODE'])
-    TEST_OP(remainder, inputs_seq_scalar_tensor, 'remainder_scalar_tensor', disable_mode=['GRAPH_MODE'],
-            disable_grad=True)
+    TEST_OP(remainder,
+            inputs_seq_tensor_tensor,
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True,
+                         'all_dim_zero': True})
+    TEST_OP(remainder,
+            inputs_seq_tensor_scalar,
+            disable_mode=['GRAPH_MODE_GE'])
+    TEST_OP(remainder,
+            inputs_seq_scalar_tensor,
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True})

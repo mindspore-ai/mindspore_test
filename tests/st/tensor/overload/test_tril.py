@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -94,8 +94,12 @@ def test_tensor_tril_dynamic():
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     diagonal2 = 2
     TEST_OP(tril_forward_func,
-            [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril',
-            disable_yaml_check=True, disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)
+            [[ms_data1, diagonal1], [ms_data2, diagonal2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_resize': True,
+                         'disable_nontensor_dynamic_type': 'STATIC_LEN'})
     TEST_OP(tril_forward_func,
-            [[ms_data1, diagonal1], [ms_data2, diagonal2]], 'tril_ext',
-            disable_nontensor_dynamic_type='STATIC_LEN', disable_resize=True)
+            [[ms_data1, diagonal1], [ms_data2, diagonal2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_resize': True,
+                         'disable_nontensor_dynamic_type': 'STATIC_LEN'})

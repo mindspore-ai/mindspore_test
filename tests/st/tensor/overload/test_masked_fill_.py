@@ -19,7 +19,7 @@ import random
 
 import mindspore as ms
 from mindspore import Tensor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
@@ -139,9 +139,9 @@ def test_tensor_masked_fill_tensor_dynamic():
             [Tensor(x1), Tensor(mask1), Tensor(y1)],
             [Tensor(x2), Tensor(mask2), Tensor(y2)],
         ],
-        "inplace_masked_fill_tensor",
-        disable_mode=["GRAPH_MODE"],
-        disable_input_check=True,
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True, 'all_dim_zero': True},
         inplace_update=True,
     )
 
@@ -167,8 +167,7 @@ def test_tensor_masked_fill_scalar_dynamic():
     TEST_OP(
         masked_fill__forward_func,
         [[Tensor(x1), Tensor(mask1), y1], [Tensor(x2), Tensor(mask2), y2]],
-        "inplace_masked_fill_scalar",
-        disable_mode=["GRAPH_MODE"],
-        disable_input_check=True,
+        disable_mode=["GRAPH_MODE_GE"],
+        case_config={'disable_input_check': True, 'all_dim_zero': True},
         inplace_update=True,
     )

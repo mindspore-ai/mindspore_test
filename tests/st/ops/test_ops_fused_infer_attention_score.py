@@ -22,7 +22,7 @@ from mindspore.common.dtype import _dtype_to_nptype
 from mindspore.ops import fused_infer_attention_score
 from mindspore.ops.function.nn_func import prompt_flash_attention
 from mindspore.ops.function.nn_func import incre_flash_attention
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -131,5 +131,8 @@ def test_ops_fused_infer_attention_score_dynamic(input_layout):
     TEST_OP(fias_forward_func,
             [[query1, key1, value1, head_num1, input_layout],
              [query2, key2, value2, head_num2, input_layout]],
-            'fused_infer_attention_score', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'], ignore_output_index=1, disable_grad=True)
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'ignore_output_index': 1})

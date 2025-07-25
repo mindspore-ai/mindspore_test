@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit, JitConfig
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -115,5 +115,5 @@ def test_take_dynamic_shape():
     tensor_y1 = ms.Tensor([2, 3], ms.int64)
     tensor_y2 = ms.Tensor([[2, 3], [4, 5]], ms.int64)
 
-    TEST_OP(mint_take_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'take',
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(mint_take_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]],
+            disable_mode=['GRAPH_MODE_GE'])

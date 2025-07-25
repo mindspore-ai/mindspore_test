@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 @test_utils.run_with_cell
@@ -127,4 +127,4 @@ def test_ops_trace_dynamic():
     inputs2 = [ms.Tensor(A2), offset2, axis3, axis4]
 
     TEST_OP(trace_forward_func, [inputs1, inputs2],
-            'trace_v2', disable_yaml_check=True)
+            disable_case=['ScalarTensor'])

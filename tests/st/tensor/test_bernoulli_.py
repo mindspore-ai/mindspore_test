@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit, Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_ones_input(shape, dtype):
@@ -136,10 +136,12 @@ def test_bernoulli_dynamic():
 
     input_seq1 = [Tensor(generate_ones_input((5, 5), np.float32)), 0.3]
     input_seq2 = [Tensor(generate_ones_input((5, 5, 6), np.float32)), 0.7]
-    TEST_OP(bernoulli_func, [input_seq1, input_seq2], '', disable_yaml_check=True)
+    TEST_OP(bernoulli_func, [input_seq1, input_seq2], disable_mode=["GRAPH_MODE_GE"])
 
     input_seq3 = [Tensor(generate_ones_input((5, 7, 8), np.float32)),
                   Tensor(generate_ones_input((5, 7, 8), np.float32)) * 0.3]
     input_seq4 = [Tensor(generate_ones_input((6, 4), np.float32)),
                   Tensor(generate_ones_input((6, 4), np.float32)) * 0.7]
-    TEST_OP(bernoulli_func, [input_seq3, input_seq4], '', disable_yaml_check=True)
+    TEST_OP(bernoulli_func, [input_seq3, input_seq4],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'deterministic_use_origin_inputs': True})

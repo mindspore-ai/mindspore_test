@@ -21,7 +21,7 @@ from mindspore.nn import Cell
 from mindspore.ops.auto_generate import GroupedMatmul, grouped_matmul
 
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -471,8 +471,11 @@ def test_ops_grouped_mamtul_dyn():
     x2 = [ms.Tensor(np_x0)]
     weight2 = [ms.Tensor(np_w0)]
 
-    TEST_OP(grouped_matmul_forward_func, [[x1, wweight1], [x2, weight2]], '', disable_input_check=True,
-            disable_grad=True, disable_yaml_check=True, disable_resize=True)
+    TEST_OP(grouped_matmul_forward_func,
+            [[x1, wweight1], [x2, weight2]],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'disable_resize': True})
 
 
 @test_utils.run_with_cell
@@ -491,7 +494,7 @@ def grouped_matmul_single_output_forward_func(x, weight, group_list):
 def test_grouped_matmul_single_output_dyn_shape():
     """
     Feature: Ops
-    Description: test op GroupedMatmul with gorup type 0
+    Description: test op GroupedMatmul with group type 0
     Expectation: expect correct result.
     """
     context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
@@ -518,8 +521,9 @@ def test_grouped_matmul_single_output_dyn_shape():
             inputs_0,
             inputs_1,
         ],
-        "",
-        disable_input_check=True,
-        disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE',]
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['DiscontiguousInput', 'EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True,
+                     'deterministic_use_origin_inputs': True}
     )

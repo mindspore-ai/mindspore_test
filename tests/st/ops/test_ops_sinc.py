@@ -15,11 +15,11 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, jit, JitConfig
+from mindspore import ops, jit
 from mindspore.mint import sinc
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -102,4 +102,4 @@ def test_ops_sinc_dynamic_shape():
     """
     x1 = generate_random_input((2, 3, 4, 5), np.float32)
     x2 = generate_random_input((4, 5), np.float32)
-    TEST_OP(sinc_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'sinc')
+    TEST_OP(sinc_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

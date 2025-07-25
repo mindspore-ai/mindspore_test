@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import nansum
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import tests.st.utils.test_utils as test_utils
 
@@ -84,6 +84,5 @@ def test_mint_nansum_dynamic_shape():
     keepdim2 = True
     TEST_OP(nansum_forward_func,
             [[input1, axis1, keepdim1], [input2, axis2, keepdim2]],
-            'nansum',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

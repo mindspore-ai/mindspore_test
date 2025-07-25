@@ -17,7 +17,7 @@ import numpy as np
 from mindspore import ops, jit
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -54,8 +54,7 @@ def test_ops_rfftfreq_forward(mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('jit_level', ["O0", "O2"])
-def test_ops_rfftfreq_forward_dynamic(jit_level):
+def test_ops_rfftfreq_forward_dynamic():
     """
     Feature: ops.rfftfreq
     Description: test function rfftfreq forward with dynamic input.
@@ -69,5 +68,4 @@ def test_ops_rfftfreq_forward_dynamic(jit_level):
     inputs1 = [n1, d1]
     inputs2 = [n2, d2]
 
-    TEST_OP(rfftfreq_forward_func, [inputs1, inputs2], "rfftfreq",
-            disable_yaml_check=True)
+    TEST_OP(rfftfreq_forward_func, [inputs1, inputs2])

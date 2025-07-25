@@ -20,8 +20,8 @@ from mindspore.common.api import _pynative_executor
 
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 @test_utils.run_with_cell
@@ -174,6 +174,6 @@ def test_gcd_dynamic():
     TEST_OP(
         ops.gcd,
         [[ms.Tensor(x1), ms.Tensor(x2)], [ms.Tensor(y1), ms.Tensor(y2)]],
-        "gcd",
-        disable_grad=True,
+        case_config={'disable_grad': True,
+                     'all_dim_zero': True},
     )

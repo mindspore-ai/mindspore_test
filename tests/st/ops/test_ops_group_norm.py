@@ -21,7 +21,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, ops, context
 
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 context.set_context(jit_level='O0')
@@ -269,4 +269,6 @@ def test_ops_group_norm_dyn():
                          [[5, 7, 6, 3], [3, 5, 6, 7], [9, 4, 2, 5], [7, 5, 8, 1]]]]).astype(np.float32)
     in1 = Tensor(input_x)
     in2 = Tensor(input_x)
-    TEST_OP(group_norm_forward_func, [[in1], [in2]], '', disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(group_norm_forward_func, [[in1], [in2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True})

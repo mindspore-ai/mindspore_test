@@ -20,7 +20,7 @@ import mindspore.common.dtype as mstype
 import mindspore as ms
 
 from tests.st.utils.test_utils import to_cell_obj, compare
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -140,5 +140,6 @@ def test_min_dim_all_dynamic():
     input_case1 = [t1, -1]
     t2 = Tensor(np.array([[[1, 20, 5], [67, 8, 9]], [[130, 24, 15], [16, 64, 32]]], dtype=np.float32))
     input_case2 = [t2, 0]
-    TEST_OP(min_, [input_case1, input_case2], '', disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(min_, [input_case1, input_case2],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor'])

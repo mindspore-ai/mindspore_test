@@ -15,7 +15,7 @@
 # pylint: disable=unused-variable
 import numpy as np
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -88,6 +88,8 @@ def test_put_dynamic_shape():
     source2 = ms.Tensor(generate_random_input((3, 2), np.float32))
     accumulate1 = False
     accumulate2 = True
-    TEST_OP(put_forward_func_with_x_mul_1, [
-        [tensor_x1, index1, source1, accumulate1],
-        [tensor_x2, index2, source2, accumulate2]], 'inplace_put', disable_mode=['GRAPH_MODE'], inplace_update=True)
+    TEST_OP(put_forward_func_with_x_mul_1,
+            [[tensor_x1, index1, source1, accumulate1],
+             [tensor_x2, index2, source2, accumulate2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            inplace_update=True)

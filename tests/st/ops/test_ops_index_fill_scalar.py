@@ -19,7 +19,7 @@ import pytest
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore.ops.function.array_func import index_fill_ext
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
@@ -116,8 +116,8 @@ def test_ops_index_fill_scalar_dynamic():
     TEST_OP(
         index_fill_ext,
         [[Tensor(x1), dim1, index1, value1], [Tensor(x2), dim2, index2, value2]],
-        "index_fill_scalar",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
-        disable_input_check=True,
-        disable_grad=True,
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True},
     )

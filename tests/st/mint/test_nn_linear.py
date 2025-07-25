@@ -20,7 +20,7 @@ import mindspore as ms
 import mindspore.mint.nn as mnn
 from mindspore import Tensor, context
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def _count_unequal_element(data_expected, data_me, rtol, atol):

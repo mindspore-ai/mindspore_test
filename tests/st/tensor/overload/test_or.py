@@ -20,7 +20,7 @@ import mindspore as ms
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -87,9 +87,8 @@ def test_tensor_or_dynamic():
     TEST_OP(
         and_forward_func,
         [[input1, other1], [input2, other2]],
-        'bitwise_or_tensor',
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
-        disable_grad=True,
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        case_config={'disable_grad': True, 'all_dim_zero': True},
     )
 
     input3 = Tensor(generate_random_input((2, 3), np.int32))
@@ -99,7 +98,6 @@ def test_tensor_or_dynamic():
     TEST_OP(
         and_forward_func,
         [[input3, other3], [input4, other4]],
-        'bitwise_or_scalar',
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
-        disable_grad=True,
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        case_config={'disable_grad': True},
     )

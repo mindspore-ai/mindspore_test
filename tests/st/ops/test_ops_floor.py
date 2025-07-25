@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, context
 from mindspore.ops import floor
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -96,8 +96,9 @@ def test_ops_floor_dynamic_shape():
     """
     x1 = generate_random_input((2, 3, 4, 5), np.float32)
     x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    TEST_OP(floor_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], '', disable_input_check=True,
-            disable_yaml_check=True, disable_tensor_dynamic_type='DYNAMIC_RANK')
+    TEST_OP(floor_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            case_config={'disable_input_check': True,
+                         'disable_tensor_dynamic_type': 'DYNAMIC_RANK'})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

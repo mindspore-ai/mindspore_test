@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
@@ -400,10 +400,9 @@ def test_upsample_nearest_1d_size_dynamic():
             [input_case1, (100,), None],
             [input_case2, (40,), None],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -424,10 +423,9 @@ def test_upsample_nearest_1d_scale_factor_dynamic():
             [input_case1, None, (1.5,)],
             [input_case2, None, (2.1,)],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -448,10 +446,9 @@ def test_upsample_nearest_2d_size_dynamic():
             [input_case1, (100, 80), None],
             [input_case2, (40, 60), None],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -472,10 +469,9 @@ def test_upsample_nearest_2d_scale_factor_dynamic():
             [input_case1, None, (1.5, 1.7)],
             [input_case2, None, (2.1, 2.8)],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -496,10 +492,9 @@ def test_upsample_nearest_3d_size_dynamic():
             [input_case1, (100, 200, 300), None],
             [input_case2, (40, 80, 80), None],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -520,10 +515,9 @@ def test_upsample_nearest_3d_scale_factor_dynamic():
             [input_case1, None, (1.5, 1.6, 1.7)],
             [input_case2, None, (2.1, 2.5, 3.5)],
         ],
-        '',
-        disable_yaml_check=True,
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 

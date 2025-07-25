@@ -16,10 +16,10 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import context
-from mindspore import jit, JitConfig
+from mindspore import jit
 from mindspore.ops.auto_generate import MoeInitRouting
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 moe_init_routing_op = MoeInitRouting()
@@ -120,4 +120,6 @@ def test_ops_dynamic():
 
     TEST_OP(moe_init_routing_op,
             [[x_1, rowIdx_1, expertIdx_1, activeNum], [x_2, rowIdx_2, expertIdx_2, activeNum]],
-            'moe_init_routing', disable_grad=True, disable_input_check=True)
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})

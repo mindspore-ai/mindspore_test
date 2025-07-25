@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor, context
@@ -159,11 +159,10 @@ def test_cross_entropy_loss_dynamic():
     TEST_OP(
         cross_entropy_loss_func,
         [input_case1, input_case2],
-        "cross_entropy_loss",
-        disable_mode=[
-            "GRAPH_MODE",
-        ],
-        disable_input_check=True,
-        ## zloss related function is not enabled.
-        ignore_output_index=[2, 3]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'ignore_output_index': [2, 3],
+                     'all_dim_zero': True,
+                     'deterministic_use_origin_inputs': True}
     )

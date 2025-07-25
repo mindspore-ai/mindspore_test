@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import mint, Tensor, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -99,5 +99,6 @@ def test_median_dynamic_shape():
     tensor_1 = Tensor(np.arange(6).reshape(2, 3), dtype=mstype.float32)
     tensor_2 = Tensor(np.arange(24).reshape(2, 3, 4), dtype=mstype.float32)
 
-    TEST_OP(median_forward_func, [[tensor_1, 0, False], [tensor_2, 1, True]], '', disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(median_forward_func, [[tensor_1, 0, False], [tensor_2, 1, True]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'])

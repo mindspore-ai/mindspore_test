@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import Tensor, ops
 from mindspore.mint import greater
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -114,5 +114,6 @@ def test_greater_op_dynamic_shape():
     x2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
     y2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
 
-    TEST_OP(greater_forward_func
-            , [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]], 'greater')
+    TEST_OP(greater_forward_func,
+            [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]],
+            case_config={'all_dim_zero': True})

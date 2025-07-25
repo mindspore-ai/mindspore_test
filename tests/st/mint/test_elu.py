@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import mint, context, Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -114,4 +114,4 @@ def test_elu_dynamic_shape_testop():
     alpha2 = np.random.uniform(0.5, 2)
     x1 = generate_random_input((3, 4, 5), np.float32)
     x2 = generate_random_input((3, 7, 8, 3), np.float32)
-    TEST_OP(mint.nn.functional.elu, [[ms.Tensor(x1), alpha1], [ms.Tensor(x2), alpha2]], 'elu')
+    TEST_OP(mint.nn.functional.elu, [[ms.Tensor(x1), alpha1], [ms.Tensor(x2), alpha2]])

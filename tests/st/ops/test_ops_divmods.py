@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
@@ -216,29 +216,17 @@ def test_divmods_dynamic():
     TEST_OP(
         divmods_none_forward_func,
         generate_inputs(),
-        "divmods",
-        disable_mode=[
-            "GRAPH_MODE",
-        ],
-        disable_yaml_check=True,
+        disable_mode=["GRAPH_MODE_GE"]
     )
 
     TEST_OP(
         divmods_trunc_forward_func,
         generate_inputs(),
-        "divmods",
-        disable_mode=[
-            "GRAPH_MODE",
-        ],
-        disable_yaml_check=True,
+        disable_mode=["GRAPH_MODE_GE"]
     )
 
     TEST_OP(
         divmods_floor_forward_func,
         generate_inputs(),
-        "divmods",
-        disable_mode=[
-            "GRAPH_MODE",
-        ],
-        disable_yaml_check=True,
+        disable_mode=["GRAPH_MODE_GE"]
     )

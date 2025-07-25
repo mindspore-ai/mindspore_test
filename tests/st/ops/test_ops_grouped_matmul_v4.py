@@ -20,7 +20,7 @@ from mindspore.nn import Cell
 from mindspore.ops.auto_generate import grouped_matmul_v4
 
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -402,7 +402,7 @@ def test_grouped_matmul_v4_x2d_w3d_splititem3_grouptype0_none_perchannel(mode):
 def test_grouped_matmul_v4_dyn_shape():
     """
     Feature: Ops
-    Description: test op GroupedMatmulV4 with gorup type 0
+    Description: test op GroupedMatmulV4 with group type 0
     Expectation: expect correct result.
     """
     context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
@@ -429,11 +429,11 @@ def test_grouped_matmul_v4_dyn_shape():
             inputs_0,
             inputs_1,
         ],
-        "",
-        disable_input_check=True,
-        disable_grad=True,
-        disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE',]
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['DiscontiguousInput', 'EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True,
+                     'deterministic_use_origin_inputs': True}
     )
 
 

@@ -20,7 +20,7 @@ from mindspore.common.api import _pynative_executor
 from mindspore.ops.auto_generate import NormalTensorTensor, NormalTensorFloat, \
     NormalFloatTensor, NormalFloatFloat
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 generator = Generator()
@@ -143,12 +143,18 @@ def test_normal_tensor_tensor_dynamic_shape_testop():
     Description: call NormalTensorTensor with valid input.
     Expectation: return the correct value.
     """
+    def normal_tensor_tensor(mean, std, seed, offset):
+        return normal_tensor_tensor_op(mean, std, seed, offset)
+
     x1 = generate_random_input((10, 10))
     x2 = generate_random_input((10, 10))
-    TEST_OP(normal_tensor_tensor_op,
+    TEST_OP(normal_tensor_tensor,
             [[ms.Tensor(x1), ms.Tensor(x1), seed_, offset_],
-             [ms.Tensor(x2), ms.Tensor(x2), seed2_, offset2_]], 'normal_tensor_tensor',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
+             [ms.Tensor(x2), ms.Tensor(x2), seed2_, offset2_]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True},
+            inplace_update=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -158,12 +164,17 @@ def test_normal_tensor_float_dynamic_shape_testop():
     Description: call NormalTensorFloat with valid input.
     Expectation: return the correct value.
     """
+    def normal_tensor_float(mean, std, seed, offset):
+        return normal_tensor_float_op(mean, std, seed, offset)
+
     x1 = generate_random_input((10, 10))
     x2 = generate_random_input((10, 10))
-    TEST_OP(normal_tensor_float_op,
+    TEST_OP(normal_tensor_float,
             [[ms.Tensor(x1), 1.0, seed_, offset_],
-             [ms.Tensor(x2), 1.0, seed2_, offset2_]], 'normal_tensor_float',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
+             [ms.Tensor(x2), 1.0, seed2_, offset2_]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True},
+            inplace_update=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -173,12 +184,18 @@ def test_normal_float_tensor_dynamic_shape_testop():
     Description: call NormalFloatTensor with valid input.
     Expectation: return the correct value.
     """
+    def normal_float_tensor(mean, std, seed, offset):
+        return normal_float_tensor_op(mean, std, seed, offset)
+
     x1 = generate_random_input((10, 10))
     x2 = generate_random_input((10, 10))
-    TEST_OP(normal_float_tensor_op,
+    TEST_OP(normal_float_tensor,
             [[1.0, ms.Tensor(x1), seed_, offset_],
-             [1.0, ms.Tensor(x2), seed2_, offset2_]], 'normal_float_tensor',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
+             [1.0, ms.Tensor(x2), seed2_, offset2_]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True},
+            inplace_update=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -188,10 +205,15 @@ def test_normal_float_float_dynamic_shape_testop():
     Description: call NormalFloatFloat with valid input.
     Expectation: return the correct value.
     """
-    TEST_OP(normal_float_float_op,
+    def normal_float_float(mean, std, size, seed, offset):
+        return normal_float_float_op(mean, std, size, seed, offset)
+
+    TEST_OP(normal_float_float,
             [[1.0, 1.0, (2, 2), seed_, offset_],
-             [2.0, 2.0, (2, 2), seed2_, offset2_]], 'normal_float_float',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
+             [2.0, 2.0, (2, 2), seed2_, offset2_]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True},
+            inplace_update=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

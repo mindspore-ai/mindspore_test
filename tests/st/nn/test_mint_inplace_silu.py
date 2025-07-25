@@ -20,7 +20,7 @@ from mindspore import mint, ops
 from mindspore import Tensor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 class Net(ms.nn.Cell):
     def construct(self, x, inplace=False):
@@ -95,4 +95,4 @@ def test_mint_silu_dyn():
     in1 = Tensor(np.random.randn(1, 2, 4, 4).astype(np.float32))
     in2 = Tensor(np.random.randn(2, 1, 4).astype(np.float32))
 
-    TEST_OP(SiLU_forward, [[in1], [in2]], 'inplace_silu')
+    TEST_OP(SiLU_forward, [[in1], [in2]], disable_mode=["GRAPH_MODE_GE"])

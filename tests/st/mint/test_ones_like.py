@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import ops, mint, Tensor, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -71,4 +71,4 @@ def test_ones_like_dynamic_shape():
 
     tensor_2 = Tensor(np.arange(24).reshape(2, 3, 4), dtype=mstype.float32)
 
-    TEST_OP(ones_like_forward_func, [[tensor_1], [tensor_2]], '', disable_yaml_check=True)
+    TEST_OP(ones_like_forward_func, [[tensor_1], [tensor_2]])

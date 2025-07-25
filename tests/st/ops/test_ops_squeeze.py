@@ -19,7 +19,7 @@ from mindspore import ops, Tensor
 from mindspore.mint import squeeze
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -102,5 +102,6 @@ def test_ops_squeeze_dynamic_shape():
     dim1 = 0
     x2 = generate_random_input((4, 1, 5), np.float32)
     dim2 = 1
-    TEST_OP(squeeze_forward_func, [[ms.Tensor(x1), dim1], [ms.Tensor(x2), dim2]]
-            , 'squeeze', disable_mode=["GRAPH_MODE"])
+    TEST_OP(squeeze_forward_func, [[ms.Tensor(x1), dim1], [ms.Tensor(x2), dim2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'])

@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import Tensor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
@@ -124,9 +124,8 @@ def test_tensor_floor_divide__dynamic():
     TEST_OP(
         floor_divide__forward_func,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
-        "inplace_floor_divide",
-        disable_mode=["GRAPH_MODE"],
-        disable_grad=True,
+        disable_mode=["GRAPH_MODE_GE"],
+        case_config={'disable_grad': True, 'all_dim_zero': True},
         inplace_update=True
     )
 
@@ -137,9 +136,8 @@ def test_tensor_floor_divide__dynamic():
     TEST_OP(
         floor_divide__forward_func,
         [[Tensor(x3), y3], [Tensor(x4), y4]],
-        "inplace_floor_divides",
-        disable_mode=["GRAPH_MODE"],
-        disable_grad=True,
+        disable_mode=["GRAPH_MODE_GE"],
+        case_config={'disable_grad': True, 'all_dim_zero': True},
         inplace_update=True
     )
 
@@ -163,7 +161,6 @@ def test_tensor_ifloordiv_dynamic():
     TEST_OP(
         ifloordiv_forward_func,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
-        "inplace_floor_divide",
-        disable_grad=True,
+        case_config={'disable_grad': True, 'all_dim_zero': True},
         inplace_update=True
     )

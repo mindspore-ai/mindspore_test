@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, Tensor, context
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -123,4 +123,4 @@ def test_isclose_dynamic_shape_testop():
     equal_nan = False
     TEST_OP(isclose_forward_func,
             [[Tensor(x1), Tensor(y1), rtol, atol, equal_nan], [Tensor(x2), Tensor(y2), rtol, atol, equal_nan]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_grad=True)
+            case_config={'disable_input_check': True, 'disable_grad': True, 'all_dim_zero': True})

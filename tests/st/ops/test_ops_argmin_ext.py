@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -97,4 +97,4 @@ def test_argmax_ext_dynamic_shape():
     dim2 = 1
     keepdim2 = False
     TEST_OP(argmin_ext_forward_func, [[ms_data1, dim1, keepdim1], [ms_data2, dim2, keepdim2]],
-            'argmin_ext', disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'], disable_case=['EmptyTensor', 'ScalarTensor'])

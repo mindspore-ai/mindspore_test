@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint, context, Tensor
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -133,6 +133,9 @@ def test_mse_loss_dynamic_shape_testop(reduction):
     target2 = generate_random_input((1, 8, 1), np.float32)
     reduction2 = reduction
 
-    TEST_OP(mint.nn.functional.mse_loss, [[ms.Tensor(x1), ms.Tensor(target1), reduction1],
-                                          [ms.Tensor(x2), ms.Tensor(target2), reduction2]], 'mse_loss_ext',
-            disable_mode=['GRAPH_MODE'], disable_input_check=True)
+    TEST_OP(mint.nn.functional.mse_loss,
+            [[ms.Tensor(x1), ms.Tensor(target1), reduction1],
+             [ms.Tensor(x2), ms.Tensor(target2), reduction2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})

@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import Tensor, mint
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 @test_utils.run_with_cell
@@ -82,4 +82,4 @@ def test_mint_flatten_dyn():
     """
     in1 = Tensor(np.random.randn(2, 3, 4, 5, 6).astype(np.float32))
     in2 = Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
-    TEST_OP(Flatten_forward_for_dyn, [[in1], [in2]], '', disable_yaml_check=True)
+    TEST_OP(Flatten_forward_for_dyn, [[in1], [in2]], disable_case=['ScalarTensor'])

@@ -19,7 +19,7 @@ from mindspore import Tensor
 from mindspore.ops import speed_fusion_attention
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 
 
@@ -583,8 +583,16 @@ def test_speed_fusion_attention_dynamic(input_layout):
     input_seq2 = [Tensor(query_np2), Tensor(key_np2), Tensor(value_np2), head_num2, input_layout, actual_seq_qlen,
                   actual_seq_kvlen]
 
-    TEST_OP(speed_fusion_attention_func, [input_seq1, input_seq2], '', disable_input_check=True,
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    if input_layout in ["BNSD", "BSND"]:
+        disable_case = ['EmptyTensor', 'ScalarTensor']
+    else:
+        disable_case = ['ScalarTensor']
+
+    TEST_OP(speed_fusion_attention_func, [input_seq1, input_seq2],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=disable_case,
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

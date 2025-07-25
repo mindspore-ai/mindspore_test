@@ -19,7 +19,7 @@ from mindspore.mint.nn.functional import l1_loss
 from mindspore.mint.nn import L1Loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -126,8 +126,10 @@ def test_ops_l1_loss_dynamic_shape(reduction):
     target2 = ms.Tensor(generate_random_input((8, 9), np.float32))
 
     test_cell = test_utils.to_cell_obj(l1_loss_forward_func)
-    TEST_OP(test_cell, [[x1, target1, reduction], [x2, target2, reduction]], "l1_loss_ext", disable_grad=False,
-            disable_input_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(test_cell, [[x1, target1, reduction], [x2, target2, reduction]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

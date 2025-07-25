@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.common.dtype as mstype
@@ -104,5 +104,7 @@ def test_ops_rotary_position_embedding_dynamic():
     cos2 = Tensor(np_cos2, dtype=mstype.float32)
     sin2 = Tensor(np_sin2, dtype=mstype.float32)
 
-    TEST_OP(test_cell, [[x1, cos1, sin1, 0], [x2, cos2, sin2, 0]], "rotary_position_embedding",
-            disable_mode=["GRAPH_MODE"], disable_input_check=True)
+    TEST_OP(test_cell, [[x1, cos1, sin1, 0], [x2, cos2, sin2, 0]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})

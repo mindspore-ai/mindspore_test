@@ -18,8 +18,8 @@ import pytest
 import mindspore as ms
 from mindspore import mint, Tensor
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.st.utils import test_utils
 
 
@@ -91,4 +91,4 @@ def test_ops_greater_equal_scalar_dynamic_shape():
     input2 = generate_random_input((3, 7, 8, 5), np.float32)
     other2 = 2.4
     TEST_OP(greater_equal_scalar_forward_dyn_func, [[Tensor(input1), other1], [Tensor(input2), other2]],
-            'greater_equal_scalar', disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'])

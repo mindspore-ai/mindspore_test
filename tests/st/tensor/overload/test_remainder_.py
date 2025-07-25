@@ -19,8 +19,8 @@ import mindspore as ms
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def _count_unequal_element(data_expected, data_me, rtol, atol):
@@ -191,8 +191,8 @@ def test_tensor_remainder__dynamic():
     TEST_OP(
         remainder__forward_func,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
-        'inplace_remainder_tensor_tensor',
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        case_config={'all_dim_zero': True},
         inplace_update=True
     )
 
@@ -203,8 +203,7 @@ def test_tensor_remainder__dynamic():
     TEST_OP(
         remainder__forward_func,
         [[Tensor(x3), y3], [Tensor(x4), y4]],
-        'inplace_remainder_tensor_scalar',
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
         inplace_update=True
     )
 
@@ -227,7 +226,7 @@ def test_tensor_imod_dynamic():
     TEST_OP(
         imod_forward_func,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
-        'inplace_remainder_tensor_tensor',
+        case_config={'all_dim_zero': True},
         inplace_update=True
     )
 
@@ -238,6 +237,5 @@ def test_tensor_imod_dynamic():
     TEST_OP(
         imod_forward_func,
         [[Tensor(x3), y3], [Tensor(x4), y4]],
-        'inplace_remainder_tensor_scalar',
         inplace_update=True
     )

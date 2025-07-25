@@ -19,7 +19,7 @@ from mindspore.mint.nn.functional import nll_loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -117,5 +117,7 @@ def test_ops_nll_loss_dynamic_shape(reduction):
     test_cell = test_utils.to_cell_obj(nll_loss_forward_func)
     TEST_OP(test_cell, [[x1, target1, weight1, ignore_index1, reduction],
                         [x2, target2, weight2, ignore_index2, reduction]],
-            "nllloss", disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['ScalarTensor', 'Deterministic'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})

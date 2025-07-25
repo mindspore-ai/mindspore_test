@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.common.dtype as mstype
@@ -115,10 +115,15 @@ def test_add_layer_norm_dynamic_shape(addtion_out):
     beta_tensor = Tensor(beta, dtype=mstype.float32)
 
     test_cell = test_utils.to_cell_obj(add_layer_norm_forward_func)
-    ignore_output_cmp_index = None
+
+    case_config = {'disable_input_check': True}
     if not addtion_out:
-        ignore_output_cmp_index = 3
-    TEST_OP(test_cell, [[x1_tensor, x2_tensor, gamma_tensor, beta_tensor, 1e-5, addtion_out],
-                        [x3_tensor, x4_tensor, gamma_tensor, beta_tensor, 1e-5, addtion_out]],
-                        "add_layernorm_v2", disable_mode=["GRAPH_MODE"], disable_input_check=True,
-                        ignore_output_index=ignore_output_cmp_index)
+        case_config = {'disable_input_check': True, 'ignore_output_index': 3}
+    # TEST_OP Todo ScalarTensor cause core dump error.
+    TEST_OP(test_cell,
+            [[x1_tensor, x2_tensor, gamma_tensor, beta_tensor, 1e-5, addtion_out],
+             [x3_tensor, x4_tensor, gamma_tensor, beta_tensor, 1e-5, addtion_out]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config=case_config)

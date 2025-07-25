@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit
 from mindspore.mint.nn.functional import softplus
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
 
@@ -143,5 +143,5 @@ def test_softplus_dynamic_shape():
     beta2 = 3
     threshold2 = 18
     TEST_OP(softplus_forward_func,
-            [[ms.Tensor(ms_data1), beta1, threshold1], [ms.Tensor(ms_data2), beta2, threshold2]], 'softplus_ext',
-            disable_mode=['GRAPH_MODE'])
+            [[ms.Tensor(ms_data1), beta1, threshold1], [ms.Tensor(ms_data2), beta2, threshold2]],
+            disable_mode=['GRAPH_MODE_GE'])

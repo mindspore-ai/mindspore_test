@@ -22,8 +22,6 @@ from mindspore import mint, Tensor, jit, context, ops
 from mindspore.common.api import _pynative_executor
 
 
-# from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-
 @test_utils.run_with_cell
 def chunk_forward_func(x, chunks, dim):
     return mint.chunk(x, chunks, dim)

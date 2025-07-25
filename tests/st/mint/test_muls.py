@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint
 from mindspore import ops
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 class Net(ms.nn.Cell):
@@ -86,8 +86,8 @@ def test_muls_dynamic_shape():
     tensor_y1 = 1.5
     tensor_y2 = 2.5
 
-    TEST_OP(mint_muls_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'muls',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(mint_muls_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

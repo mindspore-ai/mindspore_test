@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -164,9 +164,12 @@ def test_tensor_topk_ext_dynamic():
     largest2 = True
     sorted2 = True
     TEST_OP(topk_ext_forward_func,
-            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk_ext',
-            disable_mode=["GRAPH_MODE"], disable_resize=True, disable_tensor_dynamic_type='DYNAMIC_RANK',
-            disable_nontensor_dynamic_type='STATIC_LEN')
+            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_resize': True,
+                         'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
+                         'disable_nontensor_dynamic_type': 'STATIC_LEN'})
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
@@ -190,6 +193,9 @@ def test_tensor_topk_dynamic():
     largest2 = True
     sorted2 = True
     TEST_OP(topk_forward_func,
-            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]], 'topk',
-            disable_mode=["GRAPH_MODE"], disable_yaml_check=True, disable_resize=True,
-            disable_tensor_dynamic_type='DYNAMIC_RANK', disable_nontensor_dynamic_type='STATIC_LEN')
+            [[ms_data1, k1, dim1, largest1, sorted1], [ms_data2, k2, dim2, largest2, sorted2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_resize': True,
+                         'disable_tensor_dynamic_type': 'DYNAMIC_RANK',
+                         'disable_nontensor_dynamic_type': 'STATIC_LEN'})

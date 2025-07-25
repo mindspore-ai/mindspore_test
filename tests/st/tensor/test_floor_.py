@@ -15,7 +15,7 @@
 # pylint: disable=unused-variable
 import numpy as np
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -63,4 +63,4 @@ def test_floor_dynamic_shape():
     tensor_x1 = ms.Tensor(generate_random_input((2, 3), np.float32))
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
-    TEST_OP(floor_forward_func_grad, [[tensor_x1], [tensor_x2]], 'inplace_floor', disable_mode=['GRAPH_MODE'])
+    TEST_OP(floor_forward_func_grad, [[tensor_x1], [tensor_x2]], disable_mode=['GRAPH_MODE_GE'])

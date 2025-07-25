@@ -19,7 +19,7 @@ import numpy as np
 
 import mindspore as ms
 from mindspore import ops, nn
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
@@ -97,8 +97,10 @@ def test_embedding_dynamic_shape():
     input2 = ms.Tensor(np.random.randint(0, 10, size=(18, 17, 19, 14)))
     weight = ms.Parameter(np.random.rand(10, 3).astype(np.float32))
 
-    TEST_OP(embedding_func, [[input1, weight, 0, 0.3, 1.1], [input2, weight, -1, 0.6, 2.4]], '',
-            disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(embedding_func, [[input1, weight, 0, 0.3, 1.1], [input2, weight, -1, 0.6, 2.4]],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'deterministic_use_origin_inputs': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

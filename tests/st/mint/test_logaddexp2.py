@@ -16,7 +16,7 @@ import pytest
 import torch
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import mint, Tensor, jit, context, JitConfig, ops
@@ -99,4 +99,6 @@ def test_f_logaddexp2_dynamic():
     input_2 = Tensor(np.ones((3, 4, 5)), dtype=ms.float32)
     other_2 = Tensor(np.ones((3, 4, 5)), dtype=ms.float32)
     # dynamic string is not supported
-    TEST_OP(mint.logaddexp2, [[input_1, other_1], [input_2, other_2]], 'logaddexp2', disable_mode=["GRAPH_MODE"])
+    TEST_OP(mint.logaddexp2, [[input_1, other_1], [input_2, other_2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            case_config={'all_dim_zero': True})

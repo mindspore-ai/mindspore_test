@@ -18,7 +18,7 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -79,7 +79,7 @@ def test_tensor_outer_dynamic():
     TEST_OP(
         outer_forward_func_dynamic,
         [[Tensor(x1), Tensor(y1)], [Tensor(x2), Tensor(y2)]],
-        "outer",
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"],
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['ScalarTensor', 'GradByRequirement'],
+        case_config={'disable_input_check': True}
     )

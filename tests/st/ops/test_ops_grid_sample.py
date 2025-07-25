@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from mindspore import ops
 import mindspore as ms
@@ -355,4 +355,5 @@ def test_gridsample_dynamic_shape():
     ms_data2 = [ms.Tensor(np.random.randn(4, 2, 2, 3, 4).astype(np.float32)),
                 ms.Tensor(np.random.randn(4, 4, 4, 4, 3).astype(np.float32))]
     TEST_OP(grid_sample_forward_func,
-            [ms_data1, ms_data2], '', disable_yaml_check=True)
+            [ms_data1, ms_data2],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

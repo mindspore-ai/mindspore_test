@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, jit, JitConfig
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_std_input(output_size):
@@ -84,15 +84,24 @@ def test_adaptive_avg_pool3d_dynamic():
     """
     x1 = generate_random_input((3, 4, 5, 6), np.float32)
     x2 = generate_random_input((3, 7, 8, 3, 5), np.float32)
-    TEST_OP(adaptive_avg_pool3d_forward_dyn_mean, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'adaptive_avg_pool3d_ext',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
-    TEST_OP(adaptive_avg_pool3d_forward_dyn_adaptive, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'adaptive_avg_pool3d_ext',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(adaptive_avg_pool3d_forward_dyn_mean, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])
+    TEST_OP(adaptive_avg_pool3d_forward_dyn_adaptive, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])
     TEST_OP(adaptive_avg_pool3d_forward_func, [[ms.Tensor(x1), (1, 1, 1)], [ms.Tensor(x2), (2, 2, 2)]],
-            'adaptive_avg_pool3d_ext', disable_yaml_check=True, disable_input_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
-    TEST_OP(adaptive_avg_pool3d_forward_func, [[ms.Tensor(x1), 1], [ms.Tensor(x2), 2]], 'adaptive_avg_pool3d_ext',
-            disable_yaml_check=True, disable_input_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
+    TEST_OP(adaptive_avg_pool3d_forward_func, [[ms.Tensor(x1), 1], [ms.Tensor(x2), 2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

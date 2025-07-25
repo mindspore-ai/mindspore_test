@@ -19,7 +19,7 @@ from mindspore import ops
 from mindspore.mint.nn.functional import softshrink
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -132,6 +132,5 @@ def test_softshrink_dynamic_shape():
     lambd1 = 0.5
     ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
     lambd2 = 0.6
-    TEST_OP(softshrink_forward_func
-            , [[ms.Tensor(ms_data1), lambd1], [ms.Tensor(ms_data2), lambd2]]
-            , 'softshrink')
+    TEST_OP(softshrink_forward_func,
+            [[ms.Tensor(ms_data1), lambd1], [ms.Tensor(ms_data2), lambd2]])

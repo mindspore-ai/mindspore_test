@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore.mint import masked_select
 from mindspore import Tensor, ops, jit
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -81,4 +81,6 @@ def test_ops_masked_select_forward_dynamic():
     mask2 = ms.Tensor(generate_random_input((4, 5), np.bool_))
 
     test_cell = test_utils.to_cell_obj(masked_select_forward_func)
-    TEST_OP(test_cell, [[input1, mask1], [input2, mask2]], "masked_select", disable_input_check=True)
+    TEST_OP(test_cell, [[input1, mask1], [input2, mask2]],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True})

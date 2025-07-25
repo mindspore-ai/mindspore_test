@@ -18,7 +18,7 @@ from mindspore.mint import cummax
 from mindspore import ops, Tensor
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -109,4 +109,6 @@ def test_cummax_dynamic():
     axis1 = 1
     input2 = Tensor(generate_random_input((2, 3, 5, 4), np.float32))
     axis2 = -2
-    TEST_OP(test_cell, [[input1, axis1], [input2, axis2]], "cummax", disable_mode=["GRAPH_MODE"])
+    TEST_OP(test_cell, [[input1, axis1], [input2, axis2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'])

@@ -13,9 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor, context
@@ -123,7 +123,10 @@ def test_ops_round_iou_dynamic_shape():
     query_boxes2 = generate_random_input((3, 4, 5), np.float32)
     TEST_OP(rotated_iou_forward_func, [[Tensor(boxes1), Tensor(query_boxes1), False, 0, True, 0.0, 0.0],
                                        [Tensor(boxes2), Tensor(query_boxes2), False, 0, True, 0.0, 0.0]],
-            'rotated_iou', disable_input_check=True, disable_grad=True, disable_mode=['GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})
 
     boxes1 = generate_random_input((8, 11, 5), np.float32)
     query_boxes1 = generate_random_input((8, 12, 5), np.float32)
@@ -131,4 +134,7 @@ def test_ops_round_iou_dynamic_shape():
     query_boxes2 = generate_random_input((11, 18, 5), np.float32)
     TEST_OP(rotated_iou_forward_func, [[Tensor(boxes1), Tensor(query_boxes1), False, 0, True, 0.0, 0.0],
                                        [Tensor(boxes2), Tensor(query_boxes2), False, 0, True, 0.0, 0.0]],
-            'rotated_iou', disable_input_check=True, disable_grad=True, disable_mode=['GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            disable_case=['EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True})

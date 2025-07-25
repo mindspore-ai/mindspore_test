@@ -18,8 +18,8 @@ import pytest
 import mindspore as ms
 from mindspore import mint, jit
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -83,8 +83,11 @@ def test_atan2_dynamic_shape():
     input1, other1 = generate_random_input((2, 3), np.float32)
     input2, other2 = generate_random_input((2, 3, 4), np.float32)
 
-    TEST_OP(atan2_forward_func, [[ms.Tensor(input1), ms.Tensor(other1)], [ms.Tensor(input2), ms.Tensor(other2)]],
-            'atan2_ext', disable_mode=['GRAPH_MODE'])
+    TEST_OP(atan2_forward_func,
+            [[ms.Tensor(input1), ms.Tensor(other1)],
+             [ms.Tensor(input2), ms.Tensor(other2)]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.ops import GradOperation
 from mindspore import Tensor, nn
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -228,12 +228,11 @@ def test_inplace_scatter_dynamic():
             [x1, dim1, index1, src1, "add"],
             [x2, dim2, index2, src2, "add"],
         ],
-        'scatter_ with src and reduce',
-        disable_yaml_check=True,
-        disable_input_check=True,  # str is not supported in dynamic case
-        disable_mode=['GRAPH_MODE'],   # not support yet
-        inplace_update=True,
-        disable_grad=True  # reduce not supports grad
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True},
+        inplace_update=True
     )
     TEST_OP(
         scatter_src_with_grad,
@@ -241,9 +240,8 @@ def test_inplace_scatter_dynamic():
             [x1, dim1, index1, src1],
             [x2, dim2, index2, src2],
         ],
-        'scatter_ with src',
-        disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE'],   # not support yet
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
         inplace_update=True,
     )
     TEST_OP(
@@ -252,12 +250,11 @@ def test_inplace_scatter_dynamic():
             [x1, dim1, index1, 1, "multiply"],
             [x2, dim2, index2, 2, "multiply"],
         ],
-        'scatter_ with value and reduce',
-        disable_yaml_check=True,
-        disable_input_check=True,  # str is not supported in dynamic case
-        disable_mode=['GRAPH_MODE'],   # not support yet
-        inplace_update=True,
-        disable_grad=True  # reduce not supports grad
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'disable_grad': True},
+        inplace_update=True
     )
     TEST_OP(
         scatter_val_with_grad,
@@ -265,9 +262,8 @@ def test_inplace_scatter_dynamic():
             [x1, dim1, index1, 1],
             [x2, dim2, index2, 2],
         ],
-        'scatter_ with value',
-        disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE'],   # not support yet
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
         inplace_update=True,
     )
 

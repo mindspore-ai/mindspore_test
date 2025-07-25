@@ -20,7 +20,7 @@ import mindspore.nn as nn
 from mindspore.common.api import _pynative_executor
 
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -176,10 +176,12 @@ def test_tensor_transpose_dynamic():
     if ms.get_context('device_target') != 'Ascend':
         with pytest.raises(RuntimeError) as error_info:
             TEST_OP(transpose_ext_forward_func, [[ms_data1, dim0_1, dim1_1], [ms_data2, dim0_2, dim1_2]],
-                    'transpose_ext_view', disable_mode=['GRAPH_MODE'])
+                    disable_case=['ScalarTensor'],
+                    disable_mode=['GRAPH_MODE_GE'])
         assert "Unsupported op [TransposeExtView] on " in str(error_info.value)
 
     axes1 = (0, 1)
     axes2 = (0, 2, 1, 3)
-    TEST_OP(transpose_forward_func, [[ms_data1, axes1], [ms_data2, axes2]], 'transpose', disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(transpose_forward_func, [[ms_data1, axes1], [ms_data2, axes2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

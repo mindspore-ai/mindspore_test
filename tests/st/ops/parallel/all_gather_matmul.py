@@ -19,8 +19,8 @@ from typing import Callable, Optional
 import numpy as np
 
 import mindspore as ms
-from tests.st.ops.dynamic_shape import test_op_utils
-from tests.st.ops import ops_binary_cases
+from tests.st.ops.test_tools.test_op import TEST_OP
+from tests.st.ops.test_tools import ops_binary_cases
 from tests.st.utils import test_utils
 
 if sys.version_info >= (3, 9):
@@ -94,7 +94,7 @@ def test_binary_case(_init):
     Feature: mindspore.ops.all_gather_matmul
     Description: Test the precision of forward calculation.
     Expectation: The result of mindspore.ops.all_gather_matmul forward calculation is equal to the result of
-        torch_npu.npu_all_gather_base_mm forword calculation.
+        torch_npu.npu_all_gather_base_mm forward calculation.
     """
     ops_all_gather_matmul_binary_case()
 
@@ -130,7 +130,7 @@ def test_dynamic_shape(_init):
     """
     Feature: mindspore.ops.all_gather_matmul
     Description: Test the dynamic shape function of forward calculation.
-    Expectation: The result of forward calculation with inputs in dynamic shapes is equal to the result of forword
+    Expectation: The result of forward calculation with inputs in dynamic shapes is equal to the result of forward
         calculation with inputs in static shapes.
     """
     rank = ms.communication.get_rank()
@@ -147,14 +147,12 @@ def test_dynamic_shape(_init):
     group = ms.communication.GlobalComm.WORLD_COMM_GROUP
     world_size = ms.communication.get_group_size()
     dynamic_func = get_dynamic_func(group, world_size)
-    test_op_utils.TEST_OP(
+    TEST_OP(
         dynamic_func,
         inputs_seq,
-        '',
-        disable_input_check=True,
-        disable_yaml_check=True,
-        disable_mode=['GRAPH_MODE'],
-        disable_grad=True,
+        disable_generalize_test=True,
+        disable_mode=['GRAPH_MODE_GE'],
+        case_config={'disable_input_check': True, 'disable_grad': True},
     )
 
 
@@ -163,7 +161,7 @@ def test_precision_with_ms_small_ops(_init):
     Feature: mindspore.ops.all_gather_matmul
     Description: Test the precision of forward calculation.
     Expectation: The result of mindspore.ops.all_gather_matmul forward calculation is equal to the result of
-        mindspore.ops.AllGahter and mindspore.ops.MatMul forword calculation.
+        mindspore.ops.AllGahter and mindspore.ops.MatMul forward calculation.
     """
     rank = ms.communication.get_rank()
     np.random.seed(rank)

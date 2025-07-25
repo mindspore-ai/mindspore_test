@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, jit, JitConfig
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -91,6 +91,8 @@ def test_fill_diagonal_dynamic_shape():
     fill_value2 = 4
     wrap1 = False
     wrap2 = True
-    TEST_OP(fill_diagonal_forward_func_withx1, [
-        [tensor_x1, fill_value1, wrap1],
-        [tensor_x2, fill_value2, wrap2]], 'inplace_fill_diagonal', disable_mode=['GRAPH_MODE'])
+    TEST_OP(fill_diagonal_forward_func_withx1,
+            [[tensor_x1, fill_value1, wrap1],
+             [tensor_x2, fill_value2, wrap2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'])

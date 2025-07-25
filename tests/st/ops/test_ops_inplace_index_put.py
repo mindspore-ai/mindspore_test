@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import nn
 from mindspore.common import mutable
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs
@@ -170,7 +170,9 @@ def test_inplace_index_put_dynamic_shape():
     indices2 = [np.array([[1, 1, 1], [1, 0, 1]]).astype(np.bool_)]
     values2 = np.array([[2, 3]]).astype(np.float32)
     accumulate2 = True
-    TEST_OP(inplace_index_put_forward_func, [
-        [ms.Tensor(x), mutable([ms.Tensor(i) for i in indices]), ms.Tensor(values), accumulate],
-        [ms.Tensor(x2), mutable([ms.Tensor(i) for i in indices2]), ms.Tensor(values2), accumulate2]],
-            'inplace_index_put', disable_mode=['GRAPH_MODE'], disable_resize=True)
+    TEST_OP(inplace_index_put_forward_func,
+            [[ms.Tensor(x), mutable([ms.Tensor(i) for i in indices]), ms.Tensor(values), accumulate],
+             [ms.Tensor(x2), mutable([ms.Tensor(i) for i in indices2]), ms.Tensor(values2), accumulate2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor', 'GradByRequirement'],
+            case_config={'disable_resize': True})

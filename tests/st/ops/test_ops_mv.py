@@ -19,7 +19,7 @@ from mindspore import Tensor
 from mindspore.mint import mv
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -148,7 +148,8 @@ def test_mv_dynamic_shape():
     TEST_OP(
         mv_forward_func,
         [[Tensor(input1), Tensor(vec1)], [Tensor(input2), Tensor(vec2)]],
-        "mv",
-        disable_input_check=True,
-        disable_mode=['GRAPH_MODE']
+        disable_mode=['GRAPH_MODE_GE'],
+        disable_case=['ScalarTensor'],
+        case_config={'disable_input_check': True,
+                     'all_dim_zero': True}
     )

@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor, jit
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def rms_norm_forward_func(x, gamma, epsilon):
@@ -169,4 +169,5 @@ def test_rms_norm_dynamic_shape():
     x_2 = Tensor(np.random.randn(2, 3, 4, 64).astype(np.float32))
     gamma_2 = Tensor(np.random.randn(3, 4, 64).astype(np.float32))
     eps_2 = 1e-5
-    TEST_OP(rms_norm_forward_func, [[x_1, gamma_1, eps_1], [x_2, gamma_2, eps_2]], "rms_norm")
+    TEST_OP(rms_norm_forward_func, [[x_1, gamma_1, eps_1], [x_2, gamma_2, eps_2]],
+            disable_case=['EmptyTensor', 'ScalarTensor'])

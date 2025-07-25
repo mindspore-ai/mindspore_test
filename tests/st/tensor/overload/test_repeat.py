@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.ops import GradOperation
 from mindspore import Tensor, nn
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -220,8 +220,7 @@ def test_repeat_dynamic_classic():
             [x1, repeats1],
             [x2, repeats2],
         ],
-        'repeat',
-        disable_mode=['GRAPH_MODE'],   # not support yet
+        disable_mode=['GRAPH_MODE_GE'],   # not support yet
     )
 
 
@@ -264,5 +263,10 @@ def test_repeat_dynamic_bprop():
         x4_size, repeats4 = testcase[2]
         x3 = Tensor(np.random.rand(*x3_size), dtype=ms.float32)
         x4 = Tensor(np.random.rand(*x4_size), dtype=ms.float32)
-        case_name = f"repeat[{index}]"
-        TEST_OP(func, [[x3, repeats3], [x4, repeats4]], case_name, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
+        disable_generalize = False
+        if index == 2:
+            disable_generalize = True
+
+        TEST_OP(func, [[x3, repeats3], [x4, repeats4]], disable_generalize_test=disable_generalize,
+                disable_mode=['GRAPH_MODE_GE'])

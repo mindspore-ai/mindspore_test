@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import ops, mint, Tensor, jit, context, nn
 from mindspore.common.api import _pynative_executor
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -104,15 +104,21 @@ def test_full_dynamic_shape():
     value_1 = Tensor([5])
     size_2 = (4, 3, 2)
     value_2 = Tensor(6)
-    TEST_OP(full_forward_func, [[size_1, value_1], [size_2, value_2]], '', disable_input_check=True,
-            disable_yaml_check=True)
+    TEST_OP(full_forward_func,
+            [[size_1, value_1], [size_2, value_2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True})
 
     size_1 = (1, 2, 3)
     value_1 = 5
     size_2 = (4, 3, 2)
     value_2 = 6
-    TEST_OP(full_forward_func, [[size_1, value_1], [size_2, value_2]], '', disable_input_check=True,
-            disable_yaml_check=True, disable_grad=True)
+    TEST_OP(full_forward_func,
+            [[size_1, value_1], [size_2, value_2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor'],
+            case_config={'disable_input_check': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

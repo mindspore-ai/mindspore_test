@@ -19,7 +19,7 @@ import mindspore.common.dtype as mstype
 from mindspore import ops, jit
 from mindspore.ops import isfinite
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -122,4 +122,4 @@ def test_isfinite_dynamic_shape_testop():
     x1 = generate_random_input((3, 4, 5), np.float32)
     x2 = generate_random_input((3, 7, 8, 3), np.float32)
 
-    TEST_OP(isfinite_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'isfinite')
+    TEST_OP(isfinite_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

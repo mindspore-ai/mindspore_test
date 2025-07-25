@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import mint
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -87,4 +87,4 @@ def test_argmax_ext_dynamic_shape():
 
     ms_data2 = GenInputData(np.float32, (5, 8, 7))
     dim2 = 1
-    TEST_OP(argmax_ext_forward_func, [[ms_data1, dim1], [ms_data2, dim2]], '', disable_yaml_check=True)
+    TEST_OP(argmax_ext_forward_func, [[ms_data1, dim1], [ms_data2, dim2]], disable_case=['EmptyTensor', 'ScalarTensor'])

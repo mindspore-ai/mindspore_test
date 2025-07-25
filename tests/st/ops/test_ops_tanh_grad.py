@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import context, Tensor, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 tanh_grad = ms.ops.auto_generate.TanhGrad()
@@ -244,7 +244,8 @@ def test_tanh_grad_dynamic_shape_testop():
     y2 = generate_random_input((3, 7, 8, 3), np.float32)
     dy2 = generate_random_input((3, 7, 8, 3), np.float32)
 
-    TEST_OP(tanh_grad_forward_func, [[ms.Tensor(y1), ms.Tensor(dy1)], [ms.Tensor(y2), ms.Tensor(dy2)]], 'tanh_grad')
+    TEST_OP(tanh_grad_forward_func, [[ms.Tensor(y1), ms.Tensor(dy1)], [ms.Tensor(y2), ms.Tensor(dy2)]],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore.nn import Cell
 from mindspore.ops import gelu
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 rtol = 1e-3
 

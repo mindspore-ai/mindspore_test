@@ -20,7 +20,7 @@ from mindspore.ops.auto_generate import KVCacheScatterUpdate
 from mindspore.common.parameter import Parameter
 from mindspore import context, Tensor, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 kv_cache_scatter_update_op = KVCacheScatterUpdate()
@@ -129,4 +129,7 @@ def test_ops_dynamic():
 
     TEST_OP(kv_cache_scatter_update_op,
             [[var_1, indices_1, updates_1, -1, 'update'], [var_2, indices_2, updates_2, -1, 'update']],
-            'kv_cache_scatter_update', disable_grad=True, disable_input_check=True)
+            disable_case=['DiscontiguousInput', 'EmptyTensor', 'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_grad': True,
+                         'deterministic_use_origin_inputs': True})

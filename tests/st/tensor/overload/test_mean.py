@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -173,12 +173,16 @@ def test_tensor_mean_dynamic():
     Expectation: the result match with expected result.
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
-    axis1 = 1
+    axis1 = 0
     keep_dims1 = False
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     axis2 = 2
     keep_dims2 = True
-    TEST_OP(mean_ext_forward_func, [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]], 'mean_ext',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_input_check=True)
-    TEST_OP(mean_forward_func, [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]], 'mean',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_grad=True)
+    TEST_OP(mean_ext_forward_func,
+            [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True})
+    TEST_OP(mean_forward_func,
+            [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True})

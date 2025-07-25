@@ -20,7 +20,7 @@ from mindspore.mint import expm1
 from mindspore.mint.special import expm1 as special_expm1
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 
 
@@ -118,6 +118,4 @@ def test_expm1_dynamic_shape():
     """
     ms_data1 = generate_random_input((2, 3, 4, 5), np.float32)
     ms_data2 = generate_random_input((3, 4, 5, 6, 7), np.float32)
-    TEST_OP(expm1_forward_func
-            , [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]]
-            , 'expm1')
+    TEST_OP(expm1_forward_func, [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]])

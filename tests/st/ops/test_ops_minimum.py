@@ -19,7 +19,7 @@ from mindspore.ops import minimum
 from mindspore import ops
 
 from tests.st.utils.test_utils import to_cell_obj, compare
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -73,7 +73,7 @@ def minimum_maximum_case_all_dyn(op_func):
     t2_x = Tensor(np.array([[[1, 20, 5], [67, 8, 9]], [[130, 24, 15], [16, 64, 32]]], dtype=np.float32))
     t2_y = Tensor(np.array([[[0, 20, 6], [69, 10, 9]], [[120, 20, 14], [16, 64, 36]]], dtype=np.float32))
     input_case2 = [t2_x, t2_y]
-    TEST_OP(op_func, [input_case1, input_case2], '', disable_yaml_check=True)
+    TEST_OP(op_func, [input_case1, input_case2], case_config={'all_dim_zero': True})
 
 
 def np_minimum(input_x, input_y):

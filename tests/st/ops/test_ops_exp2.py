@@ -19,7 +19,7 @@ from mindspore.mint import exp2
 from mindspore.mint.special import exp2 as special_exp2
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -129,6 +129,5 @@ def test_exp2_dynamic_shape(mode):
     TEST_OP(
         exp2_forward_func,
         [[ms.Tensor(ms_data1)], [ms.Tensor(ms_data2)]],
-        "exp2",
-        disable_mode=["GRAPH_MODE"],
+        disable_mode=["GRAPH_MODE_GE"],
     )

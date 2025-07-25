@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from tests.st.utils.test_utils import run_with_cell
 
@@ -144,13 +144,13 @@ def test_tensor_mul__dynamic():
     TEST_OP(
         inplace_mul_forward_func,
         [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]],
-        "inplace_mul",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        case_config={'all_dim_zero': True}
     )
 
     TEST_OP(
         inplace_mul_forward_func,
         [[scalar_x1, scalar_y1], [scalar_x2, scalar_y2]],
-        "inplace_muls",
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
+        disable_mode=["GRAPH_MODE_GE", "GRAPH_MODE_O0"],
+        case_config={'all_dim_zero': True}
     )

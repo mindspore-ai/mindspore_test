@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 
@@ -140,17 +140,17 @@ def test_tensor_sum_dynamic():
     Expectation: the result match with expected result.
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 6), np.float32))
-    dim1 = 1
+    dim1 = 0
     keepdim1 = False
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
     dim2 = 2
     keepdim2 = True
     TEST_OP(sum_ext_forward_func,
-            [[ms_data1, dim1, keepdim1], [ms_data2, dim2, keepdim2]], 'sum_ext', disable_mode=['GRAPH_MODE'],
-            disable_yaml_check=True)
+            [[ms_data1, dim1, keepdim1], [ms_data2, dim2, keepdim2]],
+            disable_mode=['GRAPH_MODE_GE'])
 
     ms_data1 = ms.Tensor(generate_random_input((2, 6), np.float32))
-    axis1 = 1
+    axis1 = 0
     dtype1 = ms.float32
     keepdims1 = True
     initial1 = 3
@@ -160,5 +160,6 @@ def test_tensor_sum_dynamic():
     keepdims2 = False
     initial2 = 2
     TEST_OP(sum_forward_func,
-            [[ms_data1, axis1, dtype1, keepdims1, initial1], [ms_data2, axis2, dtype2, keepdims2, initial2]], 'sum',
-            disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_resize=True)
+            [[ms_data1, axis1, dtype1, keepdims1, initial1], [ms_data2, axis2, dtype2, keepdims2, initial2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_resize': True})

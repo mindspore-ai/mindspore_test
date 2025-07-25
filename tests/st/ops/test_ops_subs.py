@@ -13,10 +13,10 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import numpy as np
 import mindspore as ms
 from mindspore import mint, Tensor
@@ -85,4 +85,4 @@ def test_ops_sub_dynamic_shape():
     other2 = 2.4
     alpha2 = 9
     TEST_OP(sub_forward_dyn_func, [[Tensor(input1), other1, alpha1], [Tensor(input2), other2, alpha2]],
-            'sub_scalar', disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'])

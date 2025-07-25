@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.mint.nn.functional import relu_
 import copy
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -63,5 +63,5 @@ def test_inplace_relu_dynamic_shape():
     tensor_x1 = ms.Tensor(generate_random_input((2, 3), np.float32))
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
 
-    TEST_OP(inplace_relu_forward_func_grad, [[tensor_x1], [tensor_x2]], 'inplace_relu',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(inplace_relu_forward_func_grad, [[tensor_x1], [tensor_x2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])

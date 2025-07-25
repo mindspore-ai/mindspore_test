@@ -15,7 +15,7 @@
 
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 import numpy as np
 import pytest
@@ -100,5 +100,6 @@ def test_forward_dynamic_shape():
 
     inputs2_x = ms.Tensor(np.array([[[5, 0.1], [0, 5.5]], [[0.1, 0.8], [5, 6]]], np.float32))
 
-    TEST_OP(isinf_forward, [[inputs1_x], [inputs2_x]], 'isinf', disable_mode=
-            ['GRAPH_MODE'], disable_grad=True, disable_yaml_check=True)
+    TEST_OP(isinf_forward, [[inputs1_x], [inputs2_x]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True})

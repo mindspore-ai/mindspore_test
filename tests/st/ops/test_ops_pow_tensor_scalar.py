@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 from mindspore import mint, ops
 import mindspore as ms
@@ -99,5 +99,7 @@ def test_pow_dynamic_shape():
     x1, _ = generate_random_input((2, 3, 4), np.float32)
     x2, _ = generate_random_input((3, 4, 5, 6), np.float32)
 
-    TEST_OP(pow_forward_func, [[ms.Tensor(x1), 2.3], [ms.Tensor(x2), 0]], 'pow_scalar_tensor',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_resize=True)
+    TEST_OP(pow_forward_func, [[ms.Tensor(x1), 2.3], [ms.Tensor(x2), 0]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_input_check': True,
+                         'disable_resize': True})

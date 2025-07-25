@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops, jit, JitConfig, mint
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -82,4 +82,5 @@ def test_ops_addcdiv_ext_forwad_dynamic_shape():
     TEST_OP(addcdiv_ext_forward_func,
             [[ms.Tensor(input1_x1), ms.Tensor(input1_x2), ms.Tensor(input1_x3), 1.0],
              [ms.Tensor(input2_x1), ms.Tensor(input2_x2), ms.Tensor(input2_x3), 2.0]],
-            'addcdiv_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'all_dim_zero': True})

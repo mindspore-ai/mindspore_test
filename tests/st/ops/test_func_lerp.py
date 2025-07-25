@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import lerp
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import tests.st.utils.test_utils as test_utils
 
@@ -97,11 +97,9 @@ def test_mint_lerp_dynamic_shape():
     input6 = ms.Tensor(generate_random_input((2, 3, 4, 5), np.float32))
     TEST_OP(lerp_forward_func,
             [[input1, input2, input3], [input4, input5, input6]],
-            'lerp',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})
 
     TEST_OP(lerp_forward_func, [[input1, input2, 0.5], [input4, input5, 0.7]],
-            'lerp',
-            disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'all_dim_zero': True})

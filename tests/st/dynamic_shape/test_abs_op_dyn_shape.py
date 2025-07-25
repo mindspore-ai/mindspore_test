@@ -18,7 +18,7 @@ from mindspore import context
 from mindspore import ops
 import mindspore as ms
 
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils.test_utils import get_inputs_np, get_inputs_tensor, compare, run_with_cell
 from tests.mark_utils import arg_mark
 
@@ -136,4 +136,4 @@ def test_abs_dyn():
     """
     input_case1 = get_inputs_tensor(get_inputs_np([(2, 4, 8)], [np.float32]))
     input_case2 = get_inputs_tensor(get_inputs_np([(2, 4, 8, 16)], [np.float32]))
-    TEST_OP(abs_func, [input_case1, input_case2], 'abs')
+    TEST_OP(abs_func, [input_case1, input_case2])

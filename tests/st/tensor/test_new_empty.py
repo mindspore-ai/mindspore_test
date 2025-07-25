@@ -17,7 +17,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 import mindspore.common.dtype as mstype
 import mindspore as ms
 from mindspore import nn
@@ -97,5 +97,7 @@ def test_new_empty_dynamic_shape():
     tensor_x1 = Tensor(np.arange(6).reshape(2, 3).astype(np.float32))
     tensor_x2 = Tensor(np.arange(60).reshape(3, 4, 5).astype(np.float32))
 
-    TEST_OP(new_empty_forward_func, [[tensor_x1], [tensor_x2]], '', disable_yaml_check=True, disable_grad=True,
-            disable_mode=['GRAPH_MODE'])
+    TEST_OP(new_empty_forward_func,
+            [[tensor_x1], [tensor_x2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True})

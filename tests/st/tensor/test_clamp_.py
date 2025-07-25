@@ -17,7 +17,7 @@ import numpy as np
 from mindspore import ops, Tensor, jit, dtype as mstype
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -134,8 +134,10 @@ def test_mint_clamp_min_max_tensor_dynamic_shape():
     min2 = ms.Tensor(generate_random_input((3, 4, 5, 1), np.float32))
     max2 = ms.Tensor(generate_random_input((3, 4, 1, 6), np.float32))
 
-    TEST_OP(clamp_forward_func_grad, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(clamp_forward_func_grad,
+            [[x1, min1, max1], [x2, min2, max2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -153,5 +155,7 @@ def test_mint_clamp_min_max_scalar_dynamic_shape():
     min2 = 3
     max2 = 8
 
-    TEST_OP(clamp_forward_func_grad, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(clamp_forward_func_grad,
+            [[x1, min1, max1], [x2, min2, max2]],
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'],
+            case_config={'all_dim_zero': True})

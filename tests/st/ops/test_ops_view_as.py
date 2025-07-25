@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import torch
 
@@ -82,4 +82,4 @@ def test_ops_view_as_dynamic_shape0():
 
     TEST_OP(view_as_forward_func,
             [[ms.Tensor(x1), ms.Tensor(y1)], [ms.Tensor(x2), ms.Tensor(y2)]],
-            'view_as', disable_mode=["GRAPH_MODE"])
+            disable_mode=["GRAPH_MODE_GE"])

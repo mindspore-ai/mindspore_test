@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 import mindspore as ms
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -131,4 +131,5 @@ def test_logical_not():
     """
     input_case1 = ms.Tensor(generate_random_input((3, 4, 5, 6), np.float32))
     input_case2 = ms.Tensor(generate_random_input((3, 4), np.float32))
-    TEST_OP(logical_not_forward_func, [[input_case1], [input_case2]], 'logical_not', disable_grad=True)
+    TEST_OP(logical_not_forward_func, [[input_case1], [input_case2]],
+            case_config={'disable_grad': True})

@@ -19,7 +19,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore.ops.auto_generate import index_select_ext
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -86,5 +86,9 @@ def test_func_index_select_ext_dynamic():
     axis2 = 2
     index2 = ms.Tensor(np.array([0, 1, 2, 1, 2, 3]).astype(np.int64))
 
-    TEST_OP(index_select_ext, [[input1, axis1, index1], [input2, axis2, index2]], 'index_select',
-            disable_input_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(index_select_ext,
+            [[input1, axis1, index1], [input2, axis2, index2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'deterministic_use_origin_inputs': True})

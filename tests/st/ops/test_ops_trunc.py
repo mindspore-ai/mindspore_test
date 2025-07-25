@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -126,30 +126,17 @@ def test_ops_trunc_vmap(context_mode):
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_trunc_dynamic_shape_cpu_gpu(context_mode):
-    """
-    Feature: pyboost function.
-    Description: test function trunc with dynamic shape on GPU and CPU.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=context_mode)
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    x2 = generate_random_input((6, 7, 8), np.float32)
-    TEST_OP(trunc_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'trunc', disable_yaml_check=True)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_trunc_dynamic_shape_ascend(context_mode):
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_ops_trunc_dynamic_shape():
     """
     Feature: pyboost function.
-    Description: test function trunc with dynamic shape on Ascend.
+    Description: test function trunc with dynamic shape.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
     x1 = generate_random_input((2, 3, 4, 5), np.float32)
     x2 = generate_random_input((6, 7, 8), np.float32)
-    TEST_OP(trunc_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]], 'trunc', disable_yaml_check=True)
+    TEST_OP(trunc_forward_func, [[ms.Tensor(x1)], [ms.Tensor(x2)]])

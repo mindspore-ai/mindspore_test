@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -88,5 +88,4 @@ def test_log_softmax_dynamic_shape():
     dim1 = 0
     x2 = ms.Tensor(generate_random_input((2, 3, 4), np.float32))
     dim2 = 1
-    TEST_OP(log_softmax_forward_func, [[x1, dim1], [x2, dim2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(log_softmax_forward_func, [[x1, dim1], [x2, dim2]], disable_mode=['GRAPH_MODE_GE'])

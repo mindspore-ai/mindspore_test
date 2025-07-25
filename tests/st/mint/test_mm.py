@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import ops, mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -79,5 +79,9 @@ def test_mm_dynamic_shape():
     input2 = ms.Tensor(generate_random_input((4, 5), np.float32))
     mat22 = ms.Tensor(generate_random_input((5, 6), np.float32))
 
-    TEST_OP(mm_forward_func, [[input1, mat21], [input2, mat22]], '', disable_input_check=True,
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'], disable_resize=True)
+    TEST_OP(mm_forward_func, [[input1, mat21], [input2, mat22]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'disable_resize': True,
+                         'all_dim_zero': True})

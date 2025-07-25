@@ -13,9 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import pytest
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 import numpy as np
 import mindspore as ms
@@ -84,4 +84,4 @@ def test_ops_normalize_dynamic_shape():
     input_y2 = generate_random_input((2, 3, 6, 5), np.float32)
     TEST_OP(diff_forward_dyn_func, [[Tensor(input_x), 2, -1, Tensor(input_x1), Tensor(input_x2)],
                                     [Tensor(input_y), 3, 2, Tensor(input_y1), Tensor(input_y2)]],
-            'diff', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'], disable_case=['EmptyTensor', 'ScalarTensor'])

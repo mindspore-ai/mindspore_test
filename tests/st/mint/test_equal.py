@@ -20,7 +20,7 @@ from mindspore.mint import equal
 
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 
 def generate_random_input(shape, dtype):
@@ -80,5 +80,4 @@ def test_ops_equal_forward_dynamic_shape():
     x2, y2 = generate_random_input((3, 4), np.float16)
     x2 = ms.Tensor(x2, dtype=ms.float16)
     y2 = ms.Tensor(y2, dtype=ms.float16)
-    TEST_OP(equal_forward_func, [[x, y], [x2, y2]], '',
-            disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(equal_forward_func, [[x, y], [x2, y2]], disable_mode=['GRAPH_MODE_GE'])

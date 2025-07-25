@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 
 import mindspore as ms
@@ -73,4 +73,4 @@ def test_tensor_log2_dynamic():
     """
     ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
     ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
-    TEST_OP(log2_forward_func, [[ms_data1], [ms_data2]], 'log2')
+    TEST_OP(log2_forward_func, [[ms_data1], [ms_data2]])

@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 import mindspore as ms
@@ -114,8 +114,6 @@ def test_pixel_shuffle_dynamic():
         pixel_shuffle_forward_func,
         [generate_inputs((1, 9, 2, 2), 3),
          generate_inputs((2, 2, 20, 5, 5), 2)],
-        "pixel_shuffle",
-        disable_mode=[
-            "GRAPH_MODE",
-        ]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['ScalarTensor']
     )

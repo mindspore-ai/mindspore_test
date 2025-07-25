@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import mindspore as ms
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -160,4 +160,5 @@ def test_div_dynamic_shape():
     ms_x0, ms_y0 = ms.Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]), ms.float32), ms.Tensor(np.array([[1, 2, 3, 4]]),
                                                                                             ms.float32)
     ms_x1, ms_y1 = ms.Tensor(np.array([[1, 2, 3], [5, 6, 7]]), ms.float32), ms.Tensor(np.array([[1, 2, 3]]), ms.float32)
-    TEST_OP(div_forward_dyn, [[ms_x0, ms_y0], [ms_x1, ms_y1]], '', disable_input_check=True, disable_yaml_check=True)
+    TEST_OP(div_forward_dyn, [[ms_x0, ms_y0], [ms_x1, ms_y1]],
+            case_config={'disable_input_check': True, 'all_dim_zero': True})

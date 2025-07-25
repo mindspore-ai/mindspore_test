@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import mint, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -95,11 +95,13 @@ def test_hardtanh_dynamic_shape():
     min_val_2 = -3
     max_val_2 = 3
     TEST_OP(hardtanh_forward_func,
-            [[ms.Tensor(x1_np), min_val_1, max_val_1], [ms.Tensor(x2_np), min_val_2, max_val_2]], '',
-            disable_yaml_check=True, disable_input_check=True, disable_mode=['GRAPH_MODE'])
+            [[ms.Tensor(x1_np), min_val_1, max_val_1], [ms.Tensor(x2_np), min_val_2, max_val_2]],
+            disable_mode=['GRAPH_MODE_GE'])
     TEST_OP(inplace_hardtanh_forward_func, [[ms.Tensor(x1_np), min_val_1, max_val_1],
-                                            [ms.Tensor(x2_np), min_val_2, max_val_2]], '',
-            disable_yaml_check=True, disable_input_check=True, disable_mode=['GRAPH_MODE'], disable_grad=True)
+                                            [ms.Tensor(x2_np), min_val_2, max_val_2]],
+            disable_mode=['GRAPH_MODE_GE'],
+            case_config={'disable_grad': True,
+                         'all_dim_zero': True})
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

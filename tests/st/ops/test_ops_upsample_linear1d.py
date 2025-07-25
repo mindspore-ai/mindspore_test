@@ -16,7 +16,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
@@ -92,9 +92,9 @@ def test_upsample_linear_1d_size_dynamic():
             [input_case1, (100,), None, True],
             [input_case2, (40,), None, False],
         ],
-        'upsample_linear1d',
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )
 
 
@@ -114,7 +114,7 @@ def test_upsample_linear_1d_scales_dynamic():
             [input_case1, None, (2.6,), True],
             [input_case2, None, (3.7,), True],
         ],
-        'upsample_linear1d',
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        disable_mode=["GRAPH_MODE_GE"],
+        disable_case=['EmptyTensor', 'ScalarTensor'],
+        case_config={'disable_input_check': True}
     )

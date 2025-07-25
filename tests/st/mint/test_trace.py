@@ -18,7 +18,7 @@ import pytest
 
 import mindspore as ms
 from mindspore import mint, Tensor, jit
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
@@ -63,5 +63,7 @@ def test_mint_trace_ext_dynamic():
     """
     x1 = generate_random_input((3, 3), np.float32)
     x2 = generate_random_input((3, 4), np.float32)
-    TEST_OP(mint.trace, [[ms.Tensor(x1)], [ms.Tensor(x2)]], "trace_ext", disable_input_check=True,
-            disable_mode=["GRAPH_MODE"])
+    TEST_OP(mint.trace, [[ms.Tensor(x1)], [ms.Tensor(x2)]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True})

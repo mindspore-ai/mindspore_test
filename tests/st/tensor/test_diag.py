@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, jit, JitConfig
 from mindspore import context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -69,5 +69,7 @@ def test_diag_dynamic_shape():
     input_x1 = ms.Tensor([[1.3, -2.1], [-4.7, 1.0]], ms.float32)
     input_x2 = ms.Tensor([1.3, 2.5, -2.1, 4.7, 2.5, 1.0], ms.float32)
     diagonal = 0
-    TEST_OP(diag_forward_func, [[input_x1, diagonal], [input_x2, diagonal]], 'diag',
-            disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(diag_forward_func, [[input_x1, diagonal], [input_x2, diagonal]],
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True},)

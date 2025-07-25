@@ -18,7 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor
 from tests.mark_utils import arg_mark
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.test_op import TEST_OP
 
 def add_rms_norm_forward_func(x1, x2, gamma, epsilon):
     y, rstd, x_sum = ops.add_rms_norm(x1, x2, gamma, epsilon)
@@ -107,5 +107,10 @@ def test_rms_norm_dynamic_shape():
     x2_2 = Tensor(np.random.randn(2, 3, 4, 64).astype(np.float32))
     gamma_2 = Tensor(np.random.randn(3, 4, 64).astype(np.float32))
     eps_2 = 1e-5
-    TEST_OP(add_rms_norm_forward_func, [[x1_1, x1_2, gamma_1, eps_1], [x2_1, x2_2, gamma_2, eps_2]], "add_rms_norm",
-            disable_mode=["GRAPH_MODE"])
+
+    # TEST_OP Todo 3rd grad is not support Deterministic case.
+    TEST_OP(add_rms_norm_forward_func, [[x1_1, x1_2, gamma_1, eps_1], [x2_1, x2_2, gamma_2, eps_2]],
+            disable_mode=["GRAPH_MODE_GE"],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor',
+                          'Deterministic'])

@@ -20,7 +20,7 @@ import mindspore as ms
 from mindspore import mint, Tensor, context
 from mindspore.ops.functional import vmap
 from tests.mark_utils import arg_mark
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.st.utils.test_utils import run_with_cell
 
 def generate_random_input(shape, dtype):

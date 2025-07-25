@@ -19,8 +19,8 @@ import mindspore as ms
 from mindspore import nn
 from mindspore import mint
 from mindspore.ops.composite import GradOperation
-from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.test_tools.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.mark_utils import arg_mark
 
 
@@ -250,44 +250,61 @@ def test_mint_einsum_dynamic():
     net = EinsumNet('abc -> ')
     inputs1 = [ms.Tensor(generate_random_input((2, 3, 4), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((5, 6, 7), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
     net = EinsumNet('aa -> a')
     inputs1 = [ms.Tensor(generate_random_input((2, 2), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((3, 3), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
     net = EinsumNet('abc -> cab')
     inputs1 = [ms.Tensor(generate_random_input((2, 3, 4), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((5, 6, 7), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
     net = EinsumNet('ab, ab -> ab')
     inputs1 = [ms.Tensor(generate_random_input((2, 3), dtype=np.float32)),
                ms.Tensor(generate_random_input((2, 3), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((4, 5), dtype=np.float32)),
                ms.Tensor(generate_random_input((4, 5), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
     net = EinsumNet('ab, ab -> ')
     inputs1 = [ms.Tensor(generate_random_input((2, 3), dtype=np.float32)),
                ms.Tensor(generate_random_input((2, 3), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((4, 5), dtype=np.float32)),
                ms.Tensor(generate_random_input((4, 5), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
     net = EinsumNet('abc, bcd -> ad')
     inputs1 = [ms.Tensor(generate_random_input((2, 3, 4), dtype=np.float32)),
                ms.Tensor(generate_random_input((3, 4, 5), dtype=np.float32))]
     inputs2 = [ms.Tensor(generate_random_input((4, 5, 6), dtype=np.float32)),
                ms.Tensor(generate_random_input((5, 6, 7), dtype=np.float32))]
-    TEST_OP(net, [inputs1, inputs2], '', disable_input_check=True, disable_yaml_check=True,
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(net, [inputs1, inputs2],
+            disable_case=['ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'all_dim_zero': True},
+            disable_mode=['GRAPH_MODE_GE', 'GRAPH_MODE_O0'])
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

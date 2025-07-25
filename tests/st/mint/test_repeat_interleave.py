@@ -17,8 +17,8 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, mint
-from mindspore import jit, JitConfig
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from mindspore import jit
+from tests.st.ops.test_tools.test_op import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -170,7 +170,9 @@ def test_repeat_interleave_dynamic_shape_int():
     dim2 = 1
     repeats2 = 7
     TEST_OP(repeat_interleave_forward, [[input_case1, repeats1, dim1], [input_case2, repeats2, dim2]],
-            '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -190,4 +192,8 @@ def test_repeat_interleave_dynamic_shape_tensor():
     repeats2 = Tensor([2, 3, 5, 4])
     TEST_OP(repeat_interleave_forward, [[input_case1, repeats1, dim1, output_size1],
                                         [input_case2, repeats2, dim2, output_size2]],
-            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+            disable_mode=['GRAPH_MODE_GE'],
+            disable_case=['EmptyTensor',
+                          'ScalarTensor'],
+            case_config={'disable_input_check': True,
+                         'deterministic_use_origin_inputs': True})
