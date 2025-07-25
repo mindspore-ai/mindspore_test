@@ -909,9 +909,7 @@ class AdamWeightDecay(Optimizer):
     Note:
         There is usually no connection between a optimizer and mixed precision. But when `FixedLossScaleManager` is used
         and `drop_overflow_update` in `FixedLossScaleManager` is set to False, optimizer needs to set the 'loss_scale'.
-        As this optimizer has no argument of `loss_scale`, so `loss_scale` needs to be processed by other means, refer
-        document `LossScale <https://www.mindspore.cn/tutorials/en/master/beginner/mixed_precision.html>`_ to
-        process `loss_scale` correctly.
+        As this optimizer has no argument of `loss_scale`, so `loss_scale` needs to be processed by other means.
 
         If parameters are not grouped, the `weight_decay` in optimizer will be applied on the network parameters without
         'beta' or 'gamma' in their names. Users can group parameters to change the strategy of decaying weight. When
