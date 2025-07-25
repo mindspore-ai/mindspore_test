@@ -1004,57 +1004,58 @@ class Profile:
             RuntimeError: If the `schedule` parameter is not set.
 
         Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import nn, context
-        >>> import mindspore.dataset as ds
-        >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType
-        >>>
-        >>> class Net(nn.Cell):
-        ...     def __init__(self):
-        ...         super(Net, self).__init__()
-        ...         self.fc = nn.Dense(2,2)
-        ...     def construct(self, x):
-        ...         return self.fc(x)
-        >>>
-        >>> def generator():
-        ...     for i in range(2):
-        ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
-        >>>
-        >>> def train(net):
-        ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
-        ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
-        ...     data = ds.GeneratorDataset(generator, ["data", "label"])
-        ...     model = mindspore.train.Model(net, loss, optimizer)
-        ...     model.train(1, data)
-        >>>
-        >>> if __name__ == '__main__':
-        ...     # If the device_target is GPU, set the device_target to "GPU"
-        ...     context.set_context(mode=mindspore.GRAPH_MODE)
-        ...     mindspore.set_device("Ascend")
-        ...
-        ...     # Init Profiler
-        ...     experimental_config = mindspore.profiler._ExperimentalConfig(
-        ...                                 profiler_level=ProfilerLevel.Level0,
-        ...                                 aic_metrics=AicoreMetrics.AiCoreNone,
-        ...                                 l2_cache=False,
-        ...                                 mstx=False,
-        ...                                 data_simplification=False,
-        ...                                 export_type=[ExportType.Text])
-        ...     steps = 10
-        ...     net = Net()
-        ...     # Note that the Profiler should be initialized before model.train
-        ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
-        ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
-        ...                                           repeat=1, skip_first=0),
-        ...                                     on_trace_ready=mindspore.profiler.tensorboard_trace_handler("./data"),
-        ...                                     profile_memory=False,
-        ...                                     experimental_config=experimental_config) as prof:
-        ...
-        ...         # Train Model
-        ...         for step in range(steps):
-        ...             train(net)
-        ...             prof.step()
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import nn, context
+            >>> import mindspore.dataset as ds
+            >>> from mindspore.profiler import ProfilerLevel, ProfilerActivity, AicoreMetrics, ExportType
+            >>>
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.fc = nn.Dense(2,2)
+            ...     def construct(self, x):
+            ...         return self.fc(x)
+            >>>
+            >>> def generator():
+            ...     for i in range(2):
+            ...         yield np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32)
+            >>>
+            >>> def train(net):
+            ...     optimizer = nn.Momentum(net.trainable_params(), 1, 0.9)
+            ...     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+            ...     data = ds.GeneratorDataset(generator, ["data", "label"])
+            ...     model = mindspore.train.Model(net, loss, optimizer)
+            ...     model.train(1, data)
+            >>>
+            >>> if __name__ == '__main__':
+            ...     # If the device_target is GPU, set the device_target to "GPU"
+            ...     context.set_context(mode=mindspore.GRAPH_MODE)
+            ...     mindspore.set_device("Ascend")
+            ...
+            ...     # Init Profiler
+            ...     experimental_config = mindspore.profiler._ExperimentalConfig(
+            ...                                 profiler_level=ProfilerLevel.Level0,
+            ...                                 aic_metrics=AicoreMetrics.AiCoreNone,
+            ...                                 l2_cache=False,
+            ...                                 mstx=False,
+            ...                                 data_simplification=False,
+            ...                                 export_type=[ExportType.Text])
+            ...     steps = 10
+            ...     net = Net()
+            ...     # Note that the Profiler should be initialized before model.train
+            ...     with mindspore.profiler.profile(activities=[ProfilerActivity.CPU, ProfilerActivity.NPU],
+            ...                                     schedule=mindspore.profiler.schedule(wait=0, warmup=0, active=1,
+            ...                                           repeat=1, skip_first=0),
+            ...                                     on_trace_ready=mindspore.profiler.
+            ...                                         tensorboard_trace_handler("./data"),
+            ...                                     profile_memory=False,
+            ...                                     experimental_config=experimental_config) as prof:
+            ...
+            ...         # Train Model
+            ...         for step in range(steps):
+            ...             train(net)
+            ...             prof.step()
         """
         if not self._has_started:
             logger.error("profile is stopped, step takes no effect!")
