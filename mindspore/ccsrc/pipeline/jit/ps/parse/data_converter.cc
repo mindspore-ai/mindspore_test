@@ -1787,6 +1787,7 @@ static const std::unordered_map<int32_t, OpDefConvertFunc> kConverters = {
 
   // TypeCas6: convert int/bool to float
   {CombineTypesForTypeCast(mindspore::ops::DT_INT, mindspore::ops::DT_FLOAT), ConvertBoolOrIntToFloat},
+  {CombineTypesForTypeCast(mindspore::ops::DT_BOOL, mindspore::ops::DT_FLOAT), ConvertBoolOrIntToFloat},
 };
 
 OpDefConvertFunc GetConverterByType(int32_t dtype) {
