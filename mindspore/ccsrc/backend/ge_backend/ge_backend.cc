@@ -1604,7 +1604,7 @@ void GEBackend::RunWholeGraph(BackendGraphId graph_id, const VectorRef &inputs, 
       MS_LOG(EXCEPTION) << "Launch graph failed, graph id: " + std::to_string(func_graph->graph_id());
     }
   }
-  auto ret = res_manager->SyncAllStreams();
+  auto ret = res_manager->SyncAllStreams(false);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Sync Stream failed";
   }
@@ -1679,11 +1679,11 @@ void GEBackend::DebugOnStepEnd(const KernelGraphPtr &graph, bool dump_flag) {
   auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
-    res_manager->SyncAllStreams();
+    res_manager->SyncAllStreams(false);
     hookDebugger.HookOnStepEnd();
   }
 #endif
-  res_manager->SyncAllStreams();
+  res_manager->SyncAllStreams(false);
 }
 
 bool GEBackend::ProfilerOnStepBegin(const KernelGraphPtr &graph) {
@@ -1728,10 +1728,10 @@ void GEBackend::ProfilerOnStepEnd(bool profile_started) {
 
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   res_manager->BindDeviceToCurrentThread(false);
-  res_manager->SyncAllStreams();
+  res_manager->SyncAllStreams(false);
   MS_LOG(INFO) << "Dot step end timestamp.";
   profiler->StepStop();
-  res_manager->SyncAllStreams();
+  res_manager->SyncAllStreams(false);
 }
 
 void GEBackend::ConvertIR(const FuncGraphPtr &func_graph,

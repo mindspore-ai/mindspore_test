@@ -74,7 +74,7 @@ void LoopCountActor::IncreaseLoopCount(OpContext<KernelTensor> *const context) {
     device::ResKey res_key{device::GetDeviceTypeByName(device_name), device_id};
     auto res_manager = device::HalResManager::GetInstance().GetOrCreateResManager(res_key);
     MS_EXCEPTION_IF_NULL(res_manager);
-    res_manager->SyncAllStreams();
+    res_manager->SyncAllStreams(false);
     MS_LOG(INFO) << "Sync stream success.";
   }
 

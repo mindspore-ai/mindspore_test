@@ -90,10 +90,10 @@ void DebugActor::DebugOnStepEnd(OpContext<KernelTensor> *const, const AID *, int
   auto &hookDebugger = dump::HookDebugger::GetInstance();
   if (hookDebugger.IsHookerEnabled()) {
     MS_LOG(INFO) << "On step end, hookdebugger is enable.";
-    res_manager->SyncAllStreams();
+    res_manager->SyncAllStreams(false);
     hookDebugger.HookOnStepEnd();
   }
-  res_manager->SyncAllStreams();
+  res_manager->SyncAllStreams(false);
 }
 void DebugActor::Finalize() {}
 }  // namespace runtime

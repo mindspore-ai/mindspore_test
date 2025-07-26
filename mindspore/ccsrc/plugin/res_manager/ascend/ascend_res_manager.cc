@@ -836,9 +836,9 @@ bool AscendResManager::SyncStream(size_t stream_id) const {
   return AscendStreamMng::GetInstance().SyncStream(stream_id);
 }
 
-bool AscendResManager::SyncAllStreams() const {
+bool AscendResManager::SyncAllStreams(bool sync_device) const {
   AscendHalManager::GetInstance().SetContext(device_id_);
-  return AscendStreamMng::GetInstance().SyncAllStreams();
+  return AscendStreamMng::GetInstance().SyncAllStreams(sync_device);
 }
 
 bool AscendResManager::SyncNotDefaultStreams() const {

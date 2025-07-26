@@ -16,6 +16,7 @@
 
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 
+#include <string>
 #include "utils/log_adapter.h"
 #include "acl/error_codes/rt_error_codes.h"
 #include "plugin/res_manager/ascend/mem_manager/ascend_gmem_adapter.h"
@@ -309,25 +310,36 @@ bool AscendStreamMng::SyncStream(aclrtStream stream) const {
   return true;
 }
 
-bool AscendStreamMng::SyncAllStreams() const {
+bool AscendStreamMng::SyncAllStreams(bool sync_device) const {
   auto RET = ACL_ERROR_NONE;
+  std::string sync_method = sync_device ? "aclrtSynchronizeDeviceWithTimeout" : "aclrtSynchronizeStreamWithTimeout";
   try {
     GilReleaseWithCheck gil_release;
-    // According to CANN, we need to set timeout to 2 hours for aclrtSynchronizeDeviceWithTimeout.
-    int timeout = 7200000;
-    RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, timeout);
-    if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
-      MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error."
-                    << "Please do the following three things to confirm whether it is caused by the "
-                    << "execution failure of a certain operator.\n"
-                    << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
-                    << "    2.Run again your python script.\n"
-                    << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
-                    << "Now you will get the certain failed op detailed infos.";
-      return false;
+    if (sync_device) {
+      // According to CANN, we need to set timeout to 2 hours for aclrtSynchronizeDeviceWithTimeout.
+      int timeout = 7200000;
+      RET = CALL_ASCEND_API(aclrtSynchronizeDeviceWithTimeout, timeout);
+      if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {
+        MS_LOG(ERROR) << "Call runtime aclrtSynchronizeDeviceWithTimeout error."
+                      << "Please do the following three things to confirm whether it is caused by the "
+                      << "execution failure of a certain operator.\n"
+                      << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
+                      << "    2.Run again your python script.\n"
+                      << "    3.Grep 'Sync run failed' in your logs, it always stays at the end of your logs.\n"
+                      << "Now you will get the certain failed op detailed infos.";
+        return false;
+      }
+    } else {
+      for (size_t i = 0; i < streams_.size(); i++) {
+        const auto stream = streams_[i];
+        if (stream != nullptr && !SyncStream(stream)) {
+          MS_LOG(ERROR) << "SyncStream for stream id " << i << " failed.";
+          return false;
+        }
+      }
     }
   } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "aclrtSynchronizeDeviceWithTimeout failed. " << e.what()
+    MS_LOG(ERROR) << sync_method << " failed. " << e.what()
                   << "Please do the following three things to confirm whether it is caused by the "
                   << "execution failure of a certain operator.\n"
                   << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"
@@ -337,7 +349,7 @@ bool AscendStreamMng::SyncAllStreams() const {
     return false;
   }
   if (RET == ACL_ERROR_RT_AICORE_OVER_FLOW) {
-    MS_LOG(WARNING) << "Call runtime aclrtSynchronizeDeviceWithTimeout, the stream get overflow."
+    MS_LOG(WARNING) << "Call runtime " << sync_method << ", the stream get overflow."
                     << "Please do the following three things to confirm whether it is caused by the "
                     << "execution failure of a certain operator.\n"
                     << "    1.Set mindspore.runtime.launch_blocking() at the beginning of your python script.\n"

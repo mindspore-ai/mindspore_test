@@ -115,7 +115,7 @@ class ASCEND_RES_MANAGER_EXPORT AscendResManager : public HalResBase {
   size_t GetCurrentStreamId() const override;
   bool QueryStream(size_t stream_id) const override;
   bool SyncStream(size_t stream_id = 0) const override;
-  bool SyncAllStreams() const override;
+  bool SyncAllStreams(bool sync_device = true) const override;
   bool SyncNotDefaultStreams() const override;
   size_t DefaultStream() const override;
   std::pair<std::vector<size_t>, std::vector<size_t>> AllocDeviceMemoryForTensorList(

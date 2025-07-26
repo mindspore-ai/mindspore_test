@@ -190,7 +190,8 @@ class RES_EXPORT HalResBase {
   // "SyncAllStreams" interfaces are implemented by subclasses.
   virtual bool SyncStream(size_t stream_id) const { return true; }
 
-  virtual bool SyncAllStreams() const { return true; }
+  // 'sync_device' is used for Ascend backend.
+  virtual bool SyncAllStreams(bool sync_device = true) const { return true; }
 
   virtual bool SyncNotDefaultStreams() const { return true; }
 
