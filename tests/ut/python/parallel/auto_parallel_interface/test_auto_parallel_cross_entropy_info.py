@@ -21,7 +21,9 @@ from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import Cell
 from mindspore.ops import stop_gradient
 from mindspore.ops import operations as P
-from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode, FakeData3
+from parallel.auto_parallel_interface._utils import init_hccl, set_parallel_mode
+from parallel.auto_parallel_interface._utils_dataset import FakeData
+
 
 ms.context.set_context(mode=ms.GRAPH_MODE)
 
@@ -64,7 +66,7 @@ def test_cross_entropy_semi_auto_parallel_with_strategy():
     """
     init_hccl(global_rank=0, device_num=8)
 
-    dataset = FakeData3(size=256, batch_size=16, image_size=(96,), num_classes=96, use_parallel=True)
+    dataset = FakeData(size=256, batch_size=16, image_size=(96,), num_classes=96, use_parallel=True, data_num=3)
     dataset.set_label_onehot(is_onehot=False)
     inputs = dataset[0][0].astype(ms.float16)
     target = dataset[0][1].astype(ms.int64)
@@ -87,7 +89,7 @@ def test_cross_entropy_semi_auto_parallel_without_strategy():
     """
     init_hccl(global_rank=0, device_num=8)
 
-    dataset = FakeData3(size=256, batch_size=16, image_size=(96,), num_classes=96, use_parallel=True)
+    dataset = FakeData(size=256, batch_size=16, image_size=(96,), num_classes=96, use_parallel=True, data_num=3)
     dataset.set_label_onehot(is_onehot=False)
     inputs = dataset[0][0].astype(ms.float16)
     target = dataset[0][1].astype(ms.int64)

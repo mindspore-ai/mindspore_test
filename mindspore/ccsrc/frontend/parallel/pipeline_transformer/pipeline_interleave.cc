@@ -127,8 +127,7 @@ void PipelineInterleave::CreateSendReceiveGroup() {
   MS_EXCEPTION_IF_NULL(g_device_manager);
   auto rank_list = g_device_manager->GetDeviceListBetweenStage();
   if (rank_list.size() == g_device_manager->DeviceNum()) {
-    group_ = {g_device_manager->world_group(), g_device_manager->world_group(), g_device_manager->world_group(),
-              g_device_manager->world_group()};
+    group_ = g_device_manager->world_group();
     return;
   }
   auto dev_list = g_device_manager->CreateDeviceListByRankList(rank_list);
@@ -137,37 +136,7 @@ void PipelineInterleave::CreateSendReceiveGroup() {
   if (g_device_manager->CreateGroup(forward_send_group_name, dev_list, &forward_send_group) != SUCCESS) {
     MS_LOG(EXCEPTION) << "Create forward Send communication group failed, the rank list is: " << rank_list;
   }
-  group_.emplace_back(forward_send_group_name);
-
-  const auto parallel_context = parallel::ParallelContext::GetInstance();
-  const auto pp_interleave_origin = parallel_context->pipeline_interleave_temp();
-  if (!pp_interleave_origin) {
-    group_.emplace_back(forward_send_group_name);
-    group_.emplace_back(forward_send_group_name);
-    group_.emplace_back(forward_send_group_name);
-    return;
-  }
-
-  Group backward_send_group;
-  auto backward_send_group_name = forward_send_group.name() + BACKWARD;
-  if (g_device_manager->CreateGroup(backward_send_group_name, dev_list, &backward_send_group) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Create backward Send communication group failed, the rank list is: " << rank_list;
-  }
-  group_.emplace_back(backward_send_group_name);
-
-  Group forward_recv_group;
-  auto forward_recv_group_name = forward_send_group.name() + RECEIVE;
-  if (g_device_manager->CreateGroup(forward_recv_group_name, dev_list, &forward_recv_group) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Create forward Receive communication group failed, the rank list is: " << rank_list;
-  }
-  group_.emplace_back(forward_recv_group_name);
-
-  Group backward_recv_group;
-  auto backward_recv_group_name = forward_recv_group_name + BACKWARD;
-  if (g_device_manager->CreateGroup(backward_recv_group_name, dev_list, &backward_recv_group) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Create backward Receive communication group failed, the rank list is: " << rank_list;
-  }
-  group_.emplace_back(backward_recv_group_name);
+  group_ = forward_send_group_name;
 }
 
 ValuePtr PipelineInterleave::SetMicroBatch(const AnfNodePtr &node, int64_t micro_size, size_t batch_axis) const {
@@ -755,8 +724,8 @@ void PipelineInterleave::InsertSendReceiveForParameter(const AnfNodePtr &param, 
   }
   Attr attr_tag = std::make_pair(SR_TAG, MakeValue(0));
   Attr attr_rank = std::make_pair(DEST_RANK, MakeValue(dst_stage));
-  Attr attr_group = std::make_pair(GROUP, MakeValue(group_[0]));
-  Attr attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_[1]));
+  Attr attr_group = std::make_pair(GROUP, MakeValue(group_));
+  Attr attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_));
   OperatorAttrs attrs = {attr_tag, attr_rank, attr_group, attr_group_back};
   auto send_op = CreateOpInstance(attrs, SEND, SEND);
   auto send_node = NewValueNode(send_op);
@@ -996,11 +965,11 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   auto user_stage = user_node_stage_info->stage();
   Attr attr_tag = std::make_pair(SR_TAG, MakeValue(0));
   Attr attr_rank = std::make_pair(DEST_RANK, MakeValue(user_stage));
-  Attr attr_group = std::make_pair(GROUP, MakeValue(group_[0]));
-  Attr attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_[1]));
+  Attr attr_group = std::make_pair(GROUP, MakeValue(group_));
+  Attr attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_));
   if (node_stage > user_stage) {
-    attr_group = std::make_pair(GROUP, MakeValue(group_[INDEX_TWO]));
-    attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_[INDEX_THREE]));
+    attr_group = std::make_pair(GROUP, MakeValue(group_));
+    attr_group_back = std::make_pair(GROUP_BACK, MakeValue(group_));
   }
   OperatorAttrs attrs = {attr_tag, attr_rank, attr_group, attr_group_back};
   auto send_op = CreateOpInstance(attrs, SEND, SEND);
