@@ -346,6 +346,7 @@ static std::vector<AObject *> CollectObjects(const std::vector<ValueNode *> &nod
 }
 
 std::vector<ValueNode *> GraphBuilder::UnpackConstObject(const py::object &iterable) {
+  MS_LOG(DEBUG) << "Is constant value, do unpack from python object: " << py::str(iterable);
   std::vector<ValueNode *> outputs;
   std::transform(iterable.begin(), iterable.end(), std::back_inserter(outputs), [this](const py::handle &item) {
     this->DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(item)});
@@ -355,8 +356,10 @@ std::vector<ValueNode *> GraphBuilder::UnpackConstObject(const py::object &itera
 }
 
 bool GraphBuilder::UnpackSequenceElements(ValueNode *node) {
+  MS_LOG(DEBUG) << "Unpack sequence elements from node: " << ToString(node);
   py::object seq = node->GetVobj()->GetPyObject();
   if (seq.ptr() == nullptr || !PySequence_Check(seq.ptr()) || !GuardLoopSequence(this->graph_, node)) {
+    MS_LOG(INFO) << "Failed to unpack sequence elements, invalid sequence object: " << node->ToString();
     return false;
   }
   Py_ssize_t size = PySequence_Size(seq.ptr());
@@ -369,6 +372,7 @@ bool GraphBuilder::UnpackSequenceElements(ValueNode *node) {
 }
 
 bool GraphBuilder::UnpackElements(ValueNode *node) {
+  MS_LOG(DEBUG) << "Unpack elements from node: " << ToString(node);
   int opcode = node->GetOpcode();
   if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
     std::for_each(node->inputs().begin(), node->inputs().end(), [this](ValueNode *i) { this->push(i); });
@@ -640,7 +644,7 @@ bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
   if (iterable != nullptr && !PyIter_Check(iterable)) {
     DoGetIter(instr);
   } else {
-    MS_LOG(INFO) << "not support yield iterator yet!";
+    MS_LOG(INFO) << "yield from iterator is not supported yet!";
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceYieldFromIterator_Unsupported);
     return false;
   }
@@ -2716,6 +2720,8 @@ AbstractWrapperPtrList GraphBuilder::HandleInputArgs(const std::vector<ValueNode
 }
 
 StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, const py::object &func, const GraphBuilderPtr &sg) {
+  MS_EXCEPTION_IF_NULL(call_node);
+  MS_LOG(DEBUG) << "Start build subgraph for function: " << py::str(func) << ", node: " << call_node->ToString();
   sg->FGBuilder()->AddPrevBuilder(FGBuilder());
   sg->FGBuilder()->set_manager(FGBuilder()->manager());
 
@@ -2734,7 +2740,7 @@ StopTraceReason GraphBuilder::BuildSubGraph(CallNode *call_node, const py::objec
   MS_LOG(INFO) << "Subgraph TraceRun start: " << py::str(func);
   bool succ = sg->FGAddInputs(args);
   if (!succ) {
-    MS_LOG(INFO) << "Add input fail for subgraph: " << py::str(func);
+    MS_LOG(INFO) << "Failed to add inputs for subgraph: " << py::str(func);
     return StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
   }
   call_node->SetSubGraph(sg->GetGraph());
@@ -2903,6 +2909,7 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
 }
 
 bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates *frame, int position_argc) {
+  MS_LOG(DEBUG) << "Check and set default params for function: " << py::str(func);
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   PyObject *defs = PyFunction_GET_DEFAULTS(func.ptr());
   PyObject *kwdefs = PyFunction_GET_KW_DEFAULTS(func.ptr());
@@ -2911,6 +2918,7 @@ bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates 
   py::object varnames_release_handle = PyCodeWrapper(co).VarNames();
   PyObject *vars = varnames_release_handle.ptr();
 
+  bool has_default_param = false;
   int defs_off = defs ? co->co_argcount - PyTuple_GET_SIZE(defs) : INT_MAX;
   for (int i = position_argc; i < argc; ++i) {
     if (frame->Local(i) != &ValueNode::kUnboundLocal) {
@@ -2923,12 +2931,16 @@ bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates 
       val = kwdefs == nullptr ? nullptr : PyDict_GetItem(kwdefs, PyTuple_GET_ITEM(vars, i));
     }
     if (val == nullptr) {
-      MS_LOG(DEBUG) << "no " << (i < defs_off ? "" : "kw-") << "default parameter error";
+      MS_LOG(INFO) << "Failed to get " << (i < defs_off ? "" : "kw-") << "default param at position " << i;
       return false;
     }
-    MS_LOG(DEBUG) << "Handle default param at position " << i;
+    MS_LOG(DEBUG) << "Found and set " << (i < defs_off ? "" : "kw-") << "default param at position " << i;
     DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(val)});
     frame->SetLocal(i, pop());
+    has_default_param = true;
+  }
+  if (!has_default_param) {
+    MS_LOG(DEBUG) << "Not found default params";
   }
   return true;
 }
@@ -2996,7 +3008,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
   if (func_info.ptr() == nullptr) {
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
-  MS_LOG(DEBUG) << "Handle params for function call. Node: " << ToString(call_node);
+  MS_LOG(DEBUG) << "Handle params for function call: " << py::str(func_info) << ", node: " << ToString(call_node);
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
   PyCodeWrapper co_wrapper(co);
   frame->ResizeLocal(co_wrapper.LocalSize());
@@ -3014,7 +3026,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
     return false;
   }
 
-  MS_EXCEPTION_IF_CHECK_FAIL(params.size() == 0, "check parameters handle");
+  MS_EXCEPTION_IF_CHECK_FAIL(params.empty(), "check parameters handle");
 
   // python3.10 and lower only
   // after store all params
@@ -3117,6 +3129,8 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
   if (func_info.ptr() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "When resolving closure, get func_info failed.";
   }
+  MS_LOG(DEBUG) << "Resolve closure of function call. Function: " << py::str(func_info)
+                << ", node: " << ToString(call_node);
   ValueNode *callable_node = call_node->input(0);
   PyCodeWrapper co(PyFunction_GET_CODE(func_info.ptr()));
   PyObject *closure = PyFunction_GET_CLOSURE(func_info.ptr());
@@ -3124,8 +3138,10 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
   int ncells = co.CellVarsSize();
   int nfrees = co.FreeVarsSize();
   frame->ResizeClosure(ncells + nfrees);
+  MS_LOG(DEBUG) << "Function co_cellvars: " << ncells << ", co_freevars: " << nfrees;
 
   auto TrackExtraAttrArgs = [this, &call_node](ValueNode *src, const std::string &name) {
+    MS_LOG(DEBUG) << "Do LOAD_ATTR " << name << " from node: " << ToString(src);
     push(src);
     DoAttrAccess({LOAD_ATTR, 0, name});
     ValueNode *attr_node = pop();
@@ -4150,11 +4166,12 @@ bool GraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   for (size_t i = 0; i < args_wrapper.size(); ++i) {
     auto ret_abstract_wrapper = FGBuilder()->AddSubGraphInput(args_wrapper[i]);
     if (ret_abstract_wrapper == nullptr) {
-      MS_LOG(INFO) << "Add input fail for input[" << i << "]: " << args[i]->ToString();
+      MS_LOG(INFO) << "Failed to add subgraph input[" << i << "]: " << ToString(args[i]);
       return false;
     }
+    MS_EXCEPTION_IF_NULL(args[i]);
     args[i]->set_abstract_wrapper(ret_abstract_wrapper);
-    MS_LOG(INFO) << "Add input success for input[" << i << "]: " << args[i]->ToString();
+    MS_LOG(DEBUG) << "Add subgraph input[" << i << "]: " << ToString(args[i]);
   }
   return true;
 }
@@ -4227,6 +4244,8 @@ void GraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value
 }
 
 std::vector<ValueNode *> GraphBuilder::GetNewArgs(CallNode *call_node, AObject *vobj, const GraphBuilderPtr &subgraph) {
+  MS_EXCEPTION_IF_NULL(call_node);
+  MS_LOG(DEBUG) << "Prepare arguments for call node: " << call_node->ToString();
   std::vector<ValueNode *> new_arg_value_nodes;
   vobj = (vobj && vobj->GetType() != AObject::kTypePrimitive) ? vobj : call_node->input(0)->GetVobj();
   if (vobj->GetType() == AObject::kTypeCFunction) {
@@ -4242,24 +4261,29 @@ std::vector<ValueNode *> GraphBuilder::GetNewArgs(CallNode *call_node, AObject *
   } else {
     f = subgraph->frame();
   }
+
+  static const std::set<AObject::Type> kUnsupportedParameter = {
+    AObject::kTypeAnyValue,  AObject::kTypeFunction,      AObject::kTypeBoundMethod,
+    AObject::kTypePrimitive, AObject::kTypeMetaFuncGraph, AObject::kTypeCell,
+  };
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(new_callable_info.ptr()));
   int argc = co->co_argcount + co->co_kwonlyargcount;
   argc += (co->co_flags & CO_VARARGS) ? 1 : 0;
   argc += (co->co_flags & CO_VARKEYWORDS) ? 1 : 0;
-  for (auto it = f.GetLocals().begin(); it != f.GetLocals().begin() + argc; it++) {
-    std::set<AObject::Type> unsupported_parameter = {
-      AObject::kTypeAnyValue,  AObject::kTypeFunction,      AObject::kTypeBoundMethod,
-      AObject::kTypePrimitive, AObject::kTypeMetaFuncGraph, AObject::kTypeCell,
-    };
-    auto it_vobj = (*it)->GetVobj();
+  for (auto it = f.GetLocals().begin(); it != f.GetLocals().begin() + argc; ++it) {
+    ValueNode *node = *it;
+    MS_EXCEPTION_IF_NULL(node);
+    auto it_vobj = node->GetVobj();
     if (it_vobj != nullptr) {
       auto pyobj = it_vobj->GetPyObject();
       if (pyobj.ptr() != nullptr) {
-        if (unsupported_parameter.find(AbstractObjectBase::GetPyType(pyobj.ptr())) == unsupported_parameter.end()) {
-          new_arg_value_nodes.push_back(*it);
+        if (kUnsupportedParameter.find(AbstractObjectBase::GetPyType(pyobj.ptr())) == kUnsupportedParameter.end()) {
+          new_arg_value_nodes.push_back(node);
+          continue;
         }
       }
     }
+    MS_LOG(DEBUG) << "Node data is incomplete or is unsupported type, remove it from arguments:" << node->ToString();
   }
   return new_arg_value_nodes;
 }
@@ -5265,7 +5289,7 @@ AbstractWrapperPtr GraphBuilder::HandleBuildStringOp(const PrimitivePtr &primiti
 
 bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
   CallNode *call_node = reinterpret_cast<CallNode *>(seek(0));
-  MS_LOG(DEBUG) << "Handle positional params for function call: " << ToString(call_node);
+  MS_LOG(DEBUG) << "Handle positional params for function call: " << py::str(func) << ", node: " << ToString(call_node);
 
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   auto vobj = AObject::Convert(func.ptr());
@@ -5300,6 +5324,7 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
     auto m = pop();
     call_node->AddParam(m);
     frame->SetLocal(kwvarg_loc, m);
+    MS_LOG(DEBUG) << "kwargs node is: " << ToString(m);
   }
 
   if (has_varg) {
@@ -5312,12 +5337,14 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
     ValueNode *build_tuple = pop();
     call_node->AddParam(build_tuple);
     frame->SetLocal(varg_loc, build_tuple);
+    MS_LOG(DEBUG) << "vargs node is: " << ToString(build_tuple);
   }
 
   pargc = params->size();
   for (int i = pargc - 1; i >= 0; --i) {
     if (frame->Local(i) != &ValueNode::kUnboundLocal) {
-      MS_LOG(DEBUG) << "duplicate key-word parameter error";
+      MS_LOG(INFO) << "Failed to process param, found duplicate key-word parameter at position " << i << ": "
+                   << ToString(frame->Local(i));
       return false;
     }
     frame->SetLocal(i, params->back());
@@ -5353,6 +5380,7 @@ bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extr
     return false;
   }
   size_t args_len = args_node->abstract_wrapper()->size();
+  MS_LOG(DEBUG) << "CALL_FUNCTION_EX vargs num: " << args_len;
   if (args_len == 0) {
     return true;
   }
@@ -5370,6 +5398,7 @@ bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extr
 }
 
 bool GraphBuilder::HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) {
+  MS_LOG(DEBUG) << "Handle kw params for function: " << py::str(func);
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
   std::vector<ValueNode *> kwvargs;
   if (!PackKwParams(func, params, frame, &kwvargs)) {
