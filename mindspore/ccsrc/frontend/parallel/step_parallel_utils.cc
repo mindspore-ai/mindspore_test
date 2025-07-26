@@ -537,11 +537,14 @@ std::vector<std::pair<AnfNodePtr, int>> FuncGraphNodeUsers(const std::pair<AnfNo
 }
 
 std::vector<int> RemovePlaceholderIdx(const std::vector<int> &get_item_index) {
+  if (get_item_index.size() == 1) {
+    return get_item_index;
+  }
   std::vector<int> new_get_item_index;
-  std::copy(get_item_index.begin(), get_item_index.end(), std::back_inserter(new_get_item_index));
-  if (new_get_item_index.size() != 1) {
-    // Remove first -1, if there is other index
-    new_get_item_index.erase(new_get_item_index.begin());
+  std::copy_if(get_item_index.begin(), get_item_index.end(), std::back_inserter(new_get_item_index),
+               [](int idx) { return idx != -1; });
+  if (new_get_item_index.size() < 1) {
+    return {-1};
   }
   return new_get_item_index;
 }
