@@ -23,5 +23,4 @@ topk_ext:
     name: TopkExt
   dispatch:
     enable: True
-    CPU: None
     GPU: None

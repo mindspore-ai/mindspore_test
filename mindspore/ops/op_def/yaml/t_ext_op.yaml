@@ -11,5 +11,4 @@ t_ext:
   dispatch:
     enable: True
     Ascend: TExtAscend
-    CPU: None
     GPU: None

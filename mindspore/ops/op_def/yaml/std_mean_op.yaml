@@ -26,6 +26,5 @@ std_mean:
     dispatch:
         enable: True
         Ascend: StdMeanAscend
-        CPU: None
         GPU: None
         

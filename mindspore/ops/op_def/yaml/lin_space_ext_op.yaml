@@ -19,5 +19,4 @@ lin_space_ext:
   dispatch:
     enable: True
     Ascend: LinSpaceExtAscend
-    CPU: None
     GPU: None

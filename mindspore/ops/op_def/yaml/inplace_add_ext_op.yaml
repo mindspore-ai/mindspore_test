@@ -21,5 +21,4 @@ inplace_add_ext:
   dispatch:
     enable: True
     Ascend: InplaceAddExtAscend
-    CPU: None
     GPU: None

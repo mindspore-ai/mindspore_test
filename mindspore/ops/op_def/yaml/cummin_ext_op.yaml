@@ -13,5 +13,4 @@ cummin_ext:
   dispatch:
     enable: True
     Ascend: CumminExtAscend
-    CPU: None
     GPU: None

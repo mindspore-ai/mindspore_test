@@ -18,5 +18,4 @@ fill_tensor:
     dispatch:
         enable: True
         Ascend: FillTensorAscend
-        CPU: None
         GPU: None

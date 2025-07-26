@@ -23,5 +23,4 @@ unique_dim:
   dispatch:
     enable: True
     Ascend: UniqueDimAscend
-    CPU: None
     GPU: None
