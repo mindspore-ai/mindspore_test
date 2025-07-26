@@ -177,6 +177,9 @@ class FuncGraphBuilder {
   /// \return Return the corresponding primitive of function of the func.
   static py::object ConvertFunction(const py::object &obj);
 
+  // Convert Python standard library APIs (usually implemented in C) to equivalent functions implemented in Python.
+  static py::object ConvertPyStdlibToFunction(const py::object &callable);
+
   /// \brief Check if the python object is a function which can be constantly folded.
   ///
   /// \param[in] obj A python object.

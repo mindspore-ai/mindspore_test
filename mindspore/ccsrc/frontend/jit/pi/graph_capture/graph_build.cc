@@ -2971,6 +2971,7 @@ ValueNode *GetBoundSelfHelper(CallNode *call_node, bool *check_method) {
       }
       break;
     case AObject::kTypeFunction:
+    case AObject::kTypeType:
       break;
     default:
       MS_LOG(INTERNAL_EXCEPTION) << "unimplemented type " << vo->ToString();
@@ -4659,6 +4660,12 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (ConvertClassType(callable_info, call_node, stop_reason)) {
     return py::object();
   }
+
+  if (py::object new_func = FGBuilder()->ConvertPyStdlibToFunction(callable_info)) {
+    MS_LOG(INFO) << "Convert python stdlib to function: " << py::str(callable_info) << " -> " << py::str(new_func);
+    return new_func;
+  }
+
   py::object original_callable = callable_info;
   if (!IsForbiddenConvertFunc(callable_info)) {
     if (EnableTensorOverload() && IsTensorOverloadMethod(callable_info)) {

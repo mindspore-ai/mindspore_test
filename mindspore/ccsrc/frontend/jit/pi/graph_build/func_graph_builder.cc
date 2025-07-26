@@ -1159,6 +1159,15 @@ py::object FuncGraphBuilder::ConvertFunction(const py::object &obj) {
   return callable_obj_ptr == nullptr ? py::object() : py::cast<py::object>(callable_obj_ptr);
 }
 
+py::object FuncGraphBuilder::ConvertPyStdlibToFunction(const py::object &callable) {
+  py::object dict = python_adapter::GetPyObjAttr(
+    python_adapter::GetPyModule("mindspore._extends.pijit.function_conversion"), "_PIJIT_STDLIB_CONVERSION");
+  MS_EXCEPTION_IF_NULL(dict.ptr());
+  MS_EXCEPTION_IF_NULL(callable.ptr());
+  PyObject *new_function = PyDict_GetItem(dict.ptr(), callable.ptr());
+  return new_function == nullptr ? py::object() : py::cast<py::object>(new_function);
+}
+
 bool FuncGraphBuilder::CanConstantFoldFunc(const py::object &obj) {
   py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
   py::object can_constant_fold = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CAN_CONSTANT_FOLD, obj);
