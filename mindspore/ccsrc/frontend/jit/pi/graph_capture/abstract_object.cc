@@ -750,12 +750,15 @@ AObject *AbstractObject::GetIter() const {
 AObject *AbstractObjectBase::GetAttr(const std::string &name) {
   PyTypeObject *tp = type_object_;
   if (tp == nullptr) {
+    MS_LOG(DEBUG) << "Do getattr '" << name << "' from PyTypeObject, but PyTypeObject is nullptr!";
     return MakeAObject(kTypeAnyValue);
   }
+  MS_LOG(DEBUG) << "Do getattr '" << name << "' from PyTypeObject: " << tp->tp_name;
   py::str name_obj(name);
   PyObject *attr_obj = PyObject_GetAttr(reinterpret_cast<PyObject *>(tp), name_obj.ptr());
   if (attr_obj == nullptr) {
     PyErr_Clear();
+    MS_LOG(DEBUG) << "Failed to getattr '" << name << "' from PyTypeObject: " << tp->tp_name;
     return MakeAObject(kTypeAnyValue);
   }
   AObject *attr = AObject::Convert(attr_obj);
@@ -767,7 +770,10 @@ AObject *AbstractObjectBase::GetAttr(const std::string &name) {
     // check @staticmethod and @classmethod
     if (Py_IS_TYPE(descr, &PyStaticMethod_Type) || Py_IS_TYPE(descr, &PyClassMethod_Type)) {
       // attr not modify
+      MS_LOG(DEBUG) << tp->tp_name << "." << name << " is "
+                    << (Py_IS_TYPE(descr, &PyStaticMethod_Type) ? "staticmethod" : "classmethod");
     } else if (PyFunction_Check(descr)) {
+      MS_LOG(DEBUG) << tp->tp_name << "." << name << " is function";
       MS_EXCEPTION_IF_CHECK_FAIL(attr_obj == descr, "unknown user defined descriptor");
       PyObject *meth = PyMethod_New(descr, Py_None);
       AObject *m = AObject::Convert(meth);
@@ -777,6 +783,7 @@ AObject *AbstractObjectBase::GetAttr(const std::string &name) {
       attr = m;
     } else {
       // other type
+      MS_LOG(DEBUG) << tp->tp_name << "." << name << " is unknown type!";
       attr = MakeAObject(kTypeAnyValue);
     }
   }
@@ -787,6 +794,7 @@ AObject *AbstractObject::GetAttr(const std::string &name) {
   FIND_MAP_CACHE(attrs_, name);
   AObject *res = nullptr;
   if (value_.ptr() != nullptr) {
+    MS_LOG(DEBUG) << "Do getattr '" << name << "' from python object";
     PyObject *attr = PyObject_GetAttrString(value_.ptr(), name.c_str());
     CHECK_PYTHON_EXCEPTION(attr);
     res = Convert(attr);
