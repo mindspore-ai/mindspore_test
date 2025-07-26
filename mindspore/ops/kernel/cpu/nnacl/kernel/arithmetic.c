@@ -380,6 +380,20 @@ void ArithmeticDoBroadcast(ArithmeticStruct *arithmetic, void *in_data, void *ou
                                     arithmetic->out_strides_, multiples);
 }
 
+int CheckDivDataInvalid(ArithmeticStruct *arithmetic) {
+  if ((arithmetic->primitive_type_ == PrimType_DivFusion || arithmetic->primitive_type_ == PrimType_RealDiv) &&
+      arithmetic->base_.in_[SECOND_INPUT]->data_type_ == kNumberTypeInt32) {
+    int element_num = NNACLGetElementNum(arithmetic->base_.in_[SECOND_INPUT]);
+    int *int_data = (int *)(arithmetic->base_.in_[SECOND_INPUT]->data_);
+    for (int i = 0; i < element_num; i++) {
+      if (int_data[i] == 0) {
+        return NNACL_INPUT_TENSOR_ERROR;
+      }
+    }
+  }
+  return NNACL_OK;
+}
+
 int ArithmeticBroadCastConstTensor(ArithmeticStruct *arithmetic) {
   NNACL_CHECK_NULL_RETURN_ERR(arithmetic);
 
@@ -419,6 +433,10 @@ int ArithmeticBroadCastConstTensor(ArithmeticStruct *arithmetic) {
 
   if (arithmetic->b_matrix_.is_const_) {
     NNACL_CHECK_NULL_RETURN_ERR(arithmetic->base_.in_[SECOND_INPUT]->data_);
+    int ret = CheckDivDataInvalid(arithmetic);
+    if (ret != NNACL_OK) {
+      return ret;
+    }
     if (arithmetic->in_elements_num1_ != arithmetic->out_elements_num_ && prefer_explicit_broadcast) {
       exist_broadcast_ = true;
 
@@ -637,6 +655,10 @@ int ArithmeticCompute(struct KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(arithmetic->a_matrix_.data_);
 
   if (false == arithmetic->b_matrix_.is_valid_) {
+    int ret = CheckDivDataInvalid(arithmetic);
+    if (ret != NNACL_OK) {
+      return ret;
+    }
     arithmetic->b_matrix_.data_ = self->in_[SECOND_INPUT]->data_;
   }
   NNACL_CHECK_NULL_RETURN_ERR(arithmetic->b_matrix_.data_);
