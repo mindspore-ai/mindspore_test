@@ -7,7 +7,7 @@ MindSpeed_LLM_PATH=../scripts/LLM/MindSpeed-LLM
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
-MASTER_PORT=6101
+MASTER_PORT=6255
 NODE_RANK=0
 
 DATA_PATH="/home/workspace/mindspore_dataset/msadapter/test_input/net/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
